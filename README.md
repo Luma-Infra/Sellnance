@@ -1,6 +1,6 @@
-# 🚀 Sellance - 실시간 크립토 차트 & 모의 시뮬레이터
+# 🚀 Sellnance - 실시간 크립토 차트 & 모의 시뮬레이터
 
-**Sellance**는 업비트(Upbit)와 바이낸스(Binance)의 실시간 웹소켓 데이터를 기반으로 작동하는 고성능 암호화폐 차트 분석 및 트레이딩 시뮬레이터입니다. 단순한 조회를 넘어, 사용자가 직접 다음 캔들을 예측하고 그려볼 수 있는 **커스텀 시뮬레이션 엔진**을 탑재하고 있습니다.
+**Sellnance**는 업비트(Upbit)와 바이낸스(Binance)의 실시간 웹소켓 데이터를 기반으로 작동하는 고성능 암호화폐 차트 분석 및 트레이딩 시뮬레이터입니다. 단순한 조회를 넘어, 사용자가 직접 다음 캔들을 예측하고 그려볼 수 있는 **커스텀 시뮬레이션 엔진**을 탑재하고 있습니다.
 
 ---
 
@@ -43,10 +43,10 @@
 * 프로젝트 루트의 `.env` 파일에 `CMC_API_KEY=your_key_here` 형태로 입력하세요.
 
 ### 2. 실행 (Windows)
-프로젝트 폴더 내 `sellance.bat` 파일을 더블 클릭하면 자동으로 환경 검사 및 서버가 가동됩니다.
+프로젝트 폴더 내 `Sellnance.bat` 파일을 더블 클릭하면 자동으로 환경 검사 및 서버가 가동됩니다.
 
 ```batch
-# sellance.bat 내부 로직
+# Sellnance.bat 내부 로직
 python -m pip install fastapi uvicorn requests pandas openpyxl jinja2 python-dotenv
 python -m uvicorn modules.app:app --reload --port num
 ```
@@ -63,7 +63,7 @@ python -m uvicorn modules.app:app --reload --port num
 본 프로젝트는 백엔드(Python/FastAPI)와 프론트엔드(Vanilla JS)의 명확한 역할 분담을 위해 다음과 같은 모듈형 구조를 채택하고 있습니다.
 
 ```text
-sellance/
+Sellnance/
 ├── modules/               # 백엔드 핵심 로직 (Python)
 │   ├── api_manager.py     # 외부 거래소 API 요청 및 데이터 가공 전용
 │   ├── app.py             # FastAPI 메인 서버 및 엔드포인트 제어
