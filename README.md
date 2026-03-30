@@ -4,6 +4,8 @@
 
 ---
 
+[][] 사진 하나 잇으면 좋을듯 !pic
+
 ## ✨ 핵심 기능 (Key Features)
 
 ### 📈 1. 초고속 실시간 차트 (Zero-Lag WebSocket)
