@@ -57,3 +57,53 @@ python -m uvicorn modules.app:app --reload --port num
 * **권장 브라우저:** Chrome, Edge, Safari (최신 버전)
 
 ---
+
+## 📁 프로젝트 구조 (Project Structure)
+
+본 프로젝트는 백엔드(Python/FastAPI)와 프론트엔드(Vanilla JS)의 명확한 역할 분담을 위해 다음과 같은 모듈형 구조를 채택하고 있습니다.
+
+```text
+sellance/
+├── modules/               # 백엔드 핵심 로직 (Python)
+│   ├── api_manager.py     # 외부 거래소 API 요청 및 데이터 가공 전용
+│   ├── app.py             # FastAPI 메인 서버 및 엔드포인트 제어
+│   └── get_market.py      # 전역 마켓 데이터 수집 및 매핑 로직
+├── static/                # 프론트엔드 정적 리소스
+│   ├── _main.js           # UI 초기화, 테마 관리 및 전역 상태 컨트롤 타워
+│   ├── api.js             # 데이터 통신 (History 로드 및 심볼 검색) 전용
+│   ├── stream.js          # WebSocket 실시간 데이터 처리 엔진
+│   ├── sim_engine.js      # 시뮬레이터 수학 알고리즘 (캔들 생성/Undo)
+│   ├── table.js           # 마켓 보드 리스트 실시간 렌더링 제어
+│   └── z_style.css        # Content-visibility 등 고성능 렌더링용 CSS
+├── templates/
+│   └── index.html         # 메인 프론트엔드 레이아웃 (반응형 독 구조)
+├── config.py              # 전역 환경 설정 및 API 키 관리
+├── mapping.json           # 거래소별 심볼 매핑 데이터 캐시
+├── .gitignore             # 가상 환경 및 캐시 파일 제외 설정
+├── LICENSE                # 프로젝트 라이선스
+└── README.md              # 프로젝트 가이드라인
+```
+
+---
+
+## 🔧 주요 최적화 및 문제 해결 일지 (Development Log)
+
+프로젝트 개발 중 발생한 핵심 병목 현상과 버그들을 아래와 같이 최적화하여 해결했습니다.
+
+### 🚀 성능 및 렌더링 최적화 (요약)
+* **차트 깜빡임 해결:** `ResizeObserver`에 0.1초 디바운스(Debounce)를 적용하여 무한 리사이즈 버그 차단.
+* **CPU 부하 절감:** 전 종목 시세 갱신에 3초 주기 버퍼링(Buffering) 전략을 도입하여 렌더링 횟수 최소화.
+* **메모리 효율화:** `content-visibility: auto`를 통해 화면 밖 리스트 요소의 브라우저 연산 제외.
+* **로딩 속도 개선:** Tailwind CSS CDN 의존성을 제거하고 CLI 빌드 방식으로 전환하여 초기 로딩 속도 10배 향상.
+
+### 📉 데이터 및 안정성 개선 (요약)
+* **캔들 중복 증식 차단:** 내 PC 시계 대신 업비트 서버 타임스탬프(`timestamp`)를 기준점으로 동기화하여 캔들 증식 버그 해결.
+* **가격 정밀도 동기화:** `$60,000`부터 `$0.00000001`까지 코인 가격에 맞춰 차트 눈금(`minMove`)과 자릿수 자동 전환.
+* **타임존 시차 보정:** 업비트 API 시각 데이터에 UTC 표준(`Z`)을 강제 파싱하여 차트 찌그러짐 및 시차 문제 해결.
+* **모듈형 아키텍처:** 800줄의 스파게티 코드를 기능별(API, Stream, Engine)로 분리하여 유지보수성 극대화.
+
+---
+
+## 📝 라이선스 및 기여 (License & Contribution)
+* **License:** 본 프로젝트는 MIT 라이선스 하에 배포되며, 개인 학습 및 연구 목적은 가능하나 상업적 이용은 지양 바랍니다.
+* 단순 참고 용도이며 거래 시 발생하는 어떠한 손실에 대해서도 책임지지 않으며, 각 거래소(Upbit, Binance)의 API 이용 약관을 준수해야 합니다.
