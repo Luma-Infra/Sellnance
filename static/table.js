@@ -40,6 +40,8 @@ async function loadTableData(force = false) {
         // ⭐️ 핵심: 전역 변수에 지금 선택한 놈을 박제함
         window.currentSelectedSymbol = pureSymbol;
         selectSymbol(pureSymbol);
+
+        applySelectedHighlight(); // 🚀 [추가] 클릭하자마자 테두리 빡!
       }
     });
 
@@ -142,6 +144,7 @@ function renderTable() {
     // 만들어둔 헬퍼 함수로 깔끔하게 렌더링
     tbody.appendChild(createRowElement(row));
   });
+  applySelectedHighlight(); // 🚀 [추가] 정렬 끝나고 내 코인 다시 찾아!
 }
 // <td class="p-4 text-right">
 //     <div class="flex flex-col items-end justify-center h-full gap-1">
@@ -382,6 +385,7 @@ function applyRealtimeSort() {
   if (typeof refreshSniperTarget === "function") {
     refreshSniperTarget();
   }
+  applySelectedHighlight(); // 🚀 [추가] 순위 바뀌어도 내 코인은 빛나야지!
 }
 
 function applySelectedHighlight() {
