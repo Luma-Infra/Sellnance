@@ -140,3 +140,8 @@ vite.config.ts.timestamp-*
 
 # py cache directory
 __pycache__
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
