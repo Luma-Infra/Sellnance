@@ -349,7 +349,33 @@ def build_final_market_list(binance_data, upbit_data, market_data_map, asset_to_
         if base_display in EXCLUSION_LIST: continue
 
         # [수정 5] CMC 데이터 맵에서 가져올 때도 lookup_key 사용!
-        info = market_data_map.get(asset_to_lookup_key.get(lookup_key))
+        info = market_data_map.get(asset_to_lookup_key.get(lookup_key))# --- 바이낸스 루프 긴급 수정본 ---
+    for ticker, b_info in binance_data.items():
+        # 1. 원본 티커 (예: 1000000BOB)
+        raw_symbol = ticker.replace('USDT', '') 
+        # 2. 예쁘게 깎은 이름 (예: BOB)
+        base_display = get_pure_base_asset(ticker).upper() 
+        
+        # 3. ⭐️ 맵핑 데이터 확인 (철벽 방어)
+        if raw_symbol in SYMBOL_TO_ID_MAP:
+            lookup_key = raw_symbol
+        elif base_display in SYMBOL_TO_ID_MAP:
+            lookup_key = base_display
+        else:
+            lookup_key = base_display # 맵핑 없으면 그냥 깎은 이름으로!
+
+        price = b_info['price']
+
+        # 4. ⭐️ 여기서 에러 났을 확률 높음! 안전하게 조회
+        lookup_id = asset_to_lookup_key.get(lookup_key)
+        if not lookup_id:
+            # 맵핑에 없으면 그냥 통과하거나 예전 방식(base_display)으로 한 번 더 시도
+            lookup_id = asset_to_lookup_key.get(base_display)
+            
+        info = market_data_map.get(lookup_id) if lookup_id else None
+
+        # [이하 로직은 기존과 동일... 하지만 info가 없을 때를 대비해야 함]
+        if not info: continue # 👈 데이터 없으면 그냥 다음 코인으로! (목록 증발 방지)
         # mcap = 0
         if info or base in MANUAL_SUPPLY_MAP:
             ucid = info.get('ucid', '') if info else ''
