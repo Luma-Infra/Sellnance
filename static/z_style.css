@@ -1,3 +1,4 @@
+/* z_style.css */
 :root {
   --bg: #ffffff;
   --panel: #f4f5f8;
@@ -168,8 +169,9 @@ body.theme-binance {
 /* 📱 모바일 최적화: 768px 이하일 때 마법이 일어납니다 */
 @media (max-width: 768px) {
   /* 1. 테이블 패딩 다이어트 (옆으로 안 터지게) */
-  #table-body td, thead th {
-    padding: 8px 4px !important; 
+  #table-body td,
+  thead th {
+    padding: 8px 4px !important;
     font-size: 11px !important;
   }
 
@@ -180,8 +182,8 @@ body.theme-binance {
 
   /* 3. 코인 이름(영문)은 모바일에서 과감히 숨기기 */
   /* (Ticker만 봐도 성주님은 다 아시니까요 ㅋㅋㅋ) */
-  #table-body span.text-\[10px\] { 
-    display: none !important; 
+  #table-body span.text-\[10px\] {
+    display: none !important;
   }
 
   /* 4. 차트 높이 고정 (리스트에 안 밀리게) */
@@ -192,8 +194,58 @@ body.theme-binance {
   }
 
   /* 5. 가로 스크롤 생기는 거 방지 */
-  body, html {
+  body,
+  html {
     overflow-x: hidden !important;
   }
 }
 
+/* 모바일에서 테이블 텍스트 크기 최적화 */
+@media (max-width: 768px) {
+  #left-panel {
+    width: 100% !important;
+    max-width: none !important;
+  }
+  #market-table {
+    font-size: 14px; /* 시원하게 보이게 */
+  }
+  .ticker-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+}
+
+/* 즐겨찾기 별 토글 애니메이션 */
+.star-btn {
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: inline-flex;
+}
+.star-btn:active {
+  transform: scale(1.4);
+}
+.star-btn.active {
+  color: var(--accent);
+  filter: drop-shadow(0 0 5px var(--accent));
+}
+
+#mobile-chart-content #right-panel {
+  display: flex !important; /* 모바일 컨텐츠 안에 들어오면 무조건 보여라! */
+  flex: 1 !important; /* 👈 부모 안에서 꽉 차게 늘어나라! */
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* 모바일 오버레이 전체 높이 확보 */
+#mobile-chart-overlay {
+  display: flex;
+  align-items: flex-end; /* 아래서 위로 올라오니까! */
+}
+
+/* 차트가 들어갈 알맹이 공간 */
+#mobile-chart-content {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+}
