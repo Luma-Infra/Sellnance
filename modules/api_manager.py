@@ -331,15 +331,26 @@ def build_final_market_list(binance_data, upbit_data, market_data_map, asset_to_
     # ---------------------------------------------------------
     # 1. 바이낸스 선물 조립
     # ---------------------------------------------------------
+    # --- 1. 바이낸스 선물 조립 루프 내부 ---
     for ticker, b_info in binance_data.items():
-        base = get_pure_base_asset(ticker).upper()
+        # [수정 1] 정규식 돌리기 전에 "원본 티커(숫자포함)"를 먼저 보관!
+        raw_symbol = ticker.replace('USDT', '') 
+        
+        # [수정 2] 이름은 정규식으로 예쁘게 깎기 (화면 표시용)
+        base_display = get_pure_base_asset(ticker).upper() 
+        
+        # [수정 3] 맵핑 조회는 "원본 티커"가 있으면 그걸 우선, 없으면 깎인 이름으로!
+        lookup_key = raw_symbol if raw_symbol in SYMBOL_TO_ID_MAP else base_display
+        
         price = b_info['price']
 
-        if not is_valid_ticker(base) and base not in SYMBOL_TO_ID_MAP: continue
-        if base in EXCLUSION_LIST: continue
+        # [수정 4] 이제 조회할 때 lookup_key를 사용!
+        if not is_valid_ticker(base_display) and lookup_key not in SYMBOL_TO_ID_MAP: continue
+        if base_display in EXCLUSION_LIST: continue
 
-        info = market_data_map.get(asset_to_lookup_key.get(base))
-        mcap = 0
+        # [수정 5] CMC 데이터 맵에서 가져올 때도 lookup_key 사용!
+        info = market_data_map.get(asset_to_lookup_key.get(lookup_key))
+        # mcap = 0
         if info or base in MANUAL_SUPPLY_MAP:
             ucid = info.get('ucid', '') if info else ''
             logo = create_image_tag(f"https://s2.coinmarketcap.com/static/img/coins/128x128/{ucid}.png" if ucid else "")
