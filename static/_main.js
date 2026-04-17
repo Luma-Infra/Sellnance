@@ -474,15 +474,21 @@ function updateRealtimeCountdown(serverMs) {
 
 function setupCountdownDOM() {
   const container = document.getElementById("chart-container");
-  // 🚀 우측 가격 축
-  const priceScaleTd = container.querySelector(
-    "div.tv-lightweight-charts table tr:nth-child(1) td:nth-child(3)",
-  );
+  if (!container) return;
+
+  // 🚀 [개선 포인트] container 내부뿐만 아니라, 이사 간 부모(table) 전체에서 가격축(td:nth-child(3))을 찾습니다.
+  const priceScaleTd = container.closest('table')?.querySelector("tr:nth-child(1) td:nth-child(3)") 
+                     || container.querySelector("div.tv-lightweight-charts table tr:nth-child(1) td:nth-child(3)");
 
   if (!priceScaleTd) {
-    // 차트가 아직 안 그려졌으면 50ms 뒤에 재시도
+    // 차트가 아직 안 그려졌거나 렌더링 전이면 재시도
     setTimeout(setupCountdownDOM, 100);
     return;
+  }
+
+  // 🚀 [중요] 기존에 그려진 잔상이 있다면 제거하고 새로 붙입니다 (중복 방지)
+  if (countdownOverlay && countdownOverlay.parentElement && countdownOverlay.parentElement !== priceScaleTd) {
+      countdownOverlay.parentElement.removeChild(countdownOverlay);
   }
 
   priceScaleTd.style.position = "relative";
@@ -491,27 +497,28 @@ function setupCountdownDOM() {
     countdownOverlay = document.createElement("div");
   }
 
-  // 🚀 [핵심] 스타일 재설정: top: 0과 z-index가 생명입니다.
+  // 🚀 [핵심] 스타일 재설정 (누님의 기존 스타일 유지)
   countdownOverlay.style.cssText = `
     position: absolute;
-    top: 0;                /* 🚨 절대 경로 기준점 */
+    top: 0;
     left: 0;
     width: 100%;
     text-align: center;
-    color: white;          /* 글자는 화이트 */
-    background-color: var(--up); /* 초기값 up색 */
+    color: white;
+    background-color: var(--up);
     padding: 2px 0;
-    font-size: 12px;
+    font-size: 11px; /* 🚀 모바일 가독성을 위해 살짝 조절 가능 */
     font-family: monospace;
     font-weight: bold;
-    z-index: 10000;        /* 🚨 최상단 레이어 보장 */
+    z-index: 10000;
     pointer-events: none;
-    opacity: 0;            /* 데이터 오기 전까지 대기 */
+    opacity: 0;
     transition: transform 0.1s ease-out;
     font-variant-numeric: tabular-nums;
-    border-radius: 10px;
+    border-radius: 4px;
   `;
 
+  // 🚀 최종적으로 현재 활성화된 가격 축에 찰싹 붙이기!
   priceScaleTd.appendChild(countdownOverlay);
 }
 
