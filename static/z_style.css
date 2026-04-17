@@ -222,68 +222,43 @@ body.theme-binance {
   height: 100% !important;
 }
 
-/* ✅ 모바일 통합 최적화 */
+/* ✅ 모바일 통합 최적화 (768px 이하) */
 @media (max-width: 768px) {
 
   /* 가로 스크롤 완전 차단 */
-  body,
-  html {
+  body, html {
     overflow-x: hidden !important;
     position: relative;
   }
 
-  /* 1. 리스트 패널 강제 감옥 로직 (이게 핵심!) */
+  /* 1. 리스트 패널: 화면에 박제 & 스크롤 허용 */
   #left-panel.flex {
     position: fixed !important;
     top: 0;
     left: 0;
     width: 100vw !important;
-    /* 주소창 제외 실제 높이(dvh)에서 네비바(64px) 뺌 */
-    height: calc(100dvh - 10x) !important;
+    /* 🚀 오타수정: 10x -> 10px */
+    height: calc(100dvh - 10px) !important;
     max-height: calc(100dvh - 10px) !important;
     overflow-y: auto !important;
-    /* 드디어 스크롤 허용! */
     z-index: 50;
     background-color: var(--bg);
-    padding-bottom: 10px;
-    /* 맨 밑 코인 가려짐 방지 */
+    padding-bottom: 20px; /* 🚀 밑바닥 여유 살짝 추가 */
   }
 
-  /* 테이블 다이어트 */
-  #table-body td,
-  thead th {
-    padding: 8px 4px !important;
-    font-size: 11px !important;
-  }
-
-  /* 차트 컨테이너 (오버레이 안에서 꽉 차게) */
-  #chart-container {
-    height: 100% !important;
-    /* 오버레이 안에서는 부모 높이 따라가기 */
-    width: 100% !important;
-    margin: 0 !important;
-  }
-
-  /* 1. 패널 자체를 안드로메다로 보냄 */
-  #right-panel {
-    display: none !important;
-    position: fixed !important;
-    left: -9999px !important; /* 화면 밖으로 완전히 퇴출 */
-    visibility: hidden !important;
-    opacity: 0 !important;
-  }
-
-  /* 2. [핵심] 캔버스/차트 엔진 강제 숨기기 */
-  /* 차트 라이브러리가 생성하는 모든 내부 요소를 강제로 숨깁니다 */
+  /* 2. [잔상박멸] 평소 우측 패널은 안드로메다 유배 */
+  #right-panel,
   #right-panel *, 
   #chart-container canvas,
   .tv-lightweight-charts {
     display: none !important;
+    position: fixed !important;
+    left: -9999px !important; 
     visibility: hidden !important;
     opacity: 0 !important;
   }
 
-  /* 3. 모바일 팝업 활성화 시에만 정중하게 재소환 */
+  /* 3. [부활] 팝업 활성화 시에만 정중하게 재소환 */
   #mobile-chart-overlay.active #right-panel,
   #mobile-chart-overlay.active #right-panel *,
   #mobile-chart-overlay.active #chart-container canvas {
@@ -293,3 +268,16 @@ body.theme-binance {
     visibility: visible !important;
     opacity: 1 !important;
   }
+
+  /* 4. 테이블 & 차트 세부 조정 */
+  #table-body td, thead th {
+    padding: 8px 4px !important;
+    font-size: 11px !important;
+  }
+
+  #chart-container {
+    height: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+}
