@@ -17,8 +17,9 @@ function toggleTheme() {
   }
   setTimeout(() => {
     initChart();
-  }, 0);
+  }, 10);
 }
+
 // 데스크탑: 좌측 패널 접기/펴기
 function toggleSidebar() {
   const leftPanel = document.getElementById("left-panel");
@@ -44,8 +45,9 @@ function toggleSidebar() {
       const container = document.getElementById("chart-container");
       chart.resize(container.clientWidth, container.clientHeight);
     }
-  }, 50);
+  }, 200);
 }
+
 // 모바일: 리스트/차트 화면 전환
 function switchMobileView(view) {
   const leftPanel = document.getElementById("left-panel");
@@ -80,40 +82,72 @@ function switchMobileView(view) {
       if (chart && container.clientWidth > 0) {
         chart.resize(container.clientWidth, container.clientHeight);
       }
-    }, 50);
+    }, 200);
   }
 }
+
 function showMobileChart() {
+  // 1. PC/태블릿 모드 검문 (SCREEN_WIDTH 기준)
+  if (window.innerWidth >= SCREEN_WIDTH) return;
+
   const overlay = document.getElementById("mobile-chart-overlay");
   const panel = document.getElementById("mobile-chart-panel");
   const content = document.getElementById("mobile-chart-content");
   const rightPanel = document.getElementById("right-panel");
 
-  // 1. 이사 보내기
+  // 2. 중복 이사 방지
+  if (content.contains(rightPanel)) {
+    // 이미 이사 와 있다면 오버레이만 다시 보여주기
+    overlay.classList.remove("hidden");
+    overlay.style.pointerEvents = "auto";
+    return;
+  }
+
+  // 3. 이사 시작 (물리적 이동)
   content.appendChild(rightPanel);
-  rightPanel.classList.remove("hidden"); // 🚨 hidden 털어버리기
+
+  // 4. 레이아웃 초기화
+  overlay.classList.remove("hidden");
+  overlay.style.pointerEvents = "auto";
+  rightPanel.classList.remove("hidden", "md:flex"); // PC용 클래스 잠시 제거
   rightPanel.classList.add("flex");
 
-  overlay.classList.remove("hidden");
-
+  // 5. 애니메이션 및 리사이즈
   setTimeout(() => {
     overlay.style.opacity = "1";
     panel.style.transform = "translateY(0)";
 
-    // 🚨 핵심: 이사 간 집의 크기에 맞춰서 차트를 다시 그려라!
+    // 🚀 [핵심] 차트가 새 집의 크기를 강제로 인식하게 만들어야 함!
     if (window.chart) {
-      window.chart.resize(content.clientWidth, content.clientHeight - 50); // 헤더 높이 대략 뺌
+      const newWidth = content.clientWidth;
+      const newHeight = content.clientHeight - 60; // 헤더 공간 제외
+
+      window.chart.resize(newWidth, newHeight);
+      window.chart.timeScale().fitContent();
     }
-  }, 300); // 패널이 다 올라온 뒤에 리사이즈!
+  }, 200);
 }
 function closeMobileChart() {
   const overlay = document.getElementById("mobile-chart-overlay");
   const panel = document.getElementById("mobile-chart-panel");
+  const rightPanel = document.getElementById("right-panel");
+  const mainContainer = document.querySelector(".max-w-\\[1600px\\]"); // 메인 부모
 
   panel.style.transform = "translateY(100%)";
   overlay.style.opacity = "0";
-  setTimeout(() => overlay.classList.add("hidden"), 300);
+  overlay.style.pointerEvents = "none"; // 👈 터치 즉시 비활성화 (유리벽 제거)
+
+  setTimeout(() => {
+    overlay.classList.add("hidden");
+    // 🚀 [복구] PC 버전 유지를 위해 우측 패널을 원래 자리로 돌려놓기!
+    if (rightPanel && mainContainer) {
+      mainContainer.appendChild(rightPanel);
+      // 만약 PC에서 리스트를 보고 있었다면 다시 hidden 처리할지 로직 체크 필요
+    }
+  }, 200);
 }
+
+// ⭐️ 1. 탭 전환 기능 (차트 ↔ 시뮬레이터) ⭐️
 function switchChartTab(mode) {
   const btnSim = document.getElementById("tab-btn-sim");
   if (mode === "chart" && btnSim.classList.contains("active")) {
@@ -135,6 +169,8 @@ function switchChartTab(mode) {
     executeTabSwitch(mode);
   }
 }
+
+// 2. 🚨 진짜 탭을 바꾸고 화면을 업데이트하는 알맹이 로직 (여기로 분리!)
 function executeTabSwitch(mode) {
   const btnChart = document.getElementById("tab-btn-chart"),
     btnSim = document.getElementById("tab-btn-sim"),
@@ -160,6 +196,7 @@ function executeTabSwitch(mode) {
       const container = document.getElementById("chart-container");
       if (container.clientWidth > 0 && container.clientHeight > 0)
         window.chart.resize(container.clientWidth, container.clientHeight);
-    }, 50);
+    }, 200);
   }
 }
+

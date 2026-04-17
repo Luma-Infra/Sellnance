@@ -139,4 +139,4 @@ function calculateTimeRemaining(tf, serverMs) {
     return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
-s;
+

@@ -316,8 +316,8 @@ def build_final_market_list(binance_data, upbit_data, market_data_map, asset_to_
     # MAJOR_COINS = {'BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'SUI'}
     SAVED_CHAIN_MAP = MAPPING_DATA.get("SAVED_CHAIN_MAP", {})
 
-    # 🚀 1. 실시간 테더 환율 가져오기 (두나무 에러 방지)
-    krw_usd_rate = 1400.0 
+    # 🚀 1. 실시간 테더 환율 가져오기 (두나무 api 에러 방지)
+    krw_usd_rate = 1450.0 
     try:
         tether_res = requests.get("https://api.upbit.com/v1/ticker?markets=KRW-USDT", timeout=3).json()
         if tether_res and len(tether_res) > 0:
@@ -333,6 +333,10 @@ def build_final_market_list(binance_data, upbit_data, market_data_map, asset_to_
     # ---------------------------------------------------------
     # --- 1. 바이낸스 선물 조립 루프 내부 ---
     for ticker, b_info in binance_data.items():
+        
+        base = get_pure_base_asset(ticker).upper()
+        mcap = 2
+    
         # [수정 1] 정규식 돌리기 전에 "원본 티커(숫자포함)"를 먼저 보관!
         raw_symbol = ticker.replace('USDT', '') 
         
@@ -413,7 +417,7 @@ def build_final_market_list(binance_data, upbit_data, market_data_map, asset_to_
         change_today = round(((price - utc0_open) / utc0_open * 100), 2) if utc0_open and utc0_open > 0 else 0.0
 
         final_results.append({
-            "Symbol": base, "DisplayTicker": ticker.replace('USDT', ''), "Ticker": ticker, 
+            "Symbol": ticker.replace('USDT', ''), "DisplayTicker": ticker.replace('USDT', ''), "Ticker": ticker, 
             "Logo": logo, "Name": info.get('name', base) if info else base,
             "Chain": chain, "Upbit": 'O' if base in upbit_krw_set else 'X',
             "Price": format_dynamic_price(price), "Change_24h": format_change(b_info.get('change_24h', 0.0)),
@@ -465,7 +469,7 @@ def build_final_market_list(binance_data, upbit_data, market_data_map, asset_to_
         change_today = round(((current_p - utc0_open) / utc0_open * 100), 2) if utc0_open > 0 else 0.0
         
         final_results.append({
-            "Symbol": base, "DisplayTicker": base, "Ticker": f"{base}KRW", 
+            "Symbol": ticker.replace('KRW-', ''), "DisplayTicker": base, "Ticker": f"{base}KRW", 
             "Logo": logo, "Name": info.get('name', base),
             "Chain": chain, "Upbit": 'O',
             "Price": format_dynamic_price(current_p), 

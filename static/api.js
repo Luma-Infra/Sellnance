@@ -40,6 +40,8 @@ function searchSymbols(v) {
 }
 
 async function selectSymbol(s) {
+  currentAsset = s;
+
   const symInput = document.getElementById("symbol-input");
   if (symInput) symInput.value = s;
   const searchRes = document.getElementById("search-results");

@@ -26,12 +26,12 @@ async function loadTableData(force = false) {
       const tr = e.target.closest("tr");
       if (tr && tr.dataset.sym) {
         const pureSymbol = tr.dataset.sym;
-        window.currentSelectedSymbol = pureSymbol;
+        currentSelectedSymbol = pureSymbol;
         selectSymbol(pureSymbol);
         applySelectedHighlight();
 
         // ⭐️ [추가] 모바일일 때만 차트 패널 '스윽' 올리기
-        if (window.innerWidth <= 768) {
+        if (window.innerWidth <= 500) {
           showMobileChart();
         }
       }
@@ -90,7 +90,7 @@ function sortTable(colKey) {
 // 🚀 [추가] 행(TR) 생성 헬퍼 (초기 렌더링 & 신규 진입 시 사용)
 function createRowElement(row) {
   const tr = document.createElement("tr");
-  const pureSymbol = row.Symbol || row.symbol;
+  const pureSymbol = row.Symbol;
   tr.dataset.sym = pureSymbol;
 
   // 껍데기 만들고 알맹이 채우는 함수 재활용
@@ -137,6 +137,7 @@ function renderTable() {
   });
   applySelectedHighlight(); // 🚀 [추가] 정렬 끝나고 내 코인 다시 찾아!
 }
+
 // <td class="p-4 text-right">
 //     <div class="flex flex-col items-end justify-center h-full gap-1">
 //         <span class="text-[13px]">${row.Upbit === "O" ? "🔵" : "⚫"}</span>
@@ -144,82 +145,9 @@ function renderTable() {
 //     </div>
 // </td>
 
-// ⭐️ 1. 탭 전환 기능 (차트 ↔ 시뮬레이터) ⭐️
-// 1. 탭 전환의 진입점 (여기서 검사만 합니다)
-function switchChartTab(mode) {
-  const btnSim = document.getElementById("tab-btn-sim");
-
-  // 🚨 핵심: 시뮬레이터에서 '차트' 탭으로 넘어가려 할 때 경고창 띄우기
-  if (mode === "chart" && btnSim.classList.contains("active")) {
-    // 못생긴 confirm 대신 쫀득한 스윗얼럿 출동
-    Swal.fire({
-      title: "시뮬레이션 종료 🚨",
-      text: "그려둔 가상 캔들이 모두 초기화되고 실제 차트로 돌아갑니다. 종료하시겠습니까?",
-      icon: "warning",
-      showCancelButton: true,
-      // ⭐️ 테마 변수를 그대로 먹여서 모달창도 이질감 없이 렌더링!
-      background: "var(--panel)",
-      color: "var(--text)",
-      confirmButtonColor: "var(--down)", // 데이터가 날아가는 경고니까 빨간색(down)
-      cancelButtonColor: "var(--border)",
-      confirmButtonText: "네, 초기화할게요 🗑️",
-      cancelButtonText: "아니요, 계속할게요",
-    }).then((result) => {
-      if (result.isConfirmed) {
-        // '네' 눌렀을 때만 진짜 탭 전환 로직 실행
-        executeTabSwitch(mode);
-      }
-    });
-  } else {
-    // 시뮬레이터로 들어갈 때나, 이미 같은 탭일 때는 경고 없이 바로 실행
-    executeTabSwitch(mode);
-  }
-}
-
-// 2. 🚨 진짜 탭을 바꾸고 화면을 업데이트하는 알맹이 로직 (여기로 분리!)
-function executeTabSwitch(mode) {
-  const btnChart = document.getElementById("tab-btn-chart");
-  const btnSim = document.getElementById("tab-btn-sim");
-  const controls = document.getElementById("sim-controls");
-
-  // 탭 버튼 Active 토글
-  if (mode === "chart") {
-    btnChart.classList.add("active");
-    btnSim.classList.remove("active");
-    // Tailwind 쓰셨으니 flex 대신 hidden 제거/추가로 하셔도 됩니다 (아래는 범용)
-    controls.style.display = "none";
-
-    // 🚨 시뮬레이터를 껐으니 실제 데이터를 다시 불러옴
-    fetchHistory();
-  } else {
-    btnSim.classList.add("active");
-    btnChart.classList.remove("active");
-    controls.style.display = "flex"; // Tailwind면 controls.classList.remove('hidden') 등
-
-    // 🚨 시뮬레이터 켰을 때 웹소켓 연결 끊기 (선택 사항)
-    if (currentWs) {
-      currentWs.close();
-      currentWs = null;
-      document.getElementById("status-dot").style.background = "gray";
-      document.getElementById("status-text").innerText = "SIMULATION MODE";
-    }
-  }
-
-  // 차트 크기 꼬임 방지용 리사이즈 (기존 코드 유지)
-  if (window.chart) {
-    setTimeout(() => {
-      const container = document.getElementById("chart-container");
-      if (container.clientWidth > 0 && container.clientHeight > 0) {
-        window.chart.resize(container.clientWidth, container.clientHeight);
-      }
-    }, 10);
-  }
-}
-
 // ⭐️ 2. 좌우 넓이 드래그 조절 기능 ⭐️
 const leftPanel = document.getElementById("left-panel");
 let isResizing = false;
-
 let animationFrameId = null;
 
 document.addEventListener("mousemove", (e) => {
@@ -380,7 +308,7 @@ function applyRealtimeSort() {
 }
 
 function applySelectedHighlight() {
-  const selectedSymbol = window.currentSelectedSymbol; // 전역에 저장된 선택 심볼
+  const selectedSymbol = currentSelectedSymbol; // 전역에 저장된 선택 심볼
   if (!selectedSymbol) return;
 
   // 1. 일단 모든 행의 하이라이트 제거
@@ -403,18 +331,20 @@ function applySelectedHighlight() {
 
 // 💡 헬퍼 함수: 재활용한 껍데기에 알맹이만 채우는 함수 (기존 로직 분리)
 function updateRowInnerHTML(tr, row) {
-  const pureSymbol = row.Symbol || row.symbol;
+  const pureSymbol = row.Symbol;
   const getCleanNum = (val) => {
     if (val === undefined || val === null) return 0;
     const clean =
       typeof val === "string"
         ? val
-            .replace(/<[^>]*>?/gm, "")
-            .replace("%", "")
-            .trim()
+          .replace(/<[^>]*>?/gm, "")
+          .replace("%", "")
+          .trim()
         : val;
     return parseFloat(clean) || 0;
   };
+
+  // console.log(`[유기적 체크] 티커: ${row.Ticker} | 최종 이름표: ${pureSymbol}`);
 
   const n24h = getCleanNum(row.Change_24h);
   const nDay = getCleanNum(row.Change_Today);
@@ -528,7 +458,7 @@ function initInfiniteScroll() {
             );
 
             nextBatch.forEach((row) => {
-              // 누님이 만든 'createRowElement'가 알아서 껍데기 만들고 CCTV(Observer)까지 달아줍니다!
+              // 'createRowElement'가 알아서 껍데기 만들고 CCTV(Observer)까지 달아줍니다!
               tbody.appendChild(createRowElement(row));
             });
 

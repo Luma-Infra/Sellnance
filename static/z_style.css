@@ -9,13 +9,15 @@
   --accent: #093687;
 }
 
-/* 누님의 변수들을 실제 사용할 클래스로 연결 */
+/* 변수들을 실제 사용할 클래스로 연결 */
 .text-theme-up {
   color: var(--up) !important;
 }
+
 .text-theme-down {
   color: var(--down) !important;
 }
+
 .text-theme-text {
   color: var(--text) !important;
 }
@@ -43,6 +45,7 @@ body.theme-upbit-dark {
 body {
   background-color: #e2e8f0;
 }
+
 body.theme-binance {
   background-color: #0b0e11;
 }
@@ -163,11 +166,13 @@ body.theme-binance {
 
 /* 테이블 행 경주마 애니메이션용 */
 .flip-row {
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); /* 쫀득한 이동 속도 */
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  /* 쫀득한 이동 속도 */
 }
 
 /* 📱 모바일 최적화: 768px 이하일 때 마법이 일어납니다 */
 @media (max-width: 768px) {
+
   /* 1. 테이블 패딩 다이어트 (옆으로 안 터지게) */
   #table-body td,
   thead th {
@@ -188,7 +193,8 @@ body.theme-binance {
 
   /* 4. 차트 높이 고정 (리스트에 안 밀리게) */
   #chart-container {
-    height: 45vh !important; /* 화면 높이의 45% 차지 */
+    height: 45vh !important;
+    /* 화면 높이의 45% 차지 */
     margin: 8px !important;
     width: calc(100% - 16px) !important;
   }
@@ -206,9 +212,12 @@ body.theme-binance {
     width: 100% !important;
     max-width: none !important;
   }
+
   #market-table {
-    font-size: 14px; /* 시원하게 보이게 */
+    font-size: 14px;
+    /* 시원하게 보이게 */
   }
+
   .ticker-cell {
     display: flex;
     align-items: center;
@@ -222,17 +231,21 @@ body.theme-binance {
   transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   display: inline-flex;
 }
+
 .star-btn:active {
   transform: scale(1.4);
 }
+
 .star-btn.active {
   color: var(--accent);
   filter: drop-shadow(0 0 5px var(--accent));
 }
 
 #mobile-chart-content #right-panel {
-  display: flex !important; /* 모바일 컨텐츠 안에 들어오면 무조건 보여라! */
-  flex: 1 !important; /* 👈 부모 안에서 꽉 차게 늘어나라! */
+  display: flex !important;
+  /* 모바일 컨텐츠 안에 들어오면 무조건 보여라! */
+  flex: 1 !important;
+  /* 👈 부모 안에서 꽉 차게 늘어나라! */
   width: 100% !important;
   height: 100% !important;
 }
@@ -240,7 +253,8 @@ body.theme-binance {
 /* 모바일 오버레이 전체 높이 확보 */
 #mobile-chart-overlay {
   display: flex;
-  align-items: flex-end; /* 아래서 위로 올라오니까! */
+  align-items: flex-end;
+  /* 아래서 위로 올라오니까! */
 }
 
 /* 차트가 들어갈 알맹이 공간 */

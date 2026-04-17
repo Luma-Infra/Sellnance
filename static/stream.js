@@ -2,13 +2,14 @@
 // stream.js
 function startRealtimeCandle(symbol, interval, isFutures, isSpot) {
   if (currentWs) {
-    // 🚀 귀부터 막기 (이게 없으면 닫는 와중에 메시지 와서 터짐)
-    currentWs.onopen = null;
+    // 🚀 연결 막기
     currentWs.onmessage = null;
     currentWs.onclose = null;
     currentWs.onerror = null;
-
+    currentWs.onopen = null;
+    // 연결 종료
     currentWs.close();
+    // 메모리 정리
     currentWs = null;
   }
 

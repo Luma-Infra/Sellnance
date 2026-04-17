@@ -47,7 +47,7 @@ function syncSniperSubscriptions() {
     toSub.forEach((s) => activeSubs.add(s));
   }
 
-  // 2. 나간 놈들 -> UNSUBSCRIBE (바이낸스 형님들 부하 방지)
+  // 2. 나간 놈들 -> UNSUBSCRIBE (바이낸스 부하 방지)
   const toUnsub = Array.from(activeSubs).filter(
     (s) => !currentVisible.includes(s),
   );
@@ -63,7 +63,7 @@ function syncSniperSubscriptions() {
   }
 }
 
-// ⚡ 0.1초 정밀 렌더링 (깜빡이 속도 극대화)
+// ⚡ 정밀 렌더링 시작하기
 // streamEach.js
 function renderSniperPrice(data) {
   const symbol = data.s.replace("USDT", "");
@@ -100,7 +100,7 @@ function renderSniperPrice(data) {
   // ✅ [수정 완료] 3. 당일(Today) 등락률 업데이트
   if (todayCell && typeof currentTableData !== "undefined") {
     const targetRow = currentTableData.find(
-      (r) => (r.Symbol || r.symbol) === symbol,
+      (r) => (r.DisplayTicker || r.symbol) === symbol,
     );
     if (targetRow && targetRow.utc0_open) {
       const openPrice = parseFloat(targetRow.utc0_open);

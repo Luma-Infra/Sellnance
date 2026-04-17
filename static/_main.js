@@ -41,13 +41,6 @@ window.onload = () => {
   }
 };
 
-// --- 🎨 차트 렌더링 및 UI ---
-// ⚙️ 차트 설정 전역 변수 (여기만 수정하면 전체 적용됨)
-const CHART_CONFIG = {
-  GHOST_COUNT: 500, // 미래 유령 캔들 개수
-  VISIBLE_COUNT: 100, // 화면에 보여줄 과거 캔들 개수
-  RIGHT_PADDING: 10, // 우측 여백 칸 수
-};
 // ⚙️ 2. 시간 변환 통합 헬퍼 (전역으로 이동!)
 // 이제 initChart와 startRealtimeCandle 양쪽에서 모두 사용 가능합니다.
 const getUnixSeconds = (t) => {
@@ -198,23 +191,46 @@ function initChart() {
   updateStatus();
 
   // 측정 도구 세팅
-  setTimeout(setupMeasureTool, 0);
+  setTimeout(setupMeasureTool, 10);
 
   // 🚀 [여기에 추가!!!] 차트 그려진 직후에 카운트다운 DOM 세팅!
-  setTimeout(setupCountdownDOM, 0);
+  setTimeout(setupCountdownDOM, 10);
 
   // 리사이즈 옵저버 디바운스
   if (window.chartResizeObserver) window.chartResizeObserver.disconnect();
 
   let resizeTimeout;
   window.chartResizeObserver = new ResizeObserver(([entry]) => {
+    // 1. 부모 컨테이너 크기 실시간 감지
     const { width, height } = entry.contentRect;
+
+    // 2. 0달러 방지 (크기가 0일 땐 패스)
     if (!width || !height) return;
 
+    // 3. 디바운스 (너무 자주 그리면 렉 걸리니까 0.05초 대기)
     clearTimeout(resizeTimeout);
-    resizeTimeout = setTimeout(() => chart?.resize(width, height), 10);
+    resizeTimeout = setTimeout(() => {
+      if (chart) {
+        chart.resize(width, height);
+        // 🚀 리사이즈 직후 차트 범위를 다시 맞춰야 안 찌그러짐
+        chart.timeScale().fitContent();
+        console.log(`📏 리사이즈 완료: ${width}x${height}`);
+      }
+
+      // 🚀 모바일 오버레이 방어 (아까 그 500px 기준 적용!)
+      if (width >= SCREEN_WIDTH) {
+        const overlay = document.getElementById("mobile-chart-overlay");
+        if (overlay && !overlay.classList.contains('hidden')) {
+          closeMobileChart();
+        }
+      }
+    }, 100);
   });
-  window.chartResizeObserver.observe(container);
+  // 🎯 차트 컨테이너 감시 시작!
+  const chartContainer = document.getElementById("chart-container");
+  if (chartContainer) {
+    window.chartResizeObserver.observe(chartContainer);
+  }
 }
 
 function setTF(tf) {
@@ -454,14 +470,14 @@ function updateRealtimeCountdown(serverMs) {
 
 function setupCountdownDOM() {
   const container = document.getElementById("chart-container");
-  // 🚀 형님이 찾으신 명당 자리 (우측 가격 축)
+  // 🚀 우측 가격 축
   const priceScaleTd = container.querySelector(
     "div.tv-lightweight-charts table tr:nth-child(1) td:nth-child(3)",
   );
 
   if (!priceScaleTd) {
     // 차트가 아직 안 그려졌으면 50ms 뒤에 재시도
-    setTimeout(setupCountdownDOM, 50);
+    setTimeout(setupCountdownDOM, 100);
     return;
   }
 
