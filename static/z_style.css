@@ -225,6 +225,13 @@ body.theme-binance {
 /* ✅ 모바일 통합 최적화 */
 @media (max-width: 768px) {
 
+  /* 4. 가로 스크롤 완전 차단 */
+  body,
+  html {
+    overflow-x: hidden !important;
+    position: relative;
+  }
+
   /* 1. 리스트 패널 강제 감옥 로직 (이게 핵심!) */
   #left-panel.flex {
     position: fixed !important;
@@ -257,10 +264,21 @@ body.theme-binance {
     margin: 0 !important;
   }
 
-  /* 4. 가로 스크롤 완전 차단 */
-  body,
-  html {
-    overflow-x: hidden !important;
-    position: relative;
+  /* 🚀 1. 메인 화면에서는 없는 놈 취급 (유령 박멸) */
+  #right-panel {
+    display: none !important;
+    /* HTML의 style="display:flex"를 씹어버림 */
+    position: fixed !important;
+    /* 레이아웃 공간 차지 방지 */
+    visibility: hidden !important;
+  }
+
+  /* 🚀 2. 모바일 팝업(오버레이) 안에서만 다시 소환 */
+  #mobile-chart-overlay.active #right-panel {
+    display: flex !important;
+    position: relative !important;
+    visibility: visible !important;
+    height: 100% !important;
+    width: 100% !important;
   }
 }
