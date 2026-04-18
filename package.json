@@ -1,0 +1,27 @@
+{
+  "devDependencies": {
+    "tailwindcss": "^4.2.2"
+  },
+  "name": "sellnance",
+  "version": "1.0.0",
+  "description": "Sellnance는 업비트(Upbit)와 바이낸스(Binance)의 데이터를 통합하여 실시간으로 분석하는 고성능 암호화폐 차트 터미널 및 트레이딩 시뮬레이터입니다.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Luma-Infra/Sellnance.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Luma-Infra/Sellnance/issues"
+  },
+  "homepage": "https://github.com/Luma-Infra/Sellnance#readme",
+  "dependencies": {
+    "@tailwindcss/cli": "^4.2.2"
+  }
+}
