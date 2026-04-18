@@ -78,18 +78,24 @@ async function selectSymbol(s) {
 }
 
 async function fetchHistory(symbol, rawTicker) {
-  if (!symbol) symbol = currentAsset;
+  // 🚨 1. 광클 철벽 방어 (1.5초 이내 재요청 무시하여 429 에러 방지)
+  const now = Date.now();
+  if (now - lastFetchTime < 1500) {
+    console.warn("⚠️ 너무 잦은 요청입니다. 창펑형 화냅니다! 1.5초만 대기해주세요.");
+    return;
+  }
+  lastFetchTime = now;
 
+  if (!symbol) symbol = currentAsset;
   const pureSymbol = symbol.replace(/USDT$/i, "").toUpperCase();
   currentAsset = pureSymbol;
 
   const isUpbitOnly = (marketDataMap.upbit || []).includes(pureSymbol);
-
   const binanceTicker = rawTicker || `${pureSymbol}USDT`;
   const upbitTicker = rawTicker || `KRW-${pureSymbol}`;
 
   const loadingModal = document.getElementById("chart-loading-modal");
-  if (loadingModal) loadingModal.classList.remove("hidden"); // Tailwind 대응
+  if (loadingModal) loadingModal.classList.remove("hidden");
 
   const isFutures = !isUpbitOnly && (marketDataMap.futures || []).includes(pureSymbol);
   const isSpot = !isUpbitOnly && (marketDataMap.spot || []).includes(pureSymbol);
@@ -98,15 +104,14 @@ async function fetchHistory(symbol, rawTicker) {
     mainData = [];
     let raw = [];
 
+    // 🚀 2. 직접 외부로 안 나가고 내 파이썬 서버(/api/candles)로 요청!
     if (isFutures || isSpot) {
-      const url = isFutures
-        ? "https://fapi.binance.com/fapi/v1/klines"
-        : "https://api.binance.com/api/v3/klines";
-      const res = await fetch(
-        `${url}?symbol=${binanceTicker}&interval=${currentTF}&limit=500`,
-      );
+      const exchange = isFutures ? "binance_futures" : "binance_spot";
+      // 내부 API 호출
+      const res = await fetch(`/api/candles?exchange=${exchange}&symbol=${binanceTicker}&interval=${currentTF}&limit=500`);
       raw = await res.json();
-      if (Array.isArray(raw)) {
+
+      if (Array.isArray(raw) && !raw.error) {
         mainData = raw.map((d) => ({
           time: Number(d[0]) / 1000,
           open: Number(d[1]),
@@ -116,31 +121,17 @@ async function fetchHistory(symbol, rawTicker) {
         }));
       }
     } else {
-      // 1. tfMap에 월봉(1M) 추가
-      const tfMap = {
-        "1m": 1,
-        "15m": 15,
-        "1h": 60,
-        "4h": 240,
-        "1d": "days",
-        "1w": "weeks",
-        "1M": "months",
-      };
-
-      // 2. 핵심 수정: 숫자인지 문자인지 판별해서 경로 생성
+      const tfMap = { "1m": 1, "15m": 15, "1h": 60, "4h": 240, "1d": "days", "1w": "weeks", "1M": "months" };
       const tfValue = tfMap[currentTF] || 60;
-      let upbitInterval =
-        typeof tfValue === "number" ? `minutes/${tfValue}` : tfValue;
-      const res = await fetch(
-        `https://api.upbit.com/v1/candles/${upbitInterval}?market=${upbitTicker}&count=200`,
-      );
+      let upbitInterval = typeof tfValue === "number" ? `minutes/${tfValue}` : tfValue;
+
+      // 내부 API 호출
+      const res = await fetch(`/api/candles?exchange=upbit&symbol=${upbitTicker}&interval=${upbitInterval}&limit=200`);
       raw = await res.json();
-      if (Array.isArray(raw)) {
+
+      if (Array.isArray(raw) && !raw.error) {
         mainData = raw.reverse().map((d) => {
-          // 🚨 핵심 패치: 시간 뒤에 'Z'를 붙여서 브라우저가 무조건 UTC(표준시)로 인식하게 강제함!
-          const ts = Math.floor(
-            Date.parse(d.candle_date_time_utc + "Z") / 1000,
-          );
+          const ts = Math.floor(Date.parse(d.candle_date_time_utc + "Z") / 1000);
           return {
             time: ts,
             open: Number(d.opening_price),
@@ -152,6 +143,7 @@ async function fetchHistory(symbol, rawTicker) {
       }
     }
 
+    // 3. 차트 그리기
     if (mainData.length > 0 && mainData[0].time) {
       if (candleSeries) candleSeries.setData(mainData);
       autoFit();
@@ -159,6 +151,8 @@ async function fetchHistory(symbol, rawTicker) {
       if (mainData.length) updateLegend(mainData[mainData.length - 1]);
       if (typeof startRealtimeCandle === "function")
         startRealtimeCandle(pureSymbol, currentTF, isFutures, isSpot);
+    } else {
+      console.error("차트 데이터가 비어있거나 에러가 났습니다:", raw);
     }
   } catch (e) {
     console.error("차트 로드 중 예외 발생:", e);

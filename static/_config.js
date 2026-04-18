@@ -15,6 +15,8 @@ let marketDataMap = {};
 let globalWs = null,
   tickerBuffer = {},
   radarIntervalId = null;
+// 🚀 [광클 방지용] 마지막 요청 시간 기록
+let lastFetchTime = 0;
 const SCREEN_WIDTH = 768;
 const UI_UPDATE_INTERVAL = 3000;
 const tfSec = {

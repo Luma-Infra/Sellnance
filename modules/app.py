@@ -91,6 +91,38 @@ def get_coin_info(asset: str):
     except Exception as e:
         return {"asset": asset, "name": asset, "market_cap": "조회 실패"}
 
+@app.get("/api/candles")
+def get_proxy_candles(exchange: str, symbol: str, interval: str, limit: int = 200):
+    """JS 대신 파이썬이 업비트/바낸에 차트 데이터를 요청해서 가져다 줍니다 (CORS 완벽 우회)"""
+    try:
+        if exchange == "upbit":
+            # 업비트 요청
+            url = f"https://api.upbit.com/v1/candles/{interval}?market={symbol}&count={limit}"
+            res = requests.get(url, headers={"Accept": "application/json"}, timeout=5)
+            res.raise_for_status()
+            return res.json()
+            
+        elif exchange == "binance_futures":
+            # 바이낸스 선물 요청
+            url = f"https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval={interval}&limit={limit}"
+            res = requests.get(url, timeout=5)
+            res.raise_for_status()
+            return res.json()
+            
+        elif exchange == "binance_spot":
+            # 바이낸스 현물 요청
+            url = f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval={interval}&limit={limit}"
+            res = requests.get(url, timeout=5)
+            res.raise_for_status()
+            return res.json()
+            
+        else:
+            return {"error": "알 수 없는 거래소입니다."}
+            
+    except Exception as e:
+        print(f"🚨 캔들 프록시 에러 ({exchange} - {symbol}): {e}")
+        return {"error": str(e)}
+
 def open_browser():
     webbrowser.open("http://127.0.0.1:8000")
 
