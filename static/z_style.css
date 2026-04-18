@@ -1,4 +1,16 @@
 /* z_style.css */
+@import "tailwindcss";
+
+@theme {
+  --color-theme-bg: var(--bg);
+  --color-theme-panel: var(--panel);
+  --color-theme-border: var(--border);
+  --color-theme-text: var(--text);
+  --color-theme-up: var(--up);
+  --color-theme-down: var(--down);
+  --color-theme-accent: var(--accent);
+}
+
 :root {
   --bg: #ffffff;
   --panel: #f4f5f8;
@@ -226,7 +238,8 @@ body.theme-binance {
 @media (max-width: 768px) {
 
   /* 가로 스크롤 완전 차단 */
-  body, html {
+  body,
+  html {
     overflow-x: hidden !important;
     position: relative;
   }
@@ -243,17 +256,18 @@ body.theme-binance {
     overflow-y: auto !important;
     z-index: 50;
     background-color: var(--bg);
-    padding-bottom: 20px; /* 🚀 밑바닥 여유 살짝 추가 */
+    padding-bottom: 20px;
+    /* 🚀 밑바닥 여유 살짝 추가 */
   }
 
   /* 2. [잔상박멸] 평소 우측 패널은 안드로메다 유배 */
   #right-panel,
-  #right-panel *, 
+  #right-panel *,
   #chart-container canvas,
   .tv-lightweight-charts {
     display: none !important;
     position: fixed !important;
-    left: -9999px !important; 
+    left: -9999px !important;
     visibility: hidden !important;
     opacity: 0 !important;
   }
@@ -270,7 +284,8 @@ body.theme-binance {
   }
 
   /* 4. 테이블 & 차트 세부 조정 */
-  #table-body td, thead th {
+  #table-body td,
+  thead th {
     padding: 8px 4px !important;
     font-size: 11px !important;
   }
