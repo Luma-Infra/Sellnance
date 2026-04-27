@@ -15,10 +15,12 @@ async function loadTableData(force = false) {
     updateTimeSpan.innerText = `마지막 업데이트: ${result.last_updated}`;
 
     window.originalTableData = JSON.parse(JSON.stringify(result.data)); // 🛡️ 철벽 방어 원본
-    window.currentTableData = JSON.parse(JSON.stringify(result.data));  // 🏃 실시간 작업용
+    window.currentTableData = JSON.parse(JSON.stringify(result.data)); // 🏃 실시간 작업용
 
-    window.currentTableData.forEach(row => {
-      row.DisplayTicker = (row.DisplayTicker || row.Symbol).toString().toUpperCase();
+    window.currentTableData.forEach((row) => {
+      row.DisplayTicker = (row.DisplayTicker || row.Symbol)
+        .toString()
+        .toUpperCase();
       // 💡 여기서 정밀도(p) 맵핑 데이터도 같이 만들면 find 지옥 탈출 가능!
     });
 
@@ -29,7 +31,6 @@ async function loadTableData(force = false) {
       // 2. 정렬 상태가 아니면 그냥 평소대로 그리기
       renderTable();
     }
-
   } catch (error) {
     console.error("데이터 로드 에러:", error);
     alert("서버에서 데이터를 가져오지 못했습니다.");
@@ -132,13 +133,13 @@ function renderTable() {
 function simpleSortData() {
   // 🚀 [핵심] 백엔드(api_manager.py)에서 보내주는 필드명과 1:1로 맞춥니다!
   const sortKeyMap = {
-    "MarketCap": "MarketCap_Raw",
-    "Price": "Price_Raw",
-    "Change_24h": "Change_24h_Raw",
-    "Change_Today": "Change_Today_Raw",
+    MarketCap: "MarketCap_Raw",
+    Price: "Price_Raw",
+    Change_24h: "Change_24h_Raw",
+    Change_Today: "Change_Today_Raw",
     // "Volume": "Volume_Raw",
-    "Volume": "Binance_Vol_Futures",
-    "Ticker": "DisplayTicker"
+    Volume: "Binance_Vol_Futures",
+    Ticker: "DisplayTicker",
   };
 
   const key = sortKeyMap[currentSortCol] || currentSortCol;
@@ -146,10 +147,14 @@ function simpleSortData() {
 
   currentTableData.sort((a, b) => {
     // 🚀 [수정] 실시간 버퍼(tickerBuffer)에 최신값이 있다면 그걸 우선 사용!
-    let valA = (tickerBuffer[a.Symbol] && key.includes("Change"))
-      ? tickerBuffer[a.Symbol].P : a[key];
-    let valB = (tickerBuffer[b.Symbol] && key.includes("Change"))
-      ? tickerBuffer[b.Symbol].P : b[key];
+    let valA =
+      tickerBuffer[a.Symbol] && key.includes("Change")
+        ? tickerBuffer[a.Symbol].P
+        : a[key];
+    let valB =
+      tickerBuffer[b.Symbol] && key.includes("Change")
+        ? tickerBuffer[b.Symbol].P
+        : b[key];
 
     // 1. 둘 다 숫자인 경우 (MarketCap, Price, Change 등)
     if (typeof valA === "number" && typeof valB === "number") {
@@ -166,13 +171,12 @@ function simpleSortData() {
 let isSortLocked = true; // 정렬 잠금 상태 (기본은 해제)
 
 // 아까 만든 토글 버튼을 '정렬 잠금' 용으로 쓰시면 됩니다!
-document.getElementById('flip-toggle')?.addEventListener('change', (e) => {
+document.getElementById("flip-toggle")?.addEventListener("change", (e) => {
   isSortLocked = e.target.checked; // 체크하면 정렬 잠금!
 });
 
 // ⭐️ 실시간 재정렬 & 경주마 애니메이션 함수
 function applyRealtimeSort() {
-
   if (!isSortLocked) {
     // 정렬은 안 하지만, 가격/변동률 "글자"는 업데이트하고 싶다면?
     renderTable(); // 순서 변경 없이 데이터(글자)만 새로고침
@@ -183,23 +187,27 @@ function applyRealtimeSort() {
 
   // 🚀 정렬용 맵핑 (클릭한 컬럼 -> 미리 계산된 숫자 필드)
   const sortKeyMap = {
-    "MarketCap": "MarketCap_Raw",
-    "Price": "Price_Raw",
-    "Change_24h": "Change_24h_Raw",
-    "Change_Today": "Change_Today_Raw",
+    MarketCap: "MarketCap_Raw",
+    Price: "Price_Raw",
+    Change_24h: "Change_24h_Raw",
+    Change_Today: "Change_Today_Raw",
     // "Volume": "Volume_Raw",
-    "Volume": "Binance_Vol_Futures",
-    "Ticker": "DisplayTicker"
+    Volume: "Binance_Vol_Futures",
+    Ticker: "DisplayTicker",
   };
 
   // 🚀 2. 메모리 정렬 실행 (정규식 완전 삭제!!!!)
   currentTableData.sort((a, b) => {
     const key = sortKeyMap[currentSortCol] || currentSortCol;
     // 🚀 [수정] 실시간 버퍼(tickerBuffer)에 최신값이 있다면 그걸 우선 사용!
-    let valA = (tickerBuffer[a.Symbol] && key.includes("Change"))
-      ? tickerBuffer[a.Symbol].P : a[key];
-    let valB = (tickerBuffer[b.Symbol] && key.includes("Change"))
-      ? tickerBuffer[b.Symbol].P : b[key];
+    let valA =
+      tickerBuffer[a.Symbol] && key.includes("Change")
+        ? tickerBuffer[a.Symbol].P
+        : a[key];
+    let valB =
+      tickerBuffer[b.Symbol] && key.includes("Change")
+        ? tickerBuffer[b.Symbol].P
+        : b[key];
 
     const isAsc = sortState === "asc";
 
@@ -336,6 +344,7 @@ function updateRowInnerHTML(tr, row) {
   const n24h = row.Change_24h_Raw ?? 0;
   const nDay = row.Change_Today_Raw ?? 0;
   const nPrice = row.Price_Raw ?? 0;
+  const Listed_Exchanges = row.Listed_Exchanges ?? null;
 
   // 🚀 가격 포맷팅 (p값 꽂아넣기)
   const formattedPrice = formatSmartPrice(nPrice, p);
@@ -363,34 +372,40 @@ function updateRowInnerHTML(tr, row) {
 
   // 거래소 로고 이미지
   const EX_LOGOS = {
-    "BINANCE": "https://s2.coinmarketcap.com/static/img/exchanges/64x64/270.png",
-    "COINBASE": "https://s2.coinmarketcap.com/static/img/exchanges/64x64/89.png",
-    "UPBIT": "https://s2.coinmarketcap.com/static/img/exchanges/64x64/351.png",
-    "BITHUMB": "https://s2.coinmarketcap.com/static/img/exchanges/64x64/200.png",
-    "BITGET": "https://s2.coinmarketcap.com/static/img/exchanges/64x64/513.png",
-    "BYBIT": "https://s2.coinmarketcap.com/static/img/exchanges/64x64/521.png",
-    "GATEIO": "https://s2.coinmarketcap.com/static/img/exchanges/64x64/302.png",
-    "OKX": "https://s2.coinmarketcap.com/static/img/exchanges/64x64/294.png"
+    BINANCE: "https://s2.coinmarketcap.com/static/img/exchanges/64x64/270.png",
+    COINBASE: "https://s2.coinmarketcap.com/static/img/exchanges/64x64/89.png",
+    UPBIT: "https://s2.coinmarketcap.com/static/img/exchanges/64x64/351.png",
+    BITHUMB: "https://s2.coinmarketcap.com/static/img/exchanges/64x64/200.png",
+    BITGET: "https://s2.coinmarketcap.com/static/img/exchanges/64x64/513.png",
+    BYBIT: "https://s2.coinmarketcap.com/static/img/exchanges/64x64/521.png",
+    GATEIO: "https://s2.coinmarketcap.com/static/img/exchanges/64x64/302.png",
+    OKX: "https://s2.coinmarketcap.com/static/img/exchanges/64x64/294.png",
   };
 
   const exchanges = row.Listed_Exchanges || [];
-  let listedExchangesHtml = exchanges.map(ex => {
-    // 선물(FUTURES)은 로고에 노란색 테두리를 주거나 작게 'F'를 달아주면 꿀잼입니다 ㅋㅋㅋ
-    if (ex === "BINANCE_FUTURES") {
-      return `<div class="relative inline-block"><img src="${EX_LOGOS["BINANCE"]}" class="w-4 h-4 rounded-full border border-yellow-400"><span class="absolute -top-1 -right-1 text-[8px] bg-yellow-400 text-black font-bold rounded px-[2px]">F</span></div>`;
-    }
-    if (EX_LOGOS[ex]) {
-      return `<img src="${EX_LOGOS[ex]}" class="w-4 h-4 rounded-full" title="${ex}">`;
-    }
-    return "";
-  }).join('<span class="w-1"></span>'); // 로고 사이 간격
+  let listedExchangesHtml = exchanges
+    .map((ex) => {
+      // 선물(FUTURES)은 로고에 노란색 테두리를 주거나 작게 'F'를 달아주면 꿀잼입니다
+      if (ex === "BINANCE_FUTURES") {
+        return `<div class="relative inline-block"><img src="${EX_LOGOS["BINANCE"]}" class="w-4 h-4 rounded-full border border-yellow-400"><span class="absolute -top-1 -right-1 text-[8px] bg-yellow-400 text-black font-bold rounded px-[2px]">F</span></div>`;
+      }
+      if (EX_LOGOS[ex]) {
+        return `<img src="${EX_LOGOS[ex]}" class="w-4 h-4 rounded-full" title="${ex}">`;
+      }
+      return "";
+    })
+    .join('<span class="w-1"></span>'); // 로고 사이 간격
 
   let tagsHtml = "";
   if (row.Tags) {
     // 너무 많으면 지저분하니까 딱 2개만 자르기!
-    tagsHtml = row.Tags.split(',').slice(0, 2).map(tag =>
-      `<span class="text-[9px] bg-gray-700 text-gray-300 px-1 py-0.5 rounded mr-1">${tag}</span>`
-    ).join('');
+    tagsHtml = row.Tags.split(",")
+      .slice(0, 2)
+      .map(
+        (tag) =>
+          `<span class="text-[9px] bg-gray-700 text-gray-300 px-1 py-0.5 rounded mr-1">${tag}</span>`,
+      )
+      .join("");
   }
 
   tr.innerHTML = `
@@ -405,10 +420,9 @@ function updateRowInnerHTML(tr, row) {
       <div class="flex flex-col">
         <b class="text-sm text-theme-text">${row.DisplayTicker || row.Symbol}</b>
         <span class="text-[10px] text-theme-text opacity-60">${row.Name || ""}</span>
-      </div>
-    </div>
-  </td>
-  <td class="p-4">
+        </div>
+        </td>
+        <td class="p-4">
     <div class="flex flex-col gap-0.5">
       <span id="price-${pureSymbol}" class="font-bold text-[14px] text-theme-text price-cell">
         ${formattedPrice} ${krwDisplay}
@@ -421,12 +435,14 @@ function updateRowInnerHTML(tr, row) {
           Day: <span id="today-${pureSymbol}" class="${colorDay} font-bold">${nDay > 0 ? "+" : ""}${Number(nDay).toFixed(2)}%</span>
         </span>
       </div>
-    </div>
-  </td>
-  <td class="p-4">
-    <div class="flex flex-col gap-0.5 text-theme-text">
+      </div>
+      </td>
+      <td class="p-4">
+      <div class="flex flex-col gap-0.5 text-theme-text">
       <span class="font-bold text-[13px] opacity-90">${row.Volume_Formatted || "-"}</span>
       <span class="text-[11px] opacity-50">M.Cap: ${row.MarketCap_Formatted}</span>
+      <div class="flex items-center gap-1 mt-1 opacity-80">${listedExchangesHtml}</div>
+      <div class="flex items-center gap-1 mt-1 opacity-80">${tagsHtml}</div>
     </div>
   </td>
 `;

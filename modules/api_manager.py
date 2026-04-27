@@ -526,7 +526,10 @@ def build_final_market_list(
         info = market_data_map.get(lookup_id) if lookup_id else None
 
         # if not info: continue # 정보 없으면 스킵
-        
+
+        ticker_info = TICKER_DATA.get(display_name)
+        saved_chain = ticker_info[1] if isinstance(ticker_info, list) else ticker_info
+        ch_sym = saved_chain or CHAIN_LOGO_MAP.get(base) or (info.get('chain_symbol') if info else '')
         ucid = info.get('ucid', '') if info else ''
 
         # 🚀 [철벽 방어] 이미 명부에 있는 UID면 즉시 폐기 (중복 방지)
@@ -535,23 +538,24 @@ def build_final_market_list(
         if ucid:
             processed_uids.add(ucid)
 
+        # 2. 이제 변수를 안심하고 생성
+        chain = create_image_tag(CHAIN_LOGO_MAP.get(ch_sym, '')) if ch_sym in CHAIN_LOGO_MAP else ch_sym
+        logo = create_image_tag(f"https://s2.coinmarketcap.com/static/img/coins/64x64/{ucid}.png" if ucid else "")
+
         if info or base in MANUAL_SUPPLY_MAP:
-            logo = create_image_tag(f"https://s2.coinmarketcap.com/static/img/coins/64x64/{ucid}.png" if ucid else "")
 
             # 🚀 [철벽 방어 2] 격리 병동 놈들은 체인 덮어씌우고 TICKER_DATA에 저장 안 함!
-            if display_name in DUPLICATED_LIST:
-                ch_sym = DUPLICATED_LIST[display_name][1] # [1]번 값으로 체인 덮어씌움
-            else:
-                ticker_info = TICKER_DATA.get(display_name)
-                saved_chain = ticker_info[1] if isinstance(ticker_info, list) else ticker_info
-                ch_sym = saved_chain or CHAIN_LOGO_MAP.get(base) or (info.get('chain_symbol') if info else '')
+            # if display_name in DUPLICATED_LIST:
+            #     ch_sym = DUPLICATED_LIST[display_name][1] # [1]번 값으로 체인 덮어씌움
+            # else:
+            #     ticker_info = TICKER_DATA.get(display_name)
+            #     saved_chain = ticker_info[1] if isinstance(ticker_info, list) else ticker_info
+            #     ch_sym = saved_chain or CHAIN_LOGO_MAP.get(base) or (info.get('chain_symbol') if info else '')
                 
-                # 깨끗한 놈들만 TICKER_DATA에 저장 허락
-                if ch_sym and display_name not in TICKER_DATA and base not in CHAIN_LOGO_MAP:
-                    TICKER_DATA[display_name] = [ucid, ch_sym]
-                    is_mapping_updated = True
-
-            chain = create_image_tag(CHAIN_LOGO_MAP.get(ch_sym, '')) if ch_sym in CHAIN_LOGO_MAP else ch_sym
+            #     # 깨끗한 놈들만 TICKER_DATA에 저장 허락
+            #     if ch_sym and display_name not in TICKER_DATA and base not in CHAIN_LOGO_MAP:
+            #         TICKER_DATA[display_name] = [ucid, ch_sym]
+            #         is_mapping_updated = True
 
             if ch_sym and base not in TICKER_DATA and base not in CHAIN_LOGO_MAP:
                 TICKER_DATA[display_name] = [ucid, ch_sym]
@@ -645,9 +649,9 @@ def build_final_market_list(
         info = market_data_map.get(lookup_id)
         if not info or info.get('cmc_price') is None: continue
 
-        ucid = info.get('ucid', '')
-        # 🚀 별명 먼저 확정 (VIP 여부 판단용)
+        ucid = info.get('ucid', '') if info else ''
         display_name = REVERSE_LOOKUP.get(f"{base}_UPBIT", base)
+        logo = create_image_tag(f"https://s2.coinmarketcap.com/static/img/coins/64x64/{ucid}.png" if ucid else "")
 
         # ✅ 원칙 적용: UID가 이미 명부에 있다면?
         if ucid and ucid in processed_uids:
@@ -658,7 +662,6 @@ def build_final_market_list(
         if ucid: processed_uids.add(ucid)
         
         # --- 여기서부터는 데이터 조립 ---
-        logo = create_image_tag(f"https://s2.coinmarketcap.com/static/img/coins/64x64/{ucid}.png" if ucid else "")
 
         # 🚀 [철벽 방어] 격리 놈들은 체인 덮어씌우고 TICKER_DATA 저장 안 함!
         if display_name in DUPLICATED_LIST:
@@ -705,10 +708,14 @@ def build_final_market_list(
         # 🚀 하드코딩 대신 자릿수 판별 로직 (표준 호가 단위 규칙만 적용)
         up_precision = 0 if p >= 100 else 1 if p >= 10 else 2 if p >= 1 else 3 if p >= 0.1 else 4
         
+        b_ticker = f"{base}USDT"
+        b_info_global = binance_data.get(b_ticker) # 👈 전역 바이낸스 맵을 뒤져야 함
+
         # (루프 안에서) 현재 코인의 상장 거래소 목록 만들기
         listed_on = set(global_listings.get(base, set()))
-        if up_info.get('is_spot'): listed_on.add('BINANCE')
-        if up_info.get('is_futures'): listed_on.add('BINANCE_FUTURES')
+        if b_info_global:
+            if b_info_global.get('is_spot'): listed_on.add('BINANCE')
+            if b_info_global.get('is_futures'): listed_on.add('BINANCE_FUTURES')
         if base in upbit_krw_set: listed_on.add('UPBIT')
         if base in bithumb_krw_set: listed_on.add('BITHUMB') # 빗썸 셋 넘겨받았다면!
 
