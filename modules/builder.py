@@ -1,13 +1,15 @@
+# builder.py
 # ==========================================
 # 🧱 모듈 3: 데이터 조립 및 변동률 계산기
 # ==========================================
-
 import requests
-from modules import utils, config_manager, exchange_api
+from modules import utils, config_manager
 
-def build_binance_row(ticker, b_info, market_data_map, asset_to_lookup_key, global_listings, upbit_krw_set, bithumb_krw_set, REVERSE_LOOKUP, processed_uids, mapping):
-    global MAPPING_DATA
-    
+def build_binance_row(
+        ticker, b_info, market_data_map, asset_to_lookup_key,
+        global_listings, upbit_krw_set, bithumb_krw_set,
+        REVERSE_LOOKUP, processed_uids, mapping):
+        
     (   
      NOTE_MAP, 
      TICKER_DATA, CHAIN_LOGO_MAP, 
@@ -106,8 +108,12 @@ def build_binance_row(ticker, b_info, market_data_map, asset_to_lookup_key, glob
 
  # 업비트 전용 1줄짜리 결과물 뱉는 함수.
 
-def build_upbit_row(base, up_info, binance_data, market_data_map, asset_to_lookup_key, global_listings, upbit_krw_set, REVERSE_LOOKUP, processed_uids, krw_usd_rate, upbit_data, bithumb_krw_set, mapping):
-    global MAPPING_DATA
+def build_upbit_row(
+        base, up_info,binance_data, market_data_map, asset_to_lookup_key,
+        global_listings, upbit_krw_set, bithumb_krw_set, 
+        REVERSE_LOOKUP, processed_uids, krw_usd_rate, mapping):
+    
+    # global MAPPING_DATA
     
     (   
      NOTE_MAP, 
@@ -115,24 +121,45 @@ def build_upbit_row(base, up_info, binance_data, market_data_map, asset_to_looku
      EXCLUSION_LIST, DUPLICATED_LIST, 
      SYMBOL_TO_ID_MAP, MANUAL_SUPPLY_MAP, SPECIAL_SYMBOL_MAP, HARDCODE_VERIFY_SKIP_LIST
     ) = config_manager.get_mapping_parts(mapping)
+
+    # --- 💡 초기값 세팅 (에러 방어막) ---
+    current_p = 0.0
+    utc0_open = 0.0
+    up_price_krw = 0.0
+    up_change_24h = 0.0
+    change_today = 0.0
+    # -------------------------------
     
     is_updated = False
+
+    if up_info is None: return None, False
     
+    # CMC 데이터 매칭
     lookup_id = asset_to_lookup_key.get(f"UPBIT_{base}")
     info = market_data_map.get(lookup_id)
     ucid = info.get('ucid', '') if info else ''
     display_name = REVERSE_LOOKUP.get(f"{base}_UPBIT", base)
 
-    # VIP 예외처리 및 중복 UID 체크
+    # 중복 UID 체크
     if ucid and ucid in processed_uids and display_name not in DUPLICATED_LIST:
         return None, False
     if ucid: processed_uids.add(ucid)
 
-    # 재료 손질
+    # 가격 데이터 추출 (여기서 변수들이 태어납니다)
+    up_price_krw = float(up_info.get('price') or 0.0)
+    up_open_krw = float(up_info.get('utc0_open') or 0.0)
+    up_change_24h = float(up_info.get('change_24h') or 0.0)
+    
+    if up_price_krw > 0: current_p = up_price_krw / krw_usd_rate
+    if up_open_krw > 0: utc0_open = up_open_krw / krw_usd_rate
+    
+    if utc0_open > 0:
+        change_today = utils.js_round(((current_p - utc0_open) / utc0_open * 100), 2)
+
+    # 로고 및 체인 설정
     ticker_info = TICKER_DATA.get(display_name)
     saved_chain = ticker_info[1] if isinstance(ticker_info, list) else ticker_info
     ch_sym = saved_chain or CHAIN_LOGO_MAP.get(display_name) or (info.get('chain_symbol') if info else '')
-    
     chain = utils.create_image_tag(CHAIN_LOGO_MAP.get(ch_sym, '')) if ch_sym in CHAIN_LOGO_MAP else ch_sym
     logo = utils.create_image_tag(f"https://s2.coinmarketcap.com/static/img/coins/64x64/{ucid}.png" if ucid else "")
 
@@ -140,7 +167,7 @@ def build_upbit_row(base, up_info, binance_data, market_data_map, asset_to_looku
     p = up_info['price']
     up_precision = 0 if p >= 100 else 1 if p >= 10 else 2 if p >= 1 else 3 if p >= 0.1 else 4
 
-    # 상장 체크 (바낸 맵 뒤지기)
+    # 상장 거래소 목록 조립
     listed_on = set(global_listings.get(base, set()))
     b_ticker = f"{base}USDT"
     b_global = binance_data.get(b_ticker)
@@ -148,40 +175,7 @@ def build_upbit_row(base, up_info, binance_data, market_data_map, asset_to_looku
         if b_global.get('is_spot'): listed_on.add('BINANCE')
         if b_global.get('is_futures'): listed_on.add('BINANCE_FUTURES')
     if base in upbit_krw_set: listed_on.add('UPBIT')
-    
-    coin_name = info.get('name', base) if info else base
-    vol_24h = info.get('volume_24h', 0) if info else 0
-    change_24h = up_change_24h
-    final_mcap = info.get('market_cap', 0)
-    # 업비트는 가격대별로 변하므로 여기서 '데이터 기반'으로 자릿수 결정
-    p = up_info['price']
-    # 🚀 하드코딩 대신 자릿수 판별 로직 (표준 호가 단위 규칙만 적용)
-    up_precision = 0 if p >= 100 else 1 if p >= 10 else 2 if p >= 1 else 3 if p >= 0.1 else 4
-    
-    b_ticker = f"{base}USDT"
-    b_info_global = binance_data.get(b_ticker) # 👈 전역 바이낸스 맵을 뒤져야 함
-
-    # (루프 안에서) 현재 코인의 상장 거래소 목록 만들기
-    listed_on = set(global_listings.get(base, set()))
-    if b_info_global:
-        if b_info_global.get('is_spot'): listed_on.add('BINANCE')
-        if b_info_global.get('is_futures'): listed_on.add('BINANCE_FUTURES')
-    if base in upbit_krw_set: listed_on.add('UPBIT')
-    if base in bithumb_krw_set: listed_on.add('BITHUMB') # 빗썸 셋 넘겨받았다면!
-    
-    up_info = upbit_data.get(base)
-    if up_info:
-        # 데이터가 None일 경우를 대비해 'or 0.0' 처리
-        up_price_krw = float(up_info.get('price') or 0.0)
-        up_open_krw = float(up_info.get('utc0_open') or 0.0)
-        up_change_24h = float(up_info.get('change_24h') or 0.0)
-        
-        if up_price_krw > 0:
-            current_p = up_price_krw / krw_usd_rate
-        if up_open_krw > 0:
-            utc0_open = up_open_krw / krw_usd_rate
-    
-    change_today = utils.js_round(((current_p - utc0_open) / utc0_open * 100), 2) if utc0_open > 0 else 0.0
+    if base in bithumb_krw_set: listed_on.add('BITHUMB')
 
     row = {
             # --- 1. 기본 식별 정보 ---
@@ -189,7 +183,7 @@ def build_upbit_row(base, up_info, binance_data, market_data_map, asset_to_looku
             "DisplayTicker": display_name,
             "Ticker": f"{base}KRW",
             "Logo": logo,
-            "Name": coin_name,
+            "Name": info.get('name', base) if info else base,
             "Chain": chain,
             "Upbit": 'O',
             "Note": NOTE_MAP.get(base, 'Upbit Only'),
@@ -197,18 +191,18 @@ def build_upbit_row(base, up_info, binance_data, market_data_map, asset_to_looku
 
             # --- 2. 화면 표시용 데이터 (HTML 포함) ---
             "Price": utils.format_dynamic_price(p, up_precision),
-            "Price_KRW": utils.up_price_krw if up_price_krw > 0 else None,
-            "Change_24h": utils.format_change(change_24h),
+            "Price_KRW": up_price_krw if up_price_krw > 0 else None,
+            "Change_24h": utils.format_change(up_change_24h),
             "Change_Today": utils.format_change(change_today),
-            "Volume_Formatted": utils.format_volume_string(vol_24h),
-            "MarketCap_Formatted": utils.format_market_cap_string(final_mcap),
+            "Volume_Formatted": utils.format_volume_string(info.get('volume_24h', 0) if info else 0),
+            "MarketCap_Formatted": utils.format_market_cap_string(info.get('market_cap', 0) if info else 0),
 
             # --- 3. 프론트엔드 정렬용 순수 숫자 데이터 (Raw) ---
             "Price_Raw": current_p,
-            "Change_24h_Raw": change_24h,
+            "Change_24h_Raw": up_change_24h,
             "Change_Today_Raw": change_today,
-            "Volume_Raw": vol_24h,
-            "MarketCap_Raw": final_mcap,
+            "Volume_Raw": info.get('volume_24h', 0) if info else 0,
+            "MarketCap_Raw": info.get('market_cap', 0) if info else 0,
             "utc0_open": utc0_open,
             
             # 추가 예정
@@ -218,7 +212,8 @@ def build_upbit_row(base, up_info, binance_data, market_data_map, asset_to_looku
     return row, False # 업데이트 로직 필요시 추가
 
 # 족보 청소기 로직 분리.
-def clean_stale_tickers(binance_data, upbit_krw_set, mapping):
+def clean_stale_tickers(
+        binance_data, upbit_krw_set, mapping):
     global MAPPING_DATA
     is_updated = False
     
@@ -240,13 +235,15 @@ def clean_stale_tickers(binance_data, upbit_krw_set, mapping):
     for k in keys_to_delete:
         del TICKER_DATA[k]
         is_updated = True
-        print(f"🧹 [청소] {k} 삭제 완료")
+        print(f"🧹 [안내] {k} 삭제 완료")
         
     return is_updated
 
 # 위 함수들을 호출해서 최종 final_results 리스트를 완성.
-def assemble_final_dashboard(global_listings, binance_data, upbit_data, market_data_map, asset_to_lookup_key, upbit_krw_set, bithumb_krw_set, upbit_only_assets, mapping):
-   
+def assemble_final_dashboard(
+        global_listings, binance_data, upbit_data, market_data_map,
+        asset_to_lookup_key, upbit_krw_set, bithumb_krw_set, upbit_only_assets, mapping):
+    
     (   
      NOTE_MAP, 
      TICKER_DATA, CHAIN_LOGO_MAP, 
@@ -279,11 +276,15 @@ def assemble_final_dashboard(global_listings, binance_data, upbit_data, market_d
 
     # 2. 업비트 투입
     for base in upbit_only_assets:
-        row, updated = build_upbit_row(base.upper(), upbit_data.get(base), binance_data, market_data_map, asset_to_lookup_key, global_listings, upbit_krw_set, bithumb_krw_set, REVERSE_LOOKUP, processed_uids, krw_usd_rate, mapping)
+        row, updated = build_upbit_row(base.upper(), upbit_data.get(base), binance_data, 
+                                        market_data_map, asset_to_lookup_key,global_listings,
+                                        upbit_krw_set, bithumb_krw_set,
+                                        REVERSE_LOOKUP, processed_uids, krw_usd_rate, mapping)
         if row: final_results.append(row)
+        if updated: any_update = True
 
     # 3. 청소기 가동
-    if clean_stale_tickers(binance_data, upbit_krw_set):
+    if clean_stale_tickers(binance_data, upbit_krw_set, mapping):
         any_update = True
         
     return final_results, any_update

@@ -1,11 +1,12 @@
-# --- ⭐️ LOAD MAPPING CONFIG ⭐️ ---
-# (기존 하드코딩 딕셔너리들 싹 지우고 아래 코드로 대체)
+# config_manager.py
 import json
 import os
 
 # 파일 경로 고정
 MAPPING_FILE = 'mapping.json'
 
+# --- ⭐️ LOAD MAPPING CONFIG ⭐️ ---
+# (기존 하드코딩 딕셔너리들 싹 지우고 아래 코드로 대체)
 def load_mapping_data():
     """mapping.json을 읽어서 딕셔너리로 반환"""
     try:

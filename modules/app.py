@@ -4,6 +4,8 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI, Request
 from datetime import datetime
+from pathlib import Path
+import webbrowser
 import threading
 import requests
 import pytz
@@ -12,9 +14,7 @@ import sys
 import io
 import os
 
-from pathlib import Path              # 👈 추가됨!
-from fastapi import FastAPI, Request   # 👈 대문자 R 확인!
-
+from . import trace_hooking             # 👈 추가
 from . import api_manager             # 👈 우리 지휘관
 
 # from modules import api_manager, 
@@ -39,7 +39,7 @@ app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="stat
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 @app.get("/")
-async def home(request: v):
+async def home(request: Request):
     # 뼈대만 렌더링하고 데이터는 AJAX로 그림
     return templates.TemplateResponse(request=request, name="index.html")
 
@@ -147,6 +147,10 @@ def auto_reset_scheduler():
 
 @app.on_event("startup")
 def on_startup():
+    # trace_hooking 파일 안에 apply_traces 함수가 있다고 가정합니다.
+    # 만약 웹소켓 매니저가 있다면 그 broadcast 함수를 넣어주면 됩니다.
+    trace_hooking.apply_traces(None)
+
     # ⭐️ 9시 정각 감시 스레드 시작
     threading.Thread(target=auto_reset_scheduler, daemon=True).start()
     

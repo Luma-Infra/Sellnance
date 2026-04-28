@@ -26,7 +26,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       // 3️⃣ [소켓 점화] 모든 준비가 끝났을 때 비로소 소켓을 연결!
       // (장부가 꽉 차 있어서 켜지자마자 바로 구독 성공함)
       initSniperSocket();
-      if (typeof startBinanceMarketRadar === "function") startBinanceMarketRadar();
+      if (typeof startBinanceMarketRadar === "function")
+        startBinanceMarketRadar();
       if (typeof startUpbitMarketRadar === "function") startUpbitMarketRadar();
       console.log("✅ 3. 실시간 소켓 연결 성공!");
     } else {
@@ -36,7 +37,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     // 4️⃣ [UI 이벤트] 슬라이더 및 버튼 반응 설정
     setupSliderEvents();
     setupButtonEvents();
-
   } catch (err) {
     console.error("🚨 시동 실패:", err);
     // 보험: 2초 뒤 자동 새로고침 시도
@@ -176,7 +176,7 @@ function initChart() {
 
   // 🚀 공통 커스텀 가격 포맷 설정 (함수 추가 없이 기존 formatSmartPrice 재활용!)
   // 🚀 p 값을 무조건 '순수 숫자(Number)'로 강제 변환! (문자열 방어)
-  const row = currentTableData.find(c => c.Symbol === currentAsset);
+  const row = currentTableData.find((c) => c.Symbol === currentAsset);
   const p = row && row.precision !== undefined ? Number(row.precision) : 2;
 
   // 🚀 minMove도 안전하게 계산
@@ -279,7 +279,7 @@ function initChart() {
       // 🚀 모바일 오버레이 방어 (아까 그 기준 적용!)
       if (width >= SCREEN_WIDTH) {
         const overlay = document.getElementById("mobile-chart-overlay");
-        if (overlay && !overlay.classList.contains('hidden')) {
+        if (overlay && !overlay.classList.contains("hidden")) {
           closeMobileChart();
         }
       }
@@ -293,7 +293,9 @@ function initChart() {
 }
 
 function setTF(tf) {
-  const isSimMode = document.getElementById("tab-btn-sim").classList.contains("active");
+  const isSimMode = document
+    .getElementById("tab-btn-sim")
+    .classList.contains("active");
   if (isSimMode) {
     Swal.fire({
       title: "초기화 경고!",
@@ -503,7 +505,8 @@ function updateRealtimeCountdown(serverMs) {
     }
 
     // 🚀 보간 계산
-    const interpolatedMs = lastServerMs + (performance.now() - localTimeAtUpdate);
+    const interpolatedMs =
+      lastServerMs + (performance.now() - localTimeAtUpdate);
 
     // 🎯 마감 시간 체크 로직 추가
     const secondsPerBar = tfSec[currentTF] || 60;
@@ -523,18 +526,19 @@ function updateRealtimeCountdown(serverMs) {
   const lastCandle = mainData[mainData.length - 1];
   const isDown = lastCandle.close < lastCandle.open;
   const style = getComputedStyle(document.body);
-  const varName = isDown ? '--down' : '--up';
-  const rawColor = style.getPropertyValue(varName).trim() || (isDown ? '#ef5350' : '#26a69a');
+  const varName = isDown ? "--down" : "--up";
+  const rawColor =
+    style.getPropertyValue(varName).trim() || (isDown ? "#ef5350" : "#26a69a");
 
   // 4. 차트 레이블 옵션 (보간된 displayTime 적용)
   const lineOptions = {
     price: lastCandle.close,
-    color: 'transparent',
+    color: "transparent",
     lineWidth: 0,
     axisLabelVisible: true,
     title: showCountdown ? `${displayTime} ` : "", // 🚀 Wait... 또는 05:20
     axisLabelColor: rawColor,
-    axisLabelTextColor: '#ffffff',
+    axisLabelTextColor: "#ffffff",
   };
 
   // 5. 생성 및 갱신
@@ -545,7 +549,7 @@ function updateRealtimeCountdown(serverMs) {
   }
 }
 
-// 실시간 카운트다운 보간 
+// 실시간 카운트다운 보간
 setInterval(() => {
   if (typeof updateRealtimeCountdown === "function" && lastServerMs > 0) {
     updateRealtimeCountdown(lastServerMs);
@@ -568,7 +572,9 @@ document.addEventListener("keydown", (e) => {
     if (!sortedList || sortedList.length === 0) return;
 
     // 2. 현재 정렬된 순서에서 나의 위치(인덱스) 찾기
-    let currentIndex = sortedList.findIndex(item => item.Symbol === currentSelectedSymbol);
+    let currentIndex = sortedList.findIndex(
+      (item) => item.Symbol === currentSelectedSymbol,
+    );
 
     // 3. [수정] 무한 루프 금지! 위아래 "제한" 걸기
     let nextIndex;
@@ -577,7 +583,10 @@ document.addEventListener("keydown", (e) => {
       nextIndex = currentIndex <= 0 ? 0 : currentIndex - 1;
     } else {
       // 맨 아래면 더 이상 안 내려감 (제한)
-      nextIndex = currentIndex >= sortedList.length - 1 ? sortedList.length - 1 : currentIndex + 1;
+      nextIndex =
+        currentIndex >= sortedList.length - 1
+          ? sortedList.length - 1
+          : currentIndex + 1;
     }
 
     // 4. 인덱스가 변했을 때만 실행 (똑같은 자리면 리소스 아끼기)
@@ -597,7 +606,9 @@ document.addEventListener("keydown", (e) => {
 
       // 7. 스크롤 추적 (즉시 반응을 위해 behavior: instant 추천)
       setTimeout(() => {
-        const targetRow = document.querySelector(`#table-body tr[data-sym="${nextCoin.Symbol}"]`);
+        const targetRow = document.querySelector(
+          `#table-body tr[data-sym="${nextCoin.Symbol}"]`,
+        );
         if (targetRow) {
           targetRow.scrollIntoView({ block: "nearest", behavior: "instant" });
           applySelectedHighlight();

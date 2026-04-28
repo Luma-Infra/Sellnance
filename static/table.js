@@ -441,11 +441,13 @@ function updateRowInnerHTML(tr, row) {
       <div class="flex flex-col gap-0.5 text-theme-text">
       <span class="font-bold text-[13px] opacity-90">${row.Volume_Formatted || "-"}</span>
       <span class="text-[11px] opacity-50">M.Cap: ${row.MarketCap_Formatted}</span>
-      <div class="flex items-center gap-1 mt-1 opacity-80">${listedExchangesHtml}</div>
-      <div class="flex items-center gap-1 mt-1 opacity-80">${tagsHtml}</div>
+
     </div>
   </td>
 `;
+
+  // <div class="flex items-center gap-1 mt-1 opacity-80">${listedExchangesHtml}</div>
+  // <div class="flex items-center gap-1 mt-1 opacity-80">${tagsHtml}</div>
 }
 
 // 🚀 [table.js 또는 main.js] 무한 스크롤 & 스나이퍼 통합 엔진

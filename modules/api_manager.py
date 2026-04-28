@@ -1,21 +1,14 @@
 # api_manager.py
-from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from datetime import datetime
 import threading
 import traceback
-import requests
-import decimal
-import config
-import json
-import math
 import pytz
 import sys
-import re
 import os
 
 # ✅ 수정 (옆방 부하들 호출하는 정석)
-from . import api_manager, builder, cmc_api, exchange_api, config_manager, utils
+from modules import builder, cmc_api, exchange_api, config_manager, utils
 
 # 1. 여기서 딱 한 번 로드한다 (최신본)
 mapping = config_manager.load_mapping_data()
@@ -36,24 +29,6 @@ market_data_map, asset_to_lookup_key = cmc_api.fetch_cmc_market_data(
 
 # 4. 상장 족보 수집
 global_listings = exchange_api.fetch_global_listings()
-
-# 2. 부하들에게 "이거 보고 조립해"라고 던져준다
-# 🚀 5. [여기가 핵심!] 빼먹은 것 없이 싹 다 던져주기
-
-# final_data, is_updated = builder.assemble_final_dashboard(
-#     global_listings, 
-#     binance_data, 
-#     upbit_data, 
-#     market_data_map, 
-#     asset_to_lookup_key, 
-#     upbit_krw_set, 
-#     bithumb_krw_set, 
-#     upbit_only_assets, 
-#     mapping 
-# )
-
-# 마지막 보따리까지!
-# (파일 상단의 임포트와 글로벌 설정, format 함수들은 그대로 두시면 됩니다!)
 
 # --- ⭐️ GLOBAL CACHE SETTINGS ⭐️ ---
 GLOBAL_CACHE = {
@@ -92,17 +67,25 @@ def _fetch_and_process_data():
     ) = config_manager.get_mapping_parts(MAPPING_DATA)
         
     # 1. 시세 수집
-    binance_data, upbit_data, upbit_krw_set, upbit_only_assets, bithumb_krw_set, = exchange_api.fetch_exchange_market_data()
+    binance_data, upbit_data, upbit_krw_set, upbit_only_assets, bithumb_krw_set, = exchange_api.fetch_exchange_market_data(mapping)
     # 2. 정보 수집 (CMC)
-    market_data_map, asset_to_lookup_key = cmc_api.fetch_cmc_market_data(binance_data, upbit_only_assets)
+    market_data_map, asset_to_lookup_key = cmc_api.fetch_cmc_market_data(binance_data, upbit_only_assets, mapping)
     # 3. 조립 및 계산
-    
     # 🚀 [추가] 조립 직전에 글로벌 상장 족보 긁어오기
     global_listings = exchange_api.fetch_global_listings()
     
-    final_results, is_mapping_updated, updated_chain_map = exchange_api.build_final_market_list(
-        global_listings, binance_data, upbit_data, market_data_map, asset_to_lookup_key, upbit_krw_set, upbit_only_assets, bithumb_krw_set
-    )
+   # ✅ 수정 코드 (명령을 builder 부대에게 내리세요!)
+    final_results, is_mapping_updated = builder.assemble_final_dashboard(
+        global_listings, 
+        binance_data, 
+        upbit_data, 
+        market_data_map, 
+        asset_to_lookup_key, 
+        upbit_krw_set, 
+        bithumb_krw_set, 
+        upbit_only_assets,
+        mapping  # 🚀 보따리 전달 잊지 마시고요!
+)
     
     all_live_assets = binance_data.keys() | upbit_krw_set # 현재 살아있는 모든 티커(원본)
     live_bases = {utils.get_pure_base_asset(a).upper() for a in all_live_assets}
@@ -129,24 +112,18 @@ def _fetch_and_process_data():
     for k in keys_to_delete:
         del MAPPING_DATA["TICKER_DATA"][k]
         is_mapping_updated = True
-        print(f"🧹 [청소] 진짜 상폐/미거래 코인 {k} 족보에서 삭제 완료!")
+        print(f"🧹 [청소] 상폐/미거래 코인 {k} 족보에서 삭제 완료!")
 
 
     # 5. 시총 정렬 후 반환
     final_results.sort(key=lambda x: x.get('MarketCap_Raw', 0), reverse=True)
+    
+    # ✅ [수정] 저장을 시키세요!
+    if is_mapping_updated:
+        config_manager.save_mapping_data(mapping) # 🚀 드디어 도구를 사용함!
+        print(f"💾 새로운 코인 정보가 mapping.json에 저장 완료되었습니다!")
+
     return final_results
-
-# 🚀 1. 족보 로드 (항상 최신본으로 시작!)
-    MAPPING_DATA = config_manager.load_mapping_data()
-
-    # 🚀 2. 시세 수집 (mapping 보따리 전달)
-    (
-        binance_data, 
-        upbit_data, 
-        upbit_krw_set, 
-        bithumb_krw_set, 
-        upbit_only_assets
-    ) = exchange_api.fetch_exchange_market_data(MAPPING_DATA)
 
 data_lock = threading.Lock()
 def get_cached_data(force_reload=False):

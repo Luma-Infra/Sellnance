@@ -1,5 +1,6 @@
-import math
+# utils.py
 import re
+from decimal import Decimal, ROUND_HALF_UP
 
 # --- ⭐️ FORMATTING FUNCTIONS ⭐️ ---
 def format_market_cap_string(mc):
@@ -16,10 +17,11 @@ def format_volume_string(vol):
     return f"{vol:,.0f}"
 
 def js_round(number, decimals=0):
-    """자바스크립트의 Math.round()와 완벽히 동일하게 동작하는 사사오입 함수"""
-    multiplier = 10 ** decimals
-    # 0.5를 더하고 내림(floor) 처리하는 것이 JS 엔진의 방식입니다.
-    return math.floor(number * multiplier + 0.5) / multiplier
+    # 🚀 숫자를 Decimal 객체로 변환
+    d = Decimal(str(number))
+    # 🚀 사사오입(ROUND_HALF_UP) 적용
+    quantize_str = '1' if decimals == 0 else f"1.{'0' * decimals}"
+    return float(d.quantize(Decimal(quantize_str), rounding=ROUND_HALF_UP))
 
 # 1. 초기화 단계에서 딱 한 번만 계산 (JavaScript든 Python이든 로직 동일)
 def get_precision(tick_size_str):
@@ -76,7 +78,7 @@ def is_scaled_symbol(symbol):
 def is_valid_ticker(ticker):
     """
     영어 대문자, 숫자 이외의 문자가 섞여 있으면 거부합니다.
-    (한자, 특수문자, 소문자, 이모지 등 온갖 잡다구리한 티커 사전에 차단)
+    (한자, 특수문자, 소문자, 이모지 등 온갖 잡다구리한 쓰레기 티커들 사전에 차단)
     """
     # ^[A-Z0-9]+$ : 시작부터 끝까지 영어 대문자와 숫자로만 이루어져야 함
     

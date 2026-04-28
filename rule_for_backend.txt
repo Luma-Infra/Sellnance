@@ -10,14 +10,19 @@ Initial stage_
 이거는 TICKER_DATA에 거래소티커 넣어서 저장해
 7 SPECIAL_SYMBOL_MAP은 거래소티커 : cmc호출용티커 이렇게 구성된거니 매칭 상태보고 cmc호출을 문제없이 하면 되고 이거도 TICKER_DATA에 거래소티커 넣어서 저장해
 8 DUPLICATED_LIST는 프론트용티커 : [uid, chain, 거래소티커, 거래소명] 이렇게 구성된거임
-그러니 거래소티커 보면서 uid 이거 써서 호출하면 됨
+그러니 거래소 티커 보면서 uid 이거 써서 호출하면 됨
 9 자 이제 cmc에 티커 + 하드코딩 uid 가 모두 갖추어 졋으니 호출하면 되겟지
 
 Second and Loop stage_
 
 10 여기부터는 처음아니고 두번째이니 TICKER_DATA에도 uid가 완성된 상황이야
-11 그러면 TICKER_DATA에 존재하는 코인들 uid로 호출하면 되겟지
+11 그러면 TICKER_DATA에 존재하는 코인들 uid로 호출하면 좀더 빠르고 정확하게 가능하겟지
 12 문제는 DUPLICATED_LIST는 TICKER_DATA에 일부로 저장안한 놈들이니 8번 규칙따라서 호출하면 되겠지, 그리고 DUPLICATED_LIST 내부 규칙은 다음과 같다
 12-1 uid가 같으면 같은 코인이지만 프론트로 업비트 바낸 둘 다 넘겨줄거고 binance json 규칙 우선
 12-2 uid가 다르면 반드시 다른 코인임
 13 어쨋든 DUPLICATED_LIST에 잇는 uid로도 cmc api 호출하면 완성되는 거임
+
+extra stage_
+
+14 기존 목록들 보면서 추후에도 겹치고 중복되고 일어날법한 트러블은 일단 코드에서 가볍게 대처하면 더 좋겟지 by 유지보수
+15 그래도 문제 생기면 바낸 260423 웹소켓 주소변경, 기타 라이브러리 버전 문제, 코드 오류, 하드 코딩, 자동 감시봇 추가 등등 다양하겟지

@@ -20,7 +20,7 @@ echo [ℹ️ CMC API KEY 안내]
 echo 시총 데이터를 불러오려면 API 키가 필요합니다.
 echo 아래 주소에서 무료 크레딧을 발급받으실 수 있습니다:
 echo 월별 1만건, 일별 1천건 제한이 있으니 잦은 호출에 유의하세요
-echo Link : https://pro.coinmarketcap.com/account
+echo 주소 : "https://pro.coinmarketcap.com/account"
 echo --------------------------------------------------
 echo.
 

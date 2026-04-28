@@ -129,6 +129,40 @@ body.theme-binance {
   background: rgba(128, 128, 128, 0.1);
 }
 
+/* 🚀 테이블 바디 스크롤 필살기 */
+#market-table {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important; /* 부모 div 높이를 다 써라! */
+}
+
+#market-table thead {
+  flex-shrink: 0 !important; /* 헤더는 절대 찌그러지지 마라! */
+}
+
+/* 🚀 줄 맞춤을 위해 아래 코드도 세트로 확인! */
+#market-table thead,
+#market-table tbody tr {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+#table-body {
+  display: block !important; /* 👈 이걸 해야 스크롤이 먹힘! */
+  flex: 1 !important; /* 남은 공간을 바디가 다 채워라! */
+  overflow-y: auto !important; /* 드디어 스크롤바 등장! */
+  min-height: 0; /* flex 자식일 때 스크롤이 안 생기는 버그 방지 */
+}
+
+/* 🚀 줄 맞춤 (헤더랑 바디 칸 너비 맞추기) */
+#market-table thead tr,
+#market-table tbody tr {
+  display: table !important;
+  width: 100% !important;
+  table-layout: fixed !important;
+}
+
 /* 🚨 전역 CSS 오염으로부터 차트 내부 테이블 보호 */
 .tv-lightweight-charts table {
   table-layout: auto !important;
@@ -147,7 +181,11 @@ body.theme-binance {
 .flash-up {
   color: color-mix(in srgb, var(--up), transparent 50%) !important;
   text-shadow: 0 0 12px color-mix(in srgb, var(--up), transparent 50%) !important;
-  background: radial-gradient(circle, var(--flash-up) 0%, transparent 80%) !important;
+  background: radial-gradient(
+    circle,
+    var(--flash-up) 0%,
+    transparent 80%
+  ) !important;
   box-shadow: inset 2px 0 0 0 var(--up) !important;
   transition: none !important;
 }
@@ -155,7 +193,11 @@ body.theme-binance {
 .flash-down {
   color: color-mix(in srgb, var(--down), transparent 50%) !important;
   text-shadow: 0 0 12px color-mix(in srgb, var(--down), transparent 50%) !important;
-  background: radial-gradient(circle, var(--flash-down) 0%, transparent 80%) !important;
+  background: radial-gradient(
+    circle,
+    var(--flash-down) 0%,
+    transparent 80%
+  ) !important;
   box-shadow: inset 2px 0 0 0 var(--down) !important;
   transition: none !important;
 }
@@ -254,7 +296,6 @@ body.theme-binance {
 
 /* ✅ 모바일 통합 최적화 (768px 이하) */
 @media (max-width: 768px) {
-
   /* 가로 스크롤 완전 차단 */
   body,
   html {
@@ -271,10 +312,12 @@ body.theme-binance {
     /* 🚀 오타수정: 10x -> 10px */
     height: calc(100dvh - 10px) !important;
     max-height: calc(100dvh - 10px) !important;
-    overflow-y: auto !important;
+    overflow-y: hidden !important;
     z-index: 101;
     background-color: var(--bg);
     padding-bottom: 20px;
+    display: flex !important; /* 🚀 1. 플렉스 박스로 선언 */
+    flex-direction: column !important; /* 🚀 2. 내용물을 세로로 쌓기 */
     /* 🚀 밑바닥 여유 살짝 추가 */
   }
 
@@ -302,6 +345,21 @@ body.theme-binance {
   }
 
   /* 4. 테이블 & 차트 세부 조정 */
+  /* #table-body {
+    display: block !important;
+    height: 500px !important;
+    overflow-y: auto !important;
+    width: 100%;
+  } */
+
+  /* 3. 헤더는 딱 붙어있게 고정 (이미 되어있겠지만 확인!) */
+  thead {
+    flex-shrink: 0; /* 헤더가 찌그러지지 않게 */
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+  }
+
   #table-body td,
   thead th {
     padding: 8px 4px !important;
