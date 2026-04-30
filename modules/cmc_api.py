@@ -112,26 +112,26 @@ def execute_cmc_requests(id_lookup, sym_lookup):
 
     for res in results:
         if not res or 'data' not in res: continue
-        # (execute_cmc_requests 내부의 for문 로직)
         for k, v in res['data'].items():
             info = v[0] if isinstance(v, list) and v else v
             if not info or 'quote' not in info: continue
             
             q = info['quote']['USD']
-            platform = info.get('platform')
             ucid_str = str(info.get('id', ''))
             
-            # ✅ [문제 10 해결] UID 길이가 15자를 넘어가면 RWA로 간주!
-            asset_type = 'RWA' if len(ucid_str) > 15 else 'CRYPTO'
-            
-            market_data_map[k] = {
+            # 🚀 [핵심] builder가 찾기 쉽게 공통 데이터 맵을 만듭니다.
+            asset_info = {
                 'name': info.get('name'),
                 'market_cap': q.get('market_cap'),
                 'cmc_price': q.get('price'),
                 'volume_24h': q.get('volume_24h'),
                 'ucid': ucid_str,
-                'asset_type': asset_type, # 🚀 나중에 builder.py에서 분기할 때 쓰세요!
-                'chain_symbol': platform.get('symbol') if platform else info.get('symbol', ''),
-                'tags': ",".join([t['name'] for t in info.get('tags', [])]) if isinstance(info.get('tags'), list) else ""
-            }   
+                'chain_symbol': info.get('platform', {}).get('symbol') if info.get('platform') else info.get('symbol', ''),
+            }
+            
+            # ✅ [최후 통첩] 숫자 ID(k)와 티커(Symbol) 둘 다 장부에 기록하세요!
+            market_data_map[str(k)] = asset_info         # ID로 찾을 때 대비
+            if info.get('symbol'):
+                market_data_map[info['symbol'].upper()] = asset_info  # 티커로 찾을 때 대비
+                
     return market_data_map

@@ -43,21 +43,35 @@ def build_binance_row(
     logo = utils.create_image_tag(f"https://s2.coinmarketcap.com/static/img/coins/64x64/{ucid}.png" if ucid else "")
 
     # 5. 족보 업데이트 및 시총 계산
-    # 🚀 [신규 상장 캐치!] 족보에 없고, 체인 정보가 확인되면 등록!
+    # 🚀 [누님의 Trust & Fill 로직]
     ticker_info = TICKER_DATA.get(display_name)
-    if not ticker_info or (isinstance(ticker_info, list) and len(ticker_info) < 4):
+    
+    # 1. 족보에 이미 UID가 있다면 최우선으로 믿고 가져옵니다 (Trust)
+    existing_uid = ticker_info[0] if isinstance(ticker_info, list) and len(ticker_info) > 0 else ""
+    
+    # 2. 최종 UID 결정전: 기존 족보 -> 하드코딩 맵 -> CMC 결과 순으로 생존 경쟁!
+    final_ucid = existing_uid or str(SYMBOL_TO_ID_MAP.get(display_name, "")) or ucid
+    
+    
+    
+    # builder.py 족보 세탁기 로직 바로 위에 삽입
+    if not ucid and not existing_uid:
+        print(f"🚨 [추적] {display_name} 수사 실패! | lookup_id: {lookup_id} | info 존재여부: {info is not None}")
+    
+    
+    
+    
+
+    # 3. 세탁기 가동 조건: 아예 없거나, 4단이 아니거나, UID가 비어있을 때만!
+    if not ticker_info or (isinstance(ticker_info, list) and (len(ticker_info) < 4 or not ticker_info[0])):
         TICKER_DATA[display_name] = [
-            ucid,                             # 1. UID
-            ch_sym,                           # 2. 체인명
-            info.get('name', base) if info else (ticker_info[2] if ticker_info and len(ticker_info) >= 3 else base), # 3. 별명
-            base                              # 4. 실제티커
+            final_ucid,                           # 🚀 믿음의 최종 UID (Fill)
+            ch_sym,                               # 체인명
+            info.get('name', base) if info else (ticker_info[2] if ticker_info and len(ticker_info) >= 3 else base),
+            base                                  # 실제티커
         ]
         is_updated = True
-        print(f"🆕 [신규 등록] 바이낸스 상장 감지: {display_name}")
-            
-        # if ch_sym and display_name not in TICKER_DATA and base not in CHAIN_LOGO_MAP:
-        #     TICKER_DATA[display_name] = [ucid, ch_sym]
-        #     is_updated = True
+        print(f"✅ [족보 세탁] {display_name} UID 복구 완료: {final_ucid}")
         
     # 시총 계산 (생략된 기존 로직 그대로 삽입)
     price = b_info['price']
@@ -175,16 +189,25 @@ def build_upbit_row(
     logo = utils.create_image_tag(f"https://s2.coinmarketcap.com/static/img/coins/64x64/{ucid}.png" if ucid else "")
 
     # 🚀 [신규 상장 캐치!] 업비트에만 있는 코인 등록
+    # 🚀 [누님의 Trust & Fill 로직]
     ticker_info = TICKER_DATA.get(display_name)
-    if not ticker_info or (isinstance(ticker_info, list) and len(ticker_info) < 4):
+    
+    # 1. 족보에 이미 UID가 있다면 최우선으로 믿고 가져옵니다 (Trust)
+    existing_uid = ticker_info[0] if isinstance(ticker_info, list) and len(ticker_info) > 0 else ""
+    
+    # 2. 최종 UID 결정전: 기존 족보 -> 하드코딩 맵 -> CMC 결과 순으로 생존 경쟁!
+    final_ucid = existing_uid or str(SYMBOL_TO_ID_MAP.get(display_name, "")) or ucid
+
+    # 3. 세탁기 가동 조건: 아예 없거나, 4단이 아니거나, UID가 비어있을 때만!
+    if not ticker_info or (isinstance(ticker_info, list) and (len(ticker_info) < 4 or not ticker_info[0])):
         TICKER_DATA[display_name] = [
-            ucid,                                 # 1. UID
-            ch_sym,                               # 2. 체인명
-            info.get('name', base) if info else (ticker_info[2] if ticker_info and len(ticker_info) >= 3 else base), # 3. 별명[cite: 1]
-            base                                  # 4. 실제티커
+            final_ucid,                           # 🚀 믿음의 최종 UID (Fill)
+            ch_sym,                               # 체인명
+            info.get('name', base) if info else (ticker_info[2] if ticker_info and len(ticker_info) >= 3 else base),
+            base                                  # 실제티커
         ]
         is_updated = True
-        print(f"🆕 [신규 등록] 업비트 전용 상장 감지: {display_name}")
+        print(f"✅ [족보 세탁] {display_name} UID 복구 완료: {final_ucid}")
 
     # 가격 및 정밀도
     p = up_info['price']
