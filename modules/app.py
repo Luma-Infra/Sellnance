@@ -170,7 +170,7 @@ async def progress_stream():
 def on_startup():
     # trace_hooking 파일 안에 apply_traces 함수가 있다고 가정합니다.
     # 만약 웹소켓 매니저가 있다면 그 broadcast 함수를 넣어주면 됩니다.
-    trace_hooking.apply_traces(None)
+    # trace_hooking.apply_traces(None)
 
     # ⭐️ 9시 정각 감시 스레드 시작
     threading.Thread(target=auto_reset_scheduler, daemon=True).start()
