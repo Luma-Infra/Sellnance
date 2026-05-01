@@ -1,717 +1,4020 @@
 {
-  "CHAIN_LOGO_MAP": {
-    "ETH": "https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png",
-    "BNB": "https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png",
-    "SOL": "https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png",
-    "SUI": "https://s2.coinmarketcap.com/static/img/coins/64x64/20947.png"
-  },
-  "__MEMO_1": "BTC ETH 파생형 너무 많아서 고정 + 중국어 포함 모든 언어 티커 대응",
-  "__MEMO_2": "-------------------------------------------------------------",
-  "EXCLUSION_LIST": ["BTCDOM", "ALL", "COIN"],
-  "HARDCODE_VERIFY_SKIP_LIST": ["币安人生", "我踏马来了", "龙虾"],
-  "NOTE_MAP": {
-    "币安人生": "bianrensheng",
-    "我踏马来了": "wotamalaile",
-    "龙虾": "lobster-2"
-  },
-  "MANUAL_SUPPLY_MAP": {},
-  "SYMBOL_TO_ID_MAP": {
-    "BTC": "1",
-    "USDT": "825",
-    "ETH": "1027",
-    "FXS": "6953",
-    "QUICK": "19966",
-    "VELODROME": "20435",
-    "WBETH": "24760",
-    "1000RATS": "28452",
-    "AI": "28846",
-    "GAME": "31246",
-    "MOVE": "32452",
-    "USDS": "33039",
-    "ACT": "33566",
-    "AVAAI": "34116",
-    "BROCCOLI714": "35749",
-    "BROCCOLIF3B": "35753",
-    "PUMPBTC": "36166",
-    "LIGHT": "38506",
-    "4": "38557",
-    "币安人生": "38590",
-    "SPORTFUN": "38647",
-    "我踏马来了": "39322",
-    "龙虾": "39671",
-    "AIGENSYN": "39883"
-  },
-  "SPECIAL_SYMBOL_MAP": {
-    "DODOX": "DODO",
-    "LUNA2": "LUNA",
-    "RAYSOL": "RAY",
-    "RONIN": "RON",
-    "FCT2": "FCT",
-    "GAME2": "GAME"
-  },
-  "DUPLICATED_LIST": {
-    "BOB(BNB)": ["34422", "", "1000000BOB", "binance"],
-    "BOB(BTC)": ["38970", "", "BOB", "binance"],
-    "EDGE(Definitive)": ["36288", "", "EDGE", "upbit"],
-    "EDGE(edgeX)": ["39720", "", "EDGE", "binance"],
-    "BEAMX": ["28298", "ETH", "BEAMX", "binance"],
-    "BEAM": ["28298", "ETH", "BEAM", "upbit"],
-    "MET": ["38353", "SOL", "MET", "binance"],
-    "MET2": ["38353", "SOL", "MET", "upbit"],
-    "BTTC": ["16086", "TRX", "BTTC", "binance"],
-    "BTT": ["16086", "TRX", "BTT", "upbit"]
-  },
-  "TICKER_DATA": {
-    "0G": ["", "ETH", "0G", "0G"],
-    "1INCH": ["", "ETH", "1INCH", "1INCH"],
-    "2Z": ["", "SOL", "2Z", "2Z"],
-    "4": ["38557", "BNB", "4", "4"],
-    "A": ["", "A", "A", "A"],
-    "AAPL": ["", "HYPE", "AAPL", "AAPL"],
-    "AAVE": ["", "ETH", "AAVE", "AAVE"],
-    "ACE": ["", "BNB", "ACE", "ACE"],
-    "ACH": ["", "ETH", "ACH", "ACH"],
-    "ACM": ["", "CHZ", "ACM", "ACM"],
-    "ACT": ["33566", "SOL", "ACT", "ACT"],
-    "ACU": ["", "ETH", "ACU", "ACU"],
-    "ACX": ["", "ETH", "ACX", "ACX"],
-    "ADA": ["", "ADA", "ADA", "ADA"],
-    "ADX": ["", "ETH", "ADX", "ADX"],
-    "AERGO": ["", "AERGO", "AERGO", "AERGO"],
-    "AERO": ["", "-", "AERO", "AERO"],
-    "AEUR": ["", "ETH", "AEUR", "AEUR"],
-    "AEVO": ["", "ETH", "AEVO", "AEVO"],
-    "AGLD": ["", "ETH", "AGLD", "AGLD"],
-    "AGT": ["", "BNB", "AGT", "AGT"],
-    "AHT": ["", "AHT", "AHT", "AHT"],
-    "AI": ["28846", "BNB", "AI", "AI"],
-    "AIA": ["", "BNB", "AIA", "AIA"],
-    "AIGENSYN": ["39883", "", "AIGENSYN", "AIGENSYN"],
-    "AIN": ["", "BNB", "AIN", "AIN"],
-    "AIO": ["", "BNB", "AIO", "AIO"],
-    "AIOT": ["", "BNB", "AIOT", "AIOT"],
-    "AIXBT": ["", "ETH", "AIXBT", "AIXBT"],
-    "AKE": ["", "BNB", "AKE", "AKE"],
-    "AKT": ["", "AKT", "AKT", "AKT"],
-    "ALCH": ["", "SOL", "ALCH", "ALCH"],
-    "ALCX": ["", "ETH", "ALCX", "ALCX"],
-    "ALGO": ["", "ALGO", "ALGO", "ALGO"],
-    "ALICE": ["", "ETH", "ALICE", "ALICE"],
-    "ALLO": ["", "ETH", "ALLO", "ALLO"],
-    "ALPINE": ["", "BNB", "ALPINE", "ALPINE"],
-    "ALT": ["", "ETH", "ALT", "ALT"],
-    "AMP": ["", "ETH", "AMP", "AMP"],
-    "AMZN": ["", "HYPE", "AMZN", "AMZN"],
-    "ANIME": ["", "ETH", "ANIME", "ANIME"],
-    "ANKR": ["", "ETH", "ANKR", "ANKR"],
-    "APE": ["", "ETH", "APE", "APE"],
-    "API3": ["", "ETH", "API3", "API3"],
-    "APR": ["", "ETH", "APR", "APR"],
-    "APT": ["", "APT", "APT", "APT"],
-    "AQT": ["", "ETH", "AQT", "AQT"],
-    "AR": ["", "AR", "AR", "AR"],
-    "ARB": ["", "ARB", "ARB", "ARB"],
-    "ARC": ["", "SOL", "ARC", "ARC"],
-    "ARDR": ["", "ARDR", "ARDR", "ARDR"],
-    "ARIA": ["", "BNB", "ARIA", "ARIA"],
-    "ARK": ["", "ARK", "ARK", "ARK"],
-    "ARKM": ["", "ETH", "ARKM", "ARKM"],
-    "ARPA": ["", "ETH", "ARPA", "ARPA"],
-    "ASR": ["", "CHZ", "ASR", "ASR"],
-    "ASTER": ["", "BNB", "ASTER", "ASTER"],
-    "ASTR": ["", "ASTR", "ASTR", "ASTR"],
-    "AT": ["", "ETH", "AT", "AT"],
-    "ATA": ["", "ETH", "ATA", "ATA"],
-    "ATH": ["", "ETH", "ATH", "ATH"],
-    "ATM": ["", "CHZ", "ATM", "ATM"],
-    "ATOM": ["", "ATOM", "ATOM", "ATOM"],
-    "AUCTION": ["", "ETH", "AUCTION", "AUCTION"],
-    "AUDIO": ["", "ETH", "AUDIO", "AUDIO"],
-    "AVA": ["", "ETH", "AVA", "AVA"],
-    "AVAAI": ["34116", "SOL", "AVAAI", "AVAAI"],
-    "AVAX": ["", "AVAX", "AVAX", "AVAX"],
-    "AVGO": ["", "AVGO", "AVGO", "AVGO"],
-    "AVNT": ["", "-", "AVNT", "AVNT"],
-    "AWE": ["", "-", "AWE", "AWE"],
-    "AXL": ["", "ETH", "AXL", "AXL"],
-    "AXS": ["", "ETH", "AXS", "AXS"],
-    "AZTEC": ["", "ETH", "AZTEC", "AZTEC"],
-    "B": ["", "BNB", "B", "B"],
-    "B2": ["", "BNB", "B2", "B2"],
-    "BABA": ["", "BABA", "BABA", "BABA"],
-    "BABY": ["", "BABY", "BABY", "BABY"],
-    "BABYDOGE": ["", "ETH", "BABYDOGE", "BABYDOGE"],
-    "BAN": ["", "SOL", "BAN", "BAN"],
-    "BANANA": ["", "ETH", "BANANA", "BANANA"],
-    "BANANAS31": ["", "BNB", "BANANAS31", "BANANAS31"],
-    "BAND": ["", "ETH", "BAND", "BAND"],
-    "BANK": ["", "BNB", "BANK", "BANK"],
-    "BAR": ["", "CHZ", "BAR", "BAR"],
-    "BARD": ["", "ETH", "BARD", "BARD"],
-    "BAS": ["", "BNB", "BAS", "BAS"],
-    "BASED": ["", "ETH", "BASED", "BASED"],
-    "BAT": ["", "ETH", "BAT", "BAT"],
-    "BB": ["", "BB", "BB", "BB"],
-    "BCH": ["", "BCH", "BCH", "BCH"],
-    "BEAM": ["", "ETH", "Beam", "BEAM"],
-    "BEAMX": ["", "ETH", "BEAMX", "BEAMX"],
-    "BEAT": ["", "BNB", "BEAT", "BEAT"],
-    "BEL": ["", "ETH", "BEL", "BEL"],
-    "BERA": ["", "BERA", "BERA", "BERA"],
-    "BFUSD": ["", "BFUSD", "BFUSD", "BFUSD"],
-    "BICO": ["", "ETH", "BICO", "BICO"],
-    "BIGTIME": ["", "ETH", "BIGTIME", "BIGTIME"],
-    "BIO": ["", "ETH", "BIO", "BIO"],
-    "BIRB": ["", "SOL", "BIRB", "BIRB"],
-    "BLAST": ["", "BLAST", "BLAST", "BLAST"],
-    "BLEND": ["", "ETH", "Fluent", "BLEND"],
-    "BLESS": ["", "BNB", "BLESS", "BLESS"],
-    "BLUAI": ["", "BNB", "BLUAI", "BLUAI"],
-    "BLUR": ["", "ETH", "BLUR", "BLUR"],
-    "BMT": ["", "BNB", "BMT", "BMT"],
-    "BNB": ["1839", "BNB", "BNB", "BNB"],
-    "BNSOL": ["", "SOL", "BNSOL", "BNSOL"],
-    "BNT": ["", "ETH", "BNT", "BNT"],
-    "BOB(BNB)": ["", "BNB", "BOB", "BOB"],
-    "BOB(BTC)": ["38970", "BOB"],
-    "BOME": ["", "SOL", "BOME", "BOME"],
-    "BONK": ["", "SOL", "BONK", "BONK"],
-    "BORA": ["", "KAIA", "BORA", "BORA"],
-    "BOUNTY": ["", "ARB", "BOUNTY", "BOUNTY"],
-    "BR": ["", "BNB", "BR", "BR"],
-    "BRETT": ["", "-", "BRETT", "BRETT"],
-    "BREV": ["", "ETH", "BREV", "BREV"],
-    "BROCCOLI714": ["35749", "BNB", "BROCCOLI714", "BROCCOLI714"],
-    "BROCCOLIF3B": ["35753", "BNB", "BROCCOLIF3B", "BROCCOLIF3B"],
-    "BSB": ["", "BNB", "BSB", "BSB"],
-    "BSV": ["", "BSV", "BSV", "BSV"],
-    "BTC": ["1", "BTC", "BTC", "BTC"],
-    "BTR": ["", "BTR", "BTR", "BTR"],
-    "BTT": ["", "TRX", "BTT", "BTT"],
-    "BTTC": ["", "", "BTTC", "BTTC"],
-    "BULLA": ["", "BNB", "BULLA", "BULLA"],
-    "BZ": ["", "BZ", "BZ", "BZ"],
-    "C": ["", "BNB", "C", "C"],
-    "C98": ["", "ETH", "C98", "C98"],
-    "CAKE": ["", "ETH", "CAKE", "CAKE"],
-    "CARV": ["", "ETH", "CARV", "CARV"],
-    "CAT": ["", "BNB", "CAT", "CAT"],
-    "CATI": ["", "TON", "CATI", "CATI"],
-    "CBK": ["", "ETH", "CBK", "CBK"],
-    "CC": ["", "CC", "CC", "CC"],
-    "CELO": ["", "CELO", "CELO", "CELO"],
-    "CELR": ["", "ETH", "CELR", "CELR"],
-    "CETUS": ["", "SUI", "CETUS", "CETUS"],
-    "CFG": ["", "CFG", "CFG", "CFG"],
-    "CFX": ["", "CFX", "CFX", "CFX"],
-    "CGPT": ["", "ETH", "CGPT", "CGPT"],
-    "CHEEMS": ["", "BNB", "CHEEMS", "CHEEMS"],
-    "CHILLGUY": ["", "SOL", "CHILLGUY", "CHILLGUY"],
-    "CHIP": ["", "CHIP", "CHIP", "CHIP"],
-    "CHR": ["", "ETH", "CHR", "CHR"],
-    "CHZ": ["", "ETH", "CHZ", "CHZ"],
-    "CITY": ["", "CHZ", "CITY", "CITY"],
-    "CKB": ["", "CKB", "CKB", "CKB"],
-    "CL": ["", "CL", "CL", "CL"],
-    "CLANKER": ["", "-", "CLANKER", "CLANKER"],
-    "CLO": ["", "BNB", "CLO", "CLO"],
-    "COAI": ["", "BNB", "COAI", "COAI"],
-    "COIN": ["32125", "SOL"],
-    "COLLECT": ["", "BNB", "COLLECT", "COLLECT"],
-    "COMP": ["", "ETH", "COMP", "COMP"],
-    "COOKIE": ["", "BNB", "COOKIE", "COOKIE"],
-    "COPPER": ["", "SOL", "COPPER", "COPPER"],
-    "COS": ["", "BNB", "COS", "COS"],
-    "COTI": ["", "COTI", "COTI", "COTI"],
-    "COW": ["", "ETH", "COW", "COW"],
-    "CPOOL": ["", "ETH", "CPOOL", "CPOOL"],
-    "CRCL": ["", "-", "CRCL", "CRCL"],
-    "CRO": ["", "CRO", "CRO", "CRO"],
-    "CROSS": ["", "BNB", "CROSS", "CROSS"],
-    "CRV": ["", "ETH", "CRV", "CRV"],
-    "CTC": ["", "CTC", "CTC", "CTC"],
-    "CTK": ["", "CTK", "CTK", "CTK"],
-    "CTSI": ["", "ETH", "CTSI", "CTSI"],
-    "CVC": ["", "ETH", "CVC", "CVC"],
-    "CVX": ["", "ETH", "CVX", "CVX"],
-    "CYBER": ["", "ETH", "CYBER", "CYBER"],
-    "CYS": ["", "BNB", "CYS", "CYS"],
-    "D": ["", "ETH", "D", "D"],
-    "DASH": ["", "DASH", "DASH", "DASH"],
-    "DCR": ["", "DCR", "DCR", "DCR"],
-    "DEEP": ["", "SUI", "DEEP", "DEEP"],
-    "DEXE": ["", "ETH", "DEXE", "DEXE"],
-    "DGB": ["", "DGB", "DGB", "DGB"],
-    "DIA": ["", "ETH", "DIA", "DIA"],
-    "DKA": ["", "ETH", "DKA", "DKA"],
-    "DODO": ["", "ETH", "DODO", "DODO"],
-    "DODOX": ["", "ETH", "DODOX", "DODOX"],
-    "DOGE": ["", "DOGE", "DOGE", "DOGE"],
-    "DOGS": ["", "TON", "DOGS", "DOGS"],
-    "DOLO": ["", "ETH", "DOLO", "DOLO"],
-    "DOOD": ["", "SOL", "DOOD", "DOOD"],
-    "DOT": ["", "DOT", "DOT", "DOT"],
-    "DRIFT": ["", "SOL", "DRIFT", "DRIFT"],
-    "DUSK": ["", "ETH", "DUSK", "DUSK"],
-    "DYDX": ["", "OSMO", "DYDX", "DYDX"],
-    "DYM": ["", "DYM", "DYM", "DYM"],
-    "EDEN": ["", "ETH", "EDEN", "EDEN"],
-    "EDGE(Definitive)": ["", "BASE", "EDGE", "EDGE"],
-    "EDGE(edgeX)": ["", "ETH", "EDGE", "EDGE"],
-    "EDU": ["", "BNB", "EDU", "EDU"],
-    "EGLD": ["", "EGLD", "EGLD", "EGLD"],
-    "EIGEN": ["", "ETH", "EIGEN", "EIGEN"],
-    "ELF": ["", "ELF", "ELF", "ELF"],
-    "ELSA": ["", "MNT", "ELSA", "ELSA"],
-    "ENA": ["", "ETH", "ENA", "ENA"],
-    "ENJ": ["", "ENJ", "ENJ", "ENJ"],
-    "ENS": ["", "ETH", "ENS", "ENS"],
-    "ENSO": ["", "ETH", "ENSO", "ENSO"],
-    "EPIC": ["", "ETH", "EPIC", "EPIC"],
-    "ERA": ["", "ETH", "ERA", "ERA"],
-    "ESP": ["", "ARB", "ESP", "ESP"],
-    "ESPORTS": ["", "BNB", "ESPORTS", "ESPORTS"],
-    "ETC": ["", "ETC", "ETC", "ETC"],
-    "ETH": ["1027", "ETH", "Ethereum", "ETH"],
-    "ETHFI": ["", "ETH", "ETHFI", "ETHFI"],
-    "ETHW": ["", "ETHW", "ETHW", "ETHW"],
-    "EUL": ["", "ETH", "EUL", "EUL"],
-    "EUR": ["", "", "EUR", "EUR"],
-    "EURI": ["", "ETH", "EURI", "EURI"],
-    "EVAA": ["", "BNB", "EVAA", "EVAA"],
-    "EWJ": ["", "EWJ", "EWJ", "EWJ"],
-    "EWY": ["", "EWY", "EWY", "EWY"],
-    "F": ["", "ETH", "F", "F"],
-    "FARM": ["", "ETH", "FARM", "FARM"],
-    "FARTCOIN": ["", "SOL", "FARTCOIN", "FARTCOIN"],
-    "FCT2": ["", "", "FCT2", "FCT2"],
-    "FDUSD": ["", "ETH", "FDUSD", "FDUSD"],
-    "FET": ["", "FET", "FET", "FET"],
-    "FF": ["", "ETH", "FF", "FF"],
-    "FHE": ["", "ETH", "FHE", "FHE"],
-    "FIDA": ["", "SOL", "FIDA", "FIDA"],
-    "FIGHT": ["", "BNB", "FIGHT", "FIGHT"],
-    "FIL": ["", "FIL", "FIL", "FIL"],
-    "FLOCK": ["", "SOL", "FLOCK", "FLOCK"],
-    "FLOKI": ["", "ETH", "FLOKI", "FLOKI"],
-    "FLOW": ["", "FLOW", "FLOW", "FLOW"],
-    "FLUID": ["", "ETH", "FLUID", "FLUID"],
-    "FLUX": ["", "FLUX", "FLUX", "FLUX"],
-    "FOGO": ["", "FOGO", "FOGO", "FOGO"],
-    "FOLKS": ["", "ETH", "FOLKS", "FOLKS"],
-    "FORM": ["", "BNB", "FORM", "FORM"],
-    "FRAX": ["", "ETH", "FRAX", "FRAX"],
-    "FTT": ["", "BNB", "FTT", "FTT"],
-    "G": ["", "G", "G", "G"],
-    "GALA": ["", "ETH", "GALA", "GALA"],
-    "GAME2": ["", "", "GAME2", "GAME2"],
-    "GAS": ["", "NEO", "GAS", "GAS"],
-    "GENIUS": ["", "BNB", "GENIUS", "GENIUS"],
-    "GIGGLE": ["", "BNB", "GIGGLE", "GIGGLE"],
-    "GLM": ["", "ETH", "GLM", "GLM"],
-    "GLMR": ["", "GLMR", "GLMR", "GLMR"],
-    "GMT": ["", "ETH", "GMT", "GMT"],
-    "GMX": ["", "SOL", "GMX", "GMX"],
-    "GNO": ["", "ETH", "GNO", "GNO"],
-    "GNS": ["", "POL", "GNS", "GNS"],
-    "GOAT": ["", "SOL", "GOAT", "GOAT"],
-    "GOOGL": ["", "HYPE", "GOOGL", "GOOGL"],
-    "GPS": ["", "BNB", "GPS", "GPS"],
-    "GRASS": ["", "SOL", "GRASS", "GRASS"],
-    "GRIFFAIN": ["", "SOL", "GRIFFAIN", "GRIFFAIN"],
-    "GRT": ["", "ETH", "GRT", "GRT"],
-    "GTC": ["", "ETH", "GTC", "GTC"],
-    "GUA": ["", "BNB", "GUA", "GUA"],
-    "GUN": ["", "GUN", "GUN", "GUN"],
-    "GWEI": ["", "ETH", "GWEI", "GWEI"],
-    "H": ["", "ETH", "H", "H"],
-    "HAEDAL": ["", "BNB", "HAEDAL", "HAEDAL"],
-    "HANA": ["", "BNB", "HANA", "HANA"],
-    "HBAR": ["", "HBAR", "HBAR", "HBAR"],
-    "HEI": ["", "ETH", "HEI", "HEI"],
-    "HEMI": ["", "ETH", "HEMI", "HEMI"],
-    "HFT": ["", "ETH", "HFT", "HFT"],
-    "HIGH": ["", "ETH", "HIGH", "HIGH"],
-    "HIVE": ["", "HIVE", "HIVE", "HIVE"],
-    "HMSTR": ["", "HMSTR", "HMSTR", "HMSTR"],
-    "HOLO": ["", "BNB", "HOLO", "HOLO"],
-    "HOME": ["", "BNB", "HOME", "HOME"],
-    "HOOD": ["", "SOL", "HOOD", "HOOD"],
-    "HOT": ["", "ETH", "HOT", "HOT"],
-    "HP": ["", "HP", "HP", "HP"],
-    "HUMA": ["", "BNB", "HUMA", "HUMA"],
-    "HUNT": ["", "ETH", "HUNT", "HUNT"],
-    "HYPE": ["", "HYPE", "HYPE", "HYPE"],
-    "HYPER": ["", "ETH", "HYPER", "HYPER"],
-    "ICNT": ["", "ETH", "ICNT", "ICNT"],
-    "ICP": ["", "ICP", "ICP", "ICP"],
-    "ICX": ["", "ICX", "ICX", "ICX"],
-    "ID": ["", "ETH", "ID", "ID"],
-    "IDOL": ["", "BNB", "IDOL", "IDOL"],
-    "ILV": ["", "ETH", "ILV", "ILV"],
-    "IMX": ["", "ETH", "IMX", "IMX"],
-    "IN": ["", "ETH", "IN", "IN"],
-    "INIT": ["", "INIT", "INIT", "INIT"],
-    "INJ": ["", "ETH", "INJ", "INJ"],
-    "INTC": ["", "INTC", "INTC", "INTC"],
-    "INX": ["", "ETH", "INX", "INX"],
-    "IO": ["", "SOL", "IO", "IO"],
-    "IOST": ["", "IOST", "IOST", "IOST"],
-    "IOTA": ["", "IOTA", "IOTA", "IOTA"],
-    "IOTX": ["", "IOTX", "IOTX", "IOTX"],
-    "IP": ["", "IP", "IP", "IP"],
-    "IQ": ["", "ETH", "IQ", "IQ"],
-    "IRYS": ["", "ETH", "IRYS", "IRYS"],
-    "JASMY": ["", "ETH", "JASMY", "JASMY"],
-    "JCT": ["", "ETH", "JCT", "JCT"],
-    "JELLYJELLY": ["", "SOL", "JELLYJELLY", "JELLYJELLY"],
-    "JOE": ["", "AVAX", "JOE", "JOE"],
-    "JST": ["", "TRX", "JST", "JST"],
-    "JTO": ["", "SOL", "JTO", "JTO"],
-    "JUP": ["", "SOL", "JUP", "JUP"],
-    "JUV": ["", "CHZ", "JUV", "JUV"],
-    "KAIA": ["", "KAIA", "KAIA", "KAIA"],
-    "KAITO": ["", "-", "KAITO", "KAITO"],
-    "KAS": ["", "KAS", "KAS", "KAS"],
-    "KAT": ["", "KAT", "KAT", "KAT"],
-    "KAVA": ["", "ETH", "KAVA", "KAVA"],
-    "KERNEL": ["", "ETH", "KERNEL", "KERNEL"],
-    "KGEN": ["", "BNB", "KGEN", "KGEN"],
-    "KGST": ["", "BNB", "KGST", "KGST"],
-    "KITE": ["", "KITE", "KITE", "KITE"],
-    "KMNO": ["", "SOL", "KMNO", "KMNO"],
-    "KNC": ["", "ETH", "KNC", "KNC"],
-    "KOMA": ["", "BNB", "KOMA", "KOMA"],
-    "KSM": ["", "KSM", "KSM", "KSM"],
-    "LA": ["", "ETH", "LA", "LA"],
-    "LAB": ["", "BNB", "LAB", "LAB"],
-    "LAYER": ["", "SOL", "LAYER", "LAYER"],
-    "LAZIO": ["", "BNB", "LAZIO", "LAZIO"],
-    "LDO": ["", "ETH", "LDO", "LDO"],
-    "LIGHT": ["38506", "BNB", "LIGHT", "LIGHT"],
-    "LINEA": ["", "LINEA", "LINEA", "LINEA"],
-    "LINK": ["", "ETH", "LINK", "LINK"],
-    "LISTA": ["", "BNB", "LISTA", "LISTA"],
-    "LIT": ["", "ETH", "LIT", "LIT"],
-    "LPT": ["", "ETH", "LPT", "LPT"],
-    "LQTY": ["", "ETH", "LQTY", "LQTY"],
-    "LSK": ["", "LSK", "LSK", "LSK"],
-    "LTC": ["", "LTC", "LTC", "LTC"],
-    "LUMIA": ["", "BNB", "LUMIA", "LUMIA"],
-    "LUNA": ["", "LUNA", "LUNA", "LUNA"],
-    "LUNA2": ["", "LUNA", "LUNA2", "LUNA2"],
-    "LUNC": ["", "LUNC", "LUNC", "LUNC"],
-    "LYN": ["", "BNB", "LYN", "LYN"],
-    "M": ["", "M", "M", "M"],
-    "MAGIC": ["", "ETH", "MAGIC", "MAGIC"],
-    "MAGMA": ["", "SUI", "MAGMA", "MAGMA"],
-    "MANA": ["", "ETH", "MANA", "MANA"],
-    "MANTA": ["", "MANTA", "MANTA", "MANTA"],
-    "MANTRA": ["", "MANTRA", "MANTRA", "MANTRA"],
-    "MASK": ["", "ETH", "MASK", "MASK"],
-    "MAV": ["", "ETH", "MAV", "MAV"],
-    "MAVIA": ["", "ETH", "MAVIA", "MAVIA"],
-    "MBL": ["", "ONT", "MBL", "MBL"],
-    "MBOX": ["", "BNB", "MBOX", "MBOX"],
-    "ME": ["", "SOL", "ME", "ME"],
-    "MED": ["", "MED", "MED", "MED"],
-    "MEGA": ["", "MEGA", "MEGA", "MEGA"],
-    "MELANIA": ["", "SOL", "MELANIA", "MELANIA"],
-    "MEME": ["", "ETH", "MEME", "MEME"],
-    "MERL": ["", "ETH", "MERL", "MERL"],
-    "MET": ["", "SOL", "MET", "MET"],
-    "MET2": ["", "SOL", "MET2", "MET2"],
-    "META": ["", "META", "META", "META"],
-    "METIS": ["", "ETH", "METIS", "METIS"],
-    "MEW": ["", "SOL", "MEW", "MEW"],
-    "MINA": ["", "MINA", "MINA", "MINA"],
-    "MIRA": ["", "BNB", "MIRA", "MIRA"],
-    "MITO": ["", "BNB", "MITO", "MITO"],
-    "MLK": ["", "ARB", "MLK", "MLK"],
-    "MLN": ["", "ETH", "MLN", "MLN"],
-    "MMT": ["", "SUI", "MMT", "MMT"],
-    "MNT": ["", "ETH", "MNT", "MNT"],
-    "MOC": ["", "ETH", "MOC", "MOC"],
-    "MOCA": ["", "ETH", "MOCA", "MOCA"],
-    "MOG": ["", "ETH", "MOG", "MOG"],
-    "MON": ["", "MON", "MON", "MON"],
-    "MOODENG": ["", "SOL", "MOODENG", "MOODENG"],
-    "MORPHO": ["", "ETH", "MORPHO", "MORPHO"],
-    "MOVE": ["32452", "APT", "MOVE", "MOVE"],
-    "MOVR": ["", "MOVR", "MOVR", "MOVR"],
-    "MSFT": ["", "MSFT", "MSFT", "MSFT"],
-    "MSTR": ["", "ETH", "MSTR", "MSTR"],
-    "MTL": ["", "MTL", "MTL", "MTL"],
-    "MU": ["", "MU", "MU", "MU"],
-    "MUBARAK": ["", "BNB", "MUBARAK", "MUBARAK"],
-    "MVL": ["", "ETH", "MVL", "MVL"],
-    "MYX": ["", "BNB", "MYX", "MYX"],
-    "NAORIS": ["", "ETH", "NAORIS", "NAORIS"],
-    "NATGAS": ["", "NATGAS", "NATGAS", "NATGAS"],
-    "NEAR": ["", "NEAR", "NEAR", "NEAR"],
-    "NEIRO": ["", "ETH", "NEIRO", "NEIRO"],
-    "NEO": ["", "NEO", "NEO", "NEO"],
-    "NEWT": ["", "ETH", "NEWT", "NEWT"],
-    "NEXO": ["", "ETH", "NEXO", "NEXO"],
-    "NFP": ["", "BNB", "NFP", "NFP"],
-    "NIGHT": ["", "BNB", "NIGHT", "NIGHT"],
-    "NIL": ["", "ETH", "NIL", "NIL"],
-    "NMR": ["", "ETH", "NMR", "NMR"],
-    "NOM": ["", "ETH", "NOM", "NOM"],
-    "NOT": ["", "TON", "NOT", "NOT"],
-    "NVDA": ["", "NVDA", "NVDA", "NVDA"],
-    "NXPC": ["", "BNB", "NXPC", "NXPC"],
-    "OG": ["", "CHZ", "OG", "OG"],
-    "OGN": ["", "ETH", "OGN", "OGN"],
-    "ON": ["", "ETH", "ON", "ON"],
-    "ONDO": ["", "ETH", "ONDO", "ONDO"],
-    "ONE": ["", "ONE", "ONE", "ONE"],
-    "ONG": ["", "BNB", "ONG", "ONG"],
-    "ONT": ["", "ONT", "ONT", "ONT"],
-    "OP": ["", "OP", "OP", "OP"],
-    "OPEN": ["", "ETH", "OPEN", "OPEN"],
-    "OPG": ["", "-", "OPG", "OPG"],
-    "OPN": ["", "ETH", "OPN", "OPN"],
-    "ORBS": ["", "ETH", "ORBS", "ORBS"],
-    "ORCA": ["", "SOL", "ORCA", "ORCA"],
-    "ORDER": ["", "ETH", "ORDER", "ORDER"],
-    "ORDI": ["", "BTC", "ORDI", "ORDI"],
-    "OSMO": ["", "OSMO", "OSMO", "OSMO"],
-    "PARTI": ["", "BNB", "PARTI", "PARTI"],
-    "PAXG": ["", "ETH", "PAXG", "PAXG"],
-    "PAYP": ["", "PAYP", "PAYP", "PAYP"],
-    "PENDLE": ["", "ETH", "PENDLE", "PENDLE"],
-    "PENGU": ["", "SOL", "PENGU", "PENGU"],
-    "PEOPLE": ["", "ETH", "PEOPLE", "PEOPLE"],
-    "PEPE": ["", "ETH", "PEPE", "PEPE"],
-    "PHA": ["", "PHA", "PHA", "PHA"],
-    "PHB": ["", "PHB", "PHB", "PHB"],
-    "PIEVERSE": ["", "ETH", "PIEVERSE", "PIEVERSE"],
-    "PIPPIN": ["", "SOL", "PIPPIN", "PIPPIN"],
-    "PIVX": ["", "PIVX", "PIVX", "PIVX"],
-    "PIXEL": ["", "ETH", "PIXEL", "PIXEL"],
-    "PLAY": ["", "-", "PLAY", "PLAY"],
-    "PLTR": ["", "PLTR", "PLTR", "PLTR"],
-    "PLUME": ["", "PLUME", "PLUME", "PLUME"],
-    "PNUT": ["", "SOL", "PNUT", "PNUT"],
-    "POKT": ["", "ETH", "POKT", "POKT"],
-    "POL": ["", "ETH", "POL", "POL"],
-    "POLYX": ["", "POLYX", "POLYX", "POLYX"],
-    "POND": ["", "ETH", "POND", "POND"],
-    "POPCAT": ["", "SOL", "POPCAT", "POPCAT"],
-    "PORTAL": ["", "ETH", "PORTAL", "PORTAL"],
-    "PORTO": ["", "BNB", "PORTO", "PORTO"],
-    "POWER": ["", "ETH", "POWER", "POWER"],
-    "POWR": ["", "ETH", "POWR", "POWR"],
-    "PRL": ["", "BNB", "PRL", "PRL"],
-    "PROM": ["", "ETH", "PROM", "PROM"],
-    "PROMPT": ["", "ETH", "PROMPT", "PROMPT"],
-    "PROVE": ["", "ETH", "PROVE", "PROVE"],
-    "PSG": ["", "CHZ", "PSG", "PSG"],
-    "PTB": ["", "ETH", "PTB", "PTB"],
-    "PUMP": ["", "SOL", "PUMP", "PUMP"],
-    "PUMPBTC": ["36166", "BNB", "PUMPBTC", "PUMPBTC"],
-    "PUNDIX": ["", "ETH", "PUNDIX", "PUNDIX"],
-    "PYR": ["", "ETH", "PYR", "PYR"],
-    "PYTH": ["", "SOL", "PYTH", "PYTH"],
-    "Q": ["", "ETH", "Q", "Q"],
-    "QI": ["", "AVAX", "QI", "QI"],
-    "QKC": ["", "ETH", "QKC", "QKC"],
-    "QNT": ["", "ETH", "QNT", "QNT"],
-    "QQQ": ["", "QQQ", "QQQ", "QQQ"],
-    "QTUM": ["", "QTUM", "QTUM", "QTUM"],
-    "QUICK": ["19966", "ETH", "QUICK", "QUICK"],
-    "RAD": ["", "RAD", "RAD", "RAD"],
-    "RARE": ["", "ETH", "RARE", "RARE"],
-    "RATS": ["", "BTC", "RATS", "RATS"],
-    "RAVE": ["", "ETH", "RAVE", "RAVE"],
-    "RAY": ["", "SOL", "RAY", "RAY"],
-    "RAYSOL": ["", "SOL", "RAYSOL", "RAYSOL"],
-    "RECALL": ["", "-", "RECALL", "RECALL"],
-    "RED": ["", "ETH", "RED", "RED"],
-    "RENDER": ["", "ETH", "RENDER", "RENDER"],
-    "REQ": ["", "ETH", "REQ", "REQ"],
-    "RESOLV": ["", "ETH", "RESOLV", "RESOLV"],
-    "REZ": ["", "ETH", "REZ", "REZ"],
-    "RIF": ["", "ETH", "RIF", "RIF"],
-    "RIVER": ["", "ETH", "RIVER", "RIVER"],
-    "RLC": ["", "ETH", "RLC", "RLC"],
-    "RLUSD": ["", "XRP", "RLUSD", "RLUSD"],
-    "ROBO": ["", "ETH", "ROBO", "ROBO"],
-    "RONIN": ["", "RON", "RONIN", "RONIN"],
-    "ROSE": ["", "BNB", "ROSE", "ROSE"],
-    "RPL": ["", "ETH", "RPL", "RPL"],
-    "RSR": ["", "ETH", "RSR", "RSR"],
-    "RUNE": ["", "RUNE", "RUNE", "RUNE"],
-    "RVN": ["", "RVN", "RVN", "RVN"],
-    "S": ["", "S", "S", "S"],
-    "SAFE": ["", "ETH", "SAFE", "SAFE"],
-    "SAGA": ["", "ETH", "SAGA", "SAGA"],
-    "SAHARA": ["", "SAHARA", "SAHARA", "SAHARA"],
-    "SAND": ["", "ETH", "SAND", "SAND"],
-    "SANTOS": ["", "BNB", "SANTOS", "SANTOS"],
-    "SAPIEN": ["", "-", "SAPIEN", "SAPIEN"],
-    "SATS": ["", "BTC", "SATS", "SATS"],
-    "SC": ["", "SC", "SC", "SC"],
-    "SCR": ["", "SCR", "SCR", "SCR"],
-    "SCRT": ["", "SCRT", "SCRT", "SCRT"],
-    "SEI": ["", "SEI", "SEI", "SEI"],
-    "SENT": ["", "ETH", "SENT", "SENT"],
-    "SFP": ["", "BNB", "SFP", "SFP"],
-    "SHELL": ["", "ETH", "SHELL", "SHELL"],
-    "SHIB": ["", "ETH", "SHIB", "SHIB"],
-    "SIGN": ["", "ETH", "SIGN", "SIGN"],
-    "SIREN": ["", "BNB", "SIREN", "SIREN"],
-    "SKL": ["", "ETH", "SKL", "SKL"],
-    "SKR": ["", "SOL", "SKR", "SKR"],
-    "SKY": ["", "ETH", "SKY", "SKY"],
-    "SKYAI": ["", "BNB", "SKYAI", "SKYAI"],
-    "SLP": ["", "ETH", "SLP", "SLP"],
-    "SNDK": ["", "SNDK", "SNDK", "SNDK"],
-    "SNT": ["", "ETH", "SNT", "SNT"],
-    "SNX": ["", "ETH", "SNX", "SNX"],
-    "SOL": ["", "Solana", "SOL", "SOL"],
-    "SOLV": ["", "BNB", "SOLV", "SOLV"],
-    "SOMI": ["", "SOMI", "SOMI", "SOMI"],
-    "SONIC": ["", "SOL", "SONIC", "SONIC"],
-    "SOON": ["", "BNB", "SOON", "SOON"],
-    "SOPH": ["", "ETH", "SOPH", "SOPH"],
-    "SPACE": ["", "ETH", "SPACE", "SPACE"],
-    "SPELL": ["", "ETH", "SPELL", "SPELL"],
-    "SPK": ["", "ETH", "SPK", "SPK"],
-    "SPORTFUN": ["38647", "SOL", "SPORTFUN", "SPORTFUN"],
-    "SPX": ["", "ETH", "SPX", "SPX"],
-    "SPY": ["", "BNB", "SPY", "SPY"],
-    "SQD": ["", "ARB", "SQD", "SQD"],
-    "SSV": ["", "ETH", "SSV", "SSV"],
-    "STABLE": ["", "STABLE", "STABLE", "STABLE"],
-    "STBL": ["", "BNB", "STBL", "STBL"],
-    "STEEM": ["", "STEEM", "STEEM", "STEEM"],
-    "STG": ["", "ETH", "STG", "STG"],
-    "STO": ["", "ETH", "STO", "STO"],
-    "STORJ": ["", "ETH", "STORJ", "STORJ"],
-    "STRAX": ["", "STRAX", "STRAX", "STRAX"],
-    "STRK": ["", "ETH", "STRK", "STRK"],
-    "STX": ["", "STX", "STX", "STX"],
-    "SUI": ["", "SUI", "SUI", "SUI"],
-    "SUN": ["", "TRX", "SUN", "SUN"],
-    "SUPER": ["", "ETH", "SUPER", "SUPER"],
-    "SUSHI": ["", "ETH", "SUSHI", "SUSHI"],
-    "SWARMS": ["", "SOL", "SWARMS", "SWARMS"],
-    "SXT": ["", "ETH", "SXT", "SXT"],
-    "SYN": ["", "ETH", "SYN", "SYN"],
-    "SYRUP": ["", "ETH", "SYRUP", "SYRUP"],
-    "SYS": ["", "SYS", "SYS", "SYS"],
-    "T": ["", "ETH", "T", "T"],
-    "TA": ["", "BNB", "TA", "TA"],
-    "TAC": ["", "ETH", "TAC", "TAC"],
-    "TAG": ["", "BNB", "TAG", "TAG"],
-    "TAIKO": ["", "TAIKO", "TAIKO", "TAIKO"],
-    "TAKE": ["", "BNB", "TAKE", "TAKE"],
-    "TAO": ["", "TAO", "TAO", "TAO"],
-    "TFUEL": ["", "TFUEL", "TFUEL", "TFUEL"],
-    "THE": ["", "BNB", "THE", "THE"],
-    "THETA": ["", "THETA", "THETA", "THETA"],
-    "TIA": ["", "OSMO", "TIA", "TIA"],
-    "TKO": ["", "BNB", "TKO", "TKO"],
-    "TLM": ["", "ETH", "TLM", "TLM"],
-    "TNSR": ["", "SOL", "TNSR", "TNSR"],
-    "TOKAMAK": ["", "ETH", "TOKAMAK", "TOKAMAK"],
-    "TON": ["", "TON", "TON", "TON"],
-    "TOSHI": ["", "BNB", "TOSHI", "TOSHI"],
-    "TOWNS": ["", "ETH", "TOWNS", "TOWNS"],
-    "TRADOOR": ["", "BNB", "TRADOOR", "TRADOOR"],
-    "TRB": ["", "ETH", "TRB", "TRB"],
-    "TREE": ["", "ETH", "TREE", "TREE"],
-    "TRIA": ["", "ETH", "TRIA", "TRIA"],
-    "TRUMP": ["", "SOL", "TRUMP", "TRUMP"],
-    "TRUST": ["", "-", "TRUST", "TRUST"],
-    "TRUTH": ["", "SUI", "TRUTH", "TRUTH"],
-    "TRX": ["", "TRX", "TRX", "TRX"],
-    "TSLA": ["", "HYPE", "TSLA", "TSLA"],
-    "TSM": ["", "TSM", "TSM", "TSM"],
-    "TST": ["", "BNB", "TST", "TST"],
-    "TT": ["", "TT", "TT", "TT"],
-    "TURBO": ["", "ETH", "TURBO", "TURBO"],
-    "TURTLE": ["", "ETH", "TURTLE", "TURTLE"],
-    "TUSD": ["", "ETH", "TUSD", "TUSD"],
-    "TUT": ["", "BNB", "TUT", "TUT"],
-    "TWT": ["", "BNB", "TWT", "TWT"],
-    "U": ["", "BNB", "U", "U"],
-    "UAI": ["", "BNB", "UAI", "UAI"],
-    "UB": ["", "ETH", "UB", "UB"],
-    "UMA": ["", "ETH", "UMA", "UMA"],
-    "UNI": ["", "ETH", "UNI", "UNI"],
-    "US": ["", "SUI", "US", "US"],
-    "USD1": ["", "ETH", "USD1", "USD1"],
-    "USDC": ["", "ETH", "USDC", "USDC"],
-    "USDE": ["", "ETH", "USDE", "USDE"],
-    "USDP": ["", "ETH", "USDP", "USDP"],
-    "USDS": ["33039", "ETH", "USDS", "USDS"],
-    "USDT": ["825", "ETH", "USDT", "USDT"],
-    "USELESS": ["", "SOL", "USELESS", "USELESS"],
-    "USTC": ["", "USTC", "USTC", "USTC"],
-    "USUAL": ["", "ETH", "USUAL", "USUAL"],
-    "VANA": ["", "ETH", "VANA", "VANA"],
-    "VANRY": ["", "ETH", "VANRY", "VANRY"],
-    "VELODROME": ["20435", "OP", "VELODROME", "VELODROME"],
-    "VELVET": ["", "BNB", "VELVET", "VELVET"],
-    "VET": ["", "VET", "VET", "VET"],
-    "VIC": ["", "VIC", "VIC", "VIC"],
-    "VIRTUAL": ["", "ETH", "VIRTUAL", "VIRTUAL"],
-    "VTHO": ["", "VET", "VTHO", "VTHO"],
-    "VVV": ["", "-", "VVV", "VVV"],
-    "W": ["", "ETH", "W", "W"],
-    "WAL": ["", "SUI", "WAL", "WAL"],
-    "WAVES": ["", "WAVES", "WAVES", "WAVES"],
-    "WAXP": ["", "WAXP", "WAXP", "WAXP"],
-    "WBETH": ["24760", "ETH", "WBETH", "WBETH"],
-    "WBTC": ["", "ETH", "WBTC", "WBTC"],
-    "WCT": ["", "ETH", "WCT", "WCT"],
-    "WET": ["", "SOL", "WET", "WET"],
-    "WIF": ["", "SOL", "WIF", "WIF"],
-    "WIN": ["", "BNB", "WIN", "WIN"],
-    "WLD": ["", "ETH", "WLD", "WLD"],
-    "WLFI": ["", "ETH", "WLFI", "WLFI"],
-    "WOO": ["", "ETH", "WOO", "WOO"],
-    "XAG": ["", "XAG", "XAG", "XAG"],
-    "XAI": ["", "ARB", "XAI", "XAI"],
-    "XAN": ["", "ETH", "XAN", "XAN"],
-    "XAU": ["", "ETH", "XAU", "XAU"],
-    "XAUT": ["", "ETH", "XAUT", "XAUT"],
-    "XCN": ["", "ETH", "Onyxcoin", "XCN"],
-    "XEC": ["", "XEC", "XEC", "XEC"],
-    "XLM": ["", "XLM", "XLM", "XLM"],
-    "XMR": ["", "XMR", "XMR", "XMR"],
-    "XNO": ["", "XNO", "XNO", "XNO"],
-    "XNY": ["", "BNB", "XNY", "XNY"],
-    "XPD": ["", "XPD", "XPD", "XPD"],
-    "XPIN": ["", "BNB", "XPIN", "XPIN"],
-    "XPL": ["", "XPL", "XPL", "XPL"],
-    "XPT": ["", "XPT", "XPT", "XPT"],
-    "XRP": ["", "XRP", "XRP", "XRP"],
-    "XTZ": ["", "XTZ", "XTZ", "XTZ"],
-    "XUSD": ["", "ETH", "XUSD", "XUSD"],
-    "XVG": ["", "XVG", "XVG", "XVG"],
-    "XVS": ["", "ETH", "XVS", "XVS"],
-    "YB": ["", "ETH", "YB", "YB"],
-    "YFI": ["", "ETH", "YFI", "YFI"],
-    "YGG": ["", "ETH", "YGG", "YGG"],
-    "ZAMA": ["", "ETH", "ZAMA", "ZAMA"],
-    "ZBT": ["", "ETH", "ZBT", "ZBT"],
-    "ZEC": ["", "ZEC", "ZEC", "ZEC"],
-    "ZEN": ["", "ZEN", "ZEN", "ZEN"],
-    "ZEREBRO": ["", "SOL", "ZEREBRO", "ZEREBRO"],
-    "ZETA": ["", "ETH", "ZETA", "ZETA"],
-    "ZIL": ["", "ZIL", "ZIL", "ZIL"],
-    "ZK": ["", "ZK", "ZK", "ZK"],
-    "ZKC": ["", "ETH", "ZKC", "ZKC"],
-    "ZKP": ["", "ETH", "ZKP", "ZKP"],
-    "ZORA": ["", "-", "ZORA", "ZORA"],
-    "ZRO": ["", "ETH", "ZRO", "ZRO"],
-    "ZRX": ["", "ETH", "ZRX", "ZRX"],
-    "币安人生": ["38590", "BNB"],
-    "我踏马来了": ["39322", "BNB"],
-    "龙虾": ["39671", "BNB"]
-  }
+    "CHAIN_LOGO_MAP": {
+        "ETH": "https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png",
+        "BNB": "https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png",
+        "SOL": "https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png",
+        "SUI": "https://s2.coinmarketcap.com/static/img/coins/64x64/20947.png"
+    },
+    "__MEMO_1": "BTC ETH 파생형 너무 많아서 고정 + 중국어 포함 모든 언어 티커 대응",
+    "__MEMO_2": "-------------------------------------------------------------",
+    "EXCLUSION_LIST": [
+        "BTCDOM",
+        "ALL",
+        "COIN"
+    ],
+    "HARDCODE_VERIFY_SKIP_LIST": [
+        "币安人生",
+        "我踏马来了",
+        "龙虾"
+    ],
+    "NOTE_MAP": {
+        "币安人生": "bianrensheng",
+        "我踏马来了": "wotamalaile",
+        "龙虾": "lobster-2"
+    },
+    "MANUAL_SUPPLY_MAP": {},
+    "SYMBOL_TO_ID_MAP": {
+        "BTC": "1",
+        "USDT": "825",
+        "ETH": "1027",
+        "FXS": "6953",
+        "QUICK": "19966",
+        "VELODROME": "20435",
+        "WBETH": "24760",
+        "1000RATS": "28452",
+        "AI": "28846",
+        "GAME": "31246",
+        "MOVE": "32452",
+        "USDS": "33039",
+        "ACT": "33566",
+        "AVAAI": "34116",
+        "BROCCOLI714": "35749",
+        "BROCCOLIF3B": "35753",
+        "PUMPBTC": "36166",
+        "LIGHT": "38506",
+        "4": "38557",
+        "币安人生": "38590",
+        "SPORTFUN": "38647",
+        "我踏马来了": "39322",
+        "龙虾": "39671",
+        "AIGENSYN": "39883"
+    },
+    "SPECIAL_SYMBOL_MAP": {
+        "DODOX": "DODO",
+        "LUNA2": "LUNA",
+        "RAYSOL": "RAY",
+        "RONIN": "RON",
+        "FCT2": "FCT",
+        "GAME2": "GAME"
+    },
+    "DUPLICATED_LIST": {
+        "BOB(BNB)": [
+            "34422",
+            "",
+            "1000000BOB",
+            "binance"
+        ],
+        "BOB(BTC)": [
+            "38970",
+            "",
+            "BOB",
+            "binance"
+        ],
+        "EDGE(Definitive)": [
+            "36288",
+            "",
+            "EDGE",
+            "upbit"
+        ],
+        "EDGE(edgeX)": [
+            "39720",
+            "",
+            "EDGE",
+            "binance"
+        ],
+        "BEAMX": [
+            "28298",
+            "ETH",
+            "BEAMX",
+            "binance"
+        ],
+        "BEAM": [
+            "28298",
+            "ETH",
+            "BEAM",
+            "upbit"
+        ],
+        "MET": [
+            "38353",
+            "SOL",
+            "MET",
+            "binance"
+        ],
+        "MET2": [
+            "38353",
+            "SOL",
+            "MET",
+            "upbit"
+        ],
+        "BTTC": [
+            "16086",
+            "TRX",
+            "BTTC",
+            "binance"
+        ],
+        "BTT": [
+            "16086",
+            "TRX",
+            "BTT",
+            "upbit"
+        ]
+    },
+    "TICKER_DATA": {
+        "0G": [
+            "",
+            "ETH",
+            "0G",
+            "0G"
+        ],
+        "1INCH": [
+            "",
+            "ETH",
+            "1INCH",
+            "1INCH"
+        ],
+        "2Z": [
+            "",
+            "SOL",
+            "2Z",
+            "2Z"
+        ],
+        "4": [
+            "38557",
+            "BNB",
+            "4",
+            "4"
+        ],
+        "A": [
+            "",
+            "A",
+            "A",
+            "A"
+        ],
+        "AAPL": [
+            "",
+            "HYPE",
+            "AAPL",
+            "AAPL"
+        ],
+        "AAVE": [
+            "",
+            "ETH",
+            "AAVE",
+            "AAVE"
+        ],
+        "ACE": [
+            "",
+            "BNB",
+            "ACE",
+            "ACE"
+        ],
+        "ACH": [
+            "",
+            "ETH",
+            "ACH",
+            "ACH"
+        ],
+        "ACM": [
+            "",
+            "CHZ",
+            "ACM",
+            "ACM"
+        ],
+        "ACT": [
+            "33566",
+            "SOL",
+            "ACT",
+            "ACT"
+        ],
+        "ACU": [
+            "",
+            "ETH",
+            "ACU",
+            "ACU"
+        ],
+        "ACX": [
+            "",
+            "ETH",
+            "ACX",
+            "ACX"
+        ],
+        "ADA": [
+            "",
+            "ADA",
+            "ADA",
+            "ADA"
+        ],
+        "ADX": [
+            "",
+            "ETH",
+            "ADX",
+            "ADX"
+        ],
+        "AERGO": [
+            "",
+            "AERGO",
+            "AERGO",
+            "AERGO"
+        ],
+        "AERO": [
+            "",
+            "-",
+            "AERO",
+            "AERO"
+        ],
+        "AEUR": [
+            "",
+            "ETH",
+            "AEUR",
+            "AEUR"
+        ],
+        "AEVO": [
+            "",
+            "ETH",
+            "AEVO",
+            "AEVO"
+        ],
+        "AGLD": [
+            "",
+            "ETH",
+            "AGLD",
+            "AGLD"
+        ],
+        "AGT": [
+            "",
+            "BNB",
+            "AGT",
+            "AGT"
+        ],
+        "AHT": [
+            "",
+            "AHT",
+            "AHT",
+            "AHT"
+        ],
+        "AI": [
+            "28846",
+            "BNB",
+            "AI",
+            "AI"
+        ],
+        "AIA": [
+            "",
+            "BNB",
+            "AIA",
+            "AIA"
+        ],
+        "AIGENSYN": [
+            "39883",
+            "",
+            "AIGENSYN",
+            "AIGENSYN"
+        ],
+        "AIN": [
+            "",
+            "BNB",
+            "AIN",
+            "AIN"
+        ],
+        "AIO": [
+            "",
+            "BNB",
+            "AIO",
+            "AIO"
+        ],
+        "AIOT": [
+            "",
+            "BNB",
+            "AIOT",
+            "AIOT"
+        ],
+        "AIXBT": [
+            "",
+            "ETH",
+            "AIXBT",
+            "AIXBT"
+        ],
+        "AKE": [
+            "",
+            "BNB",
+            "AKE",
+            "AKE"
+        ],
+        "AKT": [
+            "",
+            "AKT",
+            "AKT",
+            "AKT"
+        ],
+        "ALCH": [
+            "",
+            "SOL",
+            "ALCH",
+            "ALCH"
+        ],
+        "ALCX": [
+            "",
+            "ETH",
+            "ALCX",
+            "ALCX"
+        ],
+        "ALGO": [
+            "",
+            "ALGO",
+            "ALGO",
+            "ALGO"
+        ],
+        "ALICE": [
+            "",
+            "ETH",
+            "ALICE",
+            "ALICE"
+        ],
+        "ALLO": [
+            "",
+            "ETH",
+            "ALLO",
+            "ALLO"
+        ],
+        "ALPINE": [
+            "",
+            "BNB",
+            "ALPINE",
+            "ALPINE"
+        ],
+        "ALT": [
+            "",
+            "ETH",
+            "ALT",
+            "ALT"
+        ],
+        "AMP": [
+            "",
+            "ETH",
+            "AMP",
+            "AMP"
+        ],
+        "AMZN": [
+            "",
+            "HYPE",
+            "AMZN",
+            "AMZN"
+        ],
+        "ANIME": [
+            "",
+            "ETH",
+            "ANIME",
+            "ANIME"
+        ],
+        "ANKR": [
+            "",
+            "ETH",
+            "ANKR",
+            "ANKR"
+        ],
+        "APE": [
+            "",
+            "ETH",
+            "APE",
+            "APE"
+        ],
+        "API3": [
+            "",
+            "ETH",
+            "API3",
+            "API3"
+        ],
+        "APR": [
+            "",
+            "ETH",
+            "APR",
+            "APR"
+        ],
+        "APT": [
+            "",
+            "APT",
+            "APT",
+            "APT"
+        ],
+        "AQT": [
+            "",
+            "ETH",
+            "AQT",
+            "AQT"
+        ],
+        "AR": [
+            "",
+            "AR",
+            "AR",
+            "AR"
+        ],
+        "ARB": [
+            "",
+            "ARB",
+            "ARB",
+            "ARB"
+        ],
+        "ARC": [
+            "",
+            "SOL",
+            "ARC",
+            "ARC"
+        ],
+        "ARDR": [
+            "",
+            "ARDR",
+            "ARDR",
+            "ARDR"
+        ],
+        "ARIA": [
+            "",
+            "BNB",
+            "ARIA",
+            "ARIA"
+        ],
+        "ARK": [
+            "",
+            "ARK",
+            "ARK",
+            "ARK"
+        ],
+        "ARKM": [
+            "",
+            "ETH",
+            "ARKM",
+            "ARKM"
+        ],
+        "ARPA": [
+            "",
+            "ETH",
+            "ARPA",
+            "ARPA"
+        ],
+        "ASR": [
+            "",
+            "CHZ",
+            "ASR",
+            "ASR"
+        ],
+        "ASTER": [
+            "",
+            "BNB",
+            "ASTER",
+            "ASTER"
+        ],
+        "ASTR": [
+            "",
+            "ASTR",
+            "ASTR",
+            "ASTR"
+        ],
+        "AT": [
+            "",
+            "ETH",
+            "AT",
+            "AT"
+        ],
+        "ATA": [
+            "",
+            "ETH",
+            "ATA",
+            "ATA"
+        ],
+        "ATH": [
+            "",
+            "ETH",
+            "ATH",
+            "ATH"
+        ],
+        "ATM": [
+            "",
+            "CHZ",
+            "ATM",
+            "ATM"
+        ],
+        "ATOM": [
+            "",
+            "ATOM",
+            "ATOM",
+            "ATOM"
+        ],
+        "AUCTION": [
+            "",
+            "ETH",
+            "AUCTION",
+            "AUCTION"
+        ],
+        "AUDIO": [
+            "",
+            "ETH",
+            "AUDIO",
+            "AUDIO"
+        ],
+        "AVA": [
+            "",
+            "ETH",
+            "AVA",
+            "AVA"
+        ],
+        "AVAAI": [
+            "34116",
+            "SOL",
+            "AVAAI",
+            "AVAAI"
+        ],
+        "AVAX": [
+            "",
+            "AVAX",
+            "AVAX",
+            "AVAX"
+        ],
+        "AVGO": [
+            "",
+            "AVGO",
+            "AVGO",
+            "AVGO"
+        ],
+        "AVNT": [
+            "",
+            "-",
+            "AVNT",
+            "AVNT"
+        ],
+        "AWE": [
+            "",
+            "-",
+            "AWE",
+            "AWE"
+        ],
+        "AXL": [
+            "",
+            "ETH",
+            "AXL",
+            "AXL"
+        ],
+        "AXS": [
+            "",
+            "ETH",
+            "AXS",
+            "AXS"
+        ],
+        "AZTEC": [
+            "",
+            "ETH",
+            "AZTEC",
+            "AZTEC"
+        ],
+        "B": [
+            "",
+            "BNB",
+            "B",
+            "B"
+        ],
+        "B2": [
+            "",
+            "BNB",
+            "B2",
+            "B2"
+        ],
+        "BABA": [
+            "",
+            "BABA",
+            "BABA",
+            "BABA"
+        ],
+        "BABY": [
+            "",
+            "BABY",
+            "BABY",
+            "BABY"
+        ],
+        "BABYDOGE": [
+            "",
+            "ETH",
+            "BABYDOGE",
+            "BABYDOGE"
+        ],
+        "BAN": [
+            "",
+            "SOL",
+            "BAN",
+            "BAN"
+        ],
+        "BANANA": [
+            "",
+            "ETH",
+            "BANANA",
+            "BANANA"
+        ],
+        "BANANAS31": [
+            "",
+            "BNB",
+            "BANANAS31",
+            "BANANAS31"
+        ],
+        "BAND": [
+            "",
+            "ETH",
+            "BAND",
+            "BAND"
+        ],
+        "BANK": [
+            "",
+            "BNB",
+            "BANK",
+            "BANK"
+        ],
+        "BAR": [
+            "",
+            "CHZ",
+            "BAR",
+            "BAR"
+        ],
+        "BARD": [
+            "",
+            "ETH",
+            "BARD",
+            "BARD"
+        ],
+        "BAS": [
+            "",
+            "BNB",
+            "BAS",
+            "BAS"
+        ],
+        "BASED": [
+            "",
+            "ETH",
+            "BASED",
+            "BASED"
+        ],
+        "BAT": [
+            "",
+            "ETH",
+            "BAT",
+            "BAT"
+        ],
+        "BB": [
+            "",
+            "BB",
+            "BB",
+            "BB"
+        ],
+        "BCH": [
+            "",
+            "BCH",
+            "BCH",
+            "BCH"
+        ],
+        "BEAM": [
+            "",
+            "ETH",
+            "Beam",
+            "BEAM"
+        ],
+        "BEAMX": [
+            "",
+            "ETH",
+            "BEAMX",
+            "BEAMX"
+        ],
+        "BEAT": [
+            "",
+            "BNB",
+            "BEAT",
+            "BEAT"
+        ],
+        "BEL": [
+            "",
+            "ETH",
+            "BEL",
+            "BEL"
+        ],
+        "BERA": [
+            "",
+            "BERA",
+            "BERA",
+            "BERA"
+        ],
+        "BFUSD": [
+            "",
+            "BFUSD",
+            "BFUSD",
+            "BFUSD"
+        ],
+        "BICO": [
+            "",
+            "ETH",
+            "BICO",
+            "BICO"
+        ],
+        "BIGTIME": [
+            "",
+            "ETH",
+            "BIGTIME",
+            "BIGTIME"
+        ],
+        "BIO": [
+            "",
+            "ETH",
+            "BIO",
+            "BIO"
+        ],
+        "BIRB": [
+            "",
+            "SOL",
+            "BIRB",
+            "BIRB"
+        ],
+        "BLAST": [
+            "",
+            "BLAST",
+            "BLAST",
+            "BLAST"
+        ],
+        "BLEND": [
+            "",
+            "ETH",
+            "Fluent",
+            "BLEND"
+        ],
+        "BLESS": [
+            "",
+            "BNB",
+            "BLESS",
+            "BLESS"
+        ],
+        "BLUAI": [
+            "",
+            "BNB",
+            "BLUAI",
+            "BLUAI"
+        ],
+        "BLUR": [
+            "",
+            "ETH",
+            "BLUR",
+            "BLUR"
+        ],
+        "BMT": [
+            "",
+            "BNB",
+            "BMT",
+            "BMT"
+        ],
+        "BNB": [
+            "1839",
+            "BNB",
+            "BNB",
+            "BNB"
+        ],
+        "BNSOL": [
+            "",
+            "SOL",
+            "BNSOL",
+            "BNSOL"
+        ],
+        "BNT": [
+            "",
+            "ETH",
+            "BNT",
+            "BNT"
+        ],
+        "BOB(BNB)": [
+            "",
+            "BNB",
+            "BOB",
+            "BOB"
+        ],
+        "BOB(BTC)": [
+            "38970",
+            "BOB"
+        ],
+        "BOME": [
+            "",
+            "SOL",
+            "BOME",
+            "BOME"
+        ],
+        "BONK": [
+            "",
+            "SOL",
+            "BONK",
+            "BONK"
+        ],
+        "BORA": [
+            "",
+            "KAIA",
+            "BORA",
+            "BORA"
+        ],
+        "BOUNTY": [
+            "",
+            "ARB",
+            "BOUNTY",
+            "BOUNTY"
+        ],
+        "BR": [
+            "",
+            "BNB",
+            "BR",
+            "BR"
+        ],
+        "BRETT": [
+            "",
+            "-",
+            "BRETT",
+            "BRETT"
+        ],
+        "BREV": [
+            "",
+            "ETH",
+            "BREV",
+            "BREV"
+        ],
+        "BROCCOLI714": [
+            "35749",
+            "BNB",
+            "BROCCOLI714",
+            "BROCCOLI714"
+        ],
+        "BROCCOLIF3B": [
+            "35753",
+            "BNB",
+            "BROCCOLIF3B",
+            "BROCCOLIF3B"
+        ],
+        "BSB": [
+            "",
+            "BNB",
+            "BSB",
+            "BSB"
+        ],
+        "BSV": [
+            "",
+            "BSV",
+            "BSV",
+            "BSV"
+        ],
+        "BTC": [
+            "1",
+            "BTC",
+            "BTC",
+            "BTC"
+        ],
+        "BTR": [
+            "",
+            "BTR",
+            "BTR",
+            "BTR"
+        ],
+        "BTT": [
+            "",
+            "TRX",
+            "BTT",
+            "BTT"
+        ],
+        "BTTC": [
+            "",
+            "",
+            "BTTC",
+            "BTTC"
+        ],
+        "BULLA": [
+            "",
+            "BNB",
+            "BULLA",
+            "BULLA"
+        ],
+        "BZ": [
+            "",
+            "BZ",
+            "BZ",
+            "BZ"
+        ],
+        "C": [
+            "",
+            "BNB",
+            "C",
+            "C"
+        ],
+        "C98": [
+            "",
+            "ETH",
+            "C98",
+            "C98"
+        ],
+        "CAKE": [
+            "",
+            "ETH",
+            "CAKE",
+            "CAKE"
+        ],
+        "CARV": [
+            "",
+            "ETH",
+            "CARV",
+            "CARV"
+        ],
+        "CAT": [
+            "",
+            "BNB",
+            "CAT",
+            "CAT"
+        ],
+        "CATI": [
+            "",
+            "TON",
+            "CATI",
+            "CATI"
+        ],
+        "CBK": [
+            "",
+            "ETH",
+            "CBK",
+            "CBK"
+        ],
+        "CC": [
+            "",
+            "CC",
+            "CC",
+            "CC"
+        ],
+        "CELO": [
+            "",
+            "CELO",
+            "CELO",
+            "CELO"
+        ],
+        "CELR": [
+            "",
+            "ETH",
+            "CELR",
+            "CELR"
+        ],
+        "CETUS": [
+            "",
+            "SUI",
+            "CETUS",
+            "CETUS"
+        ],
+        "CFG": [
+            "",
+            "CFG",
+            "CFG",
+            "CFG"
+        ],
+        "CFX": [
+            "",
+            "CFX",
+            "CFX",
+            "CFX"
+        ],
+        "CGPT": [
+            "",
+            "ETH",
+            "CGPT",
+            "CGPT"
+        ],
+        "CHEEMS": [
+            "",
+            "BNB",
+            "CHEEMS",
+            "CHEEMS"
+        ],
+        "CHILLGUY": [
+            "",
+            "SOL",
+            "CHILLGUY",
+            "CHILLGUY"
+        ],
+        "CHIP": [
+            "",
+            "CHIP",
+            "CHIP",
+            "CHIP"
+        ],
+        "CHR": [
+            "",
+            "ETH",
+            "CHR",
+            "CHR"
+        ],
+        "CHZ": [
+            "",
+            "ETH",
+            "CHZ",
+            "CHZ"
+        ],
+        "CITY": [
+            "",
+            "CHZ",
+            "CITY",
+            "CITY"
+        ],
+        "CKB": [
+            "",
+            "CKB",
+            "CKB",
+            "CKB"
+        ],
+        "CL": [
+            "",
+            "CL",
+            "CL",
+            "CL"
+        ],
+        "CLANKER": [
+            "",
+            "-",
+            "CLANKER",
+            "CLANKER"
+        ],
+        "CLO": [
+            "",
+            "BNB",
+            "CLO",
+            "CLO"
+        ],
+        "COAI": [
+            "",
+            "BNB",
+            "COAI",
+            "COAI"
+        ],
+        "COIN": [
+            "32125",
+            "SOL"
+        ],
+        "COLLECT": [
+            "",
+            "BNB",
+            "COLLECT",
+            "COLLECT"
+        ],
+        "COMP": [
+            "",
+            "ETH",
+            "COMP",
+            "COMP"
+        ],
+        "COOKIE": [
+            "",
+            "BNB",
+            "COOKIE",
+            "COOKIE"
+        ],
+        "COPPER": [
+            "",
+            "SOL",
+            "COPPER",
+            "COPPER"
+        ],
+        "COS": [
+            "",
+            "BNB",
+            "COS",
+            "COS"
+        ],
+        "COTI": [
+            "",
+            "COTI",
+            "COTI",
+            "COTI"
+        ],
+        "COW": [
+            "",
+            "ETH",
+            "COW",
+            "COW"
+        ],
+        "CPOOL": [
+            "",
+            "ETH",
+            "CPOOL",
+            "CPOOL"
+        ],
+        "CRCL": [
+            "",
+            "-",
+            "CRCL",
+            "CRCL"
+        ],
+        "CRO": [
+            "",
+            "CRO",
+            "CRO",
+            "CRO"
+        ],
+        "CROSS": [
+            "",
+            "BNB",
+            "CROSS",
+            "CROSS"
+        ],
+        "CRV": [
+            "",
+            "ETH",
+            "CRV",
+            "CRV"
+        ],
+        "CTC": [
+            "",
+            "CTC",
+            "CTC",
+            "CTC"
+        ],
+        "CTK": [
+            "",
+            "CTK",
+            "CTK",
+            "CTK"
+        ],
+        "CTSI": [
+            "",
+            "ETH",
+            "CTSI",
+            "CTSI"
+        ],
+        "CVC": [
+            "",
+            "ETH",
+            "CVC",
+            "CVC"
+        ],
+        "CVX": [
+            "",
+            "ETH",
+            "CVX",
+            "CVX"
+        ],
+        "CYBER": [
+            "",
+            "ETH",
+            "CYBER",
+            "CYBER"
+        ],
+        "CYS": [
+            "",
+            "BNB",
+            "CYS",
+            "CYS"
+        ],
+        "D": [
+            "",
+            "ETH",
+            "D",
+            "D"
+        ],
+        "DASH": [
+            "",
+            "DASH",
+            "DASH",
+            "DASH"
+        ],
+        "DCR": [
+            "",
+            "DCR",
+            "DCR",
+            "DCR"
+        ],
+        "DEEP": [
+            "",
+            "SUI",
+            "DEEP",
+            "DEEP"
+        ],
+        "DEXE": [
+            "",
+            "ETH",
+            "DEXE",
+            "DEXE"
+        ],
+        "DGB": [
+            "",
+            "DGB",
+            "DGB",
+            "DGB"
+        ],
+        "DIA": [
+            "",
+            "ETH",
+            "DIA",
+            "DIA"
+        ],
+        "DKA": [
+            "",
+            "ETH",
+            "DKA",
+            "DKA"
+        ],
+        "DODO": [
+            "",
+            "ETH",
+            "DODO",
+            "DODO"
+        ],
+        "DODOX": [
+            "",
+            "ETH",
+            "DODOX",
+            "DODOX"
+        ],
+        "DOGE": [
+            "",
+            "DOGE",
+            "DOGE",
+            "DOGE"
+        ],
+        "DOGS": [
+            "",
+            "TON",
+            "DOGS",
+            "DOGS"
+        ],
+        "DOLO": [
+            "",
+            "ETH",
+            "DOLO",
+            "DOLO"
+        ],
+        "DOOD": [
+            "",
+            "SOL",
+            "DOOD",
+            "DOOD"
+        ],
+        "DOT": [
+            "",
+            "DOT",
+            "DOT",
+            "DOT"
+        ],
+        "DRIFT": [
+            "",
+            "SOL",
+            "DRIFT",
+            "DRIFT"
+        ],
+        "DUSK": [
+            "",
+            "ETH",
+            "DUSK",
+            "DUSK"
+        ],
+        "DYDX": [
+            "",
+            "OSMO",
+            "DYDX",
+            "DYDX"
+        ],
+        "DYM": [
+            "",
+            "DYM",
+            "DYM",
+            "DYM"
+        ],
+        "EDEN": [
+            "",
+            "ETH",
+            "EDEN",
+            "EDEN"
+        ],
+        "EDGE(Definitive)": [
+            "",
+            "BASE",
+            "EDGE",
+            "EDGE"
+        ],
+        "EDGE(edgeX)": [
+            "",
+            "ETH",
+            "EDGE",
+            "EDGE"
+        ],
+        "EDU": [
+            "",
+            "BNB",
+            "EDU",
+            "EDU"
+        ],
+        "EGLD": [
+            "",
+            "EGLD",
+            "EGLD",
+            "EGLD"
+        ],
+        "EIGEN": [
+            "",
+            "ETH",
+            "EIGEN",
+            "EIGEN"
+        ],
+        "ELF": [
+            "",
+            "ELF",
+            "ELF",
+            "ELF"
+        ],
+        "ELSA": [
+            "",
+            "MNT",
+            "ELSA",
+            "ELSA"
+        ],
+        "ENA": [
+            "",
+            "ETH",
+            "ENA",
+            "ENA"
+        ],
+        "ENJ": [
+            "",
+            "ENJ",
+            "ENJ",
+            "ENJ"
+        ],
+        "ENS": [
+            "",
+            "ETH",
+            "ENS",
+            "ENS"
+        ],
+        "ENSO": [
+            "",
+            "ETH",
+            "ENSO",
+            "ENSO"
+        ],
+        "EPIC": [
+            "",
+            "ETH",
+            "EPIC",
+            "EPIC"
+        ],
+        "ERA": [
+            "",
+            "ETH",
+            "ERA",
+            "ERA"
+        ],
+        "ESP": [
+            "",
+            "ARB",
+            "ESP",
+            "ESP"
+        ],
+        "ESPORTS": [
+            "",
+            "BNB",
+            "ESPORTS",
+            "ESPORTS"
+        ],
+        "ETC": [
+            "",
+            "ETC",
+            "ETC",
+            "ETC"
+        ],
+        "ETH": [
+            "1027",
+            "ETH",
+            "Ethereum",
+            "ETH"
+        ],
+        "ETHFI": [
+            "",
+            "ETH",
+            "ETHFI",
+            "ETHFI"
+        ],
+        "ETHW": [
+            "",
+            "ETHW",
+            "ETHW",
+            "ETHW"
+        ],
+        "EUL": [
+            "",
+            "ETH",
+            "EUL",
+            "EUL"
+        ],
+        "EUR": [
+            "",
+            "",
+            "EUR",
+            "EUR"
+        ],
+        "EURI": [
+            "",
+            "ETH",
+            "EURI",
+            "EURI"
+        ],
+        "EVAA": [
+            "",
+            "BNB",
+            "EVAA",
+            "EVAA"
+        ],
+        "EWJ": [
+            "",
+            "EWJ",
+            "EWJ",
+            "EWJ"
+        ],
+        "EWY": [
+            "",
+            "EWY",
+            "EWY",
+            "EWY"
+        ],
+        "F": [
+            "",
+            "ETH",
+            "F",
+            "F"
+        ],
+        "FARM": [
+            "",
+            "ETH",
+            "FARM",
+            "FARM"
+        ],
+        "FARTCOIN": [
+            "",
+            "SOL",
+            "FARTCOIN",
+            "FARTCOIN"
+        ],
+        "FCT2": [
+            "",
+            "",
+            "FCT2",
+            "FCT2"
+        ],
+        "FDUSD": [
+            "",
+            "ETH",
+            "FDUSD",
+            "FDUSD"
+        ],
+        "FET": [
+            "",
+            "FET",
+            "FET",
+            "FET"
+        ],
+        "FF": [
+            "",
+            "ETH",
+            "FF",
+            "FF"
+        ],
+        "FHE": [
+            "",
+            "ETH",
+            "FHE",
+            "FHE"
+        ],
+        "FIDA": [
+            "",
+            "SOL",
+            "FIDA",
+            "FIDA"
+        ],
+        "FIGHT": [
+            "",
+            "BNB",
+            "FIGHT",
+            "FIGHT"
+        ],
+        "FIL": [
+            "",
+            "FIL",
+            "FIL",
+            "FIL"
+        ],
+        "FLOCK": [
+            "",
+            "SOL",
+            "FLOCK",
+            "FLOCK"
+        ],
+        "FLOKI": [
+            "",
+            "ETH",
+            "FLOKI",
+            "FLOKI"
+        ],
+        "FLOW": [
+            "",
+            "FLOW",
+            "FLOW",
+            "FLOW"
+        ],
+        "FLUID": [
+            "",
+            "ETH",
+            "FLUID",
+            "FLUID"
+        ],
+        "FLUX": [
+            "",
+            "FLUX",
+            "FLUX",
+            "FLUX"
+        ],
+        "FOGO": [
+            "",
+            "FOGO",
+            "FOGO",
+            "FOGO"
+        ],
+        "FOLKS": [
+            "",
+            "ETH",
+            "FOLKS",
+            "FOLKS"
+        ],
+        "FORM": [
+            "",
+            "BNB",
+            "FORM",
+            "FORM"
+        ],
+        "FRAX": [
+            "",
+            "ETH",
+            "FRAX",
+            "FRAX"
+        ],
+        "FTT": [
+            "",
+            "BNB",
+            "FTT",
+            "FTT"
+        ],
+        "G": [
+            "",
+            "G",
+            "G",
+            "G"
+        ],
+        "GALA": [
+            "",
+            "ETH",
+            "GALA",
+            "GALA"
+        ],
+        "GAME2": [
+            "",
+            "",
+            "GAME2",
+            "GAME2"
+        ],
+        "GAS": [
+            "",
+            "NEO",
+            "GAS",
+            "GAS"
+        ],
+        "GENIUS": [
+            "",
+            "BNB",
+            "GENIUS",
+            "GENIUS"
+        ],
+        "GIGGLE": [
+            "",
+            "BNB",
+            "GIGGLE",
+            "GIGGLE"
+        ],
+        "GLM": [
+            "",
+            "ETH",
+            "GLM",
+            "GLM"
+        ],
+        "GLMR": [
+            "",
+            "GLMR",
+            "GLMR",
+            "GLMR"
+        ],
+        "GMT": [
+            "",
+            "ETH",
+            "GMT",
+            "GMT"
+        ],
+        "GMX": [
+            "",
+            "SOL",
+            "GMX",
+            "GMX"
+        ],
+        "GNO": [
+            "",
+            "ETH",
+            "GNO",
+            "GNO"
+        ],
+        "GNS": [
+            "",
+            "POL",
+            "GNS",
+            "GNS"
+        ],
+        "GOAT": [
+            "",
+            "SOL",
+            "GOAT",
+            "GOAT"
+        ],
+        "GOOGL": [
+            "",
+            "HYPE",
+            "GOOGL",
+            "GOOGL"
+        ],
+        "GPS": [
+            "",
+            "BNB",
+            "GPS",
+            "GPS"
+        ],
+        "GRASS": [
+            "",
+            "SOL",
+            "GRASS",
+            "GRASS"
+        ],
+        "GRIFFAIN": [
+            "",
+            "SOL",
+            "GRIFFAIN",
+            "GRIFFAIN"
+        ],
+        "GRT": [
+            "",
+            "ETH",
+            "GRT",
+            "GRT"
+        ],
+        "GTC": [
+            "",
+            "ETH",
+            "GTC",
+            "GTC"
+        ],
+        "GUA": [
+            "",
+            "BNB",
+            "GUA",
+            "GUA"
+        ],
+        "GUN": [
+            "",
+            "GUN",
+            "GUN",
+            "GUN"
+        ],
+        "GWEI": [
+            "",
+            "ETH",
+            "GWEI",
+            "GWEI"
+        ],
+        "H": [
+            "",
+            "ETH",
+            "H",
+            "H"
+        ],
+        "HAEDAL": [
+            "",
+            "BNB",
+            "HAEDAL",
+            "HAEDAL"
+        ],
+        "HANA": [
+            "",
+            "BNB",
+            "HANA",
+            "HANA"
+        ],
+        "HBAR": [
+            "",
+            "HBAR",
+            "HBAR",
+            "HBAR"
+        ],
+        "HEI": [
+            "",
+            "ETH",
+            "HEI",
+            "HEI"
+        ],
+        "HEMI": [
+            "",
+            "ETH",
+            "HEMI",
+            "HEMI"
+        ],
+        "HFT": [
+            "",
+            "ETH",
+            "HFT",
+            "HFT"
+        ],
+        "HIGH": [
+            "",
+            "ETH",
+            "HIGH",
+            "HIGH"
+        ],
+        "HIVE": [
+            "",
+            "HIVE",
+            "HIVE",
+            "HIVE"
+        ],
+        "HMSTR": [
+            "",
+            "HMSTR",
+            "HMSTR",
+            "HMSTR"
+        ],
+        "HOLO": [
+            "",
+            "BNB",
+            "HOLO",
+            "HOLO"
+        ],
+        "HOME": [
+            "",
+            "BNB",
+            "HOME",
+            "HOME"
+        ],
+        "HOOD": [
+            "",
+            "SOL",
+            "HOOD",
+            "HOOD"
+        ],
+        "HOT": [
+            "",
+            "ETH",
+            "HOT",
+            "HOT"
+        ],
+        "HP": [
+            "",
+            "HP",
+            "HP",
+            "HP"
+        ],
+        "HUMA": [
+            "",
+            "BNB",
+            "HUMA",
+            "HUMA"
+        ],
+        "HUNT": [
+            "",
+            "ETH",
+            "HUNT",
+            "HUNT"
+        ],
+        "HYPE": [
+            "",
+            "HYPE",
+            "HYPE",
+            "HYPE"
+        ],
+        "HYPER": [
+            "",
+            "ETH",
+            "HYPER",
+            "HYPER"
+        ],
+        "ICNT": [
+            "",
+            "ETH",
+            "ICNT",
+            "ICNT"
+        ],
+        "ICP": [
+            "",
+            "ICP",
+            "ICP",
+            "ICP"
+        ],
+        "ICX": [
+            "",
+            "ICX",
+            "ICX",
+            "ICX"
+        ],
+        "ID": [
+            "",
+            "ETH",
+            "ID",
+            "ID"
+        ],
+        "IDOL": [
+            "",
+            "BNB",
+            "IDOL",
+            "IDOL"
+        ],
+        "ILV": [
+            "",
+            "ETH",
+            "ILV",
+            "ILV"
+        ],
+        "IMX": [
+            "",
+            "ETH",
+            "IMX",
+            "IMX"
+        ],
+        "IN": [
+            "",
+            "ETH",
+            "IN",
+            "IN"
+        ],
+        "INIT": [
+            "",
+            "INIT",
+            "INIT",
+            "INIT"
+        ],
+        "INJ": [
+            "",
+            "ETH",
+            "INJ",
+            "INJ"
+        ],
+        "INTC": [
+            "",
+            "INTC",
+            "INTC",
+            "INTC"
+        ],
+        "INX": [
+            "",
+            "ETH",
+            "INX",
+            "INX"
+        ],
+        "IO": [
+            "",
+            "SOL",
+            "IO",
+            "IO"
+        ],
+        "IOST": [
+            "",
+            "IOST",
+            "IOST",
+            "IOST"
+        ],
+        "IOTA": [
+            "",
+            "IOTA",
+            "IOTA",
+            "IOTA"
+        ],
+        "IOTX": [
+            "",
+            "IOTX",
+            "IOTX",
+            "IOTX"
+        ],
+        "IP": [
+            "",
+            "IP",
+            "IP",
+            "IP"
+        ],
+        "IQ": [
+            "",
+            "ETH",
+            "IQ",
+            "IQ"
+        ],
+        "IRYS": [
+            "",
+            "ETH",
+            "IRYS",
+            "IRYS"
+        ],
+        "JASMY": [
+            "",
+            "ETH",
+            "JASMY",
+            "JASMY"
+        ],
+        "JCT": [
+            "",
+            "ETH",
+            "JCT",
+            "JCT"
+        ],
+        "JELLYJELLY": [
+            "",
+            "SOL",
+            "JELLYJELLY",
+            "JELLYJELLY"
+        ],
+        "JOE": [
+            "",
+            "AVAX",
+            "JOE",
+            "JOE"
+        ],
+        "JST": [
+            "",
+            "TRX",
+            "JST",
+            "JST"
+        ],
+        "JTO": [
+            "",
+            "SOL",
+            "JTO",
+            "JTO"
+        ],
+        "JUP": [
+            "",
+            "SOL",
+            "JUP",
+            "JUP"
+        ],
+        "JUV": [
+            "",
+            "CHZ",
+            "JUV",
+            "JUV"
+        ],
+        "KAIA": [
+            "",
+            "KAIA",
+            "KAIA",
+            "KAIA"
+        ],
+        "KAITO": [
+            "",
+            "-",
+            "KAITO",
+            "KAITO"
+        ],
+        "KAS": [
+            "",
+            "KAS",
+            "KAS",
+            "KAS"
+        ],
+        "KAT": [
+            "",
+            "KAT",
+            "KAT",
+            "KAT"
+        ],
+        "KAVA": [
+            "",
+            "ETH",
+            "KAVA",
+            "KAVA"
+        ],
+        "KERNEL": [
+            "",
+            "ETH",
+            "KERNEL",
+            "KERNEL"
+        ],
+        "KGEN": [
+            "",
+            "BNB",
+            "KGEN",
+            "KGEN"
+        ],
+        "KGST": [
+            "",
+            "BNB",
+            "KGST",
+            "KGST"
+        ],
+        "KITE": [
+            "",
+            "KITE",
+            "KITE",
+            "KITE"
+        ],
+        "KMNO": [
+            "",
+            "SOL",
+            "KMNO",
+            "KMNO"
+        ],
+        "KNC": [
+            "",
+            "ETH",
+            "KNC",
+            "KNC"
+        ],
+        "KOMA": [
+            "",
+            "BNB",
+            "KOMA",
+            "KOMA"
+        ],
+        "KSM": [
+            "",
+            "KSM",
+            "KSM",
+            "KSM"
+        ],
+        "LA": [
+            "",
+            "ETH",
+            "LA",
+            "LA"
+        ],
+        "LAB": [
+            "",
+            "BNB",
+            "LAB",
+            "LAB"
+        ],
+        "LAYER": [
+            "",
+            "SOL",
+            "LAYER",
+            "LAYER"
+        ],
+        "LAZIO": [
+            "",
+            "BNB",
+            "LAZIO",
+            "LAZIO"
+        ],
+        "LDO": [
+            "",
+            "ETH",
+            "LDO",
+            "LDO"
+        ],
+        "LIGHT": [
+            "38506",
+            "BNB",
+            "LIGHT",
+            "LIGHT"
+        ],
+        "LINEA": [
+            "",
+            "LINEA",
+            "LINEA",
+            "LINEA"
+        ],
+        "LINK": [
+            "",
+            "ETH",
+            "LINK",
+            "LINK"
+        ],
+        "LISTA": [
+            "",
+            "BNB",
+            "LISTA",
+            "LISTA"
+        ],
+        "LIT": [
+            "",
+            "ETH",
+            "LIT",
+            "LIT"
+        ],
+        "LPT": [
+            "",
+            "ETH",
+            "LPT",
+            "LPT"
+        ],
+        "LQTY": [
+            "",
+            "ETH",
+            "LQTY",
+            "LQTY"
+        ],
+        "LSK": [
+            "",
+            "LSK",
+            "LSK",
+            "LSK"
+        ],
+        "LTC": [
+            "",
+            "LTC",
+            "LTC",
+            "LTC"
+        ],
+        "LUMIA": [
+            "",
+            "BNB",
+            "LUMIA",
+            "LUMIA"
+        ],
+        "LUNA": [
+            "",
+            "LUNA",
+            "LUNA",
+            "LUNA"
+        ],
+        "LUNA2": [
+            "",
+            "LUNA",
+            "LUNA2",
+            "LUNA2"
+        ],
+        "LUNC": [
+            "",
+            "LUNC",
+            "LUNC",
+            "LUNC"
+        ],
+        "LYN": [
+            "",
+            "BNB",
+            "LYN",
+            "LYN"
+        ],
+        "M": [
+            "",
+            "M",
+            "M",
+            "M"
+        ],
+        "MAGIC": [
+            "",
+            "ETH",
+            "MAGIC",
+            "MAGIC"
+        ],
+        "MAGMA": [
+            "",
+            "SUI",
+            "MAGMA",
+            "MAGMA"
+        ],
+        "MANA": [
+            "",
+            "ETH",
+            "MANA",
+            "MANA"
+        ],
+        "MANTA": [
+            "",
+            "MANTA",
+            "MANTA",
+            "MANTA"
+        ],
+        "MANTRA": [
+            "",
+            "MANTRA",
+            "MANTRA",
+            "MANTRA"
+        ],
+        "MASK": [
+            "",
+            "ETH",
+            "MASK",
+            "MASK"
+        ],
+        "MAV": [
+            "",
+            "ETH",
+            "MAV",
+            "MAV"
+        ],
+        "MAVIA": [
+            "",
+            "ETH",
+            "MAVIA",
+            "MAVIA"
+        ],
+        "MBL": [
+            "",
+            "ONT",
+            "MBL",
+            "MBL"
+        ],
+        "MBOX": [
+            "",
+            "BNB",
+            "MBOX",
+            "MBOX"
+        ],
+        "ME": [
+            "",
+            "SOL",
+            "ME",
+            "ME"
+        ],
+        "MED": [
+            "",
+            "MED",
+            "MED",
+            "MED"
+        ],
+        "MEGA": [
+            "",
+            "MEGA",
+            "MEGA",
+            "MEGA"
+        ],
+        "MELANIA": [
+            "",
+            "SOL",
+            "MELANIA",
+            "MELANIA"
+        ],
+        "MEME": [
+            "",
+            "ETH",
+            "MEME",
+            "MEME"
+        ],
+        "MERL": [
+            "",
+            "ETH",
+            "MERL",
+            "MERL"
+        ],
+        "MET": [
+            "",
+            "SOL",
+            "MET",
+            "MET"
+        ],
+        "MET2": [
+            "",
+            "SOL",
+            "MET2",
+            "MET2"
+        ],
+        "META": [
+            "",
+            "META",
+            "META",
+            "META"
+        ],
+        "METIS": [
+            "",
+            "ETH",
+            "METIS",
+            "METIS"
+        ],
+        "MEW": [
+            "",
+            "SOL",
+            "MEW",
+            "MEW"
+        ],
+        "MINA": [
+            "",
+            "MINA",
+            "MINA",
+            "MINA"
+        ],
+        "MIRA": [
+            "",
+            "BNB",
+            "MIRA",
+            "MIRA"
+        ],
+        "MITO": [
+            "",
+            "BNB",
+            "MITO",
+            "MITO"
+        ],
+        "MLK": [
+            "",
+            "ARB",
+            "MLK",
+            "MLK"
+        ],
+        "MLN": [
+            "",
+            "ETH",
+            "MLN",
+            "MLN"
+        ],
+        "MMT": [
+            "",
+            "SUI",
+            "MMT",
+            "MMT"
+        ],
+        "MNT": [
+            "",
+            "ETH",
+            "MNT",
+            "MNT"
+        ],
+        "MOC": [
+            "",
+            "ETH",
+            "MOC",
+            "MOC"
+        ],
+        "MOCA": [
+            "",
+            "ETH",
+            "MOCA",
+            "MOCA"
+        ],
+        "MOG": [
+            "",
+            "ETH",
+            "MOG",
+            "MOG"
+        ],
+        "MON": [
+            "",
+            "MON",
+            "MON",
+            "MON"
+        ],
+        "MOODENG": [
+            "",
+            "SOL",
+            "MOODENG",
+            "MOODENG"
+        ],
+        "MORPHO": [
+            "",
+            "ETH",
+            "MORPHO",
+            "MORPHO"
+        ],
+        "MOVE": [
+            "32452",
+            "APT",
+            "MOVE",
+            "MOVE"
+        ],
+        "MOVR": [
+            "",
+            "MOVR",
+            "MOVR",
+            "MOVR"
+        ],
+        "MSFT": [
+            "",
+            "MSFT",
+            "MSFT",
+            "MSFT"
+        ],
+        "MSTR": [
+            "",
+            "ETH",
+            "MSTR",
+            "MSTR"
+        ],
+        "MTL": [
+            "",
+            "MTL",
+            "MTL",
+            "MTL"
+        ],
+        "MU": [
+            "",
+            "MU",
+            "MU",
+            "MU"
+        ],
+        "MUBARAK": [
+            "",
+            "BNB",
+            "MUBARAK",
+            "MUBARAK"
+        ],
+        "MVL": [
+            "",
+            "ETH",
+            "MVL",
+            "MVL"
+        ],
+        "MYX": [
+            "",
+            "BNB",
+            "MYX",
+            "MYX"
+        ],
+        "NAORIS": [
+            "",
+            "ETH",
+            "NAORIS",
+            "NAORIS"
+        ],
+        "NATGAS": [
+            "",
+            "NATGAS",
+            "NATGAS",
+            "NATGAS"
+        ],
+        "NEAR": [
+            "",
+            "NEAR",
+            "NEAR",
+            "NEAR"
+        ],
+        "NEIRO": [
+            "",
+            "ETH",
+            "NEIRO",
+            "NEIRO"
+        ],
+        "NEO": [
+            "",
+            "NEO",
+            "NEO",
+            "NEO"
+        ],
+        "NEWT": [
+            "",
+            "ETH",
+            "NEWT",
+            "NEWT"
+        ],
+        "NEXO": [
+            "",
+            "ETH",
+            "NEXO",
+            "NEXO"
+        ],
+        "NFP": [
+            "",
+            "BNB",
+            "NFP",
+            "NFP"
+        ],
+        "NIGHT": [
+            "",
+            "BNB",
+            "NIGHT",
+            "NIGHT"
+        ],
+        "NIL": [
+            "",
+            "ETH",
+            "NIL",
+            "NIL"
+        ],
+        "NMR": [
+            "",
+            "ETH",
+            "NMR",
+            "NMR"
+        ],
+        "NOM": [
+            "",
+            "ETH",
+            "NOM",
+            "NOM"
+        ],
+        "NOT": [
+            "",
+            "TON",
+            "NOT",
+            "NOT"
+        ],
+        "NVDA": [
+            "",
+            "NVDA",
+            "NVDA",
+            "NVDA"
+        ],
+        "NXPC": [
+            "",
+            "BNB",
+            "NXPC",
+            "NXPC"
+        ],
+        "OG": [
+            "",
+            "CHZ",
+            "OG",
+            "OG"
+        ],
+        "OGN": [
+            "",
+            "ETH",
+            "OGN",
+            "OGN"
+        ],
+        "ON": [
+            "",
+            "ETH",
+            "ON",
+            "ON"
+        ],
+        "ONDO": [
+            "",
+            "ETH",
+            "ONDO",
+            "ONDO"
+        ],
+        "ONE": [
+            "",
+            "ONE",
+            "ONE",
+            "ONE"
+        ],
+        "ONG": [
+            "",
+            "BNB",
+            "ONG",
+            "ONG"
+        ],
+        "ONT": [
+            "",
+            "ONT",
+            "ONT",
+            "ONT"
+        ],
+        "OP": [
+            "",
+            "OP",
+            "OP",
+            "OP"
+        ],
+        "OPEN": [
+            "",
+            "ETH",
+            "OPEN",
+            "OPEN"
+        ],
+        "OPG": [
+            "",
+            "-",
+            "OPG",
+            "OPG"
+        ],
+        "OPN": [
+            "",
+            "ETH",
+            "OPN",
+            "OPN"
+        ],
+        "ORBS": [
+            "",
+            "ETH",
+            "ORBS",
+            "ORBS"
+        ],
+        "ORCA": [
+            "",
+            "SOL",
+            "ORCA",
+            "ORCA"
+        ],
+        "ORDER": [
+            "",
+            "ETH",
+            "ORDER",
+            "ORDER"
+        ],
+        "ORDI": [
+            "",
+            "BTC",
+            "ORDI",
+            "ORDI"
+        ],
+        "OSMO": [
+            "",
+            "OSMO",
+            "OSMO",
+            "OSMO"
+        ],
+        "PARTI": [
+            "",
+            "BNB",
+            "PARTI",
+            "PARTI"
+        ],
+        "PAXG": [
+            "",
+            "ETH",
+            "PAXG",
+            "PAXG"
+        ],
+        "PAYP": [
+            "",
+            "PAYP",
+            "PAYP",
+            "PAYP"
+        ],
+        "PENDLE": [
+            "",
+            "ETH",
+            "PENDLE",
+            "PENDLE"
+        ],
+        "PENGU": [
+            "",
+            "SOL",
+            "PENGU",
+            "PENGU"
+        ],
+        "PEOPLE": [
+            "",
+            "ETH",
+            "PEOPLE",
+            "PEOPLE"
+        ],
+        "PEPE": [
+            "",
+            "ETH",
+            "PEPE",
+            "PEPE"
+        ],
+        "PHA": [
+            "",
+            "PHA",
+            "PHA",
+            "PHA"
+        ],
+        "PHB": [
+            "",
+            "PHB",
+            "PHB",
+            "PHB"
+        ],
+        "PIEVERSE": [
+            "",
+            "ETH",
+            "PIEVERSE",
+            "PIEVERSE"
+        ],
+        "PIPPIN": [
+            "",
+            "SOL",
+            "PIPPIN",
+            "PIPPIN"
+        ],
+        "PIVX": [
+            "",
+            "PIVX",
+            "PIVX",
+            "PIVX"
+        ],
+        "PIXEL": [
+            "",
+            "ETH",
+            "PIXEL",
+            "PIXEL"
+        ],
+        "PLAY": [
+            "",
+            "-",
+            "PLAY",
+            "PLAY"
+        ],
+        "PLTR": [
+            "",
+            "PLTR",
+            "PLTR",
+            "PLTR"
+        ],
+        "PLUME": [
+            "",
+            "PLUME",
+            "PLUME",
+            "PLUME"
+        ],
+        "PNUT": [
+            "",
+            "SOL",
+            "PNUT",
+            "PNUT"
+        ],
+        "POKT": [
+            "",
+            "ETH",
+            "POKT",
+            "POKT"
+        ],
+        "POL": [
+            "",
+            "ETH",
+            "POL",
+            "POL"
+        ],
+        "POLYX": [
+            "",
+            "POLYX",
+            "POLYX",
+            "POLYX"
+        ],
+        "POND": [
+            "",
+            "ETH",
+            "POND",
+            "POND"
+        ],
+        "POPCAT": [
+            "",
+            "SOL",
+            "POPCAT",
+            "POPCAT"
+        ],
+        "PORTAL": [
+            "",
+            "ETH",
+            "PORTAL",
+            "PORTAL"
+        ],
+        "PORTO": [
+            "",
+            "BNB",
+            "PORTO",
+            "PORTO"
+        ],
+        "POWER": [
+            "",
+            "ETH",
+            "POWER",
+            "POWER"
+        ],
+        "POWR": [
+            "",
+            "ETH",
+            "POWR",
+            "POWR"
+        ],
+        "PRL": [
+            "",
+            "BNB",
+            "PRL",
+            "PRL"
+        ],
+        "PROM": [
+            "",
+            "ETH",
+            "PROM",
+            "PROM"
+        ],
+        "PROMPT": [
+            "",
+            "ETH",
+            "PROMPT",
+            "PROMPT"
+        ],
+        "PROVE": [
+            "",
+            "ETH",
+            "PROVE",
+            "PROVE"
+        ],
+        "PSG": [
+            "",
+            "CHZ",
+            "PSG",
+            "PSG"
+        ],
+        "PTB": [
+            "",
+            "ETH",
+            "PTB",
+            "PTB"
+        ],
+        "PUMP": [
+            "",
+            "SOL",
+            "PUMP",
+            "PUMP"
+        ],
+        "PUMPBTC": [
+            "36166",
+            "BNB",
+            "PUMPBTC",
+            "PUMPBTC"
+        ],
+        "PUNDIX": [
+            "",
+            "ETH",
+            "PUNDIX",
+            "PUNDIX"
+        ],
+        "PYR": [
+            "",
+            "ETH",
+            "PYR",
+            "PYR"
+        ],
+        "PYTH": [
+            "",
+            "SOL",
+            "PYTH",
+            "PYTH"
+        ],
+        "Q": [
+            "",
+            "ETH",
+            "Q",
+            "Q"
+        ],
+        "QI": [
+            "",
+            "AVAX",
+            "QI",
+            "QI"
+        ],
+        "QKC": [
+            "",
+            "ETH",
+            "QKC",
+            "QKC"
+        ],
+        "QNT": [
+            "",
+            "ETH",
+            "QNT",
+            "QNT"
+        ],
+        "QQQ": [
+            "",
+            "QQQ",
+            "QQQ",
+            "QQQ"
+        ],
+        "QTUM": [
+            "",
+            "QTUM",
+            "QTUM",
+            "QTUM"
+        ],
+        "QUICK": [
+            "19966",
+            "ETH",
+            "QUICK",
+            "QUICK"
+        ],
+        "RAD": [
+            "",
+            "RAD",
+            "RAD",
+            "RAD"
+        ],
+        "RARE": [
+            "",
+            "ETH",
+            "RARE",
+            "RARE"
+        ],
+        "RATS": [
+            "",
+            "BTC",
+            "RATS",
+            "RATS"
+        ],
+        "RAVE": [
+            "",
+            "ETH",
+            "RAVE",
+            "RAVE"
+        ],
+        "RAY": [
+            "",
+            "SOL",
+            "RAY",
+            "RAY"
+        ],
+        "RAYSOL": [
+            "",
+            "SOL",
+            "RAYSOL",
+            "RAYSOL"
+        ],
+        "RECALL": [
+            "",
+            "-",
+            "RECALL",
+            "RECALL"
+        ],
+        "RED": [
+            "",
+            "ETH",
+            "RED",
+            "RED"
+        ],
+        "RENDER": [
+            "",
+            "ETH",
+            "RENDER",
+            "RENDER"
+        ],
+        "REQ": [
+            "",
+            "ETH",
+            "REQ",
+            "REQ"
+        ],
+        "RESOLV": [
+            "",
+            "ETH",
+            "RESOLV",
+            "RESOLV"
+        ],
+        "REZ": [
+            "",
+            "ETH",
+            "REZ",
+            "REZ"
+        ],
+        "RIF": [
+            "",
+            "ETH",
+            "RIF",
+            "RIF"
+        ],
+        "RIVER": [
+            "",
+            "ETH",
+            "RIVER",
+            "RIVER"
+        ],
+        "RLC": [
+            "",
+            "ETH",
+            "RLC",
+            "RLC"
+        ],
+        "RLUSD": [
+            "",
+            "XRP",
+            "RLUSD",
+            "RLUSD"
+        ],
+        "ROBO": [
+            "",
+            "ETH",
+            "ROBO",
+            "ROBO"
+        ],
+        "RONIN": [
+            "",
+            "RON",
+            "RONIN",
+            "RONIN"
+        ],
+        "ROSE": [
+            "",
+            "BNB",
+            "ROSE",
+            "ROSE"
+        ],
+        "RPL": [
+            "",
+            "ETH",
+            "RPL",
+            "RPL"
+        ],
+        "RSR": [
+            "",
+            "ETH",
+            "RSR",
+            "RSR"
+        ],
+        "RUNE": [
+            "",
+            "RUNE",
+            "RUNE",
+            "RUNE"
+        ],
+        "RVN": [
+            "",
+            "RVN",
+            "RVN",
+            "RVN"
+        ],
+        "S": [
+            "",
+            "S",
+            "S",
+            "S"
+        ],
+        "SAFE": [
+            "",
+            "ETH",
+            "SAFE",
+            "SAFE"
+        ],
+        "SAGA": [
+            "",
+            "ETH",
+            "SAGA",
+            "SAGA"
+        ],
+        "SAHARA": [
+            "",
+            "SAHARA",
+            "SAHARA",
+            "SAHARA"
+        ],
+        "SAND": [
+            "",
+            "ETH",
+            "SAND",
+            "SAND"
+        ],
+        "SANTOS": [
+            "",
+            "BNB",
+            "SANTOS",
+            "SANTOS"
+        ],
+        "SAPIEN": [
+            "",
+            "-",
+            "SAPIEN",
+            "SAPIEN"
+        ],
+        "SATS": [
+            "",
+            "BTC",
+            "SATS",
+            "SATS"
+        ],
+        "SC": [
+            "",
+            "SC",
+            "SC",
+            "SC"
+        ],
+        "SCR": [
+            "",
+            "SCR",
+            "SCR",
+            "SCR"
+        ],
+        "SCRT": [
+            "",
+            "SCRT",
+            "SCRT",
+            "SCRT"
+        ],
+        "SEI": [
+            "",
+            "SEI",
+            "SEI",
+            "SEI"
+        ],
+        "SENT": [
+            "",
+            "ETH",
+            "SENT",
+            "SENT"
+        ],
+        "SFP": [
+            "",
+            "BNB",
+            "SFP",
+            "SFP"
+        ],
+        "SHELL": [
+            "",
+            "ETH",
+            "SHELL",
+            "SHELL"
+        ],
+        "SHIB": [
+            "",
+            "ETH",
+            "SHIB",
+            "SHIB"
+        ],
+        "SIGN": [
+            "",
+            "ETH",
+            "SIGN",
+            "SIGN"
+        ],
+        "SIREN": [
+            "",
+            "BNB",
+            "SIREN",
+            "SIREN"
+        ],
+        "SKL": [
+            "",
+            "ETH",
+            "SKL",
+            "SKL"
+        ],
+        "SKR": [
+            "",
+            "SOL",
+            "SKR",
+            "SKR"
+        ],
+        "SKY": [
+            "",
+            "ETH",
+            "SKY",
+            "SKY"
+        ],
+        "SKYAI": [
+            "",
+            "BNB",
+            "SKYAI",
+            "SKYAI"
+        ],
+        "SLP": [
+            "",
+            "ETH",
+            "SLP",
+            "SLP"
+        ],
+        "SNDK": [
+            "",
+            "SNDK",
+            "SNDK",
+            "SNDK"
+        ],
+        "SNT": [
+            "",
+            "ETH",
+            "SNT",
+            "SNT"
+        ],
+        "SNX": [
+            "",
+            "ETH",
+            "SNX",
+            "SNX"
+        ],
+        "SOL": [
+            "",
+            "Solana",
+            "SOL",
+            "SOL"
+        ],
+        "SOLV": [
+            "",
+            "BNB",
+            "SOLV",
+            "SOLV"
+        ],
+        "SOMI": [
+            "",
+            "SOMI",
+            "SOMI",
+            "SOMI"
+        ],
+        "SONIC": [
+            "",
+            "SOL",
+            "SONIC",
+            "SONIC"
+        ],
+        "SOON": [
+            "",
+            "BNB",
+            "SOON",
+            "SOON"
+        ],
+        "SOPH": [
+            "",
+            "ETH",
+            "SOPH",
+            "SOPH"
+        ],
+        "SPACE": [
+            "",
+            "ETH",
+            "SPACE",
+            "SPACE"
+        ],
+        "SPELL": [
+            "",
+            "ETH",
+            "SPELL",
+            "SPELL"
+        ],
+        "SPK": [
+            "",
+            "ETH",
+            "SPK",
+            "SPK"
+        ],
+        "SPORTFUN": [
+            "38647",
+            "SOL",
+            "SPORTFUN",
+            "SPORTFUN"
+        ],
+        "SPX": [
+            "",
+            "ETH",
+            "SPX",
+            "SPX"
+        ],
+        "SPY": [
+            "",
+            "BNB",
+            "SPY",
+            "SPY"
+        ],
+        "SQD": [
+            "",
+            "ARB",
+            "SQD",
+            "SQD"
+        ],
+        "SSV": [
+            "",
+            "ETH",
+            "SSV",
+            "SSV"
+        ],
+        "STABLE": [
+            "",
+            "STABLE",
+            "STABLE",
+            "STABLE"
+        ],
+        "STBL": [
+            "",
+            "BNB",
+            "STBL",
+            "STBL"
+        ],
+        "STEEM": [
+            "",
+            "STEEM",
+            "STEEM",
+            "STEEM"
+        ],
+        "STG": [
+            "",
+            "ETH",
+            "STG",
+            "STG"
+        ],
+        "STO": [
+            "",
+            "ETH",
+            "STO",
+            "STO"
+        ],
+        "STORJ": [
+            "",
+            "ETH",
+            "STORJ",
+            "STORJ"
+        ],
+        "STRAX": [
+            "",
+            "STRAX",
+            "STRAX",
+            "STRAX"
+        ],
+        "STRK": [
+            "",
+            "ETH",
+            "STRK",
+            "STRK"
+        ],
+        "STX": [
+            "",
+            "STX",
+            "STX",
+            "STX"
+        ],
+        "SUI": [
+            "",
+            "SUI",
+            "SUI",
+            "SUI"
+        ],
+        "SUN": [
+            "",
+            "TRX",
+            "SUN",
+            "SUN"
+        ],
+        "SUPER": [
+            "",
+            "ETH",
+            "SUPER",
+            "SUPER"
+        ],
+        "SUSHI": [
+            "",
+            "ETH",
+            "SUSHI",
+            "SUSHI"
+        ],
+        "SWARMS": [
+            "",
+            "SOL",
+            "SWARMS",
+            "SWARMS"
+        ],
+        "SXT": [
+            "",
+            "ETH",
+            "SXT",
+            "SXT"
+        ],
+        "SYN": [
+            "",
+            "ETH",
+            "SYN",
+            "SYN"
+        ],
+        "SYRUP": [
+            "",
+            "ETH",
+            "SYRUP",
+            "SYRUP"
+        ],
+        "SYS": [
+            "",
+            "SYS",
+            "SYS",
+            "SYS"
+        ],
+        "T": [
+            "",
+            "ETH",
+            "T",
+            "T"
+        ],
+        "TA": [
+            "",
+            "BNB",
+            "TA",
+            "TA"
+        ],
+        "TAC": [
+            "",
+            "ETH",
+            "TAC",
+            "TAC"
+        ],
+        "TAG": [
+            "",
+            "BNB",
+            "TAG",
+            "TAG"
+        ],
+        "TAIKO": [
+            "",
+            "TAIKO",
+            "TAIKO",
+            "TAIKO"
+        ],
+        "TAKE": [
+            "",
+            "BNB",
+            "TAKE",
+            "TAKE"
+        ],
+        "TAO": [
+            "",
+            "TAO",
+            "TAO",
+            "TAO"
+        ],
+        "TFUEL": [
+            "",
+            "TFUEL",
+            "TFUEL",
+            "TFUEL"
+        ],
+        "THE": [
+            "",
+            "BNB",
+            "THE",
+            "THE"
+        ],
+        "THETA": [
+            "",
+            "THETA",
+            "THETA",
+            "THETA"
+        ],
+        "TIA": [
+            "",
+            "OSMO",
+            "TIA",
+            "TIA"
+        ],
+        "TKO": [
+            "",
+            "BNB",
+            "TKO",
+            "TKO"
+        ],
+        "TLM": [
+            "",
+            "ETH",
+            "TLM",
+            "TLM"
+        ],
+        "TNSR": [
+            "",
+            "SOL",
+            "TNSR",
+            "TNSR"
+        ],
+        "TOKAMAK": [
+            "",
+            "ETH",
+            "TOKAMAK",
+            "TOKAMAK"
+        ],
+        "TON": [
+            "",
+            "TON",
+            "TON",
+            "TON"
+        ],
+        "TOSHI": [
+            "",
+            "BNB",
+            "TOSHI",
+            "TOSHI"
+        ],
+        "TOWNS": [
+            "",
+            "ETH",
+            "TOWNS",
+            "TOWNS"
+        ],
+        "TRADOOR": [
+            "",
+            "BNB",
+            "TRADOOR",
+            "TRADOOR"
+        ],
+        "TRB": [
+            "",
+            "ETH",
+            "TRB",
+            "TRB"
+        ],
+        "TREE": [
+            "",
+            "ETH",
+            "TREE",
+            "TREE"
+        ],
+        "TRIA": [
+            "",
+            "ETH",
+            "TRIA",
+            "TRIA"
+        ],
+        "TRUMP": [
+            "",
+            "SOL",
+            "TRUMP",
+            "TRUMP"
+        ],
+        "TRUST": [
+            "",
+            "-",
+            "TRUST",
+            "TRUST"
+        ],
+        "TRUTH": [
+            "",
+            "SUI",
+            "TRUTH",
+            "TRUTH"
+        ],
+        "TRX": [
+            "",
+            "TRX",
+            "TRX",
+            "TRX"
+        ],
+        "TSLA": [
+            "",
+            "HYPE",
+            "TSLA",
+            "TSLA"
+        ],
+        "TSM": [
+            "",
+            "TSM",
+            "TSM",
+            "TSM"
+        ],
+        "TST": [
+            "",
+            "BNB",
+            "TST",
+            "TST"
+        ],
+        "TT": [
+            "",
+            "TT",
+            "TT",
+            "TT"
+        ],
+        "TURBO": [
+            "",
+            "ETH",
+            "TURBO",
+            "TURBO"
+        ],
+        "TURTLE": [
+            "",
+            "ETH",
+            "TURTLE",
+            "TURTLE"
+        ],
+        "TUSD": [
+            "",
+            "ETH",
+            "TUSD",
+            "TUSD"
+        ],
+        "TUT": [
+            "",
+            "BNB",
+            "TUT",
+            "TUT"
+        ],
+        "TWT": [
+            "",
+            "BNB",
+            "TWT",
+            "TWT"
+        ],
+        "U": [
+            "",
+            "BNB",
+            "U",
+            "U"
+        ],
+        "UAI": [
+            "",
+            "BNB",
+            "UAI",
+            "UAI"
+        ],
+        "UB": [
+            "",
+            "ETH",
+            "UB",
+            "UB"
+        ],
+        "UMA": [
+            "",
+            "ETH",
+            "UMA",
+            "UMA"
+        ],
+        "UNI": [
+            "",
+            "ETH",
+            "UNI",
+            "UNI"
+        ],
+        "US": [
+            "",
+            "SUI",
+            "US",
+            "US"
+        ],
+        "USD1": [
+            "",
+            "ETH",
+            "USD1",
+            "USD1"
+        ],
+        "USDC": [
+            "",
+            "ETH",
+            "USDC",
+            "USDC"
+        ],
+        "USDE": [
+            "",
+            "ETH",
+            "USDE",
+            "USDE"
+        ],
+        "USDP": [
+            "",
+            "ETH",
+            "USDP",
+            "USDP"
+        ],
+        "USDS": [
+            "33039",
+            "ETH",
+            "USDS",
+            "USDS"
+        ],
+        "USDT": [
+            "825",
+            "ETH",
+            "USDT",
+            "USDT"
+        ],
+        "USELESS": [
+            "",
+            "SOL",
+            "USELESS",
+            "USELESS"
+        ],
+        "USTC": [
+            "",
+            "USTC",
+            "USTC",
+            "USTC"
+        ],
+        "USUAL": [
+            "",
+            "ETH",
+            "USUAL",
+            "USUAL"
+        ],
+        "VANA": [
+            "",
+            "ETH",
+            "VANA",
+            "VANA"
+        ],
+        "VANRY": [
+            "",
+            "ETH",
+            "VANRY",
+            "VANRY"
+        ],
+        "VELODROME": [
+            "20435",
+            "OP",
+            "VELODROME",
+            "VELODROME"
+        ],
+        "VELVET": [
+            "",
+            "BNB",
+            "VELVET",
+            "VELVET"
+        ],
+        "VET": [
+            "",
+            "VET",
+            "VET",
+            "VET"
+        ],
+        "VIC": [
+            "",
+            "VIC",
+            "VIC",
+            "VIC"
+        ],
+        "VIRTUAL": [
+            "",
+            "ETH",
+            "VIRTUAL",
+            "VIRTUAL"
+        ],
+        "VTHO": [
+            "",
+            "VET",
+            "VTHO",
+            "VTHO"
+        ],
+        "VVV": [
+            "",
+            "-",
+            "VVV",
+            "VVV"
+        ],
+        "W": [
+            "",
+            "ETH",
+            "W",
+            "W"
+        ],
+        "WAL": [
+            "",
+            "SUI",
+            "WAL",
+            "WAL"
+        ],
+        "WAVES": [
+            "",
+            "WAVES",
+            "WAVES",
+            "WAVES"
+        ],
+        "WAXP": [
+            "",
+            "WAXP",
+            "WAXP",
+            "WAXP"
+        ],
+        "WBETH": [
+            "24760",
+            "ETH",
+            "WBETH",
+            "WBETH"
+        ],
+        "WBTC": [
+            "",
+            "ETH",
+            "WBTC",
+            "WBTC"
+        ],
+        "WCT": [
+            "",
+            "ETH",
+            "WCT",
+            "WCT"
+        ],
+        "WET": [
+            "",
+            "SOL",
+            "WET",
+            "WET"
+        ],
+        "WIF": [
+            "",
+            "SOL",
+            "WIF",
+            "WIF"
+        ],
+        "WIN": [
+            "",
+            "BNB",
+            "WIN",
+            "WIN"
+        ],
+        "WLD": [
+            "",
+            "ETH",
+            "WLD",
+            "WLD"
+        ],
+        "WLFI": [
+            "",
+            "ETH",
+            "WLFI",
+            "WLFI"
+        ],
+        "WOO": [
+            "",
+            "ETH",
+            "WOO",
+            "WOO"
+        ],
+        "XAG": [
+            "",
+            "XAG",
+            "XAG",
+            "XAG"
+        ],
+        "XAI": [
+            "",
+            "ARB",
+            "XAI",
+            "XAI"
+        ],
+        "XAN": [
+            "",
+            "ETH",
+            "XAN",
+            "XAN"
+        ],
+        "XAU": [
+            "",
+            "ETH",
+            "XAU",
+            "XAU"
+        ],
+        "XAUT": [
+            "",
+            "ETH",
+            "XAUT",
+            "XAUT"
+        ],
+        "XCN": [
+            "",
+            "ETH",
+            "Onyxcoin",
+            "XCN"
+        ],
+        "XEC": [
+            "",
+            "XEC",
+            "XEC",
+            "XEC"
+        ],
+        "XLM": [
+            "",
+            "XLM",
+            "XLM",
+            "XLM"
+        ],
+        "XMR": [
+            "",
+            "XMR",
+            "XMR",
+            "XMR"
+        ],
+        "XNO": [
+            "",
+            "XNO",
+            "XNO",
+            "XNO"
+        ],
+        "XNY": [
+            "",
+            "BNB",
+            "XNY",
+            "XNY"
+        ],
+        "XPD": [
+            "",
+            "XPD",
+            "XPD",
+            "XPD"
+        ],
+        "XPIN": [
+            "",
+            "BNB",
+            "XPIN",
+            "XPIN"
+        ],
+        "XPL": [
+            "",
+            "XPL",
+            "XPL",
+            "XPL"
+        ],
+        "XPT": [
+            "",
+            "XPT",
+            "XPT",
+            "XPT"
+        ],
+        "XRP": [
+            "",
+            "XRP",
+            "XRP",
+            "XRP"
+        ],
+        "XTZ": [
+            "",
+            "XTZ",
+            "XTZ",
+            "XTZ"
+        ],
+        "XUSD": [
+            "",
+            "ETH",
+            "XUSD",
+            "XUSD"
+        ],
+        "XVG": [
+            "",
+            "XVG",
+            "XVG",
+            "XVG"
+        ],
+        "XVS": [
+            "",
+            "ETH",
+            "XVS",
+            "XVS"
+        ],
+        "YB": [
+            "",
+            "ETH",
+            "YB",
+            "YB"
+        ],
+        "YFI": [
+            "",
+            "ETH",
+            "YFI",
+            "YFI"
+        ],
+        "YGG": [
+            "",
+            "ETH",
+            "YGG",
+            "YGG"
+        ],
+        "ZAMA": [
+            "",
+            "ETH",
+            "ZAMA",
+            "ZAMA"
+        ],
+        "ZBT": [
+            "",
+            "ETH",
+            "ZBT",
+            "ZBT"
+        ],
+        "ZEC": [
+            "",
+            "ZEC",
+            "ZEC",
+            "ZEC"
+        ],
+        "ZEN": [
+            "",
+            "ZEN",
+            "ZEN",
+            "ZEN"
+        ],
+        "ZEREBRO": [
+            "",
+            "SOL",
+            "ZEREBRO",
+            "ZEREBRO"
+        ],
+        "ZETA": [
+            "",
+            "ETH",
+            "ZETA",
+            "ZETA"
+        ],
+        "ZIL": [
+            "",
+            "ZIL",
+            "ZIL",
+            "ZIL"
+        ],
+        "ZK": [
+            "",
+            "ZK",
+            "ZK",
+            "ZK"
+        ],
+        "ZKC": [
+            "",
+            "ETH",
+            "ZKC",
+            "ZKC"
+        ],
+        "ZKP": [
+            "",
+            "ETH",
+            "ZKP",
+            "ZKP"
+        ],
+        "ZORA": [
+            "",
+            "-",
+            "ZORA",
+            "ZORA"
+        ],
+        "ZRO": [
+            "",
+            "ETH",
+            "ZRO",
+            "ZRO"
+        ],
+        "ZRX": [
+            "",
+            "ETH",
+            "ZRX",
+            "ZRX"
+        ],
+        "币安人生": [
+            "38590",
+            "BNB"
+        ],
+        "我踏马来了": [
+            "39322",
+            "BNB"
+        ],
+        "龙虾": [
+            "39671",
+            "BNB"
+        ]
+    }
 }
