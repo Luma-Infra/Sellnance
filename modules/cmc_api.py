@@ -38,54 +38,66 @@ def build_cmc_lookup_lists(binance_base_set, upbit_krw_set, MAPPING_DATA):
 
     REVERSE_LOOKUP = {f"{v[2].upper()}_{v[3].upper()}": k for k, v in DUPLICATED_LIST.items() if len(v) >= 4}
 
-    # 🚀 공통 처리기 (함수 안의 함수로 깔끔하게!)
+   # 🚀 공통 처리기 (귀빈 대접 버전)
     def process_asset(a, exchange_tag):
         if a in EXCLUSION_LIST: return
-        if not utils.is_valid_ticker(a) or "_" in a or re.search(r'\d{6}$', a): return
-
-        lookup_name = f"{a.upper()}_{exchange_tag}" # 예: MET_BINANCE, MET_UPBIT
-        alias_name = REVERSE_LOOKUP.get(lookup_name, a)
-
+        
+        # 1순위: '원본 이름(a)' 그대로 하드코딩 맵에 있는지 확인 (최고 귀빈)
         cmc_id = None
-        if lookup_name in SYMBOL_TO_ID_MAP:
-            cmc_id = str(SYMBOL_TO_ID_MAP[lookup_name])
-        elif alias_name in HARDCODE_VERIFY_SKIP_LIST:
-            cmc_id = str(SYMBOL_TO_ID_MAP.get(alias_name, ""))
-        elif alias_name in DUPLICATED_LIST:
-            cmc_id = str(DUPLICATED_LIST[alias_name][0])
-        elif alias_name in SYMBOL_TO_ID_MAP:
-            cmc_id = str(SYMBOL_TO_ID_MAP[alias_name])
-        elif alias_name in TICKER_DATA:
-            cmc_id = str(TICKER_DATA[alias_name][0])
+        if a in SYMBOL_TO_ID_MAP:
+            cmc_id = str(SYMBOL_TO_ID_MAP[a])
 
-        if cmc_id and cmc_id != "None" and cmc_id != "":
+        # 2순위: 원본에 없을 때만 '숫자(배율)' 제거를 시도
+        # PUMPBTC 같은 건 여기서 BTC가 안 잘리도록 누님이 고친 get_pure_base_asset이 작동함
+        base = utils.get_pure_base_asset(a).upper()
+        
+        # [귀빈 예외] 원본과 배율 제거본이 다를 때(즉, 숫자만 붙었을 때) 하드코딩 맵 재조회
+        if not cmc_id and a.upper() != base:
+            if base in SYMBOL_TO_ID_MAP:
+                cmc_id = str(SYMBOL_TO_ID_MAP[base])
+
+        # 유효성 검사 (숫자 6자리 등 쓰레기 필터링)
+        if not base or "_" in base or re.search(r'\d{6}$', base): return
+
+        # 이름표 및 별칭 확정 (누님의 요청대로 BTC/ETH 자르기는 패스하므로 a를 우선 사용)
+        lookup_name = f"{a.upper()}_{exchange_tag}"
+        alias_name = REVERSE_LOOKUP.get(lookup_name, a.upper()) 
+
+        # 3순위: 중복 리스트(별명) 및 족보 확인
+        if not cmc_id:
+            if alias_name in DUPLICATED_LIST:
+                cmc_id = str(DUPLICATED_LIST[alias_name][0])
+            elif alias_name in TICKER_DATA:
+                cmc_id = str(TICKER_DATA[alias_name][0])
+
+        # --- 장부 기록 ---
+        if cmc_id and cmc_id not in ["None", ""]:
             id_lookup.append(cmc_id)
             asset_to_lookup_key[lookup_name] = cmc_id
         else:
-            norm = SPECIAL_SYMBOL_MAP.get(utils.get_pure_base_asset(a), utils.get_pure_base_asset(a))
-            if utils.is_valid_ticker(norm) and "_" not in norm and norm.isascii():
-                sym_lookup.append(norm)
-                asset_to_lookup_key[lookup_name] = norm
+            # 하드코딩 없으면 원본(a) 혹은 배율 제거본(base)으로 CMC 타격
+            # 숫자가 붙었던 녀석은 base로, 일반 합성어는 a 그대로 보냄
+            target_name = base if a.upper() != base else a.upper()
+            sym_lookup.append(target_name)
+            asset_to_lookup_key[lookup_name] = target_name
 
     # 🚀 바이낸스와 업비트를 '각각' 돌립니다. 이제 EDGE와 MET가 둘 다 큐에 들어갑니다!
-    for a in binance_base_set: process_asset(a, "BINANCE")
-    for a in upbit_krw_set: process_asset(a, "UPBIT")
+    for base in binance_base_set: process_asset(base, "BINANCE")
+    for base in upbit_krw_set: process_asset(base, "UPBIT")
                 
     return list(set(id_lookup)), list(set(sym_lookup)), asset_to_lookup_key
 
 # CMC 단일 묶음 호출기.
 def fetch_cmc_market_data(binance_data, upbit_krw_set, MAPPING_DATA):
     # 1. 전체 자산 목록 합치기
-    binance_base_set = {t.replace('USDT', '') for t in binance_data.keys()}
-    # all_assets = binance_base_set.union(upbit_only_assets)
+    binance_base_set = {utils.get_pure_base_asset(t.replace('USDT', '')).upper() for t in binance_data.keys()}    # all_assets = binance_base_set.union(upbit_only_assets)
 
     # 2. 조회 명단 작성 (UID파 vs 티커파)
     # 🚀 upbit_only_assets 파라미터를 버리고 전체 upbit_krw_set 받기
     id_lookup, sym_lookup, asset_to_lookup_key = build_cmc_lookup_lists(binance_base_set, upbit_krw_set, MAPPING_DATA)
-
+    
     # 3. CMC API 실행
     market_data_map = execute_cmc_requests(id_lookup, sym_lookup)
-
     return market_data_map, asset_to_lookup_key
 
 # ThreadPool 돌려서 CMC 데이터 긁어오고 market_data_map 만드는 로직.

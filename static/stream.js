@@ -1,5 +1,13 @@
 // stream.js
 // --- 🌊 실시간 웹소켓 엔진 ---
+
+// 타이틀만 광속으로 업데이트하는 함수 분리
+const updateTabTitle = (price, sym, prec) => {
+  const formatted = formatSmartPrice(price, prec || 2);
+  // 렌더링 엔진과 별개로 실행되어 딜레이가 사라짐
+  document.title = `${formatted} ${sym.toUpperCase()} | Xsellance 🚀`;
+};
+
 function startRealtimeCandle(symbol, interval, isFutures, isSpot) {
   const streamName = `${symbol.toLowerCase()}usdt@kline_${interval}`;
   const wsBase = isFutures ? "wss://fstream.binance.com/market/ws" : "wss://stream.binance.com:9443/ws";
@@ -36,9 +44,38 @@ function startRealtimeCandle(symbol, interval, isFutures, isSpot) {
 
     candleSeries.setData([...mainData, ...ghostData]);
 
-    const lastPrice = mainData[mainData.length - 1].close;
-    const p = currentTableData.find(c => c.Symbol === symbol.toUpperCase)?.precision || 2;
-    document.title = `${formatSmartPrice(lastPrice, p)} ${symbol} | ?sellance 🚀`;
+    // const lastPrice = mainData[mainData.length - 1].close;
+    // const p = currentTableData.find(c => c.Symbol === symbol.toUpperCase())?.precision || 2;
+    // document.title = `${formatSmartPrice(lastPrice, p)} ${symbol} | ?sellance 🚀`;
+  };
+
+  // 🚀 [해결] 핸들러를 별도 함수로 빼서 신규 연결/채널 교체시 모두 재사용해야 함!
+  const handleBinanceMessage = (e) => {
+    if (window.isFetchingChart) return;
+    const res = JSON.parse(e.data);
+    if (res.e !== "kline") return;
+
+    const tickSymbol = res.k.s.toUpperCase();
+    const currentAssetClean = currentAsset.split('(')[0].trim().toUpperCase();
+    if (!tickSymbol.includes(currentAssetClean)) return;
+
+    const k = res.k;
+    const liveData = { time: k.t / 1000, open: +k.o, high: +k.h, low: +k.l, close: +k.c };
+
+    if (mainData.length > 0) {
+      const lastIdx = mainData.length - 1;
+      if (mainData[lastIdx].time === liveData.time) mainData[lastIdx] = liveData;
+      else if (liveData.time > mainData[lastIdx].time) mainData.push(liveData);
+    }
+
+    if (typeof updateRealtimeCountdown === "function") updateRealtimeCountdown(res.E);
+
+    // 🚀 [광속 타이틀] res.k.s(실시간 심볼)와 테이블 정밀도 사용
+    const currentP = currentTableData.find(c => c.Symbol === currentAssetClean)?.precision || 2;
+    updateTabTitle(+k.c, symbol, currentP); // symbol은 인자값
+
+    updateStatus(liveData);
+    renderWithGhosts();
   };
 
   // ---------------------------------------------------------
@@ -54,57 +91,20 @@ function startRealtimeCandle(symbol, interval, isFutures, isSpot) {
   // 📌 3. 바이낸스 타격 (선물 or 현물)
   // ---------------------------------------------------------
   if (isFutures || isSpot) {
-    // 1️⃣ 소켓이 없거나 닫혔으면 새로 생성
     if (!binanceChartWs || binanceChartWs.readyState !== WebSocket.OPEN) {
       binanceChartWs = new WebSocket(wsBase);
       binanceChartWs.onopen = () => {
         binanceChartWs.send(JSON.stringify({ method: "SUBSCRIBE", params: [streamName], id: getWsId() }));
         currentKlineStream = streamName;
-        console.log(`✅ [차트소켓] 신규 연결 및 구독 완료: ${streamName}`);
-        document.getElementById("status-dot").style.background = "#26a69a";
-        document.getElementById("status-text").innerText = "Binance LIVE";
       };
-
-      binanceChartWs.onmessage = (e) => {
-        // 🚀 [방어막] 차트 로딩 중이면 기존 코인의 틱 데이터는 가차 없이 씹는다!
-        if (window.isFetchingChart) return;
-
-        const res = JSON.parse(e.data);
-        if (res.e !== "kline") return; // 캔들 아니면 무시
-
-        // 🚀 [가장 중요] 다른 코인 데이터 새치기 방어
-        const tickSymbol = res.k.s.toUpperCase();
-        const currentAssetClean = currentAsset.split('(')[0].trim().toUpperCase();
-
-        if (!tickSymbol.includes(currentAssetClean)) return; // 👈 튀는 현상 막아주는 1등 공신
-
-        const k = res.k;
-        const liveData = { time: k.t / 1000, open: +k.o, high: +k.h, low: +k.l, close: +k.c };
-
-        if (mainData.length > 0) {
-          const lastIdx = mainData.length - 1;
-          if (mainData[lastIdx].time === liveData.time) mainData[lastIdx] = liveData;
-          else if (liveData.time > mainData[lastIdx].time) mainData.push(liveData);
-        }
-
-        // 🚀 [결정적 수리] 바낸도 카운트다운 엔진에 '서버 시간(res.E)'을 먹여준다!
-        if (typeof updateRealtimeCountdown === "function") {
-          // res.E 는 바이낸스가 밀리초 단위로 쏴주는 정확한 서버 현재 시간입니다.
-          updateRealtimeCountdown(res.E);
-        }
-
-        updateStatus(liveData);
-        renderWithGhosts();
-      };
-    }
-    // 2️⃣ 이미 열려있으면 채널만 교체 (구독/해지)
-    else {
+      binanceChartWs.onmessage = handleBinanceMessage; // ✅ 신규 연결시 등록
+    } else {
       if (currentKlineStream && currentKlineStream !== streamName) {
         binanceChartWs.send(JSON.stringify({ method: "UNSUBSCRIBE", params: [currentKlineStream], id: getWsId() }));
       }
       binanceChartWs.send(JSON.stringify({ method: "SUBSCRIBE", params: [streamName], id: getWsId() }));
+      binanceChartWs.onmessage = handleBinanceMessage; // ✅ [중요] 채널 교체시에도 핸들러 갱신 (심볼 고정 해결)
       currentKlineStream = streamName;
-      console.log(`🎯 [타겟교체] ${streamName}`);
     }
   }
 
@@ -176,6 +176,10 @@ function startRealtimeCandle(symbol, interval, isFutures, isSpot) {
 
         const displayPrice = formatSmartPrice(liveData.close, p);
         document.title = `2 ${displayPrice} ${symbol} | sellance 🚀`;
+
+        // 🚀 [광속 타이틀] 업비트도 통합 함수로 교체! (오타 '2' 제거)
+        const upbitP = currentTableData.find(c => c.Symbol === currentAssetClean)?.precision || 2;
+        updateTabTitle(liveData.close, symbol, upbitP);
 
         if (typeof updateRealtimeCountdown === "function") {
           updateRealtimeCountdown(serverMs);

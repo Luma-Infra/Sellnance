@@ -181,9 +181,16 @@ async function fetchHistory(symbol) {
   const isSpot = (currentMarket === "SPOT");
   const isUpbit = (currentMarket === "UPBIT");
 
-  // 티커 규격 맞추기
-  const binanceTicker = `${rawSymbol}USDT`;
-  const upbitTicker = `KRW-${rawSymbol}`;
+  // 🚀 [세련된 방법] 현재 클릭한 코인의 전체 데이터(장부)를 찾습니다.
+  const rowInfo = window.currentTableData.find(c => c.Symbol === rawSymbol);
+
+  // 🚀 장부에 Upbit_Symbol이 적혀있으면 그거 쓰고, 없으면 그냥 원본(rawSymbol) 씁니다.
+  const bTicker = rawSymbol;
+  const uTicker = (rowInfo && rowInfo.Upbit_Symbol) ? rowInfo.Upbit_Symbol : rawSymbol;
+
+  // 티커 규격 맞추기 (알아서 BTTC와 BTT로 나뉘어 들어감)
+  const binanceTicker = `${bTicker}USDT`;
+  const upbitTicker = `KRW-${uTicker}`;
 
   const loadingModal = document.getElementById("chart-loading-modal");
   if (loadingModal) loadingModal.classList.remove("hidden");
@@ -276,6 +283,7 @@ async function fetchHistory(symbol) {
 
         // 🚀 [이동] 실시간 소켓은 미리 시동을 걸어둡니다.
         if (typeof startRealtimeCandle === "function") {
+          const targetSymbol = isUpbit ? uTicker : bTicker;
           startRealtimeCandle(rawSymbol, currentTF, isFutures, isSpot);
         }
 

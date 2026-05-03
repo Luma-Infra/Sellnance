@@ -61,8 +61,10 @@ def get_pure_base_asset(ticker):
     # USDT, KRW 외에 다른 마켓이 추가되어도 대응 가능하도록 리스트화
     for quote in ['USDT', 'KRW', 'BTC', 'ETH']:
         if ticker.endswith(quote):
-            ticker = ticker[:-len(quote)]
-            break
+            # 단, 'BTC', 'ETH' 순수한 티커는 자르면 안되므로 길이 체크 추가
+            if len(ticker) > len(quote):
+                ticker = ticker[:-len(quote)]
+                break
 
     # 2. 정규식으로 배율과 순수 심볼 분리
     # ^(10+|1[MB])? : 시작부분의 10, 100, 1M, 1B 등을 그룹 캡처
@@ -81,7 +83,6 @@ def is_valid_ticker(ticker):
     (한자, 특수문자, 소문자, 이모지 등 온갖 잡다구리한 쓰레기 티커들 사전에 차단)
     """
     # ^[A-Z0-9]+$ : 시작부터 끝까지 영어 대문자와 숫자로만 이루어져야 함
-    
     if re.match(r'^[A-Z0-9]+$', ticker):
         return True
     return False

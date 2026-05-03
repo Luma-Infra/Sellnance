@@ -25,50 +25,40 @@ def build_binance_row(
     display_name = REVERSE_LOOKUP.get(f"{raw_symbol.upper()}_BINANCE", base)
     
     # 2. 족보에서 체인 정보 먼저 확정 (구조적 순서 선점)
+    # 🚀 [정리 완료] CMC 정보 매칭 및 만능 열쇠 (이 순서가 파이썬의 정석입니다)
     ticker_info = TICKER_DATA.get(display_name)
     saved_chain = ticker_info[1] if isinstance(ticker_info, list) else ticker_info
+    existing_uid = ticker_info[0] if isinstance(ticker_info, list) and len(ticker_info) > 0 else ""
+    hardcoded_id = str(SYMBOL_TO_ID_MAP.get(base, ""))
     
-    # 3. CMC 정보 매칭
+    # 🚀 [지문 확정] 1순위: 족보 / 2순위: 하드코딩(base) / 3순위: 하드코딩(display) / 4순위: CMC결과
+    final_ucid = existing_uid or hardcoded_id or str(SYMBOL_TO_ID_MAP.get(display_name, ""))
+    
     lookup_id = asset_to_lookup_key.get(f"BINANCE_{raw_symbol.upper()}") or asset_to_lookup_key.get(f"BINANCE_{base.upper()}")
-    info = market_data_map.get(lookup_id)
-    ucid = info.get('ucid', '') if info else ''
+    # 3중 타격: 장부 키 -> 순수 티커 -> 하드코딩 ID 순으로 찔러서 info 무조건 확보!
+    # TO-BE: 👇 final_ucid를 가장 먼저 찔러야 EDGE 두 놈이 자기 장부를 찾아갑니다!
+    info = market_data_map.get(str(final_ucid)) or market_data_map.get(lookup_id)
     
-    # 중복 UID 체크
-    if ucid and ucid in processed_uids: return None, False
-    if ucid: processed_uids.add(ucid)
+    # 중복 UID 체크 (무조건 final_ucid로 검사)
+    # TO-BE: 👇 아래처럼 "주석 처리" 하거나 삭제하세요. 
+    # (단, processed_uids.add는 유지해서 족보 세탁기가 누가 누군지 알게는 해줍니다.)
+    
+    # CMC에서 새로운 ucid를 찾았다면 최종 업데이트
+    if not final_ucid and info: final_ucid = info.get('ucid', '')    
+    if final_ucid: processed_uids.add(final_ucid)
 
-    # 4. 재료 가공 (순서 중요: ch_sym 확정 후 이미지 생성)
+    # 4. 재료 가공 (무조건 final_ucid로 로고 생성!)
     ch_sym = saved_chain or CHAIN_LOGO_MAP.get(base) or (info.get('chain_symbol') if info else '')
     chain = utils.create_image_tag(CHAIN_LOGO_MAP.get(ch_sym, '')) if ch_sym in CHAIN_LOGO_MAP else ch_sym
-    logo = utils.create_image_tag(f"https://s2.coinmarketcap.com/static/img/coins/64x64/{ucid}.png" if ucid else "")
+    logo = utils.create_image_tag(f"https://s2.coinmarketcap.com/static/img/coins/64x64/{final_ucid}.png" if final_ucid else "")
 
-    # 5. 족보 업데이트 및 시총 계산
-    # 🚀 [누님의 Trust & Fill 로직]
-    ticker_info = TICKER_DATA.get(display_name)
-    
-    # 1. 족보에 이미 UID가 있다면 최우선으로 믿고 가져옵니다 (Trust)
-    existing_uid = ticker_info[0] if isinstance(ticker_info, list) and len(ticker_info) > 0 else ""
-    
-    # 2. 최종 UID 결정전: 기존 족보 -> 하드코딩 맵 -> CMC 결과 순으로 생존 경쟁!
-    final_ucid = existing_uid or str(SYMBOL_TO_ID_MAP.get(display_name, "")) or ucid
-    
-    
-    
-    # builder.py 족보 세탁기 로직 바로 위에 삽입
-    if not ucid and not existing_uid:
-        print(f"🚨 [추적] {display_name} 수사 실패! | lookup_id: {lookup_id} | info 존재여부: {info is not None}")
-    
-    
-    
-    
-
-    # 3. 세탁기 가동 조건: 아예 없거나, 4단이 아니거나, UID가 비어있을 때만!
+    # 5. 족보 업데이트 (세탁기)
     if not ticker_info or (isinstance(ticker_info, list) and (len(ticker_info) < 4 or not ticker_info[0])):
         TICKER_DATA[display_name] = [
-            final_ucid,                           # 🚀 믿음의 최종 UID (Fill)
-            ch_sym,                               # 체인명
+            final_ucid,                           # 🚀 믿음의 최종 UID
+            ch_sym,                               
             info.get('name', base) if info else (ticker_info[2] if ticker_info and len(ticker_info) >= 3 else base),
-            base                                  # 실제티커
+            base                                  
         ]
         is_updated = True
         print(f"✅ [족보 세탁] {display_name} UID 복구 완료: {final_ucid}")
@@ -97,6 +87,7 @@ def build_binance_row(
     # 7. 데이터 조립
     row = {
         # --- 1. 기본 식별 정보 ---
+            "UID": final_ucid,
             "Symbol": raw_symbol,
             "DisplayTicker": display_name,
             "Ticker": ticker, 
@@ -132,8 +123,7 @@ def build_binance_row(
     }
     return row, is_updated
 
- # 업비트 전용 1줄짜리 결과물 뱉는 함수.
-
+# 업비트 전용 1줄짜리 결과물 뱉는 함수.
 def build_upbit_row(
         base, up_info,binance_data, market_data_map, asset_to_lookup_key,
         global_listings, upbit_krw_set, bithumb_krw_set, 
@@ -181,36 +171,43 @@ def build_upbit_row(
     if utc0_open > 0:
         change_today = utils.js_round(((current_p - utc0_open) / utc0_open * 100), 2)
 
-    # 로고 및 체인 설정
+# 🚀 [정리 완료] 업비트용 만능 열쇠 및 지문 확정
     ticker_info = TICKER_DATA.get(display_name)
     saved_chain = ticker_info[1] if isinstance(ticker_info, list) else ticker_info
+    existing_uid = ticker_info[0] if isinstance(ticker_info, list) and len(ticker_info) > 0 else ""
+    hardcoded_id = str(SYMBOL_TO_ID_MAP.get(base, ""))
+
+    final_ucid = existing_uid or hardcoded_id or str(SYMBOL_TO_ID_MAP.get(display_name, ""))
+    
+    lookup_id = asset_to_lookup_key.get(f"UPBIT_{base}")
+    # 3중 타격으로 업비트 코인 시총/볼륨 확보!
+    # TO-BE: 👇 final_ucid를 가장 먼저 찔러야 EDGE 두 놈이 자기 장부를 찾아갑니다!
+    info = market_data_map.get(str(final_ucid)) or market_data_map.get(lookup_id)
+
+    # 중복 UID 체크 및 방어
+    if final_ucid and final_ucid in processed_uids and display_name not in DUPLICATED_LIST:
+        return None, False
+    if final_ucid: processed_uids.add(final_ucid)
+
+    # 로고 및 체인 설정
     ch_sym = saved_chain or CHAIN_LOGO_MAP.get(display_name) or (info.get('chain_symbol') if info else '')
     chain = utils.create_image_tag(CHAIN_LOGO_MAP.get(ch_sym, '')) if ch_sym in CHAIN_LOGO_MAP else ch_sym
-    logo = utils.create_image_tag(f"https://s2.coinmarketcap.com/static/img/coins/64x64/{ucid}.png" if ucid else "")
+    logo = utils.create_image_tag(f"https://s2.coinmarketcap.com/static/img/coins/64x64/{final_ucid}.png" if final_ucid else "")
 
-    # 🚀 [신규 상장 캐치!] 업비트에만 있는 코인 등록
-    # 🚀 [누님의 Trust & Fill 로직]
-    ticker_info = TICKER_DATA.get(display_name)
-    
-    # 1. 족보에 이미 UID가 있다면 최우선으로 믿고 가져옵니다 (Trust)
-    existing_uid = ticker_info[0] if isinstance(ticker_info, list) and len(ticker_info) > 0 else ""
-    
-    # 2. 최종 UID 결정전: 기존 족보 -> 하드코딩 맵 -> CMC 결과 순으로 생존 경쟁!
-    final_ucid = existing_uid or str(SYMBOL_TO_ID_MAP.get(display_name, "")) or ucid
-
-    # 3. 세탁기 가동 조건: 아예 없거나, 4단이 아니거나, UID가 비어있을 때만!
+    # 🚀 [신규 상장 캐치 & 족보 세탁기]
     if not ticker_info or (isinstance(ticker_info, list) and (len(ticker_info) < 4 or not ticker_info[0])):
         TICKER_DATA[display_name] = [
-            final_ucid,                           # 🚀 믿음의 최종 UID (Fill)
-            ch_sym,                               # 체인명
+            final_ucid,                           
+            ch_sym,                               
             info.get('name', base) if info else (ticker_info[2] if ticker_info and len(ticker_info) >= 3 else base),
-            base                                  # 실제티커
+            base                                  
         ]
         is_updated = True
         print(f"✅ [족보 세탁] {display_name} UID 복구 완료: {final_ucid}")
 
     # 가격 및 정밀도
-    p = up_info['price']
+    # p = up_info['price']
+    p = current_p
     up_precision = 0 if p >= 100 else 1 if p >= 10 else 2 if p >= 1 else 3 if p >= 0.1 else 4
 
     # 상장 거래소 목록 조립
@@ -225,6 +222,7 @@ def build_upbit_row(
 
     row = {
             # --- 1. 기본 식별 정보 ---
+            "UID": final_ucid,
             "Symbol": base,
             "DisplayTicker": display_name,
             "Ticker": f"{base}KRW",
@@ -297,7 +295,7 @@ def assemble_final_dashboard(
      SYMBOL_TO_ID_MAP, MANUAL_SUPPLY_MAP, SPECIAL_SYMBOL_MAP, HARDCODE_VERIFY_SKIP_LIST
     ) = config_manager.get_mapping_parts(mapping)
     
-    final_results = []
+    final_results = {}
     any_update = False
     processed_uids = set()
     
@@ -321,8 +319,9 @@ def assemble_final_dashboard(
             continue
         
         row, updated = build_binance_row(ticker, b_info, market_data_map, asset_to_lookup_key, global_listings, upbit_krw_set, bithumb_krw_set, REVERSE_LOOKUP, processed_uids, mapping)
-        if row: 
-            final_results.append(row)
+        if row:
+            uid = row.get("UID")
+            final_results[uid] = row
             if updated: any_update = True
 
     # 2. 업비트 투입 (upbit_only_assets 버리고 upbit_krw_set 사용!)
@@ -347,11 +346,24 @@ def assemble_final_dashboard(
             upbit_krw_set, bithumb_krw_set,
             REVERSE_LOOKUP, processed_uids, krw_usd_rate, mapping
         )
-        if row: final_results.append(row)
+        if row: 
+            uid = row.get("UID")
+            if uid in final_results:
+                # 🚀 MET/MET2 합체! 기존 바낸 데이터에 업비트 정보만 덧칠합니다.
+                final_results[uid]["Upbit"] = 'O'
+                final_results[uid]["Listed_Exchanges"] = list(set(final_results[uid].get("Listed_Exchanges", []) + row.get("Listed_Exchanges", [])))
+                if row.get("Price_KRW"): final_results[uid]["Price_KRW"] = row["Price_KRW"]
+                # 🚀 [우아한 정공법 추가] 
+                # 나중에 프론트가 차트 부를 때 쓰라고 업비트 전용 이름(base)을 남겨줍니다.
+                final_results[uid]["Upbit_Symbol"] = base
+            else:
+                final_results[uid] = row
         if updated: any_update = True
 
     # 3. 청소기 가동
     # if clean_stale_tickers(binance_data, upbit_krw_set, mapping):
     #     any_update = True
         
-    return final_results, any_update
+    # AS-IS: return final_results, any_update
+    # TO-BE: 👇 딕셔너리의 값들만 리스트로 뽑아서 리턴!
+    return list(final_results.values()), any_update
