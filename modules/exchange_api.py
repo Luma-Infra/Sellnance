@@ -89,6 +89,10 @@ def fetch_exchange_market_data(mapping):
 
     return binance_data, upbit_data, upbit_krw_set, upbit_only_assets, bithumb_krw_set
 
+
+# 전역 세션 객체 생성 (커넥션 풀링을 통한 속도 극대화)
+api_session = requests.Session()
+
 # 9시 시가 수집
 def fetch_binance_open(task):
     """(보조) 선물/현물 구분해서 9시 시가 수집 (task: (symbol, is_futures))"""
@@ -103,7 +107,7 @@ def fetch_binance_open(task):
         url = f"https://api.binance.com/api/v3/klines?symbol={symbol}USDT&interval=1d&limit=1"
         
     try:
-        res = requests.get(url, timeout=5).json()
+        res = api_session.get(url, timeout=5).json()
         if res and isinstance(res, list) and len(res) > 0:
             return symbol, float(res[0][1])
     except Exception as e:
@@ -118,13 +122,21 @@ def fetch_binance_futures_spot():
     binance_base_assets = set()
     
     try:
-        # 1. 기초 데이터 수집 (선물/현물 마켓 정보 및 24시간 시세)
-        info_f = requests.get("https://fapi.binance.com/fapi/v1/exchangeInfo").json()
-        prices_f = requests.get("https://fapi.binance.com/fapi/v1/ticker/24hr").json()
+        # 1. 기초 데이터 수집 (선물/현물 마켓 정보 및 24시간 시세 병렬 타격)
+        urls = [
+            "https://fapi.binance.com/fapi/v1/exchangeInfo",
+            "https://fapi.binance.com/fapi/v1/ticker/24hr",
+            "https://api.binance.com/api/v3/exchangeInfo",
+            "https://api.binance.com/api/v3/ticker/24hr"
+        ]
+        
+        def fetch_url(url):
+            return api_session.get(url, timeout=5).json()
+            
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            info_f, prices_f, info_s, prices_s = list(executor.map(fetch_url, urls))
+            
         active_f = {s['symbol'] for s in info_f['symbols'] if s['status'] == 'TRADING' and s['quoteAsset'] == 'USDT'}
-
-        info_s = requests.get("https://api.binance.com/api/v3/exchangeInfo").json()
-        prices_s = requests.get("https://api.binance.com/api/v3/ticker/24hr").json()
         active_s = {s['symbol'] for s in info_s['symbols'] if s['status'] == 'TRADING' and s['quoteAsset'] == 'USDT'}
 
         # 2. 정밀도(Precision) 맵 생성
@@ -182,7 +194,7 @@ def fetch_upbit_prices(upbit_only_assets):
         try:
             chunk = upbit_list[i:i+100]
             markets_str = ",".join([f"KRW-{k}" for k in chunk])
-            res = requests.get(f"https://api.upbit.com/v1/ticker?markets={markets_str}", timeout=5).json()
+            res = api_session.get(f"https://api.upbit.com/v1/ticker?markets={markets_str}", timeout=5).json()
             
             for item in res:
                 sym = item['market'].replace('KRW-', '')
@@ -196,4 +208,3 @@ def fetch_upbit_prices(upbit_only_assets):
             print(f"🚨 [업비트 수집 에러 (Chunk)]: {e}")
 
     return upbit_data
-

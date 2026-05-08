@@ -1,9 +1,9 @@
 package main
 
 import (
+	"log"
 	"sync"
 	"time"
-	"log"
 )
 
 // 🚀 Redis를 대체하는 Go의 완벽한 인메모리 저장소
@@ -13,7 +13,19 @@ type CacheStore struct {
 	LastUpdated string
 }
 
+type ProgressState struct {
+	mu      sync.RWMutex
+	Phases  []string
+	Status  []string
+	Percent int
+}
+
 var globalCache = CacheStore{}
+var globalProgress = ProgressState{
+	Phases:  []string{"데이터 수집 준비", "거래소/CMC 갱신", "데이터 조립 및 매핑"},
+	Status:  []string{"대기", "대기", "대기"},
+	Percent: 100, // 초기 상태는 완료
+}
 
 // 읽기 전용 (JS 프론트엔드가 데이터를 달라고 할 때)
 func GetCachedData() ([]map[string]interface{}, string) {
@@ -22,13 +34,37 @@ func GetCachedData() ([]map[string]interface{}, string) {
 	return globalCache.Data, globalCache.LastUpdated
 }
 
+// SSE에서 진행 상태를 읽어갈 때 사용
+func GetProgressData() map[string]interface{} {
+	globalProgress.mu.RLock()
+	defer globalProgress.mu.RUnlock()
+	return map[string]interface{}{
+		"phases":  globalProgress.Phases,
+		"status":  globalProgress.Status,
+		"percent": globalProgress.Percent,
+	}
+}
+
+func updateProgress(percent int, statuses []string) {
+	globalProgress.mu.Lock()
+	defer globalProgress.mu.Unlock()
+	globalProgress.Percent = percent
+	if statuses != nil {
+		globalProgress.Status = statuses
+	}
+}
+
 // 데이터 갱신 (파이썬 ThreadPoolExecutor 대체)
 func ForceUpdateCache() {
 	log.Println("💡 API 데이터를 수집합니다... (Goroutine 병렬 처리)")
+	updateProgress(10, []string{"진행중...", "대기", "대기"})
 	
 	// 🚀 fetcher.go에 있는 병렬 수집기 호출
+	updateProgress(40, []string{"완료!!", "진행중...", "대기"})
 	newData := FetchAllMarketsParallel()
 
+	if newData != nil {
+		updateProgress(80, []string{"완료!!", "완료!!", "진행중..."})
 	// 한국 시간 KST 가져오기
 	loc, _ := time.LoadLocation("Asia/Seoul")
 	nowStr := time.Now().In(loc).Format("2006-01-02 15:04:05")
@@ -39,6 +75,11 @@ func ForceUpdateCache() {
 	globalCache.mu.Unlock()
 
 	log.Printf("✅ 데이터 캐싱 완료! (총 %d개)\n", len(newData))
+	} else {
+		log.Println("🚨 데이터 수집 실패. 기존 캐시를 유지합니다.")
+	}
+
+	updateProgress(100, []string{"완료!!", "완료!!", "완료!!"})
 }
 
 // 1시간마다 알아서 돌아가는 캐시 갱신 데몬

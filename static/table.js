@@ -1,4 +1,6 @@
 // table.js
+import { store, CONFIG } from './store.js';
+
 // 1. 데이터 로드 함수
 async function loadTableData(force = false) {
   const modal = document.getElementById("loading-modal");
@@ -14,17 +16,17 @@ async function loadTableData(force = false) {
     const result = await res.json();
     updateTimeSpan.innerText = `마지막 업데이트: ${result.last_updated}`;
 
-    window.originalTableData = JSON.parse(JSON.stringify(result.data)); // 🛡️ 철벽 방어 원본
-    window.currentTableData = JSON.parse(JSON.stringify(result.data)); // 🏃 실시간 작업용
+    store.originalTableData = JSON.parse(JSON.stringify(result.data)); // 🛡️ 철벽 방어 원본
+    store.currentTableData = JSON.parse(JSON.stringify(result.data)); // 🏃 실시간 작업용
 
-    window.currentTableData.forEach((row) => {
+    store.currentTableData.forEach((row) => {
       row.DisplayTicker = (row.DisplayTicker || row.Symbol)
         .toString()
         .toUpperCase();
       // 💡 여기서 정밀도(p) 맵핑 데이터도 같이 만들면 find 지옥 탈출 가능!
     });
 
-    if (currentSortCol && sortState !== "") {
+    if (store.currentSortCol && store.sortState !== "") {
       // 1. 순위 재계산 (경주마 로직 실행)
       applyRealtimeSort();
     } else {
@@ -42,14 +44,23 @@ async function loadTableData(force = false) {
 
 // 2. ⭐️ 3단계 정렬 핵심 로직 ⭐️ (리셋 & 상단 이동 추가)
 function sortTable(colKey) {
-  currentRenderLimit = 50;
+  store.currentRenderLimit = 50;
 
-  // 1. 클릭할 때마다 3단계 사이클 돌리기
-  if (currentSortCol === colKey) {
-    sortState = sortState === "" ? "desc" : sortState === "desc" ? "asc" : "";
+  // 🚀 [추가] 2단 정렬 타겟인지 확인
+  const isTwoStep = colKey.includes("Change") || colKey === "Volume"
+
+  // 1. 클릭할 때마다 2 ~ 3단계 사이클 돌리기
+  if (store.currentSortCol === colKey) {
+    if (isTwoStep) {
+      // 2단: 내림차순 <-> 오름차순 무한 반복 (빈 문자열 스킵)
+      store.sortState = store.sortState === "desc" ? "asc" : "desc";
+    } else {
+      // 3단: 내림차순 -> 오름차순 -> 초기화
+      store.sortState = store.sortState === "" ? "desc" : store.sortState === "desc" ? "asc" : "";
+    }
   } else {
-    currentSortCol = colKey;
-    sortState = "desc";
+    store.currentSortCol = colKey;
+    store.sortState = "desc";
   }
 
   // 🚀 [추가] 스크롤을 최상단으로 강제 소환!
@@ -63,14 +74,14 @@ function sortTable(colKey) {
   const arrowEl = document.getElementById(`sort-${colKey}`);
 
   // 3. 정렬 실행
-  if (sortState === "") {
+  if (store.sortState === "") {
     // [3타 - 제자리 복구]
-    currentTableData = [...originalTableData];
+    store.currentTableData = [...store.originalTableData];
     if (arrowEl) arrowEl.innerText = "";
     renderTable(); // renderTable 내부에서도 currentRenderLimit(50)을 쓰니까 완벽!
   } else {
     // [1타, 2타 - 실시간 정렬]
-    if (arrowEl) arrowEl.innerText = sortState === "asc" ? "▲" : "▼";
+    if (arrowEl) arrowEl.innerText = store.sortState === "asc" ? "▲" : "▼";
 
     // 정렬은 순식간에 해버리기
     simpleSortData();
@@ -88,7 +99,7 @@ function createRowElement(row) {
   updateRowInnerHTML(tr, row);
 
   // 새로 만든 행을 CCTV에 즉시 등록
-  if (tableObserver) tableObserver.observe(tr);
+  if (store.tableObserver) store.tableObserver.observe(tr);
   return tr;
 }
 
@@ -99,19 +110,19 @@ function renderTable() {
 
   // ⭐️ 기존 감시 카메라 끄고 초기화
   // 🚀 핵심: 새 카메라 달기 전에 "기존 카메라"를 완전히 파괴해야 합니다!
-  if (tableObserver) {
-    tableObserver.disconnect();
-    tableObserver = null; // 참조까지 끊어버리세요
+  if (store.tableObserver) {
+    store.tableObserver.disconnect();
+    store.tableObserver = null; // 참조까지 끊어버리세요
   }
 
   // ⭐️ 새 감시 카메라 설치
-  tableObserver = new IntersectionObserver(
+  store.tableObserver = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
         const sym = entry.target.dataset.sym; // 코인 이름 가져오기
         if (entry.isIntersecting)
-          visibleSymbols.add(sym); // 화면에 들어오면 추가
-        else visibleSymbols.delete(sym); // 화면 밖으로 나가면 삭제
+          store.visibleSymbols.add(sym); // 화면에 들어오면 추가
+        else store.visibleSymbols.delete(sym); // 화면 밖으로 나가면 삭제
       });
     },
     {
@@ -121,7 +132,7 @@ function renderTable() {
   );
 
   // 🚨 핵심: 전체가 아니라 상위 RENDER_LIMIT만 자릅니다!
-  const topData = currentTableData.slice(0, currentRenderLimit); // 🚀 이걸로 변경
+  const topData = store.currentTableData.slice(0, store.currentRenderLimit); // 🚀 이걸로 변경
   topData.forEach((row) => {
     // 만들어둔 헬퍼 함수로 깔끔하게 렌더링
     tbody.appendChild(createRowElement(row));
@@ -142,18 +153,18 @@ function simpleSortData() {
     Ticker: "DisplayTicker",
   };
 
-  const key = sortKeyMap[currentSortCol] || currentSortCol;
-  const isAsc = sortState === "asc";
+  const key = sortKeyMap[store.currentSortCol] || store.currentSortCol;
+  const isAsc = store.sortState === "asc";
 
-  currentTableData.sort((a, b) => {
+  store.currentTableData.sort((a, b) => {
     // 🚀 [수정] 실시간 버퍼(tickerBuffer)에 최신값이 있다면 그걸 우선 사용!
     let valA =
-      tickerBuffer[a.Symbol] && key.includes("Change")
-        ? tickerBuffer[a.Symbol].P
+      store.tickerBuffer[a.Symbol] && key.includes("Change")
+        ? store.tickerBuffer[a.Symbol].P
         : a[key];
     let valB =
-      tickerBuffer[b.Symbol] && key.includes("Change")
-        ? tickerBuffer[b.Symbol].P
+      store.tickerBuffer[b.Symbol] && key.includes("Change")
+        ? store.tickerBuffer[b.Symbol].P
         : b[key];
 
     // 1. 둘 다 숫자인 경우 (MarketCap, Price, Change 등)
@@ -183,7 +194,7 @@ function applyRealtimeSort() {
     return;
   }
 
-  if (!currentSortCol || sortState === "") return;
+  if (!store.currentSortCol || store.sortState === "") return;
 
   // 🚀 정렬용 맵핑 (클릭한 컬럼 -> 미리 계산된 숫자 필드)
   const sortKeyMap = {
@@ -197,19 +208,19 @@ function applyRealtimeSort() {
   };
 
   // 🚀 2. 메모리 정렬 실행 (정규식 완전 삭제!!!!)
-  currentTableData.sort((a, b) => {
-    const key = sortKeyMap[currentSortCol] || currentSortCol;
+  store.currentTableData.sort((a, b) => {
+    const key = sortKeyMap[store.currentSortCol] || store.currentSortCol;
     // 🚀 [수정] 실시간 버퍼(tickerBuffer)에 최신값이 있다면 그걸 우선 사용!
     let valA =
-      tickerBuffer[a.Symbol] && key.includes("Change")
-        ? tickerBuffer[a.Symbol].P
+      store.tickerBuffer[a.Symbol] && key.includes("Change")
+        ? store.tickerBuffer[a.Symbol].P
         : a[key];
     let valB =
-      tickerBuffer[b.Symbol] && key.includes("Change")
-        ? tickerBuffer[b.Symbol].P
+      store.tickerBuffer[b.Symbol] && key.includes("Change")
+        ? store.tickerBuffer[b.Symbol].P
         : b[key];
 
-    const isAsc = sortState === "asc";
+    const isAsc = store.sortState === "asc";
 
     // 숫자 데이터면 단순 연산
     if (typeof valA === "number" && typeof valB === "number") {
@@ -223,7 +234,7 @@ function applyRealtimeSort() {
   });
 
   const tbody = document.getElementById("table-body");
-  const topData = currentTableData.slice(0, currentRenderLimit);
+  const topData = store.currentTableData.slice(0, store.currentRenderLimit);
   const topSymbols = new Set(topData.map((d) => d.Symbol || d.symbol));
 
   const existingRows = Array.from(tbody.children);
@@ -232,7 +243,7 @@ function applyRealtimeSort() {
   // 🚀 [최적화 2] FLIP First: "화면에 보이는 놈들만" 위치 기억
   existingRows.forEach((row) => {
     const sym = row.dataset.sym;
-    if (visibleSymbols.has(sym)) {
+    if (store.visibleSymbols.has(sym)) {
       firstRects.set(sym, row.getBoundingClientRect().top);
     }
   });
@@ -245,7 +256,7 @@ function applyRealtimeSort() {
     if (!topSymbols.has(sym)) {
       recycleBin.push(row);
       // 재활용 대기열에 들어갔으니 일단 CCTV에서 뺌
-      visibleSymbols.delete(sym);
+      store.visibleSymbols.delete(sym);
     }
   });
 
@@ -258,10 +269,10 @@ function applyRealtimeSort() {
     if (!tr) {
       if (recycleBin.length > 0) {
         tr = recycleBin.pop();
-        if (tableObserver) tableObserver.unobserve(tr); // 1. 기존 감시 취소
+        if (store.tableObserver) store.tableObserver.unobserve(tr); // 1. 기존 감시 취소
         tr.dataset.sym = sym;
         updateRowInnerHTML(tr, data);
-        if (tableObserver) tableObserver.observe(tr); // 2. 새 신분으로 감시 재시작 🚀
+        if (store.tableObserver) store.tableObserver.observe(tr); // 2. 새 신분으로 감시 재시작 🚀
       } else {
         // 완전 초기 렌더링 시 빈 공간이 모자랄 때만 새로 생성
         tr = createRowElement(data);
@@ -276,7 +287,7 @@ function applyRealtimeSort() {
 
   // 혹시 남은 잉여 DOM이 있다면 그때서야 파괴 (보통 발생 안 함)
   recycleBin.forEach((row) => {
-    if (tableObserver) tableObserver.unobserve(row);
+    if (store.tableObserver) store.tableObserver.unobserve(row);
     row.remove();
   });
 
@@ -312,7 +323,7 @@ function applyRealtimeSort() {
 }
 
 function applySelectedHighlight() {
-  const selectedSymbol = currentSelectedSymbol; // 전역에 저장된 선택 심볼
+  const selectedSymbol = store.currentSelectedSymbol; // 전역에 저장된 선택 심볼
   if (!selectedSymbol) return;
 
   // 1. 일단 모든 행의 하이라이트 제거
@@ -439,7 +450,14 @@ function updateRowInnerHTML(tr, row) {
       </td>
       <td class="p-4">
       <div class="flex flex-col gap-0.5 text-theme-text">
-      <span class="font-bold text-[13px] opacity-90">${row.Volume_Formatted || "-"}</span>
+
+      <!-- 🚀 [수정] 거래대금 분리 표시 로직 -->
+      <div class="flex flex-col gap-0 opacity-90 font-mono text-[11px] mb-1">
+         ${row.Binance_Vol_Formatted ? `<span class="text-[#f0b90b]">B: ${row.Binance_Vol_Formatted}</span>` : ''}
+         ${row.Upbit_Vol_Formatted ? `<span class="text-[#093687]">U: ${row.Upbit_Vol_Formatted}</span>` : ''}
+         ${!row.Binance_Vol_Formatted && !row.Upbit_Vol_Formatted ? `<span>Total: ${row.Volume_Formatted || "-"}</span>` : ''}
+      </div>
+
       <span class="text-[11px] opacity-50">M.Cap: ${row.MarketCap_Formatted}</span>
       <div class="flex items-center gap-1 mt-1 opacity-80">${listedExchangesHtml}</div>
       <div class="flex items-center gap-1 mt-1 opacity-80">${tagsHtml}</div>
@@ -484,20 +502,20 @@ function initInfiniteScroll() {
         !isFetchingMore &&
         scrollTop + clientHeight >= scrollHeight - clientHeight * 1.2
       ) {
-        if (currentRenderLimit < currentTableData.length) {
+        if (store.currentRenderLimit < store.currentTableData.length) {
           isFetchingMore = true;
           loadingIndicator.style.display = "block";
 
           setTimeout(() => {
             // 1. 기존 개수 기억하고 한도 늘리기
-            const oldLimit = currentRenderLimit;
-            currentRenderLimit += RENDER_CHUNK;
+            const oldLimit = store.currentRenderLimit;
+            store.currentRenderLimit += CONFIG.RENDER_CHUNK;
 
             // 🚀 2. 핵심 최적화: 전체 정렬 대신, 딱 추가될 50개만 잘라서 밑에 붙입니다!
             const tbody = document.getElementById("table-body");
-            const nextBatch = currentTableData.slice(
+            const nextBatch = store.currentTableData.slice(
               oldLimit,
-              currentRenderLimit,
+              store.currentRenderLimit,
             );
 
             nextBatch.forEach((row) => {
@@ -624,13 +642,22 @@ document.addEventListener("DOMContentLoaded", () => {
     const tr = e.target.closest("tr");
     if (tr && tr.dataset.sym) {
       const pureSymbol = tr.dataset.sym;
-      currentSelectedSymbol = pureSymbol;
+      store.currentSelectedSymbol = pureSymbol;
       selectSymbol(pureSymbol);
       applySelectedHighlight();
 
-      if (window.innerWidth <= SCREEN_WIDTH) {
+      if (window.innerWidth <= CONFIG.SCREEN_WIDTH) {
         showMobileChart();
       }
     }
   });
 });
+
+window.loadTableData = loadTableData;
+window.sortTable = sortTable;
+window.renderTable = renderTable;
+window.applyRealtimeSort = applyRealtimeSort;
+window.applySelectedHighlight = applySelectedHighlight;
+window.initInfiniteScroll = initInfiniteScroll;
+window.toggleFavorite = toggleFavorite;
+window.applyPriceFlash = applyPriceFlash;

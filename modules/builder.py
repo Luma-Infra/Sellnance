@@ -34,7 +34,7 @@ def build_binance_row(
     # 🚀 [지문 확정] 1순위: 족보 / 2순위: 하드코딩(base) / 3순위: 하드코딩(display) / 4순위: CMC결과
     final_ucid = existing_uid or hardcoded_id or str(SYMBOL_TO_ID_MAP.get(display_name, ""))
     
-    lookup_id = asset_to_lookup_key.get(f"BINANCE_{raw_symbol.upper()}") or asset_to_lookup_key.get(f"BINANCE_{base.upper()}")
+    lookup_id = asset_to_lookup_key.get(f"{raw_symbol.upper()}_BINANCE") or asset_to_lookup_key.get(f"{base.upper()}_BINANCE")
     # 3중 타격: 장부 키 -> 순수 티커 -> 하드코딩 ID 순으로 찔러서 info 무조건 확보!
     # TO-BE: 👇 final_ucid를 가장 먼저 찔러야 EDGE 두 놈이 자기 장부를 찾아갑니다!
     info = market_data_map.get(str(final_ucid)) or market_data_map.get(lookup_id)
@@ -105,6 +105,9 @@ def build_binance_row(
             "Change_Today": utils.format_change(change_today),
             "Volume_Formatted": utils.format_volume_string(vol_24h),
             "MarketCap_Formatted": utils.format_market_cap_string(mcap),
+            # 🚀 [추가] 바이낸스 전용 거래대금 (선물 + 현물)
+            "Binance_Vol_Formatted": utils.format_volume_string(b_info.get('vol_futures', 0.0) + b_info.get('vol_spot', 0.0)),
+            "MarketCap_Formatted": utils.format_market_cap_string(mcap),
 
             # --- 3. 프론트엔드 정렬용 순수 숫자 데이터 (Raw) ---
             "Price_Raw": price,
@@ -150,7 +153,7 @@ def build_upbit_row(
     if up_info is None: return None, False
     
     # CMC 데이터 매칭
-    lookup_id = asset_to_lookup_key.get(f"UPBIT_{base}")
+    lookup_id = asset_to_lookup_key.get(f"{base.upper()}_UPBIT")
     info = market_data_map.get(lookup_id)
     ucid = info.get('ucid', '') if info else ''
     display_name = REVERSE_LOOKUP.get(f"{base}_UPBIT", base)
@@ -179,10 +182,13 @@ def build_upbit_row(
 
     final_ucid = existing_uid or hardcoded_id or str(SYMBOL_TO_ID_MAP.get(display_name, ""))
     
-    lookup_id = asset_to_lookup_key.get(f"UPBIT_{base}")
+    lookup_id = asset_to_lookup_key.get(f"{base.upper()}_UPBIT")
     # 3중 타격으로 업비트 코인 시총/볼륨 확보!
     # TO-BE: 👇 final_ucid를 가장 먼저 찔러야 EDGE 두 놈이 자기 장부를 찾아갑니다!
     info = market_data_map.get(str(final_ucid)) or market_data_map.get(lookup_id)
+
+    # 🚀 CMC에서 새로운 ucid를 찾았다면 최종 업데이트
+    if not final_ucid and info: final_ucid = info.get('ucid', '')
 
     # 중복 UID 체크 및 방어
     if final_ucid and final_ucid in processed_uids and display_name not in DUPLICATED_LIST:
@@ -239,6 +245,9 @@ def build_upbit_row(
             "Change_24h": utils.format_change(up_change_24h),
             "Change_Today": utils.format_change(change_today),
             "Volume_Formatted": utils.format_volume_string(info.get('volume_24h', 0) if info else 0),
+            "MarketCap_Formatted": utils.format_market_cap_string(info.get('market_cap', 0) if info else 0),
+            # 🚀 [추가] 업비트 전용 거래대금 (24h 거래대금)[cite: 9]
+            "Upbit_Vol_Formatted": utils.format_volume_string(up_info.get('acc_trade_price_24h', 0.0)),
             "MarketCap_Formatted": utils.format_market_cap_string(info.get('market_cap', 0) if info else 0),
 
             # --- 3. 프론트엔드 정렬용 순수 숫자 데이터 (Raw) ---
@@ -349,13 +358,14 @@ def assemble_final_dashboard(
         if row: 
             uid = row.get("UID")
             if uid in final_results:
-                # 🚀 MET/MET2 합체! 기존 바낸 데이터에 업비트 정보만 덧칠합니다.
+                # 🚀 기존 바낸 데이터에 업비트 정보만 덧칠합니다.
                 final_results[uid]["Upbit"] = 'O'
                 final_results[uid]["Listed_Exchanges"] = list(set(final_results[uid].get("Listed_Exchanges", []) + row.get("Listed_Exchanges", [])))
                 if row.get("Price_KRW"): final_results[uid]["Price_KRW"] = row["Price_KRW"]
-                # 🚀 [우아한 정공법 추가] 
-                # 나중에 프론트가 차트 부를 때 쓰라고 업비트 전용 이름(base)을 남겨줍니다.
                 final_results[uid]["Upbit_Symbol"] = base
+                
+                # 🚀 [추가] 바이낸스 정보에 업비트 볼륨 정보도 병합!
+                final_results[uid]["Upbit_Vol_Formatted"] = row.get("Upbit_Vol_Formatted")
             else:
                 final_results[uid] = row
         if updated: any_update = True

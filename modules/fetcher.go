@@ -1,64 +1,61 @@
 package main
 
 import (
-	"sync"
-	// "net/http" (실제 구현 시 API 요청용)
+	"encoding/json"
+	"log"
+	"os/exec"
+	"strings"
 )
 
+// FetchAllMarketsParallel 파이썬의 API_MANAGER를 직접 호출하여
+// 100% 완벽한 족보 및 포맷팅 데이터를 Go 메모리로 가져옵니다.
 func FetchAllMarketsParallel() []map[string]interface{} {
-	var wg sync.WaitGroup
+	log.Println("⚡ Go Engine: 파이썬 코어 로직을 호출하여 데이터를 생성합니다...")
 
-	// 결과를 담을 변수들
-	var binanceData map[string]interface{}
-	var upbitData map[string]interface{}
-	var cmcData map[string]interface{}
+	// 1. 파이썬 스크립트 실행 (단발성 스크립트를 만들어 호출하거나, 기존 구조 활용)
+	// 예: get_market.py 등에서 json.dumps()로 출력하게 한 후 그걸 받아옵니다.
+	// 🚨 명령어는 서버 환경에 맞게 python 또는 python3로 수정하세요.
+	pythonScript := `
+import sys, os, json
+# 기존 stdout 백업 및 쓰레기 로그 차단
+old_stdout = sys.stdout
+sys.stdout = open(os.devnull, 'w')
 
-	// 🚀 1. 3개의 거래소를 "동시에" 찌릅니다 (고루틴 마법)
-	wg.Add(3) // 3명의 일꾼 투입
+from modules import api_manager
+data, _ = api_manager.get_cached_data(force_reload=True)
 
-	go func() {
-		defer wg.Done()
-		// 파이썬 fetch_binance_futures_spot() 역할
-		binanceData = fetchBinanceAPI() 
-	}()
+# stdout 복구 후 경계선과 함께 출력
+sys.stdout = old_stdout
+print("---JSON_START---")
+print(json.dumps(data))
+print("---JSON_END---")
+`
+	cmd := exec.Command("python", "-c", pythonScript)
 
-	go func() {
-		defer wg.Done()
-		// 파이썬 fetch_upbit_prices() 역할
-		upbitData = fetchUpbitAPI()
-	}()
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Printf("🚨 파이썬 데이터 엔진 호출 실패: %v\n출력: %s", err, string(output))
+		return nil
+	}
 
-	go func() {
-		defer wg.Done()
-		// 파이썬 fetch_cmc_market_data() 역할
-		cmcData = fetchCmcAPI()
-	}()
+	outStr := string(output)
+	startIdx := strings.Index(outStr, "---JSON_START---")
+	endIdx := strings.Index(outStr, "---JSON_END---")
 
-	wg.Wait() // 🚧 3명이 다 가져올 때까지 잠깐 대기 (0.x초 컷)
+	if startIdx == -1 || endIdx == -1 {
+		log.Printf("🚨 파이썬 출력에서 JSON 경계선을 찾을 수 없습니다.\n출력: %s", outStr)
+		return nil
+	}
 
-	// 🚀 2. 가져온 데이터 조립 (파이썬 builder.py 역할)
-	finalResults := assembleFinalDashboard(binanceData, upbitData, cmcData)
+	// 2. 안전하게 격리된 JSON 스트링만 파싱
+	jsonStr := strings.TrimSpace(outStr[startIdx+len("---JSON_START---") : endIdx])
 
-	return finalResults
-}
+	var parsedData []map[string]interface{}
+	err = json.Unmarshal([]byte(jsonStr), &parsedData)
+	if err != nil {
+		log.Printf("🚨 JSON 역직렬화 에러: %v\n", err)
+		return nil
+	}
 
-// --- 아래는 내부 구현 함수들 (API 호출부) ---
-func fetchBinanceAPI() map[string]interface{} {
-	// TODO: Binance API 찌르는 로직 (http.Get 활용)
-	return make(map[string]interface{})
-}
-
-func fetchUpbitAPI() map[string]interface{} {
-	// TODO: Upbit API 찌르는 로직
-	return make(map[string]interface{})
-}
-
-func fetchCmcAPI() map[string]interface{} {
-	// TODO: CMC API 찌르는 로직
-	return make(map[string]interface{})
-}
-
-func assembleFinalDashboard(bData, uData, cData map[string]interface{}) []map[string]interface{} {
-	// 파이썬의 build_binance_row, build_upbit_row를 여기서 실행하여 배열로 리턴!
-	return []map[string]interface{}{}
+	return parsedData
 }

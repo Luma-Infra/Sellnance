@@ -1,14 +1,29 @@
 // _main.js
+import { store, CONFIG, tfSec, measureDOM } from './store.js';
+import { loadSymbols, searchSymbols, clearSearch, selectSymbol, fetchHistory, clearChartData, updateExchangeBadges } from './api.js';
+import './chart_utils.js';
+import { initChart } from './chart.js';
+import './sim_engine.js';
+import './ui_control.js';
+import './stream.js';
+import './streamEach.js';
+import './table.js';
+import './start.js';
+import './app_loader.js';
+
+// 🚀 Vite 모듈 환경에서 인라인 이벤트 처리용 함수 노출
+window.searchSymbols = searchSymbols;
+window.clearSearch = clearSearch;
+window.selectSymbol = selectSymbol;
+
 // 🚀 엔진 시동 파트
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("🏁 대시보드 엔진 가동 시작...");
 
   try {
     // 1️⃣ [데이터 로드] 마켓 구성 정보 + 실제 테이블 장부를 '순서대로' 가져온다
-    if (typeof loadSymbols === "function") {
-      await loadSymbols(); // 코인 맵핑 정보 로드
-      console.log("✅ 1-A. 마켓 맵 로드 완료");
-    }
+    await loadSymbols(); // 코인 맵핑 정보 로드
+    console.log("✅ 1-A. 마켓 맵 로드 완료");
 
     if (typeof loadTableData === "function") {
       // 🚨 핵심: 실시간 시세가 기록될 '진짜 장부'가 채워질 때까지 기다립니다.
@@ -17,7 +32,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // 2️⃣ [엔진 준비] 이제 장부가 확실히 있으니 차트를 그린다
-    if (window.currentTableData && window.currentTableData.length > 0) {
+    if (store.currentTableData && store.currentTableData.length > 0) {
       initChart();
       initMeasureEvents();
       initInfiniteScroll();
@@ -72,8 +87,8 @@ function setupButtonEvents() {
       if (typeof updatePreview === "function") updatePreview();
     };
     genBtn.onmouseleave = () => {
-      isHover = false;
-      previewSeries.setData([]);
+      store.isHover = false;
+      store.previewSeries.setData([]);
     };
   }
 }
@@ -317,7 +332,7 @@ function setTF(tf) {
 }
 
 function executeSetTF(tf) {
-  currentTF = tf;
+  store.currentTF = tf;
   document.querySelectorAll(".tf-btn").forEach((b) => {
     const onClickAttr = b.getAttribute("onclick") || "";
     // 현재 버튼이 클릭된 타임프레임(tf)과 일치하는지 확인
@@ -331,30 +346,37 @@ function executeSetTF(tf) {
     b.classList.toggle("opacity-50", !isMatch);
   });
 
+  // 🚀 [추가] index.html에 정의된 버튼 렌더링 함수를 호출하여 UI 갱신
+  if (typeof renderTimeframeButtons === "function") {
+    renderTimeframeButtons(tf);
+  }
+
   // 4. 차트 데이터 갱신 함수 호출
-  if (typeof fetchHistory === "function") fetchHistory(currentAsset);
+  if (typeof fetchHistory === "function") fetchHistory(store.currentAsset);
 }
+window.setTF = setTF;
+window.executeSetTF = executeSetTF;
 
 function toggleLogScale() {
-  isLogMode = !isLogMode;
+  store.isLogMode = !store.isLogMode;
   const btn = document.getElementById("log-btn");
   if (btn) {
-    btn.innerText = isLogMode ? "Log ON" : "Log Off";
-    btn.classList.toggle("active", isLogMode);
+    btn.innerText = store.isLogMode ? "Log ON" : "Log Off";
+    btn.classList.toggle("active", store.isLogMode);
   }
-  chart.priceScale("right").applyOptions({ mode: isLogMode ? 1 : 0 });
+  store.chart.priceScale("right").applyOptions({ mode: store.isLogMode ? 1 : 0 });
 }
 
 function updatePreview() {
-  if (mainData.length && isHover && typeof getNext === "function")
-    previewSeries.setData([getNext()]);
+  if (store.mainData.length && store.isHover && typeof getNext === "function")
+    store.previewSeries.setData([getNext()]);
 }
 
 function stopMeasuring() {
-  isMeasuring = false;
-  measureStart = null;
-  measureEnd = null;
-  [measureBox, startPriceLabel, endPriceLabel, priceRangeBar].forEach((el) => {
+  store.isMeasuring = false;
+  store.measureStart = null;
+  store.measureEnd = null;
+  [measureDOM.box, measureDOM.startLabel, measureDOM.endLabel, measureDOM.rangeBar].forEach((el) => {
     el.style.display = "none";
     el.innerText = "";
   });
@@ -364,17 +386,17 @@ function stopMeasuring() {
 function setupMeasureTool() {
   // const container = document.getElementById("chart-container");
   const container = document.getElementById("pane-main");
-  cachedChartTd = container.querySelector("td:nth-child(2)");
-  cachedPriceTd = container.querySelector("td:nth-child(3)");
+  store.cachedChartTd = container.querySelector("td:nth-child(2)");
+  store.cachedPriceTd = container.querySelector("td:nth-child(3)");
 
-  if (!cachedChartTd || !cachedPriceTd) return;
+  if (!store.cachedChartTd || !store.cachedPriceTd) return;
 
-  cachedChartTd.style.position = "relative";
-  cachedPriceTd.style.position = "relative";
-  cachedChartTd.appendChild(measureBox);
-  cachedPriceTd.appendChild(priceRangeBar);
-  cachedPriceTd.appendChild(startPriceLabel);
-  cachedPriceTd.appendChild(endPriceLabel);
+  store.cachedChartTd.style.position = "relative";
+  store.cachedPriceTd.style.position = "relative";
+  store.cachedChartTd.appendChild(measureDOM.box);
+  store.cachedPriceTd.appendChild(measureDOM.rangeBar);
+  store.cachedPriceTd.appendChild(measureDOM.startLabel);
+  store.cachedPriceTd.appendChild(measureDOM.endLabel);
 }
 
 // --- ⚡ 3. 마우스 이벤트 (단 한 번만 실행되도록 분리) ---
@@ -384,66 +406,66 @@ function initMeasureEvents() {
 
   container.addEventListener("mousedown", (e) => {
     // 🚀 매번 찾지 않고 캐싱된 DOM 사용
-    if (!cachedChartTd || !cachedPriceTd || !chart || !candleSeries) return;
+    if (!store.cachedChartTd || !store.cachedPriceTd || !store.chart || !store.candleSeries) return;
 
     const rect = container.getBoundingClientRect();
-    if (e.clientX - rect.left > rect.width - (cachedPriceTd.clientWidth || 60))
+    if (e.clientX - rect.left > rect.width - (store.cachedPriceTd.clientWidth || 60))
       return;
 
     if (e.shiftKey && e.button === 0) {
       stopMeasuring();
-      isMeasuring = true;
+      store.isMeasuring = true;
 
-      const chartRect = cachedChartTd.getBoundingClientRect();
+      const chartRect = store.cachedChartTd.getBoundingClientRect();
       const sX = e.clientX - chartRect.left;
       const sY = e.clientY - chartRect.top;
-      const price = candleSeries.coordinateToPrice(sY);
+      const price = store.candleSeries.coordinateToPrice(sY);
 
-      measureStart = {
+      store.measureStart = {
         x: sX,
         y: sY,
         price: price,
-        time: chart.timeScale().coordinateToTime(sX),
+        time: store.chart.timeScale().coordinateToTime(sX),
       };
 
       // 초기화 및 노출
-      measureBox.style.cssText += `left: ${sX}px; top: ${sY}px; width: 0px; height: 0px; display: flex;`;
-      priceRangeBar.style.cssText += `top: ${sY}px; height: 0px; display: block;`;
-      startPriceLabel.style.cssText += `top: ${sY - 10}px; display: block;`;
-      endPriceLabel.style.cssText += `top: ${sY - 10}px; display: block;`;
+      measureDOM.box.style.cssText += `left: ${sX}px; top: ${sY}px; width: 0px; height: 0px; display: flex;`;
+      measureDOM.rangeBar.style.cssText += `top: ${sY}px; height: 0px; display: block;`;
+      measureDOM.startLabel.style.cssText += `top: ${sY - 10}px; display: block;`;
+      measureDOM.endLabel.style.cssText += `top: ${sY - 10}px; display: block;`;
 
-      measureBox.innerText = "";
-      startPriceLabel.innerText = formatSmartPrice(price);
-      endPriceLabel.innerText = formatSmartPrice(price);
+      measureDOM.box.innerText = "";
+      measureDOM.startLabel.innerText = formatSmartPrice(price);
+      measureDOM.endLabel.innerText = formatSmartPrice(price);
       e.preventDefault();
-    } else if (e.button === 0 && isMeasuring) {
-      isMeasuring = false;
-    } else if (!e.shiftKey && !isMeasuring && measureStart) {
+    } else if (e.button === 0 && store.isMeasuring) {
+      store.isMeasuring = false;
+    } else if (!e.shiftKey && !store.isMeasuring && store.measureStart) {
       stopMeasuring();
     }
   });
 
   container.addEventListener("mousemove", (e) => {
-    if (!isMeasuring || !measureStart || !cachedChartTd || !candleSeries)
+    if (!store.isMeasuring || !store.measureStart || !store.cachedChartTd || !store.candleSeries)
       return;
 
-    const chartRect = cachedChartTd.getBoundingClientRect();
+    const chartRect = store.cachedChartTd.getBoundingClientRect();
     const curX = e.clientX - chartRect.left;
     const curY = e.clientY - chartRect.top;
 
-    const curPrice = candleSeries.coordinateToPrice(curY);
-    const curTime = chart.timeScale().coordinateToTime(curX);
+    const curPrice = store.candleSeries.coordinateToPrice(curY);
+    const curTime = store.chart.timeScale().coordinateToTime(curX);
     if (curPrice === null || curTime === null) return;
 
-    measureEnd = { price: curPrice, time: curTime };
+    store.measureEnd = { price: curPrice, time: curTime };
 
     // 🚀 실시간 좌표 역산
-    const startX = chart.timeScale().timeToCoordinate(measureStart.time);
-    const startY = candleSeries.priceToCoordinate(measureStart.price);
+    const startX = store.chart.timeScale().timeToCoordinate(store.measureStart.time);
+    const startY = store.candleSeries.priceToCoordinate(store.measureStart.price);
     if (startX === null || startY === null) return;
 
-    const priceDiff = curPrice - measureStart.price;
-    const percentDiff = (priceDiff / measureStart.price) * 100;
+    const priceDiff = curPrice - store.measureStart.price;
+    const percentDiff = (priceDiff / store.measureStart.price) * 100;
     const isUp = priceDiff >= 0;
     const tColor = isUp ? "var(--up, #26a69a)" : "var(--down, #ef5350)";
     const tBg = isUp ? "rgba(38,166,154,0.15)" : "rgba(239,83,80,0.15)";
@@ -453,20 +475,20 @@ function initMeasureEvents() {
     const leftX = Math.min(startX, curX),
       widthX = Math.abs(curX - startX);
 
-    measureBox.style.cssText += `left: ${leftX}px; top: ${topY}px; width: ${widthX}px; height: ${heightY}px; border-color: ${tColor}; background-color: ${tBg}; color: ${tColor};`;
-    priceRangeBar.style.cssText += `top: ${topY}px; height: ${heightY}px; background-color: ${tBg};`;
-    startPriceLabel.style.cssText += `top: ${startY - 10}px; background-color: ${tColor};`;
-    endPriceLabel.style.cssText += `top: ${curY - 10}px; background-color: ${tColor};`;
-    endPriceLabel.innerText = formatSmartPrice(curPrice);
+    measureDOM.box.style.cssText += `left: ${leftX}px; top: ${topY}px; width: ${widthX}px; height: ${heightY}px; border-color: ${tColor}; background-color: ${tBg}; color: ${tColor};`;
+    measureDOM.rangeBar.style.cssText += `top: ${topY}px; height: ${heightY}px; background-color: ${tBg};`;
+    measureDOM.startLabel.style.cssText += `top: ${startY - 10}px; background-color: ${tColor};`;
+    measureDOM.endLabel.style.cssText += `top: ${curY - 10}px; background-color: ${tColor};`;
+    measureDOM.endLabel.innerText = formatSmartPrice(curPrice);
 
     const barsDiff = Math.abs(
-      Math.round((curTime - measureStart.time) / (tfSec[currentTF] || 86400)),
+      Math.round((curTime - store.measureStart.time) / (tfSec[store.currentTF] || 86400)),
     );
-    measureBox.innerText = `${barsDiff} bars\n${formatSmartPrice(priceDiff)}\n(${isUp ? "+" : ""}${percentDiff.toFixed(2)}%)`;
+    measureDOM.box.innerText = `${barsDiff} bars\n${formatSmartPrice(priceDiff)}\n(${isUp ? "+" : ""}${percentDiff.toFixed(2)}%)`;
   });
 
   container.addEventListener("contextmenu", (e) => {
-    if (measureStart) {
+    if (store.measureStart) {
       e.preventDefault();
       stopMeasuring();
     }
@@ -474,14 +496,13 @@ function initMeasureEvents() {
 }
 
 function toggleCountdown(isChecked) {
-  showCountdown = isChecked;
+  store.showCountdown = isChecked;
   const knob = document.getElementById("countdown-knob");
 
   // UI 토글 애니메이션
   if (isChecked) {
     knob.style.transform = "translateX(10px)";
     knob.parentElement.classList.add("bg-theme-accent");
-    if (countdownOverlay) countdownOverlay.style.display = "block";
   } else {
     knob.style.transform = "translateX(0)";
     knob.parentElement.classList.remove("bg-theme-accent");
@@ -491,28 +512,28 @@ function toggleCountdown(isChecked) {
 
 function updateRealtimeCountdown(serverMs) {
   // 1. 기본 방어 (차트 시리즈 없으면 삭제)
-  if (!candleSeries || mainData.length === 0) {
-    if (countdownPriceLine) {
-      candleSeries.removePriceLine(countdownPriceLine);
-      countdownPriceLine = null;
+  if (!store.candleSeries || store.mainData.length === 0) {
+    if (store.countdownPriceLine) {
+      store.candleSeries.removePriceLine(store.countdownPriceLine);
+      store.countdownPriceLine = null;
     }
     return;
   }
 
   // 2. 보간 엔진 가동 조건 (serverMs가 유효할 때만)
   if (serverMs && serverMs > 0) {
-    if (serverMs !== lastServerMs) {
-      lastServerMs = serverMs;
-      localTimeAtUpdate = performance.now();
+    if (serverMs !== store.lastServerMs) {
+      store.lastServerMs = serverMs;
+      store.localTimeAtUpdate = performance.now();
     }
 
     // 🚀 보간 계산
     const interpolatedMs =
-      lastServerMs + (performance.now() - localTimeAtUpdate);
+      store.lastServerMs + (performance.now() - store.localTimeAtUpdate);
 
     // 🎯 마감 시간 체크 로직 추가
-    const secondsPerBar = tfSec[currentTF] || 60;
-    const lastCandleTime = mainData[mainData.length - 1].time; // Unix Sec
+    const secondsPerBar = tfSec[store.currentTF] || 60;
+    const lastCandleTime = store.mainData[store.mainData.length - 1].time; // Unix Sec
     const nextBarTimeMs = (lastCandleTime + secondsPerBar) * 1000; // MS 변환
 
     if (interpolatedMs >= nextBarTimeMs) {
@@ -520,12 +541,12 @@ function updateRealtimeCountdown(serverMs) {
       displayTime = "00:00";
     } else {
       // 아직 시간 남았으면 정상 카운트다운
-      displayTime = calculateTimeRemaining(currentTF, interpolatedMs);
+      // displayTime = calculateTimeRemaining(store.currentTF, interpolatedMs);
     }
   }
 
   // 3. 봉 색상 및 상태 파악
-  const lastCandle = mainData[mainData.length - 1];
+  const lastCandle = store.mainData[store.mainData.length - 1];
   const isDown = lastCandle.close < lastCandle.open;
   const style = getComputedStyle(document.body);
   const varName = isDown ? "--down" : "--up";
@@ -538,79 +559,98 @@ function updateRealtimeCountdown(serverMs) {
     color: "transparent",
     lineWidth: 0,
     axisLabelVisible: true,
-    title: showCountdown ? `${displayTime} ` : "", // 🚀 Wait... 또는 05:20
+    title: store.showCountdown ? `${displayTime} ` : "", // 🚀 Wait... 또는 05:20
     axisLabelColor: rawColor,
     axisLabelTextColor: "#ffffff",
   };
 
   // 5. 생성 및 갱신
-  if (!countdownPriceLine) {
-    countdownPriceLine = candleSeries.createPriceLine(lineOptions);
+  if (!store.countdownPriceLine) {
+    store.countdownPriceLine = store.candleSeries.createPriceLine(lineOptions);
   } else {
-    countdownPriceLine.applyOptions(lineOptions);
+    store.countdownPriceLine.applyOptions(lineOptions);
   }
 }
 
 // 실시간 카운트다운 보간
 setInterval(() => {
-  if (typeof updateRealtimeCountdown === "function" && lastServerMs > 0) {
-    updateRealtimeCountdown(lastServerMs);
+  if (typeof updateRealtimeCountdown === "function" && store.lastServerMs > 0) {
+    updateRealtimeCountdown(store.lastServerMs);
   }
 }, 50);
 
-// 🚀 정렬 순서 퀵 서칭 탐색형 방향키 엔진
+// 🚀 검색창 바깥 클릭 시 닫기
+document.addEventListener("click", (e) => {
+  const searchResults = document.getElementById("search-results");
+  const symbolInput = document.getElementById("symbol-input");
+
+  // 입력창이나 결과창 내부를 클릭한 게 아니라면 숨김 처리
+  if (searchResults && symbolInput && !symbolInput.contains(e.target) && !searchResults.contains(e.target)) {
+    searchResults.style.display = "none";
+  }
+});
+
+// 🚀 탭 활성화 감지 (Sleep -> Wake Up 스턴 방어)
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    console.log("☀️ 탭 활성화: 절전 모드 해제 및 데이터 클렌징");
+
+    // 1. 잠든 사이 폭주해서 쌓인 찌꺼기 버퍼 즉시 소각
+    // tickerBuffer = {};
+
+    // 2. 10초 이상 자리를 비웠다면 차트를 아예 새로고침 (유령 캔들, 끊김 방지)
+    const now = Date.now();
+    if (now - store.lastFetchTime > 10000 && store.currentAsset) {
+      console.log("🔄 장시간 부재 감지: 차트를 재동기화합니다.");
+      if (typeof fetchHistory === "function") fetchHistory(store.currentAsset);
+    }
+  }
+});
+
+// 🚀 정렬 순서 퀵 서칭 탐색 및 타임프레임 변경 엔진
 document.addEventListener("keydown", (e) => {
   if (document.activeElement.tagName === "INPUT") return;
 
   const up = e.key === "ArrowUp";
   const down = e.key === "ArrowDown";
+  const left = e.key === "ArrowLeft";
+  const right = e.key === "ArrowRight";
 
+  // 💡 1. 좌우 방향키: 타임프레임(TF) 퀵 스위칭
+  if (left || right) {
+    e.preventDefault();
+    const tfArray = ["1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "12h", "1d", "3d", "1w", "1M"];
+    let idx = tfArray.indexOf(store.currentTF);
+    if (left && idx > 0) setTF(tfArray[idx - 1]);
+    else if (right && idx < tfArray.length - 1) setTF(tfArray[idx + 1]);
+    return;
+  }
+
+  // 💡 2. 상하 방향키: 테이블 리스트 탐색 (기존 코드)
   if (up || down) {
     e.preventDefault();
-
-    // 1. [수정] 원본 데이터 말고, 현재 화면에 정렬되어 있는 "진짜 순서"를 가져옵니다.
-    // renderTable() 할 때 사용하는 그 최종 배열이어야 합니다.
-    const sortedList = currentTableData; // 이미 sortTable()에서 정렬된 상태의 배열
+    const sortedList = store.currentTableData;
     if (!sortedList || sortedList.length === 0) return;
 
-    // 2. 현재 정렬된 순서에서 나의 위치(인덱스) 찾기
-    let currentIndex = sortedList.findIndex(
-      (item) => item.Symbol === currentSelectedSymbol,
-    );
-
-    // 3. [수정] 무한 루프 금지! 위아래 "제한" 걸기
+    let currentIndex = sortedList.findIndex((item) => item.Symbol === store.currentSelectedSymbol);
     let nextIndex;
-    if (up) {
-      // 맨 위면 더 이상 안 올라감 (제한)
-      nextIndex = currentIndex <= 0 ? 0 : currentIndex - 1;
-    } else {
-      // 맨 아래면 더 이상 안 내려감 (제한)
-      nextIndex =
-        currentIndex >= sortedList.length - 1
-          ? sortedList.length - 1
-          : currentIndex + 1;
-    }
 
-    // 4. 인덱스가 변했을 때만 실행 (똑같은 자리면 리소스 아끼기)
+    if (up) nextIndex = currentIndex <= 0 ? 0 : currentIndex - 1;
+    else nextIndex = currentIndex >= sortedList.length - 1 ? sortedList.length - 1 : currentIndex + 1;
+
     if (nextIndex === currentIndex) return;
 
     const nextCoin = sortedList[nextIndex];
     if (nextCoin) {
-      // 5. 렌더링 리미트 보정 (정렬된 순서대로 보여주기 위해 필요)
-      if (nextIndex >= currentRenderLimit) {
-        currentRenderLimit = nextIndex + 1;
+      if (nextIndex >= store.currentRenderLimit) {
+        store.currentRenderLimit = nextIndex + 1;
         renderTable();
       }
+      store.currentSelectedSymbol = nextCoin.Symbol;
+      selectSymbol(nextCoin.Symbol);
 
-      // 6. 실행 및 하이라이트
-      currentSelectedSymbol = nextCoin.Symbol;
-      selectSymbol(nextCoin.Symbol); // 👈 여기서 이미 마켓 판별 로직 타니까 안전!
-
-      // 7. 스크롤 추적 (즉시 반응을 위해 behavior: instant 추천)
       setTimeout(() => {
-        const targetRow = document.querySelector(
-          `#table-body tr[data-sym="${nextCoin.Symbol}"]`,
-        );
+        const targetRow = document.querySelector(`#table-body tr[data-sym="${nextCoin.Symbol}"]`);
         if (targetRow) {
           targetRow.scrollIntoView({ block: "nearest", behavior: "instant" });
           applySelectedHighlight();

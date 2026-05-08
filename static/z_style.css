@@ -90,6 +90,17 @@ body.theme-binance {
   }
 }
 
+/* 🚀 차트 로딩 시 쫀득한 애니메이션 효과 */
+#chart-wrapper {
+  transition: transform 0.1s cubic-bezier(0.1, 0, 0.1, 1), filter 0.1s ease;
+  will-change: transform, filter;
+}
+
+/* 데이터 로딩 중일 때 (어둡고 축소) */
+#chart-wrapper.chart-loading {
+  filter: brightness(0.8) blur(1px);
+}
+
 .chart-spinner {
   width: 40px;
   height: 40px;
@@ -133,11 +144,13 @@ body.theme-binance {
 #market-table {
   display: flex !important;
   flex-direction: column !important;
-  height: 100% !important; /* 부모 div 높이를 다 써라! */
+  height: 100% !important;
+  /* 부모 div 높이를 다 써라! */
 }
 
 #market-table thead {
-  flex-shrink: 0 !important; /* 헤더는 절대 찌그러지지 마라! */
+  flex-shrink: 0 !important;
+  /* 헤더는 절대 찌그러지지 마라! */
 }
 
 /* 🚀 줄 맞춤을 위해 아래 코드도 세트로 확인! */
@@ -149,10 +162,14 @@ body.theme-binance {
 }
 
 #table-body {
-  display: block !important; /* 👈 이걸 해야 스크롤이 먹힘! */
-  flex: 1 !important; /* 남은 공간을 바디가 다 채워라! */
-  overflow-y: auto !important; /* 드디어 스크롤바 등장! */
-  min-height: 0; /* flex 자식일 때 스크롤이 안 생기는 버그 방지 */
+  display: block !important;
+  /* 👈 이걸 해야 스크롤이 먹힘! */
+  flex: 1 !important;
+  /* 남은 공간을 바디가 다 채워라! */
+  overflow-y: auto !important;
+  /* 드디어 스크롤바 등장! */
+  min-height: 0;
+  /* flex 자식일 때 스크롤이 안 생기는 버그 방지 */
 }
 
 /* 🚀 줄 맞춤 (헤더랑 바디 칸 너비 맞추기) */
@@ -179,11 +196,9 @@ body.theme-binance {
 .flash-up {
   color: color-mix(in srgb, var(--up), transparent 50%) !important;
   text-shadow: 0 0 12px color-mix(in srgb, var(--up), transparent 50%) !important;
-  background: radial-gradient(
-    circle,
-    var(--flash-up) 0%,
-    transparent 80%
-  ) !important;
+  background: radial-gradient(circle,
+      var(--flash-up) 0%,
+      transparent 80%) !important;
   box-shadow: inset 2px 0 0 0 var(--up) !important;
   transition: none !important;
 }
@@ -191,11 +206,9 @@ body.theme-binance {
 .flash-down {
   color: color-mix(in srgb, var(--down), transparent 50%) !important;
   text-shadow: 0 0 12px color-mix(in srgb, var(--down), transparent 50%) !important;
-  background: radial-gradient(
-    circle,
-    var(--flash-down) 0%,
-    transparent 80%
-  ) !important;
+  background: radial-gradient(circle,
+      var(--flash-down) 0%,
+      transparent 80%) !important;
   box-shadow: inset 2px 0 0 0 var(--down) !important;
   transition: none !important;
 }
@@ -293,6 +306,7 @@ body.theme-binance {
 
 /* ✅ 모바일 통합 최적화 (768px 이하) */
 @media (max-width: 768px) {
+
   /* 가로 스크롤 완전 차단 */
   body,
   html {
@@ -313,14 +327,17 @@ body.theme-binance {
     z-index: 101;
     background-color: var(--bg);
     padding-bottom: 20px;
-    display: flex !important; /* 🚀 1. 플렉스 박스로 선언 */
-    flex-direction: column !important; /* 🚀 2. 내용물을 세로로 쌓기 */
+    display: flex !important;
+    /* 🚀 1. 플렉스 박스로 선언 */
+    flex-direction: column !important;
+    /* 🚀 2. 내용물을 세로로 쌓기 */
     /* 🚀 밑바닥 여유 살짝 추가 */
   }
 
   /* 2. [잔상박멸] 평소 우측 패널은 안드로메다 유배 */
   #right-panel {
-    display: none; /* !important 제거하고 JS에서 제어하게 두세요 */
+    display: none;
+    /* !important 제거하고 JS에서 제어하게 두세요 */
   }
 
   /* 
@@ -354,7 +371,8 @@ body.theme-binance {
 
   /* 3. 헤더는 딱 붙어있게 고정 (이미 되어있겠지만 확인!) */
   thead {
-    flex-shrink: 0; /* 헤더가 찌그러지지 않게 */
+    flex-shrink: 0;
+    /* 헤더가 찌그러지지 않게 */
     display: table;
     width: 100%;
     table-layout: fixed;

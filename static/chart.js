@@ -1,164 +1,164 @@
 // chart.js
-// 🚀 [추가] 차트 패널 (볼륨, 김프) 토글 관리자
-window.paneConfig = { volume: true, kimchi: true };
+import { store } from './store.js';
 
+// 🚀 [추가] 차트 패널 (볼륨, 김프) 토글 관리자
 function togglePane(paneName) {
-  window.paneConfig[paneName] = !window.paneConfig[paneName];
+  store.paneConfig[paneName] = !store.paneConfig[paneName];
   applyChartLayout();
 }
 
+let isDraggingResizer = null;
+
+// 🚀 1. 마진 레이아웃 & 선 위치 업데이트
 function applyChartLayout() {
-  if (!chart || !chartVol || !chartKimchi) return;
+  if (!chart || !candleSeries) return;
 
   const v = window.paneConfig.volume;
-  // kimchiData가 전역 변수인지 확인하세요!
-  const k =
-    window.paneConfig.kimchi &&
-    window.kimchiData &&
-    window.kimchiData.length > 0;
+  const k = window.paneConfig.kimchi;
 
-  const elVol = document.getElementById("pane-vol");
-  const elKimchi = document.getElementById("pane-kimchi");
+  const rVol = document.getElementById("resizer-vol");
+  const rKim = document.getElementById("resizer-kimchi");
 
-  // 1. HTML 엘리먼트 노출 제어 (hidden 클래스 제거 및 display 설정)
-  if (elVol) {
-    elVol.classList.remove("hidden");
-    elVol.style.display = v ? "block" : "none";
+  // 🚨 [핵심 수정] 여기서 빈칸(undefined)이 안 되도록 기본 숫자(0과 1)를 무조건 깔아줍니다!
+  let mainBottom = 0;
+  let volTop = 1, volBottom = 0;
+  let kimchiTop = 1, kimchiBottom = 0;
+  const marginGap = 0.03;
+
+  if (v && k) {
+    rVol.style.display = "block"; rKim.style.display = "block";
+    rVol.style.top = (store.chartSplits.s1 * 100) + "%";
+    rKim.style.top = (store.chartSplits.s2 * 100) + "%";
+
+    mainBottom = 1 - store.chartSplits.s1 + marginGap;
+    volTop = store.chartSplits.s1 + marginGap;
+    volBottom = 1 - store.chartSplits.s2 + marginGap;
+    kimchiTop = store.chartSplits.s2 + marginGap;
+    kimchiBottom = 0;
+  } else if (v && !k) {
+    rVol.style.display = "block"; rKim.style.display = "none";
+    rVol.style.top = (store.chartSplits.s1 * 100) + "%";
+
+    mainBottom = 1 - store.chartSplits.s1 + marginGap;
+    volTop = store.chartSplits.s1 + marginGap;
+    volBottom = 0;
+  } else if (!v && k) {
+    rVol.style.display = "none"; rKim.style.display = "block";
+    rKim.style.top = (store.chartSplits.s2 * 100) + "%";
+
+    mainBottom = 1 - store.chartSplits.s2 + marginGap;
+    kimchiTop = store.chartSplits.s2 + marginGap;
+    kimchiBottom = 0;
+  } else {
+    rVol.style.display = "none"; rKim.style.display = "none";
+    mainBottom = 0;
   }
-  if (elKimchi) {
-    elKimchi.classList.remove("hidden");
-    elKimchi.style.display = k ? "block" : "none";
+
+  // 🚀 마진 즉시 적용 (하나의 십자선 유지)
+  // 🚀 마진 적용 및 우측 Y축(숫자) 색상 분리!
+  chart.priceScale("right").applyOptions({
+    scaleMargins: { top: 0.1, bottom: mainBottom },
+    textColor: getComputedStyle(document.body).getPropertyValue("--text").trim() // 메인은 기본 텍스트 색상
+  });
+
+  if (volumeSeries) {
+    volumeSeries.applyOptions({ visible: v });
+    chart.priceScale("volScale").applyOptions({
+      scaleMargins: { top: volTop, bottom: volBottom },
+      textColor: "rgba(38, 166, 154, 0.8)", // 🚀 볼륨 축은 청록색
+    });
   }
+  if (kimchiSeries) {
+    kimchiSeries.applyOptions({ visible: k });
+    chart.priceScale("kimchiScale").applyOptions({
+      scaleMargins: { top: kimchiTop, bottom: kimchiBottom },
+      textColor: "#57a4fc", // 🚀 김프 축은 파란색
+    });
+  }
+}
 
-  // 2. [가장 중요] 각 차트 엔진에 리사이즈 명령 하달[cite: 2, 3]
-  // 부모(pane-main 등)의 크기가 flex-grow에 의해 변했으므로 이를 차트에 알려줘야 합니다.
-  requestAnimationFrame(() => {
-    const mainRect = document
-      .getElementById("pane-main")
-      .getBoundingClientRect();
-    chart.resize(mainRect.width, mainRect.height);
+// 🚀 2. 드래그 엔진 초기화
+function initResizers() {
+  const wrapper = document.getElementById("chart-wrapper");
+  const rVol = document.getElementById("resizer-vol");
+  const rKim = document.getElementById("resizer-kimchi");
 
-    if (v) {
-      const volRect = elVol.getBoundingClientRect();
-      chartVol.resize(volRect.width, volRect.height);
+  const startDrag = (e, target) => {
+    isDraggingResizer = target;
+    document.body.style.cursor = 'row-resize';
+  };
+
+  if (rVol) rVol.addEventListener('mousedown', (e) => startDrag(e, 'vol'));
+  if (rKim) rKim.addEventListener('mousedown', (e) => startDrag(e, 'kimchi'));
+
+  window.addEventListener('mousemove', (e) => {
+    if (!isDraggingResizer) return;
+    const rect = wrapper.getBoundingClientRect();
+    let pct = (e.clientY - rect.top) / rect.height;
+
+    // 선끼리 교차하거나 영역 밖으로 나가지 못하게 제한!
+    if (isDraggingResizer === 'vol') {
+      if (pct < 0.2) pct = 0.2;
+      if (pct > store.chartSplits.s2 - 0.1) pct = store.chartSplits.s2 - 0.1;
+      store.chartSplits.s1 = pct;
+    } else {
+      if (pct < store.chartSplits.s1 + 0.1) pct = store.chartSplits.s1 + 0.1;
+      if (pct > 0.9) pct = 0.9;
+      store.chartSplits.s2 = pct;
     }
-    if (k) {
-      const kimchiRect = elKimchi.getBoundingClientRect();
-      chartKimchi.resize(kimchiRect.width, kimchiRect.height);
+    applyChartLayout();
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (isDraggingResizer) {
+      isDraggingResizer = null;
+      document.body.style.cursor = 'default';
     }
   });
 }
 
-function initChart() {
-  // 1. 기존 메모리 해제 (쌀먹의 기본)
-  if (chart) {
-    chart.remove();
-    chart = null;
-  }
-  if (chartVol) {
-    chartVol.remove();
-    chartVol = null;
-  }
-  if (chartKimchi) {
-    chartKimchi.remove();
-    chartKimchi = null;
-  }
-
-  // 2. 3개의 분리된 DOM 가져오기
+// 🚀 3. 차트 생성
+export function initChart() {
+  if (store.chart) { store.chart.remove(); store.chart = null; }
   const elMain = document.getElementById("pane-main");
-  const elVol = document.getElementById("pane-vol");
-  const elKimchi = document.getElementById("pane-kimchi");
 
-  const isDark = currentTheme === "binance" || currentTheme === "upbit-dark";
-  const upColor = currentTheme === "binance" ? "#26a69a" : "#c84a31";
-  const downColor = currentTheme === "binance" ? "#ef5350" : "#1261c4";
-
-  // 공통 옵션 (배경, 그리드)
-  const commonOptions = {
-    layout: {
-      background: {
-        color: getComputedStyle(document.body).getPropertyValue("--bg").trim(),
-      },
-      textColor: getComputedStyle(document.body)
-        .getPropertyValue("--text")
-        .trim(),
-    },
-    grid: {
-      vertLines: { color: isDark ? "#2a2a22" : "#f1f1f11f" },
-      horzLines: { color: isDark ? "#2a2a22" : "#f1f1f11f" },
-    },
+  store.chart = LightweightCharts.createChart(elMain, {
+    layout: { background: { color: "transparent" }, textColor: "#d1d4dc" },
+    grid: { vertLines: { color: "#2a2a22" }, horzLines: { color: "#2a2a22" } },
     crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-  };
-
-  // 🚀 [1단] 메인 캔들 차트 생성
-  chart = LightweightCharts.createChart(elMain, {
-    ...commonOptions,
     timeScale: { timeVisible: true, secondsVisible: false },
-    rightPriceScale: {
-      autoScale: true,
-      borderColor: isDark ? "#2a2a22" : "#f1f1f11f",
-    },
+    rightPriceScale: { autoScale: true, borderColor: "#2a2a22" },
   });
+
   candleSeries = chart.addCandlestickSeries({
-    upColor,
-    downColor,
-    borderUpColor: upColor,
-    borderDownColor: downColor,
-    wickUpColor: upColor,
-    wickDownColor: downColor,
+    upColor: "#26a69a", downColor: "#ef5350", borderVisible: false, wickUpColor: "#26a69a", wickDownColor: "#ef5350",
   });
 
-  // 🚀 [2단] 거래량 차트 생성
-  chartVol = LightweightCharts.createChart(elVol, {
-    ...commonOptions,
-    timeScale: { visible: false }, // 💡 라벨 숨김! 공간 절약
-    rightPriceScale: {
-      autoScale: true,
-      scaleMargins: { top: 0.1, bottom: 0 },
-      borderColor: isDark ? "#2a2a22" : "#f1f1f11f",
-    },
+  volumeSeries = chart.addHistogramSeries({
+    color: "#26a69a", priceFormat: { type: "volume" }, priceScaleId: "volScale"
   });
-  volumeSeries = chartVol.addHistogramSeries({
-    color: "#26a69a",
-    priceFormat: { type: "volume" },
-  });
+  chart.priceScale("volScale").applyOptions({ autoScale: true, borderColor: "transparent" });
 
-  // 🚀 [3단] 김프 차트 생성
-  chartKimchi = LightweightCharts.createChart(elKimchi, {
-    ...commonOptions,
-    timeScale: { visible: false }, // 💡 라벨 숨김! 공간 절약
-    rightPriceScale: {
-      autoScale: true,
-      scaleMargins: { top: 0.1, bottom: 0.1 },
-      borderColor: isDark ? "#2a2a22" : "#f1f1f11f",
-    },
-  });
-  kimchiSeries = chartKimchi.addLineSeries({
+  // 🚀 김프 라인 차트 부활 (색상 로직 삭제로 오류 방어)
+  kimchiSeries = chart.addLineSeries({
+    color: "#57a4fc", // 단일 테마색으로 지정
     lineWidth: 2,
     crosshairMarkerVisible: false,
-    priceFormat: {
-      type: "custom",
-      formatter: (price) => (price > 0 ? "+" : "") + price.toFixed(2) + "%",
-    },
+    priceFormat: { type: "custom", formatter: (p) => (p > 0 ? "+" : "") + p.toFixed(2) + "%" },
+    priceScaleId: "kimchiScale"
   });
+  chart.priceScale("kimchiScale").applyOptions({ autoScale: true, borderColor: "transparent" });
 
-  // 🔥 [핵심 기술] 세 차트의 X축(시간)을 톱니바퀴처럼 물리게 동기화!
-  const syncTimeScales = (source, target1, target2) => {
-    source.timeScale().subscribeVisibleLogicalRangeChange((range) => {
-      if (range) {
-        target1.timeScale().setVisibleLogicalRange(range);
-        target2.timeScale().setVisibleLogicalRange(range);
-      }
-    });
-  };
-  syncTimeScales(chart, chartVol, chartKimchi);
-  syncTimeScales(chartVol, chart, chartKimchi);
-  syncTimeScales(chartKimchi, chart, chartVol);
+  initResizers();
+  applyChartLayout();
 
-  // 리사이즈 옵저버 (3마리 동시에 크기 조절)
   if (window.chartResizeObserver) window.chartResizeObserver.disconnect();
-  window.chartResizeObserver = new ResizeObserver(() => {
-    applyChartLayout(); // 창 크기가 변하면 레이아웃 매니저 호출
+  window.chartResizeObserver = new ResizeObserver(([entry]) => {
+    if (entry.contentRect.width && entry.contentRect.height) {
+      store.chart.resize(entry.contentRect.width, entry.contentRect.height);
+    }
   });
   window.chartResizeObserver.observe(document.getElementById("chart-wrapper"));
 }
+
+window.togglePane = togglePane;

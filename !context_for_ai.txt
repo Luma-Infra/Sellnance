@@ -1,23 +1,19 @@
 ﻿=== [1] PROJECT STRUCTURE ===
-!context_for_ai.txt
-!prompt_to_ai.txt
-!readme_by_ai.txt
-!rule_for_backend.txt
-!tailwind_to_shell.txt
-!tempMsg,txt
 .env
 .gitignore
 config.py
 context_for_ai.txt
-go.mod
-go.sum
 LICENSE
 mapping.json
 package-lock.json
 package.json
+prompt_to_ai.txt
 README.md
+readme_by_ai.txt
 requirements.txt
+rule_for_backend.txt
 start.bat
+tailwind_to_shell.txt
 wrangler.jsonc
 
 +---modules
@@ -34,7 +30,6 @@ wrangler.jsonc
 +---static
 |   api.js
 |   app_loader.js
-|   chart.js
 |   chart_utils.js
 |   sim_engine.js
 |   stream.js
@@ -81,7 +76,7 @@ def _fetch_and_process_data():
     # 3. 조립 및 계산
     # 🚀 [추가] 조립 직전에 글로벌 상장 족보 긁어오기
    # ✅ 수정 코드 (명령을 builder 부대에게 내리세요!)
-        MAPPING_DATA  # 🚀 보따리 전달 잊지 마시고요!
+        mapping  # 🚀 보따리 전달 잊지 마시고요!
     all_live_assets = binance_data.keys() | upbit_krw_set # 현재 살아있는 모든 티커(원본)
     # 🧹 [청소기 가동 구간]
     # DUPLICATED_LIST의 키값(별명)들을 세트로 미리 준비 (속도 향상)
@@ -92,7 +87,7 @@ def _fetch_and_process_data():
         # 4. 🔥 [추가] 중복 리스트(DUPLICATED_LIST) 별명에도 없을 경우에만!
     # 5. 시총 정렬 후 반환
     # ✅ [수정] 저장을 시키세요!
-        config_manager.save_mapping_data(MAPPING_DATA) # 🚀 드디어 도구를 사용함!
+        config_manager.save_mapping_data(mapping) # 🚀 드디어 도구를 사용함!
 def get_cached_data(force_reload=False):
         # 🚀 1. 지금 시간을 무조건 한국 시간(KST)으로 꽉 고정!
         # 🚀 2. timestamp가 datetime.min이 아닐 때만 계산 (에러 방지)
@@ -120,10 +115,8 @@ async def home(request: Request):
     # 뼈대만 렌더링하고 데이터는 AJAX로 그림
 # ⭐️ async 삭제됨!
 def get_market_data(force: bool = False):
-# app.py 내부 라우터 교체
+# ⭐️ async 삭제됨!
 def get_market_map():
-        # 중앙 통제소에서 데이터 가져오기 (force=False 라서 크레딧 소모 0)
-        # 조립된 데이터 안에서 슥슥 뽑아내기만 하면 끝!
 # ⭐️ async 삭제됨!
 def get_coin_info(asset: str):
         # api_manager.py의 캐시 데이터를 가져옵니다 (force=False 이므로 API 새로 안 찌름)
@@ -146,7 +139,6 @@ async def progress_stream():
 def on_startup():
     # trace_hooking 파일 안에 apply_traces 함수가 있다고 가정합니다.
     # 만약 웹소켓 매니저가 있다면 그 broadcast 함수를 넣어주면 됩니다.
-    # trace_hooking.apply_traces(None)
     # ⭐️ 9시 정각 감시 스레드 시작
     # ⭐️ 데이터 긁어오기 (이건 배포든 로컬이든 필수!)
     # 🚀 로컬(127.0.0.1) 환경이고, 아직 브라우저 안 열었을 때만 실행
@@ -163,29 +155,21 @@ def on_startup():
 def build_binance_row(
     # 1. 이름표 및 기본 정보
     # 2. 족보에서 체인 정보 먼저 확정 (구조적 순서 선점)
-    # 🚀 [정리 완료] CMC 정보 매칭 및 만능 열쇠 (이 순서가 파이썬의 정석입니다)
-    # 🚀 [지문 확정] 1순위: 족보 / 2순위: 하드코딩(base) / 3순위: 하드코딩(display) / 4순위: CMC결과
-    # 3중 타격: 장부 키 -> 순수 티커 -> 하드코딩 ID 순으로 찔러서 info 무조건 확보!
-    # TO-BE: 👇 final_ucid를 가장 먼저 찔러야 EDGE 두 놈이 자기 장부를 찾아갑니다!
-    # 중복 UID 체크 (무조건 final_ucid로 검사)
-    # TO-BE: 👇 아래처럼 "주석 처리" 하거나 삭제하세요. 
-    # (단, processed_uids.add는 유지해서 족보 세탁기가 누가 누군지 알게는 해줍니다.)
-    # CMC에서 새로운 ucid를 찾았다면 최종 업데이트
-    # 4. 재료 가공 (무조건 final_ucid로 로고 생성!)
-    # 5. 족보 업데이트 (세탁기)
-            final_ucid,                           # 🚀 믿음의 최종 UID
-    # 시총 계산 (생략된 기존 로직 그대로 삽입)
+    # 3. CMC 정보 매칭
+    # 중복 UID 체크
+    # 4. 재료 가공 (순서 중요: ch_sym 확정 후 이미지 생성)
+    # 5. 족보 업데이트 및 시총 계산
+        # 시총 계산 (생략된 기존 로직 그대로 삽입)
         mcap = info.get('market_cap', 0) if info else 0 # 예시 간소화
     # 6. 상장 거래소 목록
     # 7. 데이터 조립
         # --- 1. 기본 식별 정보 ---
             # --- 2. 화면 표시용 데이터 (HTML 포함) ---
             "Price_KRW": None, # 바이낸스는 원화 없음
-            # 🚀 [추가] 바이낸스 전용 거래대금 (선물 + 현물)
             # --- 3. 프론트엔드 정렬용 순수 숫자 데이터 (Raw) ---
             # 추가 데이터 정리 예정
             "Listed_Exchanges": list(listed_on), # 🚀 프론트엔드야, 이거 보고 이미지 박아라!
-# 업비트 전용 1줄짜리 결과물 뱉는 함수.
+ # 업비트 전용 1줄짜리 결과물 뱉는 함수.
 def build_upbit_row(
     # global MAPPING_DATA
     # --- 💡 초기값 세팅 (에러 방어막) ---
@@ -193,21 +177,15 @@ def build_upbit_row(
     # CMC 데이터 매칭
     # 중복 UID 체크
     # 가격 데이터 추출 (여기서 변수들이 태어납니다)
-# 🚀 [정리 완료] 업비트용 만능 열쇠 및 지문 확정
-    # 3중 타격으로 업비트 코인 시총/볼륨 확보!
-    # TO-BE: 👇 final_ucid를 가장 먼저 찔러야 EDGE 두 놈이 자기 장부를 찾아갑니다!
-    # 중복 UID 체크 및 방어
     # 로고 및 체인 설정
-    # 🚀 [신규 상장 캐치 & 족보 세탁기]
     # 가격 및 정밀도
-    # p = up_info['price']
     # 상장 거래소 목록 조립
             # --- 1. 기본 식별 정보 ---
             # --- 2. 화면 표시용 데이터 (HTML 포함) ---
-            # 🚀 [추가] 업비트 전용 거래대금 (24h 거래대금)[cite: 9]
             # --- 3. 프론트엔드 정렬용 순수 숫자 데이터 (Raw) ---
             # 추가 예정
             "Listed_Exchanges": list(listed_on), # 🚀 프론트엔드야, 이거 보고 이미지 박아라!
+    return row, False # 업데이트 로직 필요시 추가
 # 족보 청소기 로직 분리.
 def clean_stale_tickers(
 # 위 함수들을 호출해서 최종 final_results 리스트를 완성.
@@ -215,22 +193,8 @@ def assemble_final_dashboard(
     # 역방향 족보 생성
     # 테더 환율
     # 1. 바이낸스 투입
-        base = utils.get_pure_base_asset(ticker).upper() # 👈 base 추출
-        # 🚀 [누님 솔루션 적용!] EXCLUSION_LIST 거르고, is_valid_ticker로 잡동사니 차단!
-    # 2. 업비트 투입 (upbit_only_assets 버리고 upbit_krw_set 사용!)
-    binance_base_set = {t.replace('USDT', '') for t in binance_data.keys()} # 🚀 비교를 위해 바낸 셋 준비
-        # 🚀 [추가] 업비트 심볼의 '진짜 이름(Display Name)'을 확인
-        # 🚀 [중요!] 바이낸스에서도 이 코인을 처리했는지 확인합니다.
-        # 만약 바이낸스에 이 코인이 있고, 바이낸스에서의 '진짜 이름'도 같다면 중복이므로 패스!
-        # 🚀 만약 이 코인이 EXCLUSION_LIST에 있다면 패스
-        # 🚀 이제 build_upbit_row로 넘깁니다! 
-                # 🚀 기존 바낸 데이터에 업비트 정보만 덧칠합니다.
-                # 🚀 [추가] 바이낸스 정보에 업비트 볼륨 정보도 병합!
+    # 2. 업비트 투입
     # 3. 청소기 가동
-    # if clean_stale_tickers(binance_data, upbit_krw_set, mapping):
-    #     any_update = True
-    # AS-IS: return final_results, any_update
-    # TO-BE: 👇 딕셔너리의 값들만 리스트로 뽑아서 리턴!
 
 
 
@@ -240,39 +204,27 @@ def assemble_final_dashboard(
 # ==========================================
 # 🧱 모듈 2: 코인마켓캡(CMC) 정보 수집기
 # ==========================================
+# 2. 이름표 9개를 순서대로 나열해서 한 방에 언패킹!
 def _fetch_cmc_api_chunk(task):
         # 에러가 나도 당황하지 않고 '어떤' 에러인지 깔끔하게 보고!
 # 심볼 검사하고 ID로 찌를지 티커로 찌를지 대기열(queue) 만드는 로직.
-def build_cmc_lookup_lists(binance_base_set, upbit_krw_set, MAPPING_DATA):
-   # 🚀 공통 처리기 (귀빈 대접 버전)
-    def process_asset(a, exchange_tag):
-        # 1순위: '원본 이름(a)' 그대로 하드코딩 맵에 있는지 확인 (최고 귀빈)
-        # 2순위: 원본에 없을 때만 '숫자(배율)' 제거를 시도
-        # PUMPBTC 같은 건 여기서 BTC가 안 잘리도록 누님이 고친 get_pure_base_asset이 작동함
-        # [귀빈 예외] 원본과 배율 제거본이 다를 때(즉, 숫자만 붙었을 때) 하드코딩 맵 재조회
-        # 유효성 검사 (숫자 6자리 등 쓰레기 필터링)
-        # 이름표 및 별칭 확정 (누님의 요청대로 BTC/ETH 자르기는 패스하므로 a를 우선 사용)
-        # 3순위: 중복 리스트(별명) 및 족보 확인
-        # --- 장부 기록 ---
-            # 하드코딩 없으면 원본(a) 혹은 배율 제거본(base)으로 CMC 타격
-            # 숫자가 붙었던 녀석은 base로, 일반 합성어는 a 그대로 보냄
-    # 🚀 바이낸스와 업비트를 '각각' 돌립니다. 이제 EDGE와 MET가 둘 다 큐에 들어갑니다!
+def build_cmc_lookup_lists(all_assets, binance_base_set, MAPPING_DATA):
+    # 🚀 단 한 줄로 9개 족보 명단을 싹 다 가져옵니다.
+    # 역방향 족보 생성
+        # 🚀 [방역] 만기일 티커 등 불량 티커 원천 차단
+        # 🚀 3단계 족보 수사
+        # 1. 중복 리스트 / 2. 고정 ID 맵 / 3. 이미 저장된 TICKER_DATA
+            # 4. 진짜 신입 (이름으로 조회)
 # CMC 단일 묶음 호출기.
-def fetch_cmc_market_data(binance_data, upbit_krw_set, MAPPING_DATA):
+def fetch_cmc_market_data(binance_data, upbit_only_assets, MAPPING_DATA):
     # 1. 전체 자산 목록 합치기
-    binance_base_set = {utils.get_pure_base_asset(t.replace('USDT', '')).upper() for t in binance_data.keys()}    # all_assets = binance_base_set.u
-nion(upbit_only_assets)
     # 2. 조회 명단 작성 (UID파 vs 티커파)
-    # 🚀 upbit_only_assets 파라미터를 버리고 전체 upbit_krw_set 받기
     # 3. CMC API 실행
 # ThreadPool 돌려서 CMC 데이터 긁어오고 market_data_map 만드는 로직.
 def execute_cmc_requests(id_lookup, sym_lookup):
     # ID 묶음 생성
     # 심볼 묶음 생성 (200개씩 청크)
-            # 🚀 [핵심] builder가 찾기 쉽게 공통 데이터 맵을 만듭니다.
-            # ✅ [최후 통첩] 숫자 ID(k)와 티커(Symbol) 둘 다 장부에 기록하세요!
-            market_data_map[str(k)] = asset_info         # ID로 찾을 때 대비
-                market_data_map[info['symbol'].upper()] = asset_info  # 티커로 찾을 때 대비
+            # CMC 응답 구조 처리 (리스트 혹은 딕셔너리)
 
 
 
@@ -388,7 +340,6 @@ def create_image_tag(url):
 def get_pure_base_asset(ticker):
     # 1. Quote(결제자산)를 뒤에서부터 안전하게 제거
     # USDT, KRW 외에 다른 마켓이 추가되어도 대응 가능하도록 리스트화
-            # 단, 'BTC', 'ETH' 순수한 티커는 자르면 안되므로 길이 체크 추가
     # 2. 정규식으로 배율과 순수 심볼 분리
     # ^(10+|1[MB])? : 시작부분의 10, 100, 1M, 1B 등을 그룹 캡처
     # (?P<symbol>.+) : 나머지를 전부 'symbol' 그룹으로 캡처
@@ -402,7 +353,7 @@ def is_valid_ticker(ticker):
 
 --- File: api.js ---
 
-// api.js
+// app.js
 // --- 📡 API Fetch 로직 ---
 async function loadSymbols() {
     const res = await fetch("/api/market-map");
@@ -424,10 +375,10 @@ function searchSymbols(v) {
   const query = v.toUpperCase();
   const filtered = query
     : allSymbols.slice(0, 15); // 빈 값이면 상위 15개 그냥 노출
-      const isUpbit = marketDataMap.upbit.includes(s);
-      const isBinanceSpot = marketDataMap.spot.includes(s);
-      const isBinanceFutures = marketDataMap.futures.includes(s);
-      // 거래소 버튼 (분기 유지)
+    const isUpbit = marketDataMap.upbit.includes(s);
+    const isBinanceSpot = marketDataMap.spot.includes(s);
+    const isBinanceFutures = marketDataMap.futures.includes(s);
+    // 거래소 버튼 (분기 유지)
 // 선택 로직 (티커명 검색창 전송 + 이름 유지)
 async function selectSymbol(s, forceMarket = null) {
   // [중요] 검색창에 티커명 즉시 반영 (기존 기능 유지)
@@ -442,8 +393,8 @@ async function selectSymbol(s, forceMarket = null) {
     const infoRes = await fetch(`/api/coin-info/${s}`);
     const infoData = await infoRes.json();
   // 차트 호출
-  const isFutures = currentMarket === "FUTURES";
-  const isSpot = currentMarket === "SPOT";
+  const isFutures = (currentMarket === "FUTURES");
+  const isSpot = (currentMarket === "SPOT");
 // 배지 UI 업데이트 헬퍼
 function updateExchangeBadges(s) {
   const badgeContainer = document.getElementById("exchange-badges");
@@ -453,7 +404,7 @@ function clearChartData() {
   // 🚀 차트 시리즈 데이터 즉시 비우기
   // if (candleSeries) candleSeries.setData([]);
   // if (previewSeries) previewSeries.setData([]);
-  // 🚀 [추가] 캔들은 남겨두되, 가격축은 미리 '오토'로 풀어서
+  // 🚀 [추가] 캔들은 남겨두되, 가격축은 미리 '오토'로 풀어서 
   // 새 데이터가 올 때 부드럽게 적응할 준비를 시킵니다.
   // 🚀 카운트다운 라벨도 유령 방지를 위해 삭제
 async function fetchHistory(symbol) {
@@ -461,86 +412,45 @@ async function fetchHistory(symbol) {
   // 🚀 [셔터 내림] 지금부터 차트 공사 중! 소켓 데이터 난입 금지!
   window.isFetchingChart = true;
   const displayName = symbol || currentAsset;
-  const rawSymbol = displayName.split("(")[0].trim().toUpperCase();
-  const isFutures = currentMarket === "FUTURES";
-  const isSpot = currentMarket === "SPOT";
-  const isUpbit = currentMarket === "UPBIT";
-  // 🚀 [세련된 방법] 현재 클릭한 코인의 전체 데이터(장부)를 찾습니다.
-  const rowInfo = window.currentTableData.find((c) => c.Symbol === rawSymbol);
-  // 🚀 장부에 Upbit_Symbol이 적혀있으면 그거 쓰고, 없으면 그냥 원본(rawSymbol) 씁니다.
-  const bTicker = rawSymbol;
-  const uTicker =
-  // 티커 규격 맞추기 (알아서 BTTC와 BTT로 나뉘어 들어감)
-  const binanceTicker = `${bTicker}USDT`;
-  const upbitTicker = `KRW-${uTicker}`;
-  // 🚀 [백엔드 장부 200% 활용] 김프를 계산할 수 있는 자격증명
-  const hasUpbit = marketDataMap.upbit?.includes(uTicker);
-  const hasBinanceSpot = marketDataMap.spot?.includes(bTicker);
-  const hasBinanceFutures = marketDataMap.futures?.includes(bTicker);
-  const canCalcKimchi = hasUpbit && (hasBinanceSpot || hasBinanceFutures);
-  // 🚀 임시 환율 (백엔드 장부에 krw_usd_rate를 담아주면 더 좋습니다!)
-  const exchangeRate = marketDataMap.krw_usd_rate || 1480.0;
+  const rawSymbol = displayName.split('(')[0].trim().toUpperCase();
+  const isFutures = (currentMarket === "FUTURES");
+  const isSpot = (currentMarket === "SPOT");
+  const isUpbit = (currentMarket === "UPBIT");
+  // 티커 규격 맞추기
+  const binanceTicker = `${rawSymbol}USDT`;
+  const upbitTicker = `KRW-${rawSymbol}`;
   const loadingModal = document.getElementById("chart-loading-modal");
-    let volumeData = []; // 볼륨 배열
-    let kimchiData = []; // 김프 배열
     // 🚀 [구조화] 바이낸스 vs 업비트 분기
       const exchange = isFutures ? "binance_futures" : "binance_spot";
-      const res = await fetch(
-          const time = Number(d[0]) / 1000;
-          const open = Number(d[1]);
-          const high = Number(d[2]);
-          const low = Number(d[3]);
-          const close = Number(d[4]);
-          const vol = Number(d[5]);
-      // 업비트/빗썸 등 원화 거래소
+      const res = await fetch(`/api/candles?exchange=${exchange}&symbol=${binanceTicker}&interval=${currentTF}&limit=500`);
+      // [개선] 재료 고르기 (업비트 지원 목록)
       const supportedMin = [1, 3, 5, 10, 15, 30, 60, 240];
+      const v = parseInt(currentTF);
+      const u = currentTF.replace(/[0-9]/g, '');
       const totalSec = tfSec[currentTF] || 60;
-      const u = currentTF.replace(/[0-9]/g, "");
+        // 일/주/월 단위: 3d면 'days' 가져와서 3개 합치기
+        // 분/시간 단위: 120분(2h)이면 60분봉 가져와서 2개 합치기
         const targetMin = totalSec / 60;
-        const baseMin = supportedMin.reverse().find((m) => targetMin % m === 0) || 1;
+        // 나눌 수 있는 가장 큰 지원 분봉 찾기
+        const baseMin = supportedMin.reverse().find(m => targetMin % m === 0) || 1;
+      // 2. 데이터 가져오기 (압축을 위해 limit 넉넉히)
       const fetchLimit = Math.min(200 * step, 600);
-      const res = await fetch(`/api/candles?exchange=upbit&symbol=${upbitTicker}&interval=${fetchInterval}&limit=${fetchLimit}`);
+      const res = await fetch(`/api/candles?exchange=upbit&symbol=${upbitTicker}&interval=${fetchInterval}&limit=${fetchLim
+it}`);
+        // 🚀 3. 무지성 합치기 (step이 1이면 그냥 통과, 아니면 압축)
           const chunk = baseData.slice(i, i + step);
-            const time = chunk[0].time;
-            const open = chunk[0].open;
-            const close = chunk[chunk.length - 1].close;
-            const high = Math.max(...chunk.map((c) => c.high));
-            const low = Math.min(...chunk.map((c) => c.low));
-            const totalVol = chunk.reduce((sum, c) => sum + (c.vol || 0), 0);
-    // 🚀 [수정됨] 2.5 [김프 엔진 및 BTC 합성 환율 계산기]
-    // 1. 김프 비교 대상 (Fallback logic) 결정
-      // 업비트/빗썸 기준: 바낸 선물 -> 바이비트 현물
-      // 바낸 기준: 업비트 -> 빗썸
-      // BTC 합성 환율을 위한 준비
-      const u = currentTF.replace(/[0-9]/g, "");
-      const totalSec = tfSec[currentTF] || 60;
-        const baseMin = [1, 3, 5, 10, 15, 30, 60, 240].reverse().find((m) => (totalSec / 60) % m === 0) || 1;
-      const uBtcUrl = `/api/candles?exchange=upbit&symbol=KRW-BTC&interval=${upbitInterval}&limit=1000`;
-      const bBtcUrl = `/api/candles?exchange=binance_spot&symbol=BTCUSDT&interval=${currentTF}&limit=500`;
-      const results = await Promise.allSettled([
-      const subRaw = results[0].status === 'fulfilled' ? results[0].value : [];
-      const uBtcRaw = results[1].status === 'fulfilled' ? results[1].value : [];
-      const bBtcRaw = results[2].status === 'fulfilled' ? results[2].value : [];
-        // BTC 합성 환율 맵 생성
-        const bBtcMap = {};
-        const syntheticRateMap = {}; 
-            const uTime = Math.floor(Date.parse(d.candle_date_time_utc + "Z") / 1000);
-            const bPrice = bBtcMap[uTime] || Object.values(bBtcMap)[0];
-        // 서브 코인 정렬
-          const timeA = (subExchange === "upbit" || subExchange === "bithumb") ? Math.floor(Date.parse(a.candle_date_time_utc + "Z") / 1000) : Numb
-er(a[0]) / 1000;
-          const timeB = (subExchange === "upbit" || subExchange === "bithumb") ? Math.floor(Date.parse(b.candle_date_time_utc + "Z") / 1000) : Numb
-er(b[0]) / 1000;
-            const subItem = subRaw[subIndex];
-            const subTime = (subExchange === "upbit" || subExchange === "bithumb")
-            const isKor = ["UPBIT", "BITHUMB"].includes(currentMarket);
-            const korPrice = isKor ? candle.close : lastKnownSubClose;
-            const glbPrice = isKor ? lastKnownSubClose : candle.close;
-            const kimchiPct = (korPrice / (glbPrice * lastKnownRate) - 1) * 100;
     // 3. 차트 렌더링
-      const row = currentTableData.find((c) => c.Symbol === rawSymbol);
-      const p = row ? Number(row.precision) : 2;
-        window.isFetchingChart = false;
+        // 🚀 [해결] 새로운 코인에 맞게 가격 포맷(precision) 즉시 갱신
+        const row = currentTableData.find(c => c.Symbol === rawSymbol);
+        const p = row ? Number(row.precision) : 2;
+            type: "price", // 0.0 방지를 위해 'custom' 대신 'price' + formatter 조합 추천
+        // 🚀 데이터를 넣기 직전에만 '잠깐' 축 잡아두는 로직 제거
+        // chart.priceScale("right").applyOptions({ autoScale: false });
+        // 🚀 [이동] 실시간 소켓은 미리 시동을 걸어둡니다.
+        // 🚀 [핵심] 브라우저가 다음 화면을 그릴 때(딱 0.01초 뒤) 축을 풉니다.
+          chart.priceScale("right").applyOptions({ autoScale: true }); // 다시 축 가동
+          // 🚀 [셔터 올림] 차트 세팅 끝! 이제 소켓 데이터 받아도 됨!
+            window.isFetchingChart = false;
 
 
 
@@ -565,54 +475,6 @@ EngineUI.init(); // 시작하자마자 UI 주입
 
 
 
---- File: chart.js ---
-
-// chart.js
-// 🚀 [추가] 차트 패널 (볼륨, 김프) 토글 관리자
-window.paneConfig = { volume: true, kimchi: true };
-function togglePane(paneName) {
-  window.paneConfig[paneName] = !window.paneConfig[paneName];
-function applyChartLayout() {
-  const v = window.paneConfig.volume;
-  const k = window.paneConfig.kimchi;
-  const elVol = document.getElementById("pane-vol");
-  const elKimchi = document.getElementById("pane-kimchi");
-  // 1. HTML 엘리먼트 노출 제어
-  // 2. [핵심] 차트 리사이즈 - 컨테이너가 숨겨져 있으면 크기가 0이 되므로 주의
-    const wrapper = document.getElementById("chart-wrapper");
-    // 메인 차트 리사이즈
-    const mainPane = document.getElementById("pane-main");
-    // 볼륨 차트 리사이즈
-    // 김프 차트 리사이즈
-function initChart() {
-  // 1. 기존 메모리 해제 (쌀먹의 기본)
-  // 2. 3개의 분리된 DOM 가져오기
-  const elMain = document.getElementById("pane-main");
-  const elVol = document.getElementById("pane-vol");
-  const elKimchi = document.getElementById("pane-kimchi");
-  const isDark = currentTheme === "binance" || currentTheme === "upbit-dark";
-  const upColor = currentTheme === "binance" ? "#26a69a" : "#c84a31";
-  const downColor = currentTheme === "binance" ? "#ef5350" : "#1261c4";
-  // 공통 옵션 (배경, 그리드)
-  const commonOptions = {
-  // 🚀 [1단] 메인 캔들 차트 생성
-      minimumWidth: 100, // 🚀 [추가] 가격축 너비를 고정하여 3개 차트의 X축을 완벽하게 정렬
-  // 🚀 [2단] 거래량 차트 생성
-    timeScale: { visible: false }, // 💡 라벨 숨김! 공간 절약
-      minimumWidth: 100, // 🚀 [추가] 동일한 너비 적용
-  // 🚀 [3단] 김프 차트 생성
-    timeScale: { visible: false }, // 💡 라벨 숨김! 공간 절약
-      minimumWidth: 100, // 🚀 [추가] 동일한 너비 적용
-  // 🔥 [핵심 기술] 세 차트의 X축(시간)을 톱니바퀴처럼 물리게 동기화!
-  const syncTimeScales = (source, target1, target2) => {
-  // 리사이즈 옵저버 (3마리 동시에 크기 조절)
-  if (window.chartResizeObserver) window.chartResizeObserver.disconnect();
-  window.chartResizeObserver = new ResizeObserver(() => {
-    applyChartLayout(); // 창 크기가 변하면 레이아웃 매니저 호출
-  window.chartResizeObserver.observe(document.getElementById("chart-wrapper"));
-
-
-
 --- File: chart_utils.js ---
 
 // chart_utils.js
@@ -623,13 +485,13 @@ function formatSmartPrice(price, p) {
 function updateLegend(d) {
   const leg = document.getElementById("ohlc-legend");
   // 🚀 p값 안전장치 (currentAsset이나 데이터가 없을 때 대비)
-  const coin =
+  const coin = typeof currentTableData !== 'undefined' ? currentTableData.find(c => c.Symbol === currentAsset) : null;
   const p = coin?.precision ?? 2;
   // 🚀 0일 때를 위한 삼항 연산자 (보합색 추가)
-  const cls =
+  const cls = d.close > d.open ? "text-theme-up" : d.close < d.open ? "text-theme-down" : "text-theme-text opacity-70";
   const chg = d.close - d.open;
   // 🚀 분모 0 방지 및 chg가 0일 때 직접 처리
-  const chgPercent =
+  const chgPercent = (d.open && d.open !== 0) ? ((chg / d.open) * 100).toFixed(2) : "0.00";
   const sign = chg > 0 ? "+" : "";
   // 🚀 formatSmartPrice에 0이 들어가도 안 죽게 안전하게 호출
   const safeFormat = (val, precision) => {
@@ -663,7 +525,7 @@ function calculateTimeRemaining(tf, serverMs) {
     const month = now.getUTCMonth();
     const date = now.getUTCDate();
         // 상장일 기준이 아니라 UTC 0시 기준 3일씩 끊기 (바이낸스 방식)
-        const dayDiff =
+        const dayDiff = Math.ceil((serverMs + 1) / (86400000 * 3)) * (86400000 * 3);
         // 다음주 월요일 00:00 UTC (일요일 23:59:59 마감)
         const dayOfWeek = now.getUTCDay(); // 0(일)~6(토)
         const diffToMon = dayOfWeek === 0 ? 1 : 8 - dayOfWeek;
@@ -711,10 +573,6 @@ function getNext() {
 
 // stream.js
 // --- 🌊 실시간 웹소켓 엔진 ---
-// 타이틀만 광속으로 업데이트하는 함수 분리
-const updateTabTitle = (price, sym, prec) => {
-  const formatted = formatSmartPrice(price, prec || 2);
-  // 렌더링 엔진과 별개로 실행되어 딜레이가 사라짐
 function startRealtimeCandle(symbol, interval, isFutures, isSpot) {
   const streamName = `${symbol.toLowerCase()}usdt@kline_${interval}`;
   const wsBase = isFutures ? "wss://fstream.binance.com/market/ws" : "wss://stream.binance.com:9443/ws";
@@ -728,21 +586,8 @@ function startRealtimeCandle(symbol, interval, isFutures, isSpot) {
     const lastTime = getUnixSeconds(mainData[mainData.length - 1].time);
     const intervalVal = (mainData.length >= 2)
     const ghostData = Array.from(
-    // const lastPrice = mainData[mainData.length - 1].close;
-    // const p = currentTableData.find(c => c.Symbol === symbol.toUpperCase())?.precision || 2;
-    // document.title = `${formatSmartPrice(lastPrice, p)} ${symbol} | ?sellance 🚀`;
-  // 🚀 [해결] 핸들러를 별도 함수로 빼서 신규 연결/채널 교체시 모두 재사용해야 함!
-  const handleBinanceMessage = (e) => {
-    if (window.isFetchingChart) return;
-    const res = JSON.parse(e.data);
-    const tickSymbol = res.k.s.toUpperCase();
-    const currentAssetClean = currentAsset.split('(')[0].trim().toUpperCase();
-    const k = res.k;
-    const liveData = { time: k.t / 1000, open: +k.o, high: +k.h, low: +k.l, close: +k.c };
-      const lastIdx = mainData.length - 1;
-    // 🚀 [광속 타이틀] res.k.s(실시간 심볼)와 테이블 정밀도 사용
-    const currentP = currentTableData.find(c => c.Symbol === currentAssetClean)?.precision || 2;
-    updateTabTitle(+k.c, symbol, currentP); // symbol은 인자값
+    const lastPrice = mainData[mainData.length - 1].close;
+    const p = currentTableData.find(c => c.Symbol === symbol.toUpperCase)?.precision || 2;
   // ---------------------------------------------------------
   // 📌 2. 이전 업비트 소켓 무조건 청소 (충돌 방지)
   // ---------------------------------------------------------
@@ -750,8 +595,21 @@ function startRealtimeCandle(symbol, interval, isFutures, isSpot) {
   // ---------------------------------------------------------
   // 📌 3. 바이낸스 타격 (선물 or 현물)
   // ---------------------------------------------------------
-      binanceChartWs.onmessage = handleBinanceMessage; // ✅ 신규 연결시 등록
-      binanceChartWs.onmessage = handleBinanceMessage; // ✅ [중요] 채널 교체시에도 핸들러 갱신 (심볼 고정 해결)
+    // 1️⃣ 소켓이 없거나 닫혔으면 새로 생성
+        // 🚀 [방어막] 차트 로딩 중이면 기존 코인의 틱 데이터는 가차 없이 씹는다!
+        if (window.isFetchingChart) return;
+        const res = JSON.parse(e.data);
+        if (res.e !== "kline") return; // 캔들 아니면 무시
+        // 🚀 [가장 중요] 다른 코인 데이터 새치기 방어
+        const tickSymbol = res.k.s.toUpperCase();
+        const currentAssetClean = currentAsset.split('(')[0].trim().toUpperCase();
+        if (!tickSymbol.includes(currentAssetClean)) return; // 👈 튀는 현상 막아주는 1등 공신
+        const k = res.k;
+        const liveData = { time: k.t / 1000, open: +k.o, high: +k.h, low: +k.l, close: +k.c };
+          const lastIdx = mainData.length - 1;
+        // 🚀 [결정적 수리] 바낸도 카운트다운 엔진에 '서버 시간(res.E)'을 먹여준다!
+          // res.E 는 바이낸스가 밀리초 단위로 쏴주는 정확한 서버 현재 시간입니다.
+    // 2️⃣ 이미 열려있으면 채널만 교체 (구독/해지)
   // ---------------------------------------------------------
   // 📌 4. 업비트 타격
   // ---------------------------------------------------------
@@ -774,8 +632,6 @@ function startRealtimeCandle(symbol, interval, isFutures, isSpot) {
         const liveData = {
         const lastIdx = mainData.length - 1;
         const displayPrice = formatSmartPrice(liveData.close, p);
-        // 🚀 [광속 타이틀] 업비트도 통합 함수로 교체! (오타 '2' 제거)
-        const upbitP = currentTableData.find(c => c.Symbol === currentAssetClean)?.precision || 2;
     // upbitChartWs.onclose = () => {
     //   document.getElementById("status-dot").style.background = "#ef5350";
     //   document.getElementById("status-text").innerText = "OFFLINE";
@@ -844,46 +700,13 @@ function initSniperSocket() {
     syncSniperSubscriptions(); // 연결되자마자 현재 보이는 놈들 구독
     const data = JSON.parse(e.data);
     // 개별 티커 데이터(24hrTicker)가 오면 즉시 DOM 업데이트
-    // if (data.e === "aggTrade") {
-    //   renderSniperPrice(data);
-    // }
 // 🔄 [핵심] visibleSymbols와 연동하여 구독 리스트 동기화
 function syncSniperSubscriptions() {
   // 🚀 [수정] 아까 우리가 만든 가장 안전한 ID 발급기로 교체!
   const getNextId = () => Math.floor(Date.now() + Math.random() * 1000);
   const currentVisible = Array.from(visibleSymbols).map(
-  // const currentVisible = Array.from(visibleSymbols).map(
-  //   (s) => `${s.toLowerCase()}usdt@aggTrade`,
-  // );
   const toSub = currentVisible.filter((s) => !activeSubs.has(s));
   const toUnsub = Array.from(activeSubs).filter((s) => !currentVisible.includes(s));
-// let lastProcessedTime = 0; // 전역 또는 상위에 선언
-// function renderSniperPrice(data) {
-//   // 🚀 [추가] 이벤트 타임(E) 비교로 최신 데이터만 처리 (병렬/고속 수신 방어)
-//   if (data.E <= lastProcessedTime) return;
-//   lastProcessedTime = data.E;
-//   const symbol = data.s.replace("USDT", "");
-//   const priceCell = document.getElementById(`price-${symbol}`);
-//   if (!priceCell) return;
-//   const row = currentTableData.find(r => r.Symbol === symbol);
-//   if (!row) return;
-//   const p = row.precision || 2;
-//   // 🚀 aggTrade에서는 가격이 'p' 필드에 담겨 옵니다. (ticker는 'c')
-//   const newPrice = parseFloat(data.p);
-//   const oldPrice = parseFloat((priceCell.innerText || "").replace(/[^0-9.-]+/g, "")) || 0;
-//   if (newPrice !== oldPrice) {
-//     priceCell.innerText = `${formatSmartPrice(newPrice, p)}`;
-//     applyPriceFlash(priceCell, newPrice, oldPrice);
-//     // 🚀 [등락률 계산] aggTrade는 등락률을 안 주므로 시가(utc0_open_Raw) 기준으로 직접 계산
-//     const todayCell = document.getElementById(`today-${symbol}`);
-//     if (todayCell && row.utc0_open_Raw) {
-//       const openPrice = parseFloat(row.utc0_open_Raw);
-//       const todayChange = ((newPrice - openPrice) / openPrice) * 100;
-//       const tThemeClass = todayChange > 0 ? "text-theme-up" : todayChange < 0 ? "text-theme-down" : "text-theme-text opacity-50";
-//       todayCell.innerHTML = `<span class="${tThemeClass} font-bold">${todayChange > 0 ? "+" : ""}${todayChange.toFixed(2)}%</span>`;
-//     }
-//   }
-// }
 // ⚡ 정밀 렌더링 시작하기
 function renderSniperPrice(data) {
   const symbol = data.s.replace("USDT", "");
@@ -903,7 +726,8 @@ function renderSniperPrice(data) {
   const todayCell = document.getElementById(`today-${symbol}`);
     const openPrice = parseFloat(row.utc0_open_Raw);
     const todayChange = ((newPrice - openPrice) / openPrice) * 100;
-    const tThemeClass = todayChange > 0 ? "text-theme-up" : todayChange < 0 ? "text-theme-down" : "text-theme-text opacity-50";
+    const tThemeClass = todayChange > 0 ? "text-theme-up" : todayChange < 0 ? "text-theme-down" : "text-theme-text opacity-
+50";
 // 🚀 모든 뷰 변화의 종착역
 function refreshSniperTarget() {
 
@@ -1091,8 +915,7 @@ const leftPanel = document.getElementById("left-panel");
     // 1. 패널 크기 변경
     // 2. 차트 리사이즈 (가장 무거운 작업)
     if (window.chart) {
-      // const container = document.getElementById("chart-container");
-      const container = document.getElementById("chart-wrapper");
+      const container = document.getElementById("chart-container");
       window.chart.resize(container.clientWidth, container.clientHeight);
   document.body.classList.remove("resizing-active"); // 🚨 효과 해제
 // [table.js 맨 아래에 독립적으로 배치]
@@ -1122,8 +945,7 @@ function toggleSidebar() {
     // 사이드바 숨기기
   // UI 변경 후 차트 크기 강제 재계산
     if (window.chartResizeObserver && chart) {
-      // const container = document.getElementById("chart-container");
-      const container = document.getElementById("chart-wrapper");
+      const container = document.getElementById("chart-container");
 // 모바일: 리스트/차트 화면 전환
 function switchMobileView(view) {
   const leftPanel = document.getElementById("left-panel");
@@ -1132,8 +954,7 @@ function switchMobileView(view) {
   const btnChart = document.getElementById("mob-btn-chart");
     // 🚀 [추가] 모바일 리스트 모드일 때 높이 제한과 스크롤 주입
     // 차트 화면 렌더링 최적화
-      // const container = document.getElementById("chart-container");
-      const container = document.getElementById("chart-wrapper");
+      const container = document.getElementById("chart-container");
 function showMobileChart() {
   if (window.innerWidth >= SCREEN_WIDTH) return;
   const overlay = document.getElementById("mobile-chart-overlay");
@@ -1150,8 +971,7 @@ function showMobileChart() {
       const newHeight = content.clientHeight - 60; // 헤더 빼고
       window.chart.resize(newWidth, newHeight);
       window.chart.timeScale().fitContent();
-      // const container = document.getElementById("chart-container");
-      const container = document.getElementById("chart-wrapper");
+      const container = document.getElementById("chart-container");
 function closeMobileChart() {
   const overlay = document.getElementById("mobile-chart-overlay");
   const panel = document.getElementById("mobile-chart-panel");
@@ -1173,8 +993,7 @@ function executeTabSwitch(mode) {
   const btnChart = document.getElementById("tab-btn-chart"),
     // 🚀 [수정] 바이낸스와 업비트 차트 소켓 둘 다 확실히 처단!
   if (window.chart) {
-      // const container = document.getElementById("chart-container");
-      const container = document.getElementById("chart-wrapper");
+      const container = document.getElementById("chart-container");
         window.chart.resize(container.clientWidth, container.clientHeight);
 
 
@@ -1185,11 +1004,9 @@ function executeTabSwitch(mode) {
 // 🌐 1. 차트 & 데이터 엔진
 window.binanceChartWs = null;
 window.isFetchingChart = null;
-let volumeSeries = null; // 🚀 볼륨 시리즈
-let kimchiSeries = null; // 🚀 김프 시리즈
 // ⏱️ 2. 보간 카운트다운 엔진
 let localTimeAtUpdate = 0; // 🚀 보간 기준점
-let lastServerMs = 0; // 🚀 서버 진짜 시간
+let lastServerMs = 0;      // 🚀 서버 진짜 시간
 // 🐎 3. 테이블 및 무한 스크롤
 window.originalTableData = [];
 window.currentTableData = [];
@@ -1211,7 +1028,7 @@ window.sniperWs = null;
 // 시스템 상수
 const SCREEN_WIDTH = 768;
 const UI_UPDATE_INTERVAL = 1500;
-const CHART_CONFIG = {
+const CHART_CONFIG = { GHOST_COUNT: 500, VISIBLE_COUNT: 200, RIGHT_PADDING: 10 };
 const tfSec = {
 // 측정용 DOM
 
@@ -1242,188 +1059,63 @@ function setupButtonEvents() {
 // ⚙️ 시간 변환 통합 헬퍼 (전역으로 이동!)
 // 이제 initChart와 startRealtimeCandle 양쪽에서 모두 사용 가능합니다.
 const getUnixSeconds = (t) => {
-// function initChart() {
-//   const container = document.getElementById("chart-container");
-//   // 🚀 과거와의 작별 (이게 메모리 아끼는 핵심!)
-//   if (chart) {
-//     chart.remove(); // 엔진 내부 메모리 해제
-//     chart = null;
-//     candleSeries = null;
-//     countdownPriceLine = null; // 👈 유령 방지
-//   }
-//   const isDark = currentTheme === "binance" || currentTheme === "upbit-dark";
-//   const upColor = currentTheme === "binance" ? "#26a69a" : "#c84a31";
-//   const downColor = currentTheme === "binance" ? "#ef5350" : "#1261c4";
-//   chart = LightweightCharts.createChart(container, {
-//     width: container.clientWidth,
-//     height: container.clientHeight,
-//     layout: {
-//       background: {
-//         color: getComputedStyle(document.body).getPropertyValue("--bg").trim(),
-//       },
-//       textColor: getComputedStyle(document.body)
-//         .getPropertyValue("--text")
-//         .trim(),
-//     },
-//     grid: {
-//       vertLines: { color: isDark ? "#2a2a22" : "#f1f1f11f" },
-//       horzLines: { color: isDark ? "#2a2a22" : "#f1f1f11f" },
-//     },
-//     timeScale: {
-//       borderColor: isDark ? "#2a2a22" : "#f1f1f11f",
-//       timeVisible: true,
-//       secondsVisible: false,
-//       fixRightEdge: false,
-//       tickMarkFormatter: (time, tickMarkType) => {
-//         const d = new Date(getUnixSeconds(time) * 1000);
-//         if (isNaN(d.getTime())) return "";
-//         // 🚀 핵심: tickMarkType이 'Year'(0)이면 연도를 최우선으로 반환
-//         // LightweightCharts.TickMarkType.Year 값은 보통 0입니다.
-//         if (tickMarkType === 0) {
-//           return `${d.getFullYear()}년`;
-//         }
-//         const isDayUnit = !(currentTF || "1h").match(/[hm]/);
-//         if (isDayUnit) {
-//           // 일봉 이상: 연도 첫날이 아니면 '월/일' 표시
-//           return `${d.getMonth() + 1}/${d.getDate()}`;
-//         } else {
-//           // 분/시간봉: '시:분' 표시
-//           return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-//         }
-//       },
-//     },
-//     localization: {
-//       locale: navigator.language,
-//       timeFormatter: (tick) => {
-//         const d = new Date(getUnixSeconds(tick) * 1000);
-//         if (isNaN(d.getTime())) return "";
-//         const y = d.getFullYear();
-//         const m = String(d.getMonth() + 1).padStart(2, "0");
-//         const date = String(d.getDate()).padStart(2, "0");
-//         const h = String(d.getHours()).padStart(2, "0");
-//         const min = String(d.getMinutes()).padStart(2, "0");
-//         // 🚀 십자선(Crosshair) 라벨도 동일한 규칙 적용
-//         if ((currentTF || "1h").match(/[hm]/)) {
-//           return `${y}-${m}-${date} ${h}:${min}`;
-//         } else {
-//           return `${y}-${m}-${date}`;
-//         }
-//       },
-//     },
-//     rightPriceScale: {
-//       autoScale: true,
-//       visible: true,
-//       entireTextOnly: false,
-//       borderColor: isDark ? "#2a2a22" : "#f1f1f11f",
-//       mode: isLogMode ? 1 : 0,
-//     },
-//     crosshair: {
-//       mode: LightweightCharts.CrosshairMode.Normal,
-//     },
-//   });
-//   // 🚀 공통 커스텀 가격 포맷 설정 (함수 추가 없이 기존 formatSmartPrice 재활용!)
-//   // 🚀 p 값을 무조건 '순수 숫자(Number)'로 강제 변환! (문자열 방어)
-//   const row = currentTableData.find((c) => c.Symbol === currentAsset);
-//   const p = row && row.precision !== undefined ? Number(row.precision) : 2;
-//   // 🚀 minMove도 안전하게 계산
-//   const safeMinMove = p > 0 ? Number((1 / Math.pow(10, p)).toFixed(p)) : 1;
-//   const customPriceFormat = {
-//     type: "price",
-//     precision: p,
-//     minMove: safeMinMove,
-//     formatter: (price) => {
-//       if (price === null || price === undefined || isNaN(price)) return "";
-//       // 💡 formatSmartPrice가 똑똑하게 소수점을 찍어줄 겁니다.
-//       return formatSmartPrice(price, p);
-//     },
-//   };
-//   candleSeries = chart.addCandlestickSeries({
-//     upColor,
-//     downColor,
-//     borderUpColor: upColor,
-//     borderDownColor: downColor,
-//     wickUpColor: upColor,
-//     wickDownColor: downColor,
-//     priceFormat: customPriceFormat, // 👈 여기 추가
-//     lastValueVisible: false,
-//   });
-//   previewSeries = chart.addCandlestickSeries({
-//     upColor: upColor + "4D",
-//     downColor: downColor + "4D",
-//     borderVisible: false,
-//     wickVisible: false,
-//     priceFormat: customPriceFormat, // 👈 여기 추가
-//   });
-//   chart.subscribeCrosshairMove((p) => {
-//     // 1. 마우스가 차트 위에 있고 데이터가 존재할 때 (탐색 모드)
-//     if (p && p.time) {
-//       const d = p.seriesData.get(candleSeries);
-//       if (d) {
-//         updateLegend(d);
-//       }
-//     }
-//     // 2. 마우스가 차트를 벗어났을 때 (실시간 추적 모드)
-//     else if (mainData && mainData.length > 0) {
-//       // 가장 최근 봉(현재가) 데이터를 전광판에 고정!
-//       updateLegend(mainData[mainData.length - 1]);
-//     }
-//   });
-//   // 🚀 설정 변수를 활용한 유령 데이터 렌더링
-//   if (mainData.length > 1) {
-//     const lastTime = getUnixSeconds(mainData[mainData.length - 1].time);
-//     const interval =
-//       lastTime - getUnixSeconds(mainData[mainData.length - 2].time);
-//     // 🚀 전역 변수 적용
-//     const ghostData = Array.from(
-//       { length: CHART_CONFIG.GHOST_COUNT },
-//       (_, i) => ({
-//         time: lastTime + interval * (i + 1),
-//       }),
-//     );
-//     candleSeries.setData([...mainData, ...ghostData]);
-//     // VISIBLE_COUNT, RIGHT_PADDING 변수 사용
-//     chart.timeScale().setVisibleLogicalRange({
-//       from: Math.max(0, mainData.length - CHART_CONFIG.VISIBLE_COUNT),
-//       to: mainData.length + CHART_CONFIG.RIGHT_PADDING,
-//     });
-//   } else if (mainData.length === 1) {
-//     candleSeries.setData(mainData);
-//     autoFit();
-//   }
-//   // 측정 도구 세팅
-//   setTimeout(setupMeasureTool, 50);
-//   // 리사이즈 옵저버 디바운스
-//   if (window.chartResizeObserver) window.chartResizeObserver.disconnect();
-//   let resizeTimeout;
-//   window.chartResizeObserver = new ResizeObserver(([entry]) => {
-//     // 1. 부모 컨테이너 크기 실시간 감지
-//     const { width, height } = entry.contentRect;
-//     // 2. 0달러 방지 (크기가 0일 땐 패스)
-//     if (!width || !height) return;
-//     // 3. 디바운스 (너무 자주 그리면 렉 걸리니까 잠시 대기)
-//     clearTimeout(resizeTimeout);
-//     resizeTimeout = setTimeout(() => {
-//       if (chart) {
-//         chart.resize(width, height);
-//         // 🚀 리사이즈 직후 차트 범위를 다시 맞춰야 안 찌그러짐
-//         // chart.timeScale().fitContent();
-//         // console.log(`📏 리사이즈 완료: ${width}x${height}`);
-//       }
-//       // 🚀 모바일 오버레이 방어 (아까 그 기준 적용!)
-//       if (width >= SCREEN_WIDTH) {
-//         const overlay = document.getElementById("mobile-chart-overlay");
-//         if (overlay && !overlay.classList.contains("hidden")) {
-//           closeMobileChart();
-//         }
-//       }
-//     }, 50);
-//   });
-//   // 🎯 차트 컨테이너 감시 시작!
-//   const chartContainer = document.getElementById("chart-container");
-//   if (chartContainer) {
-//     window.chartResizeObserver.observe(chartContainer);
-//   }
-// }
+function initChart() {
+  const container = document.getElementById("chart-container");
+  // 🚀 과거와의 작별 (이게 메모리 아끼는 핵심!)
+    chart.remove(); // 엔진 내부 메모리 해제
+    countdownPriceLine = null; // 👈 유령 방지
+  const isDark = currentTheme === "binance" || currentTheme === "upbit-dark";
+  const upColor = currentTheme === "binance" ? "#26a69a" : "#c84a31";
+  const downColor = currentTheme === "binance" ? "#ef5350" : "#1261c4";
+        const d = new Date(getUnixSeconds(time) * 1000);
+        // 🚀 핵심: tickMarkType이 'Year'(0)이면 연도를 최우선으로 반환
+        // LightweightCharts.TickMarkType.Year 값은 보통 0입니다.
+        const isDayUnit = !(currentTF || "1h").match(/[hm]/);
+          // 일봉 이상: 연도 첫날이 아니면 '월/일' 표시
+          // 분/시간봉: '시:분' 표시
+        const d = new Date(getUnixSeconds(tick) * 1000);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, "0");
+        const date = String(d.getDate()).padStart(2, "0");
+        const h = String(d.getHours()).padStart(2, "0");
+        const min = String(d.getMinutes()).padStart(2, "0");
+        // 🚀 십자선(Crosshair) 라벨도 동일한 규칙 적용
+  // 🚀 공통 커스텀 가격 포맷 설정 (함수 추가 없이 기존 formatSmartPrice 재활용!)
+  // 🚀 p 값을 무조건 '순수 숫자(Number)'로 강제 변환! (문자열 방어)
+  const row = currentTableData.find((c) => c.Symbol === currentAsset);
+  const p = row && row.precision !== undefined ? Number(row.precision) : 2;
+  // 🚀 minMove도 안전하게 계산
+  const safeMinMove = p > 0 ? Number((1 / Math.pow(10, p)).toFixed(p)) : 1;
+  const customPriceFormat = {
+      // 💡 formatSmartPrice가 똑똑하게 소수점을 찍어줄 겁니다.
+    priceFormat: customPriceFormat, // 👈 여기 추가
+    priceFormat: customPriceFormat, // 👈 여기 추가
+    // 1. 마우스가 차트 위에 있고 데이터가 존재할 때 (탐색 모드)
+      const d = p.seriesData.get(candleSeries);
+    // 2. 마우스가 차트를 벗어났을 때 (실시간 추적 모드)
+      // 가장 최근 봉(현재가) 데이터를 전광판에 고정!
+  // 🚀 설정 변수를 활용한 유령 데이터 렌더링
+    const lastTime = getUnixSeconds(mainData[mainData.length - 1].time);
+    const interval =
+    // 🚀 전역 변수 적용
+    const ghostData = Array.from(
+    // VISIBLE_COUNT, RIGHT_PADDING 변수 사용
+  // 측정 도구 세팅
+  // 리사이즈 옵저버 디바운스
+  if (window.chartResizeObserver) window.chartResizeObserver.disconnect();
+  window.chartResizeObserver = new ResizeObserver(([entry]) => {
+    // 1. 부모 컨테이너 크기 실시간 감지
+    const { width, height } = entry.contentRect;
+    // 2. 0달러 방지 (크기가 0일 땐 패스)
+    // 3. 디바운스 (너무 자주 그리면 렉 걸리니까 잠시 대기)
+        // 🚀 리사이즈 직후 차트 범위를 다시 맞춰야 안 찌그러짐
+        // chart.timeScale().fitContent();
+        // console.log(`📏 리사이즈 완료: ${width}x${height}`);
+      // 🚀 모바일 오버레이 방어 (아까 그 기준 적용!)
+        const overlay = document.getElementById("mobile-chart-overlay");
+  // 🎯 차트 컨테이너 감시 시작!
+  const chartContainer = document.getElementById("chart-container");
+    window.chartResizeObserver.observe(chartContainer);
 function setTF(tf) {
   const isSimMode = document
 function executeSetTF(tf) {
@@ -1439,12 +1131,10 @@ function updatePreview() {
 function stopMeasuring() {
 // --- 🚀 2. 렌더링 시 DOM만 다시 붙여주는 함수 (initChart 내부에서 호출) ---
 function setupMeasureTool() {
-  // const container = document.getElementById("chart-container");
-  const container = document.getElementById("pane-main");
+  const container = document.getElementById("chart-container");
 // --- ⚡ 3. 마우스 이벤트 (단 한 번만 실행되도록 분리) ---
 function initMeasureEvents() {
-  // const container = document.getElementById("chart-container");
-  const container = document.getElementById("pane-main");
+  const container = document.getElementById("chart-container");
     // 🚀 매번 찾지 않고 캐싱된 DOM 사용
     const rect = container.getBoundingClientRect();
       const chartRect = cachedChartTd.getBoundingClientRect();

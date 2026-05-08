@@ -1,5 +1,6 @@
 // stream.js
 // --- 🌊 실시간 웹소켓 엔진 ---
+import { store, tfSec, CONFIG } from './store.js';
 
 // 타이틀만 광속으로 업데이트하는 함수 분리
 const updateTabTitle = (price, sym, prec) => {
@@ -13,7 +14,7 @@ function startRealtimeCandle(symbol, interval, isFutures, isSpot) {
   const wsBase = isFutures ? "wss://fstream.binance.com/market/ws" : "wss://stream.binance.com:9443/ws";
 
   // 🚀 [광클 방어 1선] 이미 똑같은 차트(코인+시간)를 보고 있으면 즉시 컷! (부하 0%)
-  if ((isFutures || isSpot) && currentKlineStream === streamName && binanceChartWs && binanceChartWs.readyState === WebSocket.OPEN) {
+  if ((isFutures || isSpot) && store.currentKlineStream === streamName && store.binanceChartWs && store.binanceChartWs.readyState === WebSocket.OPEN) {
     console.log(`😎 [스킵] 이미 ${streamName} 채널 시청 중입니다. (서버 부하 방지)`);
     return;
   }
@@ -64,14 +65,26 @@ function startRealtimeCandle(symbol, interval, isFutures, isSpot) {
 
     if (mainData.length > 0) {
       const lastIdx = mainData.length - 1;
-      if (mainData[lastIdx].time === liveData.time) mainData[lastIdx] = liveData;
-      else if (liveData.time > mainData[lastIdx].time) mainData.push(liveData);
+      // ✅ 🚀 [수정] 유령봉 방어 로직 (시간 차이가 타임프레임 기준보다 작으면 강제로 덮어쓰기)
+      const secDiff = liveData.time - mainData[lastIdx].time;
+      const currentTfSec = tfSec[currentTF] || 60;
+
+      if (secDiff === 0 || secDiff < currentTfSec) {
+        // 시간이 같거나, 다음 봉 생성 시간이 채 안 지났는데 시간이 다르게 찍혀 왔다면 (오차) -> 기존 캔들 병합
+        liveData.open = mainData[lastIdx].open;
+        liveData.high = Math.max(mainData[lastIdx].high, liveData.high);
+        liveData.low = Math.min(mainData[lastIdx].low, liveData.low);
+        mainData[lastIdx] = liveData;
+      } else if (secDiff >= currentTfSec) {
+        // 정확히 다음 봉 타임스탬프를 넘겼을 때만 새로운 캔들 생성!
+        mainData.push(liveData);
+      }
     }
 
     if (typeof updateRealtimeCountdown === "function") updateRealtimeCountdown(res.E);
 
     // 🚀 [광속 타이틀] res.k.s(실시간 심볼)와 테이블 정밀도 사용
-    const currentP = currentTableData.find(c => c.Symbol === currentAssetClean)?.precision || 2;
+    const currentP = store.currentTableData.find(c => c.Symbol === currentAssetClean)?.precision || 2;
     updateTabTitle(+k.c, symbol, currentP); // symbol은 인자값
 
     updateStatus(liveData);
@@ -81,30 +94,30 @@ function startRealtimeCandle(symbol, interval, isFutures, isSpot) {
   // ---------------------------------------------------------
   // 📌 2. 이전 업비트 소켓 무조건 청소 (충돌 방지)
   // ---------------------------------------------------------
-  if (upbitChartWs) {
-    upbitChartWs.onmessage = null; // 핸들러 먼저 죽여야 안전!
-    upbitChartWs.close();
-    upbitChartWs = null;
+  if (store.upbitChartWs) {
+    store.upbitChartWs.onmessage = null; // 핸들러 먼저 죽여야 안전!
+    store.upbitChartWs.close();
+    store.upbitChartWs = null;
   }
 
   // ---------------------------------------------------------
   // 📌 3. 바이낸스 타격 (선물 or 현물)
   // ---------------------------------------------------------
   if (isFutures || isSpot) {
-    if (!binanceChartWs || binanceChartWs.readyState !== WebSocket.OPEN) {
-      binanceChartWs = new WebSocket(wsBase);
-      binanceChartWs.onopen = () => {
-        binanceChartWs.send(JSON.stringify({ method: "SUBSCRIBE", params: [streamName], id: getWsId() }));
-        currentKlineStream = streamName;
+    if (!store.binanceChartWs || store.binanceChartWs.readyState !== WebSocket.OPEN) {
+      store.binanceChartWs = new WebSocket(wsBase);
+      store.binanceChartWs.onopen = () => {
+        store.binanceChartWs.send(JSON.stringify({ method: "SUBSCRIBE", params: [streamName], id: getWsId() }));
+        store.currentKlineStream = streamName;
       };
-      binanceChartWs.onmessage = handleBinanceMessage; // ✅ 신규 연결시 등록
+      store.binanceChartWs.onmessage = handleBinanceMessage; // ✅ 신규 연결시 등록
     } else {
-      if (currentKlineStream && currentKlineStream !== streamName) {
-        binanceChartWs.send(JSON.stringify({ method: "UNSUBSCRIBE", params: [currentKlineStream], id: getWsId() }));
+      if (store.currentKlineStream && store.currentKlineStream !== streamName) {
+        store.binanceChartWs.send(JSON.stringify({ method: "UNSUBSCRIBE", params: [store.currentKlineStream], id: getWsId() }));
       }
-      binanceChartWs.send(JSON.stringify({ method: "SUBSCRIBE", params: [streamName], id: getWsId() }));
-      binanceChartWs.onmessage = handleBinanceMessage; // ✅ [중요] 채널 교체시에도 핸들러 갱신 (심볼 고정 해결)
-      currentKlineStream = streamName;
+      store.binanceChartWs.send(JSON.stringify({ method: "SUBSCRIBE", params: [streamName], id: getWsId() }));
+      store.binanceChartWs.onmessage = handleBinanceMessage; // ✅ [중요] 채널 교체시에도 핸들러 갱신 (심볼 고정 해결)
+      store.currentKlineStream = streamName;
     }
   }
 
@@ -113,26 +126,26 @@ function startRealtimeCandle(symbol, interval, isFutures, isSpot) {
   // ---------------------------------------------------------
   else {
     // 🚀 바이낸스 보던 게 있다면 데이터 안 섞이게 매너 해지!
-    if (binanceChartWs && binanceChartWs.readyState === WebSocket.OPEN && currentKlineStream) {
-      binanceChartWs.send(JSON.stringify({ method: "UNSUBSCRIBE", params: [currentKlineStream], id: getWsId() }));
-      currentKlineStream = null;
+    if (store.binanceChartWs && store.binanceChartWs.readyState === WebSocket.OPEN && store.currentKlineStream) {
+      store.binanceChartWs.send(JSON.stringify({ method: "UNSUBSCRIBE", params: [store.currentKlineStream], id: getWsId() }));
+      store.currentKlineStream = null;
     }
 
     const upbitTicker = `KRW-${symbol}`;
-    upbitChartWs = new WebSocket("wss://api.upbit.com/websocket/v1");
+    store.upbitChartWs = new WebSocket("wss://api.upbit.com/websocket/v1");
 
-    upbitChartWs.onopen = () => {
+    store.upbitChartWs.onopen = () => {
       const msg = [
         { ticket: "UNIQUE_TICKET" },
         { type: "ticker", codes: [upbitTicker] },
       ];
-      upbitChartWs.send(JSON.stringify(msg));
+      store.upbitChartWs.send(JSON.stringify(msg));
       document.getElementById("status-dot").style.background = "#1261c4";
       document.getElementById("status-text").innerText = "Upbit LIVE";
     };
 
-    upbitChartWs.onmessage = async (e) => {
-      if (window.isFetchingChart) return;
+    store.upbitChartWs.onmessage = async (e) => {
+      if (store.isFetchingChart) return;
 
       // 데이터 파싱 (Blob/Text 대응)
       let res;
@@ -165,12 +178,18 @@ function startRealtimeCandle(symbol, interval, isFutures, isSpot) {
 
         const lastIdx = mainData.length - 1;
 
-        if (mainData[lastIdx].time === liveData.time) {
+        // ✅ 🚀 [수정] 유령봉 방어 로직 (시간 차이가 타임프레임 기준보다 작으면 강제로 덮어쓰기)
+        const secDiff = liveData.time - mainData[lastIdx].time;
+        const currentTfSec = tfSec[currentTF] || 60;
+
+        if (secDiff === 0 || secDiff < currentTfSec) {
+          // 시간이 같거나, 다음 봉 생성 시간이 채 안 지났는데 시간이 다르게 찍혀 왔다면 (오차) -> 기존 캔들 병합
           liveData.open = mainData[lastIdx].open;
           liveData.high = Math.max(mainData[lastIdx].high, liveData.high);
           liveData.low = Math.min(mainData[lastIdx].low, liveData.low);
           mainData[lastIdx] = liveData;
-        } else if (liveData.time > mainData[lastIdx].time) {
+        } else if (secDiff >= currentTfSec) {
+          // 정확히 다음 봉 타임스탬프를 넘겼을 때만 새로운 캔들 생성!
           mainData.push(liveData);
         }
 
@@ -178,7 +197,7 @@ function startRealtimeCandle(symbol, interval, isFutures, isSpot) {
         document.title = `2 ${displayPrice} ${symbol} | sellance 🚀`;
 
         // 🚀 [광속 타이틀] 업비트도 통합 함수로 교체! (오타 '2' 제거)
-        const upbitP = currentTableData.find(c => c.Symbol === currentAssetClean)?.precision || 2;
+        const upbitP = store.currentTableData.find(c => c.Symbol === currentAssetClean)?.precision || 2;
         updateTabTitle(liveData.close, symbol, upbitP);
 
         if (typeof updateRealtimeCountdown === "function") {
@@ -189,7 +208,7 @@ function startRealtimeCandle(symbol, interval, isFutures, isSpot) {
         renderWithGhosts();
       }
     };
-    // upbitChartWs.onclose = () => {
+    // store.upbitChartWs.onclose = () => {
     //   document.getElementById("status-dot").style.background = "#ef5350";
     //   document.getElementById("status-text").innerText = "OFFLINE";
     // };
@@ -198,19 +217,19 @@ function startRealtimeCandle(symbol, interval, isFutures, isSpot) {
 
 function startBinanceMarketRadar() {
   // 🚀 안전하게 기존 소켓 닫기
-  if (binanceRadarWs) {
-    binanceRadarWs.onmessage = null;
-    binanceRadarWs.close();
+  if (store.binanceRadarWs) {
+    store.binanceRadarWs.onmessage = null;
+    store.binanceRadarWs.close();
   }
 
-  binanceRadarWs = new WebSocket("wss://fstream.binance.com/market/ws/!ticker@arr");
+  store.binanceRadarWs = new WebSocket("wss://fstream.binance.com/market/ws/!ticker@arr");
 
-  binanceRadarWs.onopen = () => {
+  store.binanceRadarWs.onopen = () => {
     // console.log("✅ [전체소켓] 바이낸스 선물 스트림 연결 성공!");
     // document.getElementById("status-dot").style.background = "#26a69a";
   };
 
-  binanceRadarWs.onmessage = (event) => {
+  store.binanceRadarWs.onmessage = (event) => {
     const data = JSON.parse(event.data);
 
     // 🚀 데이터가 들어오는지 딱 한 번만 확인
@@ -218,35 +237,35 @@ function startBinanceMarketRadar() {
 
     data.forEach((ticker) => {
       const pureSymbol = ticker.s.replace("USDT", "");
-      tickerBuffer[pureSymbol] = ticker;
+      store.tickerBuffer[pureSymbol] = ticker;
     });
   };
 
-  binanceRadarWs.onclose = (e) => {
-    console.log(`❌ [전체소켓] 연결 끊김! ${UI_UPDATE_INTERVAL / 1000}초 후 재시도...`, e.reason);
-    setTimeout(startBinanceMarketRadar, UI_UPDATE_INTERVAL); // 🚀 자동 재연결!
+  store.binanceRadarWs.onclose = (e) => {
+    console.log(`❌ [전체소켓] 연결 끊김! ${CONFIG.UI_UPDATE_INTERVAL / 1000}초 후 재시도...`, e.reason);
+    setTimeout(startBinanceMarketRadar, CONFIG.UI_UPDATE_INTERVAL); // 🚀 자동 재연결!
   };
 
-  binanceRadarWs.onerror = (err) => {
+  store.binanceRadarWs.onerror = (err) => {
     console.error("🚨 [전체소켓] 에러 발생:", err);
   };
 }
 
 function startUpbitMarketRadar() {
-  if (upbitRadarWs) {
-    upbitRadarWs.onmessage = null;
-    upbitRadarWs.close();
+  if (store.upbitRadarWs) {
+    store.upbitRadarWs.onmessage = null;
+    store.upbitRadarWs.close();
   }
 
-  upbitRadarWs = new WebSocket("wss://api.upbit.com/websocket/v1");
-  upbitRadarWs.binaryType = 'arraybuffer';
+  store.upbitRadarWs = new WebSocket("wss://api.upbit.com/websocket/v1");
+  store.upbitRadarWs.binaryType = 'arraybuffer';
 
-  upbitRadarWs.onopen = () => {
+  store.upbitRadarWs.onopen = () => {
     // 🚀 [핵심 최적화] 
     // Upbit 상장('O') 되어 있어야 함
     // 바이낸스 티커가 없거나, Note에 'Upbit Only'라고 명시된 놈들만 필터링
     // Ticker가 '...USDT'면 바이낸스에 있는 놈이니 제외 대상!)
-    const upbitOnlyCodes = currentTableData
+    const upbitOnlyCodes = store.currentTableData
       .filter(row => {
         const isUpbit = row.Upbit === 'O';
         // 바이낸스 티커(Ticker)가 없거나 'null'인 경우만 업비트 소켓으로 구독
@@ -264,29 +283,29 @@ function startUpbitMarketRadar() {
       { ticket: "UNIQUE_TICKET" },
       { type: "ticker", codes: upbitOnlyCodes }
     ];
-    upbitRadarWs.send(JSON.stringify(msg));
+    store.upbitRadarWs.send(JSON.stringify(msg));
     console.log(`🎯 [업비트 전용] ${upbitOnlyCodes.length}개 국내산 코인들 타격 시작!`);
   };
 
   const decoder = new TextDecoder('utf-8');
-  upbitRadarWs.onmessage = (event) => {
+  store.upbitRadarWs.onmessage = (event) => {
 
     const ticker = JSON.parse(decoder.decode(event.data));
     const pureSymbol = ticker.code.replace("KRW-", "");
 
     // 🚀 업비트 전용 코인들의 데이터를 버퍼에 저장
-    tickerBuffer[pureSymbol] = {
+    store.tickerBuffer[pureSymbol] = {
       s: pureSymbol,
       c: ticker.trade_price,
       P: ticker.signed_change_rate * 100,
     };
   };
 
-  upbitRadarWs.onclose = () => setTimeout(startUpbitMarketRadar, UI_UPDATE_INTERVAL);
+  store.upbitRadarWs.onclose = () => setTimeout(startUpbitMarketRadar, CONFIG.UI_UPDATE_INTERVAL);
 }
 
 // ✅ 업비트 시간 계산기 (어떤 TF가 와도 0.1초 컷)
-function getUpbitCandleStartTime(serverMs, tf) {
+export function getUpbitCandleStartTime(serverMs, tf) {
   const d = new Date(serverMs);
   const sec = tfSec[tf] || 60; // _config.js에 선언한 tfSec 활용!
 
@@ -310,24 +329,24 @@ function getUpbitCandleStartTime(serverMs, tf) {
 }
 
 // ✅ UI 업데이트 인터벌 (tickerBuffer 안전하게 소모)
-if (radarIntervalId) clearInterval(radarIntervalId);
-radarIntervalId = setInterval(() => {
+if (store.radarIntervalId) clearInterval(store.radarIntervalId);
+store.radarIntervalId = setInterval(() => {
   // 🚀 1. 쌀먹 핵심: 버퍼가 비어있으면 CPU도 쉰다!
-  if (Object.keys(tickerBuffer).length === 0) return;
+  if (Object.keys(store.tickerBuffer).length === 0) return;
 
   // 🚀 화면을 안 보고 있으면 DOM 업데이트(반짝이 등)는 싹 무시하고 장부만 업데이트!
   const isHidden = document.hidden;
 
   // 🚀 2. 데이터 안전 복사 (Snapshot) 후 원본 즉시 비우기
   // 이렇게 해야 비우는 찰나에 들어오는 데이터 유실이 없습니다.
-  const snapshot = { ...tickerBuffer };
-  for (let key in tickerBuffer) delete tickerBuffer[key];
+  const snapshot = { ...store.tickerBuffer };
+  for (let key in store.tickerBuffer) delete store.tickerBuffer[key];
 
   let dataUpdated = false;
 
   Object.keys(snapshot).forEach((pureSymbol) => {
     const ticker = snapshot[pureSymbol];
-    const row = currentTableData.find(r => r.Symbol === pureSymbol);
+    const row = store.currentTableData.find(r => r.Symbol === pureSymbol);
     if (!row) return;
 
     row.Price_Raw = parseFloat(ticker.c);
@@ -336,7 +355,7 @@ radarIntervalId = setInterval(() => {
 
     // 🚀 3. 화면에 보이는 놈만 DOM 터치
     // !isHidden &&
-    if (typeof visibleSymbols !== "undefined" && visibleSymbols.has(pureSymbol)) {
+    if (store.visibleSymbols && store.visibleSymbols.has(pureSymbol)) {
       const priceCell = document.getElementById(`price-${pureSymbol}`);
       if (priceCell) {
         const oldPrice = parseFloat(priceCell.innerText.replace(/[^0-9.-]+/g, "")) || 0;
@@ -354,4 +373,8 @@ radarIntervalId = setInterval(() => {
   if (dataUpdated && typeof applyRealtimeSort === "function") {
     applyRealtimeSort();
   }
-}, UI_UPDATE_INTERVAL);
+}, CONFIG.UI_UPDATE_INTERVAL);
+
+window.startRealtimeCandle = startRealtimeCandle;
+window.startBinanceMarketRadar = startBinanceMarketRadar;
+window.startUpbitMarketRadar = startUpbitMarketRadar;

@@ -1,8 +1,8 @@
 const EngineUI = {
-    // 🚀 1. 로딩 오버레이 HTML 구조 통째로 주입
-    init() {
-        const loaderWrap = document.getElementById("app-loader");
-        loaderWrap.innerHTML = `
+  // 🚀 1. 로딩 오버레이 HTML 구조 통째로 주입
+  init() {
+    const loaderWrap = document.getElementById("app-loader");
+    loaderWrap.innerHTML = `
       <div id="loading-overlay" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-theme-bg transition-opacity duration-1000">
         <div class="w-full max-w-md p-6 bg-theme-panel border border-theme-border rounded-xl shadow-2xl">
           <div class="text-center mb-8">
@@ -20,22 +20,22 @@ const EngineUI = {
         </div>
       </div>
     `;
-    },
+  },
 
-    // 🚀 2. 데이터 들어올 때마다 화면 갱신
-    update(data) {
-        const bar = document.getElementById("progress-bar");
-        const text = document.getElementById("percent-text");
-        const list = document.getElementById("status-list");
+  // 🚀 2. 데이터 들어올 때마다 화면 갱신
+  update(data) {
+    const bar = document.getElementById("progress-bar");
+    const text = document.getElementById("percent-text");
+    const list = document.getElementById("status-list");
 
-        if (bar) bar.style.width = `${data.percent}%`;
-        if (text) text.innerText = `${data.percent}%`;
+    if (bar) bar.style.width = `${data.percent}%`;
+    if (text) text.innerText = `${data.percent}%`;
 
-        if (list) {
-            list.innerHTML = data.phases.map((name, i) => {
-                const isDone = data.status[i].includes("완료");
-                const isIng = data.status[i].includes("진행");
-                return `
+    if (list) {
+      list.innerHTML = data.phases.map((name, i) => {
+        const isDone = data.status[i].includes("완료");
+        const isIng = data.status[i].includes("진행");
+        return `
           <div class="flex justify-between items-center p-2.5 rounded bg-theme-border/10 border border-transparent ${isIng ? 'border-theme-accent/30 bg-theme-accent/5' : ''}">
             <span class="opacity-80">${i + 1}. ${name}</span>
             <span class="${isDone ? 'text-theme-accent' : isIng ? 'text-blue-400 animate-pulse' : 'opacity-30'} font-bold">
@@ -43,25 +43,25 @@ const EngineUI = {
             </span>
           </div>
         `;
-            }).join("");
-        }
-
-        if (data.percent === 100) this.finish();
-    },
-
-    // 🚀 3. 로딩 완료 시 처리
-    finish() {
-        setTimeout(() => {
-            const overlay = document.getElementById("loading-overlay");
-            const main = document.getElementById("main-content");
-            if (overlay) overlay.classList.add("opacity-0", "pointer-events-none");
-            if (main) {
-                main.classList.remove("hidden");
-                setTimeout(() => main.classList.remove("opacity-0"), 50);
-            }
-            document.body.classList.remove("overflow-hidden");
-        }, 1000);
+      }).join("");
     }
+
+    if (data.percent === 100) this.finish();
+  },
+
+  // 🚀 3. 로딩 완료 시 처리
+  finish() {
+    setTimeout(() => {
+      const overlay = document.getElementById("loading-overlay");
+      const main = document.getElementById("main-content");
+      if (overlay) overlay.classList.add("opacity-0", "pointer-events-none");
+      if (main) {
+        main.classList.remove("hidden");
+        setTimeout(() => main.classList.remove("opacity-0"), 50);
+      }
+      document.body.classList.remove("overflow-hidden");
+    }, 1000);
+  }
 };
 
 // 🚀 SSE 연결부 수정
@@ -69,7 +69,9 @@ const eventSource = new EventSource("/api/progress");
 EngineUI.init(); // 시작하자마자 UI 주입
 
 eventSource.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    EngineUI.update(data);
-    if (data.percent === 100) eventSource.close();
+  const data = JSON.parse(event.data);
+  EngineUI.update(data);
+  if (data.percent === 100) eventSource.close();
 };
+
+window.EngineUI = EngineUI;

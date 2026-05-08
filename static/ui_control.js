@@ -1,5 +1,6 @@
 // ui_control.js
 // --- 📱 UI/UX 컨트롤 로직 ---
+import { store, CONFIG } from './store.js';
 
 function toggleTheme() {
   const body = document.body;
@@ -11,14 +12,14 @@ function toggleTheme() {
     body.classList.remove("theme-binance");
     body.classList.add("theme-upbit");
 
-    currentTheme = "upbit";
+    store.currentTheme = "upbit";
 
     if (btn) btn.innerHTML = "🌙";
   } else {
     body.classList.remove("theme-upbit");
     body.classList.add("theme-binance");
 
-    currentTheme = "binance";
+    store.currentTheme = "binance";
     if (btn) btn.innerHTML = "☀️";
   }
   setTimeout(() => {
@@ -34,9 +35,9 @@ function toggleSidebar() {
   const leftPanel = document.getElementById("left-panel");
   const openBtn = document.getElementById("sidebar-open-btn");
 
-  isSidebarOpen = !isSidebarOpen;
+  store.isSidebarOpen = !store.isSidebarOpen;
 
-  if (isSidebarOpen) {
+  if (store.isSidebarOpen) {
     // 사이드바 열기
     leftPanel.classList.remove("md:hidden");
     leftPanel.classList.add("md:flex");
@@ -127,11 +128,11 @@ function showMobileChart() {
     panel.style.transform = "translateY(0)";
     panel.style.opacity = "1"; // 🚀 이거 빠지면 안 보여요!
 
-    if (window.chart) {
+    if (store.chart) {
       const newWidth = content.clientWidth;
       const newHeight = content.clientHeight - 60; // 헤더 빼고
-      window.chart.resize(newWidth, newHeight);
-      window.chart.timeScale().fitContent();
+      store.chart.resize(newWidth, newHeight);
+      store.chart.timeScale().fitContent();
 
       // const container = document.getElementById("chart-container");
       const container = document.getElementById("chart-wrapper");

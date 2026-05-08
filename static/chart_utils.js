@@ -1,8 +1,10 @@
 // chart_utils.js
+import { store, tfSec } from './store.js';
+
 function resetChartScale() {
-  if (!chart || !candleSeries) return;
-  chart.timeScale().fitContent();
-  chart.priceScale("right").applyOptions({ autoScale: true });
+  if (!store.chart || !store.candleSeries) return;
+  store.chart.timeScale().fitContent();
+  store.chart.priceScale("right").applyOptions({ autoScale: true });
 }
 
 // ✅ 포맷팅 by precision
@@ -27,8 +29,8 @@ function updateLegend(d) {
 
   // 🚀 p값 안전장치 (currentAsset이나 데이터가 없을 때 대비)
   const coin =
-    typeof currentTableData !== "undefined"
-      ? currentTableData.find((c) => c.Symbol === currentAsset)
+    typeof store.currentTableData !== "undefined"
+      ? store.currentTableData.find((c) => c.Symbol === store.currentAsset)
       : null;
   const p = coin?.precision ?? 2;
 
@@ -65,7 +67,7 @@ function updateLegend(d) {
 function updateStatus(d) {
   // 🚀 핵심: d(실시간 데이터)가 들어오면 그걸 최우선으로 쓴다!
   // d가 없으면(마우스 이벤트 등) 그때만 mainData에서 꺼내온다.
-  const last = d || (mainData.length ? mainData[mainData.length - 1] : null);
+  const last = d || (store.mainData.length ? store.mainData[store.mainData.length - 1] : null);
 
   if (!last) return;
 
@@ -88,7 +90,7 @@ function updateStatus(d) {
   const targetEl = document.getElementById("head-target");
   if (targetEl && typeof getNext === "function") {
     targetEl.innerText = formatSmartPrice(getNext().close);
-    targetEl.style.color = curDir === "bull" ? "var(--up)" : "var(--down)";
+    targetEl.style.color = store.curDir === "bull" ? "var(--up)" : "var(--down)";
   }
 
   // 🚀 대망의 레전드 업데이트
@@ -173,3 +175,9 @@ function calculateTimeRemaining(tf, serverMs) {
   if (d > 0) return `${dd}${hh}h`;
   return h > 0 ? `${hh}:${mm}:${ss}` : `${mm}:${ss}`;
 }
+
+window.resetChartScale = resetChartScale;
+window.formatSmartPrice = formatSmartPrice;
+window.updateLegend = updateLegend;
+window.updateStatus = updateStatus;
+window.autoFit = autoFit;

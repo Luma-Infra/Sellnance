@@ -360,6 +360,12 @@
             "Altlayer",
             "ALT"
         ],
+        "AMD": [
+            "39489",
+            "AMD",
+            "Advanced Micro Devices Inc (Derivatives)",
+            "AMD"
+        ],
         "AMP": [
             "6945",
             "ETH",
@@ -588,6 +594,12 @@
             "BSquared Network",
             "B2"
         ],
+        "B3": [
+            "35690",
+            "BASE",
+            "B3",
+            "B3"
+        ],
         "BABA": [
             "39486",
             "BABA",
@@ -725,6 +737,12 @@
             "ETH",
             "Big Time",
             "BIGTIME"
+        ],
+        "BILL": [
+            "39545",
+            "ETH",
+            "Billions Network",
+            "BILL"
         ],
         "BIO": [
             "34812",
@@ -2273,9 +2291,9 @@
             "MET"
         ],
         "MET2": [
-            "",
+            "38353",
             "SOL",
-            "MET2",
+            "Meteora",
             "MET2"
         ],
         "META": [
@@ -2841,6 +2859,12 @@
             "ETH",
             "Quack AI",
             "Q"
+        ],
+        "QCOM": [
+            "39932",
+            "QCOM",
+            "Qualcomm (Derivatives)",
+            "QCOM"
         ],
         "QI": [
             "9288",
@@ -3609,6 +3633,12 @@
             "SUI",
             "Talus",
             "US"
+        ],
+        "USAR": [
+            "39514",
+            "USAR",
+            "USA Rare Earth Inc (Derivatives)",
+            "USAR"
         ],
         "USD1": [
             "36148",

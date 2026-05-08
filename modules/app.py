@@ -4,6 +4,7 @@ from fastapi.responses import StreamingResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI, Request
+from dotenv import load_dotenv
 from datetime import datetime
 from pathlib import Path
 import webbrowser
@@ -45,6 +46,14 @@ templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 async def home(request: Request):
     # 뼈대만 렌더링하고 데이터는 AJAX로 그림
     return templates.TemplateResponse(request=request, name="index.html")
+
+load_dotenv()
+@app.get("/api/get-env-key")
+def get_env_cmc_key():
+    """서버 환경변수에 설정된 CMC_API_KEY를 안전하게 전달합니다."""
+    # 서버 os.environ에서 가져오고, 없으면 빈 문자열
+    env_key = os.environ.get("CMC_API_KEY", "")
+    return {"key": env_key}
 
 # ⭐️ async 삭제됨!
 @app.get("/api/market-data")
@@ -99,12 +108,14 @@ def get_coin_info(asset: str):
         return {"asset": asset, "name": asset, "market_cap": "조회 실패"}
 
 @app.get("/api/candles")
-def get_proxy_candles(exchange: str, symbol: str, interval: str, limit: int = 200):
+def get_proxy_candles(exchange: str, symbol: str, interval: str, limit: int = 200, to: str = ""):
     """JS 대신 파이썬이 업비트/바낸에 차트 데이터를 요청해서 가져다 줍니다 (CORS 완벽 우회)"""
     try:
         if exchange == "upbit":
-            # 업비트 요청
             url = f"https://api.upbit.com/v1/candles/{interval}?market={symbol}&count={limit}"
+            # 🚀 to 파라미터가 있으면 URL에 붙여줌 (과거 데이터 페이징용)
+            if to:
+                url += f"&to={to}"
             res = requests.get(url, headers={"Accept": "application/json"}, timeout=5)
             res.raise_for_status()
             return res.json()
