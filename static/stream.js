@@ -2,6 +2,122 @@
 // --- 🌊 실시간 웹소켓 엔진 ---
 import { store, tfSec, CONFIG } from "./store.js";
 
+// 🚀 실시간 김프 1초컷 업데이트 엔진 (모든 마켓 공통 적용)
+function updateRealtimeKimchi(liveData, symbol, chartTime) {
+  if (!store.kimchiSeries || !store.paneConfig.kimchi) return;
+
+  // 💡 [수정] 하드코딩된 환율(1450) 대신, 업비트 USDT/KRW 실시간 시세를 가져와 적용합니다.
+  // 실시간 시세가 없으면 백엔드 스냅샷 환율을 사용하고, 그마저도 없으면 계산을 중단합니다.
+  const usdtPrice =
+    store.tickerBuffer["KRW-USDT"]?.c || store.tickerBuffer["USDT_KRW"]?.c;
+  const rate = usdtPrice || store.marketDataMap?.krw_usd_rate || 0;
+
+  if (rate === 0) {
+    // 환율 정보가 없으면 김프 계산 중단
+    return;
+  }
+
+  const pureSymbol = symbol.replace(/^(10+|1[MB])(?=[A-Z])/i, "").toUpperCase();
+
+  let mainMulti = 1;
+  const multiMatch = symbol.match(/^(10+|1[MB])(?=[A-Z])/i);
+  if (multiMatch) {
+    const pMatch = multiMatch[1].toUpperCase();
+    mainMulti =
+      pMatch === "1M"
+        ? 1000000
+        : pMatch === "1B"
+          ? 1000000000
+          : parseInt(pMatch, 10);
+  }
+
+  const isKor = ["UPBIT", "BITHUMB"].includes(store.currentMarket);
+  let subPrice = null;
+  let subMulti = 1;
+
+  const row = store.currentTableData.find((c) => c.Symbol === pureSymbol);
+
+  if (isKor) {
+    // 국내 거래소 차트 -> 글로벌(바이낸스) 레이더 참조
+    let glbSym = row && row.Exact_Spot ? row.Exact_Spot : pureSymbol;
+    if (store.currentMarket === "FUTURES" && row && row.Exact_Futures)
+      glbSym = row.Exact_Futures;
+
+    let glbPrice = store.tickerBuffer[`${glbSym}USDT`]?.c;
+    if (!glbPrice && row && row.Price_Raw) {
+      glbPrice = row.Price_Raw * mainMulti;
+    }
+
+    if (glbPrice) {
+      subPrice = glbPrice;
+      let gMultiMatch = glbSym.match(/^(10+|1[MB])(?=[A-Z])/i);
+      if (gMultiMatch) {
+        const pMatch = gMultiMatch[1].toUpperCase();
+        subMulti =
+          pMatch === "1M"
+            ? 1000000
+            : pMatch === "1B"
+              ? 1000000000
+              : parseInt(pMatch, 10);
+      }
+    }
+  } else {
+    // 글로벌 거래소 차트 -> 국내(업비트/빗썸) 레이더 참조
+    let korSym = row && row.Upbit_Symbol ? row.Upbit_Symbol : pureSymbol;
+    let korPrice = store.tickerBuffer[`KRW-${korSym}`]?.c;
+    if (!korPrice) korPrice = store.tickerBuffer[`${pureSymbol}_KRW`]?.c;
+    if (!korPrice && row && row.Price_KRW) {
+      korPrice = row.Price_KRW * mainMulti;
+    }
+
+    if (korPrice) {
+      subPrice = korPrice;
+      let kMultiMatch = korSym.match(/^(10+|1[MB])(?=[A-Z])/i);
+      if (kMultiMatch) {
+        const pMatch = kMultiMatch[1].toUpperCase();
+        subMulti =
+          pMatch === "1M"
+            ? 1000000
+            : pMatch === "1B"
+              ? 1000000000
+              : parseInt(pMatch, 10);
+      }
+    }
+  }
+
+  if (subPrice && liveData.close > 0) {
+    const rawKorPrice = isKor ? liveData.close : parseFloat(subPrice);
+    const rawGlbPrice = isKor ? parseFloat(subPrice) : liveData.close;
+
+    const unitKorPrice = rawKorPrice / (isKor ? mainMulti : subMulti);
+    const unitGlbPrice = rawGlbPrice / (isKor ? subMulti : mainMulti);
+
+    const kimchiPct = (unitKorPrice / (unitGlbPrice * rate) - 1) * 100;
+
+    if (isFinite(kimchiPct) && kimchiPct >= -50 && kimchiPct <= 100) {
+      store.kimchiSeries.update({
+        time: chartTime,
+        value: kimchiPct,
+        color:
+          typeof window.getKimchiColor === "function"
+            ? window.getKimchiColor(kimchiPct)
+            : "#57a4fc",
+      });
+
+      if (store.kimchiData && store.kimchiData.length > 0) {
+        const kLastIdx = store.kimchiData.length - 1;
+        if (store.kimchiData[kLastIdx].time === liveData.time) {
+          store.kimchiData[kLastIdx].value = kimchiPct;
+        } else if (liveData.time > store.kimchiData[kLastIdx].time) {
+          store.kimchiData.push({ time: liveData.time, value: kimchiPct });
+        }
+      } else {
+        store.kimchiData.push({ time: liveData.time, value: kimchiPct });
+      }
+    }
+  }
+}
+
 // 타이틀만 광속으로 업데이트하는 함수 분리
 const updateTabTitle = (price, sym, prec) => {
   const formatted = formatSmartPrice(price, prec || 2);
@@ -94,15 +210,18 @@ function startRealtimeCandle(
       const isDayUnit = !(store.currentTF || "1h").match(/[hm]/);
       const chartTime = isDayUnit
         ? (() => {
-            const dt = new Date(liveData.time * 1000);
-            return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, "0")}-${String(dt.getUTCDate()).padStart(2, "0")}`;
-          })()
+          const dt = new Date(liveData.time * 1000);
+          return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, "0")}-${String(dt.getUTCDate()).padStart(2, "0")}`;
+        })()
         : liveData.time;
 
       if (store.candleSeries)
         store.candleSeries.update({ ...liveData, time: chartTime });
       if (store.volumeSeries && volData.value > 0)
         store.volumeSeries.update({ ...volData, time: chartTime });
+
+      // 🚀 실시간 김프 막대 생성!
+      updateRealtimeKimchi(liveData, symbol, chartTime);
 
       // 장부(mainData)도 꼬리물기로 최신화
       if (store.mainData.length > 0) {
@@ -290,13 +409,16 @@ function startRealtimeCandle(
           const isDayUnit = !(store.currentTF || "1h").match(/[hm]/);
           const chartTime = isDayUnit
             ? (() => {
-                const dt = new Date(liveData.time * 1000);
-                return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, "0")}-${String(dt.getUTCDate()).padStart(2, "0")}`;
-              })()
+              const dt = new Date(liveData.time * 1000);
+              return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, "0")}-${String(dt.getUTCDate()).padStart(2, "0")}`;
+            })()
             : liveData.time;
 
           if (store.candleSeries)
             store.candleSeries.update({ ...liveData, time: chartTime });
+
+          // 🚀 실시간 김프 막대 생성!
+          updateRealtimeKimchi(liveData, symbol, chartTime);
         } catch (err) {
           console.warn("🚨 업비트 차트 업데이트 꼬임 방어:", err);
         }
@@ -405,71 +527,16 @@ function startRealtimeCandle(
           const isDayUnit = !(store.currentTF || "1h").match(/[hm]/);
           const chartTime = isDayUnit
             ? (() => {
-                const dt = new Date(liveData.time * 1000);
-                return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, "0")}-${String(dt.getUTCDate()).padStart(2, "0")}`;
-              })()
+              const dt = new Date(liveData.time * 1000);
+              return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, "0")}-${String(dt.getUTCDate()).padStart(2, "0")}`;
+            })()
             : liveData.time;
 
           if (store.candleSeries)
             store.candleSeries.update({ ...liveData, time: chartTime });
-        } catch (err) {}
-
-        // 🚀 [궁극의 김프 실시간 1초컷 연동 엔진]
-        if (store.kimchiSeries && store.paneConfig.kimchi) {
-          const rate = store.marketDataMap?.krw_usd_rate || 1450.0;
-          const pureSymbol = symbol
-            .replace(/^(10+|1[MB])(?=[A-Z])/i, "")
-            .toUpperCase();
-
-          let multi = 1;
-          const multiMatch = symbol.match(/^(10+|1[MB])(?=[A-Z])/i);
-          if (multiMatch) {
-            const pMatch = multiMatch[1].toUpperCase();
-            multi =
-              pMatch === "1M"
-                ? 1000000
-                : pMatch === "1B"
-                  ? 1000000000
-                  : parseInt(pMatch, 10);
-          }
-
-          // 빗썸 차트이므로, 글로벌 가격(Binance)을 실시간 레이더 버퍼에서 훔쳐옴!
-          let glbPrice = store.tickerBuffer[`${symbol}USDT`]?.c;
-          if (!glbPrice) {
-            const row = store.currentTableData.find(
-              (c) => c.Symbol === pureSymbol,
-            );
-            if (row && row.Price_Raw) glbPrice = row.Price_Raw * multi;
-          }
-
-          if (glbPrice && liveData.close > 0) {
-            const unitKorPrice = liveData.close;
-            const unitGlbPrice = parseFloat(glbPrice) / multi;
-            const kimchiPct = (unitKorPrice / (unitGlbPrice * rate) - 1) * 100;
-
-            if (isFinite(kimchiPct) && kimchiPct >= -50 && kimchiPct <= 100) {
-              store.kimchiSeries.update({
-                time: chartTime,
-                value: kimchiPct,
-                color:
-                  typeof window.getKimchiColor === "function"
-                    ? window.getKimchiColor(kimchiPct)
-                    : "#57a4fc",
-              });
-              if (store.kimchiData && store.kimchiData.length > 0) {
-                const kLastIdx = store.kimchiData.length - 1;
-                if (store.kimchiData[kLastIdx].time === liveData.time) {
-                  store.kimchiData[kLastIdx].value = kimchiPct;
-                } else if (liveData.time > store.kimchiData[kLastIdx].time) {
-                  store.kimchiData.push({
-                    time: liveData.time,
-                    value: kimchiPct,
-                  });
-                }
-              }
-            }
-          }
-        }
+        } catch (err) { }
+        // 🚀 [궁극의 김프 실시간 1초컷 연동 엔진] -> 통합 함수로 교체!
+        updateRealtimeKimchi(liveData, symbol, chartTime);
 
         updateTabTitle(liveData.close, symbol, p);
         if (typeof updateRealtimeCountdown === "function")
@@ -531,45 +598,41 @@ function startUpbitMarketRadar() {
   store.upbitRadarWs.binaryType = "arraybuffer";
 
   store.upbitRadarWs.onopen = () => {
-    // 🚀 [핵심 최적화]
-    // Upbit 상장('O') 되어 있어야 함
-    // 바이낸스 티커가 없거나, Note에 'Upbit Only'라고 명시된 놈들만 필터링
-    // Ticker가 '...USDT'면 바이낸스에 있는 놈이니 제외 대상!)
-    const upbitOnlyCodes = store.currentTableData
-      .filter((row) => {
-        const isUpbit = row.Upbit === "O";
-        // 바이낸스 티커(Ticker)가 없거나 'null'인 경우만 업비트 소켓으로 구독
-        const isNotOnBinance =
-          !row.Ticker || row.Ticker === "" || row.Note === "Upbit Only";
-        return isUpbit && isNotOnBinance;
-      })
+    // 🚀 [수정] '업비트 전용' 코인만 구독하던 로직을 '업비트에 상장된 모든 KRW 코인'을 구독하도록 확장합니다.
+    // 이렇게 해야 USDT-KRW 환율을 실시간으로 가져올 수 있습니다.
+    const allUpbitCodes = store.currentTableData
+      .filter((row) => row.Upbit === "O" && row.Symbol)
       .map((row) => `KRW-${row.Symbol}`);
 
-    if (upbitOnlyCodes.length === 0) {
+    // 🚀 [추가] USDT가 목록에 없으면 수동으로 추가하여 환율을 무조건 가져오도록 보장합니다.
+    if (!allUpbitCodes.includes("KRW-USDT")) {
+      allUpbitCodes.push("KRW-USDT");
+    }
+
+    if (allUpbitCodes.length === 0) {
       console.log(
-        "✅ 모든 코인이 바이낸스 스트림에 포함되어 업비트 개별 소켓을 열지 않습니다.",
+        "⚠️ 업비트 KRW 마켓 코드를 찾을 수 없어 업비트 레이더 소켓을 열지 않습니다.",
       );
       return;
     }
 
     const msg = [
       { ticket: "UNIQUE_TICKET" },
-      { type: "ticker", codes: upbitOnlyCodes },
+      { type: "ticker", codes: allUpbitCodes },
     ];
     store.upbitRadarWs.send(JSON.stringify(msg));
     console.log(
-      `🎯 [업비트 전용] ${upbitOnlyCodes.length}개 국내산 코인들 타격 시작!`,
+      `🎯 [업비트 전체] ${allUpbitCodes.length}개 KRW 마켓 레이더 가동!`,
     );
   };
 
   const decoder = new TextDecoder("utf-8");
   store.upbitRadarWs.onmessage = (event) => {
     const ticker = JSON.parse(decoder.decode(event.data));
-    const pureSymbol = ticker.code.replace("KRW-", "");
 
     // 🚀 [수정] 업비트 전용 코인들의 데이터를 전체 티커(예: KRW-EDGE)를 키로 사용하여 버퍼에 저장
     store.tickerBuffer[ticker.code] = {
-      s: pureSymbol,
+      s: ticker.code.replace("KRW-", ""),
       c: ticker.trade_price,
       P: ticker.signed_change_rate * 100,
       q_upbit: ticker.acc_trade_price_24h, // 🚀 추가: 업비트 24시간 거래대금

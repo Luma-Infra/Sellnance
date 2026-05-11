@@ -266,6 +266,9 @@ export function clearChartData(isTfChange = false) {
 
     if (store.chart) {
       store.chart.priceScale("right").applyOptions({ autoScale: true });
+      if (typeof window.resetPriceScaleWidthSync === "function") {
+        window.resetPriceScaleWidthSync();
+      }
     }
 
     if (store.countdownPriceLine && store.candleSeries) {
@@ -328,7 +331,7 @@ export async function fetchHistory(symbol, isTfChange = false) {
     rowInfo && rowInfo.Exact_Futures ? rowInfo.Exact_Futures : rawSymbol;
   const exactUpbit =
     rowInfo && rowInfo.Upbit_Symbol ? rowInfo.Upbit_Symbol : rawSymbol;
-  const exactBithumb = rawSymbol; // 빗썸은 99% pureBase와 일치하므로 안전
+  const exactBithumb = getPureBase(rawSymbol); // 빗썸은 순수 티커명 사용
 
   // 현재 마켓의 정확한 심볼 지정
   let mainTickerStr = rawSymbol;
@@ -870,10 +873,13 @@ export async function fetchHistory(symbol, isTfChange = false) {
                 const subTime =
                   subExchange === "upbit"
                     ? Math.floor(
-                        Date.parse(subItem.candle_date_time_utc + "Z") / 1000,
-                      )
+                      Date.parse(subItem.candle_date_time_utc + "Z") / 1000,
+                    )
                     : Number(subItem[0]) / 1000;
-                if (subTime <= candle.time) {
+
+                // 🚀 [조립형 캔들 왜곡 방지] 캔들 마감 시간 전까지의 데이터를 모두 끌어와서 마지막 종가를 찾는다!
+                const nextCandleTime = candle.time + (tfSec[store.currentTF] || 60);
+                if (subTime < nextCandleTime) {
                   lastKnownSubClose =
                     subExchange === "upbit"
                       ? subItem.trade_price
@@ -1094,7 +1100,7 @@ setInterval(async () => {
       };
       console.log(`♻️ [백그라운드] 환율 맵 30초 자동 갱신 완료 (${cacheKey})`);
     }
-  } catch (e) {}
+  } catch (e) { }
 }, 30000);
 
 // 🚀 김프 비교군 스위칭 전역 함수 노출
