@@ -47,7 +47,16 @@ function renderRealtimeRow(tId, data) {
     }
   }
 
-  // 2. [UI 렌더링 격리] 여기서부터는 성능을 위해 가시성 체크 및 쓰로틀링 적용
+  const p = store.getPrecision(row.Ticker);
+
+  // 🚀 [역할 분리] 만약 이 코인이 현재 탭에 띄워진 활성 코인이라면, 가시성(스크롤/검색)과 무관하게 차트 상단 헤더 전광판을 100% 실시간 광속 동기화! (실제 DOM 조작은 _main.js의 전역 함수가 전담하여 스트림 엔진 경량화 달성)
+  if (row.Ticker === store.currentSelectedSymbol || row.DisplayTicker === store.currentAsset || row.Symbol === store.currentAsset) {
+    if (typeof window.updateHeaderDisplay === "function") {
+      window.updateHeaderDisplay(row, newPrice, p);
+    }
+  }
+
+  // 2. [UI 렌더링 격리] 여기서부터는 테이블 셀 성능을 위해 가시성 체크 및 쓰로틀링 적용
   // 🚀 [핵심] 화면에 안 보이는 코인은 DOM 연산을 1절 하지 않음 (성능 최적화)
   if (!store.visibleSymbols.has(row.Ticker)) return;
 
@@ -57,7 +66,6 @@ function renderRealtimeRow(tId, data) {
   const priceCell = document.getElementById(`price-${row.Ticker}`);
   if (!priceCell) return;
 
-  const p = store.getPrecision(row.Ticker);
   const oldPrice = parseFloat(priceCell.getAttribute("data-raw-price")) || 0;
 
   // 가격 및 반짝이 효과
@@ -100,29 +108,6 @@ function renderRealtimeRow(tId, data) {
   const binanceVolCell = document.getElementById(`vol-binance-${row.Ticker}`);
   if (binanceVolCell && data.q && data.e !== "aggTrade") {
     binanceVolCell.innerText = `${window.formatVolumeDollar(parseFloat(data.q))}`;
-  }
-
-  // 🚀 [추가] 만약 이 코인이 현재 탭에 띄워진 활성 코인이라면, 차트 상단 헤더 전광판도 테이블과 100% 동일하게 실시간 동기화!
-  if (row.Ticker === store.currentSelectedSymbol || row.DisplayTicker === store.currentAsset) {
-    const headPriceEl = document.getElementById("head-price");
-    const headChg24h = document.getElementById("head-chg-24h");
-    const headChgDay = document.getElementById("head-chg-day");
-
-    if (headPriceEl) {
-      headPriceEl.innerText = window.formatSmartPrice(newPrice, p);
-    }
-    if (headChg24h) {
-      const n24 = row.Change_24h_Raw ?? 0;
-      const c24 = n24 > 0 ? "text-theme-up" : n24 < 0 ? "text-theme-down" : "text-theme-text";
-      headChg24h.className = `text-[13px] md:text-[15px] font-mono mt-0.5 ${c24}`;
-      headChg24h.innerText = `${n24 > 0 ? "+" : ""}${Number(n24).toFixed(2)}%`;
-    }
-    if (headChgDay) {
-      const nDay = row.Change_Today_Raw ?? 0;
-      const cDay = nDay > 0 ? "text-theme-up" : nDay < 0 ? "text-theme-down" : "text-theme-text";
-      headChgDay.className = `text-[13px] md:text-[15px] font-mono mt-0.5 ${cDay}`;
-      headChgDay.innerText = `${nDay > 0 ? "+" : ""}${Number(nDay).toFixed(2)}%`;
-    }
   }
 }
 

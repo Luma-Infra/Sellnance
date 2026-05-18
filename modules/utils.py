@@ -16,6 +16,13 @@ def format_volume_string(vol):
     if vol >= 1_000_000: return f"{vol / 1_000_000:,.2f} M"
     return f"{vol:,.0f}"
 
+def format_volume_krw_string(vol_krw):
+    if vol_krw is None or vol_krw == 0: return "0"
+    if vol_krw >= 1_000_000_000_000: return f"{vol_krw / 1_000_000_000_000:,.2f}조"
+    if vol_krw >= 100_000_000: return f"{vol_krw / 100_000_000:,.0f}억"
+    if vol_krw >= 1_000_000: return f"{vol_krw / 1_000_000:,.0f}백만"
+    return f"{vol_krw:,.0f}"
+
 def js_round(number, decimals=0):
     # 🚀 숫자를 Decimal 객체로 변환
     d = Decimal(str(number))

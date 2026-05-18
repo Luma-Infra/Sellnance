@@ -130,16 +130,18 @@ body.theme-binance {
   }
 }
 
-/* 🚀 테마 전환 시 모든 요소가 한꺼번에 '스르륵' 변하게 만드는 동기화 설정 */
+/* 🚀 테마 전환 시 주요 컨테이너들이 부드럽게 변하도록 설정 (전역 !important 오염 제거하여 JS 애니메이션 완벽 부활!) */
 body.theme-binance:not(.resizing-active),
 body.theme-upbit:not(.resizing-active),
-body.theme-binance:not(.resizing-active) *:not(.price-cell),
-body.theme-upbit:not(.resizing-active) *:not(.price-cell) {
+body.theme-binance:not(.resizing-active) #left-panel,
+body.theme-upbit:not(.resizing-active) #left-panel,
+body.theme-binance:not(.resizing-active) #right-panel,
+body.theme-upbit:not(.resizing-active) #right-panel {
   transition:
     background-color 0.3s ease-in-out,
     color 0.3s ease-in-out,
     border-color 0.3s ease-in-out,
-    box-shadow 0.3s ease-in-out !important;
+    box-shadow 0.3s ease-in-out;
 }
 
 /* 🚀 차트 로딩 시 쫀득한 애니메이션 효과 */
@@ -265,18 +267,22 @@ body.theme-upbit:not(.resizing-active) *:not(.price-cell) {
   table-layout: fixed !important;
 }
 
-/* 🚨 전역 CSS 오염으로부터 차트 내부 테이블 보호 */
-/* .tv-lightweight-charts table {
+/* 🚨 전역 CSS 오염 및 라이브러리 네이티브 스케일 구분선 근본 박멸 */
+.tv-lightweight-charts table {
   table-layout: auto !important;
   margin: 0 !important;
   padding: 0 !important;
-} */
+  border-collapse: collapse !important;
+  border-spacing: 0 !important;
+}
 
-/* .tv-lightweight-charts td,
-.tv-lightweight-charts th {
+.tv-lightweight-charts td,
+.tv-lightweight-charts th,
+.tv-lightweight-charts td > div {
   padding: 0 !important;
   border: none !important;
-} */
+  background: transparent !important;
+}
 
 .flash-up {
   color: color-mix(in srgb, var(--up), transparent 50%) !important;

@@ -189,6 +189,10 @@ export function initChart() {
   // 2. 볼륨 차트 (좌측 김프, 우측 거래량 스케일 동시 적용)
   store.chartVol = window.LightweightCharts.createChart(elVol, {
     ...commonOptions,
+    timeScale: {
+      ...commonOptions.timeScale,
+      borderColor: "transparent", // 🚀 [하단 테두리 박멸] 볼륨 캔버스 하단의 진한 테두리 선 투명화
+    },
     rightPriceScale: {
       autoScale: true,
       visible: true,
@@ -198,9 +202,14 @@ export function initChart() {
     leftPriceScale: {
       autoScale: true,
       visible: true,
-      borderColor: gridColor,
+      borderColor: "transparent", // 🚀 [좌측 테두리 박멸] 메인 차트와 동일하게 좌측 테두리 선 투명화
       scaleMargins: { top: 0.1, bottom: 0.1 },
     },
+  });
+
+  // 🚀 사용자가 차트 줌/패닝을 직접 조작했음을 감지하는 이벤트 리스너 부착
+  store.chart.timeScale().subscribeVisibleTimeRangeChange(() => {
+    store.isUserZoomed = true;
   });
 
   // 🚀 DOM 이벤트 기반 activeChart 제어 제거 (라이브러리 내부 이벤트로 100% 통합 제어)
@@ -419,15 +428,21 @@ export function initChart() {
           store.isCrosshairActive = true;
           const pTime = getUnixSeconds(param.time);
           let d = null;
-          if (sourceChart === store.chart)
+          if (sourceChart === store.chart) {
             d = param.seriesData.get(store.candleSeries);
-          else d = store.mainData?.find((item) => item.time === pTime) || null;
-          const v =
-            store.volumeData?.find((item) => item.time === pTime) || null;
-          const k =
-            store.kimchiData?.find((item) => item.time === pTime) || null;
-          if (d && typeof window.updateLegend === "function")
+            // 🚀 [완벽 폴백 보강] 라이브러리 내부 캔들 구조체(d)에는 volume 필드가 없으므로, 원본 메인 장부(store.mainData)에서 찾아 volume을 주입합니다!
+            const mainCandle = store.mainData?.find((item) => item.time === pTime);
+            if (d && mainCandle && mainCandle.volume !== undefined) {
+              d.volume = mainCandle.volume;
+            }
+          } else {
+            d = store.mainData?.find((item) => item.time === pTime) || null;
+          }
+          const v = store.volumeData?.find((item) => item.time === pTime) || null;
+          const k = store.kimchiData?.find((item) => item.time === pTime) || null;
+          if (d && typeof window.updateLegend === "function") {
             window.updateLegend(d, v, k);
+          }
         } else {
           // 🚀 [핵심 방어책] isHover === false 일 때, 현재 activeChart가 내 차트(sourceChart)인 경우에만 초기화 실행!!!
           // (즉, 마우스가 다른 차트로 넘어갔을 때는 이전 차트의 else 블록이 방해하지 못하도록 원천 차단!!!)
@@ -467,72 +482,63 @@ export function initChart() {
   ]);
 
   // 🚀 Y축(Price Scale) 가로폭 완벽 동기화 엔진 (좌/우측 스케일 동시 관리)
-  const allCharts = [store.chart, store.chartVol].filter(Boolean);
-  let maxPriceScaleWidth = 0;
-  let maxLeftPriceScaleWidth = 0;
-  let isSyncingWidth = false;
+  let currentMaxRight = 0;
+  let currentMaxLeft = 0;
+  window.isResettingWidth = false; // 🚀 [레이스 컨디션 방어 락] 리셋 중 이벤트 폭주 원천 차단!
 
-  const syncPriceScaleWidths = () => {
-    if (isSyncingWidth) return;
-    isSyncingWidth = true;
-
+  window.syncPriceScaleWidths = () => {
+    if (window.isResettingWidth) return; // 🚨 리셋 피팅(fitContent) 중에는 라이브러리 과거 너비 조회를 원천 차단!
+    const charts = [store.chart, store.chartVol].filter(Boolean);
     let maxRight = 0;
     let maxLeft = 0;
 
-    allCharts.forEach((c) => {
-      if (c) {
-        maxRight = Math.max(maxRight, c.priceScale("right").width());
-        maxLeft = Math.max(maxLeft, c.priceScale("left").width());
-      }
+    charts.forEach((c) => {
+      maxRight = Math.max(maxRight, c.priceScale("right").width());
+      maxLeft = Math.max(maxLeft, c.priceScale("left").width());
     });
 
-    if (maxRight > 0 && maxRight > maxPriceScaleWidth) {
-      maxPriceScaleWidth = maxRight + 12;
-      allCharts.forEach((c) => {
-        if (c)
-          c.priceScale("right").applyOptions({
-            minimumWidth: maxPriceScaleWidth,
-          });
-      });
+    // 🚀 [초고속 캐시 방어벽] 너비가 이전과 동일하면 applyOptions 호출을 원천 스킵하여 60fps 렌더링 성능 100% 보장!
+    if (maxRight > 0 && maxRight !== currentMaxRight) {
+      currentMaxRight = maxRight;
+      charts.forEach((c) => c.priceScale("right").applyOptions({ minimumWidth: maxRight }));
     }
-
-    if (maxLeft > 0 && maxLeft > maxLeftPriceScaleWidth) {
-      maxLeftPriceScaleWidth = maxLeft + 12;
-      allCharts.forEach((c) => {
-        if (c)
-          c.priceScale("left").applyOptions({
-            minimumWidth: maxLeftPriceScaleWidth,
-          });
-      });
+    if (maxLeft > 0 && maxLeft !== currentMaxLeft) {
+      currentMaxLeft = maxLeft;
+      charts.forEach((c) => c.priceScale("left").applyOptions({ minimumWidth: maxLeft }));
     }
-
-    isSyncingWidth = false;
   };
 
+  const allCharts = [store.chart, store.chartVol].filter(Boolean);
   allCharts.forEach((c) => {
-    if (c) {
-      c.timeScale().subscribeSizeChange(syncPriceScaleWidths);
-    }
+    // 🚀 창 크기 변경뿐만 아니라, 줌인/줌아웃, 좌우 스크롤(VisibleLogicalRangeChange) 및 마우스 이동 시에도 실시간 자동 싱크!
+    c.timeScale().subscribeSizeChange(() => setTimeout(window.syncPriceScaleWidths, 50));
+    c.timeScale().subscribeVisibleLogicalRangeChange(window.syncPriceScaleWidths);
+    c.subscribeCrosshairMove(window.syncPriceScaleWidths);
   });
 
-  // 🚀 전역 리셋 함수
+  // 🚀 전역 리셋 함수 (데이터 로드 전 초기화 및 로드 후 자동 싱크 보장)
   window.resetPriceScaleWidthSync = () => {
-    isSyncingWidth = true;
-    maxPriceScaleWidth = 0;
-    maxLeftPriceScaleWidth = 110; // 🚀 좌측 스케일은 십자선 라벨이 절대 잘리지 않도록 기본 최소 너비 110px 고정!
-
+    window.isResettingWidth = true; // 🚨 락 활성화!
+    currentMaxRight = 0;
+    currentMaxLeft = 0;
     allCharts.forEach((c) => {
-      if (c) {
-        c.priceScale("right").applyOptions({ minimumWidth: 0 });
-        c.priceScale("left").applyOptions({ minimumWidth: 0 });
-      }
+      c.priceScale("right").applyOptions({ minimumWidth: 0, autoScale: true });
+      c.priceScale("left").applyOptions({ minimumWidth: 0, autoScale: true });
     });
 
-    isSyncingWidth = false;
+    // 🚀 브라우저 렌더링 사이클(Repaint)이 완벽히 끝나 라이브러리 내부 width()가 순수하게 줄어든 150ms 뒤에 락 해제 및 최종 싱크!
+    setTimeout(() => {
+      window.isResettingWidth = false;
+      window.syncPriceScaleWidths();
+    }, 150);
   };
 
-  // 최초 1회 실행
   window.resetPriceScaleWidthSync();
+
+  // 🚀 차트 스케일 리셋(더블클릭) 시 이전 넓이의 저주를 풀고 즉시 0으로 리셋 후 재계산 연동!
+  [elMain, elVol].forEach((el) => {
+    if (el) el.addEventListener("dblclick", window.resetPriceScaleWidthSync);
+  });
 
   initResizers();
   applyChartLayout();
@@ -594,7 +600,28 @@ export function updateChartTheme() {
         volItem.color = candle.close >= candle.open ? upColorVol : downColorVol;
       }
     });
-    store.volumeSeries.setData(store.volumeData);
+
+    const isDayUnit = !(store.currentTF || "1h").match(/[hm]/);
+    const mapTime = (d) => {
+      if (isDayUnit) {
+        if (typeof d.time === "string" && d.time.includes("-")) return d;
+        const numTime = Number(d.time);
+        if (isNaN(numTime)) return d;
+        const dt = new Date(numTime * 1000);
+        return {
+          ...d,
+          time: `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, "0")}-${String(dt.getUTCDate()).padStart(2, "0")}`,
+        };
+      } else {
+        if (typeof d.time === "string" && d.time.includes("-")) {
+          const parsedUnix = Math.floor(new Date(d.time).getTime() / 1000);
+          return { ...d, time: isNaN(parsedUnix) ? d.time : parsedUnix };
+        }
+        return d;
+      }
+    };
+
+    store.volumeSeries.setData(store.volumeData.map(mapTime));
   }
 
   applyChartLayout();

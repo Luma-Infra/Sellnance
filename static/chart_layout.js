@@ -32,7 +32,7 @@ export function applyChartLayout() {
     store.chartVol.priceScale("left").applyOptions({ 
       visible: true, 
       minimumWidth: 60,
-      borderColor: k ? "" : "transparent" // 데이터 없을 땐 투명 테두리
+      borderColor: "transparent" // 🚀 김프 활성화 시에도 좌측 검은 실선이 생기지 않도록 상시 투명 유지
     });
     
     // 메인 차트도 동일한 너비로 맞춰서 완벽한 수직 정렬 구현

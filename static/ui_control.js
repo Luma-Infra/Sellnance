@@ -4,7 +4,15 @@ import { store, CONFIG } from "./_store.js";
 import { initChart, updateChartTheme } from "./chart.js";
 import { fetchHistory } from "./chart_data.js";
 
+let isThemeToggling = false; // 🚀 라이트/다크 모드 연타 방어 플래그
+
 function toggleTheme() {
+  if (isThemeToggling) return;
+  isThemeToggling = true;
+  setTimeout(() => {
+    isThemeToggling = false;
+  }, 500);
+
   const body = document.body;
   const btn = document.getElementById("theme-toggle-btn");
   const isCurrentlyDark = body.classList.contains("theme-binance");
@@ -28,9 +36,10 @@ function toggleTheme() {
     if (mainLogoImg) mainLogoImg.src = staticPath + "_gemini-svg-dark.svg";
   }
 
-  // 🚀 차트 테마 업데이트 (0.3초 트랜지션과 박자를 맞추기 위해 즉시 호출)
+  // 🚀 차트 테마 업데이트 (브라우저 스타일 재계산 및 트랜지션 즉각 반영을 위해 즉시 호출 및 50ms 후 최종 확정 호출)
   if (typeof updateChartTheme === "function") {
     updateChartTheme();
+    setTimeout(updateChartTheme, 50);
   }
 }
 
@@ -203,6 +212,66 @@ function executeTabSwitch(mode) {
   }
 }
 
+// 🚀 좌우 패널 위치 스왑 (FLIP 애니메이션 기반 무결점 스왑 엔진)
+function togglePanelSwap() {
+  const container = document.getElementById("main-dashboard-content");
+  const leftPanel = document.getElementById("left-panel");
+  const rightPanel = document.getElementById("right-panel");
+  if (!container || !leftPanel || !rightPanel) return;
+
+  // 1. First: 현재 위치 기록
+  const firstLeft = leftPanel.getBoundingClientRect();
+  const firstRight = rightPanel.getBoundingClientRect();
+
+  // 2. 클래스 토글 (md:flex-row ↔ md:flex-row-reverse)
+  const isReverse = container.classList.contains("md:flex-row-reverse");
+  if (isReverse) {
+    container.classList.remove("md:flex-row-reverse");
+    container.classList.add("md:flex-row");
+  } else {
+    container.classList.remove("md:flex-row");
+    container.classList.add("md:flex-row-reverse");
+  }
+
+  // 3. Last: 변경된 위치 기록
+  const lastLeft = leftPanel.getBoundingClientRect();
+  const lastRight = rightPanel.getBoundingClientRect();
+
+  // 4. Invert: 변화량 계산 및 역방향 이동(transform) 강제 적용
+  const deltaLeftX = firstLeft.left - lastLeft.left;
+  const deltaRightX = firstRight.left - lastRight.left;
+
+  leftPanel.style.transition = "none";
+  rightPanel.style.transition = "none";
+  leftPanel.style.transform = `translateX(${deltaLeftX}px)`;
+  rightPanel.style.transform = `translateX(${deltaRightX}px)`;
+
+  // 강제 리플로우(Reflow) 브라우저 레이아웃 확정
+  leftPanel.getBoundingClientRect();
+
+  // 5. Play: 2중 requestAnimationFrame으로 브라우저 프레임 스킵 버그를 완벽히 차단하고, Apple 스타일 이징으로 스르르르륵 황홀하게 스왑!
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      leftPanel.style.transition = "transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)";
+      rightPanel.style.transition = "transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)";
+      leftPanel.style.transform = "translateX(0)";
+      rightPanel.style.transform = "translateX(0)";
+
+      setTimeout(() => {
+        leftPanel.style.transition = "";
+        rightPanel.style.transition = "";
+        leftPanel.style.transform = "";
+        rightPanel.style.transform = "";
+      }, 600);
+    });
+  });
+
+  // 🚀 차트 리사이징 안전 보장
+  setTimeout(() => {
+    if (typeof window.applyChartLayout === "function") window.applyChartLayout();
+  }, 620);
+}
+
 // 🚀 전역 스코프 노출 (HTML 인라인 onclick 이벤트용)
 window.toggleTheme = toggleTheme;
 window.toggleSidebar = toggleSidebar;
@@ -211,6 +280,7 @@ window.showMobileChart = showMobileChart;
 window.closeMobileChart = closeMobileChart;
 window.switchChartTab = switchChartTab;
 window.executeTabSwitch = executeTabSwitch;
+window.togglePanelSwap = togglePanelSwap;
 
 // ================== api.js에서 이동됨 ==================
 // 검색창 비우기 (X 버튼용)
@@ -302,6 +372,10 @@ export function searchSymbols(v) {
 
 // 선택 로직 (티커명 검색창 전송 + 이름 유지)
 export async function selectSymbol(s, forceMarket = null) {
+  store.isFetchingChart = false; // 🚀 사용자가 테이블 코인을 직접 클릭할 때는 백그라운드 락을 강제로 즉시 해제하여 무조건 최우선 실행!
+  window.isFetchingChart = false;
+  store.isUserZoomed = false; // 🚀 새 코인 선택 시 줌 상태 리셋하여 최초 1회 예쁜 오토핏 보장!
+
   store.currentAsset = s;
   store.currentSelectedSymbol = s; // 🚀 전역 선택자 동기화
 
@@ -333,21 +407,18 @@ export async function selectSymbol(s, forceMarket = null) {
   // 마켓 우선순위 결정 (기본: 선물 > 현물 > 업비트)
   if (forceMarket) {
     store.currentMarket = forceMarket;
-  } else {
-    // 🚀 [수정] 중괄호로 감싸고 "문자열"임을 명확히 선언!
-    if (rowInfo && rowInfo.Listed_Exchanges) {
-      if (rowInfo.Listed_Exchanges.includes("BINANCE_FUTURES")) {
-        store.currentMarket = "FUTURES";
-      } else if (rowInfo.Listed_Exchanges.includes("BINANCE")) {
-        store.currentMarket = "SPOT";
-      } else if (rowInfo.Listed_Exchanges.includes("UPBIT")) {
-        store.currentMarket = "UPBIT";
-      } else if (rowInfo.Listed_Exchanges.includes("BITHUMB")) {
-        store.currentMarket = "BITHUMB";
-      } else if (rowInfo.Listed_Exchanges.includes("BYBIT")) {
-        store.currentMarket = "BYBIT";
-      }
-    }
+  } else if (rowInfo && rowInfo.Listed_Exchanges) {
+    const ex = rowInfo.Listed_Exchanges;
+    // 🚀 [도메인 규칙 일반화] Base 자산이 Quote 통화(USDT)와 일치하여 글로벌 페어 성립이 불가능한 경우 원화 마켓 최우선 배정
+    const isQuoteCurrency = s.startsWith("USDT");
+
+    if (isQuoteCurrency && (ex.includes("UPBIT") || ex.includes("BITHUMB"))) {
+      store.currentMarket = ex.includes("UPBIT") ? "UPBIT" : "BITHUMB";
+    } else if (ex.includes("BINANCE_FUTURES")) store.currentMarket = "FUTURES";
+    else if (ex.includes("BINANCE")) store.currentMarket = "SPOT";
+    else if (ex.includes("UPBIT")) store.currentMarket = "UPBIT";
+    else if (ex.includes("BITHUMB")) store.currentMarket = "BITHUMB";
+    else if (ex.includes("BYBIT")) store.currentMarket = "BYBIT";
   }
   // 🚀 [수정] 헤더 및 타이틀 Precision(정밀도) 반영 (단일 진실 공급원 O(1) 광속 탐색!)
   const p = store.getPrecision(s);
@@ -355,11 +426,24 @@ export async function selectSymbol(s, forceMarket = null) {
 
   if (rowInfo) {
     if (headAssetName) {
-      headAssetName.innerText = `${rowInfo.Symbol} (${rowInfo.Name || ""})`;
+      const favorites = JSON.parse(localStorage.getItem("sellnance_favs") || "[]");
+      const isFav = favorites.includes(rowInfo.Symbol);
+      const logoHtml = rowInfo.Logo || "";
+      headAssetName.innerHTML = `
+        <div class="flex items-center gap-2">
+          <button onclick="window.toggleFavorite('${rowInfo.Symbol}', event); setTimeout(() => window.selectSymbol('${s}'), 50);" class="star-btn text-[16px] transition-all hover:scale-125 flex-shrink-0 ${isFav ? 'active' : ''}" style="color: ${isFav ? 'var(--accent)' : 'gray'}">
+            ${isFav ? '⭐' : '☆'}
+          </button>
+          <div class="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-white/5 rounded-full overflow-hidden">
+            ${logoHtml}
+          </div>
+          <span>${rowInfo.Symbol} (${rowInfo.Name || ""})</span>
+        </div>
+      `;
     }
     // 타이틀에 실시간 가격 & 정밀도 반영
     const titlePrice = window.formatSmartPrice(rowInfo.Price_Raw || 0, p);
-    document.title = `${titlePrice} | ${rowInfo.Symbol} - Sellnance`;
+    // document.title = `${titlePrice} | ${rowInfo.Symbol} - Sellnance`;
 
     const headMcap = document.getElementById("head-mcap");
     const headVolB = document.getElementById("head-vol-binance");
@@ -408,7 +492,20 @@ export async function selectSymbol(s, forceMarket = null) {
     if (headAssetName && infoData.name) {
       const displaySym =
         infoData.symbol || (rowInfo ? rowInfo.Symbol : querySym.split("(")[0]);
-      headAssetName.innerText = `${displaySym} (${infoData.name})`;
+      const favorites = JSON.parse(localStorage.getItem("sellnance_favs") || "[]");
+      const isFav = favorites.includes(displaySym);
+      const logoHtml = rowInfo ? (rowInfo.Logo || "") : "";
+      headAssetName.innerHTML = `
+        <div class="flex items-center gap-2">
+          <button onclick="window.toggleFavorite('${displaySym}', event); setTimeout(() => window.selectSymbol('${s}'), 50);" class="star-btn text-[16px] transition-all hover:scale-125 flex-shrink-0 ${isFav ? 'active' : ''}" style="color: ${isFav ? 'var(--accent)' : 'gray'}">
+            ${isFav ? '⭐' : '☆'}
+          </button>
+          <div class="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-white/5 rounded-full overflow-hidden">
+            ${logoHtml}
+          </div>
+          <span>${displaySym} (${infoData.name})</span>
+        </div>
+      `;
     }
   } catch (e) {
     console.error("이름 로드 실패", e);
@@ -430,8 +527,9 @@ export async function selectSymbol(s, forceMarket = null) {
     // 2. 해당 행으로 스크롤 이동 및 하이라이트
     setTimeout(() => {
       store.currentSelectedSymbol = s; // 선택자 동기화
+      const targetSym = rowInfo ? rowInfo.Ticker : s;
       const targetRow = document.querySelector(
-        `#table-body tr[data-sym="${s}"]`,
+        `#table-body tr[data-sym="${targetSym}"]`,
       );
       if (targetRow) {
         targetRow.scrollIntoView({ block: "center", behavior: "smooth" });
@@ -443,7 +541,7 @@ export async function selectSymbol(s, forceMarket = null) {
 
   // 🚀 [핵심] 차트 데이터 즉시 로드
   if (typeof fetchHistory === "function") {
-    fetchHistory(s);
+    fetchHistory(s, false, false);
   }
 }
 

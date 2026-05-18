@@ -1,20 +1,20 @@
 import { store, tfSec } from './_store.js';
 import { getMultiplier, getPureBase } from './chart_utils.js';
-import { fetchPaginated } from './api.js';
+import { fetchPaginated } from './chart_api.js';
 import { formatSmartPrice, formatCrosshairPrice } from './chart_utils.js';
 import { updateExchangeBadges } from './ui_control.js';
 
 export function clearChartData(isTfChange = false) {
   // 🚀 코인 변경 및 타임프레임 변경 시: 기존 캔들과 김프 데이터를 모두 유지하여 눈의 피로(깜빡임)를 완벽히 제거합니다.
   // (새로운 데이터를 받아오는 순간 한 방에 덮어씌움으로써 자연스럽고 부드럽게 전환)
-  if (store.countdownPriceLine && store.candleSeries) {
+  if (!isTfChange && store.countdownPriceLine && store.candleSeries) {
     store.candleSeries.removePriceLine(store.countdownPriceLine);
     store.countdownPriceLine = null;
   }
   console.log("🧹 차트/타임프레임 변경: 기존 차트 잔상 유지 (깜빡임 및 눈의 피로 방지)");
 }
 
-export async function fetchHistory(symbol, isTfChange = false) {
+export async function fetchHistory(symbol, isTfChange = false, isTabRestore = false) {
   const now = Date.now();
   if (now - store.lastFetchTime < 10) return;
   store.lastFetchTime = now;
@@ -60,7 +60,8 @@ export async function fetchHistory(symbol, isTfChange = false) {
 
   const loadingModal = document.getElementById("chart-loading-modal");
   const wrapper = document.getElementById("chart-wrapper");
-  // 🚀 [UX 개선] 코인 변경 시 화면이 하얗게/까맣게 깜빡이거나 개박살나는 현상을 방지하기 위해 로딩 모달과 블러 처리를 제거합니다.
+  if (wrapper && !isTfChange) wrapper.classList.add("chart-loading"); 
+  // 🚀 [고급 로딩] 기존 캔들 잔상은 유지하면서 화면만 살짝 어둡게 처리
 
   try {
     const snapshotAsset = store.currentAsset;
@@ -156,8 +157,9 @@ export async function fetchHistory(symbol, isTfChange = false) {
 
     if (isFutures || isSpot || isBybit) {
       rawMain.forEach((d) => {
-        newMainData.push({ time: d.time, open: d.open, high: d.high, low: d.low, close: d.close, volume: d.vol });
-        newVolumeData.push({ time: d.time, value: d.vol, color: d.close >= d.open ? upColorVol : downColorVol });
+        const safeVol = Number(d.vol) || 0;
+        newMainData.push({ time: d.time, open: d.open, high: d.high, low: d.low, close: d.close, volume: safeVol });
+        newVolumeData.push({ time: d.time, value: safeVol, color: d.close >= d.open ? upColorVol : downColorVol });
       });
     } else {
       for (let i = 0; i < rawMain.length; i += mainStep) {
@@ -168,7 +170,7 @@ export async function fetchHistory(symbol, isTfChange = false) {
           const close = chunk[chunk.length - 1].close;
           const high = Math.max(...chunk.map(c => c.high));
           const low = Math.min(...chunk.map(c => c.low));
-          const totalVol = chunk.reduce((sum, c) => sum + (c.vol || 0), 0);
+          const totalVol = chunk.reduce((sum, c) => sum + (Number(c.vol) || 0), 0);
           newMainData.push({ time, open, high, low, close, volume: totalVol });
           newVolumeData.push({
             time,
@@ -190,12 +192,22 @@ export async function fetchHistory(symbol, isTfChange = false) {
 
     const isDayUnit = !(store.currentTF || "1h").match(/[hm]/);
     const mapTime = (d) => {
-      if (!isDayUnit) return d;
-      const dt = new Date(d.time * 1000);
-      return {
-        ...d,
-        time: `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, "0")}-${String(dt.getUTCDate()).padStart(2, "0")}`,
-      };
+      if (isDayUnit) {
+        if (typeof d.time === "string" && d.time.includes("-")) return d;
+        const numTime = Number(d.time);
+        if (isNaN(numTime)) return d;
+        const dt = new Date(numTime * 1000);
+        return {
+          ...d,
+          time: `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, "0")}-${String(dt.getUTCDate()).padStart(2, "0")}`,
+        };
+      } else {
+        if (typeof d.time === "string" && d.time.includes("-")) {
+          const parsedUnix = Math.floor(new Date(d.time).getTime() / 1000);
+          return { ...d, time: isNaN(parsedUnix) ? d.time : parsedUnix };
+        }
+        return d;
+      }
     };
 
     if (store.mainData.length > 0 && store.candleSeries) {
@@ -235,7 +247,7 @@ export async function fetchHistory(symbol, isTfChange = false) {
       store.kimchiData = [];
 
       if (typeof applyChartLayout === "function") applyChartLayout();
-      if (typeof autoFit === "function") autoFit();
+      if (typeof autoFit === "function") autoFit(isTabRestore);
       if (typeof updateStatus === "function") updateStatus();
 
       if (typeof startRealtimeCandle === "function") {
@@ -250,11 +262,12 @@ export async function fetchHistory(symbol, isTfChange = false) {
       }
     }
 
-    // 🚀 [로딩 해제] 이제 사용자는 기다림 없이 차트를 바로 조작 가능합니다.
+    // 🚀 [로딩 해제 및 최종 싱크 안착] 차트 데이터가 완전히 캔버스에 렌더링된 직후, 라이브러리가 코인마다 다르게 계산해 둔 순수 너비를 최초 1회 캐치하여 기준값으로 던져놓음!
     if (loadingModal) loadingModal.classList.add("hidden");
     if (wrapper) wrapper.classList.remove("chart-loading");
     window.isFetchingChart = false;
     store.isFetchingChart = false;
+    if (typeof window.syncPriceScaleWidths === "function") window.syncPriceScaleWidths();
 
     // ==========================================
     // 3️⃣ 김프 데이터 Lazy 렌더링 (백그라운드 비동기)
@@ -588,6 +601,7 @@ export async function fetchHistory(symbol, isTfChange = false) {
               store.chart.timeScale().setVisibleLogicalRange(currentRange); // 3. 미동 없이 복구!
           }
           if (typeof applyChartLayout === "function") applyChartLayout(); // 패널 크기 부드럽게 조정
+          if (typeof window.syncPriceScaleWidths === "function") setTimeout(window.syncPriceScaleWidths, 50); // 🚀 [미리 싱크 유지] 김프 로드 시점에는 0 리셋으로 인한 덜컥거림을 방지하고, 기확보된 칼각 대칭 너비를 그대로 부드럽게 유지!
         } else {
           // No available subs, so hide loading message if it was shown
           store.paneConfig.kimchi = false;

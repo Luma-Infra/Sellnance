@@ -178,8 +178,8 @@ def fetch_exchange_market_data(mapping):
     upbit_krw_set, bithumb_krw_set = get_korean_exchange_markets()
 
     # 2. 거래소 타격 (병렬 처리 가능하면 좋겠지만 일단 순차로!)
-    binance_data, binance_base_assets = fetch_binance_futures_spot()
     bybit_data = fetch_bybit_prices()  # 🚀 [추가] 바이비트 데이터 긁어오기
+    binance_data, binance_base_assets = fetch_binance_futures_spot(bybit_data)
 
     binance_pure = {utils.get_pure_base_asset(a) for a in binance_base_assets}
 
@@ -201,8 +201,8 @@ def fetch_exchange_market_data(mapping):
         if k not in binance_pure or alias_upbit != alias_binance:
             upbit_only_assets.add(k)
 
-    # 4. 업비트 시세 타격
-    upbit_data = fetch_upbit_prices(upbit_only_assets)
+    # 4. 업비트 시세 타격 (KRW 마켓 전체 수집)
+    upbit_data = fetch_upbit_prices(upbit_krw_set)
 
     return (
         binance_data,
@@ -293,9 +293,11 @@ def fetch_binance_open(task):
 
 
 # 바낸 선물/현물 수집 및 합치기 (새로 생성)
-def fetch_binance_futures_spot():
+def fetch_binance_futures_spot(bybit_data=None):
     binance_data = {}
     binance_base_assets = set()
+    if bybit_data is None:
+        bybit_data = {}
 
     try:
         # 1. 기초 데이터 수집 (선물/현물 마켓 정보, 24시간 시세, 펀딩비 병렬 타격)
@@ -307,13 +309,26 @@ def fetch_binance_futures_spot():
             "https://fapi.binance.com/fapi/v1/premiumIndex",  # 🚀 펀딩비 추가
         ]
 
-        def fetch_url_safe(url):
-            try:
-                r = api_session.get(url, timeout=5)
-                if r.status_code == 200:
-                    return r.json()
-            except Exception as e:
-                print(f"⚠️ [API 개별 실패] {url}: {e}")
+        def fetch_url_safe(base_url):
+            urls_to_try = [base_url]
+            if "api.binance.com" in base_url:
+                urls_to_try = [
+                    base_url,
+                    base_url.replace("api.binance.com", "api1.binance.com"),
+                    base_url.replace("api.binance.com", "api2.binance.com"),
+                    base_url.replace("api.binance.com", "api3.binance.com"),
+                ]
+
+            for url in urls_to_try:
+                try:
+                    r = api_session.get(url, timeout=5)
+                    if r.status_code == 200:
+                        return r.json()
+                    elif r.status_code == 429:
+                        print(f"⚠️ [API 429 제한] {url} 접속 지연. 백업 클러스터로 우회합니다...")
+                        continue
+                except Exception as e:
+                    print(f"⚠️ [API 개별 실패] {url}: {e}")
             return None
 
         with ThreadPoolExecutor(max_workers=5) as executor:
@@ -326,6 +341,28 @@ def fetch_binance_futures_spot():
             info_s = results[2] or {"symbols": []}
             prices_s = results[3] or []
             premium_f = results[4] or []
+
+        # 🚀 [추가] 바이낸스 선물 API 밴 감지 및 바이비트 선물 Fallback 이식
+        if not prices_f or len(prices_f) < 10:
+            print("🚨 [IP Banned 감지] 바이낸스 선물 API 접속 불가. 임시 조치로 바이비트 선물을 가볍게 찌릅니다!!!")
+            prices_f = []
+            premium_f = []
+            info_f_symbols = []
+            for base, b_inf in bybit_data.items():
+                if b_inf.get("futures_price", 0) > 0:
+                    sym = f"{base}USDT"
+                    info_f_symbols.append({"symbol": sym, "status": "TRADING", "quoteAsset": "USDT"})
+                    prices_f.append({
+                        "symbol": sym,
+                        "lastPrice": b_inf.get("futures_price", 0),
+                        "priceChangePercent": b_inf.get("change_24h", 0.0),
+                        "quoteVolume": b_inf.get("volume_24h", 0.0),
+                    })
+                    premium_f.append({
+                        "symbol": sym,
+                        "lastFundingRate": b_inf.get("funding_rate", 0.0),
+                    })
+            info_f["symbols"] = info_f_symbols
 
         # 2. 마켓 필터링 (데이터가 있을 때만 진행)
         active_f = {
@@ -406,11 +443,12 @@ def fetch_binance_futures_spot():
                 open_price_tasks.append((sym, ticker in active_f))
 
         if open_price_tasks:
-            print(f"⏳ [시가 보정] 캐시 누락 {len(open_price_tasks)}건 개별 수집 중...")
-            with ThreadPoolExecutor(max_workers=25) as executor:
-                results = executor.map(fetch_binance_open, open_price_tasks)
-                for sym, open_p in results:
-                    if open_p: utc0_open_dict[sym] = open_p
+            print(f"⏳ [시가 보정] 캐시 누락 {len(open_price_tasks)}건 발생. 벌크 캡처로 1방에 보정합니다...")
+            capture_utc0_prices_bulk()
+            day_cache = UTC0_OPEN_CACHE.get(today_str, {})
+            for sym, _ in open_price_tasks:
+                if sym in day_cache:
+                    utc0_open_dict[sym] = day_cache[sym]
 
         # 5. 최종 데이터 합치기
         for ticker in all_active:
@@ -437,12 +475,12 @@ def fetch_binance_futures_spot():
 
 
 # 업비트 가격 수집 (새로 생성)
-def fetch_upbit_prices(upbit_only_assets):
+def fetch_upbit_prices(upbit_assets):
     upbit_data = {}
-    if not upbit_only_assets:
+    if not upbit_assets:
         return upbit_data
 
-    upbit_list = list(upbit_only_assets)
+    upbit_list = list(upbit_assets)
     for i in range(0, len(upbit_list), 100):
         try:
             chunk = upbit_list[i : i + 100]
@@ -458,6 +496,7 @@ def fetch_upbit_prices(upbit_only_assets):
                     "price": item["trade_price"],
                     "utc0_open": item["opening_price"],
                     "change_24h": item.get("signed_change_rate", 0.0) * 100,
+                    "volume_24h": item.get("acc_trade_price_24h", 0.0),
                 }
         except Exception as e:
             print(f"🚨 [업비트 수집 에러 (Chunk)]: {e}")
@@ -487,6 +526,8 @@ def fetch_bybit_prices():
                 if base not in bybit_data:
                     bybit_data[base] = {"volume_24h": 0.0}
                 bybit_data[base]["futures_price"] = float(item.get("lastPrice", 0))
+                bybit_data[base]["change_24h"] = float(item.get("price24hPcnt", 0)) * 100
+                bybit_data[base]["funding_rate"] = float(item.get("fundingRate", 0))
                 bybit_data[base]["volume_24h"] += float(item.get("turnover24h", 0))
 
         for item in s_list:

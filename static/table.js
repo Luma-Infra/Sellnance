@@ -1,51 +1,11 @@
 // table.js
 import { store, CONFIG } from "./_store.js";
 import { formatSmartPrice, formatVolumeKRW } from "./chart_utils.js"; // 🚀 기존 유틸리티 적극 재사용
-
-// 1. 데이터 로드 함수
-async function loadTableData(force = false) {
-  const modal = document.getElementById("loading-modal");
-  const updateTimeSpan = document.getElementById("update-time");
-
-  modal.classList.remove("hidden");
-  updateTimeSpan.innerText = "업데이트 중...";
-
-  try {
-    console.log("1. 파이썬 서버에 테이블 데이터 요청 시작!"); // ⭐️ 추가
-    const res = await fetch(`/api/market-data?force=${force}`);
-    console.log("2. 파이썬 서버가 응답 완료!"); // ⭐️ 추가
-    const result = await res.json();
-    updateTimeSpan.innerText = `마지막 업데이트: ${result.last_updated}`;
-
-    store.originalTableData = JSON.parse(JSON.stringify(result.data)); // 🛡️ 철벽 방어 원본
-    store.currentTableData = JSON.parse(JSON.stringify(result.data)); // 🏃 실시간 작업용
-
-    store.currentTableData.forEach((row) => {
-      row.DisplayTicker = (row.DisplayTicker || row.Symbol)
-        .toString()
-        .toUpperCase();
-      // 💡 여기서 정밀도(p) 맵핑 데이터도 같이 만들면 find 지옥 탈출 가능!
-    });
-
-    if (store.currentSortCol && store.sortState !== "") {
-      // 1. 순위 재계산 (경주마 로직 실행)
-      applyRealtimeSort();
-    } else {
-      // 2. 정렬 상태가 아니면 그냥 평소대로 그리기
-      renderTable();
-    }
-  } catch (error) {
-    console.error("데이터 로드 에러:", error);
-    alert("서버에서 데이터를 가져오지 못했습니다.");
-    updateTimeSpan.innerText = "업데이트 실패";
-  } finally {
-    modal.classList.add("hidden");
-  }
-}
+import { loadTableData, loadTableDataSilent } from "./table_api.js"; // 🚀 API 통신 모듈 완벽 위임
 
 // 2. ⭐️ 3단계 정렬 핵심 로직 ⭐️ (리셋 & 상단 이동 추가)
 function sortTable(colKey) {
-  store.currentRenderLimit = 50;
+  store.currentRenderLimit = 1000;
 
   // 🚀 [추가] 2단 정렬 타겟인지 확인
   const isTwoStep = colKey.includes("Change") || colKey === "Volume";
@@ -263,14 +223,12 @@ function simpleSortData() {
   });
 }
 
-// ⭐️ 실시간 재정렬 & 경주마 애니메이션 함수
+// ⭐️ 실시간 재정렬 & 경주마 애니메이션 함수 (Best of Super Best 초고속 쌀먹 렌더링 아키텍처)
 function applyRealtimeSort() {
   if (!store.currentSortCol || store.sortState === "") return;
 
-  // 🚀 [수정] 무조건 필터링 먼저 진행! (그래야 즐겨찾기/업비트 전용이 유지됨)
   const filteredData = getFilteredData();
 
-  // 🚀 [수정] 필터링된 결과물 내에서만 정렬을 진행해야 함
   const sortKeyMap = {
     MarketCap: "MarketCap_Raw",
     Price: "Price_Raw",
@@ -300,77 +258,75 @@ function applyRealtimeSort() {
 
   const tbody = document.getElementById("table-body");
   const topData = filteredData.slice(0, store.currentRenderLimit);
-  const topSymbols = new Set(topData.map((d) => d.Ticker)); // 🚀 DisplayTicker -> Ticker 변경
+  const topSymbols = new Set(topData.map((d) => d.Ticker));
 
   const existingRows = Array.from(tbody.children);
   const firstRects = new Map();
 
-  // 🚀 [수정] FLIP First: 모든 기존 행의 현재 위치를 기억 (가시성 체크에만 의존하면 센서 지연 시 애니메이션 누락됨)
+  // 🚀 [최적화 1] O(1) DOM 탐색을 위한 메모리 맵핑 (querySelector 660번 호출 렉 완벽 제거!)
+  store.rowDomMap = store.rowDomMap || new Map();
   existingRows.forEach((row) => {
     const sym = row.dataset.sym;
     if (sym) {
-      firstRects.set(sym, row.getBoundingClientRect().top);
+      store.rowDomMap.set(sym, row);
+      // 🚀 [최적화 2] 화면에 보이는 놈(visibleSymbols)만 현재 위치 기억 (1000개 전체 탐색 렉 차단!)
+      if (store.visibleSymbols.has(sym)) {
+        firstRects.set(sym, row.getBoundingClientRect().top);
+      }
     }
   });
 
-  // 🚀 [최적화] DOM 재활용 풀(Pool) 생성
-  // 100등 밖으로 밀려난 패배자들의 DOM을 버리지 않고 모아둡니다.
   const recycleBin = [];
   existingRows.forEach((row) => {
     const sym = row.dataset.sym;
     if (!topSymbols.has(sym)) {
       recycleBin.push(row);
-      row.remove(); // 🚀 [핵심] 테이블에서 즉시 제거하여 제자리에서 데이터만 바뀌는 '변신 잔상' 방지
-      // 재활용 대기열에 들어갔으니 일단 CCTV에서 뺌
+      row.remove();
       store.visibleSymbols.delete(sym);
+      store.rowDomMap.delete(sym);
     }
   });
 
-  // 4. 새로운 승리자들 DOM 재배치 (재활용 적극 활용)
+  // 🚀 [최적화 3] DOM 재배치 시 O(1) 메모리 맵핑 활용 (querySelector 완전 0화)
   topData.forEach((data, index) => {
-    const sym = data.Ticker; // 🚀 DisplayTicker -> Ticker 변경 (중복 방어)
-    let tr = tbody.querySelector(`tr[data-sym="${sym}"]`);
+    const sym = data.Ticker;
+    let tr = store.rowDomMap.get(sym);
 
-    // DOM이 없다면? (새로 진입한 코인)
     if (!tr) {
       if (recycleBin.length > 0) {
         tr = recycleBin.pop();
-        if (store.tableObserver) store.tableObserver.unobserve(tr); // 1. 기존 감시 취소
+        if (store.tableObserver) store.tableObserver.unobserve(tr);
         tr.dataset.sym = sym;
         updateRowInnerHTML(tr, data);
-        if (store.tableObserver) store.tableObserver.observe(tr); // 2. 새 신분으로 감시 재시작 🚀
+        if (store.tableObserver) store.tableObserver.observe(tr);
       } else {
-        // 완전 초기 렌더링 시 빈 공간이 모자랄 때만 새로 생성
         tr = createRowElement(data);
       }
+      store.rowDomMap.set(sym, tr);
     }
 
-    // 위치가 다르면 DOM 이동
     if (tbody.children[index] !== tr) {
       tbody.insertBefore(tr, tbody.children[index]);
     }
   });
 
-  // 혹시 남은 잉여 DOM이 있다면 그때서야 파괴 (보통 발생 안 함)
   recycleBin.forEach((row) => {
     if (store.tableObserver) store.tableObserver.unobserve(row);
     row.remove();
   });
 
-  // 🚀 [최적화] FLIP Last & Play: "보이는 화면만" 정밀 타격 애니메이션
   const finalRows = Array.from(tbody.children);
 
   if (store.useFlip) {
-    // 1단계: 모든 행의 새로운 위치(Last) 측정 (가시성 체크 완화)
+    // 🚀 [최적화 4] 화면에 보이는 놈만 새로운 위치(Last) 측정 (가시 영역 외 좌표 계산 낭비 원천 차단)
     const lastRects = new Map();
     finalRows.forEach((row) => {
       const sym = row.dataset.sym;
-      if (firstRects.has(sym)) {
+      if (firstRects.has(sym) && store.visibleSymbols.has(sym)) {
         lastRects.set(sym, row.getBoundingClientRect().top);
       }
     });
 
-    // 2단계: 위치가 바뀐 행들만 부드럽게 이동 (Write Phase)
     finalRows.forEach((row) => {
       const sym = row.dataset.sym;
       const firstY = firstRects.get(sym);
@@ -381,14 +337,12 @@ function applyRealtimeSort() {
         row.style.transition = "none";
         row.style.transform = `translateY(${deltaY}px)`;
         row.style.willChange = "transform";
-        row.offsetHeight; // 🚀 [핵심] 강제 리플로우로 브라우저에게 시작 위치를 확실히 각인
+        row.offsetHeight; // 🚀 [핵심] 가시 영역의 소수 행에 대해서만 리플로우 유발
 
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
-            row.style.transition =
-              "transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)"; // 0.3s로 단축 (400ms 주기와 간섭 방지)
+            row.style.transition = "transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)";
             row.style.transform = "";
-            // 애니메이션 완료 후 최적화 레이어 해제
             setTimeout(() => {
               if (row) row.style.willChange = "auto";
             }, 350);
@@ -397,17 +351,16 @@ function applyRealtimeSort() {
       }
     });
   } else {
-    // 🚀 애니메이션 OFF: 모든 행의 transform을 깨끗이 비워 즉시 위치 반영
     finalRows.forEach((row) => {
       row.style.transform = "";
       row.style.transition = "none";
     });
   }
-  // 🚀 안전장치 장착 (스크롤 쪽이랑 똑같이!)
+
   if (typeof refreshSniperTarget === "function") {
     refreshSniperTarget();
   }
-  applySelectedHighlight(); // 🚀 [추가] 순위 바뀌어도 내 코인은 빛나자
+  applySelectedHighlight();
 }
 
 function applySelectedHighlight() {
@@ -497,11 +450,39 @@ function updateRowInnerHTML(tr, row) {
     </div>
   </td>
   <td class="p-2 col-price overflow-hidden">
-    <div class="flex flex-col leading-tight min-w-0">
-      <span id="price-${tId}" data-raw-price="${nPrice}" class="font-black text-[14px] text-theme-text price-cell tracking-tighter truncate">
-        ${formattedPrice}
-        ${row.Price_KRW ? `<span class="text-[12px] text-theme-text opacity-70 ml-1"> ( ${Number(row.Price_KRW).toLocaleString()} 원 )</span>` : ""}
-      </span>
+    <div class="flex flex-col leading-tight min-w-0 gap-0.5">
+      ${(() => {
+        const rate = store.marketDataMap?.krw_usd_rate || 0;
+        const hasBinance =
+          row.Listed_Exchanges?.some(
+            (e) => e.includes("BINANCE") || e.includes("BYBIT"),
+          ) || row.Price_Raw > 0;
+        const hasUpbit =
+          row.Listed_Exchanges?.includes("UPBIT") ||
+          row.Listed_Exchanges?.includes("BITHUMB") ||
+          row.Upbit === "O" ||
+          row.Price_KRW > 0;
+
+        let finalUsd = row.Price_Raw ?? 0;
+        let finalKrw = row.Price_KRW ?? 0;
+        if (!hasBinance && hasUpbit) finalUsd = finalKrw / rate;
+        else if (hasBinance && !hasUpbit) finalKrw = finalUsd * rate;
+
+        const isKrwMode = store.currencyMode === "KRW";
+        const mainP = isKrwMode
+          ? `${Number(finalKrw).toLocaleString()} 원`
+          : formatSmartPrice(finalUsd, p);
+        const subP = isKrwMode
+          ? `$ ${formatSmartPrice(finalUsd, p)}`
+          : `${Number(finalKrw).toLocaleString()} ₩`;
+
+        return `
+          <span id="price-${tId}" data-raw-price="${nPrice}" class="font-black text-[14px] text-theme-text price-cell tracking-tighter truncate block">
+            ${mainP}
+          </span>
+          <span class="text-[11px] text-theme-text opacity-50 block truncate font-mono">${subP}</span>
+        `;
+      })()}
       <div class="flex items-center justify-between gap-2 text-[10px] font-black text-left mt-0.5 w-full min-w-0">
         <span id="change-${tId}" class="${color24h} ${store.currentSortCol === "Change_Today" ? "opacity-40" : "opacity-100"} flex-1 text-left truncate">${n24h > 0 ? "+" : ""}${Number(n24h).toFixed(2)}%</span>
         <span id="today-${tId}" class="${colorDay} ${store.currentSortCol === "Change_Today" ? "opacity-100" : "opacity-40"} flex-1 text-left truncate">${nDay > 0 ? "+" : ""}${Number(nDay).toFixed(2)}%</span>
@@ -509,10 +490,13 @@ function updateRowInnerHTML(tr, row) {
     </div>
   </td>
   <td class="p-2 col-mcap overflow-hidden">
-    <div class="flex flex-col leading-tight min-w-0">
-      <span class="text-[12px] font-black text-theme-text opacity-90 tracking-tighter truncate">${row.MarketCap_Formatted || "0"}</span>
+    <div class="flex flex-col leading-tight min-w-0 gap-0.5">
+      <div class="flex items-center justify-between gap-1 w-full min-w-0 truncate text-[11px] font-mono">
+        <span id="vol-binance-${tId}" class="text-[#f0b90b] font-bold truncate">B: ${row.Volume_Formatted && row.Volume_Formatted !== "-" && row.Volume_Formatted !== "0" ? row.Volume_Formatted : "-"}</span>
+        <span class="text-[#093687] font-bold truncate">U: ${row.Upbit_Vol_Formatted && row.Upbit_Vol_Formatted !== "-" && row.Upbit_Vol_Formatted !== "0" ? row.Upbit_Vol_Formatted : "-"}</span>
+      </div>
       <div class="flex items-center justify-between gap-2 text-[10px] font-black opacity-60 text-left mt-0.5 w-full min-w-0">
-        <span id="vol-binance-${tId}" class="flex-1 text-left truncate">${row.Volume_Formatted || "0"}</span>
+        <span class="flex-1 text-left truncate">${row.MarketCap_Formatted || "0"}</span>
         <span class="text-theme-accent flex-1 text-left truncate">${row.VMC_Formatted || "0.0%"}</span>
       </div>
     </div>
@@ -520,8 +504,12 @@ function updateRowInnerHTML(tr, row) {
   <td class="p-2 text-left col-kimch overflow-hidden">
     <div class="flex flex-col leading-tight items-start min-w-0">
       <div class="flex items-center justify-start gap-1 min-w-0 max-w-full">
-         <span class="text-[12px] font-black truncate ${row.Kimchi_Raw > 0 ? "text-theme-up" : "text-theme-down"}">${row.Kimchi_Formatted || "0.0%"}</span>
-         <span class="text-[9px] font-black opacity-40 uppercase tracking-tighter truncate">(${row.Kimchi_Label || "-"})</span>
+         ${
+           !row.Kimchi_Label || row.Kimchi_Label === "-"
+             ? `<span class="text-[12px] font-black text-theme-text opacity-40">-</span>`
+             : `<span class="text-[12px] font-black truncate ${row.Kimchi_Raw > 0 ? "text-theme-up" : "text-theme-down"}">${row.Kimchi_Formatted || "0.0%"}</span>`
+         }
+              <!-- <span class="text-[9px] font-black opacity-40 uppercase tracking-tighter truncate">(${row.Kimchi_Label})</span> -->
       </div>
       <div class="flex items-center justify-start gap-2 text-[10px] font-black mt-0.5 min-w-0 max-w-full">
          <span class="text-theme-accent opacity-70 truncate">${row.Funding_Formatted || "-"}</span>
@@ -591,21 +579,16 @@ function initInfiniteScroll() {
     () => {
       const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
 
-      // --- [파트 A] 무한 스크롤 (데이터 추가 렌더링) ---
-      if (
-        !isFetchingMore &&
-        scrollTop + clientHeight >= scrollHeight - clientHeight * 1.2
-      ) {
+      // --- [파트 A] 무한 스크롤 (데이터 추가 렌더링) - 전체 700개 렌더링으로 변경되어 비활성화 ---
+      if (false) {
         if (store.currentRenderLimit < store.currentTableData.length) {
           isFetchingMore = true;
           loadingIndicator.style.display = "block";
 
           setTimeout(() => {
-            // 1. 기존 개수 기억하고 한도 늘리기
             const oldLimit = store.currentRenderLimit;
             store.currentRenderLimit += CONFIG.RENDER_CHUNK;
 
-            // 🚀 2. 핵심 최적화: 전체 정렬 대신, 딱 추가될 50개만 잘라서 밑에 붙입니다!
             const tbody = document.getElementById("table-body");
             const nextBatch = store.currentTableData.slice(
               oldLimit,
@@ -613,11 +596,9 @@ function initInfiniteScroll() {
             );
 
             nextBatch.forEach((row) => {
-              // 'createRowElement'가 알아서 껍데기 만들고 CCTV(Observer)까지 달아줍니다!
               tbody.appendChild(createRowElement(row));
             });
 
-            // 3. 50개가 새로 생겼으니 조준경 갱신
             if (typeof refreshSniperTarget === "function") {
               refreshSniperTarget();
             }
@@ -741,7 +722,7 @@ function switchTab(tab) {
   }
 
   store.currentTab = tab;
-  store.currentRenderLimit = 50;
+  store.currentRenderLimit = 1000;
 
   // UI 업데이트
   document.querySelectorAll(".tab-btn").forEach((btn) => {
@@ -809,7 +790,7 @@ function switchFilter(mode) {
     }
   }
 
-  store.currentRenderLimit = 50;
+  store.currentRenderLimit = 1000;
   renderTable();
 }
 
@@ -828,6 +809,15 @@ function switchView(mode) {
 }
 
 // 🚀 [신규] 상단 제어기 함수들
+window.toggleCurrency = () => {
+  store.currencyMode = store.currencyMode === "USD" ? "KRW" : "USD";
+  const btn = document.getElementById("currency-toggle");
+  if (btn) {
+    btn.innerText = store.currencyMode === "USD" ? "USD ($)" : "KRW (₩)";
+  }
+  renderTable();
+};
+
 window.toggleLang = () => {
   store.lang = store.lang === "KR" ? "EN" : "KR";
   const btn = document.getElementById("lang-toggle");
@@ -868,7 +858,7 @@ window.toggleSmallCap = () => {
     }
   }
 
-  store.currentRenderLimit = 50;
+  store.currentRenderLimit = 1000;
   renderTable();
 };
 
@@ -944,10 +934,10 @@ function togglePasswordVisibility(id) {
   const raw = store.settings.CMC_API_KEY || "";
 
   if (input.dataset.masked === "true") {
-    // 🚀 마스킹 해제 (원본 노출 - 열면 눈알 열리기)
+    // 🚀 마스킹 해제 (원본 노출 - 열면 원숭이 까꿍)
     input.value = raw;
     input.dataset.masked = "false";
-    if (btn) btn.innerText = "👁️";
+    if (btn) btn.innerText = "🙉";
   } else {
     // 🚀 다시 마스킹 (가리면 눈알 닫기)
     input.value = maskApiKey(raw);
@@ -956,12 +946,12 @@ function togglePasswordVisibility(id) {
   }
 }
 
-// 🚀 [HTS급 실시간 정렬 엔진] 0.4초마다 순위 재배치 및 고속 FLIP 실행
+// 🚀 [HTS급 실시간 정렬 엔진 최적화] 1초마다 순위 재배치 및 가시 영역 고속 FLIP 실행 (Best of Super Best 쌀먹 아키텍처)
 setInterval(() => {
-  if (store.currentSortCol && store.sortState !== "") {
+  if (store.currentSortCol && store.sortState !== "" && store.isEngineStarted) {
     applyRealtimeSort();
   }
-}, 400);
+}, 1000);
 
 // 🚀 [통합] 전역 수출 구간
 window.loadTableData = loadTableData;

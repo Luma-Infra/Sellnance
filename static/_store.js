@@ -16,6 +16,7 @@ export const store = {
   hideSmallCap: false, // 🚀 시총 1M 미만 숨기기 여부
   lang: "KR", // 🚀 한/영 토글 (KR, EN)
   filterMode: "ALL", // 🚀 [추가] ALL, BINANCE, UPBIT, FUTURES, SPOT
+  currencyMode: "USD", // 🚀 [추가] USD, KRW 토글 모드
   viewMode: "DETAILED",
   settings: {
     CMC_API_KEY: "",
@@ -39,7 +40,7 @@ export const store = {
   lastFetchTime: 0,
   isLogMode: false,
   showCountdown: true,
-  currentRenderLimit: 50,
+  currentRenderLimit: 1000,
 
   curDir: "bull",
   bullBody: 10,

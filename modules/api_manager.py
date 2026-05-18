@@ -15,6 +15,11 @@ from modules.exchange_api import capture_utc0_prices_bulk
 # --- ⭐️ GLOBAL CACHE SETTINGS ⭐️ ---
 KST = pytz.timezone("Asia/Seoul")
 GLOBAL_CACHE = {"data": [], "timestamp": datetime.min, "last_updated_str": ""}
+GLOBAL_CMC_CACHE = {
+    "map": {},
+    "lookup": {},
+    "timestamp": datetime.min,
+}  # 🚀 CMC 크레딧 방어용 독립 캐시
 CACHE_TIMEOUT_SECONDS = 3600  # 1시간
 
 
@@ -78,7 +83,8 @@ def suppress_output():
 # ==========================================
 # 👑 최종 함수 BOSS
 # ==========================================
-def _fetch_and_process_data():
+def _fetch_and_process_data(silent_mode=False):
+    global GLOBAL_CMC_CACHE
     # 🚀 1. 족보 로드 (항상 최신본으로 시작!)
     MAPPING_DATA = config_manager.load_mapping_data()
     (
@@ -93,7 +99,7 @@ def _fetch_and_process_data():
         HARDCODE_VERIFY_SKIP_LIST,
     ) = config_manager.get_mapping_parts(MAPPING_DATA)
 
-    # 1. 시세 수집
+    # 1. 시세 수집 (바낸/업비트/바이비트/펀비 무료 무제한 타격!)
     (
         binance_data,
         upbit_data,
@@ -103,14 +109,35 @@ def _fetch_and_process_data():
         bybit_data,
     ) = exchange_api.fetch_exchange_market_data(MAPPING_DATA)
     print(
-        f"📊 [1/3 시세 수집 완료] 바낸:{len(binance_data)}, 업비트:{len(upbit_data)}, 바이비트:{len(bybit_data)}"
+        f"📊 [1/3 시세/펀비 수집 완료 (Silent:{silent_mode})] 바낸:{len(binance_data)}, 업비트:{len(upbit_data)}, 바이비트:{len(bybit_data)}"
     )
 
-    # 2. 정보 수집 (CMC)
-    market_data_map, asset_to_lookup_key = cmc_api.fetch_cmc_market_data(
-        binance_data, upbit_only_assets, MAPPING_DATA
-    )
-    print(f"📊 [2/3 CMC 매칭 완료] 장부 매칭 성공:{len(market_data_map)}개")
+    # 2. 정보 수집 (CMC 크레딧 철벽 방어!)
+    now_kst = datetime.now(KST)
+    cmc_expired = False
+    if GLOBAL_CMC_CACHE["timestamp"] != datetime.min:
+        cmc_expired = (
+            now_kst - GLOBAL_CMC_CACHE["timestamp"].astimezone(KST)
+        ).total_seconds() > CACHE_TIMEOUT_SECONDS
+    else:
+        cmc_expired = True
+
+    if silent_mode and not cmc_expired and GLOBAL_CMC_CACHE.get("map"):
+        market_data_map = GLOBAL_CMC_CACHE["map"]
+        asset_to_lookup_key = GLOBAL_CMC_CACHE["lookup"]
+        print("🛡️ [2/3 CMC 캐시 재활용] API 크레딧 소모 0! 기존 시가총액 장부 유지")
+    else:
+        market_data_map, asset_to_lookup_key = cmc_api.fetch_cmc_market_data(
+            binance_data, upbit_only_assets, MAPPING_DATA
+        )
+        GLOBAL_CMC_CACHE = {
+            "map": market_data_map,
+            "lookup": asset_to_lookup_key,
+            "timestamp": now_kst,
+        }
+        print(
+            f"📊 [2/3 CMC 매칭 완료 (API 호출)] 장부 매칭 성공:{len(market_data_map)}개"
+        )
 
     # 3. 조립 및 계산
     global_listings = exchange_api.fetch_global_listings()
@@ -138,46 +165,35 @@ def _fetch_and_process_data():
 
         traceback.print_exc()
 
-    # 족보 업데이트가 발생했다면 저장 (이게 없으면 EDGE 같은 놈들이 매번 세탁기 돌아갑니다)
     if is_mapping_updated:
         config_manager.save_mapping_data(MAPPING_DATA)
         print("💾 [업데이트] 새로운 족보(mapping.json)가 저장되었습니다.")
 
-    all_live_assets = (
-        binance_data.keys() | upbit_krw_set
-    )  # 현재 살아있는 모든 티커(원본)
+    all_live_assets = binance_data.keys() | upbit_krw_set | bybit_data.keys()
     live_bases = {utils.get_pure_base_asset(a).upper() for a in all_live_assets}
 
-    # 🧹 [청소기 가동 구간 - 안전장치 추가 🚀]
-    if len(binance_data) < 100 or len(upbit_krw_set) < 10:
+    # 🚀 [청소기 가동 구간 - 철벽 방어막 장착]
+    # 사일런트 모드이거나, 수집된 데이터가 평소보다 적으면 족보 청소를 절대 하지 않고 즉시 퇴근합니다!!!
+    if silent_mode or len(binance_data) < 10 or len(upbit_krw_set) < 10:
         print(
-            "⚠️ [SAFEGUARD] 데이터 수집량이 너무 적어 족보 청소를 중단합니다. (API 에러 의심)"
+            f"⚠️ [SAFEGUARD] 족보 청소 생략 (Silent:{silent_mode}, 바낸:{len(binance_data)}, 업비트:{len(upbit_krw_set)})"
         )
         return final_results
 
     keys_to_delete = []
-
-    # DUPLICATED_LIST의 키값(별명)들을 세트로 미리 준비 (속도 향상)
     dup_names = set(MAPPING_DATA.get("DUPLICATED_LIST", {}).keys())
-    # 🚀 '_거래소명' 꼬리표를 떼어낸 순수 별명들도 준비 (TICKER_DATA와 비교용)
     dup_names_clean = {
         re.sub(r"_(binance|upbit|bithumb)$", "", k, flags=re.IGNORECASE)
         for k in dup_names
     }
 
     for saved_name in list(MAPPING_DATA["TICKER_DATA"].keys()):
-        # 🚀 철벽 조건:
-        # 1. 라이브 목록(live_bases)에 없고
-        # 2. 특별 맵핑(SPECIAL_SYMBOL_MAP)에도 없고
-        # 3. 고정 UID 맵(SYMBOL_TO_ID_MAP)에도 없고
-        # 4. 🔥 [추가] 중복 리스트(DUPLICATED_LIST) 별명에도 없을 경우에만!
         if (
             saved_name not in live_bases
             and saved_name not in SPECIAL_SYMBOL_MAP
             and saved_name not in SYMBOL_TO_ID_MAP
             and saved_name not in dup_names_clean
         ):
-
             keys_to_delete.append(saved_name)
 
     for k in keys_to_delete:
@@ -185,13 +201,11 @@ def _fetch_and_process_data():
         is_mapping_updated = True
         print(f"🧹 [청소] 상폐/미거래 코인 {k} 족보에서 삭제 완료!")
 
-    # 5. 시총 정렬 후 반환
     if isinstance(final_results, list):
-        final_results.sort(key=lambda x: x.get("MarketCap_Raw", 0), reverse=True)
+        final_results.sort(key=lambda x: float(x.get("MarketCap_Raw") if x.get("MarketCap_Raw") is not None else 0.0), reverse=True)
 
-    # ✅ [수정] 저장을 시키세요!
     if is_mapping_updated:
-        config_manager.save_mapping_data(MAPPING_DATA)  # 🚀 드디어 도구를 사용함!
+        config_manager.save_mapping_data(MAPPING_DATA)
         print(f"💾 새로운 코인 정보가 mapping.json에 저장 완료되었습니다!")
 
     return final_results
@@ -200,57 +214,50 @@ def _fetch_and_process_data():
 data_lock = threading.Lock()
 
 
-def get_cached_data(force_reload=False):
+def get_cached_data(force_reload=False, silent_mode=False):
     global GLOBAL_CACHE
-    _ensure_initialized()  # 🚀 [추가] 실제 요청 시점에 데이터 로드
+    _ensure_initialized()
     with data_lock:
-        # 🚀 1. 지금 시간을 무조건 한국 시간(KST)으로 꽉 고정!
         kst = pytz.timezone("Asia/Seoul")
         now_kst = datetime.now(kst)
 
         needs_reset = False
-
-        # 🚀 2. timestamp가 datetime.min이 아닐 때만 계산 (에러 방지)
         if GLOBAL_CACHE["timestamp"] != datetime.min:
-            # 저장된 시간도 KST로 변환해서 정확히 비교
             last_update_kst = GLOBAL_CACHE["timestamp"].astimezone(kst)
-
-            # 오늘 9시가 지났고, 마지막 업데이트가 오늘 9시 이전이면 리셋!
             if now_kst.hour >= 9 and (
                 last_update_kst.date() < now_kst.date() or last_update_kst.hour < 9
             ):
                 needs_reset = True
                 print("🚨 오전 9시 정각 리셋 트리거 발동!")
 
-        # 🚀 3. 캐시 만료 로직 (시간 계산 깔끔하게)
         is_expired = False
         if GLOBAL_CACHE["timestamp"] != datetime.min:
-            # now_kst와 비교하기 위해 KST로 맞춰서 계산
             is_expired = (
                 now_kst - GLOBAL_CACHE["timestamp"].astimezone(kst)
             ).total_seconds() > CACHE_TIMEOUT_SECONDS
         else:
-            is_expired = True  # 처음 켰을 때는 무조건 갱신
+            is_expired = True
 
-        if force_reload or needs_reset or is_expired:
-            # print("💡 API 데이터를 수집합니다... (약 5~10초 소요)")
+        # 🚀 [쌀먹 핵심] silent_mode일 때는 1시간 만료와 무관하게 무조건 펀비/시세만 새로 긁어와 캐시 갱신!
+        if force_reload or needs_reset or is_expired or silent_mode:
             try:
-                raw_data = _fetch_and_process_data()
+                raw_data = _fetch_and_process_data(silent_mode=silent_mode)
 
                 if raw_data:
                     GLOBAL_CACHE.update(
                         {
                             "data": raw_data,
-                            "timestamp": now_kst,  # 🚀 저장할 때도 무조건 KST로 저장!
+                            "timestamp": now_kst,
                             "last_updated_str": now_kst.strftime("%Y-%m-%d %H:%M:%S"),
                         }
                     )
-                    print(f"✅ 데이터 캐싱 완료! (총 {len(raw_data)}개)")
+                    print(
+                        f"✅ 데이터 캐싱 완료! (총 {len(raw_data)}개, Silent:{silent_mode})"
+                    )
             except Exception as e:
                 print(f"데이터 수집 에러: {e}")
                 traceback.print_exc()
 
-    # 🚀 반환 직전에 리스트로 변환 (프론트엔드 array.length 체크 대응)
     data_to_return = GLOBAL_CACHE["data"]
     if isinstance(data_to_return, dict):
         data_to_return = list(data_to_return.values())

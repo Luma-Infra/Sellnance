@@ -1,6 +1,6 @@
 // _main.js
 import { store, CONFIG, tfSec, measureDOM } from "./_store.js";
-import { loadSymbols } from "./api.js";
+import { loadSymbols } from "./chart_api.js";
 import { searchSymbols, clearSearch, selectSymbol, updateExchangeBadges } from "./ui_control.js";
 import { fetchHistory, clearChartData } from "./chart_data.js";
 import { initChart } from "./chart.js";
@@ -19,6 +19,56 @@ window.store = store;
 window.searchSymbols = searchSymbols;
 window.clearSearch = clearSearch;
 window.selectSymbol = selectSymbol;
+
+// 🚀 [역할 분리] 스트림 엔진(stream.js)의 렌더링 과부하를 막기 위해, 차트 상단 헤더 전광판 조작 전담 함수를 메인 UI 컨트롤러 영역에 선언합니다!
+window.updateHeaderDisplay = (row, newPrice, p) => {
+  const headPriceEl = document.getElementById("head-price");
+  const headPriceSub = document.getElementById("head-price-sub");
+  const headChg24h = document.getElementById("head-chg-24h");
+  const headChgDay = document.getElementById("head-chg-day");
+  const headMcap = document.getElementById("head-mcap");
+  const headVolB = document.getElementById("head-vol-binance");
+  const headVolU = document.getElementById("head-vol-upbit");
+
+  if (headPriceEl) {
+    const rate = store.marketDataMap?.krw_usd_rate || 0;
+    const hasBinance = row.Listed_Exchanges?.some(e => e.includes("BINANCE") || e.includes("BYBIT")) || (row.Price_Raw > 0);
+    const hasUpbit = row.Listed_Exchanges?.includes("UPBIT") || row.Listed_Exchanges?.includes("BITHUMB") || row.Upbit === "O" || (row.Price_KRW > 0);
+
+    let usdP = row.Price_Raw ?? 0;
+    let krwP = row.Price_KRW ?? 0;
+    if (!hasBinance && hasUpbit) usdP = krwP / rate;
+    else if (hasBinance && !hasUpbit) krwP = usdP * rate;
+
+    if (newPrice !== undefined) {
+      if (store.currentMarket === "UPBIT" || store.currentMarket === "BITHUMB") {
+        krwP = newPrice;
+        if (!hasBinance) usdP = krwP / rate;
+      } else {
+        usdP = newPrice;
+        if (!hasUpbit) krwP = usdP * rate;
+      }
+    }
+
+    headPriceEl.innerText = `${window.formatSmartPrice(usdP, p)}`;
+    if (headPriceSub) headPriceSub.innerText = `${Number(krwP).toLocaleString()} ₩`;
+  }
+  if (headChg24h) {
+    const n24 = row.Change_24h_Raw ?? 0;
+    const c24 = n24 > 0 ? "text-theme-up" : n24 < 0 ? "text-theme-down" : "text-theme-text";
+    headChg24h.className = `text-[13px] md:text-[15px] font-mono mt-0.5 ${c24}`;
+    headChg24h.innerText = `${n24 > 0 ? "+" : ""}${Number(n24).toFixed(2)}%`;
+  }
+  if (headChgDay) {
+    const nDay = row.Change_Today_Raw ?? 0;
+    const cDay = nDay > 0 ? "text-theme-up" : nDay < 0 ? "text-theme-down" : "text-theme-text";
+    headChgDay.className = `text-[13px] md:text-[15px] font-mono mt-0.5 ${cDay}`;
+    headChgDay.innerText = `${nDay > 0 ? "+" : ""}${Number(nDay).toFixed(2)}%`;
+  }
+  if (headMcap) headMcap.innerText = row.MarketCap_Formatted || "-";
+  if (headVolB) headVolB.innerText = row.Volume_Formatted || "-";
+  if (headVolU) headVolU.innerText = row.Upbit_Vol_Formatted || "-";
+};
 
 // 🚀 엔진 시동 파트
 document.addEventListener("DOMContentLoaded", async () => {
@@ -49,12 +99,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       console.warn("⚠️ 장부가 아직 비어있습니다. 수집 완료를 기다리는 중...");
       const loadingText = document.querySelector("#loading-modal h2");
       if (loadingText) loadingText.innerText = "데이터 수집 완료 대기 중 (5초 후 재시도)...";
-      
+
       setTimeout(() => {
         console.log("🔄 데이터 수집 완료 재확인 시도...");
         location.reload();
       }, 5000);
-      return; 
+      return;
     }
 
     // 4️⃣ [UI 이벤트] 슬라이더 및 버튼 반응 설정
@@ -130,19 +180,23 @@ document.addEventListener("click", (e) => {
 let tabHiddenTime = 0;
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
-    // 탭을 벗어난 정확한 시간을 기록
     tabHiddenTime = Date.now();
+    store.isTabHidden = true;
   } else if (document.visibilityState === "visible") {
     console.log("☀️ 탭 활성화: 절전 모드 해제 및 데이터 클렌징");
+    store.isTabHidden = false;
 
     // 1. 잠든 사이 폭주해서 쌓인 찌꺼기 버퍼 즉시 소각
     for (let key in store.tickerBuffer) delete store.tickerBuffer[key];
 
-    // 2. 🚀 [수정] 다른 탭에 30초 이상 자리를 비웠을 때, 죽어있는 반쪽짜리 소켓들을 전부 강제 종료하고 새 소켓으로 깔끔하게 재점화!
+    // 2. 🚀 다른 탭에 30초 이상 자리를 비웠을 때, 죽어있는 반쪽짜리 소켓들을 전부 강제 종료하고 새 소켓으로 깔끔하게 재점화!
     if (tabHiddenTime > 0 && Date.now() - tabHiddenTime > 30000) {
       console.log("🔄 장시간 부재 감지: 모든 소켓 연결을 초기화하고 차트를 재동기화합니다.");
-      
-      // 기존 소켓들 확실하게 처단
+
+      // 기존 소켓들 확실하게 처단 (비동기 락 해제)
+      store.isFetchingChart = false;
+      window.isFetchingChart = false;
+
       [store.binanceChartWs, store.upbitChartWs, store.sniperWs, store.binanceRadarWs, store.upbitRadarWs].forEach((ws) => {
         if (ws) {
           ws.onmessage = null;
@@ -162,7 +216,7 @@ document.addEventListener("visibilitychange", () => {
       if (typeof startUpbitMarketRadar === "function") startUpbitMarketRadar();
 
       if (store.currentAsset && typeof fetchHistory === "function") {
-        fetchHistory(store.currentAsset);
+        fetchHistory(store.currentAsset, false, true); // 🚀 isTabRestore = true로 전달하여 줌 원복 방어!
       }
     }
     tabHiddenTime = 0;

@@ -19,18 +19,19 @@ window.getUnixSeconds = getUnixSeconds;
 
 function resetChartScale() {
   if (!store.chart || !store.candleSeries) return;
+
+  // 🚀 [레이스 컨디션 완벽 차단] fitContent() 전에 전역 락(Lock)을 먼저 걸어 이벤트 폭주로 인한 너비 오염을 원천 봉쇄!
+  if (typeof window.resetPriceScaleWidthSync === "function") {
+    window.resetPriceScaleWidthSync();
+  }
+
   store.chart.timeScale().fitContent();
-  store.chart.priceScale("right").applyOptions({ autoScale: true });
+  store.chart.priceScale("right").applyOptions({ minimumWidth: 0, autoScale: true });
   
   if (store.chartVol) {
     store.chartVol.timeScale().fitContent();
-    store.chartVol.priceScale("right").applyOptions({ autoScale: true });
-    store.chartVol.priceScale("left").applyOptions({ autoScale: true });
-  }
-
-  // 🚀 더블클릭 등으로 스케일 리셋 시, 늘어나있던 Y축 여백도 함께 리셋!
-  if (typeof window.resetPriceScaleWidthSync === "function") {
-    window.resetPriceScaleWidthSync();
+    store.chartVol.priceScale("right").applyOptions({ minimumWidth: 0, autoScale: true });
+    store.chartVol.priceScale("left").applyOptions({ minimumWidth: 0, autoScale: true });
   }
 }
 
@@ -120,14 +121,14 @@ function updateLegend(d, v, k) {
   };
 
   // 🚀 볼륨 전광판 포맷팅 및 색상 적용
+  // 🚀 볼륨 전광판 포맷팅 및 색상 적용 (배열 인덱스 오차가 발생해도 캔들 자체의 실시간 d.volume을 다이렉트로 참조하여 전광판 멈춤 완벽 방어!)
   let volHtml = "";
   if (store.paneConfig.volume) {
     let volValue = "-";
     let volColor = "text-theme-text";
-    if (v && v.value !== undefined) {
-      volValue = window.formatVolumeDollar
-        ? window.formatVolumeDollar(v.value)
-        : v.value.toLocaleString();
+    const rawVol = (v && v.value !== undefined) ? v.value : (d && d.volume !== undefined ? d.volume : null);
+    if (rawVol !== null) {
+      volValue = window.formatVolumeDollar ? window.formatVolumeDollar(rawVol) : rawVol.toLocaleString();
       volColor = cls; // 캔들의 양봉/음봉 색상을 그대로 따라감
     }
     volHtml = `<span class="opacity-60 text-[11px] mr-1 border-l border-white/10 pl-3">Vol</span><span class="${volColor} font-bold mr-3">${volValue}</span>`;
@@ -204,19 +205,28 @@ function updateStatus(d, p) {
   }
 }
 
-function autoFit() {
+function autoFit(isTabRestore = false) {
+  if (isTabRestore && store.isUserZoomed) return; // 🚀 탭 복귀 시 사용자가 이미 줌 조작을 해두었다면 오토핏 건너뛰기! (야동 감상 후 복귀 줌 원복 방어!!!)
   if (store.chart && store.mainData.length) {
     const len = store.mainData.length;
+    const logicalRange = {
+      from: Math.max(0, len - 100),
+      to: len + 10,
+    };
 
-    // 🚨 [과거 유령 캔들 철벽 차단]
-    // 상장된 지 얼마 안 된 코인(데이터가 100개 미만)일 때,
-    // 인덱스가 음수로 떨어져 과거로 텅 빈 유령 공간이 강제로 생기는 현상을 막습니다.
-    store.chart.timeScale().setVisibleLogicalRange({
-      from: Math.max(0, len - 100), // 0 이하로 절대 못 내려가게 음수 방어!
-      to: len + 10, // 우측 여백(미래)만 10칸 살짝 남김
-    });
-
+    store.chart.timeScale().setVisibleLogicalRange(logicalRange);
     store.chart.priceScale("right").applyOptions({ autoScale: true });
+
+    // 🚀 거래량 차트(vol-pane) 완벽 동기화 오토핏! (스케일 뻗거나 꼬이는 현상 원천 차단)
+    if (store.chartVol) {
+      try {
+        store.chartVol.timeScale().setVisibleLogicalRange(logicalRange);
+        store.chartVol.priceScale("right").applyOptions({ autoScale: true });
+        if (store.kimchiSeries) {
+          store.chartVol.priceScale("left").applyOptions({ autoScale: true });
+        }
+      } catch (e) {}
+    }
   }
 }
 
@@ -337,6 +347,7 @@ export function toggleCountdown(isChecked) {
 }
 
 export function updateRealtimeCountdown(serverMs) {
+  if (store.isFetchingChart) return;
   if (!store.candleSeries || store.mainData.length === 0) {
     if (store.countdownPriceLine) {
       store.candleSeries.removePriceLine(store.countdownPriceLine);
@@ -403,3 +414,40 @@ setInterval(() => {
     updateRealtimeCountdown(store.lastServerMs);
   }
 }, 50);
+
+// 🎯 브라우저 탭 제목 실시간 스위칭 통합 매니저 (소켓 중복 생성 ZERO, 메인 차트 소켓 100% 재활용)
+let lastTabTitleUpdateMs = 0;
+
+export function updateTabTitleManager(price, symbol, isUpbit) {
+  if (isNaN(price) || price <= 0) return;
+
+  // 🚀 500ms 쓰로틀링으로 브라우저 탭 깜빡임 부하 완벽 방어!
+  const nowMs = performance.now();
+  if (!lastTabTitleUpdateMs || nowMs - lastTabTitleUpdateMs > 500) {
+    lastTabTitleUpdateMs = nowMs;
+
+    const getTargetSymbol = () => {
+      const selectedRow = store.currentTableData?.find(
+        (c) => c.Ticker === store.currentSelectedSymbol,
+      );
+      return selectedRow?.Symbol || symbol;
+    };
+
+    let p = 2;
+    if (isUpbit) {
+      // 업비트 KRW 마켓 호가 단위 정밀도 자동 계산
+      if (price < 1) p = 4;
+      else if (price < 10) p = 2;
+      else if (price < 100) p = 1;
+      else p = 0;
+    } else {
+      // 바이낸스 USDT 마켓 정밀도 참조
+      p = store.getPrecision(store.currentSelectedSymbol || symbol);
+    }
+
+    const formatted = formatSmartPrice(price, p);
+    document.title = `${formatted} ${getTargetSymbol().toUpperCase()} | Xsellance`;
+  }
+}
+window.updateTabTitleManager = updateTabTitleManager;
+

@@ -222,6 +222,18 @@
               </svg>
             </button>
 
+            <!-- ⇄ 패널 스왑 버튼 -->
+            <button
+              onclick="togglePanelSwap()"
+              class="hidden md:flex items-center justify-center w-8 h-8 rounded-lg bg-theme-border/20 border border-theme-border/30 hover:bg-theme-accent group transition-all duration-300"
+              title="좌우 패널 위치 스왑"
+            >
+              <span
+                class="text-xs text-theme-text group-hover:text-white transition-transform group-hover:rotate-180 duration-500"
+                >⇄</span
+              >
+            </button>
+
             <!-- ◀ 접기 버튼 (Pretty) -->
             <button
               onclick="toggleSidebar()"
@@ -280,6 +292,13 @@
             </div>
 
             <div class="flex items-center gap-2">
+              <button
+                id="currency-toggle"
+                onclick="window.toggleCurrency()"
+                class="px-3 py-1.5 bg-theme-accent text-white border border-theme-border/40 rounded-lg text-[10px] font-black transition-all shadow-sm"
+              >
+                USD ($)
+              </button>
               <button
                 id="lang-toggle"
                 onclick="toggleLang()"
@@ -367,12 +386,12 @@
                   </div>
                 </th>
                 <th
-                  onclick="sortTable('MarketCap')"
+                  onclick="sortTable('Volume')"
                   class="p-2 cursor-pointer hover:bg-white/5 transition-colors col-mcap"
                 >
                   <div class="flex items-center gap-1">
-                    MarketCap
-                    <span id="sort-MarketCap" class="sort-arrow"></span>
+                    Volume
+                    <span id="sort-Volume" class="sort-arrow"></span>
                   </div>
                 </th>
                 <th
@@ -415,9 +434,9 @@
                     class="flex items-center justify-between gap-2 text-left w-full min-w-0"
                   >
                     <span
-                      onclick="sortTable('Volume')"
+                      onclick="sortTable('MarketCap')"
                       class="cursor-pointer hover:text-theme-accent flex-1 text-left truncate"
-                      >Volume</span
+                      >M.Cap</span
                     >
                     <span
                       onclick="sortTable('VMC')"
@@ -466,7 +485,7 @@
         </button>
 
         <div
-          class="flex w-full shrink-0 h-16 bg-theme-panel border-b border-theme-border"
+          class="flex w-full shrink-0 h-14 bg-theme-panel border-b border-theme-border"
         >
           <button
             id="tab-btn-chart"
@@ -535,17 +554,23 @@
               class="flex items-center justify-between gap-5 text-right flex-wrap w-full border-t border-theme-border/30 pt-2 mt-1"
             >
               <div class="flex items-center gap-6 justify-start pl-1">
-                <!-- 🚀 1. 실시간 가격 전광판 -->
-                <div class="flex flex-col text-xs text-left">
+                <!-- 🚀 1. 실시간 가격 전광판 (USD & KRW 동시 표기) -->
+                <div class="flex flex-col text-xs text-left min-w-0">
                   <span
                     class="opacity-50 text-[10px] uppercase font-bold tracking-wider"
                     >Price</span
                   >
-                  <b
-                    id="head-price"
-                    class="text-[20px] md:text-[20px] font-mono mt-0.5 text-theme-accent"
-                    >-</b
-                  >
+                  <div class="flex flex-col min-w-0 leading-none mt-0.5 gap-1">
+                    <b
+                      id="head-price"
+                      class="text-[20px] md:text-[20px] font-mono text-theme-accent truncate"
+                      >-</b
+                    >
+                    <span
+                      id="head-price-sub"
+                      class="text-[11px] font-mono text-theme-text opacity-50 truncate"
+                    ></span>
+                  </div>
                 </div>
                 <!-- 🚀 2. 24H 변동률 전광판 -->
                 <div class="flex flex-col text-xs text-left">
@@ -642,7 +667,11 @@
 
               <button
                 class="reset-btn px-3 py-1 text-[11px] font-bold text-theme-down border border-theme-down rounded hover:bg-theme-down/10 transition-colors shadow-sm"
-                onclick="resetChartScale()"
+                onclick="
+                  if (window.resetPriceScaleWidthSync)
+                    window.resetPriceScaleWidthSync();
+                  resetChartScale();
+                "
               >
                 차트 스케일 리셋
               </button>
@@ -652,12 +681,12 @@
 
         <!-- <div
           id="chart-container"
-          class="flex-1 relative overflow-hidden m-[15px] w-[calc(100%-30px)] border border-theme-border rounded-lg bg-theme-panel shadow-[inset_0_0_15px_rgba(0,0,0,0.15)]"
+          class="flex-1 relative overflow-hidden m-[15px] w-[calc(100%-30px)] border border-theme-border rounded-lg bg-theme-panel"
         > -->
         <!-- 차트 전체를 감싸는 부모 (기존 chart-container 자리를 대체) -->
         <div
           id="chart-wrapper"
-          class="flex-1 flex flex-col relative overflow-hidden m-[15px] w-[calc(100%-30px)] border border-theme-border rounded-lg bg-theme-panel shadow-[inset_0_0_15px_rgba(0,0,0,0.15)]"
+          class="flex-1 flex flex-col relative overflow-hidden m-[15px] w-[calc(100%-30px)] border border-theme-border rounded-lg bg-theme-panel"
         >
           <!-- 1. 메인 차트 -->
           <div

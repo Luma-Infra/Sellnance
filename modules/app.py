@@ -90,6 +90,13 @@ def get_market_data(force: bool = False):
     return {"data": data, "last_updated": last_updated}
 
 
+@app.get("/api/market-data-silent")
+def get_market_data_silent():
+    """🚨 [CMC 크레딧 방어용] CMC API 호출 없이 바이낸스/업비트 시세 및 펀딩비만 조용히 갱신하여 반환합니다."""
+    data, last_updated = api_manager.get_cached_data(force_reload=False, silent_mode=True)
+    return {"data": data, "last_updated": last_updated}
+
+
 # app.py 내부 라우터 교체
 @app.get("/api/market-map")
 def get_market_map():
