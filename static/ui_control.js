@@ -207,8 +207,10 @@ function executeTabSwitch(mode) {
     store.binanceChartWs = null;
     store.upbitChartWs = null;
 
-    document.getElementById("status-dot").style.background = "gray";
-    document.getElementById("status-text").innerText = "SIMULATION";
+    const statusDot = document.getElementById("status-dot");
+    if (statusDot) statusDot.style.background = "gray";
+    const statusText = document.getElementById("status-text");
+    if (statusText) statusText.innerText = "SIMULATION";
   }
 }
 
@@ -371,178 +373,164 @@ export function searchSymbols(v) {
 }
 
 // 선택 로직 (티커명 검색창 전송 + 이름 유지)
-export async function selectSymbol(s, forceMarket = null) {
-  store.isFetchingChart = false; // 🚀 사용자가 테이블 코인을 직접 클릭할 때는 백그라운드 락을 강제로 즉시 해제하여 무조건 최우선 실행!
+export function selectSymbol(s, forceMarket = null) {
+  // 🚀 [INP 최적화 Phase 1] 클릭 즉시 최소한의 상태만 변경하고 즉각 시각적 피드백 제공 (Next Paint 0~16ms 달성!)
+  store.isFetchingChart = false;
   window.isFetchingChart = false;
-  store.isUserZoomed = false; // 🚀 새 코인 선택 시 줌 상태 리셋하여 최초 1회 예쁜 오토핏 보장!
-
+  store.isUserZoomed = false;
   store.currentAsset = s;
-  store.currentSelectedSymbol = s; // 🚀 전역 선택자 동기화
+  store.currentSelectedSymbol = s;
 
-  // 🚀 최초 코인 선택 시 보류되었던 차트 엔진 및 호가창(Sniper) 소켓 점화! (테이블 레이더는 이미 서버 시작 시 가동됨)
-  if (!store.isEngineStarted) {
-    console.log(
-      "🚀 최초 코인 선택 감지: 보류되었던 차트 엔진 및 호가창 소켓 점화 시작!",
-    );
-    store.isEngineStarted = true;
-    if (typeof window.initChart === "function") window.initChart();
-    else if (typeof initChart === "function") initChart();
-    if (typeof window.initSniperSocket === "function")
-      window.initSniperSocket();
-  }
-
-  // [중요] 검색창에 티커명 즉시 반영 (기존 기능 유지)
+  // 1. 검색창 닫기 및 입력값 동기화 (가벼운 DOM 조작 즉시 실행)
   const symInput = document.getElementById("symbol-input");
   if (symInput) symInput.value = s;
-
   const searchRes = document.getElementById("search-results");
   if (searchRes) searchRes.style.display = "none";
 
-  // 🚀 [수정] currentTableData뿐만 아니라 originalTableData(전체 장부)까지 샅샅이 뒤져서 정밀도(precision) 누락 방지!
-  const allSourceData = store.originalTableData || store.currentTableData || [];
-  const rowInfo = allSourceData.find(
-    (c) => c.DisplayTicker === s || c.Ticker === s,
-  );
-
-  // 마켓 우선순위 결정 (기본: 선물 > 현물 > 업비트)
-  if (forceMarket) {
-    store.currentMarket = forceMarket;
-  } else if (rowInfo && rowInfo.Listed_Exchanges) {
-    const ex = rowInfo.Listed_Exchanges;
-    // 🚀 [도메인 규칙 일반화] Base 자산이 Quote 통화(USDT)와 일치하여 글로벌 페어 성립이 불가능한 경우 원화 마켓 최우선 배정
-    const isQuoteCurrency = s.startsWith("USDT");
-
-    if (isQuoteCurrency && (ex.includes("UPBIT") || ex.includes("BITHUMB"))) {
-      store.currentMarket = ex.includes("UPBIT") ? "UPBIT" : "BITHUMB";
-    } else if (ex.includes("BINANCE_FUTURES")) store.currentMarket = "FUTURES";
-    else if (ex.includes("BINANCE")) store.currentMarket = "SPOT";
-    else if (ex.includes("UPBIT")) store.currentMarket = "UPBIT";
-    else if (ex.includes("BITHUMB")) store.currentMarket = "BITHUMB";
-    else if (ex.includes("BYBIT")) store.currentMarket = "BYBIT";
-  }
-  // 🚀 [수정] 헤더 및 타이틀 Precision(정밀도) 반영 (단일 진실 공급원 O(1) 광속 탐색!)
-  const p = store.getPrecision(s);
-  const headAssetName = document.getElementById("head-asset-name");
-
-  if (rowInfo) {
-    if (headAssetName) {
-      const favorites = JSON.parse(localStorage.getItem("sellnance_favs") || "[]");
-      const isFav = favorites.includes(rowInfo.Symbol);
-      const logoHtml = rowInfo.Logo || "";
-      headAssetName.innerHTML = `
-        <div class="flex items-center gap-2">
-          <button onclick="window.toggleFavorite('${rowInfo.Symbol}', event); setTimeout(() => window.selectSymbol('${s}'), 50);" class="star-btn text-[16px] transition-all hover:scale-125 flex-shrink-0 ${isFav ? 'active' : ''}" style="color: ${isFav ? 'var(--accent)' : 'gray'}">
-            ${isFav ? '⭐' : '☆'}
-          </button>
-          <div class="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-white/5 rounded-full overflow-hidden">
-            ${logoHtml}
-          </div>
-          <span>${rowInfo.Symbol} (${rowInfo.Name || ""})</span>
-        </div>
-      `;
-    }
-    // 타이틀에 실시간 가격 & 정밀도 반영
-    const titlePrice = window.formatSmartPrice(rowInfo.Price_Raw || 0, p);
-    // document.title = `${titlePrice} | ${rowInfo.Symbol} - Sellnance`;
-
-    const headMcap = document.getElementById("head-mcap");
-    const headVolB = document.getElementById("head-vol-binance");
-    const headVolU = document.getElementById("head-vol-upbit");
-    const headPriceEl = document.getElementById("head-price");
-    const headChg24h = document.getElementById("head-chg-24h");
-    const headChgDay = document.getElementById("head-chg-day");
-
-    if (headMcap) headMcap.innerText = rowInfo.MarketCap_Formatted || "-";
-    if (headVolB) headVolB.innerText = rowInfo.Volume_Formatted || "-";
-    if (headVolU) headVolU.innerText = rowInfo.Upbit_Vol_Formatted || "-";
-    if (headPriceEl) headPriceEl.innerText = titlePrice;
-
-    if (headChg24h) {
-      const n24 = rowInfo.Change_24h_Raw ?? 0;
-      const c24 =
-        n24 > 0
-          ? "text-theme-up"
-          : n24 < 0
-            ? "text-theme-down"
-            : "text-theme-text";
-      headChg24h.className = `text-[13px] md:text-[15px] font-mono mt-0.5 ${c24}`;
-      headChg24h.innerText = `${n24 > 0 ? "+" : ""}${Number(n24).toFixed(2)}%`;
-    }
-    if (headChgDay) {
-      const nDay = rowInfo.Change_Today_Raw ?? 0;
-      const cDay =
-        nDay > 0
-          ? "text-theme-up"
-          : nDay < 0
-            ? "text-theme-down"
-            : "text-theme-text";
-      headChgDay.className = `text-[13px] md:text-[15px] font-mono mt-0.5 ${cDay}`;
-      headChgDay.innerText = `${nDay > 0 ? "+" : ""}${Number(nDay).toFixed(2)}%`;
-    }
+  // 2. 테이블 행 즉시 하이라이트 반영 (시각적 피드백 선행)
+  if (typeof applySelectedHighlight === "function") {
+    applySelectedHighlight();
   }
 
-  // 배지 업데이트
-  updateExchangeBadges(s);
-
-  // 🚀 [핵심] 코인 이름 가져와서 "티커 (이름)" 형태로 덮어쓰기
-  try {
-    const querySym = rowInfo ? rowInfo.DisplayTicker : s;
-    const infoRes = await fetch(`/api/coin-info/${querySym}`);
-    const infoData = await infoRes.json();
-    if (headAssetName && infoData.name) {
-      const displaySym =
-        infoData.symbol || (rowInfo ? rowInfo.Symbol : querySym.split("(")[0]);
-      const favorites = JSON.parse(localStorage.getItem("sellnance_favs") || "[]");
-      const isFav = favorites.includes(displaySym);
-      const logoHtml = rowInfo ? (rowInfo.Logo || "") : "";
-      headAssetName.innerHTML = `
-        <div class="flex items-center gap-2">
-          <button onclick="window.toggleFavorite('${displaySym}', event); setTimeout(() => window.selectSymbol('${s}'), 50);" class="star-btn text-[16px] transition-all hover:scale-125 flex-shrink-0 ${isFav ? 'active' : ''}" style="color: ${isFav ? 'var(--accent)' : 'gray'}">
-            ${isFav ? '⭐' : '☆'}
-          </button>
-          <div class="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-white/5 rounded-full overflow-hidden">
-            ${logoHtml}
-          </div>
-          <span>${displaySym} (${infoData.name})</span>
-        </div>
-      `;
-    }
-  } catch (e) {
-    console.error("이름 로드 실패", e);
+  // 🚀 최초 코인 선택 시 보류되었던 차트 엔진 및 호가창 소켓 점화
+  if (!store.isEngineStarted) {
+    console.log("🚀 최초 코인 선택 감지: 보류되었던 차트 엔진 및 호가창 소켓 점화 시작!");
+    store.isEngineStarted = true;
+    if (typeof window.initChart === "function") window.initChart();
+    else if (typeof initChart === "function") initChart();
+    if (typeof window.initSniperSocket === "function") window.initSniperSocket();
   }
 
-  // 🚀 [추가] 검색한 코인이 현재 테이블 렌더링 범위(50개) 밖에 있을 경우 대응
-  const sortedList = store.currentTableData;
-  const targetIdx = sortedList.findIndex(
-    (item) => item.DisplayTicker === s || item.Ticker === s,
-  );
-
-  if (targetIdx !== -1) {
-    // 1. 만약 현재 렌더링 한도보다 뒤에 있다면 한도를 늘리고 재렌더링
-    if (targetIdx >= store.currentRenderLimit) {
-      store.currentRenderLimit = targetIdx + 1;
-      if (typeof renderTable === "function") renderTable();
-    }
-
-    // 2. 해당 행으로 스크롤 이동 및 하이라이트
+  // 🚀 [INP 최적화 Phase 2] 무거운 배열 탐색, DOM 재생성, API 통신, 차트 렌더링(fetchHistory)을 다음 페인트 이후로 양보(Yielding)
+  requestAnimationFrame(() => {
     setTimeout(() => {
-      store.currentSelectedSymbol = s; // 선택자 동기화
-      const targetSym = rowInfo ? rowInfo.Ticker : s;
-      const targetRow = document.querySelector(
-        `#table-body tr[data-sym="${targetSym}"]`,
+      const allSourceData = store.originalTableData || store.currentTableData || [];
+      const rowInfo = allSourceData.find(
+        (c) => c.DisplayTicker === s || c.Ticker === s,
       );
-      if (targetRow) {
-        targetRow.scrollIntoView({ block: "center", behavior: "smooth" });
-        if (typeof applySelectedHighlight === "function")
-          applySelectedHighlight();
-      }
-    }, 100);
-  }
 
-  // 🚀 [핵심] 차트 데이터 즉시 로드
-  if (typeof fetchHistory === "function") {
-    fetchHistory(s, false, false);
-  }
+      // 마켓 우선순위 결정
+      if (forceMarket) {
+        store.currentMarket = forceMarket;
+      } else if (rowInfo && rowInfo.Listed_Exchanges) {
+        const ex = rowInfo.Listed_Exchanges;
+        const isQuoteCurrency = s.startsWith("USDT");
+        if (isQuoteCurrency && (ex.includes("UPBIT") || ex.includes("BITHUMB"))) {
+          store.currentMarket = ex.includes("UPBIT") ? "UPBIT" : "BITHUMB";
+        } else if (ex.includes("BINANCE_FUTURES")) store.currentMarket = "FUTURES";
+        else if (ex.includes("BINANCE")) store.currentMarket = "SPOT";
+        else if (ex.includes("UPBIT")) store.currentMarket = "UPBIT";
+        else if (ex.includes("BITHUMB")) store.currentMarket = "BITHUMB";
+        else if (ex.includes("BYBIT")) store.currentMarket = "BYBIT";
+      }
+
+      const p = store.getPrecision(s);
+      const headAssetName = document.getElementById("head-asset-name");
+
+      if (rowInfo) {
+        if (headAssetName) {
+          const favorites = JSON.parse(localStorage.getItem("sellnance_favs") || "[]");
+          const isFav = favorites.includes(rowInfo.Symbol);
+          const logoHtml = rowInfo.Logo || "";
+          headAssetName.innerHTML = `
+            <div class="flex items-center gap-2">
+              <button onclick="window.toggleFavorite('${rowInfo.Symbol}', event); setTimeout(() => window.selectSymbol('${s}'), 50);" class="star-btn text-[16px] transition-all hover:scale-125 flex-shrink-0 ${isFav ? 'active' : ''}" style="color: ${isFav ? 'var(--accent)' : 'gray'}">
+                ${isFav ? '⭐' : '☆'}
+              </button>
+              <div class="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-white/5 rounded-full overflow-hidden">
+                ${logoHtml}
+              </div>
+              <span>${rowInfo.Symbol} (${rowInfo.Name || ""})</span>
+            </div>
+          `;
+        }
+
+        const titlePrice = window.formatSmartPrice(rowInfo.Price_Raw || 0, p);
+        const headMcap = document.getElementById("head-mcap");
+        const headVolB = document.getElementById("head-vol-binance");
+        const headVolU = document.getElementById("head-vol-upbit");
+        const headPriceEl = document.getElementById("head-price");
+        const headChg24h = document.getElementById("head-chg-24h");
+        const headChgDay = document.getElementById("head-chg-day");
+
+        if (headMcap) headMcap.innerText = rowInfo.MarketCap_Formatted || "-";
+        if (headVolB) headVolB.innerText = rowInfo.Volume_Formatted || "-";
+        if (headVolU) headVolU.innerText = rowInfo.Upbit_Vol_Formatted || "-";
+        if (headPriceEl) headPriceEl.innerText = titlePrice;
+
+        if (headChg24h) {
+          const n24 = rowInfo.Change_24h_Raw ?? 0;
+          const c24 = n24 > 0 ? "text-theme-up" : n24 < 0 ? "text-theme-down" : "text-theme-text";
+          headChg24h.className = `text-[13px] md:text-[15px] font-mono mt-0.5 ${c24}`;
+          headChg24h.innerText = `${n24 > 0 ? "+" : ""}${Number(n24).toFixed(2)}%`;
+        }
+        if (headChgDay) {
+          const nDay = rowInfo.Change_Today_Raw ?? 0;
+          const cDay = nDay > 0 ? "text-theme-up" : nDay < 0 ? "text-theme-down" : "text-theme-text";
+          headChgDay.className = `text-[13px] md:text-[15px] font-mono mt-0.5 ${cDay}`;
+          headChgDay.innerText = `${nDay > 0 ? "+" : ""}${Number(nDay).toFixed(2)}%`;
+        }
+      }
+
+      updateExchangeBadges(s);
+
+      // 코인 상세 이름 비동기 패치
+      try {
+        const querySym = rowInfo ? rowInfo.DisplayTicker : s;
+        fetch(`/api/coin-info/${querySym}`)
+          .then((res) => res.json())
+          .then((infoData) => {
+            if (headAssetName && infoData.name) {
+              const displaySym = infoData.symbol || (rowInfo ? rowInfo.Symbol : querySym.split("(")[0]);
+              const favorites = JSON.parse(localStorage.getItem("sellnance_favs") || "[]");
+              const isFav = favorites.includes(displaySym);
+              const logoHtml = rowInfo ? (rowInfo.Logo || "") : "";
+              headAssetName.innerHTML = `
+                <div class="flex items-center gap-2">
+                  <button onclick="window.toggleFavorite('${displaySym}', event); setTimeout(() => window.selectSymbol('${s}'), 50);" class="star-btn text-[16px] transition-all hover:scale-125 flex-shrink-0 ${isFav ? 'active' : ''}" style="color: ${isFav ? 'var(--accent)' : 'gray'}">
+                    ${isFav ? '⭐' : '☆'}
+                  </button>
+                  <div class="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-white/5 rounded-full overflow-hidden">
+                    ${logoHtml}
+                  </div>
+                  <span>${displaySym} (${infoData.name})</span>
+                </div>
+              `;
+            }
+          })
+          .catch((e) => console.error("이름 로드 실패", e));
+      } catch (e) {
+        console.error("이름 로드 에러", e);
+      }
+
+      // 테이블 스크롤 이동
+      const sortedList = store.currentTableData;
+      const targetIdx = sortedList.findIndex(
+        (item) => item.DisplayTicker === s || item.Ticker === s,
+      );
+
+      if (targetIdx !== -1) {
+        if (targetIdx >= store.currentRenderLimit) {
+          store.currentRenderLimit = targetIdx + 1;
+          if (typeof renderTable === "function") renderTable();
+        }
+        setTimeout(() => {
+          store.currentSelectedSymbol = s;
+          const targetSym = rowInfo ? rowInfo.Ticker : s;
+          const targetRow = document.querySelector(`#table-body tr[data-sym="${targetSym}"]`);
+          if (targetRow) {
+            targetRow.scrollIntoView({ block: "center", behavior: "smooth" });
+            if (typeof applySelectedHighlight === "function") applySelectedHighlight();
+          }
+        }, 50);
+      }
+
+      // 🚀 [핵심] 차트 데이터 패치 실행 (메인 스레드 경합 완벽 해소)
+      if (typeof fetchHistory === "function") {
+        fetchHistory(s, false, false);
+      }
+    }, 0);
+  });
 }
 
 // 배지 UI 업데이트 헬퍼

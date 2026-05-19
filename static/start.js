@@ -194,14 +194,40 @@ function saveAndStart() {
     });
     return;
   }
-  localStorage.setItem("CMC_API_KEY", keyToSave);
-  hideStartScreen();
+
+  // 🚀 [INP 최적화 1] 클릭 즉시 시각적 피드백 제공 (Next Paint 가속)
+  const btn = document.querySelector("#start-screen button");
+  if (btn) {
+    btn.innerText = "STARTING ENGINE... 🚀";
+    btn.style.pointerEvents = "none";
+  }
+
+  // 🚀 [INP 최적화 2] 브라우저가 화면을 즉시 페인트할 수 있도록 메인 스레드 양보 (Yielding to Main Thread)
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      localStorage.setItem("CMC_API_KEY", keyToSave);
+      hideStartScreen();
+    }, 0);
+  });
 }
 
 // 🚀 Skip (쌀먹 모드 유지)
 function skipAndStart() {
   console.log("⏭️ [스킵] 캐시 데이터로 진입합니다.");
-  hideStartScreen();
+
+  // 🚀 [INP 최적화 1] 클릭 즉시 시각적 피드백 제공
+  const buttons = document.querySelectorAll("#start-screen button");
+  if (buttons.length > 1 && buttons[1]) {
+    buttons[1].innerText = "SKIPPING... ⏭️";
+    buttons[1].style.pointerEvents = "none";
+  }
+
+  // 🚀 [INP 최적화 2] 메인 스레드 양보 (Yielding)로 클릭 지연 시간(INP)을 0ms 수준으로 단축!
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      hideStartScreen();
+    }, 0);
+  });
 }
 
 function hideStartScreen() {

@@ -1,24 +1,42 @@
 // table_filter.js
 import { store, CONFIG } from "./_store.js";
+import { renderTable } from "./table_render.js";
+import { loadTableData } from "./table_api.js";
 
 export function getFilteredData() {
   let filteredData = [...store.currentTableData];
 
+  // 1. 탭 필터링 (ALL, FAV)
   if (store.currentTab === "FAV") {
-    const favorites = JSON.parse(localStorage.getItem("sellnance_favs") || "[]");
-    filteredData = filteredData.filter((d) => favorites.includes(d.DisplayTicker || d.Symbol));
+    const favorites = JSON.parse(
+      localStorage.getItem("sellnance_favs") || "[]",
+    );
+    filteredData = filteredData.filter((d) =>
+      favorites.includes(d.DisplayTicker || d.Symbol),
+    );
   }
 
+  // 2. 마켓 필터링 (ALL / BINANCE / UPBIT)
   if (store.filterMode === "UPBIT") {
-    filteredData = filteredData.filter((d) => d.Listed_Exchanges?.includes("UPBIT") || d.Listed_Exchanges?.includes("BITHUMB"));
+    filteredData = filteredData.filter(
+      (d) =>
+        d.Listed_Exchanges?.includes("UPBIT") ||
+        d.Listed_Exchanges?.includes("BITHUMB"),
+    );
   } else if (store.filterMode === "BINANCE") {
-    filteredData = filteredData.filter((d) => d.Listed_Exchanges?.some((ex) => ex.startsWith("BINANCE")));
+    filteredData = filteredData.filter((d) =>
+      d.Listed_Exchanges?.some((ex) => ex.startsWith("BINANCE")),
+    );
   }
 
+  // 3. 시총 필터링 (1M 미만 숨기기 토글)
   if (store.hideSmallCap) {
-    filteredData = filteredData.filter((d) => (d.MarketCap_Raw || 0) >= 1000000);
+    filteredData = filteredData.filter(
+      (d) => (d.MarketCap_Raw || 0) >= 1000000,
+    );
   }
 
+  // 4. 바운더리 필터링
   const boundary = store.settings?.SORT_BOUNDARY;
   if (boundary) {
     filteredData = filteredData.filter((d) => {
@@ -36,7 +54,7 @@ export function switchTab(tab) {
   }
 
   store.currentTab = tab;
-  store.currentRenderLimit = 50;
+  store.currentRenderLimit = 1000;
 
   document.querySelectorAll(".tab-btn").forEach((btn) => {
     btn.classList.remove("bg-theme-accent", "text-white", "shadow-md");
@@ -45,11 +63,15 @@ export function switchTab(tab) {
 
   const activeBtn = document.getElementById(`tab-${tab.toLowerCase()}`);
   if (activeBtn) {
-    activeBtn.classList.remove("text-theme-text", "opacity-50", "border-theme-border");
+    activeBtn.classList.remove(
+      "text-theme-text",
+      "opacity-50",
+      "border-theme-border",
+    );
     activeBtn.classList.add("bg-theme-accent", "text-white", "shadow-md");
   }
 
-  if (typeof window.renderTable === "function") window.renderTable();
+  renderTable();
 }
 
 export function switchFilter(mode) {
@@ -89,13 +111,17 @@ export function switchFilter(mode) {
     });
     const activeBtn = document.getElementById(`filter-${mode.toLowerCase()}`);
     if (activeBtn) {
-      activeBtn.classList.remove("text-theme-text", "opacity-50", "hover:opacity-100");
+      activeBtn.classList.remove(
+        "text-theme-text",
+        "opacity-50",
+        "hover:opacity-100",
+      );
       activeBtn.classList.add("bg-theme-accent", "text-white", "shadow-sm");
     }
   }
 
-  store.currentRenderLimit = 50;
-  if (typeof window.renderTable === "function") window.renderTable();
+  store.currentRenderLimit = 1000;
+  renderTable();
 }
 
 export function switchView(mode) {
@@ -109,7 +135,23 @@ export function switchView(mode) {
       ? "view-btn px-3 py-1.5 text-[11px] font-bold rounded-md transition-all bg-theme-accent text-white shadow-sm"
       : "view-btn px-3 py-1.5 text-[11px] font-bold rounded-md transition-all text-theme-text opacity-50 hover:opacity-100";
 
-  if (typeof window.renderTable === "function") window.renderTable();
+  renderTable();
+}
+
+export function toggleCurrency() {
+  store.currencyMode = store.currencyMode === "USD" ? "KRW" : "USD";
+  const btn = document.getElementById("currency-toggle");
+  if (btn) {
+    btn.innerText = store.currencyMode === "USD" ? "USD ($)" : "KRW (₩)";
+  }
+  renderTable();
+}
+
+export function toggleLang() {
+  store.lang = store.lang === "KR" ? "EN" : "KR";
+  const btn = document.getElementById("lang-toggle");
+  if (btn) btn.innerText = store.lang;
+  renderTable();
 }
 
 export function toggleSmallCap() {
@@ -118,18 +160,34 @@ export function toggleSmallCap() {
   const btn = document.getElementById("btn-small-cap");
   if (btn) {
     if (store.hideSmallCap) {
-      btn.classList.remove("text-theme-text", "opacity-50", "border-theme-border");
-      btn.classList.add("bg-theme-down", "text-white", "border-theme-down", "shadow-md", "opacity-100");
+      btn.classList.remove(
+        "text-theme-text",
+        "opacity-50",
+        "border-theme-border",
+      );
+      btn.classList.add(
+        "bg-theme-down",
+        "text-white",
+        "border-theme-down",
+        "shadow-md",
+        "opacity-100",
+      );
       btn.innerText = "🚫 Hiding Mcap < 1M";
     } else {
       btn.classList.add("text-theme-text", "opacity-50", "border-theme-border");
-      btn.classList.remove("bg-theme-down", "text-white", "border-theme-down", "shadow-md", "opacity-100");
+      btn.classList.remove(
+        "bg-theme-down",
+        "text-white",
+        "border-theme-down",
+        "shadow-md",
+        "opacity-100",
+      );
       btn.innerText = "🚫 Hiding Mcap < 1M";
     }
   }
 
-  store.currentRenderLimit = 50;
-  if (typeof window.renderTable === "function") window.renderTable();
+  store.currentRenderLimit = 1000;
+  renderTable();
 }
 
 export function maskApiKey(key) {
@@ -186,7 +244,7 @@ export async function saveSettings() {
     if (res.ok) {
       alert("Settings saved successfully! Restarting data fetch...");
       closeSettingsModal();
-      if (typeof window.loadTableData === "function") window.loadTableData(true);
+      loadTableData(true);
     }
   } catch (e) {
     alert("Failed to save settings.");

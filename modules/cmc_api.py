@@ -126,7 +126,7 @@ def execute_cmc_requests(id_lookup, sym_lookup):
     market_data_map = {}
     results = []
     try:
-        with ThreadPoolExecutor(max_workers=25) as executor:
+        with ThreadPoolExecutor(max_workers=5) as executor:
             results = list(executor.map(_fetch_cmc_api_chunk, quote_tasks))
     except RuntimeError:
         # 인터프리터 종료 중이면 그냥 빈 결과 리턴 (에러 방지)

@@ -19,11 +19,14 @@ export async function loadTableData(force = false) {
     store.originalTableData = JSON.parse(JSON.stringify(result.data)); // 🛡️ 철벽 방어 원본
     store.currentTableData = JSON.parse(JSON.stringify(result.data)); // 🏃 실시간 작업용
 
+    store.tickerRowMap.clear();
     store.currentTableData.forEach((row) => {
       row.DisplayTicker = (row.DisplayTicker || row.Symbol)
         .toString()
         .toUpperCase();
-      // 💡 여기서 정밀도(p) 맵핑 데이터도 같이 만들면 find 지옥 탈출 가능!
+      if (row.Ticker) store.tickerRowMap.set(row.Ticker.toUpperCase(), row);
+      if (row.DisplayTicker) store.tickerRowMap.set(row.DisplayTicker.toUpperCase(), row);
+      if (row.Symbol) store.tickerRowMap.set(row.Symbol.toUpperCase(), row);
     });
 
     if (store.currentSortCol && store.sortState !== "") {

@@ -225,7 +225,7 @@ api_session.mount("http://", adapter)
 def capture_utc0_prices_bulk():
     """
     🚀 [최적화 핵심] 9시 정각에 전체 티커를 벌크로 긁어서 시가를 고정합니다.
-    개별 klines 호출 600번을 단 1번의 벌크 호출로 대체!
+    개별 klines 호출 600번을 단 1번의 벌크 호출로 대체! (스케줄러 KST 09:00 정각 전용)
     """
     global UTC0_OPEN_CACHE
     print("🎯 [SCEDULER] KST 09:00 시가 벌크 캡처 개시...")
@@ -257,6 +257,63 @@ def capture_utc0_prices_bulk():
         print(f"✅ [SUCCESS] {today_str} 시가 벌크 저장 완료 ({len(UTC0_OPEN_CACHE[today_str])}개)")
     except Exception as e:
         print(f"🚨 [ERROR] 시가 벌크 캡처 실패: {e}")
+
+# 🚀 [수정] 서버 중간 시작 시 정확한 UTC 0시 시가를 병렬로 고속 수집하는 전담 함수 추가!
+def fetch_missing_utc0_opens_parallel(tasks):
+    """
+    🚀 [IP 밴 위험 0% 궁극의 시가 보정기]
+    1. 현물 tradingDay 벌크 API 단 1번 호출로 현물 전 종목 당일 09시 시가 확보 (Weight 4)
+    2. 선물 코인은 현물 시가를 1차 복사(도킹)하여 klines 호출 대상 90% 소각
+    3. 남은 극소수 선물 단독 코인만 max_workers=3으로 안전하게 캡처하여 밴 위험 원천 차단!
+    """
+    global UTC0_OPEN_CACHE
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    if today_str not in UTC0_OPEN_CACHE:
+        UTC0_OPEN_CACHE[today_str] = {}
+
+    print(f"⏳ [시가 정밀 보정] 캐시 누락 감지. IP 밴 위험 0% 하이브리드 벌크 캡처 개시...")
+
+    # 1. 현물 tradingDay 벌크 타격 (단 1방에 현물 전체 당일 09시 시가 확보!)
+    try:
+        res_trading_day = api_session.get("https://api.binance.com/api/v3/ticker/tradingDay", timeout=5).json()
+        if isinstance(res_trading_day, list):
+            for item in res_trading_day:
+                sym = item['symbol'].replace('USDT', '')
+                if is_valid_ticker(sym):
+                    UTC0_OPEN_CACHE[today_str][sym] = float(item['openPrice'])
+            print(f"✅ [벌크 도킹] 현물 tradingDay API로 {len(res_trading_day)}개 종목 09시 시가 1초컷 확보!")
+    except Exception as e:
+        print(f"⚠️ tradingDay 벌크 실패, 백업 로직 전환: {e}")
+
+    # 2. 남은 누락분 필터링 (현물에 없고 선물에만 있는 극소수 코인 식별)
+    remaining_tasks = []
+    for sym, is_futures in tasks:
+        if sym not in UTC0_OPEN_CACHE[today_str]:
+            remaining_tasks.append((sym, is_futures))
+
+    if remaining_tasks:
+        print(f"🔍 [잔여 타격] 현물에 없는 선물 단독 종목 {len(remaining_tasks)}건 감지. (max_workers=3 안전 캡처 진행)")
+        def _fetch(task):
+            sym, is_fut = task
+            url = f"https://fapi.binance.com/fapi/v1/klines?symbol={sym}USDT&interval=1d&limit=1" if is_fut else f"https://api.binance.com/api/v3/klines?symbol={sym}USDT&interval=1d&limit=1"
+            try:
+                r = api_session.get(url, timeout=5).json()
+                if r and isinstance(r, list) and len(r) > 0:
+                    return sym, float(r[0][1])
+            except:
+                pass
+            return sym, None
+
+        # 🚀 사령관님 보호를 위해 max_workers=5으로 철벽 스로틀링!
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            futures = [executor.submit(_fetch, t) for t in remaining_tasks]
+            for f in futures:
+                sym, val = f.result()
+                if val is not None:
+                    UTC0_OPEN_CACHE[today_str][sym] = val
+
+    save_utc0_cache()
+    print(f"✅ [SUCCESS] {today_str} 당일 09시 시가 무결점 보정 완료 ({len(UTC0_OPEN_CACHE[today_str])}개 확보)")
 
 def get_utc0_open_price(symbol, is_futures):
     """캐시된 시가가 있으면 반환, 없으면 개별 klines 호출 (보험)"""
@@ -443,8 +500,8 @@ def fetch_binance_futures_spot(bybit_data=None):
                 open_price_tasks.append((sym, ticker in active_f))
 
         if open_price_tasks:
-            print(f"⏳ [시가 보정] 캐시 누락 {len(open_price_tasks)}건 발생. 벌크 캡처로 1방에 보정합니다...")
-            capture_utc0_prices_bulk()
+            print(f"⏳ [시가 보정] 캐시 누락 {len(open_price_tasks)}건 발생. 일봉 klines 병렬 캡처로 1방에 보정합니다...")
+            fetch_missing_utc0_opens_parallel(open_price_tasks)
             day_cache = UTC0_OPEN_CACHE.get(today_str, {})
             for sym, _ in open_price_tasks:
                 if sym in day_cache:

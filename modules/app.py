@@ -125,6 +125,7 @@ def get_market_map():
         all_assets = list(set(upbit + futures + spot + bithumb))
         fallback_rate = float(api_manager.MAPPING_DATA.get("DEFAULT_KRW_USD_RATE", 0.0)) if api_manager.MAPPING_DATA else 0.0
         krw_usd_rate = cached_data[0].get("krw_usd_rate", fallback_rate) if cached_data else fallback_rate
+        past_gap_map = api_manager.MAPPING_DATA.get("PAST_GAP_RECOVERY_MAP", {}) if api_manager.MAPPING_DATA else {}
 
         return {
             "all_assets": all_assets,
@@ -133,6 +134,7 @@ def get_market_map():
             "spot": spot,
             "bithumb": bithumb,
             "krw_usd_rate": krw_usd_rate,
+            "past_gap_map": past_gap_map,
         }
     except Exception as e:
         return {"error": str(e)}

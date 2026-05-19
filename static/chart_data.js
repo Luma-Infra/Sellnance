@@ -24,6 +24,11 @@ export async function fetchHistory(symbol, isTfChange = false, isTabRestore = fa
   clearChartData(isTfChange);
 
   const displayName = symbol || store.currentAsset;
+  if (!displayName) {
+    store.isFetchingChart = false;
+    window.isFetchingChart = false;
+    return;
+  }
   const rawSymbol = displayName.split("(")[0].trim().toUpperCase();
   store.currentAsset = displayName;
 
@@ -62,6 +67,34 @@ export async function fetchHistory(symbol, isTfChange = false, isTabRestore = fa
   const wrapper = document.getElementById("chart-wrapper");
   if (wrapper && !isTfChange) wrapper.classList.add("chart-loading"); 
   // 🚀 [고급 로딩] 기존 캔들 잔상은 유지하면서 화면만 살짝 어둡게 처리
+
+  // 🚀 [신규] PAST_GAP_RECOVERY_MAP에 해당하는 녀석(AIA 등 과거 차트 단절 복구 대상)인지 감지!
+  // 해당되는 놈은 백엔드에서 TvDatafeed 라이브러리 호출하느라 차트 로딩이 매우 느리므로 전용 안내 문구 오버레이 추가!
+  const pastGapMap = store.marketDataMap?.past_gap_map || {};
+  let gapOverlay = document.getElementById("gap-recovery-overlay");
+
+  if (pastGapMap[pureBase] && !isTfChange) {
+    if (!gapOverlay) {
+      gapOverlay = document.createElement("div");
+      gapOverlay.id = "gap-recovery-overlay";
+      // 🚀 트뷰 차트 캔버스 영역(wrapper) 위에 정중하고 고급스럽게 안착!
+      gapOverlay.className = "absolute inset-0 z-50 flex flex-col items-center justify-center bg-theme-bg/80 backdrop-blur-sm transition-all duration-300";
+      gapOverlay.innerHTML = `
+        <div class="flex flex-col items-center gap-3 p-6 rounded-2xl bg-theme-panel/90 border border-theme-border shadow-2xl text-center">
+          <div class="w-10 h-10 border-4 border-theme-accent border-t-transparent rounded-full animate-spin"></div>
+          <div class="flex flex-col gap-1">
+            <span class="text-[15px] font-black text-theme-accent tracking-wider uppercase">라이브러리 호출 중...</span>
+            <span class="text-[11px] font-bold text-theme-text opacity-60 tracking-tighter">과거 차트 단절 구간을 인공지능이 복원하고 있습니다</span>
+          </div>
+        </div>
+      `;
+      if (wrapper) wrapper.appendChild(gapOverlay);
+    }
+    gapOverlay.style.display = "flex";
+  } else {
+    // 일반 코인이면 기존 로직 유지 (오버레이 숨김)
+    if (gapOverlay) gapOverlay.style.display = "none";
+  }
 
   try {
     const snapshotAsset = store.currentAsset;
@@ -265,6 +298,7 @@ export async function fetchHistory(symbol, isTfChange = false, isTabRestore = fa
     // 🚀 [로딩 해제 및 최종 싱크 안착] 차트 데이터가 완전히 캔버스에 렌더링된 직후, 라이브러리가 코인마다 다르게 계산해 둔 순수 너비를 최초 1회 캐치하여 기준값으로 던져놓음!
     if (loadingModal) loadingModal.classList.add("hidden");
     if (wrapper) wrapper.classList.remove("chart-loading");
+    if (gapOverlay) gapOverlay.style.display = "none";
     window.isFetchingChart = false;
     store.isFetchingChart = false;
     if (typeof window.syncPriceScaleWidths === "function") window.syncPriceScaleWidths();
@@ -636,6 +670,7 @@ export async function fetchHistory(symbol, isTfChange = false, isTabRestore = fa
   } finally {
     if (loadingModal) loadingModal.classList.add("hidden");
     if (wrapper) wrapper.classList.remove("chart-loading");
+    if (gapOverlay) gapOverlay.style.display = "none";
     window.isFetchingChart = false;
     store.isFetchingChart = false;
   }

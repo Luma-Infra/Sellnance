@@ -6,6 +6,7 @@ export const store = {
   tickerBuffer: {},
   visibleSymbols: new Set(),
   btcRateCache: {}, // 🚀 합성 환율 전용 메모리 캐시 엔진 추가
+  tickerRowMap: new Map(), // 🚀 [단일 진실 공급원] 전역 테이블 행 O(1) 광속 탐색 맵
 
   currentAsset: null,
   currentSelectedSymbol: null,
@@ -85,13 +86,16 @@ export const store = {
       return store.precisionMap.get(key);
     }
 
-    const allSource = store.originalTableData || store.currentTableData || [];
-    const row = allSource.find(
-      (r) =>
-        (r.Ticker || "").toUpperCase() === key ||
-        (r.DisplayTicker || "").toUpperCase() === key ||
-        (r.Symbol || "").toUpperCase() === key,
-    );
+    let row = store.tickerRowMap.get(key);
+    if (!row) {
+      const allSource = store.originalTableData || store.currentTableData || [];
+      row = allSource.find(
+        (r) =>
+          (r.Ticker || "").toUpperCase() === key ||
+          (r.DisplayTicker || "").toUpperCase() === key ||
+          (r.Symbol || "").toUpperCase() === key,
+      );
+    }
 
     const p =
       row && row.precision !== undefined

@@ -16,14 +16,11 @@ function renderRealtimeRow(tId, data) {
   // 🚀 [해결] PEPE vs 1000PEPE, XRP vs XRPDOWN 등 심볼 헷갈림 방지 (널뛰기 버그 컷)
   const dataSym = (data.s || tId).toUpperCase();
   
-  // 1. 최우선: Ticker(BTCUSDT, BTCKRW 등)가 완벽히 일치하는 행 찾기 (originalTableData 전체 장부까지 샅샅이 탐색!)
-  const allSource = store.originalTableData || store.currentTableData || [];
-  let row = allSource.find((r) => r.Ticker === dataSym);
-
-  // 2. [수정] 차선: 업비트 규격 변환 매칭 (KRW-BTC -> BTCKRW)
-  if (!row && (dataSym.includes("KRW-") || tId.includes("KRW-"))) {
+  // 🚀 [단일 진실 공급원 O(1) 광속 탐색]
+  let row = store.tickerRowMap.get(dataSym);
+  if (!row && (dataSym.startsWith("KRW-") || tId.startsWith("KRW-"))) {
     const upbitTicker = tId.replace("KRW-", "") + "KRW";
-    row = allSource.find((r) => r.Ticker === upbitTicker);
+    row = store.tickerRowMap.get(upbitTicker);
   }
   
   if (!row) return;
