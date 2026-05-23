@@ -20,6 +20,37 @@
 
     <!-- <link rel="stylesheet" href="/static/z_style.css"> -->
     <link rel="stylesheet" href="../static/z_style.min.css" />
+    <style>
+      /* 🚀 3단 뷰 모드 동적 반응형 CSS */
+      #left-panel {
+        transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      #left-panel.view-mode-simple {
+        width: 260px !important;
+      }
+      #left-panel.view-mode-basic {
+        width: 560px !important;
+      }
+      #left-panel.view-mode-expert {
+        width: 640px !important;
+      }
+
+      /* 기본적으로 Listing 숨김 */
+      .col-listing {
+        display: none !important;
+      }
+
+      /* 모드별 컬럼 표시 제어 */
+      #left-panel.view-mode-simple .col-mcap,
+      #left-panel.view-mode-simple .col-kimch,
+      #left-panel.view-mode-simple .col-exch {
+        display: none !important;
+      }
+
+      #left-panel.view-mode-expert .col-listing {
+        display: table-cell !important;
+      }
+    </style>
 
     <!-- 🚀 Vite 호환: 단일 Entry Point(ES Module) 사용 -->
     <!-- _main.js 내부에서 필요한 모든 모듈을 import 하도록 묶습니다. -->
@@ -356,6 +387,31 @@
               🚫 Hiding Mcap < 1M
             </button>
           </div>
+
+          <!-- 3층: 테이블 모드 토글 (심플, 베이직, 엑스퍼트) -->
+          <div class="flex items-center gap-1 mt-2 mb-1 px-1">
+            <button
+              onclick="window.switchViewMode('simple')"
+              id="view-mode-simple-btn"
+              class="flex-1 py-1 text-[10px] font-black rounded border border-theme-border opacity-50 hover:opacity-100 transition-all text-theme-text"
+            >
+              SIMPLE
+            </button>
+            <button
+              onclick="window.switchViewMode('basic')"
+              id="view-mode-basic-btn"
+              class="flex-1 py-1 text-[10px] font-black rounded border border-theme-accent bg-theme-accent text-white transition-all shadow-md"
+            >
+              BASIC
+            </button>
+            <button
+              onclick="window.switchViewMode('expert')"
+              id="view-mode-expert-btn"
+              class="flex-1 py-1 text-[10px] font-black rounded border border-theme-border opacity-50 hover:opacity-100 transition-all text-theme-text"
+            >
+              EXPERT
+            </button>
+          </div>
         </div>
 
         <!-- TABLE overflow-y-auto -->
@@ -405,6 +461,15 @@
                 <th class="p-2 text-left col-exch">
                   <div class="flex items-center justify-start gap-1">
                     Exchanges
+                  </div>
+                </th>
+                <th
+                  onclick="sortTable('Listing_Date')"
+                  class="p-2 cursor-pointer hover:bg-white/5 transition-colors col-listing"
+                >
+                  <div class="flex items-center gap-1">
+                    Listing
+                    <span id="sort-Listing_Date" class="sort-arrow"></span>
                   </div>
                 </th>
               </tr>
@@ -480,6 +545,15 @@
                     class="flex items-center justify-start gap-1 truncate min-w-0"
                   >
                     LISTED ON
+                  </div>
+                </th>
+                <th
+                  class="p-2 text-[9px] opacity-70 text-left overflow-hidden col-listing"
+                >
+                  <div
+                    class="flex items-center justify-start gap-1 truncate min-w-0"
+                  >
+                    LISTED DATE
                   </div>
                 </th>
               </tr>
@@ -578,15 +652,58 @@
                     >Price</span
                   >
                   <div class="flex flex-col min-w-0 leading-none mt-0.5 gap-1">
-                    <b
-                      id="head-price"
-                      class="text-[20px] md:text-[20px] font-mono text-theme-accent truncate"
-                      >-</b
+                    <!-- Binance Header Price -->
+                    <div
+                      id="head-price-binance"
+                      class="hidden flex flex-col gap-0.5"
                     >
-                    <span
-                      id="head-price-sub"
-                      class="text-[11px] font-mono text-theme-text opacity-50 truncate"
-                    ></span>
+                      <b
+                        class="text-[20px] md:text-[20px] font-mono text-theme-accent truncate"
+                        >-</b
+                      >
+                      <span
+                        class="text-[11px] font-mono text-theme-text opacity-50 truncate"
+                      ></span>
+                    </div>
+                    <!-- Bybit Header Price -->
+                    <div
+                      id="head-price-bybit"
+                      class="hidden flex flex-col gap-0.5"
+                    >
+                      <b
+                        class="text-[20px] md:text-[20px] font-mono text-theme-accent truncate"
+                        >-</b
+                      >
+                      <span
+                        class="text-[11px] font-mono text-theme-text opacity-50 truncate"
+                      ></span>
+                    </div>
+                    <!-- Upbit Header Price -->
+                    <div
+                      id="head-price-upbit"
+                      class="hidden flex flex-col gap-0.5"
+                    >
+                      <b
+                        class="text-[20px] md:text-[20px] font-mono text-theme-accent truncate"
+                        >-</b
+                      >
+                      <span
+                        class="text-[11px] font-mono text-theme-text opacity-50 truncate"
+                      ></span>
+                    </div>
+                    <!-- Bithumb Header Price -->
+                    <div
+                      id="head-price-bithumb"
+                      class="hidden flex flex-col gap-0.5"
+                    >
+                      <b
+                        class="text-[20px] md:text-[20px] font-mono text-theme-accent truncate"
+                        >-</b
+                      >
+                      <span
+                        class="text-[11px] font-mono text-theme-text opacity-50 truncate"
+                      ></span>
+                    </div>
                   </div>
                 </div>
                 <!-- 🚀 2. 24H 변동률 전광판 -->
@@ -614,39 +731,90 @@
                   >
                 </div>
               </div>
-              <div class="flex items-center gap-5">
-                <div class="flex flex-col text-xs text-left">
-                  <span
-                    class="opacity-50 text-[10px] uppercase font-bold tracking-wider"
-                    >Market Cap</span
-                  >
-                  <b
-                    id="head-mcap"
-                    class="text-[13px] md:text-[15px] font-mono mt-0.5"
-                    >-</b
-                  >
+              <!-- 🚀 우측: 통계 전광판 및 상단 컨트롤 패널 -->
+              <div class="flex items-center gap-3 md:gap-5 ml-auto">
+                <!-- 통계 전광판 (모바일 숨김, 데스크탑 보임) -->
+                <div class="flex items-center gap-5 hidden xl:flex">
+                  <div class="flex flex-col text-xs text-left">
+                    <span
+                      class="opacity-50 text-[10px] uppercase font-bold tracking-wider"
+                      >Market Cap</span
+                    >
+                    <b
+                      id="head-mcap"
+                      class="text-[13px] md:text-[15px] font-mono mt-0.5"
+                      >-</b
+                    >
+                  </div>
+                  <div class="flex flex-col text-xs text-left">
+                    <span
+                      class="opacity-50 text-[10px] uppercase font-bold tracking-wider"
+                      >Vol(24h)</span
+                    >
+                    <b
+                      id="head-vol-binance"
+                      class="text-[13px] md:text-[15px] font-mono mt-0.5 text-[#f0b90b]"
+                      >-</b
+                    >
+                  </div>
+                  <div class="flex flex-col text-xs text-left">
+                    <span
+                      class="opacity-50 text-[10px] uppercase font-bold tracking-wider"
+                      >U-Vol(24h)</span
+                    >
+                    <b
+                      id="head-vol-upbit"
+                      class="text-[13px] md:text-[15px] font-mono mt-0.5 text-[#093687]"
+                      >-</b
+                    >
+                  </div>
                 </div>
-                <div class="flex flex-col text-xs text-left">
-                  <span
-                    class="opacity-50 text-[10px] uppercase font-bold tracking-wider"
-                    >Vol(24h)</span
+
+                <!-- 상단 컨트롤 패널 (카운트다운, 스케일 리셋, 호가창) -->
+                <div
+                  class="flex items-center gap-2 md:gap-3 pl-0 xl:pl-5 xl:border-l border-theme-border/30"
+                >
+                  <label class="flex items-center gap-1.5 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      id="toggle-countdown"
+                      class="peer hidden"
+                      checked
+                      onchange="toggleCountdown(this.checked)"
+                    />
+                    <div
+                      class="w-6 h-3.5 bg-theme-border rounded-full relative transition-colors duration-300 peer-checked:bg-theme-accent group-hover:brightness-110"
+                    >
+                      <div
+                        id="countdown-knob"
+                        class="absolute left-[2px] top-[2px] w-2.5 h-2.5 bg-white rounded-full transition-transform duration-300 transform translate-x-[10px]"
+                      ></div>
+                    </div>
+                    <span
+                      class="text-[10px] font-bold opacity-50 transition-opacity text-theme-text uppercase tracking-wider hidden sm:block"
+                      >Countdown</span
+                    >
+                  </label>
+
+                  <button
+                    class="reset-btn px-2.5 py-1 text-[10px] md:text-[11px] font-bold text-theme-down bg-theme-down/5 border border-theme-down/30 rounded hover:bg-theme-down/15 transition-all shadow-sm whitespace-nowrap"
+                    onclick="
+                      if (window.resetPriceScaleWidthSync)
+                        window.resetPriceScaleWidthSync();
+                      resetChartScale();
+                    "
                   >
-                  <b
-                    id="head-vol-binance"
-                    class="text-[13px] md:text-[15px] font-mono mt-0.5 text-[#f0b90b]"
-                    >-</b
+                    차트 리셋
+                  </button>
+                  <button
+                    id="toggle-orderbook-btn"
+                    class="px-2.5 py-1 text-[10px] md:text-[11px] font-bold text-theme-accent bg-theme-accent/5 border border-theme-accent/30 rounded hover:bg-theme-accent/15 transition-all shadow-sm whitespace-nowrap"
+                    onclick="
+                      if (window.toggleOrderbook) window.toggleOrderbook();
+                    "
                   >
-                </div>
-                <div class="flex flex-col text-xs text-left">
-                  <span
-                    class="opacity-50 text-[10px] uppercase font-bold tracking-wider"
-                    >U-Vol(24h)</span
-                  >
-                  <b
-                    id="head-vol-upbit"
-                    class="text-[13px] md:text-[15px] font-mono mt-0.5 text-[#093687]"
-                    >-</b
-                  >
+                    호가창 열기
+                  </button>
                 </div>
               </div>
             </div>
@@ -655,44 +823,10 @@
           <div
             class="flex items-center gap-1.5 bg-black/5 px-5 py-2 border-t border-theme-border overflow-x-auto whitespace-nowrap scrollbar-hide"
           >
-            <div id="tf-container" class="flex items-center gap-1.5"></div>
-
-            <div class="flex items-center gap-1.5 ml-auto">
-              <label
-                class="flex items-center gap-1.5 mr-2 cursor-pointer group"
-              >
-                <input
-                  type="checkbox"
-                  id="toggle-countdown"
-                  class="hidden"
-                  checked
-                  onchange="toggleCountdown(this.checked)"
-                />
-                <div
-                  class="w-6 h-3.5 bg-theme-border rounded-full relative transition-colors duration-300 peer-checked:bg-theme-accent group-hover:brightness-110"
-                >
-                  <div
-                    id="countdown-knob"
-                    class="absolute left-[2px] top-[2px] w-2.5 h-2.5 bg-white rounded-full transition-transform duration-300 transform translate-x-[10px]"
-                  ></div>
-                </div>
-                <span
-                  class="text-[10px] font-bold opacity-50 transition-opacity text-theme-text uppercase tracking-wider"
-                  >Countdown</span
-                >
-              </label>
-
-              <button
-                class="reset-btn px-3 py-1 text-[11px] font-bold text-theme-down border border-theme-down rounded hover:bg-theme-down/10 transition-colors shadow-sm"
-                onclick="
-                  if (window.resetPriceScaleWidthSync)
-                    window.resetPriceScaleWidthSync();
-                  resetChartScale();
-                "
-              >
-                차트 스케일 리셋
-              </button>
-            </div>
+            <div
+              id="tf-container"
+              class="flex items-center gap-1.5 w-full"
+            ></div>
           </div>
         </header>
 
@@ -701,45 +835,132 @@
           class="flex-1 relative overflow-hidden m-[15px] w-[calc(100%-30px)] border border-theme-border rounded-lg bg-theme-panel"
         > -->
         <!-- 차트 전체를 감싸는 부모 (기존 chart-container 자리를 대체) -->
+        <!-- 차트와 호가창을 감싸는 Flex 부모 -->
         <div
-          id="chart-wrapper"
-          class="flex-1 flex flex-col relative overflow-hidden m-[15px] w-[calc(100%-30px)] border border-theme-border rounded-lg bg-theme-panel"
+          class="flex-1 flex flex-col md:flex-row overflow-hidden m-[15px] w-[calc(100%-30px)] gap-[15px]"
         >
           <!-- 1. 메인 차트 -->
           <div
-            id="pane-main"
-            class="w-full relative z-0 flex-[6] min-h-[100px]"
-          ></div>
-
-          <!-- 조절바 (메인-볼륨) -->
-          <div
-            id="resizer-vol"
-            class="w-full h-[4px] bg-theme-border/50 cursor-row-resize z-[100] hidden hover:bg-theme-accent transition-colors"
-          ></div>
-
-          <!-- 2. 볼륨 차트 -->
-          <div
-            id="pane-vol"
-            class="w-full relative z-0 flex-[2] hidden min-h-[50px] border-t border-theme-border"
-          ></div>
-
-          <div
-            id="ohlc-legend"
-            class="absolute top-3 left-3 z-[50] font-mono text-[13px] flex items-center px-2.5 py-1 bg-black/40 backdrop-blur-sm border border-white/5 rounded pointer-events-none"
+            id="chart-wrapper"
+            class="flex-1 flex flex-col relative overflow-hidden border border-theme-border rounded-lg bg-theme-panel min-w-0"
           >
-            <span class="opacity-50 text-xs">Hover on chart...</span>
+            <!-- 1. 메인 차트 -->
+            <div
+              id="pane-main"
+              class="w-full relative z-0 flex-[6] min-h-[100px]"
+            ></div>
+
+            <!-- 조절바 (메인-볼륨) -->
+            <div
+              id="resizer-vol"
+              class="w-full h-[4px] bg-theme-border/50 cursor-row-resize z-[100] hidden hover:bg-theme-accent transition-colors"
+            ></div>
+
+            <!-- 2. 볼륨 차트 -->
+            <div
+              id="pane-vol"
+              class="w-full relative z-0 flex-[2] hidden min-h-[50px] border-t border-theme-border"
+            ></div>
+
+            <div
+              id="ohlc-legend"
+              class="absolute top-3 left-3 z-[50] font-mono text-[13px] flex items-center px-2.5 py-1 bg-black/40 backdrop-blur-sm border border-white/5 rounded pointer-events-none"
+            >
+              <span class="opacity-50 text-xs">Hover on chart...</span>
+            </div>
+
+            <div
+              id="kimchi-no-data"
+              class="absolute top-12 left-4 z-[110] hidden bg-black/80 backdrop-blur-md px-3 py-2 rounded-lg border border-theme-accent/30 shadow-[0_0_15px_rgba(0,0,0,0.3)] pointer-events-none opacity-75"
+            >
+              <p
+                class="text-[11px] text-theme-accent font-bold tracking-tight flex items-center gap-2"
+              >
+                <span>⚠️</span>
+                <!-- 상대 거래소 데이터가 없어 김프 차트를 표시할 수 없습니다. -->
+              </p>
+            </div>
           </div>
 
+          <!-- 2. 우측 호가창 (Orderbook) 패널 -->
           <div
-            id="kimchi-no-data"
-            class="absolute top-12 left-4 z-[110] hidden bg-black/80 backdrop-blur-md px-3 py-2 rounded-lg border border-theme-accent/30 shadow-[0_0_15px_rgba(0,0,0,0.3)] pointer-events-none opacity-75"
+            id="orderbook-panel"
+            class="hidden w-full md:w-[260px] flex-shrink-0 flex-col border border-theme-border rounded-lg bg-theme-panel relative overflow-hidden transition-all duration-300 shadow-md"
           >
-            <p
-              class="text-[11px] text-theme-accent font-bold tracking-tight flex items-center gap-2"
+            <!-- Orderbook Header -->
+            <div
+              class="flex items-center justify-between p-2 border-b border-theme-border bg-theme-bg/40 shrink-0 backdrop-blur-sm"
             >
-              <span>⚠️</span>
-              <!-- 상대 거래소 데이터가 없어 김프 차트를 표시할 수 없습니다. -->
-            </p>
+              <span class="text-[11px] font-bold text-theme-text opacity-80"
+                >Orderbook</span
+              >
+              <div class="flex items-center">
+                <span
+                  id="orderbook-precision-label"
+                  class="text-[10px] font-mono font-bold text-theme-accent px-2 w-[60px] text-right truncate"
+                  >Auto</span
+                >
+                <div
+                  class="flex items-center bg-theme-border/20 rounded border border-theme-border/30 ml-1"
+                >
+                  <button
+                    class="w-6 h-5 flex items-center justify-center text-[10px] font-black text-theme-text opacity-70 hover:opacity-100 hover:bg-theme-border/50 transition-colors rounded-l border-r border-theme-border/30"
+                    onclick="
+                      if (window.changeOrderbookPrecision)
+                        window.changeOrderbookPrecision(-1);
+                    "
+                  >
+                    -
+                  </button>
+                  <button
+                    class="w-6 h-5 flex items-center justify-center text-[10px] font-black text-theme-text opacity-70 hover:opacity-100 hover:bg-theme-border/50 transition-colors border-r border-theme-border/30"
+                    onclick="
+                      if (window.changeOrderbookPrecision)
+                        window.changeOrderbookPrecision(1);
+                    "
+                  >
+                    +
+                  </button>
+                  <button
+                    class="w-6 h-5 flex items-center justify-center text-[12px] font-black text-theme-text opacity-70 hover:opacity-100 hover:bg-theme-border/50 transition-colors rounded-r"
+                    onclick="
+                      if (window.resetOrderbookPrecision)
+                        window.resetOrderbookPrecision();
+                    "
+                    title="Reset Precision"
+                  >
+                    ↺
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Asks (매도) -->
+            <div
+              id="orderbook-asks"
+              class="flex-1 flex flex-col justify-end overflow-hidden min-h-0 bg-theme-panel"
+            >
+              <!-- JS will inject ask rows here -->
+            </div>
+
+            <!-- Spread / Current Price -->
+            <div
+              class="flex items-center justify-center py-1.5 border-y border-theme-border/50 bg-theme-bg/40 shrink-0 backdrop-blur-sm"
+            >
+              <span
+                id="orderbook-current-price"
+                class="text-[13px] font-mono font-black text-theme-text"
+                >--</span
+              >
+            </div>
+
+            <!-- Bids (매수) -->
+            <div
+              id="orderbook-bids"
+              class="flex-1 flex flex-col justify-start overflow-hidden min-h-0 bg-theme-panel"
+            >
+              <!-- JS will inject bid rows here -->
+            </div>
           </div>
         </div>
 
@@ -861,7 +1082,8 @@
       id="settings-modal"
       class="fixed inset-0 z-[300] hidden flex items-center justify-center bg-black/60 backdrop-blur-sm"
     >
-      <div
+      <form
+        onsubmit="event.preventDefault()"
         class="bg-theme-panel border border-theme-border p-6 rounded-2xl shadow-2xl w-[400px] flex flex-col gap-5"
       >
         <div
@@ -873,6 +1095,7 @@
             Engine Settings
           </h3>
           <button
+            type="button"
             onclick="closeSettingsModal()"
             class="text-theme-text opacity-50 hover:opacity-100 text-xl"
           >
@@ -891,14 +1114,23 @@
               <input
                 id="setting-cmc-key"
                 type="password"
-                class="w-full bg-theme-bg border border-theme-border p-3 rounded-xl text-xs text-theme-text outline-none focus:border-theme-accent transition-all font-mono"
+                autocomplete="new-password"
+                class="w-full bg-theme-bg border border-theme-border py-3 pl-3 pr-16 rounded-xl text-xs text-theme-text outline-none focus:border-theme-accent transition-all font-mono"
                 placeholder="Paste your API key here..."
               />
               <button
+                type="button"
                 onclick="togglePasswordVisibility('setting-cmc-key')"
-                class="absolute right-3 top-1/2 -translate-y-1/2 text-theme-text opacity-30 hover:opacity-100 transition-all"
+                class="absolute right-8 top-1/2 -translate-y-1/2 text-theme-text opacity-30 hover:opacity-100 transition-all"
               >
                 👁️
+              </button>
+              <button
+                type="button"
+                onclick="clearCmcKey()"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-theme-text opacity-30 hover:opacity-100 transition-all text-xs"
+              >
+                ✕
               </button>
             </div>
             <p class="text-[9px] opacity-30 mt-1 italic">
@@ -909,19 +1141,21 @@
 
         <div class="flex gap-2 mt-2">
           <button
+            type="button"
             onclick="saveSettings()"
             class="flex-1 bg-theme-accent text-white py-3 rounded-xl font-black text-sm shadow-lg hover:brightness-110 active:scale-95 transition-all"
           >
             SAVE & APPLY
           </button>
           <button
+            type="button"
             onclick="closeSettingsModal()"
             class="flex-1 bg-theme-border/20 text-theme-text py-3 rounded-xl font-bold text-sm hover:bg-theme-border/40 transition-all"
           >
             CANCEL
           </button>
         </div>
-      </div>
+      </form>
     </div>
   </body>
 </html>

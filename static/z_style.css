@@ -26,11 +26,12 @@
   --ratio-mcap: 2; /*       3열: 시총   */
   --ratio-kimch: 1.2; /*    4열: 김프   */
   --ratio-exch: 2; /*       5열: 거래소 */
+  --ratio-listing: 2.2; /*    6열: 상장일 */
 
   /* 💡 자동 합산 및 퍼센트 변환 엔진 (절대 건드리지 마세요!) */
   --ratio-total: calc(
     var(--ratio-asset) + var(--ratio-price) + var(--ratio-mcap) +
-      var(--ratio-kimch) + var(--ratio-exch)
+      var(--ratio-kimch) + var(--ratio-exch) + var(--ratio-listing)
   );
 }
 
@@ -49,6 +50,9 @@
 }
 .col-exch {
   width: calc((var(--ratio-exch) / var(--ratio-total)) * 100%) !important;
+}
+.col-listing {
+  width: calc((var(--ratio-listing) / var(--ratio-total)) * 100%) !important;
 }
 
 html,
@@ -367,12 +371,12 @@ body.theme-upbit:not(.resizing-active) #right-panel {
 }
 
 .star-btn:active {
-  transform: scale(1.4);
+  transform: scale(1.05);
 }
 
 .star-btn.active {
   color: var(--accent);
-  filter: drop-shadow(0 0 5px var(--accent));
+  filter: drop-shadow(0 0 1px var(--accent));
 }
 
 #mobile-chart-content #right-panel {
@@ -492,4 +496,53 @@ body.theme-upbit:not(.resizing-active) #right-panel {
     width: 100% !important;
     margin: 0 !important;
   }
+}
+
+/* 🚀 테이블 가격 옆 거래소 마크 태그 */
+.exchange-tag {
+  display: inline-block;
+  font-size: 8px;
+  font-weight: 800;
+  padding: 1px 3px;
+  border-radius: 2px;
+  margin-left: 4px;
+  vertical-align: middle;
+  line-height: 1;
+  text-transform: uppercase;
+}
+.exchange-tag.binance-tag {
+  background-color: rgba(240, 185, 11, 0.15) !important;
+  color: #f0b90b !important;
+  border: 0.5px solid rgba(240, 185, 11, 0.3) !important;
+}
+.exchange-tag.bybit-tag {
+  background-color: rgba(247, 166, 0, 0.15) !important;
+  color: #f7a600 !important;
+  border: 0.5px solid rgba(247, 166, 0, 0.3) !important;
+}
+.exchange-tag.upbit-tag {
+  background-color: rgba(30, 83, 229, 0.15) !important;
+  color: #1e53e5 !important;
+  border: 0.5px solid rgba(30, 83, 229, 0.3) !important;
+}
+.exchange-tag.bithumb-tag {
+  background-color: rgba(255, 139, 0, 0.15) !important;
+  color: #ff8b00 !important;
+  border: 0.5px solid rgba(255, 139, 0, 0.3) !important;
+}
+
+/* 🚀 정렬 시 테이블 영역 로딩/어두워짐 효과 (chart-loading 참고) */
+#table-body {
+  will-change: filter;
+  transition: filter 0.1s cubic-bezier(0.1, 0, 0.1, 1);
+}
+/* 1. 다크 모드 (바이낸스): 기존대로 어둡고 흐리게 */
+body.theme-binance #table-body.table-loading {
+  filter: brightness(0.7) blur(0.5px);
+  pointer-events: none;
+}
+/* 2. 라이트 모드 (업비트): 어두워지는 대신 반투명(opacity)하고 흐리게 처리 */
+body.theme-upbit #table-body.table-loading {
+  filter: opacity(0.5) blur(0.5px); /* 또는 단순히 opacity: 0.6; blur(0.5px); */
+  pointer-events: none;
 }

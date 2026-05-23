@@ -50,8 +50,9 @@ function getStartScreenHTML() {
           <input
             type="text"
             id="cmc-api-input"
-            placeholder="Paste your CMC API Key..."
-            class="w-full bg-theme-bg text-theme-text border-2 border-theme-border px-4 py-3.5 rounded-xl text-center font-mono text-sm focus:outline-none focus:border-theme-accent transition-all shadow-inner"
+            placeholder="Loading..."
+            disabled
+            class="w-full bg-theme-bg text-theme-text border-2 border-theme-border px-4 py-3.5 rounded-xl text-center font-mono text-sm focus:outline-none focus:border-theme-accent transition-all shadow-inner opacity-50 cursor-not-allowed"
             autocomplete="off"
             spellcheck="false"
           />
@@ -71,16 +72,20 @@ function getStartScreenHTML() {
 
         <div class="flex flex-col gap-3 mt-2">
           <button
+            id="btn-start-engine"
+            disabled
             onclick="saveAndStart()"
-            class="w-full py-3.5 bg-theme-accent text-white font-black rounded-xl shadow-lg hover:brightness-110 active:scale-[0.98] transition-all tracking-widest uppercase"
+            class="w-full py-3.5 bg-theme-accent/50 text-white/50 font-black rounded-xl shadow-lg transition-all tracking-widest uppercase cursor-not-allowed pointer-events-none"
           >
-            Start Engine 🚀
+            ?1 불러오는 중.. 📡
           </button>
           <button
+            id="btn-skip-start"
+            disabled
             onclick="skipAndStart()"
-            class="w-full py-3 bg-transparent text-theme-text border border-theme-border font-bold rounded-xl hover:bg-white/5 active:scale-[0.98] transition-all tracking-wide opacity-50 hover:opacity-100"
+            class="w-full py-3 bg-transparent text-theme-text/50 border border-theme-border/50 font-bold rounded-xl transition-all tracking-wide opacity-50 cursor-not-allowed pointer-events-none"
           >
-            Skip (Use Cached Data) ⏭️
+            ?2 불러오는 중.. 📡
           </button>
         </div>
       </div>
@@ -107,6 +112,8 @@ async function initStartScreen() {
   document.body.insertAdjacentHTML("beforeend", getStartScreenHTML());
 
   const input = document.getElementById("cmc-api-input");
+  const btnStart = document.getElementById("btn-start-engine");
+  const btnSkip = document.getElementById("btn-skip-start");
 
   // 1. 서버 환경변수(env)에서 키 가져오기 (확실히 올 때까지 기다림)
   try {
@@ -125,10 +132,29 @@ async function initStartScreen() {
   } catch (e) {
     console.error("🚨 서버 통신 실패, 로컬 스토리지로 대체합니다.");
     rawCmcKey = localStorage.getItem("CMC_API_KEY") || "";
+  } finally {
+    // 🚀 공백이든 값 없든 무조건 불러오기 작업 이후 활성화!
+    if (input) {
+      input.disabled = false;
+      input.placeholder = "Paste your CMC API Key...";
+      input.classList.remove("opacity-50", "cursor-not-allowed");
+    }
+
+    if (btnStart) {
+      btnStart.disabled = false;
+      btnStart.innerText = "Start Engine 🚀";
+      btnStart.className = "w-full py-3.5 bg-theme-accent text-white font-black rounded-xl shadow-lg hover:brightness-110 active:scale-[0.98] transition-all tracking-widest uppercase cursor-pointer pointer-events-auto";
+    }
+
+    if (btnSkip) {
+      btnSkip.disabled = false;
+      btnSkip.innerText = "Skip (Use Cached Data) ⏭️";
+      btnSkip.className = "w-full py-3 bg-transparent text-theme-text border border-theme-border font-bold rounded-xl hover:bg-white/5 active:scale-[0.98] transition-all tracking-wide opacity-50 hover:opacity-100 cursor-pointer pointer-events-auto";
+    }
   }
 
   // 2. 가져온 키가 있다면 "즉시" 인풋 박스에 마스킹해서 보여줌
-  if (rawCmcKey) {
+  if (rawCmcKey && input) {
     input.value = maskApiKey(rawCmcKey);
   }
 

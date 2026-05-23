@@ -5,7 +5,7 @@
         "SOL": "https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png",
         "SUI": "https://s2.coinmarketcap.com/static/img/coins/64x64/20947.png"
     },
-    "DEFAULT_KRW_USD_RATE": 1488.0,
+    "DEFAULT_KRW_USD_RATE": 1491.0,
     "__MEMO__1": "BTC ETH 파생형 너무 많아서 고정 + 중국어 포함 모든 언어 티커 대응",
     "__MEMO__2": "----------------------------------------------------------",
     "EXCLUSION_LIST": [
@@ -63,9 +63,9 @@
         "AIGENSYN": "39883"
     },
     "_COMMENT_DUPLICATED_LIST": {
-        "💡 [쌀먹 매칭 룰] 바이낸스 또는 업비트": "",
+        "💡 [매칭 룰] 바이낸스 또는 업비트": "",
         "둘 중 하나라도 타 거래소(빗썸/바이비트) 티커명과 일치하거나,": "",
-        "여기에 명시된 UID가 일치하면 시세 및 뱃지가 자동으로 쌀먹 도킹됩니다!": ""
+        "여기에 명시된 UID가 일치하면 시세 및 뱃지가 자동으로 도킹됩니다!": ""
     },
     "DUPLICATED_LIST": {
         "BTT(BitTorrent)_upbit": [
@@ -3400,6 +3400,12 @@
             "Spacecoin",
             "SPACE"
         ],
+        "SPCX": [
+            "36921",
+            null,
+            "Paimon SpaceX SPV Token",
+            "SPCX"
+        ],
         "SPELL": [
             "11289",
             null,
@@ -4252,5 +4258,2045 @@
             "lobster-2",
             "龙虾"
         ]
+    },
+    "LISTING_DATES": {
+        "BTC": {
+            "binance_listing": "2019-09-25"
+        },
+        "ETH": {
+            "binance_listing": "2019-09-25"
+        },
+        "BCH": {
+            "binance_listing": "2019-09-25"
+        },
+        "XRP": {
+            "binance_listing": "2019-09-25"
+        },
+        "LTC": {
+            "binance_listing": "2019-09-25"
+        },
+        "TRX": {
+            "binance_listing": "2019-09-25"
+        },
+        "ETC": {
+            "binance_listing": "2019-09-25"
+        },
+        "LINK": {
+            "binance_listing": "2019-09-25"
+        },
+        "XLM": {
+            "binance_listing": "2019-09-25"
+        },
+        "ADA": {
+            "binance_listing": "2019-09-25",
+            "upbit_listing": "2017-10-01"
+        },
+        "XMR": {
+            "binance_listing": "2019-09-25"
+        },
+        "DASH": {
+            "binance_listing": "2019-09-25"
+        },
+        "ZEC": {
+            "binance_listing": "2019-09-25"
+        },
+        "XTZ": {
+            "binance_listing": "2019-09-25"
+        },
+        "BNB": {
+            "binance_listing": "2019-09-25"
+        },
+        "ATOM": {
+            "binance_listing": "2019-09-25"
+        },
+        "ONT": {
+            "binance_listing": "2019-09-25"
+        },
+        "IOTA": {
+            "binance_listing": "2019-09-25"
+        },
+        "BAT": {
+            "binance_listing": "2019-09-25"
+        },
+        "VET": {
+            "binance_listing": "2019-09-25"
+        },
+        "NEO": {
+            "binance_listing": "2019-09-25"
+        },
+        "QTUM": {
+            "binance_listing": "2019-09-25"
+        },
+        "IOST": {
+            "binance_listing": "2019-09-25"
+        },
+        "THETA": {
+            "binance_listing": "2019-09-25"
+        },
+        "ALGO": {
+            "binance_listing": "2019-09-25"
+        },
+        "ZIL": {
+            "binance_listing": "2019-09-25"
+        },
+        "KNC": {
+            "binance_listing": "2019-09-25"
+        },
+        "ZRX": {
+            "binance_listing": "2019-09-25"
+        },
+        "COMP": {
+            "binance_listing": "2019-09-25"
+        },
+        "OMG": {
+            "binance_listing": "2019-09-25"
+        },
+        "DOGE": {
+            "binance_listing": "2019-09-25"
+        },
+        "SXP": {
+            "binance_listing": "2019-09-25"
+        },
+        "KAVA": {
+            "binance_listing": "2019-09-25"
+        },
+        "BAND": {
+            "binance_listing": "2019-09-25"
+        },
+        "RLC": {
+            "binance_listing": "2019-09-25"
+        },
+        "WAVES": {
+            "binance_listing": "2019-09-25"
+        },
+        "MKR": {
+            "binance_listing": "2019-09-25"
+        },
+        "SNX": {
+            "binance_listing": "2019-09-25"
+        },
+        "DOT": {
+            "binance_listing": "2019-09-25"
+        },
+        "DEFI": {
+            "binance_listing": "2019-09-25"
+        },
+        "YFI": {
+            "binance_listing": "2019-09-25"
+        },
+        "BAL": {
+            "binance_listing": "2019-09-25"
+        },
+        "CRV": {
+            "binance_listing": "2019-09-25"
+        },
+        "TRB": {
+            "binance_listing": "2019-09-25"
+        },
+        "RUNE": {
+            "binance_listing": "2019-09-25"
+        },
+        "SUSHI": {
+            "binance_listing": "2019-09-25"
+        },
+        "EGLD": {
+            "binance_listing": "2019-09-25"
+        },
+        "SOL": {
+            "binance_listing": "2019-09-25"
+        },
+        "ICX": {
+            "binance_listing": "2019-09-25"
+        },
+        "STORJ": {
+            "binance_listing": "2019-09-25"
+        },
+        "BLZ": {
+            "binance_listing": "2019-09-25"
+        },
+        "UNI": {
+            "binance_listing": "2019-09-25"
+        },
+        "AVAX": {
+            "binance_listing": "2019-09-25"
+        },
+        "FTM": {
+            "binance_listing": "2019-09-25"
+        },
+        "ENJ": {
+            "binance_listing": "2019-09-25"
+        },
+        "FLM": {
+            "binance_listing": "2019-09-25"
+        },
+        "REN": {
+            "binance_listing": "2019-09-25"
+        },
+        "KSM": {
+            "binance_listing": "2019-09-25"
+        },
+        "NEAR": {
+            "binance_listing": "2019-09-25"
+        },
+        "AAVE": {
+            "binance_listing": "2019-09-25"
+        },
+        "FIL": {
+            "binance_listing": "2019-09-25"
+        },
+        "RSR": {
+            "binance_listing": "2019-09-25"
+        },
+        "LRC": {
+            "binance_listing": "2019-09-25"
+        },
+        "OCEAN": {
+            "binance_listing": "2019-09-25"
+        },
+        "BEL": {
+            "binance_listing": "2019-09-25"
+        },
+        "AXS": {
+            "binance_listing": "2019-09-25"
+        },
+        "ALPHA": {
+            "binance_listing": "2019-09-25"
+        },
+        "ZEN": {
+            "binance_listing": "2019-09-25"
+        },
+        "SKL": {
+            "binance_listing": "2020-08-24"
+        },
+        "GRT": {
+            "binance_listing": "2020-12-18"
+        },
+        "1INCH": {
+            "binance_listing": "2020-12-25"
+        },
+        "CHZ": {
+            "binance_listing": "2021-01-21"
+        },
+        "SAND": {
+            "binance_listing": "2021-01-18"
+        },
+        "ANKR": {
+            "binance_listing": "2021-01-25"
+        },
+        "UNFI": {
+            "binance_listing": "2021-02-09"
+        },
+        "REEF": {
+            "binance_listing": "2021-01-25"
+        },
+        "RVN": {
+            "binance_listing": "2021-02-23"
+        },
+        "SFP": {
+            "binance_listing": "2021-02-24"
+        },
+        "XEM": {
+            "binance_listing": "2021-03-02"
+        },
+        "BTCST": {
+            "binance_listing": "2021-03-03"
+        },
+        "COTI": {
+            "binance_listing": "2021-03-09"
+        },
+        "CHR": {
+            "binance_listing": "2021-03-12"
+        },
+        "MANA": {
+            "binance_listing": "2021-03-14"
+        },
+        "ALICE": {
+            "binance_listing": "2021-03-15"
+        },
+        "HBAR": {
+            "binance_listing": "2021-03-17"
+        },
+        "ONE": {
+            "binance_listing": "2021-03-17"
+        },
+        "LINA": {
+            "binance_listing": "2021-03-17"
+        },
+        "STMX": {
+            "binance_listing": "2021-03-17"
+        },
+        "DENT": {
+            "binance_listing": "2021-03-23"
+        },
+        "CELR": {
+            "binance_listing": "2021-03-29"
+        },
+        "HOT": {
+            "binance_listing": "2021-03-30"
+        },
+        "MTL": {
+            "binance_listing": "2021-03-31"
+        },
+        "OGN": {
+            "binance_listing": "2021-03-31"
+        },
+        "NKN": {
+            "binance_listing": "2021-04-08"
+        },
+        "SC": {
+            "binance_listing": "2021-04-12"
+        },
+        "DGB": {
+            "binance_listing": "2021-04-19"
+        },
+        "1000SHIB": {
+            "binance_listing": "2021-05-10"
+        },
+        "BAKE": {
+            "binance_listing": "2021-05-18"
+        },
+        "GTC": {
+            "binance_listing": "2021-03-15"
+        },
+        "BTCDOM": {
+            "binance_listing": "2021-06-17"
+        },
+        "IOTX": {
+            "binance_listing": "2021-08-11"
+        },
+        "RAY": {
+            "binance_listing": "2021-08-18"
+        },
+        "C98": {
+            "binance_listing": "2021-08-23"
+        },
+        "MASK": {
+            "binance_listing": "2021-07-16"
+        },
+        "ATA": {
+            "binance_listing": "2021-08-30"
+        },
+        "DYDX": {
+            "binance_listing": "2021-09-09"
+        },
+        "1000XEC": {
+            "binance_listing": "2021-09-16"
+        },
+        "GALA": {
+            "binance_listing": "2021-09-17"
+        },
+        "CELO": {
+            "binance_listing": "2021-09-26"
+        },
+        "AR": {
+            "binance_listing": "2021-09-28"
+        },
+        "KLAY": {
+            "binance_listing": "2021-10-11"
+        },
+        "ARPA": {
+            "binance_listing": "2021-10-18"
+        },
+        "CTSI": {
+            "binance_listing": "2021-10-25"
+        },
+        "LPT": {
+            "binance_listing": "2021-11-10"
+        },
+        "ENS": {
+            "binance_listing": "2021-11-29"
+        },
+        "PEOPLE": {
+            "binance_listing": "2021-12-23"
+        },
+        "ROSE": {
+            "binance_listing": "2021-12-31"
+        },
+        "DUSK": {
+            "binance_listing": "2022-01-06"
+        },
+        "FLOW": {
+            "binance_listing": "2022-02-09"
+        },
+        "IMX": {
+            "binance_listing": "2022-02-10"
+        },
+        "API3": {
+            "binance_listing": "2022-02-21"
+        },
+        "GMT": {
+            "binance_listing": "2022-03-14"
+        },
+        "APE": {
+            "binance_listing": "2022-03-17"
+        },
+        "WOO": {
+            "binance_listing": "2022-04-07"
+        },
+        "FTT": {
+            "binance_listing": "2022-04-14"
+        },
+        "JASMY": {
+            "binance_listing": "2022-04-19"
+        },
+        "DAR": {
+            "binance_listing": "2022-04-28"
+        },
+        "OP": {
+            "binance_listing": "2022-06-01"
+        },
+        "INJ": {
+            "binance_listing": "2022-08-16"
+        },
+        "STG": {
+            "binance_listing": "2022-08-24"
+        },
+        "SPELL": {
+            "binance_listing": "2022-09-05"
+        },
+        "1000LUNC": {
+            "binance_listing": "2022-09-08"
+        },
+        "LUNA2": {
+            "binance_listing": "2022-09-09"
+        },
+        "LDO": {
+            "binance_listing": "2022-09-21"
+        },
+        "ICP": {
+            "binance_listing": "2021-07-30"
+        },
+        "APT": {
+            "binance_listing": "2022-10-18"
+        },
+        "QNT": {
+            "binance_listing": "2022-10-18"
+        },
+        "FET": {
+            "binance_listing": "2023-01-15"
+        },
+        "FXS": {
+            "binance_listing": "2023-01-19"
+        },
+        "HOOK": {
+            "binance_listing": "2023-01-19"
+        },
+        "MAGIC": {
+            "binance_listing": "2023-01-23"
+        },
+        "T": {
+            "binance_listing": "2023-01-31"
+        },
+        "HIGH": {
+            "binance_listing": "2023-02-03"
+        },
+        "MINA": {
+            "binance_listing": "2023-02-03"
+        },
+        "ASTR": {
+            "binance_listing": "2023-02-13"
+        },
+        "AGIX": {
+            "binance_listing": "2023-02-15"
+        },
+        "PHB": {
+            "binance_listing": "2023-02-15"
+        },
+        "GMX": {
+            "binance_listing": "2023-02-16"
+        },
+        "CFX": {
+            "binance_listing": "2023-02-19"
+        },
+        "STX": {
+            "binance_listing": "2023-02-20"
+        },
+        "BNX": {
+            "binance_listing": "2023-02-22"
+        },
+        "ACH": {
+            "binance_listing": "2023-02-21"
+        },
+        "SSV": {
+            "binance_listing": "2023-02-23"
+        },
+        "CKB": {
+            "binance_listing": "2023-02-27"
+        },
+        "PERP": {
+            "binance_listing": "2023-03-05"
+        },
+        "TRU": {
+            "binance_listing": "2023-03-06"
+        },
+        "LQTY": {
+            "binance_listing": "2023-03-08"
+        },
+        "USDC": {
+            "binance_listing": "2023-03-12"
+        },
+        "ID": {
+            "binance_listing": "2023-03-23"
+        },
+        "ARB": {
+            "binance_listing": "2023-03-23"
+        },
+        "JOE": {
+            "binance_listing": "2023-03-28"
+        },
+        "TLM": {
+            "binance_listing": "2023-03-29"
+        },
+        "AMB": {
+            "binance_listing": "2023-03-29"
+        },
+        "LEVER": {
+            "binance_listing": "2023-03-29"
+        },
+        "RDNT": {
+            "binance_listing": "2023-04-04"
+        },
+        "HFT": {
+            "binance_listing": "2023-04-05"
+        },
+        "XVS": {
+            "binance_listing": "2023-04-12"
+        },
+        "BLUR": {
+            "binance_listing": "2023-04-27"
+        },
+        "EDU": {
+            "binance_listing": "2023-04-28"
+        },
+        "IDEX": {
+            "binance_listing": "2023-05-02"
+        },
+        "SUI": {
+            "binance_listing": "2023-05-03"
+        },
+        "1000PEPE": {
+            "binance_listing": "2023-05-05"
+        },
+        "1000FLOKI": {
+            "binance_listing": "2023-05-06"
+        },
+        "UMA": {
+            "binance_listing": "2023-05-09"
+        },
+        "RAD": {
+            "binance_listing": "2023-05-09"
+        },
+        "KEY": {
+            "binance_listing": "2023-05-23"
+        },
+        "COMBO": {
+            "binance_listing": "2023-06-02"
+        },
+        "NMR": {
+            "binance_listing": "2023-06-22"
+        },
+        "MAV": {
+            "binance_listing": "2023-06-29"
+        },
+        "MDT": {
+            "binance_listing": "2023-06-30"
+        },
+        "XVG": {
+            "binance_listing": "2023-07-05"
+        },
+        "WLD": {
+            "binance_listing": "2023-07-24"
+        },
+        "PENDLE": {
+            "binance_listing": "2023-07-28"
+        },
+        "ARKM": {
+            "binance_listing": "2023-07-28"
+        },
+        "AGLD": {
+            "binance_listing": "2023-07-29"
+        },
+        "YGG": {
+            "binance_listing": "2023-08-05"
+        },
+        "DODOX": {
+            "binance_listing": "2023-08-08"
+        },
+        "BNT": {
+            "binance_listing": "2023-08-10"
+        },
+        "OXT": {
+            "binance_listing": "2023-08-11"
+        },
+        "SEI": {
+            "binance_listing": "2023-08-17"
+        },
+        "CYBER": {
+            "binance_listing": "2023-08-21"
+        },
+        "HIFI": {
+            "binance_listing": "2023-09-16"
+        },
+        "ARK": {
+            "binance_listing": "2023-09-19"
+        },
+        "GLMR": {
+            "binance_listing": "2023-09-26"
+        },
+        "BICO": {
+            "binance_listing": "2023-09-28"
+        },
+        "STRAX": {
+            "binance_listing": "2023-10-11"
+        },
+        "LOOM": {
+            "binance_listing": "2023-10-11"
+        },
+        "BIGTIME": {
+            "binance_listing": "2023-10-12"
+        },
+        "BOND": {
+            "binance_listing": "2023-10-15"
+        },
+        "ORBS": {
+            "binance_listing": "2023-10-17"
+        },
+        "STPT": {
+            "binance_listing": "2023-10-18"
+        },
+        "WAXP": {
+            "binance_listing": "2023-10-18"
+        },
+        "BSV": {
+            "binance_listing": "2023-10-20"
+        },
+        "RIF": {
+            "binance_listing": "2023-10-21"
+        },
+        "POLYX": {
+            "binance_listing": "2023-10-25"
+        },
+        "GAS": {
+            "binance_listing": "2023-10-25"
+        },
+        "POWR": {
+            "binance_listing": "2023-10-27"
+        },
+        "TIA": {
+            "binance_listing": "2023-10-31"
+        },
+        "SNT": {
+            "binance_listing": "2023-11-02"
+        },
+        "CAKE": {
+            "binance_listing": "2023-11-02"
+        },
+        "MEME": {
+            "binance_listing": "2023-11-03"
+        },
+        "TWT": {
+            "binance_listing": "2023-11-03"
+        },
+        "TOKEN": {
+            "binance_listing": "2023-11-03"
+        },
+        "ORDI": {
+            "binance_listing": "2023-11-07"
+        },
+        "STEEM": {
+            "binance_listing": "2023-11-08"
+        },
+        "BADGER": {
+            "binance_listing": "2023-11-09"
+        },
+        "ILV": {
+            "binance_listing": "2023-11-10"
+        },
+        "NTRN": {
+            "binance_listing": "2023-11-14"
+        },
+        "KAS": {
+            "binance_listing": "2023-11-17"
+        },
+        "BEAMX": {
+            "binance_listing": "2023-11-17"
+        },
+        "1000BONK": {
+            "binance_listing": "2023-11-22"
+        },
+        "PYTH": {
+            "binance_listing": "2023-11-22"
+        },
+        "SUPER": {
+            "binance_listing": "2023-11-26"
+        },
+        "USTC": {
+            "binance_listing": "2023-11-27"
+        },
+        "ONG": {
+            "binance_listing": "2023-11-27"
+        },
+        "ETHW": {
+            "binance_listing": "2023-11-28"
+        },
+        "JTO": {
+            "binance_listing": "2023-12-08"
+        },
+        "1000SATS": {
+            "binance_listing": "2023-12-12"
+        },
+        "AUCTION": {
+            "binance_listing": "2023-12-15"
+        },
+        "1000RATS": {
+            "binance_listing": "2023-12-15"
+        },
+        "ACE": {
+            "binance_listing": "2023-12-18"
+        },
+        "MOVR": {
+            "binance_listing": "2023-12-26"
+        },
+        "NFP": {
+            "binance_listing": "2023-12-27"
+        },
+        "AI": {
+            "binance_listing": "2024-01-08"
+        },
+        "XAI": {
+            "binance_listing": "2024-01-09"
+        },
+        "WIF": {
+            "binance_listing": "2024-01-18"
+        },
+        "MANTA": {
+            "binance_listing": "2024-01-18"
+        },
+        "ONDO": {
+            "binance_listing": "2024-01-20"
+        },
+        "LSK": {
+            "binance_listing": "2024-01-25"
+        },
+        "ALT": {
+            "binance_listing": "2024-01-25"
+        },
+        "JUP": {
+            "binance_listing": "2024-01-31"
+        },
+        "ZETA": {
+            "binance_listing": "2024-02-02"
+        },
+        "RONIN": {
+            "binance_listing": "2024-02-06"
+        },
+        "DYM": {
+            "binance_listing": "2024-02-07"
+        },
+        "OM": {
+            "binance_listing": "2024-02-13"
+        },
+        "PIXEL": {
+            "binance_listing": "2024-02-19"
+        },
+        "STRK": {
+            "binance_listing": "2024-02-20"
+        },
+        "GLM": {
+            "binance_listing": "2024-02-22"
+        },
+        "PORTAL": {
+            "binance_listing": "2024-02-29"
+        },
+        "TON": {
+            "binance_listing": "2024-03-01"
+        },
+        "AXL": {
+            "binance_listing": "2024-03-01"
+        },
+        "MYRO": {
+            "binance_listing": "2024-03-05"
+        },
+        "METIS": {
+            "binance_listing": "2024-03-12"
+        },
+        "AEVO": {
+            "binance_listing": "2024-03-13"
+        },
+        "VANRY": {
+            "binance_listing": "2024-03-13"
+        },
+        "BOME": {
+            "binance_listing": "2024-03-16"
+        },
+        "ETHFI": {
+            "binance_listing": "2024-03-18"
+        },
+        "ENA": {
+            "binance_listing": "2024-04-02"
+        },
+        "W": {
+            "binance_listing": "2024-04-03"
+        },
+        "TNSR": {
+            "binance_listing": "2024-04-08"
+        },
+        "SAGA": {
+            "binance_listing": "2024-04-09"
+        },
+        "TAO": {
+            "binance_listing": "2024-04-11"
+        },
+        "OMNI": {
+            "binance_listing": "2024-04-17"
+        },
+        "REZ": {
+            "binance_listing": "2024-04-30"
+        },
+        "BB": {
+            "binance_listing": "2024-05-13"
+        },
+        "NOT": {
+            "binance_listing": "2024-05-16"
+        },
+        "TURBO": {
+            "binance_listing": "2024-05-30"
+        },
+        "IO": {
+            "binance_listing": "2024-06-11"
+        },
+        "ZK": {
+            "binance_listing": "2024-06-17"
+        },
+        "MEW": {
+            "binance_listing": "2024-06-17"
+        },
+        "LISTA": {
+            "binance_listing": "2024-06-20"
+        },
+        "ZRO": {
+            "binance_listing": "2024-06-20"
+        },
+        "RENDER": {
+            "binance_listing": "2024-07-26"
+        },
+        "BANANA": {
+            "binance_listing": "2024-08-15"
+        },
+        "RARE": {
+            "binance_listing": "2024-08-15"
+        },
+        "G": {
+            "binance_listing": "2024-08-15"
+        },
+        "SYN": {
+            "binance_listing": "2024-08-16"
+        },
+        "SYS": {
+            "binance_listing": "2024-08-19"
+        },
+        "VOXEL": {
+            "binance_listing": "2024-08-20"
+        },
+        "BRETT": {
+            "binance_listing": "2024-08-20"
+        },
+        "ALPACA": {
+            "binance_listing": "2024-08-22"
+        },
+        "POPCAT": {
+            "binance_listing": "2024-08-22"
+        },
+        "SUN": {
+            "binance_listing": "2024-08-22"
+        },
+        "VIDT": {
+            "binance_listing": "2024-08-23"
+        },
+        "NULS": {
+            "binance_listing": "2024-08-26"
+        },
+        "DOGS": {
+            "binance_listing": "2024-08-26"
+        },
+        "MBOX": {
+            "binance_listing": "2024-08-28"
+        },
+        "CHESS": {
+            "binance_listing": "2024-08-29"
+        },
+        "FLUX": {
+            "binance_listing": "2024-09-03"
+        },
+        "BSW": {
+            "binance_listing": "2024-09-05"
+        },
+        "QUICK": {
+            "binance_listing": "2024-09-06"
+        },
+        "NEIROETH": {
+            "binance_listing": "2024-09-06"
+        },
+        "RPL": {
+            "binance_listing": "2024-09-09"
+        },
+        "POL": {
+            "binance_listing": "2024-09-13"
+        },
+        "UXLINK": {
+            "binance_listing": "2024-09-15"
+        },
+        "1MBABYDOGE": {
+            "binance_listing": "2024-09-16"
+        },
+        "NEIRO": {
+            "binance_listing": "2024-09-16"
+        },
+        "KDA": {
+            "binance_listing": "2024-09-18"
+        },
+        "FIDA": {
+            "binance_listing": "2024-09-19"
+        },
+        "FIO": {
+            "binance_listing": "2024-09-20"
+        },
+        "CATI": {
+            "binance_listing": "2024-09-20"
+        },
+        "GHST": {
+            "binance_listing": "2024-09-23"
+        },
+        "LOKA": {
+            "binance_listing": "2024-09-24"
+        },
+        "HMSTR": {
+            "binance_listing": "2024-09-26"
+        },
+        "REI": {
+            "binance_listing": "2024-09-27"
+        },
+        "COS": {
+            "binance_listing": "2024-09-30"
+        },
+        "EIGEN": {
+            "binance_listing": "2024-10-01"
+        },
+        "DIA": {
+            "binance_listing": "2024-10-02"
+        },
+        "1000CAT": {
+            "binance_listing": "2024-10-21"
+        },
+        "SCR": {
+            "binance_listing": "2024-10-22"
+        },
+        "GOAT": {
+            "binance_listing": "2024-10-24"
+        },
+        "MOODENG": {
+            "binance_listing": "2024-10-25"
+        },
+        "SAFE": {
+            "binance_listing": "2024-10-25"
+        },
+        "SANTOS": {
+            "binance_listing": "2024-10-28"
+        },
+        "TROY": {
+            "binance_listing": "2024-10-31"
+        },
+        "PONKE": {
+            "binance_listing": "2024-11-04"
+        },
+        "COW": {
+            "binance_listing": "2024-11-06"
+        },
+        "CETUS": {
+            "binance_listing": "2024-11-06"
+        },
+        "1000000MOG": {
+            "binance_listing": "2024-11-07"
+        },
+        "GRASS": {
+            "binance_listing": "2024-11-08"
+        },
+        "DRIFT": {
+            "binance_listing": "2024-11-08"
+        },
+        "SWELL": {
+            "binance_listing": "2024-11-08"
+        },
+        "ACT": {
+            "binance_listing": "2024-11-11"
+        },
+        "PNUT": {
+            "binance_listing": "2024-11-11"
+        },
+        "HIPPO": {
+            "binance_listing": "2024-11-13"
+        },
+        "1000X": {
+            "binance_listing": "2024-11-13"
+        },
+        "DEGEN": {
+            "binance_listing": "2024-11-15"
+        },
+        "BAN": {
+            "binance_listing": "2024-11-18"
+        },
+        "AKT": {
+            "binance_listing": "2024-11-18"
+        },
+        "SLERF": {
+            "binance_listing": "2024-11-21"
+        },
+        "SCRT": {
+            "binance_listing": "2024-11-21"
+        },
+        "1000CHEEMS": {
+            "binance_listing": "2024-11-25"
+        },
+        "1000WHY": {
+            "binance_listing": "2024-11-25"
+        },
+        "THE": {
+            "binance_listing": "2024-11-27"
+        },
+        "MORPHO": {
+            "binance_listing": "2024-11-27"
+        },
+        "CHILLGUY": {
+            "binance_listing": "2024-11-27"
+        },
+        "KAIA": {
+            "binance_listing": "2024-12-04"
+        },
+        "AERO": {
+            "binance_listing": "2024-12-04"
+        },
+        "ACX": {
+            "binance_listing": "2024-12-06"
+        },
+        "ORCA": {
+            "binance_listing": "2024-12-06"
+        },
+        "MOVE": {
+            "binance_listing": "2024-12-09"
+        },
+        "RAYSOL": {
+            "binance_listing": "2024-12-10"
+        },
+        "KOMA": {
+            "binance_listing": "2024-12-10"
+        },
+        "VIRTUAL": {
+            "binance_listing": "2024-12-10"
+        },
+        "SPX": {
+            "binance_listing": "2024-12-10"
+        },
+        "ME": {
+            "binance_listing": "2024-12-10"
+        },
+        "AVA": {
+            "binance_listing": "2024-12-13"
+        },
+        "DEGO": {
+            "binance_listing": "2024-12-13"
+        },
+        "VELODROME": {
+            "binance_listing": "2024-12-13"
+        },
+        "MOCA": {
+            "binance_listing": "2024-12-16"
+        },
+        "VANA": {
+            "binance_listing": "2024-12-16"
+        },
+        "PENGU": {
+            "binance_listing": "2024-12-17"
+        },
+        "LUMIA": {
+            "binance_listing": "2024-12-18"
+        },
+        "USUAL": {
+            "binance_listing": "2024-12-18"
+        },
+        "AIXBT": {
+            "binance_listing": "2024-12-20"
+        },
+        "FARTCOIN": {
+            "binance_listing": "2024-12-20"
+        },
+        "KMNO": {
+            "binance_listing": "2024-12-20"
+        },
+        "CGPT": {
+            "binance_listing": "2024-12-20"
+        },
+        "HIVE": {
+            "binance_listing": "2024-12-23"
+        },
+        "DEXE": {
+            "binance_listing": "2024-12-24"
+        },
+        "PHA": {
+            "binance_listing": "2024-12-30"
+        },
+        "DF": {
+            "binance_listing": "2024-12-30"
+        },
+        "GRIFFAIN": {
+            "binance_listing": "2025-01-02"
+        },
+        "AI16Z": {
+            "binance_listing": "2025-01-02"
+        },
+        "ZEREBRO": {
+            "binance_listing": "2025-01-02"
+        },
+        "BIO": {
+            "binance_listing": "2025-01-03"
+        },
+        "COOKIE": {
+            "binance_listing": "2025-01-07"
+        },
+        "ALCH": {
+            "binance_listing": "2025-01-07"
+        },
+        "SWARMS": {
+            "binance_listing": "2025-01-07"
+        },
+        "SONIC": {
+            "binance_listing": "2025-01-08"
+        },
+        "D": {
+            "binance_listing": "2025-01-09"
+        },
+        "PROM": {
+            "binance_listing": "2025-01-15"
+        },
+        "S": {
+            "binance_listing": "2025-01-16"
+        },
+        "SOLV": {
+            "binance_listing": "2025-01-17"
+        },
+        "ARC": {
+            "binance_listing": "2025-01-17"
+        },
+        "AVAAI": {
+            "binance_listing": "2025-01-17"
+        },
+        "TRUMP": {
+            "binance_listing": "2025-01-18"
+        },
+        "MELANIA": {
+            "binance_listing": "2025-01-20"
+        },
+        "VTHO": {
+            "binance_listing": "2025-01-22"
+        },
+        "ANIME": {
+            "binance_listing": "2025-01-23"
+        },
+        "VINE": {
+            "binance_listing": "2025-01-24"
+        },
+        "PIPPIN": {
+            "binance_listing": "2025-01-24"
+        },
+        "VVV": {
+            "binance_listing": "2025-01-29"
+        },
+        "BERA": {
+            "binance_listing": "2025-02-06"
+        },
+        "TST": {
+            "binance_listing": "2025-02-09"
+        },
+        "LAYER": {
+            "binance_listing": "2025-02-11"
+        },
+        "HEI": {
+            "binance_listing": "2025-02-13"
+        },
+        "B3": {
+            "binance_listing": "2025-02-13"
+        },
+        "IP": {
+            "binance_listing": "2025-02-13"
+        },
+        "GPS": {
+            "binance_listing": "2025-02-17"
+        },
+        "SHELL": {
+            "binance_listing": "2025-02-17"
+        },
+        "KAITO": {
+            "binance_listing": "2025-02-20"
+        },
+        "RED": {
+            "binance_listing": "2025-03-06"
+        },
+        "VIC": {
+            "binance_listing": "2025-03-12"
+        },
+        "EPIC": {
+            "binance_listing": "2025-03-13"
+        },
+        "BMT": {
+            "binance_listing": "2025-03-17"
+        },
+        "MUBARAK": {
+            "binance_listing": "2025-03-17"
+        },
+        "FORM": {
+            "binance_listing": "2025-03-19"
+        },
+        "BID": {
+            "binance_listing": "2025-03-20"
+        },
+        "TUT": {
+            "binance_listing": "2025-03-20"
+        },
+        "BROCCOLI714": {
+            "binance_listing": "2025-03-21"
+        },
+        "BROCCOLIF3B": {
+            "binance_listing": "2025-03-21"
+        },
+        "SIREN": {
+            "binance_listing": "2025-03-22"
+        },
+        "BANANAS31": {
+            "binance_listing": "2025-03-22"
+        },
+        "BR": {
+            "binance_listing": "2025-03-21"
+        },
+        "PLUME": {
+            "binance_listing": "2025-03-21"
+        },
+        "NIL": {
+            "binance_listing": "2025-03-24"
+        },
+        "PARTI": {
+            "binance_listing": "2025-03-25"
+        },
+        "JELLYJELLY": {
+            "binance_listing": "2025-03-26"
+        },
+        "MAVIA": {
+            "binance_listing": "2025-03-26"
+        },
+        "PAXG": {
+            "binance_listing": "2025-03-27"
+        },
+        "WAL": {
+            "binance_listing": "2025-03-27"
+        },
+        "FUN": {
+            "binance_listing": "2025-03-31"
+        },
+        "MLN": {
+            "binance_listing": "2025-03-31"
+        },
+        "GUN": {
+            "binance_listing": "2025-03-31"
+        },
+        "ATH": {
+            "binance_listing": "2025-04-02"
+        },
+        "BABY": {
+            "binance_listing": "2025-04-05"
+        },
+        "FORTH": {
+            "binance_listing": "2025-04-08"
+        },
+        "PROMPT": {
+            "binance_listing": "2025-04-11"
+        },
+        "XCN": {
+            "binance_listing": "2025-04-11"
+        },
+        "STO": {
+            "binance_listing": "2025-04-12"
+        },
+        "FHE": {
+            "binance_listing": "2025-04-12"
+        },
+        "KERNEL": {
+            "binance_listing": "2025-04-14"
+        },
+        "WCT": {
+            "binance_listing": "2025-04-15"
+        },
+        "INIT": {
+            "binance_listing": "2025-04-16"
+        },
+        "AERGO": {
+            "binance_listing": "2025-04-16"
+        },
+        "BANK": {
+            "binance_listing": "2025-04-18"
+        },
+        "EPT": {
+            "binance_listing": "2025-04-21"
+        },
+        "DEEP": {
+            "binance_listing": "2025-04-22"
+        },
+        "HYPER": {
+            "binance_listing": "2025-04-22"
+        },
+        "MEMEFI": {
+            "binance_listing": "2025-04-25"
+        },
+        "FIS": {
+            "binance_listing": "2025-04-25"
+        },
+        "JST": {
+            "binance_listing": "2025-04-28"
+        },
+        "SIGN": {
+            "binance_listing": "2025-04-28"
+        },
+        "PUNDIX": {
+            "binance_listing": "2025-04-30"
+        },
+        "CTK": {
+            "binance_listing": "2025-04-30"
+        },
+        "AIOT": {
+            "binance_listing": "2025-04-30"
+        },
+        "DOLO": {
+            "binance_listing": "2025-05-01"
+        },
+        "HAEDAL": {
+            "binance_listing": "2025-05-01"
+        },
+        "SXT": {
+            "binance_listing": "2025-05-02"
+        },
+        "ASR": {
+            "binance_listing": "2025-05-06"
+        },
+        "ALPINE": {
+            "binance_listing": "2025-05-06"
+        },
+        "B2": {
+            "binance_listing": "2025-05-06"
+        },
+        "MILK": {
+            "binance_listing": "2025-05-06"
+        },
+        "SYRUP": {
+            "binance_listing": "2025-05-07"
+        },
+        "OBOL": {
+            "binance_listing": "2025-05-07"
+        },
+        "DOOD": {
+            "binance_listing": "2025-05-09"
+        },
+        "OG": {
+            "binance_listing": "2025-05-12"
+        },
+        "ZKJ": {
+            "binance_listing": "2025-05-13"
+        },
+        "SKYAI": {
+            "binance_listing": "2025-05-13"
+        },
+        "NXPC": {
+            "binance_listing": "2025-05-15"
+        },
+        "CVC": {
+            "binance_listing": "2025-05-16"
+        },
+        "AGT": {
+            "binance_listing": "2025-05-20"
+        },
+        "AWE": {
+            "binance_listing": "2025-05-21"
+        },
+        "B": {
+            "binance_listing": "2025-05-22"
+        },
+        "SOON": {
+            "binance_listing": "2025-05-23"
+        },
+        "HUMA": {
+            "binance_listing": "2025-05-26"
+        },
+        "A": {
+            "binance_listing": "2025-05-28"
+        },
+        "SOPH": {
+            "binance_listing": "2025-05-28"
+        },
+        "MERL": {
+            "binance_listing": "2025-05-29"
+        },
+        "HYPE": {
+            "binance_listing": "2025-05-30"
+        },
+        "PUFFER": {
+            "binance_listing": "2025-06-04"
+        },
+        "PORT3": {
+            "binance_listing": "2025-06-04"
+        },
+        "1000000BOB": {
+            "binance_listing": "2025-06-05"
+        },
+        "LA": {
+            "binance_listing": "2025-06-05"
+        },
+        "SKATE": {
+            "binance_listing": "2025-06-09"
+        },
+        "HOME": {
+            "binance_listing": "2025-06-10"
+        },
+        "RESOLV": {
+            "binance_listing": "2025-06-10"
+        },
+        "TAIKO": {
+            "binance_listing": "2025-06-11"
+        },
+        "SQD": {
+            "binance_listing": "2025-06-11"
+        },
+        "PUMPBTC": {
+            "binance_listing": "2025-06-13"
+        },
+        "SPK": {
+            "binance_listing": "2025-06-17"
+        },
+        "MYX": {
+            "binance_listing": "2025-06-18"
+        },
+        "F": {
+            "binance_listing": "2025-06-18"
+        },
+        "NEWT": {
+            "binance_listing": "2025-06-19"
+        },
+        "DMC": {
+            "binance_listing": "2025-06-24"
+        },
+        "H": {
+            "binance_listing": "2025-06-25"
+        },
+        "OL": {
+            "binance_listing": "2025-06-25"
+        },
+        "SAHARA": {
+            "binance_listing": "2025-06-26"
+        },
+        "ICNT": {
+            "binance_listing": "2025-07-03"
+        },
+        "BULLA": {
+            "binance_listing": "2025-07-04"
+        },
+        "IDOL": {
+            "binance_listing": "2025-07-04"
+        },
+        "M": {
+            "binance_listing": "2025-07-07"
+        },
+        "TANSSI": {
+            "binance_listing": "2025-07-09"
+        },
+        "PUMP": {
+            "binance_listing": "2025-07-10"
+        },
+        "CROSS": {
+            "binance_listing": "2025-07-10"
+        },
+        "AIN": {
+            "binance_listing": "2025-07-10"
+        },
+        "C": {
+            "binance_listing": "2025-07-15"
+        },
+        "VELVET": {
+            "binance_listing": "2025-07-15"
+        },
+        "TAC": {
+            "binance_listing": "2025-07-15"
+        },
+        "ERA": {
+            "binance_listing": "2025-07-17"
+        },
+        "TA": {
+            "binance_listing": "2025-07-21"
+        },
+        "CVX": {
+            "binance_listing": "2025-07-23"
+        },
+        "SLP": {
+            "binance_listing": "2025-07-23"
+        },
+        "ZORA": {
+            "binance_listing": "2025-07-25"
+        },
+        "TAG": {
+            "binance_listing": "2025-07-25"
+        },
+        "ZRC": {
+            "binance_listing": "2025-07-29"
+        },
+        "ESPORTS": {
+            "binance_listing": "2025-07-29"
+        },
+        "TREE": {
+            "binance_listing": "2025-07-29"
+        },
+        "A2Z": {
+            "binance_listing": "2025-07-30"
+        },
+        "PLAY": {
+            "binance_listing": "2025-07-31"
+        },
+        "NAORIS": {
+            "binance_listing": "2025-07-31"
+        },
+        "TOWNS": {
+            "binance_listing": "2025-08-05"
+        },
+        "PROVE": {
+            "binance_listing": "2025-08-05"
+        },
+        "ALL": {
+            "binance_listing": "2025-08-06"
+        },
+        "IN": {
+            "binance_listing": "2025-08-07"
+        },
+        "YALA": {
+            "binance_listing": "2025-08-07"
+        },
+        "CARV": {
+            "binance_listing": "2025-08-07"
+        },
+        "AIO": {
+            "binance_listing": "2025-08-13"
+        },
+        "XNY": {
+            "binance_listing": "2025-08-13"
+        },
+        "USELESS": {
+            "binance_listing": "2025-08-15"
+        },
+        "DAM": {
+            "binance_listing": "2025-08-18"
+        },
+        "CUDIS": {
+            "binance_listing": "2025-08-20"
+        },
+        "SAPIEN": {
+            "binance_listing": "2025-08-20"
+        },
+        "XPL": {
+            "binance_listing": "2025-08-22"
+        },
+        "WLFI": {
+            "binance_listing": "2025-08-23"
+        },
+        "SOMI": {
+            "binance_listing": "2025-08-25"
+        },
+        "BAS": {
+            "binance_listing": "2025-08-26"
+        },
+        "BTR": {
+            "binance_listing": "2025-08-27"
+        },
+        "MITO": {
+            "binance_listing": "2025-08-28"
+        },
+        "HEMI": {
+            "binance_listing": "2025-08-29"
+        },
+        "LINEA": {
+            "binance_listing": "2025-09-01"
+        },
+        "Q": {
+            "binance_listing": "2025-09-02"
+        },
+        "ARIA": {
+            "binance_listing": "2025-09-03"
+        },
+        "TAKE": {
+            "binance_listing": "2025-09-03"
+        },
+        "PTB": {
+            "binance_listing": "2025-09-03"
+        },
+        "OPEN": {
+            "binance_listing": "2025-09-08"
+        },
+        "FLOCK": {
+            "binance_listing": "2025-09-09"
+        },
+        "SKY": {
+            "binance_listing": "2025-09-09"
+        },
+        "AVNT": {
+            "binance_listing": "2025-09-09"
+        },
+        "HOLO": {
+            "binance_listing": "2025-09-11"
+        },
+        "XPIN": {
+            "binance_listing": "2025-09-12"
+        },
+        "UB": {
+            "binance_listing": "2025-09-12"
+        },
+        "ZKC": {
+            "binance_listing": "2025-09-15"
+        },
+        "TOSHI": {
+            "binance_listing": "2025-09-17"
+        },
+        "STBL": {
+            "binance_listing": "2025-09-17"
+        },
+        "0G": {
+            "binance_listing": "2025-09-17"
+        },
+        "BARD": {
+            "binance_listing": "2025-09-18"
+        },
+        "ASTER": {
+            "binance_listing": "2025-09-19"
+        },
+        "TRADOOR": {
+            "binance_listing": "2025-09-19"
+        },
+        "BLESS": {
+            "binance_listing": "2025-09-23"
+        },
+        "FLUID": {
+            "binance_listing": "2025-09-24"
+        },
+        "COAI": {
+            "binance_listing": "2025-09-25"
+        },
+        "HANA": {
+            "binance_listing": "2025-09-26"
+        },
+        "MIRA": {
+            "binance_listing": "2025-09-26"
+        },
+        "AKE": {
+            "binance_listing": "2025-09-26"
+        },
+        "ORDER": {
+            "binance_listing": "2025-09-26"
+        },
+        "LIGHT": {
+            "binance_listing": "2025-09-27"
+        },
+        "XAN": {
+            "binance_listing": "2025-09-29"
+        },
+        "FF": {
+            "binance_listing": "2025-09-29"
+        },
+        "VFY": {
+            "binance_listing": "2025-09-30"
+        },
+        "EDEN": {
+            "binance_listing": "2025-09-30"
+        },
+        "NOM": {
+            "binance_listing": "2025-10-01"
+        },
+        "TRUTH": {
+            "binance_listing": "2025-10-01"
+        },
+        "2Z": {
+            "binance_listing": "2025-10-02"
+        },
+        "EVAA": {
+            "binance_listing": "2025-10-03"
+        },
+        "LYN": {
+            "binance_listing": "2025-10-06"
+        },
+        "KGEN": {
+            "binance_listing": "2025-10-07"
+        },
+        "4": {
+            "binance_listing": "2025-10-08"
+        },
+        "GIGGLE": {
+            "binance_listing": "2025-10-09"
+        },
+        "MON": {
+            "binance_listing": "2025-10-10"
+        },
+        "YB": {
+            "binance_listing": "2025-10-10"
+        },
+        "MET": {
+            "binance_listing": "2025-10-11"
+        },
+        "EUL": {
+            "binance_listing": "2025-10-13"
+        },
+        "ENSO": {
+            "binance_listing": "2025-10-14"
+        },
+        "CLO": {
+            "binance_listing": "2025-10-14"
+        },
+        "RECALL": {
+            "binance_listing": "2025-10-15"
+        },
+        "ZBT": {
+            "binance_listing": "2025-10-17"
+        },
+        "LAB": {
+            "binance_listing": "2025-10-17"
+        },
+        "RIVER": {
+            "binance_listing": "2025-10-17"
+        },
+        "RVV": {
+            "binance_listing": "2025-10-18"
+        },
+        "币安人生": {
+            "binance_listing": "2025-10-20"
+        },
+        "BLUAI": {
+            "binance_listing": "2025-10-21"
+        },
+        "TURTLE": {
+            "binance_listing": "2025-10-22"
+        },
+        "APR": {
+            "binance_listing": "2025-10-23"
+        },
+        "ON": {
+            "binance_listing": "2025-10-24"
+        },
+        "42": {
+            "binance_listing": "2025-10-27"
+        },
+        "COMMON": {
+            "binance_listing": "2025-10-27"
+        },
+        "KITE": {
+            "binance_listing": "2025-10-29"
+        },
+        "AT": {
+            "binance_listing": "2025-10-29"
+        },
+        "CC": {
+            "binance_listing": "2025-10-31"
+        },
+        "MMT": {
+            "binance_listing": "2025-11-04"
+        },
+        "TRUST": {
+            "binance_listing": "2025-11-05"
+        },
+        "UAI": {
+            "binance_listing": "2025-11-06"
+        },
+        "FOLKS": {
+            "binance_listing": "2025-11-06"
+        },
+        "STABLE": {
+            "binance_listing": "2025-11-06"
+        },
+        "JCT": {
+            "binance_listing": "2025-11-10"
+        },
+        "ALLO": {
+            "binance_listing": "2025-11-11"
+        },
+        "CLANKER": {
+            "binance_listing": "2025-11-12"
+        },
+        "BEAT": {
+            "binance_listing": "2025-11-12"
+        },
+        "PIEVERSE": {
+            "binance_listing": "2025-11-14"
+        },
+        "SENT": {
+            "binance_listing": "2025-11-14"
+        },
+        "GAIB": {
+            "binance_listing": "2025-11-20"
+        },
+        "BOB": {
+            "binance_listing": "2025-11-21"
+        },
+        "IRYS": {
+            "binance_listing": "2025-11-26"
+        },
+        "RLS": {
+            "binance_listing": "2025-12-02"
+        },
+        "POWER": {
+            "binance_listing": "2025-12-06"
+        },
+        "WET": {
+            "binance_listing": "2025-12-10"
+        },
+        "NIGHT": {
+            "binance_listing": "2025-12-10"
+        },
+        "US": {
+            "binance_listing": "2025-12-12"
+        },
+        "CYS": {
+            "binance_listing": "2025-12-12"
+        },
+        "RAVE": {
+            "binance_listing": "2025-12-14"
+        },
+        "ZKP": {
+            "binance_listing": "2025-12-21"
+        },
+        "GUA": {
+            "binance_listing": "2025-12-21"
+        },
+        "IR": {
+            "binance_listing": "2025-12-21"
+        },
+        "LIT": {
+            "binance_listing": "2025-12-23"
+        },
+        "BREV": {
+            "binance_listing": "2025-12-30"
+        },
+        "COLLECT": {
+            "binance_listing": "2025-12-31"
+        },
+        "MAGMA": {
+            "binance_listing": "2025-12-31"
+        },
+        "ZAMA": {
+            "binance_listing": "2026-01-09"
+        },
+        "FOGO": {
+            "binance_listing": "2026-01-10"
+        },
+        "FRAX": {
+            "binance_listing": "2026-01-15"
+        },
+        "SPORTFUN": {
+            "binance_listing": "2026-01-16"
+        },
+        "AIA": {
+            "binance_listing": "2026-01-20"
+        },
+        "ACU": {
+            "binance_listing": "2026-01-21"
+        },
+        "我踏马来了": {
+            "binance_listing": "2026-01-21"
+        },
+        "ELSA": {
+            "binance_listing": "2026-01-22"
+        },
+        "SKR": {
+            "binance_listing": "2026-01-22"
+        },
+        "SPACE": {
+            "binance_listing": "2026-01-23"
+        },
+        "FIGHT": {
+            "binance_listing": "2026-01-23"
+        },
+        "BIRB": {
+            "binance_listing": "2026-01-29"
+        },
+        "GWEI": {
+            "binance_listing": "2026-01-29"
+        },
+        "MEGA": {
+            "binance_listing": "2026-01-30"
+        },
+        "INX": {
+            "binance_listing": "2026-01-30"
+        },
+        "TRIA": {
+            "binance_listing": "2026-02-06"
+        },
+        "ESP": {
+            "binance_listing": "2026-02-10"
+        },
+        "AZTEC": {
+            "binance_listing": "2026-02-11"
+        },
+        "OPN": {
+            "binance_listing": "2026-02-21"
+        },
+        "ROBO": {
+            "binance_listing": "2026-02-27"
+        },
+        "KAT": {
+            "binance_listing": "2026-03-02"
+        },
+        "MANTRA": {
+            "binance_listing": "2026-03-04"
+        },
+        "龙虾": {
+            "binance_listing": "2026-03-11"
+        },
+        "CFG": {
+            "binance_listing": "2026-03-16"
+        },
+        "EDGE": {
+            "binance_listing": "2026-03-19",
+            "upbit_listing": "2026-03-01"
+        },
+        "BSB": {
+            "binance_listing": "2026-03-25"
+        },
+        "XAUT": {
+            "binance_listing": "2026-03-26"
+        },
+        "BASED": {
+            "binance_listing": "2026-03-30"
+        },
+        "PRL": {
+            "binance_listing": "2026-04-01"
+        },
+        "GENIUS": {
+            "binance_listing": "2026-04-16"
+        },
+        "CHIP": {
+            "binance_listing": "2026-04-16"
+        },
+        "OPG": {
+            "binance_listing": "2026-04-22"
+        },
+        "AIGENSYN": {
+            "binance_listing": "2026-04-29"
+        },
+        "BILL": {
+            "binance_listing": "2026-05-07"
+        },
+        "PHAROS": {
+            "binance_listing": "2026-05-14"
+        },
+        "STAR": {
+            "binance_listing": "2026-05-14"
+        },
+        "PHAROSUSDT": {
+            "binance_listing": "2026-05-14"
+        },
+        "STARUSDT": {
+            "binance_listing": "2026-05-14"
+        },
+        "ADAUSDT": {
+            "binance_listing": "2020-01-01"
+        },
+        "ICXUSDT": {
+            "binance_listing": "2020-09-01"
+        },
+        "DOGEUSDT": {
+            "binance_listing": "2020-07-01"
+        },
+        "UNIUSDT": {
+            "binance_listing": "2020-09-01"
+        },
+        "YFIUSDT": {
+            "binance_listing": "2020-08-01"
+        },
+        "AVAXUSDT": {
+            "binance_listing": "2020-09-01"
+        },
+        "EGLDUSDT": {
+            "binance_listing": "2020-09-01"
+        },
+        "COMPUSDT": {
+            "binance_listing": "2020-06-01"
+        },
+        "AAVEUSDT": {
+            "binance_listing": "2020-10-01"
+        },
+        "RLCUSDT": {
+            "binance_listing": "2020-07-01"
+        },
+        "PROVEUSDT": {
+            "binance_listing": "2025-08-01"
+        },
+        "CHIPUSDT": {
+            "binance_listing": "2026-04-01"
+        },
+        "CTKUSDT": {
+            "binance_listing": "2025-04-01"
+        },
+        "VANAUSDT": {
+            "binance_listing": "2024-12-01"
+        },
+        "OPUSDT": {
+            "binance_listing": "2022-06-01"
+        },
+        "TAOUSDT": {
+            "binance_listing": "2024-04-01"
+        },
+        "ARPAUSDT": {
+            "binance_listing": "2021-10-01"
+        },
+        "ERAUSDT": {
+            "binance_listing": "2025-07-01"
+        },
+        "SOONUSDT": {
+            "binance_listing": "2025-05-01"
+        },
+        "BLAST": {
+            "upbit_listing": "2024-06-01"
+        },
+        "USDT": {
+            "upbit_listing": "2024-06-01"
+        },
+        "BABYUSDT": {
+            "binance_listing": "2025-04-01"
+        },
+        "EDGEUSDT": {
+            "binance_listing": "2026-03-01"
+        },
+        "PHBUSDT": {
+            "binance_listing": "2025-01-08"
+        },
+        "GRASSUSDT": {
+            "binance_listing": "2025-01-08"
+        },
+        "GIGGLEUSDT": {
+            "binance_listing": "2025-10-09"
+        },
+        "META": {
+            "upbit_listing": "2025-11-04",
+            "binance_listing": "2026-03-01",
+            "bithumb_listing": "2026-05-16"
+        },
+        "NEARUSDT": {
+            "binance_listing": "2025-01-08"
+        },
+        "LUNAUSDT": {
+            "binance_listing": "2025-01-08"
+        },
+        "RLUSDUSDT": {
+            "binance_listing": "2026-01-22"
+        },
+        "FIDAUSDT": {
+            "binance_listing": "2026-05-21"
+        }
     }
 }

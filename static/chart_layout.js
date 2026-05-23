@@ -64,8 +64,21 @@ export function applyChartLayout() {
   if (store.chart) store.chart.timeScale().applyOptions({ visible: !v && !k });
   if (store.chartVol) store.chartVol.timeScale().applyOptions({ visible: v || k });
 
-  if (store.chart && paneMain) store.chart.resize(paneMain.clientWidth, paneMain.clientHeight);
-  if (store.chartVol && paneVol) store.chartVol.resize(paneVol.clientWidth, paneVol.clientHeight);
+  // 🚀 [리사이즈 비동기 스케줄링] DOM 너비/높이 강제 측정 비용(Reflow) 및 캔버스 중복 resize 방지
+  if (store.chart && paneMain) {
+    requestAnimationFrame(() => {
+      if (store.chart && paneMain) {
+        store.chart.resize(paneMain.clientWidth, paneMain.clientHeight);
+      }
+    });
+  }
+  if (store.chartVol && paneVol) {
+    requestAnimationFrame(() => {
+      if (store.chartVol && paneVol) {
+        store.chartVol.resize(paneVol.clientWidth, paneVol.clientHeight);
+      }
+    });
+  }
 
   // 🚀 김프 비교군 스위처 위치 연동
   const kimchiSwitcher = document.getElementById("kimchi-switcher");
@@ -83,6 +96,9 @@ export function applyChartLayout() {
 
 // 🚀 2. 드래그 엔진 초기화
 export function initResizers() {
+  if (window._resizersInitialized) return; // 🚀 중복 등록 차단 (렉 유발 1위 방어!)
+  window._resizersInitialized = true;
+
   const wrapper = document.getElementById("chart-wrapper");
   const rVol = document.getElementById("resizer-vol");
 

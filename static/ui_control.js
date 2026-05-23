@@ -63,6 +63,34 @@ function toggleSidebar() {
   }
 }
 
+export function switchViewMode(mode) {
+  store.tableViewMode = mode;
+  const panel = document.getElementById("left-panel");
+  if (!panel) return;
+  
+  // 기존 모드 클래스 제거
+  panel.classList.remove("view-mode-simple", "view-mode-basic", "view-mode-expert");
+  panel.classList.add(`view-mode-${mode}`);
+  
+  // 버튼 스타일 갱신
+  const modes = ['simple', 'basic', 'expert'];
+  modes.forEach(m => {
+    const btn = document.getElementById(`view-mode-${m}-btn`);
+    if (btn) {
+      if (m === mode) {
+        btn.className = "flex-1 py-1 text-[10px] font-black rounded border border-theme-accent bg-theme-accent text-white transition-all shadow-md";
+      } else {
+        btn.className = "flex-1 py-1 text-[10px] font-black rounded border border-theme-border opacity-50 hover:opacity-100 transition-all text-theme-text";
+      }
+    }
+  });
+  
+  // CSS transition 후 테이블 너비 갱신을 위해 약간의 딜레이 리렌더링
+  if (typeof window.renderTable === "function") {
+    setTimeout(() => window.renderTable(), 310);
+  }
+}
+
 // 모바일: 리스트/차트 화면 전환
 function switchMobileView(view) {
   const leftPanel = document.getElementById("left-panel");
@@ -254,8 +282,10 @@ function togglePanelSwap() {
   // 5. Play: 2중 requestAnimationFrame으로 브라우저 프레임 스킵 버그를 완벽히 차단하고, Apple 스타일 이징으로 스르르르륵 황홀하게 스왑!
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      leftPanel.style.transition = "transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)";
-      rightPanel.style.transition = "transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)";
+      leftPanel.style.transition =
+        "transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)";
+      rightPanel.style.transition =
+        "transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)";
       leftPanel.style.transform = "translateX(0)";
       rightPanel.style.transform = "translateX(0)";
 
@@ -270,7 +300,8 @@ function togglePanelSwap() {
 
   // 🚀 차트 리사이징 안전 보장
   setTimeout(() => {
-    if (typeof window.applyChartLayout === "function") window.applyChartLayout();
+    if (typeof window.applyChartLayout === "function")
+      window.applyChartLayout();
   }, 620);
 }
 
@@ -394,17 +425,21 @@ export function selectSymbol(s, forceMarket = null) {
 
   // 🚀 최초 코인 선택 시 보류되었던 차트 엔진 및 호가창 소켓 점화
   if (!store.isEngineStarted) {
-    console.log("🚀 최초 코인 선택 감지: 보류되었던 차트 엔진 및 호가창 소켓 점화 시작!");
+    console.log(
+      "🚀 최초 코인 선택 감지: 보류되었던 차트 엔진 및 호가창 소켓 점화 시작!",
+    );
     store.isEngineStarted = true;
     if (typeof window.initChart === "function") window.initChart();
     else if (typeof initChart === "function") initChart();
-    if (typeof window.initSniperSocket === "function") window.initSniperSocket();
+    if (typeof window.initSniperSocket === "function")
+      window.initSniperSocket();
   }
 
   // 🚀 [INP 최적화 Phase 2] 무거운 배열 탐색, DOM 재생성, API 통신, 차트 렌더링(fetchHistory)을 다음 페인트 이후로 양보(Yielding)
   requestAnimationFrame(() => {
     setTimeout(() => {
-      const allSourceData = store.originalTableData || store.currentTableData || [];
+      const allSourceData =
+        store.originalTableData || store.currentTableData || [];
       const rowInfo = allSourceData.find(
         (c) => c.DisplayTicker === s || c.Ticker === s,
       );
@@ -415,9 +450,13 @@ export function selectSymbol(s, forceMarket = null) {
       } else if (rowInfo && rowInfo.Listed_Exchanges) {
         const ex = rowInfo.Listed_Exchanges;
         const isQuoteCurrency = s.startsWith("USDT");
-        if (isQuoteCurrency && (ex.includes("UPBIT") || ex.includes("BITHUMB"))) {
+        if (
+          isQuoteCurrency &&
+          (ex.includes("UPBIT") || ex.includes("BITHUMB"))
+        ) {
           store.currentMarket = ex.includes("UPBIT") ? "UPBIT" : "BITHUMB";
-        } else if (ex.includes("BINANCE_FUTURES")) store.currentMarket = "FUTURES";
+        } else if (ex.includes("BINANCE_FUTURES"))
+          store.currentMarket = "FUTURES";
         else if (ex.includes("BINANCE")) store.currentMarket = "SPOT";
         else if (ex.includes("UPBIT")) store.currentMarket = "UPBIT";
         else if (ex.includes("BITHUMB")) store.currentMarket = "BITHUMB";
@@ -429,50 +468,46 @@ export function selectSymbol(s, forceMarket = null) {
 
       if (rowInfo) {
         if (headAssetName) {
-          const favorites = JSON.parse(localStorage.getItem("sellnance_favs") || "[]");
+          const favorites = JSON.parse(
+            localStorage.getItem("sellnance_favs") || "[]",
+          );
           const isFav = favorites.includes(rowInfo.Symbol);
           const logoHtml = rowInfo.Logo || "";
+          const fullText = `${rowInfo.Symbol} (${rowInfo.Name || ""})`;
+          const len = fullText.length;
+          // 수학적 로그 방식 적용: 10글자 초과 시 길이에 반비례하여 부드럽게 폰트 크기 축소 (기본 1.125rem, 최소 0.65rem)
+          let fontSizeStyle = "";
+          if (len > 10) {
+            const sizeRem = Math.max(0.65, 1.125 - Math.log10(len / 10) * 0.6);
+            fontSizeStyle = `style="font-size: ${sizeRem.toFixed(3)}rem; line-height: 1.1; word-break: break-all; white-space: normal;"`;
+          } else {
+            fontSizeStyle = `style="white-space: nowrap;"`;
+          }
+
           headAssetName.innerHTML = `
             <div class="flex items-center gap-2">
-              <button onclick="window.toggleFavorite('${rowInfo.Symbol}', event); setTimeout(() => window.selectSymbol('${s}'), 50);" class="star-btn text-[16px] transition-all hover:scale-125 flex-shrink-0 ${isFav ? 'active' : ''}" style="color: ${isFav ? 'var(--accent)' : 'gray'}">
-                ${isFav ? '⭐' : '☆'}
+              <button onclick="window.toggleFavorite('${rowInfo.Symbol}', event); setTimeout(() => window.selectSymbol('${s}'), 50);" class="star-btn text-[16px] transition-all hover:scale-125 flex-shrink-0 ${isFav ? "active" : ""}" style="color: ${isFav ? "var(--accent)" : "gray"}">
+                ${isFav ? "⭐" : "☆"}
               </button>
               <div class="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-white/5 rounded-full overflow-hidden">
                 ${logoHtml}
               </div>
-              <span>${rowInfo.Symbol} (${rowInfo.Name || ""})</span>
+              <span ${fontSizeStyle}>${fullText}</span>
             </div>
           `;
         }
 
-        const titlePrice = window.formatSmartPrice(rowInfo.Price_Raw || 0, p);
-        const headMcap = document.getElementById("head-mcap");
-        const headVolB = document.getElementById("head-vol-binance");
-        const headVolU = document.getElementById("head-vol-upbit");
-        const headPriceEl = document.getElementById("head-price");
-        const headChg24h = document.getElementById("head-chg-24h");
-        const headChgDay = document.getElementById("head-chg-day");
-
-        if (headMcap) headMcap.innerText = rowInfo.MarketCap_Formatted || "-";
-        if (headVolB) headVolB.innerText = rowInfo.Volume_Formatted || "-";
-        if (headVolU) headVolU.innerText = rowInfo.Upbit_Vol_Formatted || "-";
-        if (headPriceEl) headPriceEl.innerText = titlePrice;
-
-        if (headChg24h) {
-          const n24 = rowInfo.Change_24h_Raw ?? 0;
-          const c24 = n24 > 0 ? "text-theme-up" : n24 < 0 ? "text-theme-down" : "text-theme-text";
-          headChg24h.className = `text-[13px] md:text-[15px] font-mono mt-0.5 ${c24}`;
-          headChg24h.innerText = `${n24 > 0 ? "+" : ""}${Number(n24).toFixed(2)}%`;
-        }
-        if (headChgDay) {
-          const nDay = rowInfo.Change_Today_Raw ?? 0;
-          const cDay = nDay > 0 ? "text-theme-up" : nDay < 0 ? "text-theme-down" : "text-theme-text";
-          headChgDay.className = `text-[13px] md:text-[15px] font-mono mt-0.5 ${cDay}`;
-          headChgDay.innerText = `${nDay > 0 ? "+" : ""}${Number(nDay).toFixed(2)}%`;
+        if (typeof window.updateHeaderDisplay === "function") {
+          window.updateHeaderDisplay(rowInfo, undefined, p);
         }
       }
 
       updateExchangeBadges(s);
+
+      // 🚀 호가창(Orderbook) 업데이트 (호가창 패널이 열려 있을 경우 자동 재연결)
+      if (typeof window.startOrderbookStream === "function") {
+        window.startOrderbookStream(s, store.currentMarket);
+      }
 
       // 코인 상세 이름 비동기 패치
       try {
@@ -481,19 +516,33 @@ export function selectSymbol(s, forceMarket = null) {
           .then((res) => res.json())
           .then((infoData) => {
             if (headAssetName && infoData.name) {
-              const displaySym = infoData.symbol || (rowInfo ? rowInfo.Symbol : querySym.split("(")[0]);
-              const favorites = JSON.parse(localStorage.getItem("sellnance_favs") || "[]");
+              const displaySym =
+                infoData.symbol ||
+                (rowInfo ? rowInfo.Symbol : querySym.split("(")[0]);
+              const favorites = JSON.parse(
+                localStorage.getItem("sellnance_favs") || "[]",
+              );
               const isFav = favorites.includes(displaySym);
-              const logoHtml = rowInfo ? (rowInfo.Logo || "") : "";
+              const logoHtml = rowInfo ? rowInfo.Logo || "" : "";
+              const fullText2 = `${displaySym} (${infoData.name})`;
+              const len2 = fullText2.length;
+              let fontSizeStyle2 = "";
+              if (len2 > 10) {
+                const sizeRem = Math.max(0.65, 1.125 - Math.log10(len2 / 10) * 0.6);
+                fontSizeStyle2 = `style="font-size: ${sizeRem.toFixed(3)}rem; line-height: 1.1; word-break: break-all; white-space: normal;"`;
+              } else {
+                fontSizeStyle2 = `style="white-space: nowrap;"`;
+              }
+
               headAssetName.innerHTML = `
                 <div class="flex items-center gap-2">
-                  <button onclick="window.toggleFavorite('${displaySym}', event); setTimeout(() => window.selectSymbol('${s}'), 50);" class="star-btn text-[16px] transition-all hover:scale-125 flex-shrink-0 ${isFav ? 'active' : ''}" style="color: ${isFav ? 'var(--accent)' : 'gray'}">
-                    ${isFav ? '⭐' : '☆'}
+                  <button onclick="window.toggleFavorite('${displaySym}', event); setTimeout(() => window.selectSymbol('${s}'), 50);" class="star-btn text-[16px] transition-all hover:scale-125 flex-shrink-0 ${isFav ? "active" : ""}" style="color: ${isFav ? "var(--accent)" : "gray"}">
+                    ${isFav ? "⭐" : "☆"}
                   </button>
                   <div class="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-white/5 rounded-full overflow-hidden">
                     ${logoHtml}
                   </div>
-                  <span>${displaySym} (${infoData.name})</span>
+                  <span ${fontSizeStyle2}>${fullText2}</span>
                 </div>
               `;
             }
@@ -517,10 +566,13 @@ export function selectSymbol(s, forceMarket = null) {
         setTimeout(() => {
           store.currentSelectedSymbol = s;
           const targetSym = rowInfo ? rowInfo.Ticker : s;
-          const targetRow = document.querySelector(`#table-body tr[data-sym="${targetSym}"]`);
+          const targetRow = document.querySelector(
+            `#table-body tr[data-sym="${targetSym}"]`,
+          );
           if (targetRow) {
             // targetRow.scrollIntoView({ block: "center", behavior: "smooth" });
-            if (typeof applySelectedHighlight === "function") applySelectedHighlight();
+            if (typeof applySelectedHighlight === "function")
+              applySelectedHighlight();
           }
         }, 50);
       }
@@ -620,3 +672,4 @@ export function toggleLogScale() {
 window.setTF = setTF;
 window.executeSetTF = executeSetTF;
 window.toggleLogScale = toggleLogScale;
+window.switchViewMode = switchViewMode;

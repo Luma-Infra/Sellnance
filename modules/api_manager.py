@@ -107,6 +107,7 @@ def _fetch_and_process_data(silent_mode=False):
         upbit_only_assets,
         bithumb_krw_set,
         bybit_data,
+        bithumb_data,
     ) = exchange_api.fetch_exchange_market_data(MAPPING_DATA)
     print(
         f"📊 [1/3 시세/펀비 수집 완료 (Silent:{silent_mode})] 바낸:{len(binance_data)}, 업비트:{len(upbit_data)}, 바이비트:{len(bybit_data)}"
@@ -157,6 +158,7 @@ def _fetch_and_process_data(silent_mode=False):
             upbit_only_assets,
             MAPPING_DATA,
             bybit_data,
+            bithumb_data,
         )
         print(f"📊 [3/3 장부 조립 완료] 최종 {len(final_results)}개 자산 입고")
     except Exception as e:

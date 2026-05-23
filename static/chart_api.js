@@ -14,19 +14,39 @@ export async function loadSymbols() {
   } catch (e) {
     console.error("🚨 마켓 데이터 로드 실패", e);
   }
+
+  // 🚀 [상장일] 서버에서 저장된 listing dates 한 번만 로드 → store.listingDates에 올려두기
+  try {
+    const res = await fetch("/api/listing-dates");
+    const dates = await res.json();
+    store.listingDates = dates || {};
+    console.log(`✅ [LISTING] ${Object.keys(store.listingDates).length}개 상장일 로드 완료`);
+  } catch (e) {
+    store.listingDates = {};
+    console.warn("⚠️ [LISTING] 상장일 데이터 로드 실패:", e);
+  }
 }
 
-// 🚀 거래소(업비트/빗썸) 제한 돌파용 무한 펌프기 (중복 및 포맷 에러 방어)
-export async function fetchPaginated(exchange, symbol, interval, totalLimit) {
+export async function fetchPaginated(exchange, symbol, interval, totalLimit, startTo = "") {
   let result = [];
-  let lastTo = "";
+  let lastTo = startTo;
   let remaining = totalLimit;
   let retryCount = 0; // 🚀 429 에러 재시도 카운트
 
   while (remaining > 0) {
     const count = Math.min(remaining, 200);
     let url = `/api/candles?exchange=${exchange}&symbol=${symbol}&interval=${interval}&limit=${count}`;
-    if (lastTo) url += `&to=${encodeURIComponent(lastTo.replace("T", " "))}`;
+    if (lastTo) {
+      let lastToStr = String(lastTo);
+      if (exchange === "upbit") {
+        if (!lastToStr.endsWith("Z") && !lastToStr.includes("+")) {
+          lastToStr = lastToStr + "Z";
+        }
+      } else {
+        lastToStr = lastToStr.replace("T", " ");
+      }
+      url += `&to=${encodeURIComponent(lastToStr)}`;
+    }
 
     const res = await fetch(url);
 

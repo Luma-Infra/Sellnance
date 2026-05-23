@@ -3,6 +3,78 @@ import { store, CONFIG } from "./_store.js";
 import { formatSmartPrice } from "./chart_utils.js";
 import { getFilteredData } from "./table_filter.js";
 
+export function getListingDate(row) {
+  const pureBase = (row.Symbol || "").toUpperCase();
+  const dateObj = store.listingDates && store.listingDates[pureBase];
+  if (!dateObj) return "-";
+
+  let mode = store.filterMode || "ALL";
+
+  if (mode === "BINANCE" || mode === "FUTURES" || mode === "SPOT") {
+    return dateObj.binance_listing || "-";
+  }
+  if (mode === "UPBIT") {
+    return dateObj.upbit_listing || "-";
+  }
+  if (mode === "BITHUMB") {
+    return dateObj.bithumb_listing || "-";
+  }
+  if (mode === "BYBIT") {
+    return dateObj.bybit_listing || "-";
+  }
+
+  // ALL 모드일 때: 가능한 거래소 상장일 중 가장 과거(최소값)의 날짜를 계산
+  const dates = [
+    dateObj.binance_listing,
+    dateObj.upbit_listing,
+    dateObj.bithumb_listing,
+    dateObj.bybit_listing
+  ].filter(d => d && d !== "-");
+
+  if (dates.length === 0) return "-";
+
+  dates.sort(); // 오름차순 정렬하여 가장 오래된 날짜가 0번 인덱스에 위치하도록 함
+  return dates[0];
+}
+
+export function formatListingDateWithExchange(row) {
+  const pureBase = (row.Symbol || "").toUpperCase();
+  const dateObj = store.listingDates && store.listingDates[pureBase];
+  if (!dateObj) return "-";
+
+  let mode = store.filterMode || "ALL";
+
+  if (mode === "BINANCE" || mode === "FUTURES" || mode === "SPOT") {
+    const d = dateObj.binance_listing || "-";
+    return d === "-" ? "-" : `binance : ${d}`;
+  }
+  if (mode === "UPBIT") {
+    const d = dateObj.upbit_listing || "-";
+    return d === "-" ? "-" : `upbit : ${d}`;
+  }
+  if (mode === "BITHUMB") {
+    const d = dateObj.bithumb_listing || "-";
+    return d === "-" ? "-" : `bithumb : ${d}`;
+  }
+  if (mode === "BYBIT") {
+    const d = dateObj.bybit_listing || "-";
+    return d === "-" ? "-" : `bybit : ${d}`;
+  }
+
+  // ALL 모드일 때
+  const candidates = [
+    { ex: "binance", date: dateObj.binance_listing },
+    { ex: "upbit", date: dateObj.upbit_listing },
+    { ex: "bithumb", date: dateObj.bithumb_listing },
+    { ex: "bybit", date: dateObj.bybit_listing }
+  ].filter(c => c.date && c.date !== "-");
+
+  if (candidates.length === 0) return "-";
+
+  candidates.sort((a, b) => a.date.localeCompare(b.date));
+  return `${candidates[0].ex} : ${candidates[0].date}`;
+}
+
 export function createRowElement(row) {
   const tr = document.createElement("tr");
   const ticker = row.Ticker; // 🚀 중복 없는 유니크 티커 사용 (BTCKRW != BTCUSDT)
@@ -78,34 +150,12 @@ export function updateRowInnerHTML(tr, row) {
   </td>
   <td class="p-2 col-price overflow-hidden">
     <div class="flex flex-col leading-tight min-w-0 gap-0.5">
-      ${(() => {
-        const rate = store.marketDataMap?.krw_usd_rate || 0;
-        const hasBinance =
-          row.Listed_Exchanges?.some(
-            (e) => e.includes("BINANCE") || e.includes("BYBIT"),
-          ) || row.Price_Raw > 0;
-        const hasUpbit =
-          row.Listed_Exchanges?.includes("UPBIT") ||
-          row.Listed_Exchanges?.includes("BITHUMB") ||
-          row.Upbit === "O" ||
-          row.Price_KRW > 0;
-
-        let finalUsd = row.Price_Raw ?? 0;
-        let finalKrw = row.Price_KRW ?? 0;
-        if (!hasBinance && hasUpbit) finalUsd = finalKrw / rate;
-        else if (hasBinance && !hasUpbit) finalKrw = finalUsd * rate;
-
-        const isKrwMode = store.currencyMode === "KRW";
-        const mainP = isKrwMode
-          ? `${Number(finalKrw).toLocaleString()} 원`
-          : formatSmartPrice(finalUsd, p);
-
-        return `
-          <span id="price-${tId}" data-raw-price="${nPrice}" class="font-black text-[14px] text-theme-text price-cell tracking-tighter truncate block">
-            ${mainP}
-          </span>
-        `;
-      })()}
+      <div id="price-${tId}" data-raw-price="0" class="font-black text-[14px] text-theme-text price-cell tracking-tighter truncate block flex items-center">
+        <span id="price-val-binance-${tId}" class="hidden"></span>
+        <span id="price-val-bybit-${tId}" class="hidden"></span>
+        <span id="price-val-upbit-${tId}" class="hidden"></span>
+        <span id="price-val-bithumb-${tId}" class="hidden"></span>
+      </div>
       <div class="flex items-center justify-between gap-2 text-[10px] font-black text-left mt-0.5 w-full min-w-0">
         <span id="change-${tId}" class="${color24h} ${store.currentSortCol === "Change_Today" ? "opacity-40" : "opacity-100"} flex-1 text-left truncate">${n24h > 0 ? "+" : ""}${Number(n24h).toFixed(2)}%</span>
         <span id="today-${tId}" class="${colorDay} ${store.currentSortCol === "Change_Today" ? "opacity-100" : "opacity-40"} flex-1 text-left truncate">${nDay > 0 ? "+" : ""}${Number(nDay).toFixed(2)}%</span>
@@ -169,7 +219,11 @@ export function updateRowInnerHTML(tr, row) {
       })()}
     </div>
   </td>
+  <td class="p-2 col-listing overflow-hidden text-[10px] font-mono whitespace-nowrap text-left opacity-70 truncate" id="listing-${tId}">
+    ${formatListingDateWithExchange(row)}
+  </td>
 `;
+  window.updateRowPriceDisplay(tr, row);
 }
 
 // 🚀 [신규 아키텍처] 고정 DOM 풀 및 Lazy 렌더링 상태 관리
@@ -187,6 +241,7 @@ const EMPTY_ROW_HTML = `
   <td class="p-2 col-mcap overflow-hidden"></td>
   <td class="p-2 col-kimch overflow-hidden"></td>
   <td class="p-2 col-exch overflow-hidden"></td>
+  <td class="p-2 col-listing overflow-hidden"></td>
 `;
 
 export function renderTable(isRealtime = false) {
@@ -224,10 +279,11 @@ export function renderTable(isRealtime = false) {
                 changed = true;
               }
               // 🚀 [성능 최적화] 무조건 updateRowInnerHTML를 부르지 않고, 내용이나 설정이 바뀐 경우에만 선별적으로 렌더링하여 layout thrashing 차단!
-              const needsRender = !tr.dataset.renderedSym ||
-                                  tr.dataset.renderedSym !== rowData.Ticker ||
-                                  tr.dataset.renderedCurrency !== store.currencyMode ||
-                                  tr.dataset.renderedLang !== store.lang;
+              const needsRender =
+                !tr.dataset.renderedSym ||
+                tr.dataset.renderedSym !== rowData.Ticker ||
+                tr.dataset.renderedCurrency !== store.currencyMode ||
+                tr.dataset.renderedLang !== store.lang;
               if (needsRender) {
                 updateRowInnerHTML(tr, rowData);
                 tr.dataset.renderedSym = rowData.Ticker;
@@ -309,10 +365,11 @@ export function renderTable(isRealtime = false) {
           // 보이고 있는 행이거나 상위 20위권인 경우 즉각 렌더링
           const isPreRender = i < 20;
           if (isPreRender || store.visibleSymbols.has(rowData.Ticker)) {
-            const needsRender = !tr.dataset.renderedSym ||
-                                tr.dataset.renderedSym !== rowData.Ticker ||
-                                tr.dataset.renderedCurrency !== store.currencyMode ||
-                                tr.dataset.renderedLang !== store.lang;
+            const needsRender =
+              !tr.dataset.renderedSym ||
+              tr.dataset.renderedSym !== rowData.Ticker ||
+              tr.dataset.renderedCurrency !== store.currencyMode ||
+              tr.dataset.renderedLang !== store.lang;
             if (needsRender) {
               updateRowInnerHTML(tr, rowData);
               tr.dataset.renderedSym = rowData.Ticker;
@@ -352,10 +409,11 @@ export function renderTable(isRealtime = false) {
       const tr = store.rowDomMap.get(sym);
       const rowData = store.tickerRowMap.get(sym.toUpperCase());
       if (tr && rowData) {
-        const needsRender = !tr.dataset.renderedSym ||
-                            tr.dataset.renderedSym !== rowData.Ticker ||
-                            tr.dataset.renderedCurrency !== store.currencyMode ||
-                            tr.dataset.renderedLang !== store.lang;
+        const needsRender =
+          !tr.dataset.renderedSym ||
+          tr.dataset.renderedSym !== rowData.Ticker ||
+          tr.dataset.renderedCurrency !== store.currencyMode ||
+          tr.dataset.renderedLang !== store.lang;
         if (needsRender) {
           updateRowInnerHTML(tr, rowData);
           tr.dataset.renderedSym = rowData.Ticker;
@@ -368,7 +426,7 @@ export function renderTable(isRealtime = false) {
     return;
   }
 
-  store.lastSortedTickers = filteredData.slice(0, limit).map(r => r.Ticker);
+  store.lastSortedTickers = filteredData.slice(0, limit).map((r) => r.Ticker);
 
   const firstRects = new Map();
   if (store.useFlip) {
@@ -389,10 +447,11 @@ export function renderTable(isRealtime = false) {
         tr.dataset.index = i;
 
         // 🚀 상위 20위 안의 행은 무조건 즉시 최신 정보로 렌더링
-        const needsRender = !tr.dataset.renderedSym ||
-                            tr.dataset.renderedSym !== rowData.Ticker ||
-                            tr.dataset.renderedCurrency !== store.currencyMode ||
-                            tr.dataset.renderedLang !== store.lang;
+        const needsRender =
+          !tr.dataset.renderedSym ||
+          tr.dataset.renderedSym !== rowData.Ticker ||
+          tr.dataset.renderedCurrency !== store.currencyMode ||
+          tr.dataset.renderedLang !== store.lang;
         if (needsRender) {
           updateRowInnerHTML(tr, rowData);
           tr.dataset.renderedSym = rowData.Ticker;
@@ -408,7 +467,7 @@ export function renderTable(isRealtime = false) {
   // 🚀 [성능 극대화] FLIP 애니메이션 실행 (레이아웃 쓰레싱을 완벽 소각하기 위해 batch read/write 형태로 전면 개편!)
   if (store.useFlip) {
     const moves = [];
-    
+
     // Pass 1: Batch Reads (동작 시작 위치 확인)
     for (const [sym, firstY] of firstRects.entries()) {
       const tr = store.rowDomMap.get(sym);
@@ -535,3 +594,97 @@ export function applyPriceFlash(element, newPrice, oldPrice) {
   element.classList.add(flashClass);
   setTimeout(() => element.classList.remove(flashClass), 100);
 }
+
+window.updateRowPriceDisplay = (target, row) => {
+  let parentEl;
+  const tId = row.Ticker || row.Symbol;
+  if (target instanceof HTMLElement) {
+    parentEl = target.querySelector(`#price-${tId}`);
+  } else {
+    parentEl = document.getElementById(`price-${tId}`);
+  }
+  if (!parentEl) return;
+
+  const rate = store.marketDataMap?.krw_usd_rate || 0;
+  const isKrwMode = store.currencyMode === "KRW";
+  const p = store.getPrecision(row.DisplayTicker || row.Symbol);
+
+  const binanceP = row.Binance_Price || null;
+  const bybitP = row.Bybit_Price || null;
+  const upbitP = row.Upbit_Price || null;
+  const bithumbP = row.Bithumb_Price || null;
+
+  let activeExchange = "";
+  let displayPrice = 0;
+
+  if (!isKrwMode) {
+    if (binanceP !== null) {
+      activeExchange = "binance";
+      displayPrice = binanceP;
+    } else if (bybitP !== null) {
+      activeExchange = "bybit";
+      displayPrice = bybitP;
+    } else if (upbitP !== null) {
+      activeExchange = "upbit";
+      displayPrice = upbitP / rate;
+    } else if (bithumbP !== null) {
+      activeExchange = "bithumb";
+      displayPrice = bithumbP / rate;
+    } else {
+      activeExchange = "binance";
+      displayPrice = row.Price_Raw || 0;
+    }
+  } else {
+    if (upbitP !== null) {
+      activeExchange = "upbit";
+      displayPrice = upbitP;
+    } else if (bithumbP !== null) {
+      activeExchange = "bithumb";
+      displayPrice = bithumbP;
+    } else if (binanceP !== null) {
+      activeExchange = "binance";
+      displayPrice = binanceP * rate;
+    } else if (bybitP !== null) {
+      activeExchange = "bybit";
+      displayPrice = bybitP * rate;
+    } else {
+      activeExchange = "upbit";
+      displayPrice = row.Price_KRW || 0;
+    }
+  }
+
+  const exchanges = ["binance", "bybit", "upbit", "bithumb"];
+  const exchangeImgUrls = {
+    binance: "https://s2.coinmarketcap.com/static/img/exchanges/64x64/270.png",
+    bybit: "https://s2.coinmarketcap.com/static/img/exchanges/64x64/521.png",
+    upbit: "https://s2.coinmarketcap.com/static/img/exchanges/64x64/351.png",
+    bithumb: "https://s2.coinmarketcap.com/static/img/exchanges/64x64/200.png",
+  };
+
+  exchanges.forEach((ex) => {
+    let span;
+    if (target instanceof HTMLElement) {
+      span = target.querySelector(`#price-val-${ex}-${tId}`);
+    } else {
+      span = document.getElementById(`price-val-${ex}-${tId}`);
+    }
+    if (!span) return;
+
+    if (ex === activeExchange) {
+      const formattedPrice = isKrwMode
+        ? `${Number(displayPrice).toLocaleString()} 원`
+        : window.formatSmartPrice(displayPrice, p);
+
+      span.innerHTML = `${formattedPrice}
+        <div class="inline-flex items-center justify-center w-[12px] h-[12px] rounded-[2px] overflow-hidden bg-white/2 ml-1 align-middle flex-shrink-0">
+          <img src="${exchangeImgUrls[ex]}" alt="${ex}" class="w-full h-full object-contain" />
+        </div>`;
+      span.classList.remove("hidden");
+    } else {
+      span.classList.add("hidden");
+    }
+  });
+
+  parentEl.setAttribute("data-raw-price", displayPrice);
+  parentEl.setAttribute("data-active-exchange", activeExchange);
+};

@@ -203,6 +203,7 @@ def fetch_exchange_market_data(mapping):
 
     # 4. 업비트 시세 타격 (KRW 마켓 전체 수집)
     upbit_data = fetch_upbit_prices(upbit_krw_set)
+    bithumb_data = fetch_bithumb_prices()
 
     return (
         binance_data,
@@ -211,6 +212,7 @@ def fetch_exchange_market_data(mapping):
         upbit_only_assets,
         bithumb_krw_set,
         bybit_data,
+        bithumb_data,
     )
 
 
@@ -564,29 +566,14 @@ def fetch_upbit_prices(upbit_assets):
 def fetch_bybit_prices():
     bybit_data = {}
     try:
-        # 1. 시세 (Ticker) 가져오기 - 현물 & 선물 통합
-        res_f = api_session.get(
-            "https://api.bybit.com/v5/market/tickers?category=linear", timeout=5
-        ).json()
+        # 1. 시세 (Ticker) 가져오기 - 현물만 (바이비트는 현물만 탐색 대상)
         res_s = api_session.get(
             "https://api.bybit.com/v5/market/tickers?category=spot", timeout=5
         ).json()
 
-        f_list = res_f.get("result", {}).get("list", [])
         s_list = res_s.get("result", {}).get("list", [])
 
-        # 2. 데이터 매핑 (티커별 spot/futures 가격 및 거래대금)
-        for item in f_list:
-            sym = item["symbol"]
-            if sym.endswith("USDT") and is_valid_ticker(sym.replace("USDT", "")):
-                base = sym.replace("USDT", "")
-                if base not in bybit_data:
-                    bybit_data[base] = {"volume_24h": 0.0}
-                bybit_data[base]["futures_price"] = float(item.get("lastPrice", 0))
-                bybit_data[base]["change_24h"] = float(item.get("price24hPcnt", 0)) * 100
-                bybit_data[base]["funding_rate"] = float(item.get("fundingRate", 0))
-                bybit_data[base]["volume_24h"] += float(item.get("turnover24h", 0))
-
+        # 2. 데이터 매핑 (티커별 spot 가격 및 거래대금)
         for item in s_list:
             sym = item["symbol"]
             if sym.endswith("USDT") and is_valid_ticker(sym.replace("USDT", "")):
@@ -599,3 +586,24 @@ def fetch_bybit_prices():
     except Exception as e:
         print(f"🚨 [바이비트 수집 에러]: {e}")
     return bybit_data
+
+
+def fetch_bithumb_prices():
+    bithumb_data = {}
+    try:
+        res = api_session.get("https://api.bithumb.com/public/ticker/ALL_KRW", timeout=5).json()
+        if res.get("status") == "0000":
+            raw_data = res.get("data", {})
+            for sym, item in raw_data.items():
+                if sym == "date":
+                    continue
+                try:
+                    bithumb_data[sym.upper()] = {
+                        "price": float(item.get("closing_price", 0)),
+                        "volume_24h": float(item.get("acc_trade_value_24H", 0)),
+                    }
+                except:
+                    pass
+    except Exception as e:
+        print(f"🚨 [빗썸 수집 에러]: {e}")
+    return bithumb_data

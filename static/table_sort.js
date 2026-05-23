@@ -1,9 +1,15 @@
 // table_sort.js
 import { store } from "./_store.js";
 import { getFilteredData } from "./table_filter.js";
-import { renderTable, applySelectedHighlight } from "./table_render.js";
+import { renderTable, applySelectedHighlight, getListingDate } from "./table_render.js";
 
 export function sortTable(colKey) {
+  // 🚀 누르자마자 실행되게 즉시 로딩 클래스 추가 (차트 로딩 효과처럼 어두워짐)
+  const table = document.getElementById("table-body");
+  if (table) {
+    table.classList.add("table-loading");
+  }
+
   // 🚀 [2단 토글 개편] 모든 정렬 가능 컬럼을 3단(desc -> asc -> 해제)이 아닌 2단(desc <-> asc)으로 토글합니다.
   if (store.currentSortCol === colKey) {
     store.sortState = store.sortState === "desc" ? "asc" : "desc";
@@ -19,6 +25,13 @@ export function sortTable(colKey) {
     arrowEl.innerText = store.sortState === "asc" ? "▲" : "▼";
   }
 
+  // 🚀 정렬 기준이 바뀌면 기존 opacity 클래스가 고착되므로 가시 행 강제 재렌더
+  if (store.rowDomMap) {
+    store.rowDomMap.forEach((tr) => {
+      tr.dataset.renderedSym = "";
+    });
+  }
+
   // 🚀 [INP 최적화] 무거운 배열 정렬 및 DOM 렌더링을 다음 페인트 이후로 비동기 양보
   requestAnimationFrame(() => {
     setTimeout(() => {
@@ -29,7 +42,12 @@ export function sortTable(colKey) {
 
       simpleSortData();
       renderTable(false); // 수동 정렬이므로 0초 컷으로 즉시 전체 배치
-    }, 0);
+
+      // 🚀 정렬 및 렌더링이 끝나면 즉시 로딩 클래스 제거
+      if (table) {
+        table.classList.remove("table-loading");
+      }
+    }, 50); // 50ms 딜레이를 주어 브라우저가 어두워진 로딩 필터를 화면에 먼저 칠할 시간을 줌
   });
 }
 
@@ -51,8 +69,18 @@ export function simpleSortData() {
   const isAsc = store.sortState === "asc";
 
   store.currentTableData.sort((a, b) => {
-    let valA = a[key];
-    let valB = b[key];
+    let valA, valB;
+    if (store.currentSortCol === "Listing_Date") {
+      valA = getListingDate(a);
+      valB = getListingDate(b);
+      if (valA === "-" && valB === "-") return 0;
+      if (valA === "-") return 1;
+      if (valB === "-") return -1;
+      return isAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+    } else {
+      valA = a[key];
+      valB = b[key];
+    }
 
     if (typeof valA === "number" && typeof valB === "number") {
       return isAsc ? valA - valB : valB - valA;

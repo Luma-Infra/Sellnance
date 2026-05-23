@@ -145,6 +145,19 @@ export function toggleCurrency() {
     btn.innerText = store.currencyMode === "USD" ? "USD ($)" : "KRW (₩)";
   }
   renderTable();
+
+  if (store.currentSelectedSymbol) {
+    const allSource = store.originalTableData || store.currentTableData || [];
+    const row = allSource.find(
+      (r) =>
+        r.DisplayTicker === store.currentSelectedSymbol ||
+        r.Ticker === store.currentSelectedSymbol,
+    );
+    if (row && typeof window.updateHeaderDisplay === "function") {
+      const p = store.getPrecision(store.currentSelectedSymbol);
+      window.updateHeaderDisplay(row, undefined, p);
+    }
+  }
 }
 
 export function toggleLang() {
@@ -265,5 +278,14 @@ export function togglePasswordVisibility(id) {
     input.value = maskApiKey(raw);
     input.dataset.masked = "true";
     if (btn) btn.innerText = "🙈";
+  }
+}
+
+export function clearCmcKey() {
+  const input = document.getElementById("setting-cmc-key");
+  if (input) {
+    input.value = "";
+    input.dataset.masked = "false";
+    input.focus();
   }
 }

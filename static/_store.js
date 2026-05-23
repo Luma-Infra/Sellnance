@@ -20,6 +20,8 @@ export const store = {
   filterMode: "ALL", // 🚀 [추가] ALL, BINANCE, UPBIT, FUTURES, SPOT
   currencyMode: "USD", // 🚀 [추가] USD, KRW 토글 모드
   viewMode: "DETAILED",
+  tableViewMode: "basic",
+  listingDates: {}, // 📅 거래소별 상장일 { BTC: { binance_listing: "2019-09-08", upbit_listing: "..." } }
   settings: {
     CMC_API_KEY: "",
   },

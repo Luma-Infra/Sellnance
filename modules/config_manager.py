@@ -12,7 +12,11 @@ def load_mapping_data():
     try:
         if os.path.exists(MAPPING_FILE):
             with open(MAPPING_FILE, 'r', encoding='utf-8') as f:
-                return json.load(f)
+                data = json.load(f)
+                # utils의 캐시 갱신
+                from modules import utils
+                utils._SKIP_LIST_CACHE = data.get("HARDCODE_VERIFY_SKIP_LIST", [])
+                return data
         else:
             print(f"🚨 {MAPPING_FILE} 파일을 찾을 수 없습니다!")
             return {}
@@ -26,6 +30,10 @@ def save_mapping_data(mapping_data):
         # 🚀 [요청] TICKER_DATA를 A-Z 알파벳 순으로 깔끔하게 정렬!
         if "TICKER_DATA" in mapping_data:
             mapping_data["TICKER_DATA"] = dict(sorted(mapping_data["TICKER_DATA"].items()))
+        
+        # utils의 캐시 갱신
+        from modules import utils
+        utils._SKIP_LIST_CACHE = mapping_data.get("HARDCODE_VERIFY_SKIP_LIST", [])
         
         with open(MAPPING_FILE, 'w', encoding='utf-8') as f:
             json.dump(mapping_data, f, indent=4, ensure_ascii=False)

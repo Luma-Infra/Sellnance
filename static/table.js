@@ -24,6 +24,7 @@ import {
   closeSettingsModal,
   saveSettings,
   togglePasswordVisibility,
+  clearCmcKey,
 } from "./table_filter.js";
 
 // ⭐️ 1. 좌우 넓이 드래그 조절 기능 (UI 공통 제어) ⭐️
@@ -105,3 +106,4 @@ window.openSettingsModal = openSettingsModal;
 window.closeSettingsModal = closeSettingsModal;
 window.saveSettings = saveSettings;
 window.togglePasswordVisibility = togglePasswordVisibility;
+window.clearCmcKey = clearCmcKey;

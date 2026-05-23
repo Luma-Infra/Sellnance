@@ -1,5 +1,4 @@
-// sim_engine.js
-// --- 🎮 시뮬레이터 수학 & 로직 ---
+// sim_engine.js 🎮 시뮬레이터 수학 & 로직
 import { store, tfSec } from './_store.js';
 
 function changeDir(d) {
@@ -74,7 +73,10 @@ function getNext() {
     const c = store.curDir === 'bull' ? o * (1 + b) : o * (1 - b);
     const highLimit = Math.max(o, c);
     const lowLimit = Math.min(o, c);
-    const nextTime = last.time + (tfSec[store.currentTF] || 86400);
+    const lastTime = (window.getUnixSeconds && typeof window.getUnixSeconds === 'function')
+        ? window.getUnixSeconds(last.time)
+        : (typeof last.time === 'string' ? Math.floor(new Date(last.time).getTime() / 1000) : last.time);
+    const nextTime = lastTime + (tfSec[store.currentTF] || 86400);
 
     return {
         time: nextTime,
@@ -91,11 +93,11 @@ window.undoLast = undoLast;
 window.getNext = getNext;
 // ================== chart.js에서 이동됨 ==================
 export function updatePreview() {
-  if (
-    store.mainData.length &&
-    store.isHover &&
-    typeof window.getNext === "function"
-  )
-    store.previewSeries.setData([window.getNext()]);
+    if (
+        store.mainData.length &&
+        store.isHover &&
+        typeof window.getNext === "function"
+    )
+        store.previewSeries.setData([window.getNext()]);
 }
 window.updatePreview = updatePreview;

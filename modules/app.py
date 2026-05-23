@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from tvDatafeed import TvDatafeed, Interval
 from fastapi import FastAPI, Request, Body
 from dotenv import load_dotenv
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 import pandas as pd
 import webbrowser
@@ -26,6 +26,7 @@ import config  # 🚀 설정 모듈 임포트
 
 from . import trace_hooking
 from . import api_manager
+from . import config_manager
 from .adapter import ExchangeAdapter # 🔌 통합 지휘소 영입
 
 # from modules import api_manager,
@@ -34,13 +35,16 @@ from .adapter import ExchangeAdapter # 🔌 통합 지휘소 영입
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # ⭐️ 9시 정각 감시 스레드 시작
+    # ⧆️ 9시 정각 감시 스레드 시작
     threading.Thread(target=auto_reset_scheduler, daemon=True).start()
 
-    # ⭐️ 데이터 긁어오기 (이건 배포든 로컬이든 필수!)
+    # ⧆️ 데이터 긁어오기 (이건 배포든 로칼이든 필수!)
     threading.Thread(target=api_manager.get_cached_data, args=(True,)).start()
 
-    # 🚀 로컬(127.0.0.1) 환경이고, 아직 브라우저 안 열었을 때만 실행
+    # 🚀 상장일 데이터 시스템 초기화 (LISTING_DATES 메모리 로드 + 바이낸스 API 콜)
+    threading.Thread(target=_init_listing_dates, daemon=True).start()
+
+    # 🚀 로칼(127.0.0.1) 환경이고, 아직 브라우저 안 열었을 때만 실행
     if not os.environ.get("RAILWAY_STATIC_URL") and not os.environ.get("BROWSER_OPENED"):
         threading.Timer(1.5, open_browser).start()
         os.environ["BROWSER_OPENED"] = "1"
@@ -63,6 +67,110 @@ print(f"📂 [PATH CHECK] Static Directory: {STATIC_DIR.absolute()}")
 
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+
+
+# =================================================
+# 📅 상장일(Listing Date) 데이터 시스템 — listing.json 독립 파일 운용
+# =================================================
+LISTING_FILE = BASE_DIR / "listing.json"
+LISTING_DATES: dict = {}
+_listing_dates_lock = threading.Lock()
+
+
+def _load_listing_file() -> dict:
+    """listing.json 읽기. 없으면 빈 dict 반환."""
+    try:
+        if LISTING_FILE.exists():
+            with open(LISTING_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+    except Exception as e:
+        print(f"🚨 [LISTING] listing.json 읽기 실패: {e}")
+    return {}
+
+
+def _save_listing_file(data: dict):
+    """listing.json 쓰기 (알파벳 정렬)."""
+    try:
+        with open(LISTING_FILE, "w", encoding="utf-8") as f:
+            json.dump(dict(sorted(data.items())), f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        print(f"🚨 [LISTING] listing.json 저장 실패: {e}")
+
+
+def _init_listing_dates():
+    """1. listing.json 로드 → 메모리 초기화. 2. 바이낸스 선물 API (신규 코인만)."""
+    global LISTING_DATES
+    saved = _load_listing_file()
+    with _listing_dates_lock:
+        LISTING_DATES.update(saved)
+    print(f"📅 [LISTING] listing.json에서 {len(saved)}개 상장일 로드")
+
+    # 바이낸스 선물 exchangeInfo → onboardDate 파싱
+    try:
+        res = requests.get("https://fapi.binance.com/fapi/v1/exchangeInfo", timeout=10)
+        res.raise_for_status()
+        symbols_info = res.json().get("symbols", [])
+        updated = 0
+        dirty = False
+        for s in symbols_info:
+            if s.get("quoteAsset") != "USDT" or s.get("contractType") != "PERPETUAL":
+                continue
+            base = s.get("baseAsset", "").upper()
+            ts_ms = s.get("onboardDate", 0)
+            if not base or not ts_ms:
+                continue
+            date_str = datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc).strftime("%Y-%m-%d")
+            with _listing_dates_lock:
+                entry = LISTING_DATES.setdefault(base, {})
+                if "binance_listing" not in entry:
+                    entry["binance_listing"] = date_str
+                    dirty = True
+                    updated += 1
+        if dirty:
+            with _listing_dates_lock:
+                _save_listing_file(dict(LISTING_DATES))
+            print(f"📅 [LISTING] 바이낸스 선물 onboardDate {updated}개 신규 저장 → listing.json")
+        else:
+            print("📅 [LISTING] 바이낸스 상장일 전체 이미 저장됨 - API 스킵")
+    except Exception as e:
+        print(f"🚨 [LISTING] 바이낸스 exchangeInfo 호출 실패: {e}")
+
+
+@app.get("/api/listing-dates")
+def get_listing_dates():
+    """LISTING_DATES 메모리 전체 반환 (Frontend 초기화 시 1회)"""
+    with _listing_dates_lock:
+        return dict(LISTING_DATES)
+
+
+@app.post("/api/listing-dates")
+def update_listing_date(data: dict = Body(...)):
+    """업비트/빗썸 등 캔들 역산 날짜 업데이트.
+    body: { symbol: "BTC", exchange_key: "upbit_listing", date: "2017-10-15" }
+    - 더 오래된 날짜만 덮어쓰기.
+    """
+    symbol = data.get("symbol", "").upper().strip()
+    exchange_key = data.get("exchange_key", "").strip()
+    new_date = data.get("date", "").strip()
+
+    if not symbol or not exchange_key or not new_date:
+        return {"status": "error", "msg": "symbol, exchange_key, date 필수"}
+    if not re.match(r"^\d{4}-\d{2}-\d{2}$", new_date):
+        return {"status": "error", "msg": "date 포맷은 YYYY-MM-DD"}
+
+    updated = False
+    with _listing_dates_lock:
+        entry = LISTING_DATES.setdefault(symbol, {})
+        existing = entry.get(exchange_key, "")
+        if not existing or new_date < existing:
+            entry[exchange_key] = new_date
+            updated = True
+
+    if updated:
+        with _listing_dates_lock:
+            _save_listing_file(dict(LISTING_DATES))
+        return {"status": "updated", "symbol": symbol, "key": exchange_key, "date": new_date}
+    return {"status": "skipped"}
 
 
 @app.get("/")

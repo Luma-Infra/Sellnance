@@ -84,11 +84,28 @@ def get_pure_base_asset(ticker):
 def is_scaled_symbol(symbol):
     return bool(re.match(r'^(10+)|^(1[MB])', symbol))
 
-def is_valid_ticker(ticker):
+_SKIP_LIST_CACHE = None
+
+def is_valid_ticker(ticker, skip_list=None):
     """
     영어 대문자, 숫자 이외의 문자가 섞여 있으면 거부합니다.
     (한자, 특수문자, 소문자, 이모지 등 온갖 잡다구리한 쓰레기 티커들 사전에 차단)
+    단, HARDCODE_VERIFY_SKIP_LIST에 들어있는 한글/한자/특수문자 티커는 허용합니다.
     """
+    global _SKIP_LIST_CACHE
+    if skip_list is None:
+        if _SKIP_LIST_CACHE is None:
+            try:
+                from modules import config_manager
+                mapping = config_manager.load_mapping_data()
+                _SKIP_LIST_CACHE = mapping.get("HARDCODE_VERIFY_SKIP_LIST", [])
+            except:
+                _SKIP_LIST_CACHE = []
+        skip_list = _SKIP_LIST_CACHE
+        
+    if skip_list and ticker in skip_list:
+        return True
+
     # ^[A-Z0-9]+$ : 시작부터 끝까지 영어 대문자와 숫자로만 이루어져야 함
     if re.match(r'^[A-Z0-9]+$', ticker):
         return True

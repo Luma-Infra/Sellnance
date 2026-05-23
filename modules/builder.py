@@ -22,6 +22,7 @@ def build_binance_row(
     mapping,
     krw_usd_rate,
     bybit_data,
+    bithumb_data,
 ):
 
     (
@@ -96,14 +97,14 @@ def build_binance_row(
         else ""
     )
 
-    # 🚀 [수정] 괄호 안의 이름이 있으면 최우선으로 사용, 없으면 CMC 이름 사용
+    # 족보에 적어둔 이름(ticker_info_list[2])이 있으면 그것을 우선 사용
     coin_name = (
         explicit_name
         if explicit_name
         else (
-            info.get("name", base)
-            if info
-            else (ticker_info_list[2] if len(ticker_info_list) >= 3 else base)
+            ticker_info_list[2]
+            if len(ticker_info_list) >= 3 and ticker_info_list[2]
+            else (info.get("name", base) if info else base)
         )
     )
 
@@ -182,26 +183,21 @@ def build_binance_row(
 
     # 🚀 [쌀먹 완화 1] Bybit Fallback (바낸 티커 base 또는 업비트 티커 target_up_base 둘 중 하나라도 바이비트에 있다면 무조건 쌀먹 도킹!)
     by_spot_p = bybit_data.get(base, {}).get("spot_price", 0.0)
-    by_futures_p = bybit_data.get(base, {}).get("futures_price", 0.0)
     by_vol_24h = bybit_data.get(base, {}).get("volume_24h", 0.0)
 
     if (
         by_spot_p == 0
-        and by_futures_p == 0
         and target_up_base
         and target_up_base in bybit_data
     ):
         by_spot_p = bybit_data.get(target_up_base, {}).get("spot_price", 0.0)
-        by_futures_p = bybit_data.get(target_up_base, {}).get("futures_price", 0.0)
         by_vol_24h = bybit_data.get(target_up_base, {}).get("volume_24h", 0.0)
 
     if by_spot_p > 0:
         listed_on.add("BYBIT")
-    if by_futures_p > 0:
-        listed_on.add("BYBIT_FUTURES")
 
     target_spot_p = binance_spot_price or by_spot_p
-    target_futures_p = binance_futures_price or by_futures_p
+    target_futures_p = binance_futures_price
 
     # 🚀 [쌀먹 완화 2] Bithumb 쌀먹 확장 (바낸 티커 base 또는 업비트 티커 target_up_base 둘 중 하나라도 빗썸에 있다면 무조건 쌀먹 도킹!)
     bithumb_direct_match = False
@@ -297,6 +293,13 @@ def build_binance_row(
         else "-"
     )
 
+    bithumb_price = bithumb_data.get(base, {}).get("price", 0.0)
+    if bithumb_price == 0 and target_up_base:
+        bithumb_price = bithumb_data.get(target_up_base, {}).get("price", 0.0)
+    for a in bithumb_aliases:
+        if bithumb_price == 0:
+            bithumb_price = bithumb_data.get(a.upper(), {}).get("price", 0.0)
+
     # 7. 데이터 조립
     row = {
         "UID": final_ucid,
@@ -310,6 +313,10 @@ def build_binance_row(
         "precision": precision,
         "Price": utils.format_dynamic_price(b_info["price"], precision),
         "Price_KRW": up_price_krw if up_price_krw > 0 else None,
+        "Binance_Price": (binance_spot_price or binance_futures_price) if (binance_spot_price > 0 or binance_futures_price > 0) else None,
+        "Bybit_Price": by_spot_p if by_spot_p > 0 else None,
+        "Upbit_Price": up_price_krw if up_price_krw > 0 else None,
+        "Bithumb_Price": bithumb_price if bithumb_price > 0 else None,
         "Upbit_Vol_Formatted": (utils.format_volume_string(up_vol_24h / krw_usd_rate) if krw_usd_rate > 0 else "-") if up_vol_24h > 0 else "-",
         "Upbit_Vol_KRW_Formatted": utils.format_volume_krw_string(up_vol_24h) if up_vol_24h > 0 else "-",
         "Upbit_Vol_Raw": up_vol_24h,
@@ -367,6 +374,7 @@ def build_upbit_row(
     mapping,
     bybit_data,
     upbit_data,
+    bithumb_data,
 ):
 
     # global MAPPING_DATA
@@ -503,6 +511,7 @@ def build_upbit_row(
     exact_spot_ticker = ""
     exact_futures_ticker = ""
     binance_spot_price = 0.0
+    binance_futures_price = 0.0
 
     for b_tick, b_inf in binance_data.items():
         b_base = utils.get_pure_base_asset(b_tick.replace("USDT", "")).upper()
@@ -522,6 +531,7 @@ def build_upbit_row(
                 if b_inf.get("is_futures"):
                     listed_on.add("BINANCE_FUTURES")
                     exact_futures_ticker = b_tick.replace("USDT", "")
+                    binance_futures_price = float(b_inf.get("price") or 0.0)
     if base in upbit_krw_set:
         listed_on.add("UPBIT")
 
@@ -565,6 +575,11 @@ def build_upbit_row(
     # 업비트는 펀비 없음
     funding_f = "-"
 
+    bithumb_price = bithumb_data.get(base, {}).get("price", 0.0)
+    for a in bithumb_aliases:
+        if bithumb_price == 0:
+            bithumb_price = bithumb_data.get(a.upper(), {}).get("price", 0.0)
+
     row = {
         # --- 1. 기본 식별 정보 ---
         "UID": final_ucid,
@@ -580,6 +595,10 @@ def build_upbit_row(
         # --- 2. 화면 표시용 데이터 (HTML 포함) ---
         "Price": utils.format_dynamic_price(p, up_precision),
         "Price_KRW": up_price_krw if up_price_krw > 0 else None,
+        "Binance_Price": (binance_spot_price or binance_futures_price) if (binance_spot_price > 0 or binance_futures_price > 0) else None,
+        "Bybit_Price": by_spot_p if by_spot_p > 0 else None,
+        "Upbit_Price": up_price_krw if up_price_krw > 0 else None,
+        "Bithumb_Price": bithumb_price if bithumb_price > 0 else None,
         "Change_24h": utils.format_change(up_change_24h),
         "Change_Today": utils.format_change(change_today),
         "Volume_Formatted": utils.format_volume_string(vol_24h),
@@ -746,6 +765,7 @@ def assemble_final_dashboard(
     upbit_only_assets,
     mapping,
     bybit_data,
+    bithumb_data,
 ):
 
     (
@@ -811,13 +831,14 @@ def assemble_final_dashboard(
             mapping,
             krw_usd_rate,
             bybit_data,
+            bithumb_data,
         )
         if is_updated:
             any_update = True
 
         if row:
             row["krw_usd_rate"] = krw_usd_rate  # 🚀 모든 행에 테더 환율 공급
-            uid = str(row.get("UID", row.get("DisplayTicker", ticker)))
+            uid = str(row.get("UID") or row.get("DisplayTicker") or ticker)
             final_results[uid] = row
 
     # 2. 업비트 투입
@@ -869,9 +890,10 @@ def assemble_final_dashboard(
             mapping,
             bybit_data,
             upbit_data,
+            bithumb_data,
         )
         if row:
-            uid = str(row.get("UID", base))
+            uid = str(row.get("UID") or base)
             if uid in final_results:
                 final_results[uid]["Upbit"] = "O"
                 final_results[uid]["Listed_Exchanges"] = list(
@@ -932,7 +954,7 @@ def assemble_final_dashboard(
                         mapping,
                     )
                     if row:
-                        uid = str(row.get("UID", base))
+                        uid = str(row.get("UID") or base)
                         final_results[uid] = row
                         if updated:
                             any_update = True

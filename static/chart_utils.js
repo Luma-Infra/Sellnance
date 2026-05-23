@@ -1,3 +1,4 @@
+// chart_utils.js
 import { store, tfSec, CONFIG } from "./_store.js";
 
 // ⚙️ 시간 변환 통합 헬퍼
@@ -16,6 +17,19 @@ export const getUnixSeconds = (t) => {
   return t; // 이미 숫자(타임스탬프)인 경우 그대로 반환
 };
 window.getUnixSeconds = getUnixSeconds;
+
+export const ensureSafeUnixSeconds = (t) => {
+  try {
+    if (t === null || t === undefined) return 0;
+    const sec = getUnixSeconds(t);
+    if (isNaN(sec) || typeof sec !== "number") return 0;
+    return sec;
+  } catch (e) {
+    console.warn("Time parsing warning in ensureSafeUnixSeconds:", t, e);
+    return 0;
+  }
+};
+window.ensureSafeUnixSeconds = ensureSafeUnixSeconds;
 
 function resetChartScale() {
   if (!store.chart || !store.candleSeries) return;
@@ -174,7 +188,7 @@ function updateLegend(d, v, k) {
     <span class="opacity-60 text-[11px] mr-1">고</span><span class="${cls} font-bold mr-3">${safeFormat(d.high, p)}</span>
     <span class="opacity-60 text-[11px] mr-1">저</span><span class="${cls} font-bold mr-3">${safeFormat(d.low, p)}</span>
     <span class="opacity-60 text-[11px] mr-1">종</span><span class="${cls} font-bold mr-3">${safeFormat(d.close, p)}</span>
-    <span class="ml-2 px-1 py-0.5 ${cls} font-black bg-black/10 rounded mr-3">${sign}${safeFormat(chg, p)} (${sign}${chgPercent}%)</span>
+    <span class="ml-2 px-1 py-0.5 ${cls} font-black rounded mr-3">${sign}${safeFormat(chg, p)} (${sign}${chgPercent}%)</span>
     ${volHtml}
     ${kimHtml}
   `;
@@ -194,9 +208,14 @@ function updateStatus(d, p) {
     p !== undefined ? p : store.getPrecision(store.currentAsset);
 
   // 가격 업데이트
-  const priceEl = document.getElementById("head-price");
-  if (priceEl) {
-    priceEl.innerText = formatSmartPrice(last.close, precision);
+  const asset = store.currentAsset || store.currentSelectedSymbol;
+  const allSource = store.originalTableData || store.currentTableData || [];
+  const row = allSource.find(
+    (r) =>
+      r.DisplayTicker === asset || r.Ticker === asset || r.Symbol === asset,
+  );
+  if (row && typeof window.updateHeaderDisplay === "function") {
+    window.updateHeaderDisplay(row, last.close, precision);
   }
 
   // 거래량 업데이트
@@ -249,7 +268,7 @@ function autoFit(isTabRestore = false) {
         if (store.kimchiSeries) {
           store.chartVol.priceScale("left").applyOptions({ autoScale: true });
         }
-      } catch (e) {}
+      } catch (e) { }
     }
   }
 }
@@ -407,7 +426,7 @@ export function updateRealtimeCountdown(serverMs) {
 
   const lastCandle = store.mainData[store.mainData.length - 1];
   const isDown = lastCandle.close < lastCandle.open;
-  
+
   if (!store.upColorCache || !store.downColorCache) {
     const style = getComputedStyle(document.body);
     store.upColorCache = style.getPropertyValue("--up").trim() || "#26a69a";

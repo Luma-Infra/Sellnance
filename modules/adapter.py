@@ -91,6 +91,9 @@ class ExchangeAdapter:
 
         # 4. BYBIT (V5 API)
         elif exchange == "bybit":
-            return f"https://api.bybit.com/v5/market/kline?category=spot&symbol={norm_sym}&interval={norm_int}&limit={limit}"
+            url = f"https://api.bybit.com/v5/market/kline?category=spot&symbol={norm_sym}&interval={norm_int}&limit={limit}"
+            if to:
+                url += f"&end={to}"
+            return url
 
         return None

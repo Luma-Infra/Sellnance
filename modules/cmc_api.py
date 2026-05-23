@@ -80,11 +80,15 @@ def build_cmc_lookup_lists(binance_base_set, upbit_krw_set, MAPPING_DATA):
             id_lookup.append(cmc_id)
             asset_to_lookup_key[lookup_name] = cmc_id
         else:
-            # 하드코딩 없으면 원본(a) 혹은 배율 제거본(base)으로 CMC 타격
-            # 숫자가 붙었던 녀석은 base로, 일반 합성어는 a 그대로 보냄
-            target_name = base if a.upper() != base else a.upper()
-            sym_lookup.append(target_name)
-            asset_to_lookup_key[lookup_name] = target_name
+            if a in HARDCODE_VERIFY_SKIP_LIST or base in HARDCODE_VERIFY_SKIP_LIST:
+                # CMC 최초 호출 시 Skip list에 있다면 심볼 조회를 생략(스킵)합니다.
+                print(f"⏭️ [CMC 최초 스킵] {a} ({exchange_tag}) - 최초 심볼 조회를 생략합니다.")
+            else:
+                # 하드코딩 없으면 원본(a) 혹은 배율 제거본(base)으로 CMC 타격
+                # 숫자가 붙었던 녀석은 base로, 일반 합성어는 a 그대로 보냄
+                target_name = base if a.upper() != base else a.upper()
+                sym_lookup.append(target_name)
+                asset_to_lookup_key[lookup_name] = target_name
 
     # 🚀 바이낸스와 업비트를 '각각' 돌립니다. 이제 EDGE와 MET가 둘 다 큐에 들어갑니다!
     for base in binance_base_set: process_asset(base, "BINANCE")

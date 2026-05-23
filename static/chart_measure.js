@@ -91,8 +91,11 @@ class MeasurePaneRenderer {
       const priceDiff = curPrice - store.measureStart.price;
       const percentDiff = (priceDiff / store.measureStart.price) * 100;
       const isUp = priceDiff >= 0;
-      const tColor = isUp ? "#26a69a" : "#ef5350";
-      const tBg = isUp ? "rgba(38,166,154,0.15)" : "rgba(239,83,80,0.15)";
+      const style = getComputedStyle(document.body);
+      const upColor = style.getPropertyValue("--up").trim() || "#26a69a";
+      const downColor = style.getPropertyValue("--down").trim() || "#ef5350";
+      const tColor = isUp ? upColor : downColor;
+      const tBg = tColor + "26"; // 15% opacity overlay
 
       const leftX = Math.min(startX, endX);
       const topY = Math.min(startY, endY);
@@ -256,15 +259,17 @@ export function initMeasureEvents() {
       };
 
       // 🚀 [핵심] 라이브러리 네이티브 커스텀 가격선(createPriceLine)으로 시작/끝 가격표 완벽 대체!
+      const style = getComputedStyle(document.body);
+      const upColor = style.getPropertyValue("--up").trim() || "#26a69a";
       const lineOpts = {
         price: price,
-        color: "#26a69a",
+        color: upColor,
         lineWidth: 1,
         lineStyle: window.LightweightCharts
           ? window.LightweightCharts.LineStyle.Dashed
           : 2,
         axisLabelVisible: true,
-        axisLabelColor: "#26a69a",
+        axisLabelColor: upColor,
         axisLabelTextColor: "#ffffff",
       };
 
@@ -333,7 +338,10 @@ export function initMeasureEvents() {
 
     // 🚀 [핵심] 드래그 중 실시간으로 끝 가격선(price) 및 양/음봉 색상(color) 60fps 네이티브 갱신!
     const isUp = curPrice >= store.measureStart.price;
-    const tColor = isUp ? "#26a69a" : "#ef5350";
+    const style = getComputedStyle(document.body);
+    const upColor = style.getPropertyValue("--up").trim() || "#26a69a";
+    const downColor = style.getPropertyValue("--down").trim() || "#ef5350";
+    const tColor = isUp ? upColor : downColor;
 
     if (store.measureStartPriceLine) {
       store.measureStartPriceLine.applyOptions({

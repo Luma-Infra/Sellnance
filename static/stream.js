@@ -3,8 +3,6 @@
 import { store, tfSec, CONFIG } from "./_store.js";
 import { getMultiplier, getPureBase } from "./chart_utils.js";
 
-
-
 // 🚀 [신규] 렌더링 과부하 방지용 쓰로틀 메모리
 const lastRenderMap = new Map();
 
@@ -15,14 +13,14 @@ function renderRealtimeRow(tId, data) {
 
   // 🚀 [해결] PEPE vs 1000PEPE, XRP vs XRPDOWN 등 심볼 헷갈림 방지 (널뛰기 버그 컷)
   const dataSym = (data.s || tId).toUpperCase();
-  
+
   // 🚀 [단일 진실 공급원 O(1) 광속 탐색]
   let row = store.tickerRowMap.get(dataSym);
   if (!row && (dataSym.startsWith("KRW-") || tId.startsWith("KRW-"))) {
     const upbitTicker = tId.replace("KRW-", "") + "KRW";
     row = store.tickerRowMap.get(upbitTicker);
   }
-  
+
   if (!row) return;
 
   // 🚨 [최종 수문장] PEPE vs 1000PEPE 등 배수 기호가 다르면 다른 코인임 (오염 차단)
@@ -36,14 +34,35 @@ function renderRealtimeRow(tId, data) {
   // 기존에는 업비트 원화 소켓 시세(예: 1억 원)가 들어와도 무작정 row.Price_Raw = newPrice 에 1억 원을 집어넣고,
   // 백엔드가 준 달러 시가(openPrice, 예: 7만 달러)로 나누어 ((1억 - 7만) / 7만) * 100 -> 140,000% 라는 기괴한 수치를 뱉었습니다.
   // 이제 원화 마켓 코인 여부를 완벽히 식별하여 원화/달러 장부를 분리 격리하고, 등락률 계산 시 통화 단위를 100% 일치시킵니다!
-  const isKrwCoin = row.Ticker.endsWith("KRW") || data.isUpbitRealtime || tId.startsWith("KRW-");
-  const rate = store.marketDataMap?.krw_usd_rate || 1400;
+  const isKrwCoin =
+    row.Ticker.endsWith("KRW") ||
+    data.isUpbitRealtime ||
+    tId.startsWith("KRW-");
+  const rate = store.marketDataMap?.krw_usd_rate || 0;
 
   if (isKrwCoin) {
     row.Price_KRW = newPrice;
     row.Price_Raw = newPrice / rate; // 달러 환산 가격으로 안전하게 격리 기입
+    if (
+      data.isUpbitRealtime ||
+      row.Upbit === "O" ||
+      store.currentMarket !== "BITHUMB"
+    ) {
+      row.Upbit_Price = newPrice;
+    } else {
+      row.Bithumb_Price = newPrice;
+    }
   } else {
     row.Price_Raw = newPrice;
+    if (
+      row.Listed_Exchanges?.includes("BINANCE") ||
+      row.Exact_Spot ||
+      row.Exact_Futures
+    ) {
+      row.Binance_Price = newPrice;
+    } else {
+      row.Bybit_Price = newPrice;
+    }
   }
 
   if (data.P !== undefined) {
@@ -60,7 +79,11 @@ function renderRealtimeRow(tId, data) {
   const p = store.getPrecision(row.Ticker);
 
   // 🚀 [역할 분리] 만약 이 코인이 현재 탭에 띄워진 활성 코인이라면, 가시성(스크롤/검색)과 무관하게 차트 상단 헤더 전광판을 100% 실시간 광속 동기화! (실제 DOM 조작은 _main.js의 전역 함수가 전담하여 스트림 엔진 경량화 달성)
-  if (row.Ticker === store.currentSelectedSymbol || row.DisplayTicker === store.currentAsset || row.Symbol === store.currentAsset) {
+  if (
+    row.Ticker === store.currentSelectedSymbol ||
+    row.DisplayTicker === store.currentAsset ||
+    row.Symbol === store.currentAsset
+  ) {
     if (typeof window.updateHeaderDisplay === "function") {
       window.updateHeaderDisplay(row, newPrice, p);
     }
@@ -70,7 +93,8 @@ function renderRealtimeRow(tId, data) {
   // 🚀 [핵심] 화면에 안 보이는 코인은 DOM 연산을 1절 하지 않음 (성능 최적화)
   if (!store.visibleSymbols.has(row.Ticker)) return;
 
-  if (now - lastRender < 800) return;
+  const isFirstRender = !lastRenderMap.has(tId);
+  if (!isFirstRender && now - lastRender < 500) return; // 🚀 800ms → 500ms로 단축, 첫 렌더는 즉시
   lastRenderMap.set(tId, now);
 
   const priceCell = document.getElementById(`price-${row.Ticker}`);
@@ -78,17 +102,20 @@ function renderRealtimeRow(tId, data) {
 
   const oldPrice = parseFloat(priceCell.getAttribute("data-raw-price")) || 0;
 
-  // 가격 및 반짝이 효과
-  if (newPrice !== oldPrice) {
-    priceCell.setAttribute("data-raw-price", newPrice);
-    const formattedPrice = window.formatSmartPrice(newPrice, p);
-    
-    // 🚀 [요구사항 2 반영: 테이블 가격 단일 표시 원칙]
-    // 기존에 붙여주던 괄호 안의 보조 원화/달러 표시를 전면 제거하고 오직 단일 가격(formattedPrice)만 깔끔하게 출력합니다.
-    priceCell.innerHTML = `${formattedPrice}`;
-    
-    if (typeof window.applyPriceFlash === "function") {
-      window.applyPriceFlash(priceCell, newPrice, oldPrice);
+  if (typeof window.updateRowPriceDisplay === "function") {
+    window.updateRowPriceDisplay(null, row);
+  }
+
+  const displayedPrice =
+    parseFloat(priceCell.getAttribute("data-raw-price")) || 0;
+
+  if (displayedPrice !== oldPrice) {
+    const activeExchange = priceCell.getAttribute("data-active-exchange");
+    const activeSpan = document.getElementById(
+      `price-val-${activeExchange}-${row.Ticker}`,
+    );
+    if (activeSpan && typeof window.applyPriceFlash === "function") {
+      // window.applyPriceFlash(activeSpan, displayedPrice, oldPrice);
     }
   }
 
@@ -97,8 +124,15 @@ function renderRealtimeRow(tId, data) {
   if (changeCell) {
     const change24h = row.Change_24h_Raw || 0;
     const isFocus = store.currentSortCol !== "Change_Today";
-    const themeClass = change24h > 0 ? "text-theme-up" : change24h < 0 ? "text-theme-down" : "text-theme-text opacity-50";
-    changeCell.innerHTML = `<span class="${themeClass} font-bold ${isFocus ? "opacity-100" : "opacity-40"}">${change24h > 0 ? "+" : ""}${change24h.toFixed(2)}%</span>`;
+    const themeClass =
+      change24h > 0
+        ? "text-theme-up"
+        : change24h < 0
+          ? "text-theme-down"
+          : "text-theme-text";
+    // 클래스를 복합 적용하지 않고 부모 span 자체를 직접 수정 (opacity 충돌 방지)
+    changeCell.className = `${themeClass} font-bold flex-1 text-left truncate ${isFocus ? "opacity-100" : "opacity-40"}`;
+    changeCell.innerText = `${change24h > 0 ? "+" : ""}${change24h.toFixed(2)}%`;
   }
 
   // 당일 등락률 UI
@@ -106,9 +140,15 @@ function renderRealtimeRow(tId, data) {
   if (todayCell && row.Change_Today_Raw !== undefined) {
     const todayChange = row.Change_Today_Raw;
     const isFocus = store.currentSortCol === "Change_Today";
-    const tThemeClass = todayChange > 0 ? "text-theme-up" : todayChange < 0 ? "text-theme-down" : "text-theme-text opacity-50";
+    const tThemeClass =
+      todayChange > 0
+        ? "text-theme-up"
+        : todayChange < 0
+          ? "text-theme-down"
+          : "text-theme-text";
     const safeChange = todayChange < -99.9 ? -99.9 : todayChange;
-    todayCell.innerHTML = `<span class="${tThemeClass} font-bold ${isFocus ? "opacity-100" : "opacity-40"}">${safeChange > 0 ? "+" : ""}${safeChange.toFixed(2)}%</span>`;
+    todayCell.className = `${tThemeClass} font-bold flex-1 text-left truncate ${isFocus ? "opacity-100" : "opacity-40"}`;
+    todayCell.innerText = `${safeChange > 0 ? "+" : ""}${safeChange.toFixed(2)}%`;
   }
 
   // 거래량 UI
@@ -120,22 +160,33 @@ function renderRealtimeRow(tId, data) {
 
 window.renderRealtimeRow = renderRealtimeRow;
 
-
-
 export function startBinanceMarketRadar() {
   if (store.binanceRadarWs) store.binanceRadarWs.close();
-  store.binanceRadarWs = new WebSocket("wss://fstream.binance.com/market/ws/!ticker@arr");
+  store.binanceRadarWs = new WebSocket(
+    "wss://fstream.binance.com/market/ws/!ticker@arr",
+  );
   store.binanceRadarWs.onmessage = (event) => {
     const data = JSON.parse(event.data);
     data.forEach((ticker) => {
       const pureSymbol = ticker.s.replace("USDT", "");
       store.tickerBuffer[ticker.s] = ticker;
-      if (store.visibleSymbols && (store.visibleSymbols.has(pureSymbol) || store.visibleSymbols.has(ticker.s))) {
-        requestAnimationFrame(() => renderRealtimeRow(ticker.s, ticker));
+      if (
+        store.visibleSymbols &&
+        (store.visibleSymbols.has(pureSymbol) ||
+          store.visibleSymbols.has(ticker.s))
+      ) {
+        // 🚀 코인마다 개별 랜덤 딜레이(0~600ms)를 줘서 칼군무 방지
+        const delay = Math.floor(Math.random() * 600);
+        setTimeout(
+          () =>
+            requestAnimationFrame(() => renderRealtimeRow(ticker.s, ticker)),
+          delay,
+        );
       }
     });
   };
-  store.binanceRadarWs.onclose = () => setTimeout(startBinanceMarketRadar, 3000);
+  store.binanceRadarWs.onclose = () =>
+    setTimeout(startBinanceMarketRadar, 3000);
 }
 
 export function startUpbitMarketRadar() {
@@ -143,21 +194,37 @@ export function startUpbitMarketRadar() {
   store.upbitRadarWs = new WebSocket("wss://api.upbit.com/websocket/v1");
   store.upbitRadarWs.binaryType = "arraybuffer";
   store.upbitRadarWs.onopen = () => {
-    const allUpbitCodes = store.currentTableData.filter((row) => row.Upbit === "O" && row.Symbol).map((row) => `KRW-${row.Symbol}`);
+    const allUpbitCodes = store.currentTableData
+      .filter((row) => row.Upbit === "O" && row.Symbol)
+      .map((row) => `KRW-${row.Symbol}`);
     if (!allUpbitCodes.includes("KRW-USDT")) allUpbitCodes.push("KRW-USDT");
     if (allUpbitCodes.length === 0) return;
-    store.upbitRadarWs.send(JSON.stringify([{ ticket: "UNIQUE_TICKET" }, { type: "ticker", codes: allUpbitCodes }]));
+    store.upbitRadarWs.send(
+      JSON.stringify([
+        { ticket: "UNIQUE_TICKET" },
+        { type: "ticker", codes: allUpbitCodes },
+      ]),
+    );
   };
   const decoder = new TextDecoder("utf-8");
+  /*
   store.upbitRadarWs.onmessage = (event) => {
     const ticker = JSON.parse(decoder.decode(event.data));
     const pureSym = ticker.code.replace("KRW-", "");
-    const normalizedTicker = { s: pureSym, c: ticker.trade_price, P: ticker.signed_change_rate * 100, q_upbit: ticker.acc_trade_price_24h };
+    const normalizedTicker = {
+      s: pureSym,
+      c: ticker.trade_price,
+      P: ticker.signed_change_rate * 100,
+      q_upbit: ticker.acc_trade_price_24h,
+    };
     store.tickerBuffer[ticker.code] = normalizedTicker;
     if (store.visibleSymbols && store.visibleSymbols.has(pureSym)) {
-      requestAnimationFrame(() => renderRealtimeRow(ticker.code, normalizedTicker));
+      requestAnimationFrame(() =>
+        renderRealtimeRow(ticker.code, normalizedTicker),
+      );
     }
   };
+  */
   store.upbitRadarWs.onclose = () => setTimeout(startUpbitMarketRadar, 3000);
 }
 
@@ -186,15 +253,33 @@ store.radarIntervalId = setInterval(() => {
   let dataUpdated = false;
   store.currentTableData.forEach((row) => {
     // 🚀 [수정] 업비트 규격 대응 (BTCKRW -> KRW-BTC)
-    const ticker = snapshot[row.Ticker] || (row.Ticker.endsWith("KRW") ? snapshot[`KRW-${row.Ticker.replace("KRW", "")}`] : null);
+    const ticker =
+      snapshot[row.Ticker] ||
+      (row.Ticker.endsWith("KRW")
+        ? snapshot[`KRW-${row.Ticker.replace("KRW", "")}`]
+        : null);
     if (!ticker) return;
 
     if (row.Ticker.endsWith("KRW")) {
-      const rate = store.marketDataMap?.krw_usd_rate;
+      const rate = store.marketDataMap?.krw_usd_rate || 0;
       row.Price_KRW = parseFloat(ticker.c);
       row.Price_Raw = row.Price_KRW / rate;
+      if (row.Upbit === "O" || store.currentMarket !== "BITHUMB") {
+        row.Upbit_Price = row.Price_KRW;
+      } else {
+        row.Bithumb_Price = row.Price_KRW;
+      }
     } else {
       row.Price_Raw = parseFloat(ticker.c);
+      if (
+        row.Listed_Exchanges?.includes("BINANCE") ||
+        row.Exact_Spot ||
+        row.Exact_Futures
+      ) {
+        row.Binance_Price = row.Price_Raw;
+      } else {
+        row.Bybit_Price = row.Price_Raw;
+      }
     }
     row.Change_24h_Raw = parseFloat(ticker.P);
     if (ticker.q) row.Binance_Vol_Futures = parseFloat(ticker.q);
@@ -202,11 +287,12 @@ store.radarIntervalId = setInterval(() => {
 
     if (row.utc0_open_Raw) {
       const open = parseFloat(row.utc0_open_Raw);
-      if (open > 0) row.Change_Today_Raw = ((row.Price_Raw - open) / open) * 100;
+      if (open > 0)
+        row.Change_Today_Raw = ((row.Price_Raw - open) / open) * 100;
     }
     dataUpdated = true;
   });
-}, 10000);
+}, 3000); // 🚀 10초 → 3초로 단축: 배치 인터벌 반응성 개선
 
 window.startBinanceMarketRadar = startBinanceMarketRadar;
 window.startUpbitMarketRadar = startUpbitMarketRadar;
