@@ -9,7 +9,7 @@ function getStartScreenHTML() {
   return `
     <div
       id="start-screen"
-      class="fixed items-start inset-0 z-[1000] flex bg-theme-bg transition-opacity duration-500 pt-16"
+      class="fixed items-center justify-center inset-0 z-[1000] flex bg-theme-bg transition-opacity duration-500 pt-16"
     >
       <div
         id="start-background"
@@ -143,13 +143,15 @@ async function initStartScreen() {
     if (btnStart) {
       btnStart.disabled = false;
       btnStart.innerText = "Start Engine 🚀";
-      btnStart.className = "w-full py-3.5 bg-theme-accent text-white font-black rounded-xl shadow-lg hover:brightness-110 active:scale-[0.98] transition-all tracking-widest uppercase cursor-pointer pointer-events-auto";
+      btnStart.className =
+        "w-full py-3.5 bg-theme-accent text-white font-black rounded-xl shadow-lg hover:brightness-110 active:scale-[0.98] transition-all tracking-widest uppercase cursor-pointer pointer-events-auto";
     }
 
     if (btnSkip) {
       btnSkip.disabled = false;
       btnSkip.innerText = "Skip (Use Cached Data) ⏭️";
-      btnSkip.className = "w-full py-3 bg-transparent text-theme-text border border-theme-border font-bold rounded-xl hover:bg-white/5 active:scale-[0.98] transition-all tracking-wide opacity-50 hover:opacity-100 cursor-pointer pointer-events-auto";
+      btnSkip.className =
+        "w-full py-3 bg-transparent text-theme-text border border-theme-border font-bold rounded-xl hover:bg-white/5 active:scale-[0.98] transition-all tracking-wide opacity-50 hover:opacity-100 cursor-pointer pointer-events-auto";
     }
   }
 

@@ -249,7 +249,7 @@ function updateStatus(d, p) {
 }
 
 function autoFit(isTabRestore = false) {
-  if (isTabRestore && store.isUserZoomed) return; // 🚀 탭 복귀 시 사용자가 이미 줌 조작을 해두었다면 오토핏 건너뛰기! (야동 감상 후 복귀 줌 원복 방어!!!)
+  if (isTabRestore && store.isUserZoomed) return; // 🚀 탭 복귀 시 사용자가 이미 줌 조작을 해두었다면 오토핏 건너뛰기!!
   if (store.chart && store.mainData.length) {
     const len = store.mainData.length;
     const logicalRange = {
@@ -268,7 +268,7 @@ function autoFit(isTabRestore = false) {
         if (store.kimchiSeries) {
           store.chartVol.priceScale("left").applyOptions({ autoScale: true });
         }
-      } catch (e) { }
+      } catch (e) {}
     }
   }
 }
@@ -498,3 +498,105 @@ export function updateTabTitleManager(price, symbol, isUpbit) {
   }
 }
 window.updateTabTitleManager = updateTabTitleManager;
+
+export const sanitizeChartData = (dataArr, hasValueField = false) => {
+  if (!Array.isArray(dataArr)) return [];
+  const sanitized = [];
+  const seen = new Set();
+
+  for (let i = 0; i < dataArr.length; i++) {
+    const d = dataArr[i];
+    if (!d || d.time === undefined || d.time === null) continue;
+
+    let t = d.time;
+    let finalTime = null;
+
+    // time 정규화 및 강제 검증
+    if (typeof t === "string") {
+      // YYYY-MM-DD 포맷 검증
+      if (/^\d{4}-\d{2}-\d{2}$/.test(t)) {
+        finalTime = t;
+      } else {
+        // 숫자가 섞여 있거나 파싱이 필요한 문자열
+        const parsed = Date.parse(t.includes("T") ? t : t + "T00:00:00Z");
+        if (!isNaN(parsed)) {
+          finalTime = Math.floor(parsed / 1000);
+        } else {
+          const num = Number(t);
+          if (!isNaN(num) && num > 0) {
+            finalTime = num;
+          }
+        }
+      }
+    } else if (typeof t === "number") {
+      if (!isNaN(t) && t > 0) {
+        finalTime = t;
+      }
+    } else if (typeof t === "object" && t !== null && t.year !== undefined) {
+      const parsed = Date.UTC(t.year, t.month - 1, t.day) / 1000;
+      if (!isNaN(parsed)) {
+        finalTime = parsed;
+      }
+    }
+
+    if (finalTime === null) continue;
+
+    const timeKey = String(finalTime);
+    if (seen.has(timeKey)) continue;
+
+    if (hasValueField) {
+      if (d.value === undefined || d.value === null || isNaN(Number(d.value)))
+        continue;
+      sanitized.push({
+        ...d,
+        time: finalTime,
+        value: Number(d.value),
+      });
+    } else {
+      if (
+        d.open === undefined ||
+        d.open === null ||
+        isNaN(Number(d.open)) ||
+        d.high === undefined ||
+        d.high === null ||
+        isNaN(Number(d.high)) ||
+        d.low === undefined ||
+        d.low === null ||
+        isNaN(Number(d.low)) ||
+        d.close === undefined ||
+        d.close === null ||
+        isNaN(Number(d.close))
+      ) {
+        continue;
+      }
+      sanitized.push({
+        ...d,
+        time: finalTime,
+        open: Number(d.open),
+        high: Number(d.high),
+        low: Number(d.low),
+        close: Number(d.close),
+        volume:
+          d.volume !== undefined &&
+          d.volume !== null &&
+          !isNaN(Number(d.volume))
+            ? Number(d.volume)
+            : 0,
+      });
+    }
+    seen.add(timeKey);
+  }
+
+  // 정교한 시간 오름차순 정렬
+  return sanitized.sort((a, b) => {
+    const getTimeVal = (time) => {
+      if (typeof time === "string") {
+        const parsed = Date.parse(time + "T00:00:00Z");
+        return isNaN(parsed) ? 0 : parsed;
+      }
+      return time * 1000;
+    };
+    return getTimeVal(a.time) - getTimeVal(b.time);
+  });
+};
+window.sanitizeChartData = sanitizeChartData;

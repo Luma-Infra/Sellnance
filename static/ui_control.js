@@ -350,6 +350,28 @@ export function searchSymbols(v) {
         raw.includes(query)
       );
     })
+    // 🚀 [검색 최적화] 일치율 우선순위 정렬: 0(완벽일치) > 1(티커시작) > 2(이름일치) > 3(이름시작) > 4(단순포함) 순서로 가중치 부여 (동점 시 짧은 길이 우선)
+    .sort((a, b) => {
+      const getScore = (r) => {
+        const disp = (r.DisplayTicker || "").toUpperCase();
+        const name = (r.Name || "").toUpperCase();
+        const sym = (r.Symbol || "").toUpperCase();
+        const raw = (r.Ticker || "").toUpperCase();
+        
+        if (disp === query || sym === query || raw === query) return 0;
+        if (disp.startsWith(query) || sym.startsWith(query) || raw.startsWith(query)) return 1;
+        if (name === query) return 2;
+        if (name.startsWith(query)) return 3;
+        return 4;
+      };
+      
+      const scoreA = getScore(a);
+      const scoreB = getScore(b);
+      
+      if (scoreA !== scoreB) return scoreA - scoreB;
+      
+      return (a.DisplayTicker || "").length - (b.DisplayTicker || "").length;
+    })
     .slice(0, 20);
 
   if (filtered.length === 0) {

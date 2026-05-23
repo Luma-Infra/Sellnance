@@ -162,9 +162,15 @@ window.renderRealtimeRow = renderRealtimeRow;
 
 export function startBinanceMarketRadar() {
   if (store.binanceRadarWs) store.binanceRadarWs.close();
-  store.binanceRadarWs = new WebSocket(
-    "wss://fstream.binance.com/market/ws/!ticker@arr",
-  );
+  
+  // 🚀 [버그 픽스] 업비트/현물 마켓인데 선물 웹소켓(fstream)을 연결해서 김프가 2~3% 오차가 나던 문제 해결!
+  // 현재 마켓 상태에 따라 선물/현물 웹소켓 URL을 동적으로 할당합니다.
+  const wsUrl = store.currentMarket === "FUTURES" 
+    ? "wss://fstream.binance.com/market/ws/!ticker@arr" 
+    : "wss://stream.binance.com:9443/ws/!ticker@arr";
+    
+  store.binanceRadarWs = new WebSocket(wsUrl);
+  
   store.binanceRadarWs.onmessage = (event) => {
     const data = JSON.parse(event.data);
     data.forEach((ticker) => {
@@ -197,7 +203,6 @@ export function startUpbitMarketRadar() {
     const allUpbitCodes = store.currentTableData
       .filter((row) => row.Upbit === "O" && row.Symbol)
       .map((row) => `KRW-${row.Symbol}`);
-    if (!allUpbitCodes.includes("KRW-USDT")) allUpbitCodes.push("KRW-USDT");
     if (allUpbitCodes.length === 0) return;
     store.upbitRadarWs.send(
       JSON.stringify([

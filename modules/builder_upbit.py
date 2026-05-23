@@ -1,0 +1,269 @@
+# builder_upbit.py
+import re
+from modules import utils, config_manager
+
+def build_upbit_row(
+    base,
+    up_info,
+    binance_data,
+    market_data_map,
+    asset_to_lookup_key,
+    global_listings,
+    upbit_krw_set,
+    bithumb_krw_set,
+    REVERSE_LOOKUP,
+    processed_uids,
+    krw_usd_rate,
+    mapping,
+    bybit_data,
+    upbit_data,
+    bithumb_data,
+):
+    (
+        NOTE_MAP,
+        TICKER_DATA,
+        CHAIN_LOGO_MAP,
+        EXCLUSION_LIST,
+        DUPLICATED_LIST,
+        SYMBOL_TO_ID_MAP,
+        MANUAL_SUPPLY_MAP,
+        SPECIAL_SYMBOL_MAP,
+        HARDCODE_VERIFY_SKIP_LIST,
+    ) = config_manager.get_mapping_parts(mapping)
+
+    # --- 💡 초기값 세팅 (에러 방어막) ---
+    current_p = 0.0
+    utc0_open = 0.0
+    up_price_krw = 0.0
+    up_change_24h = 0.0
+    change_today = 0.0
+    # -------------------------------
+
+    is_updated = False
+    if up_info is None:
+        return None, False
+
+    # CMC 데이터 매칭
+    lookup_id = asset_to_lookup_key.get(f"{base.upper()}_UPBIT")
+    info = market_data_map.get(lookup_id)
+    raw_key = str(REVERSE_LOOKUP.get(f"{base}_UPBIT", base) or base)
+    display_name = re.sub(
+        r"_(binance|upbit|bithumb)$", "", raw_key, flags=re.IGNORECASE
+    )
+
+    # 🚀 [추가] 괄호 안의 이름 추출 (예: EDGE(Definitive) -> Definitive)
+    explicit_name = ""
+    name_match = re.search(r"\((.*?)\)", display_name)
+    if name_match:
+        explicit_name = name_match.group(1)
+
+    # 가격 데이터 추출 (여기서 변수들이 태어납니다)
+    up_price_krw = float(up_info.get("price") or 0.0)
+    up_open_krw = float(up_info.get("utc0_open") or 0.0)
+    up_change_24h = float(up_info.get("change_24h") or 0.0)
+
+    if up_price_krw > 0:
+        current_p = up_price_krw / krw_usd_rate
+    if up_open_krw > 0:
+        utc0_open = up_open_krw / krw_usd_rate
+
+    if utc0_open > 0:
+        change_today = utils.js_round(((current_p - utc0_open) / utc0_open * 100), 2)
+
+    # 🚀 [정리 완료] 업비트용 만능 열쇠 및 지문 확정
+    ticker_info = TICKER_DATA.get(display_name)
+    saved_chain = ticker_info[1] if isinstance(ticker_info, list) else ticker_info
+    existing_uid = (
+        ticker_info[0] if isinstance(ticker_info, list) and len(ticker_info) > 0 else ""
+    )
+    hardcoded_id = str(SYMBOL_TO_ID_MAP.get(base, ""))
+
+    final_ucid = (
+        existing_uid or hardcoded_id or str(SYMBOL_TO_ID_MAP.get(display_name, ""))
+    )
+
+    lookup_id = asset_to_lookup_key.get(f"{base.upper()}_UPBIT")
+    # 3중 타격으로 업비트 코인 시총/볼륨 확보!
+    # TO-BE: 👇 final_ucid를 가장 먼저 찔러야 EDGE 두 놈이 자기 장부를 찾아갑니다!
+    info = market_data_map.get(str(final_ucid)) or market_data_map.get(lookup_id)
+
+    # 🚀 CMC에서 새로운 ucid를 찾았다면 최종 업데이트
+    if not final_ucid and info:
+        final_ucid = info.get("ucid", "")
+
+    # 중복 UID 체크 및 방어
+    if final_ucid and final_ucid in processed_uids and raw_key not in DUPLICATED_LIST:
+        return None, False
+    if final_ucid:
+        processed_uids.add(final_ucid)
+
+    # 로고 및 체인 설정
+    ch_sym = (
+        saved_chain
+        or CHAIN_LOGO_MAP.get(display_name)
+        or (info.get("chain_symbol") if info else "")
+    )
+    chain = (
+        utils.create_image_tag(CHAIN_LOGO_MAP.get(ch_sym, ""))
+        if ch_sym in CHAIN_LOGO_MAP
+        else ch_sym
+    )
+    logo = utils.create_image_tag(
+        f"https://s2.coinmarketcap.com/static/img/coins/64x64/{final_ucid}.png"
+        if final_ucid
+        else ""
+    )
+
+    # 🚀 [수정] 괄호 안의 이름이 있으면 최우선으로 사용, 없으면 CMC 이름 사용
+    coin_name = (
+        explicit_name
+        if explicit_name
+        else (
+            info.get("name", base)
+            if info
+            else (ticker_info[2] if ticker_info and len(ticker_info) >= 3 else base)
+        )
+    )
+
+    # 🚀 [신규 상장 캐치 & 족보 세탁기]
+    if not ticker_info or (
+        isinstance(ticker_info, list) and (len(ticker_info) < 4 or not ticker_info[0])
+    ):
+        TICKER_DATA[display_name] = [
+            final_ucid,
+            ch_sym,
+            coin_name,  # 🚀 괄호에서 추출한 이름 우선 반영
+            base,
+        ]
+        is_updated = True
+        print(f"✅ [족보 세탁] {display_name} UID 복구 완료: {final_ucid}")
+
+    # 가격 및 정밀도
+    p = current_p
+    up_precision = (
+        0 if p >= 100 else 1 if p >= 10 else 2 if p >= 1 else 3 if p >= 0.1 else 4
+    )
+
+    # 상장 거래소 목록 조립
+    listed_on = set(global_listings.get(base, set()))
+    exact_spot_ticker = ""
+    exact_futures_ticker = ""
+    binance_spot_price = 0.0
+    binance_futures_price = 0.0
+
+    for b_tick, b_inf in binance_data.items():
+        b_base = utils.get_pure_base_asset(b_tick.replace("USDT", "")).upper()
+        if b_base == base:
+            # 🚀 [수정] 바이낸스 티커가 실제로 같은 코인인지 검증 (EDGE 등 중복 티커 충돌 방어)
+            alias_binance_raw = str(
+                REVERSE_LOOKUP.get(f"{b_base}_BINANCE", b_base) or b_base
+            )
+            alias_binance_clean = re.sub(
+                r"_(binance|upbit|bithumb)$", "", alias_binance_raw, flags=re.IGNORECASE
+            )
+            if alias_binance_clean == display_name:
+                if b_inf.get("is_spot"):
+                    listed_on.add("BINANCE")
+                    exact_spot_ticker = b_tick.replace("USDT", "")
+                    binance_spot_price = float(b_inf.get("price") or 0.0)
+                if b_inf.get("is_futures"):
+                    listed_on.add("BINANCE_FUTURES")
+                    exact_futures_ticker = b_tick.replace("USDT", "")
+                    binance_futures_price = float(b_inf.get("price") or 0.0)
+    if base in upbit_krw_set:
+        listed_on.add("UPBIT")
+
+    # 🚀 [수정] 업비트 코인도 빗썸에 다른 이름(예: EDGEX)으로 상장되어 있는지 뱃지 검증
+    bithumb_aliases = [
+        v[2]
+        for v in DUPLICATED_LIST.values()
+        if len(v) >= 4 and v[0] == final_ucid and v[3].upper() == "BITHUMB"
+    ]
+    if base in bithumb_krw_set or any(a in bithumb_krw_set for a in bithumb_aliases):
+        listed_on.add("BITHUMB")
+
+    # 🚀 [수정] CMC 거래량 대신 거래소 실시간 거래량 합산
+    binance_vol = 0.0
+    for b_tick, b_inf in binance_data.items():
+        b_base = utils.get_pure_base_asset(b_tick.replace("USDT", "")).upper()
+        if b_base == base:
+            binance_vol += (b_inf.get("vol_futures") or 0.0) + (
+                b_inf.get("vol_spot") or 0.0
+            )
+
+    up_vol_24h = (
+        up_price_krw * float(upbit_data[base].get("volume_24h") or 0.0) / krw_usd_rate
+        if base in upbit_data and krw_usd_rate > 0
+        else 0.0
+    )
+    by_vol_24h = bybit_data.get(base, {}).get("volume_24h", 0.0)
+
+    vol_24h = binance_vol + up_vol_24h + by_vol_24h
+    mcap = info.get("market_cap", 0) if info else 0
+    vmc_raw = (vol_24h / mcap * 100) if mcap > 0 else 0.0
+
+    # 🚀 [추가] 업비트 전용 코인 김프 라벨 (바이비트 등 Fallback 비교군이 있을 때만)
+    by_spot_p = bybit_data.get(base, {}).get("spot_price", 0.0)
+    kimchi_label = "-"
+    if up_price_krw > 0 and by_spot_p > 0:
+        kimchi_label = "UPBIT <> BYB SPOT"
+    elif up_price_krw > 0 and binance_spot_price > 0:
+        kimchi_label = "UPBIT <> BIN SPOT"
+
+    # 업비트는 펀비 없음
+    funding_f = "-"
+
+    bithumb_price = bithumb_data.get(base, {}).get("price", 0.0)
+    for a in bithumb_aliases:
+        if bithumb_price == 0:
+            bithumb_price = bithumb_data.get(a.upper(), {}).get("price", 0.0)
+
+    row = {
+        # --- 1. 기본 식별 정보 ---
+        "UID": final_ucid,
+        "Symbol": base,
+        "DisplayTicker": display_name,
+        "Ticker": f"{base}KRW",
+        "Logo": logo,
+        "Name": coin_name,  # 🚀 추출된 정확한 이름 삽입
+        "Chain": chain,
+        "Upbit": "O",
+        "Note": NOTE_MAP.get(base, "Upbit Only"),
+        "precision": up_precision,
+        # --- 2. 화면 표시용 데이터 (HTML 포함) ---
+        "Price": utils.format_dynamic_price(p, up_precision),
+        "Price_KRW": up_price_krw if up_price_krw > 0 else None,
+        "Binance_Price": (binance_spot_price or binance_futures_price) if (binance_spot_price > 0 or binance_futures_price > 0) else None,
+        "Bybit_Price": by_spot_p if by_spot_p > 0 else None,
+        "Upbit_Price": up_price_krw if up_price_krw > 0 else None,
+        "Bithumb_Price": bithumb_price if bithumb_price > 0 else None,
+        "Change_24h": utils.format_change(up_change_24h),
+        "Change_Today": utils.format_change(change_today),
+        "Volume_Formatted": utils.format_volume_string(vol_24h),
+        "Kimchi_Label": kimchi_label,
+        "MarketCap_Formatted": utils.format_market_cap_string(mcap),
+        "VMC_Formatted": f"{vmc_raw:.2f}%",
+        "Funding_Formatted": funding_f,
+        # 🚀 [추가] 업비트 전용 거래대금 (24h 거래대금)
+        "Upbit_Vol_Formatted": utils.format_volume_string(
+            up_info.get("acc_trade_price_24h", 0.0)
+        ),
+        # --- 3. 프론트엔드 정렬용 순수 숫자 데이터 (Raw) ---
+        "Price_Raw": current_p,
+        "Change_24h_Raw": up_change_24h,
+        "Change_Today_Raw": change_today,
+        "Volume_Raw": vol_24h,
+        "MarketCap_Raw": mcap,
+        "VMC_Raw": vmc_raw,
+        "Funding_Raw": 0.0,
+        "Kimchi_Raw": 0.0,
+        "utc0_open_Raw": utc0_open,
+        # 추가 예정
+        "Upbit_Vol": up_info.get("acc_trade_price_24h", 0.0),
+        "Exact_Spot": exact_spot_ticker,
+        "Exact_Futures": exact_futures_ticker,
+        "Listed_Exchanges": list(
+            listed_on
+        ),  # 🚀 프론트엔드야, 이거 보고 이미지 박아라!
+    }
+    return row, is_updated

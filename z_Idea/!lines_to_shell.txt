@@ -1,0 +1,20 @@
+Get-ChildItem -Recurse -File | Where-Object {
+    (($_.FullName -like "*\modules\*") -and ($_.Extension -eq ".py" -or $_.Extension -eq ".go")) -or 
+    (($_.FullName -like "*\static\*") -and ($_.Extension -eq ".js"))
+} | ForEach-Object {
+    $content = Get-Content $_.FullName
+    $cleanLines = $content | Where-Object {
+        $trimmed = $_.Trim()
+        $trimmed -ne "" -and 
+        -not $trimmed.StartsWith("#") -and 
+        -not $trimmed.StartsWith("//") -and
+        -not $trimmed.StartsWith("/*") -and
+        -not $trimmed.StartsWith("*") -and
+        -not $trimmed.EndsWith("*/") -and
+        -not ($trimmed.StartsWith('"""') -or $trimmed.StartsWith("'''"))
+    }
+    [PSCustomObject]@{
+        "File Path" = $_.FullName.Replace((Get-Location).Path + "\", "")
+        "Line Count" = $cleanLines.Count
+    }
+} | Format-Table -AutoSize | Out-File -FilePath "lines_for_ai.txt" -Encoding utf8

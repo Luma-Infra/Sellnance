@@ -454,34 +454,18 @@ def get_usdkrw_history():
         # 1. 과거 FX 환율 (FX_IDC) 수집
         tv = TvDatafeed()
         df_fx = tv.get_hist(
-            symbol="USDKRW", exchange="FX_IDC", interval=Interval.in_daily, n_bars=3650
+            symbol="USDKRW", exchange="FX_IDC", interval=Interval.in_daily, n_bars=5000
         )
 
-        # 2. 최근 테더 환율 (UPBIT) 수집
-        res = requests.get(
-            "https://api.upbit.com/v1/candles/days?market=KRW-USDT&count=500", timeout=5
-        )
-        res.raise_for_status()
-        upbit_tether = res.json()
-
+        # A. 데이터 수집 (원시 맵 구성) - 순수 은행 환율(FX_IDC)만 사용
         raw_map = {}
-        UPBIT_LAUNCH_TS = 1717977600  # 2024-06-10 00:00:00 UTC
-
-        # A. 데이터 수집 (원시 맵 구성)
         if df_fx is not None and not df_fx.empty:
             for date, row in df_fx.iterrows():
                 dt = pd.to_datetime(date)
                 ts = int(
                     datetime(dt.year, dt.month, dt.day, tzinfo=pytz.UTC).timestamp()
                 )
-                if ts < UPBIT_LAUNCH_TS:
-                    raw_map[ts] = float(row["close"])
-
-        for c in upbit_tether:
-            dt = datetime.fromisoformat(c["candle_date_time_utc"])
-            ts = int(dt.replace(tzinfo=pytz.UTC).timestamp())
-            if ts >= UPBIT_LAUNCH_TS:
-                raw_map[ts] = float(c["trade_price"])
+                raw_map[ts] = float(row["close"])
 
         if not raw_map:
             return {"error": "환율 데이터를 수집하지 못했습니다."}
@@ -498,18 +482,15 @@ def get_usdkrw_history():
             if curr_ts in raw_map:
                 history_map[str(curr_ts)] = raw_map[curr_ts]
             else:
-                # 🚀 데이터가 비어있다면 (주말 등) 전후 데이터를 찾아 선형 보간
+                # 🚀 데이터가 비어있다면 (주말 휴장 등) 직전 영업일의 최종 유효 환율(금요일 종가)을 그대로 유지 (선형보간 제거)
                 prev_ts = max([ts for ts in sorted_ts if ts < curr_ts], default=None)
-                next_ts = min([ts for ts in sorted_ts if ts > curr_ts], default=None)
-
-                if prev_ts and next_ts:
-                    weight = (curr_ts - prev_ts) / (next_ts - prev_ts)
-                    interp_val = raw_map[prev_ts] + weight * (
-                        raw_map[next_ts] - raw_map[prev_ts]
-                    )
-                    history_map[str(curr_ts)] = round(interp_val, 2)
-                elif prev_ts:
+                if prev_ts:
                     history_map[str(curr_ts)] = raw_map[prev_ts]
+                else:
+                    # 첫 부분 공백 방어용
+                    next_ts = min([ts for ts in sorted_ts if ts > curr_ts], default=None)
+                    if next_ts:
+                        history_map[str(curr_ts)] = raw_map[next_ts]
 
             curr_ts += day_sec
 

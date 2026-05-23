@@ -10,9 +10,14 @@ import {
 
 // 🎯 개별 스트림 스나이퍼 소켓 초기화 (바이낸스 + 업비트 상시 멀티 파이프라인 가동)
 function initSniperSocket() {
-  // 1. 바이낸스 선물 복합 스트림 가동
+  // 1. 바이낸스 복합 스트림 가동 (선물/현물 동적 분기)
   if (!store.sniperWs || store.sniperWs.readyState !== WebSocket.OPEN) {
-    store.sniperWs = new WebSocket("wss://fstream.binance.com/market/ws");
+    // 🚀 [버그 픽스] 현물 코인 스나이핑 시 선물 웹소켓을 쏴서 가격이 어긋나거나 수신되지 않던 문제 완벽 해결!
+    const wsUrl = store.currentMarket === "FUTURES"
+      ? "wss://fstream.binance.com/market/ws"
+      : "wss://stream.binance.com:9443/ws";
+      
+    store.sniperWs = new WebSocket(wsUrl);
     store.sniperWs.onopen = () => {
       console.log("🎯 바이낸스 스나이퍼 엔진 가동: 보이는 놈들 정밀 타격 시작");
       syncSniperSubscriptions();
@@ -229,69 +234,79 @@ function refreshSniperTarget() {
 function updateRealtimeKimchi(liveData, symbol, chartTime) {
   if (!store.kimchiSeries || !store.paneConfig.kimchi) return;
 
-  const usdtPrice =
-    store.tickerBuffer["KRW-USDT"]?.c || store.tickerBuffer["USDT_KRW"]?.c;
-  const rate = usdtPrice || store.marketDataMap?.krw_usd_rate || 0;
-
+  // 1. 순수 법정 환율만 참조 (테더 프리미엄 오용 원천 배제)
+  const rate = store.marketDataMap?.krw_usd_rate || 0;
   if (rate === 0) return;
 
   const pureSymbol = getPureBase(symbol);
-  const mainMulti = getMultiplier(symbol);
-
   const isKor = ["UPBIT", "BITHUMB"].includes(store.currentMarket);
-  let subPrice = null;
-  let subMulti = 1;
-
   const row = store.currentTableData.find((c) => c.Symbol === pureSymbol);
 
-  if (isKor) {
-    let glbSym = row && row.Exact_Spot ? row.Exact_Spot : pureSymbol;
-    if (store.currentMarket === "FUTURES" && row && row.Exact_Futures)
-      glbSym = row.Exact_Futures;
+  // 2. 글로벌/국내의 1개 단위 순수 가격(Unit Price) 구하기
+  let unitKorPrice = null;
+  let unitGlbPrice = null;
 
+  if (isKor) {
+    // A. 현재 마켓이 한국 거래소 (메인 차트가 한국 시세)
+    const mainMulti = getMultiplier(symbol);
+    unitKorPrice = liveData.close / mainMulti;
+
+    let glbSym = row && row.Exact_Spot ? row.Exact_Spot : pureSymbol;
+    if (store.currentMarket === "FUTURES" && row && row.Exact_Futures) {
+      glbSym = row.Exact_Futures;
+    }
     let glbPrice = null;
-    const hasBinance = row?.Listed_Exchanges?.some((ex) =>
-      ex.includes("BINANCE"),
-    );
+    const hasBinance = row?.Listed_Exchanges?.some((ex) => ex.includes("BINANCE"));
     if (hasBinance) {
       glbPrice = store.tickerBuffer[`${glbSym}USDT`]?.c;
     }
-    if (!glbPrice && row && row.Price_Raw) glbPrice = row.Price_Raw * mainMulti;
-
-    if (glbPrice) {
-      subPrice = glbPrice;
-      subMulti = getMultiplier(glbSym);
+    if (!glbPrice && row && row.Price_Raw) {
+      glbPrice = row.Price_Raw; 
+    } else if (glbPrice) {
+      glbPrice = parseFloat(glbPrice) / getMultiplier(glbSym);
     }
+    unitGlbPrice = glbPrice;
   } else {
+    // B. 현재 마켓이 글로벌 거래소 (메인 차트가 글로벌 시세)
+    const mainMulti = getMultiplier(symbol);
+    unitGlbPrice = liveData.close / mainMulti;
+
     let korSym = row && row.Upbit_Symbol ? row.Upbit_Symbol : pureSymbol;
     let korPrice = store.tickerBuffer[`KRW-${korSym}`]?.c;
     if (!korPrice) korPrice = store.tickerBuffer[`${pureSymbol}_KRW`]?.c;
-    if (!korPrice && row && row.Price_KRW) korPrice = row.Price_KRW * mainMulti;
-
-    if (korPrice) {
-      subPrice = korPrice;
-      subMulti = getMultiplier(korSym);
+    if (!korPrice && row && row.Price_KRW) {
+      korPrice = row.Price_KRW;
+    } else if (korPrice) {
+      korPrice = parseFloat(korPrice) / getMultiplier(korSym);
     }
+    unitKorPrice = korPrice;
   }
 
   // 🚀 [원인 완벽 규명 및 해결: 빗썸 김프 증발 방어 코드]
-  // 실시간 소켓 갱신 중 일시적으로 비교군 가격(subPrice)이 null이 되거나 체결가가 0이라고 해서,
-  // 기존 vol-pane 캔버스에 예쁘게 렌더링되어 있던 수백 개의 김프 데이터(kimchiData)를 통째로 소각(setData([]))해버리던 끔찍한 버그 전면 제거!
+  // 실시간 소켓 갱신 중 일시적으로 비교군 가격이 null이 되거나 체결가가 0이라고 해서,
+  // 기존 vol-pane 캔버스에 예쁘게 렌더링되어 있던 수백 개의 김프 데이터를 통째로 소각해버리던 끔찍한 버그 전면 제거!
   // 코인 변경 시 초기화는 이미 chart_data.js가 전담하므로, 여기서는 조용히 return만 하여 기존 김프 라인을 100% 완벽하게 유지합니다!
-  if (!subPrice || liveData.close <= 0) {
+  if (!unitKorPrice || !unitGlbPrice || liveData.close <= 0) {
     return;
   }
 
+  const isTimeValid = (() => {
+    if (chartTime === undefined || chartTime === null) return false;
+    if (typeof chartTime === "number") {
+      return !isNaN(chartTime) && chartTime > 0;
+    }
+    if (typeof chartTime === "string") {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(chartTime)) return true;
+      const num = Number(chartTime);
+      if (!isNaN(num) && num > 0) return true;
+      const parsed = Date.parse(chartTime.includes("T") ? chartTime : chartTime + "T00:00:00Z");
+      return !isNaN(parsed);
+    }
+    return false;
+  })();
+
   // 🚀 [완벽 방어벽] chartTime 유효성 및 kimchiPct 정상 수치 여부를 철저히 검증하고 try-catch로 감싸서 어떤 예외도 밖으로 새어나가지 못하게 차단!
-  if (
-    chartTime !== undefined &&
-    chartTime !== null &&
-    !Number.isNaN(Number(chartTime))
-  ) {
-    const rawKorPrice = isKor ? liveData.close : parseFloat(subPrice);
-    const rawGlbPrice = isKor ? parseFloat(subPrice) : liveData.close;
-    const unitKorPrice = rawKorPrice / (isKor ? mainMulti : subMulti);
-    const unitGlbPrice = rawGlbPrice / (isKor ? subMulti : mainMulti);
+  if (isTimeValid) {
     const kimchiPct = (unitKorPrice / (unitGlbPrice * rate) - 1) * 100;
 
     if (isFinite(kimchiPct) && kimchiPct >= -50 && kimchiPct <= 100) {
@@ -356,6 +371,11 @@ export function startRealtimeCandle(
 
     requestAnimationFrame(() => {
       realtimeUpdatePending = false;
+      
+      // 🚀 [완벽 방어] 탭/타임프레임 전환 시 큐에 남아있던 망령(잔상 웹소켓 렌더) 원천 차단!
+      // 차트를 새로 로딩 중일 때, 이전 타임프레임의 로직으로 억지로 업데이트를 시도하여 스케일이 박살나는 치명적 크래시(Value is null)를 방어합니다.
+      if (store.isFetchingChart || window.isFetchingChart) return;
+
       const currentCandle = latestActiveCandle;
       const currentSymbol = latestSymbol;
       const currentServerMs = latestServerMs;
@@ -387,13 +407,47 @@ export function startRealtimeCandle(
             return currentCandle.time;
           })();
 
-      if (store.candleSeries) {
-        store.candleSeries.update({ ...currentCandle, time: chartTime });
-        if (store.leftScaleSeries) {
-          store.leftScaleSeries.update({
+      const isTimeValid = (() => {
+        if (chartTime === undefined || chartTime === null) return false;
+        if (typeof chartTime === "number") {
+          return !isNaN(chartTime) && chartTime > 0;
+        }
+        if (typeof chartTime === "string") {
+          if (/^\d{4}-\d{2}-\d{2}$/.test(chartTime)) return true;
+          const num = Number(chartTime);
+          if (!isNaN(num) && num > 0) return true;
+          const parsed = Date.parse(chartTime.includes("T") ? chartTime : chartTime + "T00:00:00Z");
+          return !isNaN(parsed);
+        }
+        return false;
+      })();
+
+      const isValidCandle = 
+        currentCandle &&
+        isTimeValid &&
+        !isNaN(Number(currentCandle.open)) && currentCandle.open !== null &&
+        !isNaN(Number(currentCandle.high)) && currentCandle.high !== null &&
+        !isNaN(Number(currentCandle.low)) && currentCandle.low !== null &&
+        !isNaN(Number(currentCandle.close)) && currentCandle.close !== null;
+
+      if (store.candleSeries && isValidCandle) {
+        try {
+          store.candleSeries.update({
             time: chartTime,
-            value: currentCandle.close,
+            open: Number(currentCandle.open),
+            high: Number(currentCandle.high),
+            low: Number(currentCandle.low),
+            close: Number(currentCandle.close),
+            volume: Number(currentCandle.volume) || 0
           });
+          if (store.leftScaleSeries) {
+            store.leftScaleSeries.update({
+              time: chartTime,
+              value: Number(currentCandle.close),
+            });
+          }
+        } catch (candleUpdateErr) {
+          console.warn("🚨 candleSeries.update 예외 우회 완료:", candleUpdateErr);
         }
         if (typeof window.updateRealtimeCountdown === "function") {
           window.updateRealtimeCountdown(currentServerMs);
@@ -403,9 +457,7 @@ export function startRealtimeCandle(
       if (
         store.volumeSeries &&
         currentCandle.volume !== undefined &&
-        chartTime !== undefined &&
-        chartTime !== null &&
-        !Number.isNaN(chartTime)
+        isTimeValid
       ) {
         if (!store.upColorCache || !store.downColorCache) {
           const curStyle = getComputedStyle(document.body);
@@ -544,6 +596,8 @@ export function startRealtimeCandle(
     CHART_DISPATCHER[res.e]?.();
 
     if (chartUpdateNeeded) {
+      // 🚀 [최종 관문 이중 방어] 로직 처리 도중 탭 이동/타임프레임 변경이 감지되면 즉시 렌더링 큐 전송 취소!
+      if (store.isFetchingChart || window.isFetchingChart) return;
       broadcastCandleUpdate(activeCandle, symbol, store.lastServerMs);
     }
   };
@@ -597,6 +651,8 @@ export function startRealtimeCandle(
     }
 
     if (chartUpdateNeeded) {
+      // 🚀 [최종 관문 이중 방어] 로직 처리 도중 탭 이동/타임프레임 변경이 감지되면 즉시 렌더링 큐 전송 취소!
+      if (store.isFetchingChart || window.isFetchingChart) return;
       broadcastCandleUpdate(activeCandle, symbol, res.timestamp);
     }
   };

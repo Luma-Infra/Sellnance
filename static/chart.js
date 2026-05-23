@@ -10,7 +10,9 @@ class CanvasCrosshairPrimitive {
     this._series = null;
     this._requestUpdate = null;
     this._x = null;
+    this._timeStr = null;
     this._paneViews = [new CanvasCrosshairPaneView(this)];
+    this._timeAxisViews = [new CanvasCrosshairTimeAxisView(this)];
   }
   attached({ chart, series, requestUpdate }) {
     this._chart = chart;
@@ -25,19 +27,48 @@ class CanvasCrosshairPrimitive {
   paneViews() {
     return this._x !== null ? this._paneViews : [];
   }
-  setX(x) {
+  timeAxisViews() {
+    return this._x !== null && this._timeStr ? this._timeAxisViews : [];
+  }
+  setX(x, timeStr = null) {
     if (x === undefined || x === null || isNaN(x)) {
       this._x = null;
+      this._timeStr = null;
     } else {
       this._x = x;
+      this._timeStr = timeStr;
     }
     if (this._requestUpdate) {
       try {
         this._requestUpdate();
-      } catch (e) {
-        // lightweight-charts 내부 렌더 상태 불일치 에러 방어
-      }
+      } catch (e) {}
     }
+  }
+}
+
+// 🚀 [신규 플러그인: 시간축 라벨]
+// 네이티브 크로스헤어가 고장나는 딜레마를 피해, 이 커스텀 플러그인이 시간축(X축) 바닥에 시간 라벨을 직접 그립니다!
+class CanvasCrosshairTimeAxisView {
+  constructor(source) {
+    this._source = source;
+  }
+  coordinate() {
+    return this._source._x || 0;
+  }
+  text() {
+    return this._source._timeStr || "";
+  }
+  background() {
+    return "#000000ff";
+  }
+  backColor() {
+    return "#000000ff"; // 🚀 트뷰 엔진이 요구하는 정확한 배경색 인터페이스명
+  }
+  color() {
+    return "#ffffff";
+  }
+  textColor() {
+    return "#ffffff";
   }
 }
 
@@ -204,6 +235,13 @@ export function initChart() {
   // 2. 볼륨 차트 (좌측 김프, 우측 거래량 스케일 동시 적용)
   store.chartVol = window.LightweightCharts.createChart(elVol, {
     ...commonOptions,
+    crosshair: {
+      ...commonOptions.crosshair,
+      vertLine: {
+        ...commonOptions.crosshair.vertLine,
+        labelVisible: false, // 🚀 [정답] 네이티브 시간 라벨만 딱 끄기! (플러그인 라벨과 겹침 방지)
+      },
+    },
     timeScale: {
       ...commonOptions.timeScale,
       borderColor: "transparent", // 🚀 [하단 테두리 박멸] 볼륨 캔버스 하단의 진한 테두리 선 투명화
@@ -344,65 +382,73 @@ export function initChart() {
   const syncCrosshair = (sourceChart, targetCharts) => {
     sourceChart.subscribeCrosshairMove((param) => {
       try {
+        // 🚀 [데이터 로딩 방어막] 차트 데이터 갱신 중(타임프레임 변경 등)일 때는 옵션 변경 및 십자선 렌더링 원천 차단!
+        // (이 방어막이 없으면 렌더링 도중 applyOptions가 호출되어 Histogram Value is null 에러가 터짐)
+        if (store.isFetchingChart) return;
+
         const isHover =
           param.point !== undefined && param.point.x >= 0 && param.point.y >= 0;
 
         if (isHover) {
-          // 🚀 1. 현재 마우스가 올라간 차트를 무조건 activeChart로 강제 승격!
-          store.activeChart = sourceChart;
+          // 🚀 1. 현재 마우스가 올라간 차트(sourceChart)에 맞춰 가로선 활성화/비활성화 처리 ( activeChart 단일 진실 소스 기준 O(1) 업데이트 )
+          if (store.activeChart !== sourceChart) {
+            store.activeChart = sourceChart;
 
-          // 🚀 2. 내 차트(sourceChart)의 가로선(horzLine) 및 라벨은 켜되, 내장 세로선(vertLine)은 투명하게 끈다! (캔버스 플러그인이 대체)
-          if (sourceChart._isSource !== true) {
+            // 🚀 1. 활성 차트 (마우스가 있는 곳): 가로선과 가격 라벨을 원래 색상으로 우아하게 복원!
             sourceChart.applyOptions({
               crosshair: {
+                mode: window.LightweightCharts.CrosshairMode.Normal,
                 vertLine: {
-                  visible: true, // ⏰ 시간축 라벨 표시를 위해 활성화
-                  color: "transparent", // 🚨 세로선은 은폐 (투명화로 겹침 방지!)
-                  labelVisible: true, // ⏰ 하단 시간축 라벨은 유지!
+                  visible: true,
+                  color: "transparent",
+                  labelVisible: true,
                   style: window.LightweightCharts.LineStyle.Dotted,
                 },
                 horzLine: {
-                  visible: true, // 👈 마우스가 있는 곳의 가로선은 켠다!
+                  visible: true,
                   labelVisible: true,
+                  color: "#758696", // 원래 트뷰 기본 십자선 색상 복구
+                  labelBackgroundColor: "#2b2b43", // 원래 트뷰 기본 라벨 배경색 복구
                   style: window.LightweightCharts.LineStyle.Dotted,
                 },
               },
             });
-            sourceChart._isSource = true;
-            sourceChart._isTarget = false;
+
+            // 🚀 2. 비활성 차트 (타겟): 트뷰 API 강제 오버라이드를 피하기 위해, 네이티브 색상 제어로 완벽 투명화!
+            targetCharts.forEach((targetObj) => {
+              if (targetObj.chart) {
+                targetObj.chart.applyOptions({
+                  crosshair: {
+                    mode: window.LightweightCharts.CrosshairMode.Normal,
+                    horzLine: {
+                      visible: false,
+                      labelVisible: false,
+                      color: "transparent", // 가로선 완전 투명화
+                      labelBackgroundColor: "transparent", // 라벨 배경 완전 투명화
+                    },
+                    vertLine: {
+                      visible: true,
+                      color: "transparent",
+                      labelVisible: true,
+                      style: window.LightweightCharts.LineStyle.Dotted,
+                    },
+                  },
+                });
+              }
+            });
           }
 
-          // 🚀 3. 자석 마그넷 효과 계산 (과거 캔들 + 미래 허공 완벽 통합 스냅)
+          // 🚀 2. 자석 효과 제거: 마우스 좌표를 그대로 사용하여 세로선이 끊김 없이 부드럽게 움직이도록 함
           let magnetX = param.point.x;
-          if (
-            param.time !== undefined &&
-            typeof sourceChart.timeScale().timeToCoordinate === "function"
-          ) {
-            const cx = sourceChart.timeScale().timeToCoordinate(param.time);
-            if (cx !== null) magnetX = cx;
-          } else if (
-            typeof sourceChart.timeScale().coordinateToLogical === "function" &&
-            typeof sourceChart.timeScale().logicalToCoordinate === "function"
-          ) {
-            const logical = sourceChart
-              .timeScale()
-              .coordinateToLogical(param.point.x);
-            if (logical !== null) {
-              const snapX = sourceChart
-                .timeScale()
-                .logicalToCoordinate(Math.round(logical));
-              if (snapX !== null) magnetX = snapX;
-            }
-          }
 
-          // 🚀 4. [핵심] 원본 차트(sourceChart) 캔버스 플러그인 세로선 다이렉트 렌더링! (메인 차트 세로선 누락 원천 차단!!!)
+          // 🚀 3. [핵심] 원본 차트(sourceChart) 캔버스 플러그인 세로선 다이렉트 렌더링! (메인 차트 세로선 누락 원천 차단!!!)
           if (sourceChart === store.chart && store._mainCrosshair) {
             store._mainCrosshair.setX(magnetX);
           } else if (sourceChart === store.chartVol && store._volCrosshair) {
             store._volCrosshair.setX(magnetX);
           }
 
-          // 🚀 5. 타겟 차트들 처리 (내장 세로선/가로선 은폐, 하단 시간축 라벨 유지, 캔버스 플러그인 단독 렌더링!)
+          // 🚀 4. 타겟 차트들 처리 (하단 시간축 라벨 유지, 캔버스 플러그인 단독 렌더링!)
           let targetTime = param.time;
 
           // 🚀 [원인 완벽 규명 및 해결: 미래 캔들 영역 타임스탬프 증발 방어]
@@ -455,39 +501,55 @@ export function initChart() {
 
           targetCharts.forEach((targetObj) => {
             const { chart: tChart, series: tSeries } = targetObj;
-            if (tChart) {
-              if (tChart !== sourceChart && tChart._isTarget !== true) {
-                tChart.applyOptions({
-                  crosshair: {
-                    horzLine: { visible: false, labelVisible: false }, // 타겟 차트 가로선 끔
-                    vertLine: {
-                      visible: true, // 🚨 중요: 타겟 차트의 시간축 라벨을 켜려면 vertLine.visible도 true여야 함!
-                      color: "transparent", // 🚨 단, 중복 선이 보이지 않게 투명화!
-                      labelVisible: true, // 하단 시간 라벨 켬
-                      style: window.LightweightCharts.LineStyle.Dotted,
-                    },
-                  },
-                });
-                tChart._isTarget = true;
-                tChart._isSource = false;
-              }
-
+            if (tChart && tSeries) {
               // 🚀 1. 먼저 원격 십자선 이동 API를 호출하여 라이브러리 내부 상태 및 하단 타임스탬프 라벨 위치를 확정 짓는다!
               if (
-                tChart !== sourceChart &&
                 normalizedTime !== undefined &&
-                normalizedTime !== null
+                normalizedTime !== null &&
+                !String(normalizedTime).includes("NaN")
               ) {
                 try {
-                  tChart.setCrosshairPosition(NaN, normalizedTime);
-                } catch (e) { }
+                  // 🚀 [초강력 단일화: 타겟 차트의 네이티브 크로스헤어 완전 초기화]
+                  // 타겟 차트에서 트뷰 API(setCrosshairPosition)를 억지로 호출하면 가로선이나 라벨이 강제로 부활하는 오버라이드 현상이 발생합니다.
+                  // 이를 원천 차단하기 위해, 비활성 타겟 차트의 네이티브 크로스헤어를 완벽하게 꺼버립니다.
+                  // (세로선 동기화는 바로 아래의 캔버스 플러그인이 완벽하게 그려주므로 시간축 스냅 등 마그네틱 기능은 100% 유지됩니다!)
+                  tChart.clearCrosshairPosition();
+                } catch (e) {}
               }
 
-              // 🚀 2. [핵심] 타겟 차트(tChart) 캔버스 플러그인 점선 최종 렌더링! (거래량 차트 세로선 누락 원천 차단!!!)
+              // 🚀 targetTime을 문자열(YYYY-MM-DD HH:mm)로 변환하여 플러그인에 전달할 준비!
+              let timeStr = null;
+              if (targetTime !== undefined && targetTime !== null) {
+                const isDay = !(store.currentTF || "1h").match(/[hm]/);
+                if (isDay && typeof targetTime === "string") {
+                  timeStr = targetTime;
+                } else {
+                  const dt = new Date(
+                    (typeof targetTime === "string"
+                      ? getUnixSeconds(targetTime)
+                      : targetTime) * 1000,
+                  );
+                  if (!isNaN(dt.getTime())) {
+                    const yyyy = dt.getUTCFullYear();
+                    const mm = String(dt.getUTCMonth() + 1).padStart(2, "0");
+                    const dd = String(dt.getUTCDate()).padStart(2, "0");
+                    if (isDay) {
+                      timeStr = `${yyyy}-${mm}-${dd}`;
+                    } else {
+                      const HH = String(dt.getHours()).padStart(2, "0");
+                      const MM = String(dt.getMinutes()).padStart(2, "0");
+                      timeStr = `${yyyy}-${mm}-${dd} ${HH}:${MM}`;
+                    }
+                  }
+                }
+              }
+
+              // 🚀 2. [핵심] 타겟 차트(tChart) 캔버스 플러그인 점선 및 하단 시간 라벨 최종 렌더링!
+              // timeStr을 던져주면, 방금 만든 CanvasCrosshairTimeAxisView가 X축에 라벨을 예쁘게 그려냅니다.
               if (tChart === store.chartVol && store._volCrosshair) {
-                store._volCrosshair.setX(magnetX);
+                store._volCrosshair.setX(magnetX, timeStr);
               } else if (tChart === store.chart && store._mainCrosshair) {
-                store._mainCrosshair.setX(magnetX);
+                store._mainCrosshair.setX(magnetX, timeStr);
               }
             }
           });
@@ -528,12 +590,19 @@ export function initChart() {
               d = { ...mainCandle };
             }
           } else {
-            d = store.mainData?.find((item) => getUnixSeconds(item.time) === pTime) || null;
+            d =
+              store.mainData?.find(
+                (item) => getUnixSeconds(item.time) === pTime,
+              ) || null;
           }
           const v =
-            store.volumeData?.find((item) => getUnixSeconds(item.time) === pTime) || null;
+            store.volumeData?.find(
+              (item) => getUnixSeconds(item.time) === pTime,
+            ) || null;
           const k =
-            store.kimchiData?.find((item) => getUnixSeconds(item.time) === pTime) || null;
+            store.kimchiData?.find(
+              (item) => getUnixSeconds(item.time) === pTime,
+            ) || null;
           if (d && typeof window.updateLegend === "function") {
             window.updateLegend(d, v, k);
           } else if (typeof window.updateStatus === "function") {
@@ -567,7 +636,7 @@ export function initChart() {
             }
           }
         }
-      } catch (err) { }
+      } catch (err) {}
     });
   };
 
@@ -653,7 +722,8 @@ export function initChart() {
 
   window.resetPriceScaleWidthSync();
 
-  // 🚀 차트 마우스 우클릭 시 전체 차트(메인+볼륨)를 병합한 고화질 캡처 이미지를 클립보드 복사 가능하도록 img 오버레이 생성
+  // 캡처는 렉 겁나게 걸려서 일단 보류
+  /* 🚀 차트 마우스 우클릭 시 전체 차트(메인+볼륨)를 병합한 고화질 캡처 이미지를 클립보드 복사 가능하도록 img 오버레이 생성
   const wrapper = document.getElementById("chart-wrapper");
   if (wrapper) {
     if (window._chartRightClickListener) {
@@ -732,7 +802,7 @@ export function initChart() {
     };
 
     wrapper.addEventListener("mousedown", window._chartRightClickListener);
-  }
+  } */
 
   // 🚀 차트 스케일 리셋(더블클릭) 시 이전 넓이의 저주를 풀고 즉시 0으로 리셋 후 재계산 연동!
   [elMain, elVol].forEach((el) => {
@@ -824,7 +894,21 @@ export function updateChartTheme() {
       }
     };
 
-    store.volumeSeries.setData(store.volumeData.map(mapTime));
+    if (store.volumeSeries && store.volumeData) {
+      try {
+        const mappedVol = store.volumeData.map(mapTime);
+        store.volumeSeries.setData(
+          window.sanitizeChartData
+            ? window.sanitizeChartData(mappedVol, true)
+            : mappedVol,
+        );
+      } catch (volThemeErr) {
+        console.warn(
+          "🚨 volumeSeries.setData in updateChartTheme 예외 우회 완료:",
+          volThemeErr,
+        );
+      }
+    }
   }
 
   applyChartLayout();
