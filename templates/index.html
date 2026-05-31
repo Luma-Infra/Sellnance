@@ -16,41 +16,11 @@
     <!-- <img src="../static/_gemini-svg-light.svg" alt="logo" id="main-logo-img" class="hidden" /> -->
     <!-- <img src="../static/gemini-svg.svg" alt="logo" /> -->
     <script src="https://unpkg.com/lightweight-charts@5.2.0/dist/lightweight-charts.standalone.production.js"></script>
+    <script src="../static/lwc_error_tracker.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <!-- <link rel="stylesheet" href="/static/z_style.css"> -->
     <link rel="stylesheet" href="../static/z_style.min.css" />
-    <style>
-      /* 🚀 3단 뷰 모드 동적 반응형 CSS */
-      #left-panel {
-        transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      }
-      #left-panel.view-mode-simple {
-        width: 260px !important;
-      }
-      #left-panel.view-mode-basic {
-        width: 560px !important;
-      }
-      #left-panel.view-mode-expert {
-        width: 640px !important;
-      }
-
-      /* 기본적으로 Listing 숨김 */
-      .col-listing {
-        display: none !important;
-      }
-
-      /* 모드별 컬럼 표시 제어 */
-      #left-panel.view-mode-simple .col-mcap,
-      #left-panel.view-mode-simple .col-kimch,
-      #left-panel.view-mode-simple .col-exch {
-        display: none !important;
-      }
-
-      #left-panel.view-mode-expert .col-listing {
-        display: table-cell !important;
-      }
-    </style>
 
     <!-- 🚀 Vite 호환: 단일 Entry Point(ES Module) 사용 -->
     <!-- _main.js 내부에서 필요한 모든 모듈을 import 하도록 묶습니다. -->
@@ -135,7 +105,7 @@
       </h2>
       <p class="text-[#d4d4d4] opacity-80 text-center text-sm leading-relaxed">
         바이낸스 및 업비트 실시간 데이터를 수집 중입니다.<br />
-        (최대 10초 ~ 30초 소요)
+        (최대 5초 ~ 20초 소요)
       </p>
     </div>
 
@@ -357,6 +327,11 @@
             </div>
           </div>
 
+          <!-- 🚀 [신규 추가] 거래소 다중 체크 AND 필터바 -->
+          <div id="exchange-filter-container" class="flex items-center gap-1.5 overflow-x-auto scrollbar-hide py-1 px-1 bg-theme-panel/5 border border-theme-border/20 rounded-xl">
+            <!-- 동적으로 table_filter.js::updateExchFilterUI()가 버튼들을 그립니다 -->
+          </div>
+
           <!-- 2층: 카테고리 탭 및 간편 필터 -->
           <div
             class="flex items-center gap-1 overflow-x-auto scrollbar-hide px-1"
@@ -373,7 +348,14 @@
               id="tab-fav"
               class="tab-btn px-4 py-1.5 text-[10px] font-black rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap"
             >
-              ⭐ FAVORITES
+              <span style="color: #e3b30a; margin-right: 2px;">★</span> FAVORITES 1
+            </button>
+            <button
+              onclick="switchTab('FAV2')"
+              id="tab-fav2"
+              class="tab-btn px-4 py-1.5 text-[10px] font-black rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap"
+            >
+              <span style="color: #3b82f6; margin-right: 2px;">★</span> FAVORITES 2
             </button>
 
             <div class="w-px h-4 bg-theme-border/30 mx-1"></div>
@@ -404,6 +386,7 @@
             >
               BASIC
             </button>
+            <!--
             <button
               onclick="window.switchViewMode('expert')"
               id="view-mode-expert-btn"
@@ -411,6 +394,7 @@
             >
               EXPERT
             </button>
+            -->
           </div>
         </div>
 
@@ -547,6 +531,7 @@
                     LISTED ON
                   </div>
                 </th>
+                <!--
                 <th
                   class="p-2 text-[9px] opacity-70 text-left overflow-hidden col-listing"
                 >
@@ -556,6 +541,7 @@
                     LISTED DATE
                   </div>
                 </th>
+                -->
               </tr>
             </thead>
             <tbody id="table-body" class="overflow-y-auto"></tbody>
@@ -576,29 +562,85 @@
         </button>
 
         <div
-          class="flex w-full shrink-0 h-14 bg-theme-panel border-b border-theme-border"
+          class="flex w-full shrink-0 h-14 bg-theme-panel border-b border-theme-border p-1.5"
         >
-          <button
-            id="tab-btn-chart"
-            class="chart-tabs-btn active flex-1 p-3 bg-transparent border-none text-theme-text font-bold transition-all border-b-2 cursor-pointer hover:bg-white/5"
-            onclick="switchChartTab('chart')"
+          <div
+            class="relative flex w-full h-full bg-theme-bg/50 rounded-lg p-1 items-center z-0 overflow-hidden gap-1 pr-1.5"
           >
-            📈 Pure Chart
-          </button>
-          <button
-            id="tab-btn-sim"
-            class="chart-tabs-btn flex-1 p-3 bg-transparent border-none text-theme-text font-bold transition-all border-b-2 cursor-pointer hover:bg-white/5"
-            onclick="switchChartTab('sim')"
-          >
-            🎮 Simulator
-          </button>
+            <div
+              id="tab-sliding-bg"
+              class="absolute top-1 bottom-1 left-0 bg-white/10 rounded-md transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] z-10 pointer-events-none border border-white/5"
+            >
+              <span
+                id="quickview-neon-glow"
+                class="absolute inset-0 bg-gradient-to-r from-theme-accent via-cyan-400 via-purple-500 via-pink-500 to-theme-accent opacity-0 transition-opacity duration-300 animate-[spin_8s_linear_infinite] scale-150 rounded-md"
+              ></span>
+              <span
+                id="quickview-neon-mask"
+                class="absolute inset-[1.5px] bg-theme-panel rounded-md opacity-0 transition-opacity duration-300"
+              ></span>
+            </div>
+
+            <button
+              id="tab-btn-chart"
+              class="chart-tabs-btn relative flex-1 h-full bg-transparent border-none text-theme-text font-bold transition-all cursor-pointer z-20 flex items-center justify-center gap-1 opacity-60 [&.active]:opacity-100"
+              onclick="
+                switchChartTab('chart');
+                moveTabSlider(0);
+              "
+            >
+              📈 Pure Chart
+            </button>
+
+            <button
+              id="tab-btn-sim"
+              class="chart-tabs-btn relative flex-1 h-full bg-transparent border-none text-theme-text font-bold transition-all cursor-pointer z-20 flex items-center justify-center gap-1 opacity-60 [&.active]:opacity-100"
+              onclick="
+                switchChartTab('sim');
+                moveTabSlider(1);
+              "
+            >
+              🎮 Simulator
+            </button>
+
+            <button
+              id="tab-btn-quickview"
+              class="chart-tabs-btn active:opacity-100 [&.active]:opacity-100 relative flex-1 h-full bg-transparent border-none text-theme-text font-black transition-all cursor-pointer z-20 flex items-center justify-center gap-1 opacity-70 overflow-hidden rounded-md group hover:opacity-100"
+              onclick="
+                switchChartTab('quickview');
+                moveTabSlider(2);
+              "
+            >
+              <span
+                class="absolute inset-0 z-0 bg-gradient-to-r from-theme-accent via-cyan-400 via-purple-500 via-pink-500 to-theme-accent animate-[spin_15s_linear_infinite] scale-150 transition-opacity duration-500 opacity-30 group-hover:opacity-60 group-[.active]:opacity-90 blur-[4px]"
+              ></span>
+
+              <span
+                class="absolute inset-0 z-0 bg-gradient-to-r from-theme-accent via-cyan-400 via-purple-500 via-pink-500 to-theme-accent animate-[spin_15s_linear_infinite] scale-150 transition-opacity duration-500 opacity-50 group-hover:opacity-80 group-[.active]:opacity-100"
+              ></span>
+
+              <span
+                class="absolute inset-[1.5px] z-10 bg-theme-panel rounded-[inherit]"
+              ></span>
+
+              <span
+                class="relative z-20 flex items-center justify-center gap-1"
+              >
+                <span
+                  class="text-theme-accent drop-shadow-[0_0_3px_rgba(59,130,246,0.6)]"
+                  >⚡</span
+                >
+                Quick View
+              </span>
+            </button>
+          </div>
         </div>
 
         <header
           id="chart-header"
           class="flex flex-col border-b border-theme-border w-full shrink-0 bg-theme-bg"
         >
-          <div class="flex justify-between items-center p-3 flex-wrap gap-4">
+          <div id="head-asset-row" class="flex justify-between items-center p-3 flex-wrap gap-4">
             <div class="flex items-center gap-4">
               <h3
                 id="head-asset-name"
@@ -606,7 +648,6 @@
               >
                 ASSET
               </h3>
-              <div id="exchange-badges" class="flex gap-1.5 items-center"></div>
 
               <!-- <div class="relative ml-2">
               <input type="text" id="symbol-input" placeholder="Search Ticker..." oninput="searchSymbols(this.value)"
@@ -642,183 +683,228 @@
             </div>
 
             <div
-              class="flex items-center justify-between gap-5 text-right flex-wrap w-full border-t border-theme-border/30 pt-2 mt-1"
+              class="flex items-center gap-6 justify-start flex-wrap w-full border-t border-theme-border/30 pt-2 mt-1 px-3"
             >
-              <div class="flex items-center gap-6 justify-start pl-1">
-                <!-- 🚀 1. 실시간 가격 전광판 (USD & KRW 동시 표기) -->
-                <div class="flex flex-col text-xs text-left min-w-0">
-                  <span
-                    class="opacity-50 text-[10px] uppercase font-bold tracking-wider"
-                    >Price</span
+              <!-- 🚀 1. 실시간 가격 전광판 (USD & KRW 동시 표기) -->
+              <div class="flex flex-col text-xs text-left min-w-0">
+                <span
+                  class="opacity-50 text-[10px] uppercase font-bold tracking-wider"
+                  >Price</span
+                >
+                <div class="flex flex-col min-w-0 leading-none mt-0.5 gap-1">
+                  <!-- Binance Header Price -->
+                  <div
+                    id="head-price-binance"
+                    class="hidden flex flex-col gap-0.5"
                   >
-                  <div class="flex flex-col min-w-0 leading-none mt-0.5 gap-1">
-                    <!-- Binance Header Price -->
-                    <div
-                      id="head-price-binance"
-                      class="hidden flex flex-col gap-0.5"
+                    <b
+                      class="text-[20px] md:text-[20px] font-mono text-theme-accent truncate"
+                      >-</b
                     >
-                      <b
-                        class="text-[20px] md:text-[20px] font-mono text-theme-accent truncate"
-                        >-</b
-                      >
-                      <span
-                        class="text-[11px] font-mono text-theme-text opacity-50 truncate"
-                      ></span>
-                    </div>
-                    <!-- Bybit Header Price -->
-                    <div
-                      id="head-price-bybit"
-                      class="hidden flex flex-col gap-0.5"
-                    >
-                      <b
-                        class="text-[20px] md:text-[20px] font-mono text-theme-accent truncate"
-                        >-</b
-                      >
-                      <span
-                        class="text-[11px] font-mono text-theme-text opacity-50 truncate"
-                      ></span>
-                    </div>
-                    <!-- Upbit Header Price -->
-                    <div
-                      id="head-price-upbit"
-                      class="hidden flex flex-col gap-0.5"
-                    >
-                      <b
-                        class="text-[20px] md:text-[20px] font-mono text-theme-accent truncate"
-                        >-</b
-                      >
-                      <span
-                        class="text-[11px] font-mono text-theme-text opacity-50 truncate"
-                      ></span>
-                    </div>
-                    <!-- Bithumb Header Price -->
-                    <div
-                      id="head-price-bithumb"
-                      class="hidden flex flex-col gap-0.5"
-                    >
-                      <b
-                        class="text-[20px] md:text-[20px] font-mono text-theme-accent truncate"
-                        >-</b
-                      >
-                      <span
-                        class="text-[11px] font-mono text-theme-text opacity-50 truncate"
-                      ></span>
-                    </div>
+                    <span
+                      class="text-[11px] font-mono text-theme-text opacity-50 truncate"
+                    ></span>
                   </div>
-                </div>
-                <!-- 🚀 2. 24H 변동률 전광판 -->
-                <div class="flex flex-col text-xs text-left">
-                  <span
-                    class="opacity-50 text-[10px] uppercase font-bold tracking-wider"
-                    >24H Chg</span
+                  <!-- Bybit Header Price -->
+                  <div
+                    id="head-price-bybit"
+                    class="hidden flex flex-col gap-0.5"
                   >
-                  <b
-                    id="head-chg-24h"
-                    class="text-[12px] md:text-[12px] font-mono mt-0.5"
-                    >-</b
+                    <b
+                      class="text-[20px] md:text-[20px] font-mono text-theme-accent truncate"
+                      >-</b
+                    >
+                    <span
+                      class="text-[11px] font-mono text-theme-text opacity-50 truncate"
+                    ></span>
+                  </div>
+                  <!-- Upbit Header Price -->
+                  <div
+                    id="head-price-upbit"
+                    class="hidden flex flex-col gap-0.5"
                   >
-                </div>
-                <!-- 🚀 3. DAY 변동률 전광판 -->
-                <div class="flex flex-col text-xs text-left">
-                  <span
-                    class="opacity-50 text-[10px] uppercase font-bold tracking-wider"
-                    >Day Chg</span
+                    <b
+                      class="text-[20px] md:text-[20px] font-mono text-theme-accent truncate"
+                      >-</b
+                    >
+                    <span
+                      class="text-[11px] font-mono text-theme-text opacity-50 truncate"
+                    ></span>
+                  </div>
+                  <!-- Bithumb Header Price -->
+                  <div
+                    id="head-price-bithumb"
+                    class="hidden flex flex-col gap-0.5"
                   >
-                  <b
-                    id="head-chg-day"
-                    class="text-[12px] md:text-[12px] font-mono mt-0.5"
-                    >-</b
-                  >
+                    <b
+                      class="text-[20px] md:text-[20px] font-mono text-theme-accent truncate"
+                      >-</b
+                    >
+                    <span
+                      class="text-[11px] font-mono text-theme-text opacity-50 truncate"
+                    ></span>
+                  </div>
                 </div>
               </div>
-              <!-- 🚀 우측: 통계 전광판 및 상단 컨트롤 패널 -->
-              <div class="flex items-center gap-3 md:gap-5 ml-auto">
-                <!-- 통계 전광판 (모바일 숨김, 데스크탑 보임) -->
-                <div class="flex items-center gap-5 hidden xl:flex">
-                  <div class="flex flex-col text-xs text-left">
-                    <span
-                      class="opacity-50 text-[10px] uppercase font-bold tracking-wider"
-                      >Market Cap</span
-                    >
-                    <b
-                      id="head-mcap"
-                      class="text-[13px] md:text-[15px] font-mono mt-0.5"
-                      >-</b
-                    >
-                  </div>
-                  <div class="flex flex-col text-xs text-left">
-                    <span
-                      class="opacity-50 text-[10px] uppercase font-bold tracking-wider"
-                      >Vol(24h)</span
-                    >
-                    <b
-                      id="head-vol-binance"
-                      class="text-[13px] md:text-[15px] font-mono mt-0.5 text-[#f0b90b]"
-                      >-</b
-                    >
-                  </div>
-                  <div class="flex flex-col text-xs text-left">
-                    <span
-                      class="opacity-50 text-[10px] uppercase font-bold tracking-wider"
-                      >U-Vol(24h)</span
-                    >
-                    <b
-                      id="head-vol-upbit"
-                      class="text-[13px] md:text-[15px] font-mono mt-0.5 text-[#093687]"
-                      >-</b
-                    >
-                  </div>
-                </div>
-
-                <!-- 상단 컨트롤 패널 (카운트다운, 스케일 리셋, 호가창) -->
-                <div
-                  class="flex items-center gap-2 md:gap-3 pl-0 xl:pl-5 xl:border-l border-theme-border/30"
+              <!-- 🚀 2. 24H 변동률 전광판 -->
+              <div class="flex flex-col text-xs text-left shrink-0 min-w-fit">
+                <span
+                  class="opacity-50 text-[10px] uppercase font-bold tracking-wider"
+                  >24H Chg</span
                 >
-                  <label class="flex items-center gap-1.5 cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      id="toggle-countdown"
-                      class="peer hidden"
-                      checked
-                      onchange="toggleCountdown(this.checked)"
-                    />
-                    <div
-                      class="w-6 h-3.5 bg-theme-border rounded-full relative transition-colors duration-300 peer-checked:bg-theme-accent group-hover:brightness-110"
-                    >
-                      <div
-                        id="countdown-knob"
-                        class="absolute left-[2px] top-[2px] w-2.5 h-2.5 bg-white rounded-full transition-transform duration-300 transform translate-x-[10px]"
-                      ></div>
-                    </div>
-                    <span
-                      class="text-[10px] font-bold opacity-50 transition-opacity text-theme-text uppercase tracking-wider hidden sm:block"
-                      >Countdown</span
-                    >
-                  </label>
-
-                  <button
-                    class="reset-btn px-2.5 py-1 text-[10px] md:text-[11px] font-bold text-theme-down bg-theme-down/5 border border-theme-down/30 rounded hover:bg-theme-down/15 transition-all shadow-sm whitespace-nowrap"
-                    onclick="
-                      if (window.resetPriceScaleWidthSync)
-                        window.resetPriceScaleWidthSync();
-                      resetChartScale();
-                    "
-                  >
-                    차트 리셋
-                  </button>
-                  <button
-                    id="toggle-orderbook-btn"
-                    class="px-2.5 py-1 text-[10px] md:text-[11px] font-bold text-theme-accent bg-theme-accent/5 border border-theme-accent/30 rounded hover:bg-theme-accent/15 transition-all shadow-sm whitespace-nowrap"
-                    onclick="
-                      if (window.toggleOrderbook) window.toggleOrderbook();
-                    "
-                  >
-                    호가창 열기
-                  </button>
-                </div>
+                <b
+                  id="head-chg-24h"
+                  class="text-[12px] md:text-[13px] font-mono mt-0.5"
+                  >-</b
+                >
+              </div>
+              <!-- 🚀 3. DAY 변동률 전광판 -->
+              <div class="flex flex-col text-xs text-left shrink-0 min-w-fit">
+                <span
+                  class="opacity-50 text-[10px] uppercase font-bold tracking-wider"
+                  >Day Chg</span
+                >
+                <b
+                  id="head-chg-day"
+                  class="text-[12px] md:text-[13px] font-mono mt-0.5"
+                  >-</b
+                >
+              </div>
+              <!-- Market Cap -->
+              <div class="flex flex-col text-xs text-left shrink-0 min-w-fit">
+                <span
+                  class="opacity-50 text-[10px] uppercase font-bold tracking-wider"
+                  >Market Cap</span
+                >
+                <b
+                  id="head-mcap"
+                  class="text-[12px] md:text-[13px] font-mono mt-0.5"
+                  >-</b
+                >
+              </div>
+              <!-- Vol(24h) -->
+              <div class="flex flex-col text-xs text-left shrink-0 min-w-fit">
+                <span
+                  class="opacity-50 text-[10px] uppercase font-bold tracking-wider"
+                  >Vol(24h)</span
+                >
+                <b
+                  id="head-vol-binance"
+                  class="text-[12px] md:text-[13px] font-mono mt-0.5 text-[#f0b90b]"
+                  >-</b
+                >
+              </div>
+              <!-- U-Vol(24h) -->
+              <div class="flex flex-col text-xs text-left shrink-0 min-w-fit">
+                <span
+                  class="opacity-50 text-[10px] uppercase font-bold tracking-wider"
+                  >U-Vol(24h)</span
+                >
+                <b
+                  id="head-vol-upbit"
+                  class="text-[12px] md:text-[13px] font-mono mt-0.5 text-[#093687]"
+                  >-</b
+                >
               </div>
             </div>
           </div>
+
+          <!-- 2층: 컨트롤 패널 (리니어/로그, 카운트다운, 스케일 리셋, 호가창) 분리 -->
+          <div
+            class="flex items-center justify-between w-full border-t border-theme-border/30 pt-2 mt-2 px-3 pb-2"
+          >
+              <!-- Left: 거래소 뱃지 -->
+              <div class="flex items-center gap-3">
+                <div
+                  id="exchange-badges"
+                  class="flex gap-1.5 items-center"
+                ></div>
+              </div>
+
+              <!-- Right: 리니어/로그 토글, 카운트다운, 차트 리셋, 호가창 열기 -->
+              <div class="flex items-center gap-2.5 md:gap-3">
+                <!-- 🚀 헤더 접기/펼치기 토글 버튼 (로그 왼쪽에 배치) -->
+                <button
+                  id="toggle-header-top-btn"
+                  class="px-2 py-1 text-[10px] md:text-[11px] font-bold text-theme-text opacity-70 hover:opacity-100 border border-theme-border/50 rounded bg-theme-panel/50 transition-all whitespace-nowrap mr-1 cursor-pointer"
+                  onclick="if (window.toggleHeaderTop) window.toggleHeaderTop();"
+                >
+                  ▲ 헤더 접기
+                </button>
+
+                <!-- 로그/리니어 좌우 토글 -->
+                <div
+                  class="relative flex p-0.5 bg-theme-border/20 rounded-lg overflow-hidden border border-theme-border/30 mr-1.5"
+                  style="height: 24px"
+                >
+                  <div
+                    id="log-slider"
+                    class="absolute top-0.5 bottom-0.5 rounded bg-theme-accent transition-all duration-200 z-0"
+                    style="width: calc(50% - 2px); left: 2px"
+                  ></div>
+                  <button
+                    onclick="toggleLogScale(false)"
+                    id="scale-linear-btn"
+                    class="relative z-10 px-2.5 text-[9px] font-black transition-all text-white flex items-center justify-center h-full"
+                    style="width: 50px"
+                  >
+                    Linear
+                  </button>
+                  <button
+                    onclick="toggleLogScale(true)"
+                    id="scale-log-btn"
+                    class="relative z-10 px-2.5 text-[9px] font-black transition-all text-theme-text opacity-50 hover:opacity-100 flex items-center justify-center h-full"
+                    style="width: 50px"
+                  >
+                    Log
+                  </button>
+                </div>
+
+                <label
+                  class="flex items-center gap-1.5 cursor-pointer group h-6 select-none"
+                >
+                  <input
+                    type="checkbox"
+                    id="toggle-countdown"
+                    class="peer hidden"
+                    checked
+                    onchange="toggleCountdown(this.checked)"
+                  />
+                  <div
+                    class="w-6 h-3.5 bg-theme-border rounded-full relative transition-colors duration-300 group-hover:brightness-110"
+                  >
+                    <div
+                      id="countdown-knob"
+                      class="absolute left-[2px] top-[2px] w-2.5 h-2.5 bg-white rounded-full transition-transform duration-300"
+                    ></div>
+                  </div>
+                  <span
+                    class="text-[10px] font-bold opacity-50 transition-opacity text-theme-text uppercase tracking-wider hidden sm:block"
+                    >Countdown</span
+                  >
+                </label>
+
+                <button
+                  class="reset-btn px-2.5 py-1 text-[10px] md:text-[11px] font-bold text-theme-down bg-theme-down/5 border border-theme-down/30 rounded hover:bg-theme-down/15 transition-all shadow-sm whitespace-nowrap"
+                  onclick="
+                    if (window.resetPriceScaleWidthSync)
+                      window.resetPriceScaleWidthSync();
+                    resetChartScale();
+                  "
+                >
+                  차트 리셋
+                </button>
+                <button
+                  id="toggle-orderbook-btn"
+                  class="px-2.5 py-1 text-[10px] md:text-[11px] font-bold text-theme-accent bg-theme-accent/5 border border-theme-accent/30 rounded hover:bg-theme-accent/15 transition-all shadow-sm whitespace-nowrap"
+                  onclick="
+                    if (window.toggleOrderbook) window.toggleOrderbook();
+                  "
+                >
+                  호가창 열기
+                </button>
+              </div>
+            </div>
 
           <div
             class="flex items-center gap-1.5 bg-black/5 px-5 py-2 border-t border-theme-border overflow-x-auto whitespace-nowrap scrollbar-hide"
@@ -897,7 +983,7 @@
               <div class="flex items-center">
                 <span
                   id="orderbook-precision-label"
-                  class="text-[10px] font-mono font-bold text-theme-accent px-2 w-[60px] text-right truncate"
+                  class="text-[10px] font-mono font-bold text-theme-accent px-2 min-w-[60px] text-right whitespace-nowrap flex-shrink-0"
                   >Auto</span
                 >
                 <div
@@ -973,103 +1059,145 @@
         </div> -->
 
         <div
-          class="hidden flex-col gap-4 p-4 bg-theme-panel border border-theme-border rounded-2xl shadow-[0_15px_40px_rgba(0,0,0,0.2)] w-[55%] min-w-[600px] mx-auto mb-6 mt-2"
+          class="hidden flex-col gap-3 p-3.5 bg-theme-panel/85 backdrop-blur-md border border-theme-border/50 rounded-xl shadow-lg w-full mx-auto mb-4 mt-2 font-black"
           id="sim-controls"
         >
-          <div
-            class="relative flex p-1.5 bg-theme-bg/80 border border-theme-border rounded-xl overflow-hidden shadow-inner"
-          >
+          <!-- 1층: 모드 토글 + 슬라이더 영역 -->
+          <div class="flex flex-wrap lg:flex-nowrap items-center gap-3 w-full">
+            <!-- 1. 방향 선택 토글 (슬림형) -->
             <div
-              id="dir-slider"
-              class="absolute top-1.5 bottom-1.5 left-1.5 w-[calc(50%-6px)] bg-theme-up rounded-lg transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] shadow-md"
-            ></div>
-            <button
-              id="dir-bull"
-              class="relative z-10 flex-1 py-3.5 cursor-pointer bg-transparent text-white font-extrabold tracking-widest text-sm transition-colors duration-300 border-none outline-none"
-              onclick="changeDir('bull')"
+              class="relative flex p-1 bg-theme-bg/60 border border-theme-border/50 rounded-lg overflow-hidden shrink-0 w-[160px] h-[34px]"
             >
-              LONG MODE
-            </button>
-            <button
-              id="dir-bear"
-              class="relative z-10 flex-1 py-3.5 cursor-pointer bg-transparent text-theme-text font-extrabold tracking-widest text-sm transition-colors duration-300 border-none outline-none"
-              onclick="changeDir('bear')"
-            >
-              SHORT MODE
-            </button>
+              <div
+                id="dir-slider"
+                class="absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] bg-theme-up rounded-md transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] shadow-sm"
+              ></div>
+              <button
+                id="dir-bull"
+                class="relative z-10 flex-1 cursor-pointer bg-transparent text-white font-black tracking-tight text-[11px] transition-colors duration-300 border-none outline-none"
+                onclick="changeDir('bull')"
+              >
+                LONG
+              </button>
+              <button
+                id="dir-bear"
+                class="relative z-10 flex-1 cursor-pointer bg-transparent text-theme-text font-black tracking-tight text-[11px] transition-colors duration-300 border-none outline-none"
+                onclick="changeDir('bear')"
+              >
+                SHORT
+              </button>
+            </div>
+
+            <!-- 2. 슬라이더 3개 가로 배치 -->
+            <div class="flex-1 flex gap-2 min-w-0 flex-wrap sm:flex-nowrap w-full">
+              <div
+                class="flex-1 flex items-center gap-2 bg-theme-bg/30 px-2 py-1 rounded-lg border border-theme-border/10 min-w-[120px]"
+              >
+                <span
+                  class="opacity-50 text-[10px] font-black uppercase tracking-wider shrink-0"
+                  >Body</span
+                >
+                <input
+                  type="range"
+                  id="input-body"
+                  class="flex-1 cursor-ew-resize accent-theme-accent h-1.5 bg-theme-border rounded appearance-none shadow-inner min-w-0"
+                  min="0"
+                  max="200"
+                  value="10"
+                  step="1"
+                />
+                <b
+                  id="val-body"
+                  class="text-theme-accent text-xs font-mono shrink-0 w-[30px] text-right"
+                  >10%</b
+                >
+              </div>
+
+              <div
+                class="flex-1 flex items-center gap-2 bg-theme-bg/30 px-2 py-1 rounded-lg border border-theme-border/10 min-w-[120px]"
+              >
+                <span
+                  class="opacity-50 text-[10px] font-black uppercase tracking-wider shrink-0"
+                  >Upper</span
+                >
+                <input
+                  type="range"
+                  id="input-top"
+                  class="flex-1 cursor-ew-resize accent-theme-accent h-1.5 bg-theme-border rounded appearance-none shadow-inner min-w-0"
+                  min="0"
+                  max="100"
+                  value="5"
+                  step="1"
+                />
+                <b
+                  id="val-top"
+                  class="text-theme-accent text-xs font-mono shrink-0 w-[24px] text-right"
+                  >5%</b
+                >
+              </div>
+
+              <div
+                class="flex-1 flex items-center gap-2 bg-theme-bg/30 px-2 py-1 rounded-lg border border-theme-border/10 min-w-[120px]"
+              >
+                <span
+                  class="opacity-50 text-[10px] font-black uppercase tracking-wider shrink-0"
+                  >Lower</span
+                >
+                <input
+                  type="range"
+                  id="input-bottom"
+                  class="flex-1 cursor-ew-resize accent-theme-accent h-1.5 bg-theme-border rounded appearance-none shadow-inner min-w-0"
+                  min="0"
+                  max="100"
+                  value="5"
+                  step="1"
+                />
+                <b
+                  id="val-bottom"
+                  class="text-theme-accent text-xs font-mono shrink-0 w-[24px] text-right"
+                  >5%</b
+                >
+              </div>
+            </div>
           </div>
 
-          <div class="flex gap-8 items-center px-2 py-6">
-            <div class="flex-1 flex flex-col gap-2.5">
-              <div class="flex justify-between text-xs font-bold px-1">
-                <span class="opacity-60 uppercase tracking-wider text-[11px]"
-                  >Body (몸통)</span
-                >
-                <b id="val-body" class="text-theme-accent text-sm">10%</b>
-              </div>
-              <input
-                type="range"
-                id="input-body"
-                class="w-full cursor-ns-resize accent-theme-accent h-2 bg-theme-border rounded-lg appearance-none shadow-inner"
-                min="0"
-                max="200"
-                value="10"
-                step="1"
-              />
-            </div>
-
-            <div class="flex-1 flex flex-col gap-2.5">
-              <div class="flex justify-between text-xs font-bold px-1">
-                <span class="opacity-60 uppercase tracking-wider text-[11px]"
-                  >Upper Wick (윗꼬리)</span
-                >
-                <b id="val-top" class="text-theme-accent text-sm">5%</b>
-              </div>
-              <input
-                type="range"
-                id="input-top"
-                class="w-full cursor-ns-resize accent-theme-accent h-2 bg-theme-border rounded-lg appearance-none shadow-inner"
-                min="0"
-                max="100"
-                value="5"
-                step="1"
-              />
-            </div>
-
-            <div class="flex-1 flex flex-col gap-2.5">
-              <div class="flex justify-between text-xs font-bold px-1">
-                <span class="opacity-60 uppercase tracking-wider text-[11px]"
-                  >Lower Wick (아랫꼬리)</span
-                >
-                <b id="val-bottom" class="text-theme-accent text-sm">5%</b>
-              </div>
-              <input
-                type="range"
-                id="input-bottom"
-                class="w-full cursor-ns-resize accent-theme-accent h-2 bg-theme-border rounded-lg appearance-none shadow-inner"
-                min="0"
-                max="100"
-                value="5"
-                step="1"
-              />
-            </div>
-          </div>
-
-          <div class="flex gap-4 mt-2">
+          <!-- 2층: 액션 버튼 전용 영역 (경계선으로 분리 및 가로 풀사이즈) -->
+          <div class="flex gap-2 w-full pt-1.5 border-t border-theme-border/20">
             <button
               id="btn-generate"
-              class="flex-[3] h-14 border-none bg-theme-up text-white font-extrabold text-base cursor-pointer rounded-xl shadow-lg hover:brightness-110 active:scale-[0.99] transition-all tracking-wide"
+              class="flex-1 h-[36px] border-none bg-theme-up hover:bg-theme-up/90 text-white font-black text-xs cursor-pointer rounded-lg shadow-md hover:brightness-105 active:scale-[0.98] transition-all tracking-wide"
               onclick="addCandle()"
             >
-              ⚡ Add Next Candle
+              ⚡ Add Simulation Candle
             </button>
             <button
               id="btn-undo"
-              class="flex-[1] h-14 bg-transparent text-theme-text border-2 border-theme-border cursor-pointer rounded-xl font-bold hover:bg-theme-border/50 hover:text-theme-down active:scale-[0.99] transition-all"
+              class="px-4 h-[36px] bg-transparent text-theme-text border border-theme-border hover:border-theme-down hover:bg-theme-border/20 cursor-pointer rounded-lg font-bold text-xs hover:text-theme-down active:scale-[0.98] transition-all"
               onclick="undoLast()"
             >
               🔙 Undo
             </button>
+          </div>
+        </div>
+
+        <!-- ⚡ 퀵뷰 실행 중 placeholder -->
+        <div
+          id="quickview-placeholder"
+          style="display: none"
+          class="hidden flex-1 flex-col items-center justify-center p-8 text-center"
+        >
+          <div class="flex flex-col items-center gap-3">
+            <div
+              class="relative flex items-center justify-center w-12 h-12 rounded-full bg-theme-accent/10 border border-theme-accent/20 animate-pulse"
+            >
+              <span class="text-xl text-theme-accent">⚡</span>
+            </div>
+            <span class="text-xs font-black text-theme-text opacity-70"
+              >실행 중입니다...</span
+            >
+            <span class="text-[10px] text-theme-text opacity-40"
+              >별도 모달 창에서 퀵뷰 엔진이 작동하고 있습니다.</span
+            >
           </div>
         </div>
       </div>
@@ -1137,6 +1265,31 @@
               API key is required to fetch real-time MarketCap and Rank data.
             </p>
           </div>
+
+          <!-- ✨ 애니메이션 끄기/켜기 -->
+          <div
+            class="flex items-center justify-between border-t border-theme-border/50 pt-4 mt-2"
+          >
+            <div class="flex flex-col">
+              <span class="text-xs font-black text-theme-text"
+                >Disable All Animations</span
+              >
+              <span class="text-[9px] opacity-40 italic"
+                >성능을 위해 모든 애니메이션 끄기</span
+              >
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                id="setting-disable-animations"
+                class="sr-only peer"
+                onchange="toggleAllAnimations(this.checked)"
+              />
+              <div
+                class="w-9 h-5 bg-theme-border/30 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-theme-accent"
+              ></div>
+            </label>
+          </div>
         </div>
 
         <div class="flex gap-2 mt-2">
@@ -1156,6 +1309,273 @@
           </button>
         </div>
       </form>
+    </div>
+    <!-- ⚡ 퀵뷰 메인 컨테이너 -->
+    <div
+      id="quickview-container"
+      style="display: none"
+      class="hidden flex-1 flex-col overflow-hidden m-2 w-[calc(100%-16px)] gap-2 relative"
+    >
+      <!-- 1) 퀵뷰 헤더 제어 영역 -->
+      <div
+        class="flex items-center justify-between p-3 bg-theme-panel/40 border border-theme-border/30 rounded-2xl backdrop-blur-md shrink-0 flex-wrap gap-3"
+      >
+        <!-- 좌측: 타임프레임 필터 -->
+        <div class="flex items-center gap-4">
+          <!-- 타임프레임 필터 -->
+          <div
+            class="flex items-center gap-1 bg-theme-border/10 p-0.5 rounded-lg border border-theme-border/20"
+          >
+            <button
+              id="qv-tf-1m"
+              class="px-2.5 py-1.5 text-[10px] font-black rounded-md transition-all qv-tf-btn text-theme-text opacity-50 hover:opacity-100"
+              onclick="changeQuickViewTF('1m')"
+            >
+              1M
+            </button>
+            <button
+              id="qv-tf-15m"
+              class="px-2.5 py-1.5 text-[10px] font-black rounded-md transition-all qv-tf-btn text-theme-text opacity-50 hover:opacity-100"
+              onclick="changeQuickViewTF('15m')"
+            >
+              15M
+            </button>
+            <button
+              id="qv-tf-1h"
+              class="px-2.5 py-1.5 text-[10px] font-black rounded-md transition-all qv-tf-btn text-theme-text opacity-50 hover:opacity-100"
+              onclick="changeQuickViewTF('1h')"
+            >
+              1H
+            </button>
+            <button
+              id="qv-tf-4h"
+              class="px-2.5 py-1.5 text-[10px] font-black rounded-md transition-all qv-tf-btn text-theme-text opacity-50 hover:opacity-100"
+              onclick="changeQuickViewTF('4h')"
+            >
+              4H
+            </button>
+            <button
+              id="qv-tf-1d"
+              class="px-2.5 py-1.5 text-[10px] font-black rounded-md transition-all qv-tf-btn text-theme-text opacity-50 hover:opacity-100"
+              onclick="changeQuickViewTF('1d')"
+            >
+              1D
+            </button>
+          </div>
+        </div>
+
+        <!-- 중앙: 페이지 네비게이션 & 레이아웃 세그먼트 버튼 & 유니크 캔들 토글 -->
+        <div class="flex items-center gap-4">
+          <!-- 페이지 네비게이션 -->
+          <div
+            class="flex items-center gap-2 bg-theme-border/10 p-0.5 rounded-lg border border-theme-border/20"
+          >
+            <button
+              class="px-2.5 py-1.5 text-[10px] font-black rounded border border-theme-border bg-theme-border/10 hover:bg-theme-border/30 text-theme-text transition-all"
+              onclick="changeQuickViewPage(-1)"
+            >
+              ◀
+            </button>
+            <span
+              id="qv-page-indicator"
+              class="text-xs font-mono font-bold tracking-tight min-w-[70px] text-center px-2"
+              >PAGE 1 / 4</span
+            >
+            <button
+              class="px-2.5 py-1.5 text-[10px] font-black rounded border border-theme-border bg-theme-border/10 hover:bg-theme-border/30 text-theme-text transition-all"
+              onclick="changeQuickViewPage(1)"
+            >
+              ▶
+            </button>
+          </div>
+
+          <!-- 레이아웃 세그먼트 버튼 (스프레드 / 겹치기) -->
+          <div
+            class="relative flex items-center bg-theme-border/10 p-0.5 rounded-lg border border-theme-border/20 overflow-hidden"
+          >
+            <!-- 슬라이딩 배경 백드롭 -->
+            <div
+              id="qv-layout-slider"
+              class="absolute top-0.5 bottom-0.5 left-0.5 w-[calc(50%-4px)] bg-theme-accent rounded-md transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] z-0"
+              style="transform: translateX(0)"
+            ></div>
+            <button
+              id="qv-layout-spread"
+              class="relative z-10 px-4 py-2 text-xs font-black rounded-md transition-all text-white cursor-pointer"
+              onclick="setQuickViewLayout('spread')"
+            >
+              🎛️ Spread (4x2)
+            </button>
+            <button
+              id="qv-layout-overlap"
+              class="relative z-10 px-4 py-2 text-xs font-black rounded-md transition-all text-theme-text opacity-60 hover:opacity-100 cursor-pointer"
+              onclick="setQuickViewLayout('overlap')"
+            >
+              🃏 Overlap (겹치기)
+            </button>
+          </div>
+
+          <!-- 🎨 캔들 색상 토글 버튼 -->
+          <button
+            id="qv-color-toggle-btn"
+            class="px-3 py-1.5 text-[10px] font-black rounded-lg border border-theme-border/50 hover:border-theme-accent text-theme-text hover:text-theme-accent bg-transparent transition-all flex items-center gap-1.5 cursor-pointer"
+            onclick="toggleQuickViewCandleColor()"
+          >
+            <span>🎨</span>
+            <span>유니크 캔들 색상 적용하기</span>
+          </button>
+        </div>
+
+        <!-- 우측: 리셋 버튼 & 닫기 버튼 -->
+        <div class="flex items-center gap-4">
+          <!-- 초기화 버튼 -->
+          <!-- 스케일 초기화 버튼 -->
+          <button
+            id="qv-scale-reset-btn"
+            class="px-3 py-1.5 text-[10px] font-black rounded-lg border border-theme-border/50 hover:border-theme-accent text-theme-text hover:text-theme-accent bg-transparent transition-all flex items-center gap-1.5 cursor-pointer"
+            onclick="resetQuickViewChartsScale()"
+          >
+            <span>🔍</span>
+            <span>스케일 초기화</span>
+          </button>
+          <!-- 처음으로 버튼 -->
+          <button
+            id="qv-reset-btn"
+            class="px-3 py-1.5 text-[10px] font-black rounded-lg border border-theme-border/50 hover:border-theme-accent text-theme-text hover:text-theme-accent bg-transparent transition-all flex items-center gap-1.5 cursor-pointer"
+            onclick="resetQuickView()"
+          >
+            <span>🔄</span>
+            <span>처음으로</span>
+          </button>
+          <!-- 구분선 -->
+          <div class="w-px h-5 bg-theme-border/30"></div>
+          <!-- 닫기 버튼 -->
+          <button
+            id="qv-close-btn"
+            class="px-3 py-1.5 text-[10px] font-black rounded-lg border border-theme-down/50 hover:border-theme-down text-theme-down hover:bg-theme-down/10 bg-transparent transition-all flex items-center gap-1.5 cursor-pointer"
+            onclick="closeQuickViewModal()"
+          >
+            <span>✕</span>
+            <span>Close</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 2) 퀵뷰 차트 본문 영역 -->
+      <div
+        id="quickview-body"
+        class="flex-1 relative overflow-hidden bg-theme-panel/20 border border-theme-border/30 rounded-2xl p-2 transition-all duration-300"
+      >
+        <!-- 8개 차트 카드가 동적으로 꽂힐 그리드/겹치기 래퍼 -->
+        <div
+          id="qv-charts-wrapper"
+          class="qv-spread-mode w-full h-full relative"
+        >
+          <!-- JS가 8개의 차트 카드를 여기에 생성합니다.
+               Spread 모드일 때는 CSS Grid가 작동하고, Overlap 모드일 때는 Absolute 겹치기가 작동합니다. -->
+        </div>
+
+        <!-- 겹쳤을 때 표시될 종합 floating 범례판 -->
+        <div
+          id="qv-overlap-legend"
+          class="absolute top-16 right-8 z-[99] hidden font-mono text-[9px] flex flex-col gap-1.5 px-3 py-2.5 backdrop-blur-md rounded-xl max-w-[200px] pointer-events-auto shadow-2xl"
+        >
+          <!-- 8개 자산 정보가 색상과 함께 세로로 동적 렌더링됩니다 -->
+        </div>
+      </div>
+
+      <!-- 3) 퀵뷰 초기 정렬 기준 오버레이 (Glassmorphic) -->
+      <div
+        id="quickview-init-overlay"
+        class="absolute inset-0 backdrop-blur-xl z-[150] flex flex-col justify-center items-center gap-6 rounded-2xl transition-all duration-500 ease-out"
+      >
+        <div class="text-center flex flex-col gap-2">
+          <h2
+            class="m-0 text-theme-accent text-3xl font-black italic tracking-widest uppercase"
+          >
+            ⚡ QUICK VIEW ENGINE
+          </h2>
+          <p
+            class="text-xs text-theme-text opacity-40 max-w-[500px] leading-relaxed mx-auto"
+          >
+            퀵뷰 엔진으로 최대 32개 코인의 실시간 차트를 한눈에 정밀
+            모니터링할게요<br />
+            대상 범위와 분석을 원하시는 정렬 기준을 선택해주세요
+          </p>
+        </div>
+
+        <!-- 🚀 [추가] 모니터링 대상 범위 선택 (전체 vs 즐겨찾기) -->
+        <div
+          class="flex items-center gap-1.5 bg-theme-border/10 p-1 rounded-xl border border-theme-border/20"
+        >
+          <button
+            id="qv-base-all"
+            class="px-4 py-2 text-xs font-black rounded-lg transition-all text-white bg-theme-accent cursor-pointer"
+            onclick="setQuickViewBase('ALL')"
+          >
+            🌐 전체 코인 기준
+          </button>
+          <button
+            id="qv-base-fav"
+            class="px-4 py-2 text-xs font-black rounded-lg transition-all text-theme-text opacity-50 hover:opacity-100 cursor-pointer"
+            onclick="setQuickViewBase('FAV')"
+          >
+            ⭐ 즐겨찾기 기준
+          </button>
+          <button
+            id="qv-base-fav2"
+            class="px-4 py-2 text-xs font-black rounded-lg transition-all text-theme-text opacity-50 hover:opacity-100 cursor-pointer"
+            onclick="setQuickViewBase('FAV2')"
+          >
+            <span style="color: #3b82f6; margin-right: 2px;">★</span> 즐겨찾기 2 기준
+          </button>
+        </div>
+
+        <div class="flex gap-5 flex-wrap justify-center mt-1">
+          <div
+            class="qv-init-card flex flex-col items-center justify-center p-6 bg-theme-panel border border-theme-border/40 hover:border-theme-accent rounded-2xl w-[150px] h-[150px] gap-3 transition-all duration-300 cursor-pointer shadow-lg hover:-translate-y-1.5 active:scale-[0.97]"
+            onclick="selectQuickViewInitSort('24h')"
+          >
+            <span
+              class="text-3xl filter drop-shadow-[0_4px_6px_rgba(239,83,80,0.3)]"
+              >🔥</span
+            >
+            <span class="text-[11px] font-black text-theme-text"
+              >24H 변동률</span
+            >
+          </div>
+          <div
+            class="qv-init-card flex flex-col items-center justify-center p-6 bg-theme-panel border border-theme-border/40 hover:border-theme-accent rounded-2xl w-[150px] h-[150px] gap-3 transition-all duration-300 cursor-pointer shadow-lg hover:-translate-y-1.5 active:scale-[0.97]"
+            onclick="selectQuickViewInitSort('day')"
+          >
+            <span
+              class="text-3xl filter drop-shadow-[0_4px_6px_rgba(38,166,154,0.3)]"
+              >☀️</span
+            >
+            <span class="text-[11px] font-black text-theme-text"
+              >오늘 (Day) 변동률</span
+            >
+          </div>
+          <div
+            class="qv-init-card flex flex-col items-center justify-center p-6 bg-theme-panel border border-theme-border/40 hover:border-theme-accent rounded-2xl w-[150px] h-[150px] gap-3 transition-all duration-300 cursor-pointer shadow-lg hover:-translate-y-1.5 active:scale-[0.97]"
+            onclick="selectQuickViewInitSort('mcap')"
+          >
+            <span
+              class="text-3xl filter drop-shadow-[0_4px_6px_rgba(240,185,11,0.3)]"
+              >💎</span
+            >
+            <span class="text-[11px] font-black text-theme-text">시가총액</span>
+          </div>
+        </div>
+        <!-- 돌아가기 (취소) 버튼 -->
+        <button
+          type="button"
+          onclick="closeQuickViewModal()"
+          class="mt-4 px-6 py-2.5 rounded-xl border border-theme-border text-theme-text/60 hover:text-theme-text hover:bg-theme-border/30 transition-all font-bold text-xs cursor-pointer shadow-md"
+        >
+          돌아가기 (Cancel)
+        </button>
+      </div>
     </div>
   </body>
 </html>

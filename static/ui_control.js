@@ -67,28 +67,50 @@ export function switchViewMode(mode) {
   store.tableViewMode = mode;
   const panel = document.getElementById("left-panel");
   if (!panel) return;
-  
+
   // 기존 모드 클래스 제거
-  panel.classList.remove("view-mode-simple", "view-mode-basic", "view-mode-expert");
+  panel.classList.remove(
+    "view-mode-simple",
+    "view-mode-basic",
+    "view-mode-expert",
+  );
   panel.classList.add(`view-mode-${mode}`);
-  
+
   // 버튼 스타일 갱신
-  const modes = ['simple', 'basic', 'expert'];
-  modes.forEach(m => {
+  const modes = ["simple", "basic", "expert"];
+  modes.forEach((m) => {
     const btn = document.getElementById(`view-mode-${m}-btn`);
     if (btn) {
       if (m === mode) {
-        btn.className = "flex-1 py-1 text-[10px] font-black rounded border border-theme-accent bg-theme-accent text-white transition-all shadow-md";
+        btn.className =
+          "flex-1 py-1 text-[10px] font-black rounded border border-theme-accent bg-theme-accent text-white transition-all shadow-md";
       } else {
-        btn.className = "flex-1 py-1 text-[10px] font-black rounded border border-theme-border opacity-50 hover:opacity-100 transition-all text-theme-text";
+        btn.className =
+          "flex-1 py-1 text-[10px] font-black rounded border border-theme-border opacity-50 hover:opacity-100 transition-all text-theme-text";
       }
     }
   });
-  
-  // CSS transition 후 테이블 너비 갱신을 위해 약간의 딜레이 리렌더링
-  if (typeof window.renderTable === "function") {
-    setTimeout(() => window.renderTable(), 310);
+
+  // 탭 라벨 텍스트 교체 (simple: 단축, 그 외: 원문)
+  const isSimple = mode === "simple";
+  const tabAll = document.getElementById("tab-all");
+  const tabFav = document.getElementById("tab-fav");
+  const tabFav2 = document.getElementById("tab-fav2");
+  const btnSmallCap = document.getElementById("btn-small-cap");
+
+  if (tabAll) tabAll.textContent = isSimple ? "MAIN" : "MAIN LIST";
+  if (tabFav) {
+    tabFav.innerHTML = isSimple
+      ? `<span style="color: var(--accent); margin-right: 2px;">★</span>FAV`
+      : `<span style="color: var(--accent); margin-right: 2px;">★</span>FAVORITES`;
   }
+  if (tabFav2) {
+    tabFav2.innerHTML = isSimple
+      ? `<span style="color: #3b82f6; margin-right: 2px;">★</span>FAV2`
+      : `<span style="color: #3b82f6; margin-right: 2px;">★</span>FAVORITES 2`;
+  }
+  if (btnSmallCap)
+    btnSmallCap.textContent = isSimple ? "🚫 Mcap < 1M" : "🚫 Hiding Mcap < 1M";
 }
 
 // 모바일: 리스트/차트 화면 전환
@@ -214,18 +236,42 @@ function switchChartTab(mode) {
 function executeTabSwitch(mode) {
   const btnChart = document.getElementById("tab-btn-chart"),
     btnSim = document.getElementById("tab-btn-sim"),
+    btnQuick = document.getElementById("tab-btn-quickview"),
     controls = document.getElementById("sim-controls");
+
   if (mode === "chart") {
-    btnChart.classList.add("active");
-    btnSim.classList.remove("active");
+    if (btnChart) btnChart.classList.add("active");
+    if (btnSim) btnSim.classList.remove("active");
+    if (btnQuick) btnQuick.classList.remove("active");
     controls.style.display = "none";
+
+    // 퀵뷰 퇴장 처리
+    const qvContainer = document.getElementById("quickview-container");
+    if (qvContainer) {
+      qvContainer.classList.add("hidden");
+      qvContainer.style.display = "none";
+    }
+    if (typeof window.destroyQuickView === "function") {
+      window.destroyQuickView();
+    }
+
     if (typeof fetchHistory === "function") fetchHistory();
-  } else {
-    btnSim.classList.add("active");
-    btnChart.classList.remove("active");
+  } else if (mode === "sim") {
+    if (btnSim) btnSim.classList.add("active");
+    if (btnChart) btnChart.classList.remove("active");
+    if (btnQuick) btnQuick.classList.remove("active");
     controls.style.display = "flex";
 
-    // 🚀 [수정] 바이낸스와 업비트 차트 소켓 둘 다 확실히 처단!
+    // 퀵뷰 퇴장 처리
+    const qvContainer = document.getElementById("quickview-container");
+    if (qvContainer) {
+      qvContainer.classList.add("hidden");
+      qvContainer.style.display = "none";
+    }
+    if (typeof window.destroyQuickView === "function") {
+      window.destroyQuickView();
+    }
+
     [store.binanceChartWs, store.upbitChartWs].forEach((ws) => {
       if (ws) {
         ws.onmessage = null;
@@ -239,6 +285,16 @@ function executeTabSwitch(mode) {
     if (statusDot) statusDot.style.background = "gray";
     const statusText = document.getElementById("status-text");
     if (statusText) statusText.innerText = "SIMULATION";
+  } else if (mode === "quickview") {
+    if (btnQuick) btnQuick.classList.add("active");
+    if (btnChart) btnChart.classList.remove("active");
+    if (btnSim) btnSim.classList.remove("active");
+    controls.style.display = "none";
+
+    // 퀵뷰 엔진 점화
+    if (typeof window.initQuickView === "function") {
+      window.initQuickView();
+    }
   }
 }
 
@@ -357,19 +413,24 @@ export function searchSymbols(v) {
         const name = (r.Name || "").toUpperCase();
         const sym = (r.Symbol || "").toUpperCase();
         const raw = (r.Ticker || "").toUpperCase();
-        
+
         if (disp === query || sym === query || raw === query) return 0;
-        if (disp.startsWith(query) || sym.startsWith(query) || raw.startsWith(query)) return 1;
+        if (
+          disp.startsWith(query) ||
+          sym.startsWith(query) ||
+          raw.startsWith(query)
+        )
+          return 1;
         if (name === query) return 2;
         if (name.startsWith(query)) return 3;
         return 4;
       };
-      
+
       const scoreA = getScore(a);
       const scoreB = getScore(b);
-      
+
       if (scoreA !== scoreB) return scoreA - scoreB;
-      
+
       return (a.DisplayTicker || "").length - (b.DisplayTicker || "").length;
     })
     .slice(0, 20);
@@ -392,24 +453,24 @@ export function searchSymbols(v) {
       // 각 거래소 버튼들을 독립적으로 생성 (있으면 다 보여줌)
       let buttons = "";
       if (isUpbit) {
-        buttons += `<button class="bg-[#093687] text-white text-[9px] px-2 py-1 rounded font-bold hover:brightness-125" onclick="event.stopPropagation(); selectSymbol('${s}', 'UPBIT')">UPBIT</button>`;
+        buttons += `<button class="bg-[#093687] text-white text-[9px] px-2 py-1 rounded font-bold hover:brightness-125" onclick="event.stopPropagation(); selectSymbol('${r.Ticker}', 'UPBIT')">UPBIT</button>`;
       }
       if (isBithumb) {
-        buttons += `<button class="bg-[#ff8b00] text-white text-[9px] px-2 py-1 rounded font-bold hover:brightness-125" onclick="event.stopPropagation(); selectSymbol('${s}', 'BITHUMB')">BITHUMB</button>`;
+        buttons += `<button class="bg-[#ff8b00] text-white text-[9px] px-2 py-1 rounded font-bold hover:brightness-125" onclick="event.stopPropagation(); selectSymbol('${r.Ticker}', 'BITHUMB')">BITHUMB</button>`;
       }
       if (isBinanceSpot) {
-        buttons += `<button class="bg-[#333] text-white text-[9px] px-2 py-1 rounded font-bold border border-[#555] hover:bg-[#444]" onclick="event.stopPropagation(); selectSymbol('${s}', 'SPOT')">B-SPOT</button>`;
+        buttons += `<button class="bg-[#333] text-white text-[9px] px-2 py-1 rounded font-bold border border-[#555] hover:bg-[#444]" onclick="event.stopPropagation(); selectSymbol('${r.Ticker}', 'SPOT')">B-SPOT</button>`;
       }
       if (isBinanceFutures) {
-        buttons += `<button class="bg-[#f0b90b] text-black text-[9px] px-2 py-1 rounded font-bold hover:brightness-110" onclick="event.stopPropagation(); selectSymbol('${s}', 'FUTURES')">B-FUT</button>`;
+        buttons += `<button class="bg-[#f0b90b] text-black text-[9px] px-2 py-1 rounded font-bold hover:brightness-110" onclick="event.stopPropagation(); selectSymbol('${r.Ticker}', 'FUTURES')">B-FUT</button>`;
       }
       if (isBybitSpot) {
-        buttons += `<button class="bg-[#1c1e23] text-[#f0b90b] text-[9px] px-2 py-1 rounded font-bold border border-[#f0b90b]/30 hover:bg-[#252930]" onclick="event.stopPropagation(); selectSymbol('${s}', 'BYBIT')">BYBIT</button>`;
+        buttons += `<button class="bg-[#1c1e23] text-[#f0b90b] text-[9px] px-2 py-1 rounded font-bold border border-[#f0b90b]/30 hover:bg-[#252930]" onclick="event.stopPropagation(); selectSymbol('${r.Ticker}', 'BYBIT')">BYBIT</button>`;
       }
 
       return `
       <div class="flex items-center justify-between p-2 cursor-pointer border-b border-theme-border text-[13px] hover:bg-white/5" 
-           onclick="selectSymbol('${s}')">
+           onclick="selectSymbol('${r.Ticker}')">
         <div class="flex items-center gap-2">
           ${r.Logo || ""}
           <div class="flex flex-col">
@@ -427,16 +488,24 @@ export function searchSymbols(v) {
 
 // 선택 로직 (티커명 검색창 전송 + 이름 유지)
 export function selectSymbol(s, forceMarket = null) {
+  const allSourceData = store.originalTableData || store.currentTableData || [];
+  const rowInfo = allSourceData.find(
+    (c) => c.Ticker === s || c.DisplayTicker === s || c.UID === s
+  );
+  const uniqueTicker = rowInfo ? rowInfo.Ticker : s;
+
   // 🚀 [INP 최적화 Phase 1] 클릭 즉시 최소한의 상태만 변경하고 즉각 시각적 피드백 제공 (Next Paint 0~16ms 달성!)
   store.isFetchingChart = false;
   window.isFetchingChart = false;
   store.isUserZoomed = false;
-  store.currentAsset = s;
-  store.currentSelectedSymbol = s;
+  store.currentAsset = uniqueTicker;
+  store.currentSelectedSymbol = uniqueTicker;
 
   // 1. 검색창 닫기 및 입력값 동기화 (가벼운 DOM 조작 즉시 실행)
   const symInput = document.getElementById("symbol-input");
-  if (symInput) symInput.value = s;
+  if (symInput) {
+    symInput.value = rowInfo ? rowInfo.Symbol : s;
+  }
   const searchRes = document.getElementById("search-results");
   if (searchRes) searchRes.style.display = "none";
 
@@ -460,18 +529,12 @@ export function selectSymbol(s, forceMarket = null) {
   // 🚀 [INP 최적화 Phase 2] 무거운 배열 탐색, DOM 재생성, API 통신, 차트 렌더링(fetchHistory)을 다음 페인트 이후로 양보(Yielding)
   requestAnimationFrame(() => {
     setTimeout(() => {
-      const allSourceData =
-        store.originalTableData || store.currentTableData || [];
-      const rowInfo = allSourceData.find(
-        (c) => c.DisplayTicker === s || c.Ticker === s,
-      );
-
       // 마켓 우선순위 결정
       if (forceMarket) {
         store.currentMarket = forceMarket;
       } else if (rowInfo && rowInfo.Listed_Exchanges) {
         const ex = rowInfo.Listed_Exchanges;
-        const isQuoteCurrency = s.startsWith("USDT");
+        const isQuoteCurrency = uniqueTicker.startsWith("USDT");
         if (
           isQuoteCurrency &&
           (ex.includes("UPBIT") || ex.includes("BITHUMB"))
@@ -485,7 +548,7 @@ export function selectSymbol(s, forceMarket = null) {
         else if (ex.includes("BYBIT")) store.currentMarket = "BYBIT";
       }
 
-      const p = store.getPrecision(s);
+      const p = store.getPrecision(uniqueTicker);
       const headAssetName = document.getElementById("head-asset-name");
 
       if (rowInfo) {
@@ -493,7 +556,25 @@ export function selectSymbol(s, forceMarket = null) {
           const favorites = JSON.parse(
             localStorage.getItem("sellnance_favs") || "[]",
           );
-          const isFav = favorites.includes(rowInfo.Symbol);
+          const favorites2 = JSON.parse(
+            localStorage.getItem("sellnance_favs2") || "[]",
+          );
+          const isFav = favorites.includes(rowInfo.UID);
+          const isFav2 = favorites2.includes(rowInfo.UID);
+
+          let starText = "☆";
+          let starColor = "gray";
+          let starClass = "";
+          if (isFav) {
+            starText = "★";
+            starColor = "#e3b30a"; // 🚀 노란색 고정 (라이트모드 파란색 오염 방어)
+            starClass = "active";
+          } else if (isFav2) {
+            starText = "★";
+            starColor = "#3b82f6";
+            starClass = "active-blue";
+          }
+
           const logoHtml = rowInfo.Logo || "";
           const fullText = `${rowInfo.Symbol} (${rowInfo.Name || ""})`;
           const len = fullText.length;
@@ -508,8 +589,8 @@ export function selectSymbol(s, forceMarket = null) {
 
           headAssetName.innerHTML = `
             <div class="flex items-center gap-2">
-              <button onclick="window.toggleFavorite('${rowInfo.Symbol}', event); setTimeout(() => window.selectSymbol('${s}'), 50);" class="star-btn text-[16px] transition-all hover:scale-125 flex-shrink-0 ${isFav ? "active" : ""}" style="color: ${isFav ? "var(--accent)" : "gray"}">
-                ${isFav ? "⭐" : "☆"}
+              <button onclick="window.toggleFavorite('${rowInfo.UID}', event, true); setTimeout(() => window.selectSymbol('${uniqueTicker}'), 50);" class="star-btn text-[16px] transition-all hover:scale-125 flex-shrink-0 ${starClass}" style="color: ${starColor}">
+                ${starText}
               </button>
               <div class="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-white/5 rounded-full overflow-hidden">
                 ${logoHtml}
@@ -524,16 +605,16 @@ export function selectSymbol(s, forceMarket = null) {
         }
       }
 
-      updateExchangeBadges(s);
+      updateExchangeBadges(uniqueTicker);
 
       // 🚀 호가창(Orderbook) 업데이트 (호가창 패널이 열려 있을 경우 자동 재연결)
       if (typeof window.startOrderbookStream === "function") {
-        window.startOrderbookStream(s, store.currentMarket);
+        window.startOrderbookStream(uniqueTicker, store.currentMarket);
       }
 
       // 코인 상세 이름 비동기 패치
       try {
-        const querySym = rowInfo ? rowInfo.DisplayTicker : s;
+        const querySym = rowInfo ? rowInfo.DisplayTicker : uniqueTicker;
         fetch(`/api/coin-info/${querySym}`)
           .then((res) => res.json())
           .then((infoData) => {
@@ -544,13 +625,34 @@ export function selectSymbol(s, forceMarket = null) {
               const favorites = JSON.parse(
                 localStorage.getItem("sellnance_favs") || "[]",
               );
-              const isFav = favorites.includes(displaySym);
+              const favorites2 = JSON.parse(
+                localStorage.getItem("sellnance_favs2") || "[]",
+              );
+              const isFav = favorites.includes(rowInfo ? rowInfo.UID : uniqueTicker);
+              const isFav2 = favorites2.includes(rowInfo ? rowInfo.UID : uniqueTicker);
+
+              let starText = "☆";
+              let starColor = "gray";
+              let starClass = "";
+              if (isFav) {
+                starText = "★";
+                starColor = "#e3b30a"; // 🚀 노란색 고정 (라이트모드 파란색 오염 방어)
+                starClass = "active";
+              } else if (isFav2) {
+                starText = "★";
+                starColor = "#3b82f6";
+                starClass = "active-blue";
+              }
+
               const logoHtml = rowInfo ? rowInfo.Logo || "" : "";
               const fullText2 = `${displaySym} (${infoData.name})`;
               const len2 = fullText2.length;
               let fontSizeStyle2 = "";
               if (len2 > 10) {
-                const sizeRem = Math.max(0.65, 1.125 - Math.log10(len2 / 10) * 0.6);
+                const sizeRem = Math.max(
+                  0.65,
+                  1.125 - Math.log10(len2 / 10) * 0.6,
+                );
                 fontSizeStyle2 = `style="font-size: ${sizeRem.toFixed(3)}rem; line-height: 1.1; word-break: break-all; white-space: normal;"`;
               } else {
                 fontSizeStyle2 = `style="white-space: nowrap;"`;
@@ -558,8 +660,8 @@ export function selectSymbol(s, forceMarket = null) {
 
               headAssetName.innerHTML = `
                 <div class="flex items-center gap-2">
-                  <button onclick="window.toggleFavorite('${displaySym}', event); setTimeout(() => window.selectSymbol('${s}'), 50);" class="star-btn text-[16px] transition-all hover:scale-125 flex-shrink-0 ${isFav ? "active" : ""}" style="color: ${isFav ? "var(--accent)" : "gray"}">
-                    ${isFav ? "⭐" : "☆"}
+                  <button onclick="window.toggleFavorite('${rowInfo ? rowInfo.UID : uniqueTicker}', event, true); setTimeout(() => window.selectSymbol('${uniqueTicker}'), 50);" class="star-btn text-[16px] transition-all hover:scale-125 flex-shrink-0 ${starClass}" style="color: ${starColor}">
+                    ${starText}
                   </button>
                   <div class="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-white/5 rounded-full overflow-hidden">
                     ${logoHtml}
@@ -577,7 +679,7 @@ export function selectSymbol(s, forceMarket = null) {
       // 테이블 스크롤 이동
       const sortedList = store.currentTableData;
       const targetIdx = sortedList.findIndex(
-        (item) => item.DisplayTicker === s || item.Ticker === s,
+        (item) => item.DisplayTicker === uniqueTicker || item.Ticker === uniqueTicker,
       );
 
       if (targetIdx !== -1) {
@@ -586,10 +688,9 @@ export function selectSymbol(s, forceMarket = null) {
           if (typeof renderTable === "function") renderTable();
         }
         setTimeout(() => {
-          store.currentSelectedSymbol = s;
-          const targetSym = rowInfo ? rowInfo.Ticker : s;
+          store.currentSelectedSymbol = uniqueTicker;
           const targetRow = document.querySelector(
-            `#table-body tr[data-sym="${targetSym}"]`,
+            `#table-body tr[data-sym="${uniqueTicker}"]`,
           );
           if (targetRow) {
             // targetRow.scrollIntoView({ block: "center", behavior: "smooth" });
@@ -601,7 +702,7 @@ export function selectSymbol(s, forceMarket = null) {
 
       // 🚀 [핵심] 차트 데이터 패치 실행 (메인 스레드 경합 완벽 해소)
       if (typeof fetchHistory === "function") {
-        fetchHistory(s, false, false);
+        fetchHistory(uniqueTicker, false, false);
       }
     }, 0);
   });
@@ -614,14 +715,21 @@ export function updateExchangeBadges(s) {
   );
   let badges = "";
   if (rowInfo) {
-    if (rowInfo.Listed_Exchanges?.includes("UPBIT") || rowInfo.Upbit === "O")
-      badges += `<span class="bg-[#093687] text-white text-[10px] px-1.5 py-0.5 rounded">UPBIT</span>`;
-    if (rowInfo.Listed_Exchanges?.includes("BINANCE_FUTURES"))
-      badges += `<span class="bg-[#f0b90b] text-black text-[10px] px-1.5 py-0.5 rounded ml-1">B-FUT</span>`;
-    if (rowInfo.Listed_Exchanges?.includes("BINANCE"))
-      badges += `<span class="bg-[#444] text-white text-[10px] px-1.5 py-0.5 rounded ml-1">B-SPOT</span>`;
-    if (rowInfo.Listed_Exchanges?.includes("BITHUMB"))
-      badges += `<span class="bg-[#ff8b00] text-white text-[10px] px-1.5 py-0.5 rounded ml-1">BITHUMB</span>`;
+    const list = [
+      { id: "UPBIT", label: "UPBIT", bg: "bg-[#093687]", text: "text-white", market: "UPBIT", condition: rowInfo.Listed_Exchanges?.includes("UPBIT") || rowInfo.Upbit === "O" },
+      { id: "B-FUT", label: "B-FUT", bg: "bg-[#f0b90b]", text: "text-black", market: "FUTURES", condition: rowInfo.Listed_Exchanges?.includes("BINANCE_FUTURES") },
+      { id: "B-SPOT", label: "B-SPOT", bg: "bg-[#444]", text: "text-white", market: "SPOT", condition: rowInfo.Listed_Exchanges?.includes("BINANCE") },
+      { id: "BITHUMB", label: "BITHUMB", bg: "bg-[#ff8b00]", text: "text-white", market: "BITHUMB", condition: rowInfo.Listed_Exchanges?.includes("BITHUMB") }
+    ];
+
+    list.forEach((item) => {
+      if (item.condition) {
+        // Highlight active market badge
+        const isActive = store.currentMarket === item.market;
+        const ringClass = isActive ? "ring-2 ring-white scale-105 shadow-lg brightness-110" : "opacity-60 hover:opacity-100 hover:scale-105";
+        badges += `<button onclick="selectSymbol('${rowInfo.Ticker}', '${item.market}')" class="${item.bg} ${item.text} ${ringClass} text-[11px] font-black px-2.5 py-1 rounded transition-all duration-200 cursor-pointer select-none active:scale-95 ml-1.5 first:ml-0">${item.label}</button>`;
+      }
+    });
   }
 
   const badgeContainer = document.getElementById("exchange-badges");
@@ -691,7 +799,36 @@ export function toggleLogScale() {
   }
 }
 
+export function moveTabSlider(index) {
+  const slider = document.getElementById("tab-sliding-bg");
+  if (!slider) return;
+
+  const buttons = document.querySelectorAll(".chart-tabs-btn");
+  if (buttons.length <= index) return;
+
+  const btn = buttons[index];
+  const btnRect = btn.getBoundingClientRect();
+  const parent = btn.parentElement;
+  const parentRect = parent.getBoundingClientRect();
+
+  const left = btnRect.left - parentRect.left;
+  slider.style.left = `${left}px`;
+  slider.style.width = `${btnRect.width}px`;
+
+  // Quick View 탭(index 2)일 때만 네온 글로우 활성화
+  const neonGlow = document.getElementById("quickview-neon-glow");
+  const neonMask = document.getElementById("quickview-neon-mask");
+  if (index === 2) {
+    if (neonGlow) neonGlow.style.opacity = "0.7";
+    if (neonMask) neonMask.style.opacity = "1";
+  } else {
+    if (neonGlow) neonGlow.style.opacity = "0";
+    if (neonMask) neonMask.style.opacity = "0";
+  }
+}
+
 window.setTF = setTF;
 window.executeSetTF = executeSetTF;
 window.toggleLogScale = toggleLogScale;
 window.switchViewMode = switchViewMode;
+window.moveTabSlider = moveTabSlider;

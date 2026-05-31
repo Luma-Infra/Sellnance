@@ -3,6 +3,7 @@ import { store, tfSec } from "./_store.js";
 
 // ⚡ 퀵뷰 전용 상태 제어 장치
 const qvState = {
+  baseTarget: "ALL", // 'ALL' (전체 코인), 'FAV' (즐겨찾기 전용)
   sortType: "", // '24h', 'day', 'mcap'
   page: 1,
   timeframe: "1h", // '1m', '5m', '15m', '1h', '4h'
@@ -13,6 +14,7 @@ const qvState = {
   binanceWs: null, // 바이낸스 복합 스트림 소켓
   upbitWs: null, // 업비트 정밀 체결 소켓
   focusIndex: -1, // 겹치기 모드에서 현재 마우스 포커스(호버)된 자산 인덱스
+  candleColorMode: "default", // 'default' (빨강/초록), 'asset' (자산별 고유색상)
 };
 
 // 🎨 겹치기 모드에서 각 라인을 시각적으로 뚜렷하게 구별하기 위한 8가지 네온/파스텔 자산 컬러 셋
@@ -30,14 +32,20 @@ const ASSET_COLORS = [
 // ⏱️ 타임프레임 텍스트 매핑 헬퍼
 const TF_LABELS = {
   "1m": "1분",
-  "5m": "5분",
   "15m": "15분",
   "1h": "1시간",
   "4h": "4시간",
+  "1d": "1일",
 };
 
 // 🏁 퀵뷰 엔진 점화
 export async function initQuickView() {
+  const container = document.getElementById("quickview-container");
+  if (container) {
+    container.classList.remove("hidden");
+    container.classList.add("qv-modal");
+    container.style.display = "flex";
+  }
   const initOverlay = document.getElementById("quickview-init-overlay");
   if (!qvState.sortType) {
     // 최초 진입 시 정렬 기준 선택 화면 노출
@@ -72,6 +80,9 @@ export async function initQuickView() {
 
   const pageIndicator = document.getElementById("qv-page-indicator");
   if (pageIndicator) pageIndicator.innerText = `PAGE ${qvState.page} / 4`;
+
+  // 레이아웃 토글 슬라이더 UI 동기화
+  updateLayoutToggleUI(qvState.layout);
 
   // 1. 상태에 맞는 코인 8개 슬라이싱
   resolveTopAssets();
@@ -120,13 +131,37 @@ export function destroyQuickView() {
     legend.classList.add("hidden");
     legend.classList.remove("collapsed");
   }
+
+  const container = document.getElementById("quickview-container");
+  if (container) {
+    container.classList.remove("qv-modal");
+    container.classList.add("hidden");
+    container.style.display = "none";
+  }
 }
 
 // 📊 상위 32개 정렬 자산 중 현재 페이지 8개 추출
 function resolveTopAssets() {
   // store의 테이블 원본 데이터를 클론하여 정렬 진행
-  const source = [...(store.originalTableData || store.currentTableData || [])];
-  if (source.length === 0) return;
+  let source = [...(store.originalTableData || store.currentTableData || [])];
+
+  // 🚀 즐겨찾기(FAV) 전용 모드인 경우 필터링 적용
+  if (qvState.baseTarget === "FAV") {
+    const favorites = JSON.parse(
+      localStorage.getItem("sellnance_favs") || "[]",
+    );
+    source = source.filter((d) => favorites.includes(d.UID));
+  } else if (qvState.baseTarget === "FAV2") {
+    const favorites2 = JSON.parse(
+      localStorage.getItem("sellnance_favs2") || "[]",
+    );
+    source = source.filter((d) => favorites2.includes(d.UID));
+  }
+
+  if (source.length === 0) {
+    qvState.activeAssets = [];
+    return;
+  }
 
   if (qvState.sortType === "24h") {
     source.sort((a, b) => (b.Change_24h_Raw || 0) - (a.Change_24h_Raw || 0));
@@ -202,6 +237,9 @@ async function rebuildQuickViewCharts() {
     header.innerHTML = `
       <div class="flex items-center gap-1.5">
         <span class="text-[8px] font-black uppercase ${tagClass}">${exTag}</span>
+        <div class="w-4 h-4 flex items-center justify-center rounded-full overflow-hidden flex-shrink-0 bg-white/5 [&>img]:w-full [&>img]:h-full [&>img]:object-contain">
+          ${asset.Logo || ""}
+        </div>
         <span class="text-xs text-theme-text font-black">${asset.Ticker}</span>
       </div>
       <div class="flex items-center gap-2 font-mono">
@@ -326,11 +364,12 @@ async function initSingleQuickViewChart(container, asset, idx) {
   // 겹치기 모드에서는 캔들이 가독성을 헤치므로 캔들 외에 자산 전용 라인 컬러도 추가해 둡니다.
   const assetColor = ASSET_COLORS[idx];
 
+  const isCandleAssetColor = qvState.candleColorMode === "asset";
   const series = chart.addSeries(window.LightweightCharts.CandlestickSeries, {
-    upColor: upColor,
-    downColor: downColor,
-    wickUpColor: upColor,
-    wickDownColor: downColor,
+    upColor: isCandleAssetColor ? assetColor : upColor,
+    downColor: isCandleAssetColor ? assetColor : downColor,
+    wickUpColor: isCandleAssetColor ? assetColor : upColor,
+    wickDownColor: isCandleAssetColor ? assetColor : downColor,
     borderVisible: false,
   });
 
@@ -350,7 +389,6 @@ async function initSingleQuickViewChart(container, asset, idx) {
       const uTF = qvState.timeframe;
       let upbitInterval = "days";
       if (uTF === "1m") upbitInterval = "minutes/1";
-      else if (uTF === "5m") upbitInterval = "minutes/5";
       else if (uTF === "15m") upbitInterval = "minutes/15";
       else if (uTF === "1h") upbitInterval = "minutes/60";
 
@@ -397,8 +435,7 @@ async function initSingleQuickViewChart(container, asset, idx) {
 
       // 🚀 [원복] 퀵뷰 독자 뱃지 상태(store.qvMarket)에 맞추어 과거 캔들 데이터(Spot vs Futures) API 분기점 확보
       const activeIsFutures =
-        store.qvMarket === "FUTURES" ||
-        store.qvMarket === "BYBIT_FUTURES";
+        store.qvMarket === "FUTURES" || store.qvMarket === "BYBIT_FUTURES";
 
       if (activeIsFutures) {
         if (hasBinanceFutures) {
@@ -622,8 +659,7 @@ function connectQuickViewSockets() {
     if (a.Upbit === "O") return false;
     // 🚀 [원복] 테이블은 그대로 두고, 퀵뷰 뱃지 전환값(store.qvMarket)에 따라 실시간 웹소켓 구독 대상을 현물/선물로 스위칭
     const isFutures =
-      store.qvMarket === "FUTURES" ||
-      store.qvMarket === "BYBIT_FUTURES";
+      store.qvMarket === "FUTURES" || store.qvMarket === "BYBIT_FUTURES";
     if (isFutures) {
       return a.Listed_Exchanges?.includes("BINANCE_FUTURES");
     } else {
@@ -729,10 +765,12 @@ function connectQuickViewSockets() {
   // 2. 업비트 정밀 Ticker 스트림 가동
   if (upbitAssets.length > 0) {
     qvState.upbitWs = new WebSocket("wss://api.upbit.com/websocket/v1");
+    qvState.upbitWs.binaryType = "arraybuffer";
 
     qvState.upbitWs.onopen = () => {
       const codes = upbitAssets.map(
-        (a) => `KRW-${a.Ticker.replace("KRW", "")}`,
+        (a) =>
+          `KRW-${a.Upbit_Symbol || a.Symbol || a.Ticker.replace("KRW", "")}`,
       );
       console.log("⚡ 퀵뷰 업비트 실시간 스트림 채널 점화:", codes);
       qvState.upbitWs.send(
@@ -744,42 +782,42 @@ function connectQuickViewSockets() {
     };
 
     const decoder = new TextDecoder("utf-8");
-    qvState.upbitWs.onmessage = async (e) => {
-      const text = typeof e.data === "string" ? e.data : await e.data.text();
-      const ticker = JSON.parse(text);
-      if (!ticker.code) return;
-
-      const pureSym = ticker.code.replace("KRW-", "");
-      const tickerName = pureSym + "KRW";
-
-      // 해당하는 차트 인덱스 찾기
-      const idx = qvState.activeAssets.findIndex(
-        (a) => a.Ticker === tickerName,
-      );
-      if (idx === -1) return;
-
-      const series = qvState.series[idx];
-      const chart = qvState.charts[idx];
-      if (!series || !chart) return;
-
-      // 업비트의 실시간 시세 메시지로 현재 차트의 마지막 봉 업데이트
-      const nowMs = ticker.timestamp;
-      const secondsPerBar = tfSec[qvState.timeframe] || 3600;
-      const barTime = Math.floor(nowMs / 1000 / secondsPerBar) * secondsPerBar;
-
-      const tradePrice = parseFloat(ticker.trade_price);
-
-      // 캔들 정보 구성 (마지막 값을 가져와 갱신하거나 새로 push)
-      const candle = {
-        time: barTime,
-        open: tradePrice, // 실시간 ticker는 open가격을 주기 어려우므로, 실시간 close 가격으로 갱신
-        high: tradePrice,
-        low: tradePrice,
-        close: tradePrice,
-      };
-
-      // Lightweight chart는 마지막 봉 시간에 동일한 time이 update로 들어가면 알아서 high, low, close를 병합 갱신해 줍니다.
+    qvState.upbitWs.onmessage = (e) => {
       try {
+        const ticker = JSON.parse(decoder.decode(e.data));
+        if (!ticker.code) return;
+
+        const pureSym = ticker.code.replace("KRW-", "");
+
+        // 해당하는 차트 인덱스 찾기 (실제 매칭 로직 보정)
+        const idx = qvState.activeAssets.findIndex(
+          (a) =>
+            (a.Upbit_Symbol || a.Symbol || a.Ticker.replace("KRW", "")) ===
+            pureSym,
+        );
+        if (idx === -1) return;
+
+        const series = qvState.series[idx];
+        const chart = qvState.charts[idx];
+        if (!series || !chart) return;
+
+        // 업비트의 실시간 시세 메시지로 현재 차트의 마지막 봉 업데이트
+        const nowMs = ticker.timestamp;
+        const secondsPerBar = tfSec[qvState.timeframe] || 3600;
+        const barTime =
+          Math.floor(nowMs / 1000 / secondsPerBar) * secondsPerBar;
+
+        const tradePrice = parseFloat(ticker.trade_price);
+
+        // 캔들 정보 구성 (마지막 값을 가져와 갱신하거나 새로 push)
+        const candle = {
+          time: barTime,
+          open: tradePrice,
+          high: tradePrice,
+          low: tradePrice,
+          close: tradePrice,
+        };
+
         series.update(candle);
         updateLiveHeaderPrice(
           idx,
@@ -787,7 +825,9 @@ function connectQuickViewSockets() {
           (ticker.signed_change_rate * 100).toString(),
           true,
         );
-      } catch (err) {}
+      } catch (err) {
+        console.error("퀵뷰 업비트 소켓 파싱 에러:", err);
+      }
     };
 
     qvState.upbitWs.onclose = () => {
@@ -840,7 +880,7 @@ function updateLiveHeaderPrice(idx, price, changePct, isFlash = false) {
     if (priceEl._flashTimeout) clearTimeout(priceEl._flashTimeout);
     priceEl._flashTimeout = setTimeout(() => {
       priceEl.style.color = "";
-    }, 150);
+    }, 200);
   }
 
   // 범례판 내부 실시간 정보 동기화
@@ -856,27 +896,12 @@ function updateLiveHeaderPrice(idx, price, changePct, isFlash = false) {
   }
 }
 
-// ↕️ 레이아웃 모드 토글 (Spread ↔ Overlap)
-export function toggleQuickViewLayout() {
-  qvState.layout = qvState.layout === "spread" ? "overlap" : "spread";
+// ↕️ 레이아웃 모드 설정 (Spread ↔ Overlap)
+export function setQuickViewLayout(layout) {
+  if (qvState.layout === layout) return;
+  qvState.layout = layout;
 
-  const toggleBtn = document.getElementById("qv-layout-toggle");
-  const layoutIcon = document.getElementById("qv-layout-icon");
-  const layoutText = document.getElementById("qv-layout-text");
-
-  if (toggleBtn && layoutIcon && layoutText) {
-    if (qvState.layout === "spread") {
-      toggleBtn.className =
-        "px-3 py-1.5 text-[10px] font-black rounded-lg border border-theme-border/50 hover:border-theme-accent text-theme-text hover:text-theme-accent bg-transparent transition-all flex items-center gap-1.5";
-      layoutIcon.innerText = "🎛️";
-      layoutText.innerText = "Spread (4x2)";
-    } else {
-      toggleBtn.className =
-        "px-3 py-1.5 text-[10px] font-black rounded-lg border border-theme-accent bg-theme-accent text-white transition-all flex items-center gap-1.5";
-      layoutIcon.innerText = "🃏";
-      layoutText.innerText = "Overlap (겹치기)";
-    }
-  }
+  updateLayoutToggleUI(layout);
 
   const wrapper = document.getElementById("qv-charts-wrapper");
   if (!wrapper) return;
@@ -889,92 +914,108 @@ export function toggleQuickViewLayout() {
         : "qv-overlap-mode w-full h-full relative";
     renderOverlapLegend();
     updateChartsAxisVisibility();
-    setTimeout(triggerResizeQuickView, 50);
     return;
   }
 
+  // [최적화 1] 애니메이션 시작 전 무거운 축 텍스트/범례 상태를 먼저 업데이트
+  updateChartsAxisVisibility();
+
   const wrapperRect = wrapper.getBoundingClientRect();
-  const centerX = wrapperRect.width / 2;
-  const centerY = wrapperRect.height / 2;
 
   if (qvState.layout === "overlap") {
-    // ── Spread → Overlap: 각 카드가 가운데로 좌라라락 모이기 ──
+    // ── Spread → Overlap: 각 카드가 제자리에서 스무스하게 중앙 전체로 확대되며 병합 ──
     const firstRects = cards.map((c) => c.getBoundingClientRect());
+
+    wrapper.className = "qv-overlap-mode w-full h-full relative";
+    renderOverlapLegend();
 
     cards.forEach((card, i) => {
       const r = firstRects[i];
-      const cardCx = r.left - wrapperRect.left + r.width / 2;
-      const cardCy = r.top - wrapperRect.top + r.height / 2;
-      const dx = centerX - cardCx;
-      const dy = centerY - cardCy;
-      const delay = i * 20;
+      const startCx = r.left - wrapperRect.left + r.width / 2;
+      const startCy = r.top - wrapperRect.top + r.height / 2;
+      const destCx = wrapperRect.width / 2;
+      const destCy = wrapperRect.height / 2;
 
+      const dx = startCx - destCx;
+      const dy = startCy - destCy;
+
+      const scaleX = r.width / wrapperRect.width;
+      const scaleY = r.height / wrapperRect.height;
+
+      // Invert: Overlap 레이아웃 상에서 크기/위치를 기존 Spread 위치로 강제 매핑
       card.style.transition = "none";
-      card.style.transform = "translate(0,0) scale(1)";
+      card.style.transform = `translate(${dx}px, ${dy}px) scale(${scaleX}, ${scaleY})`;
+      card.style.transformOrigin = "center";
       card.style.opacity = "1";
-      card.style.position = "relative";
       card.style.zIndex = "5";
 
+      // Play: 원래 위치로 가득 채워지는 애니메이션 진행
       requestAnimationFrame(() => {
-        card.style.transition = `transform 0.3s cubic-bezier(0.4,0,0.8,0) ${delay}ms, opacity 0.25s ease ${delay}ms`;
-        card.style.transform = `translate(${dx}px, ${dy}px) scale(0.25)`;
-        card.style.opacity = "0";
+        requestAnimationFrame(() => {
+          card.style.transition =
+            "transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease";
+          card.style.transform = "translate(0, 0) scale(1)";
+          card.style.opacity = "0.4"; // 겹치기 모드의 불투명도로 수렴
+        });
       });
     });
 
-    setTimeout(
-      () => {
-        wrapper.className = "qv-overlap-mode w-full h-full relative";
-        cards.forEach((card) => {
-          card.style.cssText = "";
-        });
-        renderOverlapLegend();
-        updateChartsAxisVisibility();
+    // [최적화 2] 350ms 애니메이션 트랜지션이 완전히 정지된 이후에 딱 한 번 리사이즈 트리거
+    setTimeout(() => {
+      cards.forEach((card) => {
+        card.style.cssText = "";
+      });
+      requestAnimationFrame(() => {
         triggerResizeQuickView();
-        setTimeout(triggerResizeQuickView, 50);
-      },
-      20 * (cards.length - 1) + 340,
-    );
+      });
+    }, 380);
   } else {
-    // ── Overlap → Spread: 가운데서 각 카드가 좌라라락 흩어지기 ──
-    // 먼저 레이아웃 전환으로 최종 위치 확보
+    // ── Overlap → Spread: 중앙의 겹쳐진 레이아웃에서 제자리(그리드)로 흩어지며 축소 ──
     wrapper.className = "qv-spread-mode w-full h-full relative";
     renderOverlapLegend();
-    updateChartsAxisVisibility();
-    triggerResizeQuickView();
 
     const lastRects = cards.map((c) => c.getBoundingClientRect());
 
     cards.forEach((card, i) => {
       const r = lastRects[i];
-      const cardCx = r.left - wrapperRect.left + r.width / 2;
-      const cardCy = r.top - wrapperRect.top + r.height / 2;
-      const dx = centerX - cardCx;
-      const dy = centerY - cardCy;
-      const delay = i * 20;
+      const destCx = r.left - wrapperRect.left + r.width / 2;
+      const destCy = r.top - wrapperRect.top + r.height / 2;
+      const startCx = wrapperRect.width / 2;
+      const startCy = wrapperRect.height / 2;
 
+      const dx = startCx - destCx;
+      const dy = startCy - destCy;
+
+      const scaleX = wrapperRect.width / r.width;
+      const scaleY = wrapperRect.height / r.height;
+
+      // Invert: Spread 그리드 내에서 크기/위치를 Overlap 위치(전체화면, 중앙)로 매핑
       card.style.transition = "none";
-      card.style.transform = `translate(${dx}px, ${dy}px) scale(0.25)`;
-      card.style.opacity = "0";
+      card.style.transform = `translate(${dx}px, ${dy}px) scale(${scaleX}, ${scaleY})`;
+      card.style.transformOrigin = "center";
+      card.style.opacity = "0.4";
+      card.style.zIndex = "10";
 
-      requestAnimationFrame(() =>
+      // Play: 그리드 내 제자리로 축소되며 복구 애니메이션 진행
+      requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          card.style.transition = `transform 0.35s cubic-bezier(0.34,1.3,0.64,1) ${delay}ms, opacity 0.2s ease ${delay}ms`;
-          card.style.transform = "translate(0,0) scale(1)";
+          card.style.transition =
+            "transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease";
+          card.style.transform = "translate(0, 0) scale(1)";
           card.style.opacity = "1";
-        }),
-      );
+        });
+      });
     });
 
-    setTimeout(
-      () => {
-        cards.forEach((card) => {
-          card.style.cssText = "";
-        });
+    // [최적화 2] 애니메이션이 멈춘 다음 최종 프레임에서 리사이즈 진행
+    setTimeout(() => {
+      cards.forEach((card) => {
+        card.style.cssText = "";
+      });
+      requestAnimationFrame(() => {
         triggerResizeQuickView();
-      },
-      20 * (cards.length - 1) + 390,
-    );
+      });
+    }, 380);
   }
 }
 
@@ -1089,19 +1130,115 @@ export function resetQuickView() {
   destroyQuickView();
 
   const initOverlay = document.getElementById("quickview-init-overlay");
-  if (initOverlay) initOverlay.classList.remove("hidden");
+  if (initOverlay) {
+    initOverlay.classList.remove("hidden");
+    initOverlay.style.display = "flex";
+  }
+}
+
+export function closeQuickViewModal() {
+  if (typeof window.switchChartTab === "function") {
+    window.switchChartTab("chart");
+  }
+  if (typeof window.moveTabSlider === "function") {
+    window.moveTabSlider(0);
+  }
+}
+
+export function toggleQuickViewCandleColor() {
+  qvState.candleColorMode =
+    qvState.candleColorMode === "asset" ? "default" : "asset";
+
+  // 버튼 스타일 업데이트
+  const btn = document.getElementById("qv-color-toggle-btn");
+  if (btn) {
+    if (qvState.candleColorMode === "asset") {
+      btn.className =
+        "px-3 py-1.5 text-[10px] font-black rounded-lg border border-theme-accent text-white bg-theme-accent transition-all flex items-center gap-1.5 cursor-pointer";
+    } else {
+      btn.className =
+        "px-3 py-1.5 text-[10px] font-black rounded-lg border border-theme-border/50 hover:border-theme-accent text-theme-text hover:text-theme-accent bg-transparent transition-all flex items-center gap-1.5 cursor-pointer";
+    }
+  }
+
+  // 실시간 캔들 색상 변경 적용
+  updateQuickViewTheme();
+}
+
+export function setQuickViewBase(base) {
+  if (qvState.baseTarget === base) return;
+  qvState.baseTarget = base;
+
+  const btnAll = document.getElementById("qv-base-all");
+  const btnFav = document.getElementById("qv-base-fav");
+  const btnFav2 = document.getElementById("qv-base-fav2");
+
+  if (btnAll && btnFav) {
+    [btnAll, btnFav, btnFav2].forEach((btn) => {
+      if (btn) {
+        btn.className =
+          "px-4 py-2 text-xs font-black rounded-lg transition-all text-theme-text opacity-50 hover:opacity-100 cursor-pointer";
+      }
+    });
+    const activeBtn =
+      base === "ALL" ? btnAll : base === "FAV" ? btnFav : btnFav2;
+    if (activeBtn) {
+      activeBtn.className =
+        "px-4 py-2 text-xs font-black rounded-lg transition-all text-white bg-theme-accent cursor-pointer";
+    }
+  }
+}
+
+export function resetQuickViewChartsScale() {
+  qvState.charts.forEach((chart) => {
+    if (chart) {
+      try {
+        chart.timeScale().fitContent();
+      } catch (e) {}
+    }
+  });
 }
 
 // 전역 window 바인딩 노출
 window.initQuickView = initQuickView;
 window.destroyQuickView = destroyQuickView;
-window.toggleQuickViewLayout = toggleQuickViewLayout;
+window.setQuickViewBase = setQuickViewBase;
+window.resetQuickViewChartsScale = resetQuickViewChartsScale;
+window.setQuickViewLayout = setQuickViewLayout;
 window.changeQuickViewSort = changeQuickViewSort;
 window.changeQuickViewTF = changeQuickViewTF;
 window.changeQuickViewPage = changeQuickViewPage;
 window.selectQuickViewInitSort = selectQuickViewInitSort;
 window.triggerResizeQuickView = triggerResizeQuickView;
 window.resetQuickView = resetQuickView;
+window.closeQuickViewModal = closeQuickViewModal;
+window.toggleQuickViewCandleColor = toggleQuickViewCandleColor;
+
+// 🎨 레이아웃 토글 슬라이더 UI 렌더링 헬퍼
+export function updateLayoutToggleUI(layout) {
+  const btnSpread = document.getElementById("qv-layout-spread");
+  const btnOverlap = document.getElementById("qv-layout-overlap");
+  const slider = document.getElementById("qv-layout-slider");
+
+  if (btnSpread && btnOverlap && slider) {
+    if (layout === "spread") {
+      btnSpread.className =
+        "relative z-10 px-4 py-2 text-xs font-black rounded-md transition-all text-white cursor-pointer";
+      btnOverlap.className =
+        "relative z-10 px-4 py-2 text-xs font-black rounded-md transition-all text-theme-text opacity-60 hover:opacity-100 cursor-pointer";
+      slider.style.transform = "translateX(0px)";
+    } else {
+      btnSpread.className =
+        "relative z-10 px-4 py-2 text-xs font-black rounded-md transition-all text-theme-text opacity-60 hover:opacity-100 cursor-pointer";
+      btnOverlap.className =
+        "relative z-10 px-4 py-2 text-xs font-black rounded-md transition-all text-white cursor-pointer";
+      // offsetLeft 측정으로 동적인 슬라이딩 트랜지션 연출
+      const offset = btnOverlap.offsetLeft - btnSpread.offsetLeft;
+      slider.style.transform = `translateX(${offset}px)`;
+    }
+  }
+}
+window.updateLayoutToggleUI = updateLayoutToggleUI;
 
 export function updateQuickViewTheme() {
   const isDark = document.body.classList.contains("theme-binance");
@@ -1111,6 +1248,9 @@ export function updateQuickViewTheme() {
   const textColor = isDark ? "#8a8d97" : "#4a4a4a";
   const upColor = isDark ? "#26a69a" : "#c84a31";
   const downColor = isDark ? "#ef5350" : "#1261c4";
+
+  // 테마 변경 시에도 레이아웃 슬라이더 위치 재보정
+  updateLayoutToggleUI(qvState.layout);
 
   qvState.charts.forEach((chart, idx) => {
     if (!chart) return;
@@ -1134,13 +1274,25 @@ export function updateQuickViewTheme() {
 
     const series = qvState.series[idx];
     if (series) {
-      series.applyOptions({
-        upColor: upColor,
-        downColor: downColor,
-        wickUpColor: upColor,
-        wickDownColor: downColor,
-      });
+      if (qvState.candleColorMode === "asset") {
+        const assetColor = ASSET_COLORS[idx];
+        series.applyOptions({
+          upColor: assetColor,
+          downColor: assetColor,
+          wickUpColor: assetColor,
+          wickDownColor: assetColor,
+        });
+      } else {
+        series.applyOptions({
+          upColor: upColor,
+          downColor: downColor,
+          wickUpColor: upColor,
+          wickDownColor: downColor,
+        });
+      }
     }
   });
 }
 window.updateQuickViewTheme = updateQuickViewTheme;
+window.initQuickView = initQuickView;
+window.destroyQuickView = destroyQuickView;

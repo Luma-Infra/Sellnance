@@ -177,16 +177,20 @@ def build_binance_row(
 
     # 🚀 [지문 완화 1] Bybit Fallback (바낸 티커 base 또는 업비트 티커 target_up_base 둘 중 하나라도 바이비트에 있다면 무조건 쌀먹 도킹!)
     by_spot_p = bybit_data.get(base, {}).get("spot_price", 0.0)
+    by_futures_p = bybit_data.get(base, {}).get("futures_price", 0.0)
     by_vol_24h = bybit_data.get(base, {}).get("volume_24h", 0.0)
 
     if (
-        by_spot_p == 0
+        (by_spot_p == 0 and by_futures_p == 0)
         and target_up_base
         and target_up_base in bybit_data
     ):
         by_spot_p = bybit_data.get(target_up_base, {}).get("spot_price", 0.0)
+        by_futures_p = bybit_data.get(target_up_base, {}).get("futures_price", 0.0)
         by_vol_24h = bybit_data.get(target_up_base, {}).get("volume_24h", 0.0)
 
+    if by_futures_p > 0:
+        listed_on.add("BYBIT_FUTURES")
     if by_spot_p > 0:
         listed_on.add("BYBIT")
 
@@ -255,15 +259,18 @@ def build_binance_row(
         # 빗썸 가격은 현재 upbit_data 구조에 없으므로 (필요시 추가 로직) 일단 업비트 위주
         pass
 
-    # 2. 해외 거래소 결정 (바낸 현물 -> 바낸 선물 -> 바이비트 현물)
+    # 2. 해외 거래소 결정 (바낸 선물 -> 바낸 현물 -> 바이빗 선물 -> 바이빗 현물)
     ovs_p = 0.0
     ovs_name = ""
-    if binance_spot_price > 0:
-        ovs_p = binance_spot_price
-        ovs_name = "BIN SPOT"
-    elif binance_futures_price > 0:
+    if binance_futures_price > 0:
         ovs_p = binance_futures_price
         ovs_name = "BIN FUT"
+    elif binance_spot_price > 0:
+        ovs_p = binance_spot_price
+        ovs_name = "BIN SPOT"
+    elif by_futures_p > 0:
+        ovs_p = by_futures_p
+        ovs_name = "BYB FUT"
     elif by_spot_p > 0:
         ovs_p = by_spot_p
         ovs_name = "BYB SPOT"
@@ -287,6 +294,11 @@ def build_binance_row(
         else "-"
     )
 
+    # 🚀 Bithumb 심볼 명확화 (중복 티커 처리)
+    bithumb_symbol = base
+    if bithumb_aliases:
+        bithumb_symbol = bithumb_aliases[0]
+
     bithumb_price = bithumb_data.get(base, {}).get("price", 0.0)
     if bithumb_price == 0 and target_up_base:
         bithumb_price = bithumb_data.get(target_up_base, {}).get("price", 0.0)
@@ -304,11 +316,12 @@ def build_binance_row(
         "Name": coin_name,
         "Chain": chain,
         "Upbit": "O" if target_up_base else "X",
+        "Bithumb_Symbol": bithumb_symbol,
         "precision": precision,
         "Price": utils.format_dynamic_price(b_info["price"], precision),
         "Price_KRW": up_price_krw if up_price_krw > 0 else None,
-        "Binance_Price": (binance_spot_price or binance_futures_price) if (binance_spot_price > 0 or binance_futures_price > 0) else None,
-        "Bybit_Price": by_spot_p if by_spot_p > 0 else None,
+        "Binance_Price": (binance_futures_price or binance_spot_price) if (binance_futures_price > 0 or binance_spot_price > 0) else None,
+        "Bybit_Price": (by_futures_p or by_spot_p) if (by_futures_p > 0 or by_spot_p > 0) else None,
         "Upbit_Price": up_price_krw if up_price_krw > 0 else None,
         "Bithumb_Price": bithumb_price if bithumb_price > 0 else None,
         "Upbit_Vol_Formatted": (utils.format_volume_string(up_vol_24h / krw_usd_rate) if krw_usd_rate > 0 else "-") if up_vol_24h > 0 else "-",

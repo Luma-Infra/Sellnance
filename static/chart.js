@@ -265,13 +265,18 @@ export function initChart() {
     store.isUserZoomed = true;
   });
 
-  // 🚀 [Lazy Load] 왼쪽으로 스크롤하여 맨 처음 영역에 도달하면 과거 데이터를 lazy하게 로드
+  // 🚀 [Lazy Load] 왼쪽으로 스크롤하여 맨 처음 영역에 도달하면 과거 데이터를 lazy하게 로드 (폭주 방지 락 도입)
+  let isCheckingLoadMore = false;
   store.chart.timeScale().subscribeVisibleLogicalRangeChange(async (range) => {
-    if (!range) return;
+    if (!range || isCheckingLoadMore) return;
     if (range.from < 15) {
+      isCheckingLoadMore = true;
       if (typeof window.loadMoreHistory === "function") {
         await window.loadMoreHistory();
       }
+      setTimeout(() => {
+        isCheckingLoadMore = false;
+      }, 500); // 0.5초 디바운스로 스크롤 프레임 폭주 원천 차단
     }
   });
 
@@ -364,13 +369,26 @@ export function initChart() {
     store.volumeSeries.attachPrimitive(store._volCrosshair);
   }
 
-  // 🌊 시간축 스크롤 완벽 동기화 엔진
+  // 🌊 시간축 스크롤 완벽 동기화 엔진 (순환 참조에 의한 중복 렌더링 루프 완벽 방쇄)
+  let isSyncingTimeScales = false;
   const syncTimeScales = (sourceChart, targetCharts) => {
     sourceChart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
+      if (isSyncingTimeScales) return;
+      // 🚀 [해결] 차트 데이터 갱신 중일 때는 시간축 동기화를 전면 차단하여 Value is null 오류 원천 차단!
+      if (store.isFetchingChart || window.isFetchingChart) return;
+
       if (range) {
+        isSyncingTimeScales = true;
         targetCharts.forEach((target) => {
-          if (target) target.timeScale().setVisibleLogicalRange(range);
+          if (target) {
+            try {
+              target.timeScale().setVisibleLogicalRange(range);
+            } catch (syncErr) {
+              // 동기화 실패 시 예외가 전파되어 멈추는 현상 완벽 방어
+            }
+          }
         });
+        isSyncingTimeScales = false;
       }
     });
   };
@@ -394,52 +412,83 @@ export function initChart() {
           if (store.activeChart !== sourceChart) {
             store.activeChart = sourceChart;
 
-            // 🚀 1. 활성 차트 (마우스가 있는 곳): 가로선과 가격 라벨을 원래 색상으로 우아하게 복원!
-            sourceChart.applyOptions({
-              crosshair: {
-                mode: window.LightweightCharts.CrosshairMode.Normal,
-                vertLine: {
-                  visible: true,
-                  color: "transparent",
-                  labelVisible: true,
-                  style: window.LightweightCharts.LineStyle.Dotted,
-                },
-                horzLine: {
-                  visible: true,
-                  labelVisible: true,
-                  color: "#758696", // 원래 트뷰 기본 십자선 색상 복구
-                  labelBackgroundColor: "#2b2b43", // 원래 트뷰 기본 라벨 배경색 복구
-                  style: window.LightweightCharts.LineStyle.Dotted,
-                },
-              },
-            });
+            // 🔥 [핵심 패치] applyOptions를 이벤트 수신 즉시 동기 실행하면 아직 초기화 안 된
+            //    서브 차트 히스토그램 버퍼를 강제 리페인트하여 Value is null을 유발합니다.
+            //    cancelAnimationFrame + requestAnimationFrame 디바운스로 단일 프레임에서만 실행합니다.
+            if (sourceChart._crosshairApplyRaf) {
+              cancelAnimationFrame(sourceChart._crosshairApplyRaf);
+            }
+            sourceChart._crosshairApplyRaf = requestAnimationFrame(() => {
+              try {
+                if (!sourceChart || !window.LightweightCharts) return;
 
-            // 🚀 2. 비활성 차트 (타겟): 트뷰 API 강제 오버라이드를 피하기 위해, 네이티브 색상 제어로 완벽 투명화!
-            targetCharts.forEach((targetObj) => {
-              if (targetObj.chart) {
-                targetObj.chart.applyOptions({
+                // 🚀 1. 활성 차트 (마우스가 있는 곳): 가로선과 가격 라벨을 원래 색상으로 우아하게 복원!
+                sourceChart.applyOptions({
                   crosshair: {
                     mode: window.LightweightCharts.CrosshairMode.Normal,
-                    horzLine: {
-                      visible: false,
-                      labelVisible: false,
-                      color: "transparent", // 가로선 완전 투명화
-                      labelBackgroundColor: "transparent", // 라벨 배경 완전 투명화
-                    },
                     vertLine: {
                       visible: true,
                       color: "transparent",
                       labelVisible: true,
                       style: window.LightweightCharts.LineStyle.Dotted,
                     },
+                    horzLine: {
+                      visible: true,
+                      labelVisible: true,
+                      color: "#758696", // 원래 트뷰 기본 십자선 색상 복구
+                      labelBackgroundColor: "#2b2b43", // 원래 트뷰 기본 라벨 배경색 복구
+                      style: window.LightweightCharts.LineStyle.Dotted,
+                    },
                   },
                 });
+
+                // 🚀 2. 비활성 차트 (타겟): 트뷰 API 강제 오버라이드를 피하기 위해, 네이티브 색상 제어로 완벽 투명화!
+                targetCharts.forEach((targetObj) => {
+                  if (targetObj.chart) {
+                    targetObj.chart.applyOptions({
+                      crosshair: {
+                        mode: window.LightweightCharts.CrosshairMode.Normal,
+                        horzLine: {
+                          visible: false,
+                          labelVisible: false,
+                          color: "transparent", // 가로선 완전 투명화
+                          labelBackgroundColor: "transparent", // 라벨 배경 완전 투명화
+                        },
+                        vertLine: {
+                          visible: true,
+                          color: "transparent",
+                          labelVisible: true,
+                          style: window.LightweightCharts.LineStyle.Dotted,
+                        },
+                      },
+                    });
+                  }
+                });
+              } catch (applyErr) {
+                console.warn("🚨 차트 간 applyOptions 레이아웃 동기화 예외 방어 완료:", applyErr);
               }
             });
           }
 
-          // 🚀 2. 자석 효과 제거: 마우스 좌표를 그대로 사용하여 세로선이 끊김 없이 부드럽게 움직이도록 함
+          // 🚀 2. 가로축(시간축) 방향 마그네틱(자석) 효과 적용
           let magnetX = param.point.x;
+          if (
+            sourceChart.timeScale &&
+            typeof sourceChart.timeScale().coordinateToLogical === "function" &&
+            typeof sourceChart.timeScale().logicalToCoordinate === "function"
+          ) {
+            const logical = sourceChart
+              .timeScale()
+              .coordinateToLogical(param.point.x);
+            if (logical !== null) {
+              const snappedX = sourceChart
+                .timeScale()
+                .logicalToCoordinate(Math.round(logical));
+              if (snappedX !== null) {
+                magnetX = snappedX;
+              }
+            }
+          }
 
           // 🚀 3. [핵심] 원본 차트(sourceChart) 캔버스 플러그인 세로선 다이렉트 렌더링! (메인 차트 세로선 누락 원천 차단!!!)
           if (sourceChart === store.chart && store._mainCrosshair) {
@@ -605,9 +654,21 @@ export function initChart() {
             ) || null;
           if (d && typeof window.updateLegend === "function") {
             window.updateLegend(d, v, k);
-          } else if (typeof window.updateStatus === "function") {
-            // 허공일 때는 현재 활성 가격(updateStatus)으로 복구!
-            window.updateStatus();
+          } else {
+            if (
+              store.mainData &&
+              store.mainData.length > 0 &&
+              typeof window.updateLegend === "function"
+            ) {
+              const lastIdx = store.mainData.length - 1;
+              const vLast = store.volumeData ? store.volumeData[lastIdx] : null;
+              const kLast = store.kimchiData ? store.kimchiData[lastIdx] : null;
+              window.updateLegend(store.mainData[lastIdx], vLast, kLast);
+            }
+            if (typeof window.updateStatus === "function") {
+              // 허공일 때는 현재 활성 가격(updateStatus)으로 복구!
+              window.updateStatus();
+            }
           }
         } else {
           // 🚀 [핵심 방어책] isHover === false 일 때, 현재 activeChart가 내 차트(sourceChart)인 경우에만 초기화 실행!!!
@@ -652,14 +713,18 @@ export function initChart() {
   let currentMaxLeft = 0;
   window.isResettingWidth = false; // 🚀 [레이스 컨디션 방어 락] 리셋 중 이벤트 폭주 원천 차단!
 
+  let lastWidthSyncTime = 0;
   let widthSyncPending = false;
-  window.syncPriceScaleWidths = () => {
+  window.syncPriceScaleWidths = (force = false) => {
     if (window.isResettingWidth) return; // 🚨 리셋 피팅(fitContent) 중에는 라이브러리 과거 너비 조회를 원천 차단!
     if (widthSyncPending) return;
+    const now = performance.now();
+    if (!force && now - lastWidthSyncTime < 100) return;
     widthSyncPending = true;
 
     requestAnimationFrame(() => {
       widthSyncPending = false;
+      lastWidthSyncTime = performance.now();
       const charts = [store.chart, store.chartVol].filter(Boolean);
       let maxRight = 0;
       let maxLeft = 0;
@@ -686,8 +751,8 @@ export function initChart() {
   };
 
   const allCharts = [store.chart, store.chartVol].filter(Boolean);
+  // 🚀 창 크기 변경뿐만 아니라, 줌인/줌아웃, 좌우 스크롤(VisibleLogicalRangeChange) 및 마우스 이동 시에도 실시간 자동 싱크!
   allCharts.forEach((c) => {
-    // 🚀 창 크기 변경뿐만 아니라, 줌인/줌아웃, 좌우 스크롤(VisibleLogicalRangeChange) 및 마우스 이동 시에도 실시간 자동 싱크!
     c.timeScale().subscribeSizeChange(() =>
       setTimeout(window.syncPriceScaleWidths, 50),
     );

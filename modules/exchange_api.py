@@ -3,7 +3,7 @@ from concurrent.futures import ThreadPoolExecutor, wait
 import requests
 from modules import config_manager, utils
 from modules.utils import is_valid_ticker
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 import os
 
@@ -227,38 +227,20 @@ api_session.mount("http://", adapter)
 def capture_utc0_prices_bulk():
     """
     🚀 [최적화 핵심] 9시 정각에 전체 티커를 벌크로 긁어서 시가를 고정합니다.
-    개별 klines 호출 600번을 단 1번의 벌크 호출로 대체! (스케줄러 KST 09:00 정각 전용)
+    (기존 ticker/24hr lastPrice를 사용하던 치명적 오차 버그를 제거하고 tradingDay 및 1d klines로 정확하게 수집하도록 위임합니다)
     """
     global UTC0_OPEN_CACHE
-    print("🎯 [SCEDULER] KST 09:00 시가 벌크 캡처 개시...")
+    print("🎯 [SCEDULER] KST 09:00 시가 벌크 초기화 개시...")
     
     try:
-        # 선물/현물 벌크 시세 동시 타격
-        res_f = api_session.get("https://fapi.binance.com/fapi/v1/ticker/24hr", timeout=5).json()
-        res_s = api_session.get("https://api.binance.com/api/v3/ticker/24hr", timeout=5).json()
-        
-        today_str = datetime.now().strftime("%Y-%m-%d")
-        if today_str not in UTC0_OPEN_CACHE:
-            UTC0_OPEN_CACHE[today_str] = {}
-
-        # 🚀 [FIX] 선물(res_f) 가격을 우선 저장하고, 현물(res_s)은 선물이 없을 때만 저장하여
-        # 현물 상폐/거래중지 코인(예: XMR)의 과거 고정 가격이 선물 활성 가격을 덮어쓰는 오류 원천 차단!
-        if isinstance(res_f, list):
-            for item in res_f:
-                sym = item['symbol'].replace('USDT', '')
-                if is_valid_ticker(sym):
-                    UTC0_OPEN_CACHE[today_str][sym] = float(item['lastPrice'])
-        
-        if isinstance(res_s, list):
-            for item in res_s:
-                sym = item['symbol'].replace('USDT', '')
-                if is_valid_ticker(sym) and sym not in UTC0_OPEN_CACHE[today_str]:
-                    UTC0_OPEN_CACHE[today_str][sym] = float(item['lastPrice'])
-        
+        today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        # 🚀 9시 정각에 캐시를 비우고 (혹은 초기화하고), 다음 시세 갱신 사이클이 무결점 tradingDay 로직으로 수집하도록 유도합니다.
+        # 이렇게 하면 1d 캔들의 정확한 openPrice와 100% 일치하게 됩니다.
+        UTC0_OPEN_CACHE[today_str] = {}
         save_utc0_cache()
-        print(f"✅ [SUCCESS] {today_str} 시가 벌크 저장 완료 ({len(UTC0_OPEN_CACHE[today_str])}개)")
+        print(f"✅ [SUCCESS] {today_str} 시가 캐시 초기화 완료 (메인 루프에서 무결점 1d 시가로 자동 수집됩니다)")
     except Exception as e:
-        print(f"🚨 [ERROR] 시가 벌크 캡처 실패: {e}")
+        print(f"🚨 [ERROR] 시가 벌크 초기화 실패: {e}")
 
 # 🚀 [수정] 서버 중간 시작 시 정확한 UTC 0시 시가를 병렬로 고속 수집하는 전담 함수 추가!
 def fetch_missing_utc0_opens_parallel(tasks):
@@ -269,7 +251,7 @@ def fetch_missing_utc0_opens_parallel(tasks):
     3. 남은 극소수 선물 단독 코인만 max_workers=3으로 안전하게 캡처하여 밴 위험 원천 차단!
     """
     global UTC0_OPEN_CACHE
-    today_str = datetime.now().strftime("%Y-%m-%d")
+    today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     if today_str not in UTC0_OPEN_CACHE:
         UTC0_OPEN_CACHE[today_str] = {}
 
@@ -319,7 +301,7 @@ def fetch_missing_utc0_opens_parallel(tasks):
 
 def get_utc0_open_price(symbol, is_futures):
     """캐시된 시가가 있으면 반환, 없으면 개별 klines 호출 (보험)"""
-    today_str = datetime.now().strftime("%Y-%m-%d")
+    today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     cached = UTC0_OPEN_CACHE.get(today_str, {}).get(symbol)
     if cached:
         return cached
@@ -488,7 +470,7 @@ def fetch_binance_futures_spot(bybit_data=None):
         all_active = active_f.union(active_s)
 
         # 4. 🚀 9시 시가 수집 (캐시 우선, 없으면 병렬 개별 호출)
-        today_str = datetime.now().strftime("%Y-%m-%d")
+        today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         day_cache = UTC0_OPEN_CACHE.get(today_str, {})
         
         open_price_tasks = []
@@ -540,25 +522,34 @@ def fetch_upbit_prices(upbit_assets):
         return upbit_data
 
     upbit_list = list(upbit_assets)
-    for i in range(0, len(upbit_list), 100):
-        try:
-            chunk = upbit_list[i : i + 100]
-            markets_str = ",".join([f"KRW-{k}" for k in chunk])
-            res = api_session.get(
-                f"https://api.upbit.com/v1/ticker?markets={markets_str}", timeout=5
-            ).json()
+    for i in range(0, len(upbit_list), 40):
+        chunk = upbit_list[i : i + 40]
+        markets_str = ",".join([f"KRW-{k}" for k in chunk])
+        
+        success = False
+        for attempt in range(3):
+            try:
+                res = api_session.get(
+                    f"https://api.upbit.com/v1/ticker?markets={markets_str}", timeout=5
+                ).json()
 
-            for item in res:
-                sym = item["market"].replace("KRW-", "")
-                upbit_data[sym] = {
-                    "raw_item": item,
-                    "price": item["trade_price"],
-                    "utc0_open": item["opening_price"],
-                    "change_24h": item.get("signed_change_rate", 0.0) * 100,
-                    "volume_24h": item.get("acc_trade_price_24h", 0.0),
-                }
-        except Exception as e:
-            print(f"🚨 [업비트 수집 에러 (Chunk)]: {e}")
+                for item in res:
+                    sym = item["market"].replace("KRW-", "")
+                    upbit_data[sym] = {
+                        "raw_item": item,
+                        "price": item["trade_price"],
+                        "utc0_open": item["opening_price"],
+                        "change_24h": item.get("signed_change_rate", 0.0) * 100,
+                        "volume_24h": item.get("acc_trade_price_24h", 0.0),
+                    }
+                success = True
+                break
+            except Exception as e:
+                import time
+                print(f"🚨 [업비트 수집 에러 (Chunk)] (시도 {attempt+1}/3): {e}")
+                time.sleep(1.0)
+        if not success:
+            print(f"❌ [업비트 수집 최종 실패 (Chunk)] {markets_str[:40]}... 청크 데이터 유실")
 
     return upbit_data
 
@@ -566,14 +557,34 @@ def fetch_upbit_prices(upbit_assets):
 def fetch_bybit_prices():
     bybit_data = {}
     try:
-        # 1. 시세 (Ticker) 가져오기 - 현물만 (바이비트는 현물만 탐색 대상)
+        # 1. 시세 (Ticker) 가져오기 - 현물(spot)
         res_s = api_session.get(
             "https://api.bybit.com/v5/market/tickers?category=spot", timeout=5
         ).json()
-
         s_list = res_s.get("result", {}).get("list", [])
 
-        # 2. 데이터 매핑 (티커별 spot 가격 및 거래대금)
+        # 2. 시세 (Ticker) 가져오기 - 선물(linear)
+        res_f = api_session.get(
+            "https://api.bybit.com/v5/market/tickers?category=linear", timeout=5
+        ).json()
+        f_list = res_f.get("result", {}).get("list", [])
+
+        # 3. 정밀도(Precision) 가져오기 - 선물(linear)
+        res_p = api_session.get(
+            "https://api.bybit.com/v5/market/instruments-info?category=linear", timeout=5
+        ).json()
+        p_list = res_p.get("result", {}).get("list", [])
+        
+        # 4. 정밀도 맵핑
+        b_precisions = {}
+        for item in p_list:
+            sym = item.get("symbol", "")
+            if sym.endswith("USDT"):
+                scale = item.get("priceScale")
+                if scale is not None:
+                    b_precisions[sym.replace("USDT", "")] = int(scale)
+
+        # 5. 데이터 매핑 (티커별 spot/futures 가격 및 거래대금)
         for item in s_list:
             sym = item["symbol"]
             if sym.endswith("USDT") and is_valid_ticker(sym.replace("USDT", "")):
@@ -582,6 +593,18 @@ def fetch_bybit_prices():
                     bybit_data[base] = {"volume_24h": 0.0}
                 bybit_data[base]["spot_price"] = float(item.get("lastPrice", 0))
                 bybit_data[base]["volume_24h"] += float(item.get("turnover24h", 0))
+                
+        for item in f_list:
+            sym = item["symbol"]
+            if sym.endswith("USDT") and is_valid_ticker(sym.replace("USDT", "")):
+                base = sym.replace("USDT", "")
+                if base not in bybit_data:
+                    bybit_data[base] = {"volume_24h": 0.0}
+                bybit_data[base]["futures_price"] = float(item.get("lastPrice", 0))
+                bybit_data[base]["volume_24h"] += float(item.get("turnover24h", 0))
+                bybit_data[base]["funding_rate"] = float(item.get("fundingRate", 0))
+                if base in b_precisions:
+                    bybit_data[base]["precision"] = b_precisions[base]
 
     except Exception as e:
         print(f"🚨 [바이비트 수집 에러]: {e}")

@@ -29,8 +29,12 @@ class ExchangeAdapter:
             return mapping.get(interval, interval)
 
         # 4. BYBIT
-        elif exchange == "bybit":
-            mapping = {"1d": "D", "days": "D", "1w": "W", "1M": "M"}
+        elif exchange in ["bybit_spot", "bybit_futures"]:
+            mapping = {
+                "1m": "1", "3m": "3", "5m": "5", "15m": "15", "30m": "30",
+                "1h": "60", "2h": "120", "4h": "240", "6h": "360", "12h": "720",
+                "1d": "D", "days": "D", "3d": "D", "1w": "W", "1M": "M",
+            }
             if interval.startswith("minutes/"):
                 return interval.split("/")[1]
             return mapping.get(interval, interval)
@@ -41,7 +45,7 @@ class ExchangeAdapter:
     def normalize_symbol(exchange, symbol):
         """거래소별 마켓 코드 형식을 통일합니다."""
         # 1. BINANCE & BYBIT (BaseQuote 형식)
-        if exchange in ["binance_spot", "binance_futures", "bybit"]:
+        if exchange in ["binance_spot", "binance_futures", "bybit_spot", "bybit_futures"]:
             return symbol.replace("-", "").replace("_", "").upper()
 
         # 2. UPBIT & BITHUMB (Quote-Base 형식)
@@ -90,8 +94,13 @@ class ExchangeAdapter:
             return f"https://api.bithumb.com/public/candlestick/{b_sym}/{norm_int}"
 
         # 4. BYBIT (V5 API)
-        elif exchange == "bybit":
+        elif exchange == "bybit_spot":
             url = f"https://api.bybit.com/v5/market/kline?category=spot&symbol={norm_sym}&interval={norm_int}&limit={limit}"
+            if to:
+                url += f"&end={to}"
+            return url
+        elif exchange == "bybit_futures":
+            url = f"https://api.bybit.com/v5/market/kline?category=linear&symbol={norm_sym}&interval={norm_int}&limit={limit}"
             if to:
                 url += f"&end={to}"
             return url

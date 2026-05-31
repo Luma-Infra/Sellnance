@@ -28,8 +28,8 @@ export function getListingDate(row) {
     dateObj.binance_listing,
     dateObj.upbit_listing,
     dateObj.bithumb_listing,
-    dateObj.bybit_listing
-  ].filter(d => d && d !== "-");
+    dateObj.bybit_listing,
+  ].filter((d) => d && d !== "-");
 
   if (dates.length === 0) return "-";
 
@@ -66,8 +66,8 @@ export function formatListingDateWithExchange(row) {
     { ex: "binance", date: dateObj.binance_listing },
     { ex: "upbit", date: dateObj.upbit_listing },
     { ex: "bithumb", date: dateObj.bithumb_listing },
-    { ex: "bybit", date: dateObj.bybit_listing }
-  ].filter(c => c.date && c.date !== "-");
+    { ex: "bybit", date: dateObj.bybit_listing },
+  ].filter((c) => c.date && c.date !== "-");
 
   if (candidates.length === 0) return "-";
 
@@ -79,6 +79,7 @@ export function createRowElement(row) {
   const tr = document.createElement("tr");
   const ticker = row.Ticker; // 🚀 중복 없는 유니크 티커 사용 (BTCKRW != BTCUSDT)
   tr.dataset.sym = ticker;
+  tr.style.position = "relative";
 
   updateRowInnerHTML(tr, row);
 
@@ -90,6 +91,17 @@ export function updateRowInnerHTML(tr, row) {
   const pureSymbol = row.Symbol;
   const tId = row.Ticker; // 🚀 DOM ID용 완벽한 고유키
   tr.dataset.sym = tId; // 🚀 화면 추적용
+
+  // 🐛 [DEBUG] 데이터 침범 및 오염 추적용 로그
+  if (!row.Ticker || !row.Symbol) {
+    console.error(
+      "[TABLE DEBUG] 🚨 비정상 데이터 유입 (Ticker/Symbol 누락)!",
+      row,
+    );
+  }
+  // console.log(
+  //   `[TABLE DEBUG] 렌더링 -> Ticker: ${tId}, 현재 tr.sym: ${tr.dataset.sym}, 가격: ${row.Price_Raw}`,
+  // );
 
   const p = row.precision || 2;
   const n24h = row.Change_24h_Raw ?? 0;
@@ -105,7 +117,34 @@ export function updateRowInnerHTML(tr, row) {
         : "text-theme-text";
 
   const favorites = JSON.parse(localStorage.getItem("sellnance_favs") || "[]");
-  const isFav = favorites.includes(pureSymbol);
+  const favorites2 = JSON.parse(
+    localStorage.getItem("sellnance_favs2") || "[]",
+  );
+  const uId = row.UID; // 🚀 백엔드에서 제공하는 근본 고유 식별키 (final_ucid)
+  const isFav = favorites.includes(uId);
+  const isFav2 = favorites2.includes(uId);
+
+  const pendingAction =
+    store.pendingFavActions && store.pendingFavActions.get(uId);
+  let currentFavState;
+  if (pendingAction) {
+    currentFavState = pendingAction.targetState;
+  } else {
+    currentFavState = isFav ? "FAV" : isFav2 ? "FAV2" : "NONE";
+  }
+
+  let starText = "☆";
+  let starColor = "gray";
+  let starClass = "";
+  if (currentFavState === "FAV") {
+    starText = "★";
+    starColor = "#e3b30a"; // 🚀 노란색 고정 (라이트모드 파란색 오염 방어)
+    starClass = "active";
+  } else if (currentFavState === "FAV2") {
+    starText = "★";
+    starColor = "#3b82f6";
+    starClass = "active-blue";
+  }
 
   const isDetailed = store.viewMode === "detailed";
   const nDay = row.Change_Today_Raw ?? 0;
@@ -119,14 +158,37 @@ export function updateRowInnerHTML(tr, row) {
   // 🚀 [최신] 2층 구조 레이아웃 (디자인 가이드 준수 + z_style.css 단일 관리소 강제 종속)
   tr.innerHTML = `
   <td class="p-2 col-asset overflow-hidden">
+    ${
+      pendingAction
+        ? `
+      <div class="row-progress-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 2.5px; z-index: 50; pointer-events: none;">
+         <div id="progress-bar-${row.Ticker}" class="row-progress-bar" style="height: 100%; width: 100%; background: linear-gradient(90deg, var(--accent) 0%, #3b82f6 100%); transition: width 50ms linear;"></div>
+      </div>
+    `
+        : ""
+    }
     <div class="flex items-center gap-1.5 min-w-0">
       <!-- 0. 절대 순위 번호 (1 ~ max length 고정 배치, CSS 카운터 기반) -->
-      <span class="row-counter text-[10px] font-mono font-bold text-theme-text opacity-40 w-5 text-center flex-shrink-0"></span>
-
+      <span class="row-counter text-[10px] font-mono font-bold text-theme-text opacity-40 w-[14px] text-right flex-shrink-0 mr-[2px]"></span>
+ 
       <!-- 1. 별 버튼 (완전 분리) -->
-      <button onclick="toggleFavorite('${pureSymbol}', event)" class="star-btn text-[14px] transition-all hover:scale-125 flex-shrink-0 ${isFav ? "active" : ""}" style="color: ${isFav ? "var(--accent)" : "gray"}">
-        ${isFav ? "⭐" : "☆"}
-      </button>
+      <div class="flex items-center gap-1 flex-shrink-0">
+        <button onclick="toggleFavorite('${uId}', event)" class="star-btn text-[14px] transition-all hover:scale-125 flex-shrink-0 ${starClass}" style="color: ${starColor}">
+          ${starText}
+        </button>
+        ${
+          pendingAction
+            ? `
+          <button onclick="window.confirmFavoriteChange('${uId}', event)" class="confirm-fav-btn text-[9px] font-bold px-1.5 py-0.5 bg-green-500/20 hover:bg-green-500/40 text-green-200 border border-green-500/40 rounded transition-all flex-shrink-0 mr-1">
+            확인
+          </button>
+          <button onclick="window.cancelFavoriteChange('${uId}', event)" class="cancel-fav-btn text-[9px] font-bold px-1.5 py-0.5 bg-red-500/20 hover:bg-red-500/40 text-red-200 border border-red-500/40 rounded transition-all flex-shrink-0">
+            취소
+          </button>
+        `
+            : ""
+        }
+      </div>
       
       <!-- 2. 티커 이미지 (고정 영역) -->
       <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-white/1 rounded-full overflow-hidden">
@@ -166,7 +228,7 @@ export function updateRowInnerHTML(tr, row) {
     <div class="flex flex-col leading-tight min-w-0 gap-0.5">
       <div class="flex items-center justify-between gap-1 w-full min-w-0 truncate text-[11px] font-mono">
         <span id="vol-binance-${tId}" class="text-[#f0b90b] font-bold truncate">${row.Volume_Formatted && row.Volume_Formatted !== "-" && row.Volume_Formatted !== "0" ? row.Volume_Formatted : "-"}</span>
-        <span class="text-[#093687] font-bold truncate">${row.Upbit_Vol_Formatted && row.Upbit_Vol_Formatted !== "-" && row.Upbit_Vol_Formatted !== "0" ? row.Upbit_Vol_Formatted : "-"}</span>
+        <span id="vol-upbit-${tId}" class="text-[#093687] font-bold truncate">${row.Upbit_Vol_Formatted && row.Upbit_Vol_Formatted !== "-" && row.Upbit_Vol_Formatted !== "0" ? row.Upbit_Vol_Formatted : "-"}</span>
       </div>
       <div class="flex items-center justify-between gap-2 text-[10px] font-black opacity-60 text-left mt-0.5 w-full min-w-0">
         <span class="flex-1 text-left truncate">${row.MarketCap_Formatted || "0"}</span>
@@ -207,11 +269,16 @@ export function updateRowInnerHTML(tr, row) {
             const isListed =
               exchanges.some((e) => e.includes(ex.id)) ||
               (ex.id === "UPBIT" && row.Upbit === "O");
+            const isFutures = exchanges.includes(`${ex.id}_FUTURES`);
+            const badgeHtml = isFutures
+              ? `<div class="absolute -top-1.5 -right-1.5 bg-[#f0b90b] text-black text-[8px] font-black px-[2px] rounded-[2px] leading-none z-10 scale-[0.65]">F</div>`
+              : "";
             const imgUrl = `https://s2.coinmarketcap.com/static/img/exchanges/64x64/${ex.cmcId}.png`;
             return `
-            <div class="w-[14px] h-[14px] flex items-center justify-center rounded-[2px] overflow-hidden bg-white/5 transition-all flex-shrink-0"
+            <div class="relative w-[14px] h-[14px] flex items-center justify-center rounded-[2px] overflow-visible bg-white/5 transition-all flex-shrink-0"
                  style="${isListed ? "filter: none; opacity: 1;" : "filter: grayscale(1); opacity: 0.1;"}">
-              <img src="${imgUrl}" alt="${ex.id}" class="w-full h-full object-contain" />
+              <img src="${imgUrl}" alt="${ex.id}" class="w-full h-full object-contain rounded-[2px]" />
+              ${isListed ? badgeHtml : ""}
             </div>
           `;
           })
@@ -234,7 +301,7 @@ const EMPTY_ROW_HTML = `
   <td class="p-2 col-asset overflow-hidden">
     <div class="flex items-center gap-1.5 min-w-0">
       <!-- 빈 껍데기 상태에서도 고정된 행 번호는 보이도록 유지 (CSS 카운터 기반) -->
-      <span class="row-counter text-[10px] font-mono font-bold text-theme-text opacity-40 w-5 text-center flex-shrink-0"></span>
+      <span class="row-counter text-[10px] font-mono font-bold text-theme-text opacity-40 w-[14px] text-right flex-shrink-0 mr-[2px]"></span>
     </div>
   </td>
   <td class="p-2 col-price overflow-hidden"></td>
@@ -297,7 +364,6 @@ export function renderTable(isRealtime = false) {
                 store.visibleSymbols.delete(rowData.Ticker);
                 changed = true;
               }
-              tr.dataset.renderedSym = "";
             }
           }
         });
@@ -321,6 +387,7 @@ export function renderTable(isRealtime = false) {
       const tr = document.createElement("tr");
       tr.dataset.index = i;
       tr.style.height = "52px"; // 🚀 고정 높이 할당으로 완벽한 800개 스크롤 바 생성!
+      tr.style.position = "relative";
       tr.style.contain = "content"; // 🚀 브라우저 렌더링 격리 최적화!
       tr.classList.add("flip-row"); // 🚀 FLIP 애니메이션용 클래스 추가!
 
@@ -563,25 +630,218 @@ export function initInfiniteScroll() {
   );
 }
 
-export function toggleFavorite(symbol, event) {
+export function toggleFavorite(uid, event, forceImmediate = false) {
   event.stopPropagation();
-  const btn = event.currentTarget;
-  let favorites = JSON.parse(localStorage.getItem("sellnance_favs") || "[]");
 
-  if (favorites.includes(symbol)) {
-    favorites = favorites.filter((f) => f !== symbol);
-    btn.innerText = "☆";
-    btn.style.color = "gray";
-    btn.classList.remove("active");
-  } else {
-    favorites.push(symbol);
-    btn.innerText = "⭐";
-    btn.style.color = "var(--accent)";
-    btn.classList.add("active");
-    btn.style.transform = "scale(1.5)";
-    setTimeout(() => (btn.style.transform = "scale(1)"), 50);
+  if (!store.pendingFavActions) {
+    store.pendingFavActions = new Map();
   }
+
+  let favorites = JSON.parse(localStorage.getItem("sellnance_favs") || "[]");
+  let favorites2 = JSON.parse(localStorage.getItem("sellnance_favs2") || "[]");
+
+  const isFav = favorites.includes(uid);
+  const isFav2 = favorites2.includes(uid);
+
+  // FAV 혹은 FAV2 탭일 경우 5초 대기 취소 메커니즘 실행
+  if (
+    !forceImmediate &&
+    (store.currentTab === "FAV" || store.currentTab === "FAV2")
+  ) {
+    let originalState;
+    let targetState;
+    let existingAction = store.pendingFavActions.get(uid);
+
+    if (existingAction) {
+      // 이미 대기 중인 상태가 있으면 타이머 취소
+      clearTimeout(existingAction.timerId);
+      originalState = existingAction.originalState; // 최초 상태 보존!
+
+      // targetState 순환 토글: FAV -> FAV2 -> NONE -> FAV ...
+      if (existingAction.targetState === "FAV") {
+        targetState = "FAV2";
+      } else if (existingAction.targetState === "FAV2") {
+        targetState = "NONE";
+      } else {
+        targetState = "FAV";
+      }
+    } else {
+      // 처음 대기 진입
+      originalState = isFav ? "FAV" : isFav2 ? "FAV2" : "NONE";
+
+      if (originalState === "FAV") {
+        targetState = "FAV2";
+      } else if (originalState === "FAV2") {
+        targetState = "NONE";
+      } else {
+        targetState = "FAV";
+      }
+    }
+
+    const timerId = setTimeout(() => {
+      commitFavoriteChange(uid);
+    }, 5000);
+
+    store.pendingFavActions.set(uid, {
+      timerId,
+      startTimestamp: Date.now(),
+      duration: 5000,
+      originalState,
+      targetState,
+    });
+
+    const row = store.currentTableData.find((r) => r.UID === uid);
+    if (row) {
+      const tr = store.rowDomMap.get(row.Ticker);
+      if (tr) {
+        updateRowInnerHTML(tr, row);
+      }
+    }
+
+    updateProgressBar();
+    return;
+  }
+
+  // 지연 없는 변경 (ALL 탭 또는 빈 별 -> 노란별 추가 등)
+  if (store.pendingFavActions.has(uid)) {
+    clearTimeout(store.pendingFavActions.get(uid).timerId);
+    store.pendingFavActions.delete(uid);
+  }
+
+  if (!isFav && !isFav2) {
+    favorites.push(uid);
+    localStorage.setItem("sellnance_favs", JSON.stringify(favorites));
+  } else if (isFav) {
+    favorites = favorites.filter((f) => f !== uid);
+    localStorage.setItem("sellnance_favs", JSON.stringify(favorites));
+    favorites2.push(uid);
+    localStorage.setItem("sellnance_favs2", JSON.stringify(favorites2));
+  } else {
+    favorites2 = favorites2.filter((f) => f !== uid);
+    localStorage.setItem("sellnance_favs2", JSON.stringify(favorites2));
+  }
+
+  const row = store.currentTableData.find((r) => r.UID === uid);
+  if (row) {
+    const tr = store.rowDomMap.get(row.Ticker);
+    if (tr) {
+      updateRowInnerHTML(tr, row);
+    }
+  }
+
+  if (store.currentTab === "FAV" || store.currentTab === "FAV2") {
+    setTimeout(() => renderTable(), 100);
+  }
+}
+
+export function commitFavoriteChange(uid) {
+  if (!store.pendingFavActions || !store.pendingFavActions.has(uid)) return;
+
+  const action = store.pendingFavActions.get(uid);
+  clearTimeout(action.timerId); // Clear background timeout to prevent double commits!
+  store.pendingFavActions.delete(uid);
+
+  let favorites = JSON.parse(localStorage.getItem("sellnance_favs") || "[]");
+  let favorites2 = JSON.parse(localStorage.getItem("sellnance_favs2") || "[]");
+
+  // targetState 기준으로 최종 반영
+  favorites = favorites.filter((f) => f !== uid);
+  favorites2 = favorites2.filter((f) => f !== uid);
+
+  if (action.targetState === "FAV") {
+    favorites.push(uid);
+  } else if (action.targetState === "FAV2") {
+    favorites2.push(uid);
+  }
+
   localStorage.setItem("sellnance_favs", JSON.stringify(favorites));
+  localStorage.setItem("sellnance_favs2", JSON.stringify(favorites2));
+
+  renderTable();
+  updateProgressBar();
+
+  const row = store.currentTableData.find((r) => r.UID === uid);
+  if (
+    row &&
+    store.currentSelectedSymbol &&
+    (store.currentSelectedSymbol === row.Ticker ||
+      store.currentSelectedSymbol.startsWith(row.Symbol + "/"))
+  ) {
+    if (typeof window.selectSymbol === "function") {
+      window.selectSymbol(store.currentSelectedSymbol);
+    }
+  }
+}
+
+window.cancelFavoriteChange = function (uid, event) {
+  if (event) event.stopPropagation();
+  if (!store.pendingFavActions || !store.pendingFavActions.has(uid)) return;
+
+  const action = store.pendingFavActions.get(uid);
+  clearTimeout(action.timerId);
+  store.pendingFavActions.delete(uid);
+
+  // localStorage는 건드린 적이 없으므로 pendingAction만 삭제하고 renderTable()을 실행해
+  // 원래 localStorage의 상태(isFav, isFav2)대로 안전하게 되돌려줍니다.
+  renderTable();
+  updateProgressBar();
+};
+
+window.confirmFavoriteChange = function (uid, event) {
+  if (event) event.stopPropagation();
+  commitFavoriteChange(uid);
+};
+
+export function updateProgressBar() {
+  if (!store.pendingFavActions || store.pendingFavActions.size === 0) {
+    if (store.progressInterval) {
+      clearInterval(store.progressInterval);
+      store.progressInterval = null;
+    }
+    return;
+  }
+
+  if (!store.progressInterval) {
+    store.progressInterval = setInterval(() => {
+      if (!store.pendingFavActions || store.pendingFavActions.size === 0) {
+        if (store.progressInterval) {
+          clearInterval(store.progressInterval);
+          store.progressInterval = null;
+        }
+        return;
+      }
+
+      for (const [uid, action] of store.pendingFavActions.entries()) {
+        const row = store.currentTableData.find((r) => r.UID === uid);
+        if (row) {
+          const bar = document.getElementById(`progress-bar-${row.Ticker}`);
+          if (bar) {
+            const elapsed = Date.now() - action.startTimestamp;
+            const remaining = action.duration - elapsed;
+            if (remaining <= 0) {
+              bar.style.width = "0%";
+            } else {
+              const pct = (remaining / action.duration) * 100;
+              bar.style.width = `${pct}%`;
+            }
+          }
+        }
+      }
+    }, 50);
+  }
+}
+
+export function clearAllPendingFavActions() {
+  if (store.pendingFavActions && store.pendingFavActions.size > 0) {
+    for (const [symbol, action] of store.pendingFavActions.entries()) {
+      clearTimeout(action.timerId);
+    }
+    store.pendingFavActions.clear();
+  }
+  if (store.progressInterval) {
+    clearInterval(store.progressInterval);
+    store.progressInterval = null;
+  }
 }
 
 export function applyPriceFlash(element, newPrice, oldPrice) {
@@ -592,7 +852,7 @@ export function applyPriceFlash(element, newPrice, oldPrice) {
   element.classList.remove("flash-up", "flash-down");
   void element.offsetWidth;
   element.classList.add(flashClass);
-  setTimeout(() => element.classList.remove(flashClass), 100);
+  setTimeout(() => element.classList.remove(flashClass), 500);
 }
 
 window.updateRowPriceDisplay = (target, row) => {
@@ -617,39 +877,58 @@ window.updateRowPriceDisplay = (target, row) => {
   let activeExchange = "";
   let displayPrice = 0;
 
+  const isKrwCoin = row.Ticker?.endsWith("KRW");
+
   if (!isKrwMode) {
-    if (binanceP !== null) {
-      activeExchange = "binance";
-      displayPrice = binanceP;
-    } else if (bybitP !== null) {
-      activeExchange = "bybit";
-      displayPrice = bybitP;
-    } else if (upbitP !== null) {
-      activeExchange = "upbit";
-      displayPrice = upbitP / rate;
-    } else if (bithumbP !== null) {
-      activeExchange = "bithumb";
-      displayPrice = bithumbP / rate;
+    if (isKrwCoin) {
+      if (upbitP !== null) {
+        activeExchange = "upbit";
+        displayPrice = upbitP / rate;
+      } else if (bithumbP !== null) {
+        activeExchange = "bithumb";
+        displayPrice = bithumbP / rate;
+      } else if (binanceP !== null) {
+        activeExchange = "binance";
+        displayPrice = binanceP;
+      } else {
+        activeExchange = "upbit";
+        displayPrice = (row.Price_KRW || 0) / rate;
+      }
     } else {
-      activeExchange = "binance";
-      displayPrice = row.Price_Raw || 0;
+      if (binanceP !== null) {
+        activeExchange = "binance";
+        displayPrice = binanceP;
+      } else if (bybitP !== null) {
+        activeExchange = "bybit";
+        displayPrice = bybitP;
+      } else {
+        activeExchange = "binance";
+        displayPrice = row.Price_Raw || 0;
+      }
     }
   } else {
-    if (upbitP !== null) {
-      activeExchange = "upbit";
-      displayPrice = upbitP;
-    } else if (bithumbP !== null) {
-      activeExchange = "bithumb";
-      displayPrice = bithumbP;
-    } else if (binanceP !== null) {
-      activeExchange = "binance";
-      displayPrice = binanceP * rate;
-    } else if (bybitP !== null) {
-      activeExchange = "bybit";
-      displayPrice = bybitP * rate;
+    if (isKrwCoin) {
+      if (upbitP !== null) {
+        activeExchange = "upbit";
+        displayPrice = upbitP;
+      } else if (bithumbP !== null) {
+        activeExchange = "bithumb";
+        displayPrice = bithumbP;
+      } else {
+        activeExchange = "upbit";
+        displayPrice = row.Price_KRW || 0;
+      }
     } else {
-      activeExchange = "upbit";
-      displayPrice = row.Price_KRW || 0;
+      if (binanceP !== null) {
+        activeExchange = "binance";
+        displayPrice = binanceP * rate;
+      } else if (bybitP !== null) {
+        activeExchange = "bybit";
+        displayPrice = bybitP * rate;
+      } else {
+        activeExchange = "upbit";
+        displayPrice = row.Price_KRW || 0;
+      }
     }
   }
 
@@ -675,9 +954,16 @@ window.updateRowPriceDisplay = (target, row) => {
         ? `${Number(displayPrice).toLocaleString()} 원`
         : window.formatSmartPrice(displayPrice, p);
 
+      const exUpper = ex.toUpperCase();
+      const isFutures = row.Listed_Exchanges?.includes(`${exUpper}_FUTURES`);
+      const badgeHtml = isFutures
+        ? `<div class="absolute -top-1.5 -right-1.5 bg-[#f0b90b] text-black text-[8px] font-black px-[2px] rounded-[2px] leading-none z-10 scale-75">F</div>`
+        : "";
+
       span.innerHTML = `${formattedPrice}
-        <div class="inline-flex items-center justify-center w-[12px] h-[12px] rounded-[2px] overflow-hidden bg-white/2 ml-1 align-middle flex-shrink-0">
-          <img src="${exchangeImgUrls[ex]}" alt="${ex}" class="w-full h-full object-contain" />
+        <div class="relative inline-flex items-center justify-center w-[12px] h-[12px] rounded-[2px] overflow-visible bg-white/2 ml-1 align-middle flex-shrink-0">
+          <img src="${exchangeImgUrls[ex]}" alt="${ex}" class="w-full h-full object-contain rounded-[2px]" />
+          ${badgeHtml}
         </div>`;
       span.classList.remove("hidden");
     } else {

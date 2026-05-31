@@ -124,6 +124,11 @@ async function initStartScreen() {
     if (data.key && data.key.trim() !== "") {
       rawCmcKey = data.key;
       console.log("✅ env 키 로드 성공!");
+
+      // 🚀 env 키가 존재하면 즉시 로컬 스토리지에 저장하고 시작 화면을 스킵합니다.
+      localStorage.setItem("CMC_API_KEY", rawCmcKey);
+      hideStartScreen();
+      return;
     } else {
       // env에 없으면 로컬 스토리지 확인
       rawCmcKey = localStorage.getItem("CMC_API_KEY") || "";

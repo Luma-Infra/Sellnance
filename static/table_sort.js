@@ -1,9 +1,22 @@
 // table_sort.js
 import { store } from "./_store.js";
 import { getFilteredData } from "./table_filter.js";
-import { renderTable, applySelectedHighlight, getListingDate } from "./table_render.js";
+import {
+  renderTable,
+  applySelectedHighlight,
+  getListingDate,
+} from "./table_render.js";
+
+let lastSortTime = 0;
 
 export function sortTable(colKey) {
+  // 🚀 모든 정렬 요소 공통 500ms 광클 방어
+  const now = Date.now();
+  if (now - lastSortTime < 500) {
+    return;
+  }
+  lastSortTime = now;
+
   // 🚀 누르자마자 실행되게 즉시 로딩 클래스 추가 (차트 로딩 효과처럼 어두워짐)
   const table = document.getElementById("table-body");
   if (table) {
@@ -65,7 +78,10 @@ export function simpleSortData() {
     VMC: "VMC_Raw",
   };
 
-  const key = sortKeyMap[store.currentSortCol] || store.currentSortCol;
+  let key = sortKeyMap[store.currentSortCol] || store.currentSortCol;
+  if (store.currentSortCol === "Volume") {
+    key = store.currentMarket === "FUTURES" ? "Binance_Vol_Futures" : "Binance_Vol_Spot";
+  }
   const isAsc = store.sortState === "asc";
 
   store.currentTableData.sort((a, b) => {
@@ -77,6 +93,25 @@ export function simpleSortData() {
       if (valA === "-") return 1;
       if (valB === "-") return -1;
       return isAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+    } else if (store.currentSortCol === "Kimchi") {
+      const hasA =
+        a.Kimchi_Raw !== undefined &&
+        a.Kimchi_Raw !== null &&
+        a.Kimchi_Raw !== "-" &&
+        !isNaN(Number(a.Kimchi_Raw));
+      const hasB =
+        b.Kimchi_Raw !== undefined &&
+        b.Kimchi_Raw !== null &&
+        b.Kimchi_Raw !== "-" &&
+        !isNaN(Number(b.Kimchi_Raw));
+
+      if (!hasA && !hasB) return 0;
+      if (!hasA) return 1; // a의 값이 없으므로 뒤(하단)로 보냄
+      if (!hasB) return -1; // b의 값이 없으므로 뒤(하단)로 보냄
+
+      valA = Number(a.Kimchi_Raw);
+      valB = Number(b.Kimchi_Raw);
+      return isAsc ? valA - valB : valB - valA;
     } else {
       valA = a[key];
       valB = b[key];

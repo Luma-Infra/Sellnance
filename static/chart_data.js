@@ -94,7 +94,9 @@ export async function fetchHistory(
   const isSpot = store.currentMarket === "SPOT";
   const isUpbit = store.currentMarket === "UPBIT";
   const isBithumb = store.currentMarket === "BITHUMB";
-  const isBybit = store.currentMarket === "BYBIT";
+  const isBybit =
+    store.currentMarket === "BYBIT" || store.currentMarket === "BYBIT_FUTURES";
+  const isBybitFutures = store.currentMarket === "BYBIT_FUTURES";
 
   let rowInfo = store.currentTableData.find((c) => {
     // 🚀 [수정] DisplayTicker(BTC)와 Ticker(BTCUSDT) 둘 다 대응 가능하도록 보강
@@ -106,6 +108,8 @@ export async function fetchHistory(
       return true;
     if (isSpot && c.Listed_Exchanges?.includes("BINANCE")) return true;
     if (isBithumb && c.Listed_Exchanges?.includes("BITHUMB")) return true;
+    if (isBybitFutures && c.Listed_Exchanges?.includes("BYBIT_FUTURES"))
+      return true;
     if (isBybit && c.Listed_Exchanges?.includes("BYBIT")) return true;
     return false;
   });
@@ -118,7 +122,7 @@ export async function fetchHistory(
   const exactSpot = rowInfo?.Exact_Spot || pureBase;
   const exactFutures = rowInfo?.Exact_Futures || pureBase;
   const exactUpbit = rowInfo?.Upbit_Symbol || rowInfo?.Symbol || pureBase;
-  const exactBithumb = pureBase;
+  const exactBithumb = rowInfo?.Bithumb_Symbol || pureBase;
   const exactBybit = rowInfo?.Bybit_Symbol || pureBase;
 
   const binanceTicker = isFutures ? `${exactFutures}USDT` : `${exactSpot}USDT`;
@@ -157,7 +161,7 @@ export async function fetchHistory(
           <div class="w-10 h-10 border-4 border-theme-accent border-t-transparent rounded-full animate-spin"></div>
           <div class="flex flex-col gap-1">
             <span class="text-[15px] font-black text-theme-accent tracking-wider uppercase">라이브러리 호출 중...</span>
-            <span class="text-[11px] font-bold text-theme-text opacity-60 tracking-tighter">과거 차트 단절 구간을 인공지능이 복원하고 있습니다</span>
+            <span class="text-[11px] font-bold text-theme-text opacity-60 tracking-tighter">과거 차트 단절 구간을 채우는 중이에요</span>
           </div>
         </div>
       `;
@@ -180,6 +184,7 @@ export async function fetchHistory(
     const snapshotTF = store.currentTF;
     let rawMain = [];
     let mainStep = 1;
+    let fetchInterval;
 
     const style = getComputedStyle(document.body);
     const upColorVol =
@@ -191,10 +196,12 @@ export async function fetchHistory(
     if (isFutures || isSpot || isBybit) {
       const exchange = isFutures
         ? "binance_futures"
-        : isBybit
-          ? "bybit"
-          : "binance_spot";
-      const ticker = isBybit ? exactBybit : binanceTicker;
+        : isBybitFutures
+          ? "bybit_futures"
+          : isBybit
+            ? "bybit_spot"
+            : "binance_spot";
+      const ticker = isBybit ? `${exactBybit}USDT` : binanceTicker;
       const res = await fetch(
         `/api/candles?exchange=${exchange}&symbol=${ticker}&interval=${store.currentTF}&limit=500`,
       );
@@ -216,6 +223,26 @@ export async function fetchHistory(
             vol: Number(d[5]),
           }))
           .sort((a, b) => a.time - b.time);
+
+        // 🚀 bybit_futures가 빈 리스트면 bybit_spot으로 폴백
+        if (rawMain.length === 0 && isBybitFutures) {
+          const resFallback = await fetch(
+            `/api/candles?exchange=bybit_spot&symbol=${ticker}&interval=${store.currentTF}&limit=500`,
+          );
+          const rawFallback = await resFallback.json();
+          if (rawFallback?.result?.list?.length > 0) {
+            rawMain = rawFallback.result.list
+              .map((d) => ({
+                time: Number(d[0]) / 1000,
+                open: Number(d[1]),
+                high: Number(d[2]),
+                low: Number(d[3]),
+                close: Number(d[4]),
+                vol: Number(d[5]),
+              }))
+              .sort((a, b) => a.time - b.time);
+          }
+        }
       } else if (Array.isArray(combinedRaw)) {
         rawMain = combinedRaw.map((d) => ({
           time: Number(d[0]) / 1000,
@@ -258,7 +285,6 @@ export async function fetchHistory(
       } else {
         const supportedMin = [1, 3, 5, 10, 15, 30, 60, 240];
         const totalSec = tfSec[store.currentTF] || 60;
-        let fetchInterval;
         const u = store.currentTF.replace(/[0-9]/g, "");
         if (u === "d" || u === "w" || u === "M") {
           fetchInterval = u === "w" ? "weeks" : u === "M" ? "months" : "days";
@@ -289,7 +315,26 @@ export async function fetchHistory(
       }
     }
 
-    if (!rawMain || rawMain.length === 0) throw new Error("No Data");
+    // 🚀 No Data 처리: 바이빗 실패 시 업비트 폴백, 그래도 없으면 조용히 종료
+    if (!rawMain || rawMain.length === 0) {
+      if (
+        isBybit &&
+        (rowInfo?.Listed_Exchanges?.includes("UPBIT") || rowInfo?.Upbit === "O")
+      ) {
+        console.warn(`⚠️ 바이빗 데이터 없음 (${exactBybit}), 업비트 폴백 시도`);
+        store.currentMarket = "UPBIT";
+        fetchHistory(displayName, isTfChange, isTabRestore);
+        return;
+      }
+      console.warn(
+        `⚠️ [No Data] ${displayName} / ${store.currentMarket} - 차트 데이터 없음`,
+      );
+      store.isFetchingChart = false;
+      window.isFetchingChart = false;
+      if (loadingModal) loadingModal.classList.add("hidden");
+      if (wrapper) wrapper.classList.remove("chart-loading");
+      return;
+    }
 
     // 🚀 [타겟] 거래소별 상장일 타겟 로직
     // - 현재 차트 모드를 파악해 exchange_key를 다르게 할당
@@ -435,13 +480,15 @@ export async function fetchHistory(
       isBybit: isBybit,
       exchange: isFutures
         ? "binance_futures"
-        : isBybit
-          ? "bybit"
-          : isSpot
-            ? "binance_spot"
-            : isUpbit
-              ? "upbit"
-              : "bithumb",
+        : isBybitFutures
+          ? "bybit_futures"
+          : isBybit
+            ? "bybit_spot"
+            : isSpot
+              ? "binance_spot"
+              : isUpbit
+                ? "upbit"
+                : "bithumb",
       ticker: isBybit
         ? exactBybit
         : isUpbit || isBithumb
@@ -473,32 +520,67 @@ export async function fetchHistory(
         },
       });
 
-      if (store.leftScaleSeries) {
-        try {
-          store.leftScaleSeries.applyOptions({
-            priceFormat: {
-              type: "custom",
-              precision: p,
-              minMove: p > 0 ? Number((1 / Math.pow(10, p)).toFixed(p)) : 1,
-              formatter: (price) => formatCrosshairPrice(price, p, true),
-            },
-          });
-          const leftData = store.mainData.map((d) => {
-            const m = mapTime(d);
-            return { time: m.time, value: m.close };
-          });
-          store.leftScaleSeries.setData(sanitizeChartData(leftData, true));
-        } catch (leftErr) {
-          console.warn("🚨 leftScaleSeries.setData 예외 우회 완료:", leftErr);
-        }
-      }
-
       // 메인 시리즈 세팅 및 자동 스케일 (Lazy를 위해 김프는 아직 빈칸!)
       try {
         store.candleSeries.setData(sanitizeChartData(store.mainData));
       } catch (candleErr) {
         console.warn("🚨 candleSeries.setData 예외 우회 완료:", candleErr);
       }
+
+      // 🚀 [해결] 메인 캔들 시리즈가 setData된 후 브라우저가 타임라인 축을 형성할 시간을 벌어주기 위해
+      // 볼륨 및 기타 보조 시리즈의 setData 호출을 requestAnimationFrame 및 setTimeout(..., 0) 계열의 비동기로 미룹니다.
+      // 이렇게 함으로써 15% 확률로 거래량이 그려지지 않는 레이스 컨디션을 완벽히 해결합니다.
+      requestAnimationFrame(() => {
+        if (store.leftScaleSeries) {
+          try {
+            const leftData = store.mainData.map((d) => {
+              const m = mapTime(d);
+              return { time: m.time, value: m.close };
+            });
+            store.leftScaleSeries.setData(sanitizeChartData(leftData, true));
+          } catch (leftErr) {
+            console.warn("🚨 leftScaleSeries.setData 예외 우회 완료:", leftErr);
+          }
+        }
+
+        try {
+          if (
+            store.volumeSeries &&
+            store.volumeData &&
+            store.volumeData.length > 0
+          ) {
+            store.volumeSeries.setData(
+              sanitizeChartData(store.volumeData, true),
+            );
+          } else if (store.volumeSeries) {
+            store.volumeSeries.setData([]);
+          }
+        } catch (volErr) {
+          console.warn("🚨 volumeSeries.setData 예외 우회 완료:", volErr);
+        }
+
+        if (store.kimchiSeries) {
+          try {
+            store.kimchiSeries.setData([]); // 🚀 과거 김프 잔재 초기화
+          } catch (kimchiErr) {}
+        }
+
+        if (typeof applyChartLayout === "function") applyChartLayout();
+        if (typeof autoFit === "function") autoFit(isTabRestore);
+        if (typeof updateStatus === "function") updateStatus();
+
+        if (typeof startRealtimeCandle === "function") {
+          startRealtimeCandle(
+            mainTickerStr,
+            store.currentTF,
+            isFutures,
+            isSpot,
+            isUpbit,
+            isBithumb,
+          );
+        }
+      });
+
       if (
         store.candleSeries &&
         typeof store.candleSeries.setMarkers === "function"
@@ -507,35 +589,8 @@ export async function fetchHistory(
           store.candleSeries.setMarkers([]);
         } catch (markerErr) {}
       }
-      try {
-        if (store.volumeSeries && store.volumeData.length > 0)
-          store.volumeSeries.setData(sanitizeChartData(store.volumeData, true));
-        else if (store.volumeSeries) store.volumeSeries.setData([]);
-      } catch (volErr) {
-        console.warn("🚨 volumeSeries.setData 예외 우회 완료:", volErr);
-      }
 
-      if (store.kimchiSeries) {
-        try {
-          store.kimchiSeries.setData([]); // 🚀 과거 김프 잔재 초기화
-        } catch (kimchiErr) {}
-      }
       store.kimchiData = [];
-
-      if (typeof applyChartLayout === "function") applyChartLayout();
-      if (typeof autoFit === "function") autoFit(isTabRestore);
-      if (typeof updateStatus === "function") updateStatus();
-
-      if (typeof startRealtimeCandle === "function") {
-        startRealtimeCandle(
-          mainTickerStr,
-          store.currentTF,
-          isFutures,
-          isSpot,
-          isUpbit,
-          isBithumb,
-        );
-      }
     }
 
     // 🚀 [로딩 해제 및 최종 싱크 안착] 차트 데이터가 완전히 캔버스에 렌더링된 직후, 라이브러리가 코인마다 다르게 계산해 둔 순수 너비를 최초 1회 캐치하여 기준값으로 던져놓음!
@@ -583,17 +638,48 @@ export async function fetchHistory(
               sym: `${exactFutures}USDT`,
               pureSym: exactFutures,
             });
+          if (listedEx.includes("BYBIT_FUTURES"))
+            availableSubs.push({
+              id: "bybit_futures",
+              name: "BYB-FUT",
+              bg: "#f7a600",
+              text: "#000",
+              sym: `${exactBybit}USDT`,
+              pureSym: exactBybit,
+            });
           if (listedEx.includes("BYBIT"))
             availableSubs.push({
               id: "bybit_spot",
               name: "BYBIT",
               bg: "#f7a600",
               text: "#fff",
-              sym: `${exactSpot}USDT`,
-              pureSym: exactSpot,
+              sym: `${exactBybit}USDT`,
+              pureSym: exactBybit,
             });
           if (availableSubs.length === 0)
             missingTarget = "글로벌 거래소(바이낸스/바이비트)";
+        } else if (isBybit) {
+          // 🚀 바이빗이 메인 차트일 때: 국내 거래소(업비트/빗썸) 김프 서브 추가
+          if (listedEx.includes("UPBIT") || rowInfo?.Upbit === "O")
+            availableSubs.push({
+              id: "upbit",
+              name: "UPBIT",
+              bg: "#093687",
+              text: "#fff",
+              sym: `KRW-${exactUpbit}`,
+              pureSym: exactUpbit,
+            });
+          if (listedEx.includes("BITHUMB"))
+            availableSubs.push({
+              id: "bithumb",
+              name: "BITHUMB",
+              bg: "#ff8b00",
+              text: "#fff",
+              sym: `${exactBithumb}_KRW`,
+              pureSym: exactBithumb,
+            });
+          if (availableSubs.length === 0)
+            missingTarget = "국내 원화 거래소(업비트/빗썸)";
         } else {
           if (listedEx.includes("UPBIT") || rowInfo?.Upbit === "O")
             availableSubs.push({
@@ -638,8 +724,8 @@ export async function fetchHistory(
               "absolute right-3 z-[110] flex gap-1.5 transition-all duration-300 pointer-events-none";
             if (wrapper) wrapper.appendChild(loadingMessageContainer);
           }
-          loadingMessageContainer.innerHTML = `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded opacity-60 bg-theme-panel text-theme-text">?3 불러오는중...</span>`;
-          loadingMessageContainer.style.display = "flex"; // Show loading message
+          // loadingMessageContainer.innerHTML = `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded opacity-60 bg-theme-panel text-theme-text">?3 불러오는중...</span>`;
+          // loadingMessageContainer.style.display = "flex"; // Show loading message
 
           let switcherContainer = document.getElementById("kimchi-switcher");
           if (!switcherContainer) {
@@ -670,7 +756,13 @@ export async function fetchHistory(
           store.paneConfig.kimchi = true;
           const noDataMsg = document.getElementById("kimchi-no-data");
           if (noDataMsg) noDataMsg.classList.add("hidden");
-          if (typeof applyChartLayout === "function") applyChartLayout();
+          requestAnimationFrame(() => {
+            try {
+              if (typeof applyChartLayout === "function") applyChartLayout();
+            } catch (layoutErr) {
+              console.warn("🚨 fetchHistory 내 applyChartLayout 예외 우회:", layoutErr);
+            }
+          });
 
           // 🚀 김프 데이터 Fetch (Lazy Load)
           const u = store.currentTF.replace(/[0-9]/g, "");
@@ -719,7 +811,15 @@ export async function fetchHistory(
             const res = await fetch(
               `/api/candles?exchange=${subExchange}&symbol=${subSymbol}&interval=${store.currentTF}&limit=500`,
             );
-            subRaw = await res.json();
+            const subJson = await res.json();
+            // 🚀 바이빗 응답은 result.list 형태로 오므로 추출 처리
+            if (subJson?.result?.list) {
+              subRaw = subJson.result.list.sort(
+                (a, b) => Number(a[0]) - Number(b[0]),
+              );
+            } else {
+              subRaw = subJson;
+            }
           }
 
           const rateCacheKey = `fiat_rate_only`;
@@ -778,25 +878,29 @@ export async function fetchHistory(
             if (wrapper && lastK)
               wrapper.style.setProperty("--kimchi-color", lastK.color);
 
-            try {
-              const currentRange = store.chart
-                .timeScale()
-                .getVisibleLogicalRange(); // 1. 현재 화면 캡처
-              store.kimchiSeries.setData(
-                sanitizeChartData(store.kimchiData, true),
-              ); // 2. 김프 데이터 꽂기
-              if (currentRange)
-                store.chart.timeScale().setVisibleLogicalRange(currentRange); // 3. 미동 없이 복구!
-            } catch (setErr) {
-              console.warn(
-                "🚨 kimchiSeries.setData 렌더링 예외 우회 완료:",
-                setErr,
-              );
-            }
+            requestAnimationFrame(() => {
+              try {
+                const currentRange = store.chart
+                  .timeScale()
+                  .getVisibleLogicalRange(); // 1. 현재 화면 캡처
+                store.kimchiSeries.setData(
+                  sanitizeChartData(store.kimchiData, true),
+                ); // 2. 김프 데이터 꽂기
+                if (currentRange)
+                  store.chart.timeScale().setVisibleLogicalRange(currentRange); // 3. 미동 없이 복구!
+
+                // 🔥 [핵심] 데이터 안착 후 동일 프레임에서 레이아웃 적용
+                if (typeof applyChartLayout === "function") applyChartLayout();
+                if (typeof window.syncPriceScaleWidths === "function")
+                  setTimeout(window.syncPriceScaleWidths, 50);
+              } catch (setErr) {
+                console.warn(
+                  "🚨 kimchiSeries.setData 렌더링 예외 우회 완료:",
+                  setErr,
+                );
+              }
+            });
           }
-          if (typeof applyChartLayout === "function") applyChartLayout(); // 패널 크기 부드럽게 조정
-          if (typeof window.syncPriceScaleWidths === "function")
-            setTimeout(window.syncPriceScaleWidths, 50); // 🚀 [미리 싱크 유지] 김프 로드 시점에는 0 리셋으로 인한 덜컥거림을 방지하고, 기확보된 칼각 대칭 너비를 그대로 부드럽게 유지!
         } else {
           // No available subs, so hide loading message if it was shown
           store.paneConfig.kimchi = false;
@@ -815,7 +919,13 @@ export async function fetchHistory(
           );
           if (loadingMessageContainer)
             loadingMessageContainer.style.display = "none";
-          if (typeof applyChartLayout === "function") applyChartLayout();
+          requestAnimationFrame(() => {
+            try {
+              if (typeof applyChartLayout === "function") applyChartLayout();
+            } catch (layoutErr) {
+              console.warn("🚨 fetchHistory (no-data) applyChartLayout 예외 우회:", layoutErr);
+            }
+          });
         }
       } catch (err) {
         console.error("김프 백그라운드 렌더링 실패:", err);
@@ -835,6 +945,7 @@ export async function fetchHistory(
     if (gapOverlay) gapOverlay.style.display = "none";
     window.isFetchingChart = false;
     store.isFetchingChart = false;
+    store.isNewCoinSelected = false; // 🚀 신규 코인 선택 플래그 초기화
   }
 }
 
@@ -1128,34 +1239,51 @@ export async function loadMoreHistory() {
     const visibleRange = timeScale.getVisibleLogicalRange();
 
     try {
+      // 1. 메인 캔들 데이터를 주입하여 시간 스케일 프레임을 먼저 확보합니다.
       store.candleSeries.setData(sanitizeChartData(store.mainData));
-      if (store.leftScaleSeries) {
-        store.leftScaleSeries.setData(
-          sanitizeChartData(
-            store.mainData.map((d) => ({ time: d.time, value: d.close })),
-            true,
-          ),
-        );
-      }
-      if (store.volumeSeries && store.volumeData.length > 0) {
-        store.volumeSeries.setData(sanitizeChartData(store.volumeData, true));
-      }
-      if (
-        store.kimchiSeries &&
-        store.kimchiData &&
-        store.kimchiData.length > 0
-      ) {
-        store.kimchiSeries.setData(sanitizeChartData(store.kimchiData, true));
-      }
-    } catch (setErr) {
-      console.warn("🚨 Lazy Load setData 예외 우회 완료:", setErr);
-    }
 
-    if (visibleRange && N > 0) {
-      timeScale.setVisibleLogicalRange({
-        from: visibleRange.from + N,
-        to: visibleRange.to + N,
+      // 2. 서브 시리즈 주입 및 X축 화면 범위 조정을 동일한 RAF 렌더링 사이클로 묶어 격리합니다.
+      //    → 모든 인덱스가 재정렬된 뒤 단 하나의 Repaint에서 실행되므로 크래시가 원천 차단됩니다.
+      requestAnimationFrame(() => {
+        try {
+          if (store.leftScaleSeries) {
+            store.leftScaleSeries.setData(
+              sanitizeChartData(
+                store.mainData.map((d) => ({ time: d.time, value: d.close })),
+                true,
+              ),
+            );
+          }
+          if (store.volumeSeries && store.volumeData.length > 0) {
+            store.volumeSeries.setData(sanitizeChartData(store.volumeData, true));
+          }
+          if (
+            store.kimchiSeries &&
+            store.kimchiData &&
+            store.kimchiData.length > 0
+          ) {
+            store.kimchiSeries.setData(sanitizeChartData(store.kimchiData, true));
+          }
+
+          // 🔥 [핵심] 모든 시리즈 데이터가 안착된 직후 안전하게 화면 범위를 이동합니다.
+          if (visibleRange && N > 0) {
+            timeScale.setVisibleLogicalRange({
+              from: visibleRange.from + N,
+              to: visibleRange.to + N,
+            });
+          }
+        } catch (setErr) {
+          console.warn(
+            "🚨 Lazy Load 내부 렌더링/범위조정 예외 우회 완료:",
+            setErr,
+          );
+        }
       });
+    } catch (candleErr) {
+      console.warn(
+        "🚨 Lazy Load candleSeries.setData 예외 우회 완료:",
+        candleErr,
+      );
     }
 
     console.log(`✅ [Lazy Load] 과거 캔들 ${N}개 추가 결합 완료!`);

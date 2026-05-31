@@ -42,6 +42,21 @@ def build_bybit_row(
     change_24h = b_inf.get("change_24h", 0.0)
     vol_24h = b_inf.get("volume_24h", 0.0)
     funding_rate = b_inf.get("funding_rate", 0.0)
+    
+    # 🚀 바이비트 instruments-info에서 수집된 정밀도 사용 (없으면 자동 계산)
+    bybit_prec = b_inf.get("precision")
+    if bybit_prec is not None:
+        precision = int(bybit_prec)
+    # elif current_p >= 1000:
+    #     precision = 1
+    # elif current_p >= 100:
+    #     precision = 2
+    # elif current_p >= 1:
+    #     precision = 3
+    # elif current_p >= 0.01:
+    #     precision = 4
+    # else:
+    #     precision = 6
 
     mcap = cmc_info.get("quote", {}).get("USD", {}).get("market_cap", 0.0)
     if not mcap and uid_str in TICKER_DATA:
@@ -62,7 +77,8 @@ def build_bybit_row(
         "Binance_Futures": "O" if b_inf.get("futures_price", 0) > 0 else "X",
         "Binance_Spot": "O" if b_inf.get("spot_price", 0) > 0 else "X",
         "Price_Raw": current_p,
-        "Price": utils.format_dynamic_price(current_p, 4),
+        "Price": utils.format_dynamic_price(current_p, precision),
+        "precision": precision,
         "Change_24h_Raw": change_24h,
         "Change_24h": utils.format_change(change_24h),
         "Volume_Raw": vol_24h,

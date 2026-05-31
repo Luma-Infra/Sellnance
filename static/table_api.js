@@ -26,7 +26,7 @@ export async function loadTableData(force = false) {
         .toUpperCase();
       if (row.Ticker) store.tickerRowMap.set(row.Ticker.toUpperCase(), row);
       if (row.DisplayTicker) store.tickerRowMap.set(row.DisplayTicker.toUpperCase(), row);
-      if (row.Symbol) store.tickerRowMap.set(row.Symbol.toUpperCase(), row);
+      // 🚀 [오류 방어] 중복 가능성이 높은 일반 Symbol로 단일 Map 덮어쓰기 금지! (동명이인 코인 가격 오염 원인 제거)
     });
 
     if (store.currentSortCol && store.sortState !== "") {
@@ -57,6 +57,11 @@ export async function loadTableDataSilent() {
       store.originalTableData = JSON.parse(JSON.stringify(result.data));
 
       const freshMap = new Map(result.data.map((item) => [item.Ticker, item]));
+      const currentTickers = new Set(store.currentTableData.map(d => d.Ticker));
+      
+      let needReRender = false;
+
+      // 1. 기존 장부 순회하며 값 업데이트
       store.currentTableData.forEach((row) => {
         const fresh = freshMap.get(row.Ticker);
         if (fresh) {
@@ -71,11 +76,35 @@ export async function loadTableDataSilent() {
         }
       });
 
+      // 2. 신규 유입 코인만 찾아서 장부에 꽂아넣기
+      result.data.forEach((freshItem) => {
+        if (!currentTickers.has(freshItem.Ticker)) {
+          console.log(`➕ [사일런트 동기화] 신규 코인 장부 주입: ${freshItem.Ticker}`);
+          
+          freshItem.DisplayTicker = (freshItem.DisplayTicker || freshItem.Symbol).toString().toUpperCase();
+          store.currentTableData.push(freshItem);
+          
+          // 맵핑 캐시 동기화
+          if (freshItem.Ticker) store.tickerRowMap.set(freshItem.Ticker.toUpperCase(), freshItem);
+          if (freshItem.DisplayTicker) store.tickerRowMap.set(freshItem.DisplayTicker.toUpperCase(), freshItem);
+          // 🚀 [오류 방어] Symbol 단일 매핑 금지
+          
+          needReRender = true;
+        }
+      });
+
+      // 3. 신규 주입이 이루어졌다면 테이블 즉각 갱신
+      if (needReRender && typeof window.renderTable === "function") {
+        window.renderTable();
+      }
+
       const updateTimeSpan = document.getElementById("update-time");
       if (updateTimeSpan)
         updateTimeSpan.innerText = `마지막 업데이트: ${result.last_updated}`;
     }
-  } catch (e) {}
+  } catch (e) {
+    console.error("사일런트 갱신 오류:", e);
+  }
 }
 
 // 5분

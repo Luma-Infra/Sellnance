@@ -39,6 +39,19 @@ export const store = {
   countdownPriceLine: null,
   paneConfig: { volume: true, kimchi: true },
   chartSplits: { s1: 0.65, s2: 0.85 },
+  exchFilterStates: {
+    BINANCE: 0,
+    BINANCE_FUTURES: 0,
+    BINANCE_STOCK: 0,
+    UPBIT: 0,
+    BITHUMB: 0,
+    BYBIT: 0,
+    OKX: 0,
+    BITGET: 0,
+    GATEIO: 0,
+    COINBASE: 0,
+  },
+  exchFilterMode: "AND", // 🚀 거래소 필터링 결합 모드 (AND, OR, ONLY)
 
   isFetchingChart: false,
   lastFetchTime: 0,
@@ -53,8 +66,13 @@ export const store = {
 
   binanceChartWs: null,
   upbitChartWs: null,
+  bithumbChartWs: null,
+  bybitChartWs: null,
   currentKlineStream: null,
+  currentBithumbStream: null,
+  currentBybitStream: null,
   binanceRadarWs: null,
+  binanceFuturesRadarWs: null, // 🚀 선물 레이더 소켓 변수 추가
   upbitRadarWs: null,
   sniperWs: null,
   activeSubs: new Set(),

@@ -34,7 +34,8 @@ def start_engine():
         "modules.app:app", 
         "--host", "127.0.0.1", 
         "--port", str(port), 
-        "--log-level", "info"
+        "--log-level", "info",
+        "--reload"
     ]
     
     try:

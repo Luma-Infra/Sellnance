@@ -27,18 +27,27 @@ CACHE_TIMEOUT_SECONDS = 3600  # 1시간
 def start_kst_9am_scheduler():
     import time
 
+    # 0초, 5초, 10초, 20초, 1분, 2분, 3분, 5분 정각에 안전하게 트리거
     def run_scheduler():
         print("⏰ [SYSTEM] 9시 정밀 시가 스케줄러 가동 중...")
         last_captured_sec = -1
         while True:
             try:
                 now = datetime.now(KST)
-                if now.hour == 9 and now.minute == 0 and now.second in [0, 10, 20]:
-                    if last_captured_sec != now.second:
-                        capture_utc0_prices_bulk()
-                        last_captured_sec = now.second
-                if now.hour != 9:
-                    last_captured_sec = -1
+                if now.hour == 9:
+                    is_trigger = False
+                    if now.minute == 0 and now.second in [0, 5, 10, 20]:
+                        is_trigger = True
+                    elif now.minute in [1, 2, 3, 5] and now.second == 0:
+                        is_trigger = True
+                        
+                    if is_trigger:
+                        current_key = now.minute * 60 + now.second
+                        if last_captured_key != current_key:
+                            capture_utc0_prices_bulk()
+                            last_captured_key = current_key
+                else:
+                    last_captured_key = -1
             except Exception as e:
                 print(f"🚨 [SCHEDULER ERROR] {e}")
             time.sleep(1)

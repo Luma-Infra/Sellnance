@@ -131,3 +131,8 @@ export function initResizers() {
 window.togglePane = togglePane;
 window.applyChartLayout = applyChartLayout;
 window.initResizers = initResizers;
+
+// 뷰 모드 전환 시 차트만 콕 집어 resize (table/quickview 사이드 이펙트 없음)
+window.addEventListener("viewModeChanged", () => {
+  applyChartLayout();
+});

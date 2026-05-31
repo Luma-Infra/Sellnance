@@ -215,7 +215,13 @@ function updateStatus(d, p) {
       r.DisplayTicker === asset || r.Ticker === asset || r.Symbol === asset,
   );
   if (row && typeof window.updateHeaderDisplay === "function") {
-    window.updateHeaderDisplay(row, last.close, precision);
+    const btnSim = document.getElementById("tab-btn-sim");
+    const isSimMode = btnSim ? btnSim.classList.contains("active") : false;
+    // 🚀 신규 코인 최초 선택 시에만 테이블의 실시간 웹소켓 시세(undefined)를 보여주고,
+    // 동일 코인 내 TF 변경이거나 실시간 틱(d), 시뮬레이터 모드 시에는 차트의 최신 종가(last.close)를 사용!
+    const useChartPrice = d || isSimMode || !store.isNewCoinSelected;
+    const newPriceForHeader = useChartPrice ? last.close : undefined;
+    window.updateHeaderDisplay(row, newPriceForHeader, precision);
   }
 
   // 거래량 업데이트
@@ -378,13 +384,16 @@ window.getKimchiColor = function (val) {
 export function toggleCountdown(isChecked) {
   store.showCountdown = isChecked;
   const knob = document.getElementById("countdown-knob");
+  if (!knob) return;
 
   if (isChecked) {
     knob.style.transform = "translateX(10px)";
+    knob.parentElement.classList.remove("bg-theme-border");
     knob.parentElement.classList.add("bg-theme-accent");
   } else {
     knob.style.transform = "translateX(0)";
     knob.parentElement.classList.remove("bg-theme-accent");
+    knob.parentElement.classList.add("bg-theme-border");
     if (store.countdownOverlay) store.countdownOverlay.style.display = "none";
   }
 }
@@ -424,6 +433,11 @@ export function updateRealtimeCountdown(serverMs) {
     }
   }
 
+  // 🚀 [시뮬레이터 강제 off] 시뮬레이터 탭 활성화 시 카운트다운 시간 표시를 강제로 off
+  const btnSim = document.getElementById("tab-btn-sim");
+  const isSimActive = btnSim && btnSim.classList.contains("active");
+  const showTitle = store.showCountdown && !isSimActive;
+
   const lastCandle = store.mainData[store.mainData.length - 1];
   const isDown = lastCandle.close < lastCandle.open;
 
@@ -442,7 +456,7 @@ export function updateRealtimeCountdown(serverMs) {
       ? window.LightweightCharts.LineStyle.Dashed
       : 2, // 🚀 점선(Dashed)으로 차별화
     axisLabelVisible: true,
-    title: store.showCountdown ? `${displayTime}` : "",
+    title: showTitle ? `${displayTime}` : "",
     axisLabelColor: rawColor,
     axisLabelTextColor: "#ffffff",
   };

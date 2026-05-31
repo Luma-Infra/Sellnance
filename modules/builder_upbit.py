@@ -143,9 +143,55 @@ def build_upbit_row(
     up_precision = (
         0 if p >= 100 else 1 if p >= 10 else 2 if p >= 1 else 3 if p >= 0.1 else 4
     )
+    
+    # 🚀 중복 티커 베이스 감지
+    duplicated_bases = set()
+    for k, v in DUPLICATED_LIST.items():
+        if len(v) >= 4:
+            duplicated_bases.add(v[2].upper())
+            duplicated_bases.add(k.split('(')[0].upper())
+
+    # 🚀 바이빗이 비교군인 경우, 바이빗 선물 정밀도를 우선 사용 (USD 가격 소수점)
+    by_raw = {}
+    if base in duplicated_bases:
+        bybit_alias = None
+        for k, v in DUPLICATED_LIST.items():
+            if len(v) >= 4 and v[0] == final_ucid and v[3].upper() == "BYBIT":
+                bybit_alias = v[2]
+                break
+        if bybit_alias:
+            by_raw = bybit_data.get(bybit_alias, {})
+    else:
+        by_raw = bybit_data.get(base, {})
+
+    by_prec = by_raw.get("precision")
+    by_futures_for_prec = by_raw.get("futures_price", 0.0)
+    if by_prec is not None and by_futures_for_prec > 0:
+        up_precision = int(by_prec)
+    else:
+        # 🚀 바이낸스가 비교군인 경우 바이낸스 precision 사용
+        for b_tick, b_inf_data in binance_data.items():
+            b_base = b_tick.replace("USDT", "").upper()
+            if b_base == base.upper() and b_inf_data.get("is_futures"):
+                bn_prec = b_inf_data.get("precision")
+                if bn_prec is not None:
+                    up_precision = int(bn_prec)
+                break
 
     # 상장 거래소 목록 조립
-    listed_on = set(global_listings.get(base, set()))
+    listed_on = set()
+    if base not in duplicated_bases:
+        listed_on = set(global_listings.get(base, set()))
+    else:
+        # 중복 코인이면 DUPLICATED_LIST에서 명시적으로 매핑된 거래소만 연동
+        for k, v in DUPLICATED_LIST.items():
+            if len(v) >= 4 and v[0] == final_ucid:
+                ex_name = v[3].upper()
+                if ex_name == "BYBIT":
+                    listed_on.add("BYBIT")
+                elif ex_name == "BINANCE":
+                    listed_on.add("BINANCE")
+
     exact_spot_ticker = ""
     exact_futures_ticker = ""
     binance_spot_price = 0.0
@@ -196,19 +242,26 @@ def build_upbit_row(
         if base in upbit_data and krw_usd_rate > 0
         else 0.0
     )
-    by_vol_24h = bybit_data.get(base, {}).get("volume_24h", 0.0)
+    by_vol_24h = by_raw.get("volume_24h", 0.0)
 
     vol_24h = binance_vol + up_vol_24h + by_vol_24h
     mcap = info.get("market_cap", 0) if info else 0
     vmc_raw = (vol_24h / mcap * 100) if mcap > 0 else 0.0
 
     # 🚀 [추가] 업비트 전용 코인 김프 라벨 (바이비트 등 Fallback 비교군이 있을 때만)
-    by_spot_p = bybit_data.get(base, {}).get("spot_price", 0.0)
+    by_spot_p = by_raw.get("spot_price", 0.0)
+    by_futures_p = by_raw.get("futures_price", 0.0)
+    
     kimchi_label = "-"
-    if up_price_krw > 0 and by_spot_p > 0:
-        kimchi_label = "UPBIT <> BYB SPOT"
-    elif up_price_krw > 0 and binance_spot_price > 0:
-        kimchi_label = "UPBIT <> BIN SPOT"
+    if up_price_krw > 0:
+        if binance_futures_price > 0:
+            kimchi_label = "UPBIT <> BIN FUT"
+        elif binance_spot_price > 0:
+            kimchi_label = "UPBIT <> BIN SPOT"
+        elif by_futures_p > 0:
+            kimchi_label = "UPBIT <> BYB FUT"
+        elif by_spot_p > 0:
+            kimchi_label = "UPBIT <> BYB SPOT"
 
     # 업비트는 펀비 없음
     funding_f = "-"
@@ -218,8 +271,13 @@ def build_upbit_row(
         if bithumb_price == 0:
             bithumb_price = bithumb_data.get(a.upper(), {}).get("price", 0.0)
 
+    # 🚀 Bithumb 심볼 명확화 (중복 티커 처리)
+    bithumb_symbol = base
+    if bithumb_aliases:
+        bithumb_symbol = bithumb_aliases[0]
+
     row = {
-        # --- 1. 기본 식별 정보 ---
+        # --- 1. 기본 식별 정보 --- 
         "UID": final_ucid,
         "Symbol": base,
         "DisplayTicker": display_name,
@@ -228,13 +286,14 @@ def build_upbit_row(
         "Name": coin_name,  # 🚀 추출된 정확한 이름 삽입
         "Chain": chain,
         "Upbit": "O",
+        "Bithumb_Symbol": bithumb_symbol,
         "Note": NOTE_MAP.get(base, "Upbit Only"),
         "precision": up_precision,
         # --- 2. 화면 표시용 데이터 (HTML 포함) ---
         "Price": utils.format_dynamic_price(p, up_precision),
         "Price_KRW": up_price_krw if up_price_krw > 0 else None,
         "Binance_Price": (binance_spot_price or binance_futures_price) if (binance_spot_price > 0 or binance_futures_price > 0) else None,
-        "Bybit_Price": by_spot_p if by_spot_p > 0 else None,
+        "Bybit_Price": (by_futures_p or by_spot_p) if (by_futures_p > 0 or by_spot_p > 0) else None,
         "Upbit_Price": up_price_krw if up_price_krw > 0 else None,
         "Bithumb_Price": bithumb_price if bithumb_price > 0 else None,
         "Change_24h": utils.format_change(up_change_24h),
@@ -245,8 +304,12 @@ def build_upbit_row(
         "VMC_Formatted": f"{vmc_raw:.2f}%",
         "Funding_Formatted": funding_f,
         # 🚀 [추가] 업비트 전용 거래대금 (24h 거래대금)
-        "Upbit_Vol_Formatted": utils.format_volume_string(
-            up_info.get("acc_trade_price_24h", 0.0)
+        "Upbit_Vol_Formatted": (
+            utils.format_volume_string(
+                up_info.get("acc_trade_price_24h", 0.0) / krw_usd_rate
+            )
+            if krw_usd_rate > 0
+            else "-"
         ),
         # --- 3. 프론트엔드 정렬용 순수 숫자 데이터 (Raw) ---
         "Price_Raw": current_p,
@@ -258,6 +321,7 @@ def build_upbit_row(
         "Funding_Raw": 0.0,
         "Kimchi_Raw": 0.0,
         "utc0_open_Raw": utc0_open,
+        "utc0_open_KRW": up_open_krw,
         # 추가 예정
         "Upbit_Vol": up_info.get("acc_trade_price_24h", 0.0),
         "Exact_Spot": exact_spot_ticker,

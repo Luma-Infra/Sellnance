@@ -25,6 +25,12 @@ import {
   saveSettings,
   togglePasswordVisibility,
   clearCmcKey,
+  toggleExchFilter,
+  updateExchFilterUI,
+  resetExchFilters,
+  toggleExchExclude,
+  getFilteredData,
+  switchExchFilterMode,
 } from "./table_filter.js";
 
 // ⭐️ 1. 좌우 넓이 드래그 조절 기능 (UI 공통 제어) ⭐️
@@ -54,9 +60,12 @@ document.addEventListener("mouseup", () => {
 });
 
 // ⭐️ 2. 초기화 및 이벤트 바인딩 ⭐️
+let lastClickedSymbol = null;
+let lastClickedTime = 0;
+
 document.addEventListener("DOMContentLoaded", () => {
   const tbody = document.getElementById("table-body");
-  loadTableData();
+  // loadTableData();
 
   if (tbody) {
     tbody.addEventListener("click", (e) => {
@@ -65,13 +74,25 @@ document.addEventListener("DOMContentLoaded", () => {
       const tr = e.target.closest("tr");
       if (tr && tr.dataset.sym) {
         const ticker = tr.dataset.sym;
+
+        // 🚀 같은 코인 500ms 광클 방어 (다른 코인은 즉시 전환 허용)
+        const now = Date.now();
+        if (ticker === lastClickedSymbol && now - lastClickedTime < 500) {
+          return;
+        }
+        lastClickedSymbol = ticker;
+        lastClickedTime = now;
+
         store.currentSelectedSymbol = ticker;
         if (typeof window.selectSymbol === "function") {
           window.selectSymbol(ticker);
         }
         applySelectedHighlight();
 
-        if (window.innerWidth <= CONFIG.SCREEN_WIDTH && typeof window.showMobileChart === "function") {
+        if (
+          window.innerWidth <= CONFIG.SCREEN_WIDTH &&
+          typeof window.showMobileChart === "function"
+        ) {
           window.showMobileChart();
         }
       }
@@ -107,3 +128,16 @@ window.closeSettingsModal = closeSettingsModal;
 window.saveSettings = saveSettings;
 window.togglePasswordVisibility = togglePasswordVisibility;
 window.clearCmcKey = clearCmcKey;
+window.toggleExchFilter = toggleExchFilter;
+window.updateExchFilterUI = updateExchFilterUI;
+window.resetExchFilters = resetExchFilters;
+window.toggleExchExclude = toggleExchExclude;
+window.getFilteredData = getFilteredData;
+window.switchExchFilterMode = switchExchFilterMode;
+
+// DOM 로드 완료 후 상단 거래소 필터바 UI 최초 초기화
+document.addEventListener("DOMContentLoaded", () => {
+  if (typeof updateExchFilterUI === "function") {
+    updateExchFilterUI();
+  }
+});

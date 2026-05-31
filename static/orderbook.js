@@ -24,7 +24,8 @@ export function initOrderbookDOM() {
     // Asks
     const askRow = document.createElement("div");
     askRow.id = `ob-ask-${i}`;
-    askRow.className = "relative flex items-center justify-between text-[10px] h-5 font-mono px-1.5 z-10 hidden hover:bg-theme-text/5 cursor-pointer transition-colors";
+    askRow.className =
+      "relative flex items-center justify-between text-[10px] h-5 font-mono px-1.5 z-10 hidden hover:bg-theme-text/5 cursor-pointer transition-colors";
     askRow.innerHTML = `
     <div id="ob-ask-bg-${i}" class="absolute right-0 top-0 bottom-0 bg-theme-down/15 will-change-[width] z-[-1] transition-all duration-[50ms]" style="width: 0%;"></div>
     <span id="ob-ask-price-${i}" class="text-theme-down font-bold w-[35%] text-left tracking-tighter"></span>
@@ -36,7 +37,8 @@ export function initOrderbookDOM() {
     // Bids
     const bidRow = document.createElement("div");
     bidRow.id = `ob-bid-${i}`;
-    bidRow.className = "relative flex items-center justify-between text-[10px] h-5 font-mono px-1.5 z-10 hidden hover:bg-theme-text/5 cursor-pointer transition-colors";
+    bidRow.className =
+      "relative flex items-center justify-between text-[10px] h-5 font-mono px-1.5 z-10 hidden hover:bg-theme-text/5 cursor-pointer transition-colors";
     bidRow.innerHTML = `
     <div id="ob-bid-bg-${i}" class="absolute right-0 top-0 bottom-0 bg-theme-up/15 will-change-[width] z-[-1] transition-all duration-[50ms]" style="width: 0%;"></div>
     <span id="ob-bid-price-${i}" class="text-theme-up font-bold w-[35%] text-left tracking-tighter"></span>
@@ -53,22 +55,26 @@ export function initOrderbookDOM() {
 
 export function toggleOrderbook() {
   const panel = document.getElementById("orderbook-panel");
+  const btn = document.getElementById("toggle-orderbook-btn");
   if (!panel) return;
   if (panel.classList.contains("hidden")) {
     panel.classList.remove("hidden");
     panel.classList.add("flex");
+    if (btn) btn.innerText = "호가창 닫기";
     startOrderbookStream(store.currentAsset, store.currentMarket);
   } else {
     panel.classList.add("hidden");
     panel.classList.remove("flex");
+    if (btn) btn.innerText = "호가창 열기";
     stopOrderbookStream();
   }
 
   // Trigger chart resize
   setTimeout(() => {
-    if (typeof window.syncPriceScaleWidths === "function") window.syncPriceScaleWidths();
-    if (store.chart) store.chart.timeScale().fitContent();
-  }, 350);
+    if (typeof window.syncPriceScaleWidths === "function")
+      window.syncPriceScaleWidths();
+    // if (store.chart) store.chart.timeScale().fitContent();
+  }, 100);
 }
 
 export function changeOrderbookPrecision(delta) {
@@ -111,18 +117,24 @@ export function startOrderbookStream(symbol, market) {
   obState.precisionModifier = 0;
 
   // 🚀 [버그 픽스] 테이블에서 "BTCUSDT" 또는 "BTCKRW"가 넘어오더라도 순수 심볼("BTC")만 추출하여 소켓 경로 중복 오류 방지
-  const baseSym = symbol.toUpperCase().replace("USDT", "").replace("KRW-", "").replace("KRW", "");
+  const baseSym = symbol
+    .toUpperCase()
+    .replace("USDT", "")
+    .replace("KRW-", "")
+    .replace("KRW", "");
 
   if (market === "UPBIT") {
     const rawSym = `KRW-${baseSym}`;
     store.orderbookWs = new WebSocket("wss://api.upbit.com/websocket/v1");
     store.orderbookWs.binaryType = "blob";
     store.orderbookWs.onopen = () => {
-      store.orderbookWs.send(JSON.stringify([
-        { ticket: "ob_" + Date.now() },
-        { type: "orderbook", codes: [rawSym] },
-        { format: "SIMPLE" }
-      ]));
+      store.orderbookWs.send(
+        JSON.stringify([
+          { ticket: "ob_" + Date.now() },
+          { type: "orderbook", codes: [rawSym] },
+          { format: "SIMPLE" },
+        ]),
+      );
     };
     store.orderbookWs.onmessage = async (e) => {
       let data = e.data;
@@ -131,8 +143,10 @@ export function startOrderbookStream(symbol, market) {
       }
       const res = JSON.parse(data);
       if (res.ty === "orderbook" && res.obu) {
-        obState.asks = res.obu.map(u => ({ price: u.ap, size: u.as })).reverse();
-        obState.bids = res.obu.map(u => ({ price: u.bp, size: u.bs }));
+        obState.asks = res.obu
+          .map((u) => ({ price: u.ap, size: u.as }))
+          .reverse();
+        obState.bids = res.obu.map((u) => ({ price: u.bp, size: u.bs }));
         scheduleRender();
       }
     };
@@ -140,10 +154,17 @@ export function startOrderbookStream(symbol, market) {
     // 빗썸 호가창 생략 시 B-SPOT으로 폴백하거나 지원 안함 처리 가능
   } else if (market === "BYBIT") {
     // Bybit linear
-    store.orderbookWs = new WebSocket("wss://stream.bybit.com/v5/public/linear");
+    store.orderbookWs = new WebSocket(
+      "wss://stream.bybit.com/v5/public/linear",
+    );
     const streamSym = baseSym + "USDT";
     store.orderbookWs.onopen = () => {
-      store.orderbookWs.send(JSON.stringify({ op: "subscribe", args: [`orderbook.50.${streamSym}`] }));
+      store.orderbookWs.send(
+        JSON.stringify({
+          op: "subscribe",
+          args: [`orderbook.50.${streamSym}`],
+        }),
+      );
     };
     store.orderbookWs.onmessage = (e) => {
       const res = JSON.parse(e.data);
@@ -157,7 +178,9 @@ export function startOrderbookStream(symbol, market) {
   } else {
     // Binance Spot / Futures
     const isFutures = market === "FUTURES";
-    const wsBase = isFutures ? "wss://fstream.binance.com/ws" : "wss://stream.binance.com:9443/ws";
+    const wsBase = isFutures
+      ? "wss://fstream.binance.com/ws"
+      : "wss://stream.binance.com:9443/ws";
     const streamSym = baseSym.toLowerCase() + "usdt"; // Cleanly formulated endpoint
 
     // Depth stream returns asks and bids natively
@@ -167,8 +190,13 @@ export function startOrderbookStream(symbol, market) {
       const asksArr = res.asks || res.a;
       const bidsArr = res.bids || res.b;
       if (asksArr && bidsArr) {
-        obState.asks = asksArr.map(a => ({ price: parseFloat(a[0]), size: parseFloat(a[1]) })).reverse();
-        obState.bids = bidsArr.map(b => ({ price: parseFloat(b[0]), size: parseFloat(b[1]) }));
+        obState.asks = asksArr
+          .map((a) => ({ price: parseFloat(a[0]), size: parseFloat(a[1]) }))
+          .reverse();
+        obState.bids = bidsArr.map((b) => ({
+          price: parseFloat(b[0]),
+          size: parseFloat(b[1]),
+        }));
         scheduleRender();
       }
     };
@@ -191,7 +219,9 @@ function renderOrderbook() {
   const groupSize = Math.pow(10, -p);
 
   const precisionLabel = document.getElementById("orderbook-precision-label");
-  if (precisionLabel) precisionLabel.innerText = groupSize >= 1 ? groupSize.toString() : groupSize.toFixed(Math.max(0, p));
+  if (precisionLabel)
+    precisionLabel.innerText =
+      groupSize >= 1 ? groupSize.toString() : groupSize.toFixed(Math.max(0, p));
 
   const priceEl = document.getElementById("orderbook-current-price");
   if (priceEl && obState.asks.length > 0 && obState.bids.length > 0) {
@@ -204,7 +234,7 @@ function renderOrderbook() {
   // 병합 헬퍼 (초고속 연산)
   const groupData = (data, isAsk) => {
     let grouped = [];
-    data.forEach(item => {
+    data.forEach((item) => {
       let gPrice;
       if (p >= 0) {
         gPrice = isAsk
@@ -241,7 +271,10 @@ function renderOrderbook() {
   }
 
   let bidTotal = 0;
-  let bidTotals = groupedBids.map(b => { bidTotal += b.size; return bidTotal; });
+  let bidTotals = groupedBids.map((b) => {
+    bidTotal += b.size;
+    return bidTotal;
+  });
 
   let maxTotal = Math.max(askTotal, bidTotal) || 1;
 
@@ -253,10 +286,14 @@ function renderOrderbook() {
         const item = groupedAsks[idx];
         const t = askTotals[idx];
         askEl.classList.remove("hidden");
-        document.getElementById(`ob-ask-price-${i}`).innerText = formatSmartPrice(item.price, Math.max(0, p));
-        document.getElementById(`ob-ask-size-${i}`).innerText = formatVol(item.size);
+        document.getElementById(`ob-ask-price-${i}`).innerText =
+          formatSmartPrice(item.price, Math.max(0, p));
+        document.getElementById(`ob-ask-size-${i}`).innerText = formatVol(
+          item.size,
+        );
         document.getElementById(`ob-ask-total-${i}`).innerText = formatVol(t);
-        document.getElementById(`ob-ask-bg-${i}`).style.width = `${(t / maxTotal) * 100}%`;
+        document.getElementById(`ob-ask-bg-${i}`).style.width =
+          `${(t / maxTotal) * 100}%`;
       } else {
         askEl.classList.add("hidden");
       }
@@ -268,10 +305,14 @@ function renderOrderbook() {
         const item = groupedBids[i];
         const t = bidTotals[i];
         bidEl.classList.remove("hidden");
-        document.getElementById(`ob-bid-price-${i}`).innerText = formatSmartPrice(item.price, Math.max(0, p));
-        document.getElementById(`ob-bid-size-${i}`).innerText = formatVol(item.size);
+        document.getElementById(`ob-bid-price-${i}`).innerText =
+          formatSmartPrice(item.price, Math.max(0, p));
+        document.getElementById(`ob-bid-size-${i}`).innerText = formatVol(
+          item.size,
+        );
         document.getElementById(`ob-bid-total-${i}`).innerText = formatVol(t);
-        document.getElementById(`ob-bid-bg-${i}`).style.width = `${(t / maxTotal) * 100}%`;
+        document.getElementById(`ob-bid-bg-${i}`).style.width =
+          `${(t / maxTotal) * 100}%`;
       } else {
         bidEl.classList.add("hidden");
       }
