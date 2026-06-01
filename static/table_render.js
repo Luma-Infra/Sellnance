@@ -126,6 +126,7 @@ export function updateRowInnerHTML(tr, row) {
 
   const pendingAction =
     store.pendingFavActions && store.pendingFavActions.get(uId);
+  tr.dataset.renderedPending = pendingAction ? "true" : "false";
   let currentFavState;
   if (pendingAction) {
     currentFavState = pendingAction.targetState;
@@ -179,10 +180,10 @@ export function updateRowInnerHTML(tr, row) {
         ${
           pendingAction
             ? `
-          <button onclick="window.confirmFavoriteChange('${uId}', event)" class="confirm-fav-btn text-[9px] font-bold px-1.5 py-0.5 bg-green-500/20 hover:bg-green-500/40 text-green-200 border border-green-500/40 rounded transition-all flex-shrink-0 mr-1">
+          <button onclick="window.confirmFavoriteChange('${uId}', event)" class="confirm-fav-btn text-[9px] font-bold px-1.5 py-0.5 rounded transition-all flex-shrink-0 mr-1">
             확인
           </button>
-          <button onclick="window.cancelFavoriteChange('${uId}', event)" class="cancel-fav-btn text-[9px] font-bold px-1.5 py-0.5 bg-red-500/20 hover:bg-red-500/40 text-red-200 border border-red-500/40 rounded transition-all flex-shrink-0">
+          <button onclick="window.cancelFavoriteChange('${uId}', event)" class="cancel-fav-btn text-[9px] font-bold px-1.5 py-0.5 rounded transition-all flex-shrink-0">
             취소
           </button>
         `
@@ -346,11 +347,13 @@ export function renderTable(isRealtime = false) {
                 changed = true;
               }
               // 🚀 [성능 최적화] 무조건 updateRowInnerHTML를 부르지 않고, 내용이나 설정이 바뀐 경우에만 선별적으로 렌더링하여 layout thrashing 차단!
+              const isPending = !!(store.pendingFavActions && store.pendingFavActions.has(rowData.UID));
               const needsRender =
                 !tr.dataset.renderedSym ||
                 tr.dataset.renderedSym !== rowData.Ticker ||
                 tr.dataset.renderedCurrency !== store.currencyMode ||
-                tr.dataset.renderedLang !== store.lang;
+                tr.dataset.renderedLang !== store.lang ||
+                (tr.dataset.renderedPending === "true") !== isPending;
               if (needsRender) {
                 updateRowInnerHTML(tr, rowData);
                 tr.dataset.renderedSym = rowData.Ticker;
@@ -407,6 +410,7 @@ export function renderTable(isRealtime = false) {
           tr.dataset.renderedSym = "";
           tr.dataset.renderedCurrency = "";
           tr.dataset.renderedLang = "";
+          tr.dataset.renderedPending = "false";
         }
       }
       store.tableObserver.observe(tr);
@@ -432,11 +436,13 @@ export function renderTable(isRealtime = false) {
           // 보이고 있는 행이거나 상위 20위권인 경우 즉각 렌더링
           const isPreRender = i < 20;
           if (isPreRender || store.visibleSymbols.has(rowData.Ticker)) {
+            const isPending = !!(store.pendingFavActions && store.pendingFavActions.has(rowData.UID));
             const needsRender =
               !tr.dataset.renderedSym ||
               tr.dataset.renderedSym !== rowData.Ticker ||
               tr.dataset.renderedCurrency !== store.currencyMode ||
-              tr.dataset.renderedLang !== store.lang;
+              tr.dataset.renderedLang !== store.lang ||
+              (tr.dataset.renderedPending === "true") !== isPending;
             if (needsRender) {
               updateRowInnerHTML(tr, rowData);
               tr.dataset.renderedSym = rowData.Ticker;
@@ -476,11 +482,13 @@ export function renderTable(isRealtime = false) {
       const tr = store.rowDomMap.get(sym);
       const rowData = store.tickerRowMap.get(sym.toUpperCase());
       if (tr && rowData) {
+        const isPending = !!(store.pendingFavActions && store.pendingFavActions.has(rowData.UID));
         const needsRender =
           !tr.dataset.renderedSym ||
           tr.dataset.renderedSym !== rowData.Ticker ||
           tr.dataset.renderedCurrency !== store.currencyMode ||
-          tr.dataset.renderedLang !== store.lang;
+          tr.dataset.renderedLang !== store.lang ||
+          (tr.dataset.renderedPending === "true") !== isPending;
         if (needsRender) {
           updateRowInnerHTML(tr, rowData);
           tr.dataset.renderedSym = rowData.Ticker;
@@ -514,11 +522,13 @@ export function renderTable(isRealtime = false) {
         tr.dataset.index = i;
 
         // 🚀 상위 20위 안의 행은 무조건 즉시 최신 정보로 렌더링
+        const isPending = !!(store.pendingFavActions && store.pendingFavActions.has(rowData.UID));
         const needsRender =
           !tr.dataset.renderedSym ||
           tr.dataset.renderedSym !== rowData.Ticker ||
           tr.dataset.renderedCurrency !== store.currencyMode ||
-          tr.dataset.renderedLang !== store.lang;
+          tr.dataset.renderedLang !== store.lang ||
+          (tr.dataset.renderedPending === "true") !== isPending;
         if (needsRender) {
           updateRowInnerHTML(tr, rowData);
           tr.dataset.renderedSym = rowData.Ticker;

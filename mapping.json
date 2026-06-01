@@ -5,7 +5,7 @@
         "SOL": "https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png",
         "SUI": "https://s2.coinmarketcap.com/static/img/coins/64x64/20947.png"
     },
-    "DEFAULT_KRW_USD_RATE": 1507.13,
+    "DEFAULT_KRW_USD_RATE": 1512.16,
     "__MEMO__1": "BTC ETH 파생형 너무 많아서 고정 + 중국어 포함 모든 언어 티커 대응",
     "__MEMO__2": "----------------------------------------------------------",
     "EXCLUSION_LIST": [
@@ -586,6 +586,12 @@
             "Astar",
             "ASTR"
         ],
+        "ASTS": [
+            "40108",
+            null,
+            "AST SpaceMobile Inc (Derivatives)",
+            "ASTS"
+        ],
         "AT": [
             "38757",
             null,
@@ -777,6 +783,12 @@
             null,
             "BounceBit",
             "BB"
+        ],
+        "BBX": [
+            "",
+            null,
+            "BBX",
+            "BBX"
         ],
         "BCH": [
             "1831",
@@ -1588,6 +1600,12 @@
             "iShares MSCI Japan ETF (Derivatives)",
             "EWJ"
         ],
+        "EWT": [
+            "5268",
+            null,
+            "Energy Web Token",
+            "EWT"
+        ],
         "EWY": [
             "39654",
             null,
@@ -2284,6 +2302,12 @@
             "Lumentum Holdings (Derivatives)",
             "LITE"
         ],
+        "LLY": [
+            "39509",
+            null,
+            "LLY",
+            "LLY"
+        ],
         "LPT": [
             "3640",
             null,
@@ -2680,6 +2704,12 @@
             "Numeraire",
             "NMR"
         ],
+        "NOK": [
+            "40072",
+            null,
+            "NOK",
+            "NOK"
+        ],
         "NOM": [
             "38464",
             null,
@@ -2697,6 +2727,12 @@
             null,
             "NVIDIA (Derivatives)",
             "NVDA"
+        ],
+        "NVO": [
+            "40104",
+            null,
+            "NVO",
+            "NVO"
         ],
         "NXPC": [
             "36044",
@@ -3375,6 +3411,12 @@
             null,
             "Smooth Love Potion",
             "SLP"
+        ],
+        "SLX": [
+            "40047",
+            "SOL",
+            "Solstice",
+            "SLX"
         ],
         "SNDK": [
             "39507",

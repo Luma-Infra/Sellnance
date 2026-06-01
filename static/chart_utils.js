@@ -135,6 +135,11 @@ function updateLegend(d, v, k) {
         : "text-theme-text opacity-70";
   const chg = d.close - d.open;
 
+  // 🚀 저가~고가 진폭(Range) 및 진폭 백분율 계산
+  const range = d.high - d.low;
+  const rangePercent =
+    d.open && d.open !== 0 ? ((range / d.open) * 100).toFixed(2) : "0.00";
+
   // 🚀 분모 0 방지 및 chg가 0일 때 직접 처리
   const chgPercent =
     d.open && d.open !== 0 ? ((chg / d.open) * 100).toFixed(2) : "0.00";
@@ -168,7 +173,7 @@ function updateLegend(d, v, k) {
         : rawVol.toLocaleString();
       volColor = cls; // 캔들의 양봉/음봉 색상을 그대로 따라감
     }
-    volHtml = `<span class="opacity-60 text-[11px] mr-1 border-l border-white/10 pl-3">Vol</span><span class="${volColor} font-bold mr-3">${volValue}</span>`;
+    volHtml = `<div class="flex items-center"><span class="opacity-60 text-[11px] mr-1">Vol</span><span class="${volColor} font-bold">${volValue}</span></div>`;
   }
 
   // 🚀 김프 전광판 포맷팅 및 다이내믹 색상(getKimchiColor) 적용
@@ -180,17 +185,22 @@ function updateLegend(d, v, k) {
       kimValue = (k.value > 0 ? "+" : "") + k.value.toFixed(2) + "%";
       kimColorStyle = `color: ${k.color || "#57a4fc"}`; // 부여된 무지개색 100% 반영!
     }
-    kimHtml = `<span class="opacity-60 text-[11px] mr-1 border-l border-white/10 pl-3">Kimchi</span><span style="${kimColorStyle}" class="font-bold">${kimValue}</span>`;
+    kimHtml = `<div class="flex items-center"><span class="opacity-60 text-[11px] mr-1">Kimchi</span><span style="${kimColorStyle}" class="font-bold">${kimValue}</span></div>`;
   }
 
   leg.innerHTML = `
-    <span class="opacity-60 text-[11px] mr-1">시</span><span class="${cls} font-bold mr-3">${safeFormat(d.open, p)}</span>
-    <span class="opacity-60 text-[11px] mr-1">고</span><span class="${cls} font-bold mr-3">${safeFormat(d.high, p)}</span>
-    <span class="opacity-60 text-[11px] mr-1">저</span><span class="${cls} font-bold mr-3">${safeFormat(d.low, p)}</span>
-    <span class="opacity-60 text-[11px] mr-1">종</span><span class="${cls} font-bold mr-3">${safeFormat(d.close, p)}</span>
-    <span class="ml-2 px-1 py-0.5 ${cls} font-black rounded mr-3">${sign}${safeFormat(chg, p)} (${sign}${chgPercent}%)</span>
-    ${volHtml}
-    ${kimHtml}
+    <div class="flex items-center flex-wrap gap-x-2.5">
+      <div class="flex items-center"><span class="opacity-60 text-[11px] mr-1">시</span><span class="${cls} font-bold">${safeFormat(d.open, p)}</span></div>
+      <div class="flex items-center"><span class="opacity-60 text-[11px] mr-1">고</span><span class="${cls} font-bold">${safeFormat(d.high, p)}</span></div>
+      <div class="flex items-center"><span class="opacity-60 text-[11px] mr-1">저</span><span class="${cls} font-bold">${safeFormat(d.low, p)}</span></div>
+      <div class="flex items-center"><span class="opacity-60 text-[11px] mr-1">종</span><span class="${cls} font-bold">${safeFormat(d.close, p)}</span></div>
+      <div class="px-1 py-0.5 ${cls} font-black rounded text-[10px] leading-none">${sign}${safeFormat(chg, p)} (${sign}${chgPercent}%)</div>
+    </div>
+    <div class="flex items-center flex-wrap gap-x-2.5 border-t border-white/5 pt-0.5 mt-0.5 w-full">
+      <div class="flex items-center"><span class="opacity-60 text-[11px] mr-1">Range</span><span class="${cls} font-bold">${safeFormat(range, p)} (${rangePercent}%)</span></div>
+      ${volHtml}
+      ${kimHtml}
+    </div>
   `;
 }
 

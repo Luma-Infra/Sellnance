@@ -64,7 +64,7 @@ export function clearChartData(isTfChange = false) {
   store.hasPlacedDeer = false;
 
   console.log(
-    "🧹 차트/타임프레임 변경: 기존 차트 잔상 유지 (사슴 마커는 즉시 제거)",
+    // "🧹 차트/타임프레임 변경: 기존 차트 잔상 유지 (사슴 마커는 즉시 제거)",
   );
 }
 
@@ -281,6 +281,48 @@ export async function fetchHistory(
             low: Number(d[4]),
             vol: Number(d[5]),
           }));
+
+          // 🚀 [추가] 빗썸 일봉 -> 주봉/월봉 조립 엔진
+          if (store.currentTF === "1w" || store.currentTF === "1M") {
+            const getStartOfWeek = (t) => {
+              const d = new Date(t * 1000);
+              const day = d.getUTCDay();
+              const diff = d.getUTCDate() - day + (day === 0 ? -6 : 1);
+              const mon = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), diff, 0, 0, 0));
+              return mon.getTime() / 1000;
+            };
+            const getStartOfMonth = (t) => {
+              const d = new Date(t * 1000);
+              const first = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1, 0, 0, 0));
+              return first.getTime() / 1000;
+            };
+
+            const groups = {};
+            const getGroupTime = store.currentTF === "1w" ? getStartOfWeek : getStartOfMonth;
+
+            rawMain.forEach((d) => {
+              const gt = getGroupTime(d.time);
+              if (!groups[gt]) groups[gt] = [];
+              groups[gt].push(d);
+            });
+
+            rawMain = Object.keys(groups)
+              .sort((a, b) => Number(a) - Number(b))
+              .map((gtStr) => {
+                const gt = Number(gtStr);
+                const chunk = groups[gt].sort((a, b) => a.time - b.time);
+                return {
+                  time: gt,
+                  open: chunk[0].open,
+                  close: chunk[chunk.length - 1].close,
+                  high: Math.max(...chunk.map((c) => c.high)),
+                  low: Math.min(...chunk.map((c) => c.low)),
+                  vol: chunk.reduce((sum, c) => sum + (c.vol || 0), 0),
+                };
+              });
+          }
+
+          mainStep = store.currentTF === "3d" ? 3 : 1;
         }
       } else {
         const supportedMin = [1, 3, 5, 10, 15, 30, 60, 240];
@@ -392,7 +434,7 @@ export async function fetchHistory(
               exchange_key: exchangeKey,
               date: newDateStr,
             }),
-          }).catch(() => {}); // 실패해도 취트 안 남의선답
+          }).catch(() => { }); // 실패해도 취트 안 남의선답
         } else {
           // 메모리의 날짜를 테이블에만 줘주기 (POST 없이)
           const listingEl = document.getElementById(
@@ -520,51 +562,34 @@ export async function fetchHistory(
         },
       });
 
-      // 메인 시리즈 세팅 및 자동 스케일 (Lazy를 위해 김프는 아직 빈칸!)
+      // 🚀 모든 시리즈 데이터를 동일한 실행 프레임(Tick) 내에서 동기식으로 세팅하여 
+      // 시리즈 간의 데이터 개수/시간 불일치로 인한 Value is null 에러를 방지합니다.
       try {
         store.candleSeries.setData(sanitizeChartData(store.mainData));
-      } catch (candleErr) {
-        console.warn("🚨 candleSeries.setData 예외 우회 완료:", candleErr);
-      }
 
-      // 🚀 [해결] 메인 캔들 시리즈가 setData된 후 브라우저가 타임라인 축을 형성할 시간을 벌어주기 위해
-      // 볼륨 및 기타 보조 시리즈의 setData 호출을 requestAnimationFrame 및 setTimeout(..., 0) 계열의 비동기로 미룹니다.
-      // 이렇게 함으로써 15% 확률로 거래량이 그려지지 않는 레이스 컨디션을 완벽히 해결합니다.
-      requestAnimationFrame(() => {
         if (store.leftScaleSeries) {
-          try {
-            const leftData = store.mainData.map((d) => {
-              const m = mapTime(d);
-              return { time: m.time, value: m.close };
-            });
-            store.leftScaleSeries.setData(sanitizeChartData(leftData, true));
-          } catch (leftErr) {
-            console.warn("🚨 leftScaleSeries.setData 예외 우회 완료:", leftErr);
-          }
+          const leftData = store.mainData.map((d) => {
+            const m = mapTime(d);
+            return { time: m.time, value: m.close };
+          });
+          store.leftScaleSeries.setData(sanitizeChartData(leftData, true));
         }
 
-        try {
-          if (
-            store.volumeSeries &&
-            store.volumeData &&
-            store.volumeData.length > 0
-          ) {
-            store.volumeSeries.setData(
-              sanitizeChartData(store.volumeData, true),
-            );
-          } else if (store.volumeSeries) {
-            store.volumeSeries.setData([]);
-          }
-        } catch (volErr) {
-          console.warn("🚨 volumeSeries.setData 예외 우회 완료:", volErr);
+        if (store.volumeSeries && store.volumeData && store.volumeData.length > 0) {
+          store.volumeSeries.setData(sanitizeChartData(store.volumeData, true));
+        } else if (store.volumeSeries) {
+          store.volumeSeries.setData([]);
         }
 
         if (store.kimchiSeries) {
-          try {
-            store.kimchiSeries.setData([]); // 🚀 과거 김프 잔재 초기화
-          } catch (kimchiErr) {}
+          store.kimchiSeries.setData([]); // 🚀 과거 김프 잔재 초기화
         }
+      } catch (err) {
+        console.warn("🚨 시리즈 데이터 동기 세팅 예외 우회:", err);
+      }
 
+      // 레이아웃 및 실시간 소켓 연결 등은 다음 프레임에 안전하게 처리
+      requestAnimationFrame(() => {
         if (typeof applyChartLayout === "function") applyChartLayout();
         if (typeof autoFit === "function") autoFit(isTabRestore);
         if (typeof updateStatus === "function") updateStatus();
@@ -587,7 +612,7 @@ export async function fetchHistory(
       ) {
         try {
           store.candleSeries.setMarkers([]);
-        } catch (markerErr) {}
+        } catch (markerErr) { }
       }
 
       store.kimchiData = [];
@@ -1003,7 +1028,7 @@ export function placeDeerAtEnd(params) {
       store.kimchiSeries.setMarkers([deerMarker]);
     }
     console.log(
-      "🦌 [사슴 배치 완료] X축 타임스탬프 유실 없이 메인 및 김프 차트에 마커 적용 완료!",
+      // "🦌 [사슴 배치 완료] X축 타임스탬프 유실 없이 메인 및 김프 차트에 마커 적용 완료!",
     );
   }
 }
@@ -1239,33 +1264,32 @@ export async function loadMoreHistory() {
     const visibleRange = timeScale.getVisibleLogicalRange();
 
     try {
-      // 1. 메인 캔들 데이터를 주입하여 시간 스케일 프레임을 먼저 확보합니다.
+      // 🚀 모든 시리즈 데이터를 동일한 틱 내에서 동기식으로 세팅하여 
+      // 캔들 시리즈만 업데이트되고 볼륨 시리즈는 다음 프레임으로 지연되어 생기는 인덱스/시간 불일치 크래시를 원천 차단합니다.
       store.candleSeries.setData(sanitizeChartData(store.mainData));
 
-      // 2. 서브 시리즈 주입 및 X축 화면 범위 조정을 동일한 RAF 렌더링 사이클로 묶어 격리합니다.
-      //    → 모든 인덱스가 재정렬된 뒤 단 하나의 Repaint에서 실행되므로 크래시가 원천 차단됩니다.
+      if (store.leftScaleSeries) {
+        store.leftScaleSeries.setData(
+          sanitizeChartData(
+            store.mainData.map((d) => ({ time: d.time, value: d.close })),
+            true,
+          ),
+        );
+      }
+      if (store.volumeSeries && store.volumeData.length > 0) {
+        store.volumeSeries.setData(sanitizeChartData(store.volumeData, true));
+      }
+      if (
+        store.kimchiSeries &&
+        store.kimchiData &&
+        store.kimchiData.length > 0
+      ) {
+        store.kimchiSeries.setData(sanitizeChartData(store.kimchiData, true));
+      }
+
+      // 🔥 [핵심] 모든 시리즈 데이터가 동기적으로 세팅된 뒤, 화면 범위 이동을 처리합니다.
       requestAnimationFrame(() => {
         try {
-          if (store.leftScaleSeries) {
-            store.leftScaleSeries.setData(
-              sanitizeChartData(
-                store.mainData.map((d) => ({ time: d.time, value: d.close })),
-                true,
-              ),
-            );
-          }
-          if (store.volumeSeries && store.volumeData.length > 0) {
-            store.volumeSeries.setData(sanitizeChartData(store.volumeData, true));
-          }
-          if (
-            store.kimchiSeries &&
-            store.kimchiData &&
-            store.kimchiData.length > 0
-          ) {
-            store.kimchiSeries.setData(sanitizeChartData(store.kimchiData, true));
-          }
-
-          // 🔥 [핵심] 모든 시리즈 데이터가 안착된 직후 안전하게 화면 범위를 이동합니다.
           if (visibleRange && N > 0) {
             timeScale.setVisibleLogicalRange({
               from: visibleRange.from + N,
@@ -1281,7 +1305,7 @@ export async function loadMoreHistory() {
       });
     } catch (candleErr) {
       console.warn(
-        "🚨 Lazy Load candleSeries.setData 예외 우회 완료:",
+        "🚨 Lazy Load 데이터 세팅 예외 우회 완료:",
         candleErr,
       );
     }

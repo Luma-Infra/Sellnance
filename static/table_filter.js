@@ -274,9 +274,10 @@ export function switchView(mode) {
 
 export function toggleCurrency() {
   store.currencyMode = store.currencyMode === "USD" ? "KRW" : "USD";
+  store.lang = store.currencyMode === "USD" ? "EN" : "KR";
   const btn = document.getElementById("currency-toggle");
   if (btn) {
-    btn.innerText = store.currencyMode === "USD" ? "USD ($)" : "KRW (₩)";
+    btn.innerText = store.currencyMode === "USD" ? "USD ($) / EN" : "KRW (₩) / KR";
   }
   renderTable();
 
@@ -292,13 +293,6 @@ export function toggleCurrency() {
       window.updateHeaderDisplay(row, undefined, p);
     }
   }
-}
-
-export function toggleLang() {
-  store.lang = store.lang === "KR" ? "EN" : "KR";
-  const btn = document.getElementById("lang-toggle");
-  if (btn) btn.innerText = store.lang;
-  renderTable();
 }
 
 export function toggleSmallCap() {
@@ -495,58 +489,120 @@ export function updateExchFilterUI() {
     </button>
   `;
 
-  container.innerHTML =
-    list
-      .map((ex) => {
-        const state = store.exchFilterStates[ex.id] || 0;
-        let badgeText = ex.label || "";
+  const buttonsHtml = list
+    .map((ex) => {
+      const state = store.exchFilterStates[ex.id] || 0;
+      let badgeText = ex.label || "";
 
-        // 상태에 따른 외형 제어 (유명 3사 외 구분 없는 버튼 상태 처리 포함)
-        let borderStyle = "border-theme-border/30";
-        let filterStyle = "filter: grayscale(1); opacity: 0.45;";
-        let bgStyle = "background: transparent;";
-        let badgeBg = "bg-theme-accent";
+      // 상태에 따른 외형 제어 (유명 3사 외 구분 없는 버튼 상태 처리 포함)
+      let borderStyle = "border-theme-border/30";
+      let filterStyle = "filter: grayscale(1); opacity: 0.45;";
+      let bgStyle = "background: transparent;";
+      let badgeBg = "bg-theme-accent";
 
-        if (state === 1) {
-          borderStyle = "border-theme-accent";
-          bgStyle =
-            "background: color-mix(in srgb, var(--accent) 12%, transparent);";
-          filterStyle = "filter: none; opacity: 1;";
-        } else if (state === -1) {
-          badgeText = "🚫" + (ex.label || "");
-          borderStyle = "border-theme-down";
-          filterStyle = "filter: grayscale(0.5) contrast(0.8); opacity: 0.85;";
-          bgStyle = "background: rgba(239, 83, 80, 0.1);";
-          badgeBg = "bg-theme-down";
-        }
+      if (state === 1) {
+        borderStyle = "border-theme-accent";
+        bgStyle =
+          "background: color-mix(in srgb, var(--accent) 12%, transparent);";
+        filterStyle = "filter: none; opacity: 1;";
+      } else if (state === -1) {
+        badgeText = "🚫" + (ex.label || "");
+        borderStyle = "border-theme-down";
+        filterStyle = "filter: grayscale(0.5) contrast(0.8); opacity: 0.85;";
+        bgStyle = "background: rgba(239, 83, 80, 0.1);";
+        badgeBg = "bg-theme-down";
+      }
 
-        // B-SPOT, B-FUT, B-STOCK의 경우 비활성화(state === 0) 상태에서도 라벨이 표시되어 구분 가능해야 함
-        if (state === 0 && ex.label) {
-          badgeBg = "bg-theme-border/40 text-theme-text opacity-60";
-        }
+      // B-SPOT, B-FUT, B-STOCK의 경우 비활성화(state === 0) 상태에서도 라벨이 표시되어 구분 가능해야 함
+      if (state === 0 && ex.label) {
+        badgeBg = "bg-theme-border/40 text-theme-text opacity-60";
+      }
 
-        const imgUrl = `https://s2.coinmarketcap.com/static/img/exchanges/64x64/${ex.cmcId}.png`;
-        const imgStyle =
-          ex.id === "BINANCE_STOCK" ? "filter: hue-rotate(180deg);" : "";
+      const imgUrl = `https://s2.coinmarketcap.com/static/img/exchanges/64x64/${ex.cmcId}.png`;
+      const imgStyle =
+        ex.id === "BINANCE_STOCK" ? "filter: hue-rotate(180deg);" : "";
 
-        // 🚀 일반 클릭으로 사이클 변경, 우클릭은 즉시 '제외(-1)' 또는 '해제(0)'로 단축 제어할 수 있도록 contextmenu 핸들링 추가
-        return `
+      // 🚀 일반 클릭으로 사이클 변경, 우클릭은 즉시 '제외(-1)' 또는 '해제(0)'로 단축 제어할 수 있도록 contextmenu 핸들링 추가
+      return `
       <button onclick="window.toggleExchFilter('${ex.id}', event)" 
               oncontextmenu="event.preventDefault(); window.toggleExchExclude('${ex.id}');"
               class="relative flex items-center justify-center p-1.5 border rounded-xl transition-all duration-300 w-8 h-8 hover:scale-105 active:scale-95 ${borderStyle}"
               style="${bgStyle} ${filterStyle}" title="${ex.name || ex.id} (클릭: 순환 토글 / 우클릭: 제외 토글)">
         <img src="${imgUrl}" alt="${ex.name || ex.id}" class="w-full h-full object-contain rounded" style="${imgStyle}" />
-        ${
-          badgeText
-            ? `<div class="absolute -top-1 -right-1 ${badgeBg} text-white text-[8px] px-0.5 rounded-sm leading-none font-black scale-[0.8]">${badgeText}</div>`
-            : ""
+        ${badgeText
+          ? `<div class="absolute -top-1 -right-1 ${badgeBg} text-white text-[8px] px-0.5 rounded-sm leading-none font-black scale-[0.8]">${badgeText}</div>`
+          : ""
         }
       </button>
     `;
-      })
-      .join("") +
-    modeToggleHtml +
-    resetBtnHtml;
+    })
+    .join("");
+
+  container.innerHTML = buttonsHtml + modeToggleHtml + resetBtnHtml;
+
+  // 🚀 [추가] 아랫줄의 #exchange-presets-container 프리셋 제어바 렌더링
+  const presetsContainer = document.getElementById("exchange-presets-container");
+  if (presetsContainer) {
+    let presets = JSON.parse(localStorage.getItem("sellnance_exch_presets") || "[]");
+    while (presets.length < 5) presets.push(null);
+
+    if (store.activePresetIndex === undefined) {
+      store.activePresetIndex = 0;
+    }
+
+    const presetButtonsHtml = presets.map((preset, idx) => {
+      const hasPreset = !!preset;
+      const num = idx + 1;
+      const isActive = store.activePresetIndex === idx;
+
+      let title = `프리셋 ${num}\n`;
+      let borderStyle = "border-theme-border/30 text-theme-text opacity-40 hover:opacity-100 hover:scale-105 bg-theme-panel/5";
+
+      if (hasPreset) {
+        const incs = Object.entries(preset.states).filter(([_, s]) => s === 1).map(([k]) => k.replace("BINANCE_", "B-"));
+        const decs = Object.entries(preset.states).filter(([_, s]) => s === -1).map(([k]) => k.replace("BINANCE_", "B-"));
+
+        title += `결합모드: ${preset.mode}\n`;
+        if (incs.length > 0) title += `포함: ${incs.join(", ")}\n`;
+        if (decs.length > 0) title += `제외: ${decs.join(", ")}\n`;
+        title += `(클릭: 선택 및 불러오기)`;
+
+        if (isActive) {
+          borderStyle = "border-purple-500 text-purple-400 bg-purple-500/25 font-black scale-105 ring-2 ring-purple-500/20";
+        } else {
+          borderStyle = "border-purple-500/40 text-purple-400/80 bg-purple-500/10 hover:scale-105";
+        }
+      } else {
+        title += "(비어 있음 - 선택 후 우측 [저장] 클릭 시 저장)";
+        if (isActive) {
+          borderStyle = "border-purple-500 text-purple-400 bg-purple-500/25 font-black scale-105 ring-2 ring-purple-500/20";
+        }
+      }
+
+      return `
+        <button onclick="window.selectExchPreset(${idx})" 
+                class="flex items-center justify-center border rounded-xl text-[9px] w-6 h-6 transition-all duration-300 font-bold ${borderStyle}"
+                title="${title}">
+          P${num}
+        </button>
+      `;
+    }).join("");
+
+    presetsContainer.innerHTML = `
+      <div class="flex items-center gap-1.5 shrink-0">
+        <span class="text-[9px] font-bold opacity-60 mr-1 uppercase tracking-wider text-theme-text">거래소 프리셋 </span>
+        ${presetButtonsHtml}
+      </div>
+      <div class="flex items-center gap-1.5 shrink-0">
+        <button onclick="window.saveCurrentPreset()" 
+                class="px-2.5 py-0.5 border border-green-500/40 hover:bg-green-500/20 text-green-400 rounded-lg transition-all duration-200 text-[9px] font-bold hover:scale-105 active:scale-95 shadow-sm"
+                title="현재 필터 설정을 선택된 프리셋 번호에 저장합니다.">저장</button>
+        <button onclick="window.deleteCurrentPreset()" 
+                class="px-2.5 py-0.5 border border-red-500/40 hover:bg-red-500/20 text-red-400 rounded-lg transition-all duration-200 text-[9px] font-bold hover:scale-105 active:scale-95 shadow-sm"
+                title="선택된 프리셋 번호의 데이터를 삭제합니다.">삭제</button>
+      </div>
+    `;
+  }
 }
 
 // 🚀 [추가] 3단 결합 조건 모드 스위칭 함수 (AND -> OR -> ONLY -> AND)
@@ -583,5 +639,68 @@ export function resetExchFilters() {
   store.exchFilterMode = "AND"; // 🚀 리셋 시 결합 조건도 AND 기본값으로 회귀
   store.currentRenderLimit = 1000;
   renderTable();
+  updateExchFilterUI();
+}
+
+// 🚀 [추가] 거래소 필터 프리셋 저장/선택/삭제 기능 (라디오 버튼 방식 + 개별 저장/삭제 버튼)
+export function selectExchPreset(index) {
+  store.activePresetIndex = index;
+
+  let presets = JSON.parse(localStorage.getItem("sellnance_exch_presets") || "[]");
+  const preset = presets[index];
+  if (preset) {
+    store.exchFilterStates = { ...preset.states };
+    store.exchFilterMode = preset.mode || "AND";
+  } else {
+    if (store.exchFilterStates) {
+      Object.keys(store.exchFilterStates).forEach((key) => {
+        store.exchFilterStates[key] = 0;
+      });
+    }
+    store.exchFilterMode = "AND";
+  }
+  store.currentRenderLimit = 1000;
+  renderTable();
+  updateExchFilterUI();
+}
+
+export function saveCurrentPreset() {
+  const index = store.activePresetIndex ?? 0;
+  if (!store.exchFilterStates) return;
+
+  let presets = JSON.parse(localStorage.getItem("sellnance_exch_presets") || "[]");
+  while (presets.length < 5) {
+    presets.push(null);
+  }
+
+  presets[index] = {
+    states: { ...store.exchFilterStates },
+    mode: store.exchFilterMode || "AND"
+  };
+
+  localStorage.setItem("sellnance_exch_presets", JSON.stringify(presets));
+  updateExchFilterUI();
+}
+
+export function deleteCurrentPreset() {
+  const index = store.activePresetIndex ?? 0;
+  let presets = JSON.parse(localStorage.getItem("sellnance_exch_presets") || "[]");
+  while (presets.length < 5) {
+    presets.push(null);
+  }
+
+  presets[index] = null;
+  localStorage.setItem("sellnance_exch_presets", JSON.stringify(presets));
+
+  // 삭제 시 현재 활성화된 필터도 함께 초기화합니다.
+  if (store.exchFilterStates) {
+    Object.keys(store.exchFilterStates).forEach((key) => {
+      store.exchFilterStates[key] = 0;
+    });
+  }
+  store.exchFilterMode = "AND";
+  store.currentRenderLimit = 1000;
+  renderTable();
+
   updateExchFilterUI();
 }

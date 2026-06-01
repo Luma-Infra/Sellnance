@@ -18,7 +18,6 @@ import {
   switchFilter,
   switchView,
   toggleCurrency,
-  toggleLang,
   toggleSmallCap,
   openSettingsModal,
   closeSettingsModal,
@@ -31,6 +30,9 @@ import {
   toggleExchExclude,
   getFilteredData,
   switchExchFilterMode,
+  selectExchPreset,
+  saveCurrentPreset,
+  deleteCurrentPreset,
 } from "./table_filter.js";
 
 // ⭐️ 1. 좌우 넓이 드래그 조절 기능 (UI 공통 제어) ⭐️
@@ -120,7 +122,6 @@ window.switchTab = switchTab;
 window.switchFilter = switchFilter;
 window.switchView = switchView;
 window.toggleCurrency = toggleCurrency;
-window.toggleLang = toggleLang;
 window.toggleSmallCap = toggleSmallCap;
 window.updateVisibleSymbols = updateVisibleSymbols;
 window.openSettingsModal = openSettingsModal;
@@ -134,6 +135,9 @@ window.resetExchFilters = resetExchFilters;
 window.toggleExchExclude = toggleExchExclude;
 window.getFilteredData = getFilteredData;
 window.switchExchFilterMode = switchExchFilterMode;
+window.selectExchPreset = selectExchPreset;
+window.saveCurrentPreset = saveCurrentPreset;
+window.deleteCurrentPreset = deleteCurrentPreset;
 
 // DOM 로드 완료 후 상단 거래소 필터바 UI 최초 초기화
 document.addEventListener("DOMContentLoaded", () => {

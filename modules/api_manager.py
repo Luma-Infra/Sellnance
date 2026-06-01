@@ -30,7 +30,7 @@ def start_kst_9am_scheduler():
     # 0초, 5초, 10초, 20초, 1분, 2분, 3분, 5분 정각에 안전하게 트리거
     def run_scheduler():
         print("⏰ [SYSTEM] 9시 정밀 시가 스케줄러 가동 중...")
-        last_captured_sec = -1
+        last_captured_key = -1
         while True:
             try:
                 now = datetime.now(KST)

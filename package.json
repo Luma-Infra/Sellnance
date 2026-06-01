@@ -25,6 +25,7 @@
   "homepage": "https://github.com/Luma-Infra/Sellnance#readme",
   "dependencies": {
     "@tailwindcss/cli": "^4.2.2",
+    "lightweight-charts": "^5.2.0",
     "vite": "^8.0.11"
   }
 }
