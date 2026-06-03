@@ -5,7 +5,7 @@
         "SOL": "https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png",
         "SUI": "https://s2.coinmarketcap.com/static/img/coins/64x64/20947.png"
     },
-    "DEFAULT_KRW_USD_RATE": 1512.16,
+    "DEFAULT_KRW_USD_RATE": 1532.18,
     "__MEMO__1": "BTC ETH 파생형 너무 많아서 고정 + 중국어 포함 모든 언어 티커 대응",
     "__MEMO__2": "----------------------------------------------------------",
     "EXCLUSION_LIST": [
@@ -483,6 +483,12 @@
             null,
             "Ankr",
             "ANKR"
+        ],
+        "ANTHROPIC": [
+            "37693",
+            null,
+            "ANTHROPIC",
+            "ANTHROPIC"
         ],
         "APE": [
             "18876",
@@ -1252,6 +1258,12 @@
             "[Fake]Circle (crcl.top)",
             "CRCL"
         ],
+        "CRM": [
+            "40116",
+            null,
+            "Salesforce Inc (Derivatives)",
+            "CRM"
+        ],
         "CRO": [
             "3635",
             "CRO",
@@ -1353,6 +1365,12 @@
             null,
             "DeepBook Protocol",
             "DEEP"
+        ],
+        "DELL": [
+            "40088",
+            null,
+            "Dell Technologies (Derivatives)",
+            "DELL"
         ],
         "DEXE": [
             "7326",
@@ -1990,6 +2008,18 @@
             "Hyperlane",
             "HYPER"
         ],
+        "HYUNDAI": [
+            "",
+            null,
+            "HYUNDAI",
+            "HYUNDAI"
+        ],
+        "IBM": [
+            "39634",
+            null,
+            "IBM (Derivatives)",
+            "IBM"
+        ],
         "ICNT": [
             "37070",
             null,
@@ -2097,6 +2127,12 @@
             null,
             "IQ",
             "IQ"
+        ],
+        "IREN": [
+            "40117",
+            null,
+            "IREN Ltd (Derivatives)",
+            "IREN"
         ],
         "IRYS": [
             "38978",
@@ -2722,6 +2758,12 @@
             "Notcoin",
             "NOT"
         ],
+        "NOW": [
+            "3893",
+            null,
+            "ChangeNOW Token",
+            "NOW"
+        ],
         "NVDA": [
             "38153",
             null,
@@ -2763,6 +2805,12 @@
             null,
             "Ondo",
             "ONDO"
+        ],
+        "ONDS": [
+            "40118",
+            null,
+            "Ondas Inc (Derivatives)",
+            "ONDS"
         ],
         "ONE": [
             "3945",
@@ -3298,6 +3346,12 @@
             "Sahara AI",
             "SAHARA"
         ],
+        "SAMSUNG": [
+            "",
+            null,
+            "SAMSUNG",
+            "SAMSUNG"
+        ],
         "SAND": [
             "6210",
             null,
@@ -3381,6 +3435,12 @@
             null,
             "siren",
             "SIREN"
+        ],
+        "SKHYNIX": [
+            "",
+            null,
+            "SKHYNIX",
+            "SKHYNIX"
         ],
         "SKL": [
             "5691",

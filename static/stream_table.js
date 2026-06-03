@@ -37,6 +37,43 @@ export function initSniperSocket() {
       console.log("🎯 업비트 스나이퍼 엔진 가동: 김치 코인들 정밀 타격 시작");
       syncSniperSubscriptions();
     };
+    store.upbitSniperWs.onmessage = async (e) => {
+      try {
+        const text = typeof e.data === "string" ? e.data : await e.data.text();
+        const res = JSON.parse(text);
+        const pureSym = res.code.replace("KRW-", "");
+        const krwTicker = pureSym + "KRW"; // 테이블의 업비트 코인 Ticker 표기법 (예: BTCKRW)
+        const newPriceKrw = parseFloat(res.trade_price);
+
+        const allSource =
+          store.originalTableData || store.currentTableData || [];
+        const row = allSource.find(
+          (r) =>
+            r.Ticker === krwTicker ||
+            r.DisplayTicker === pureSym ||
+            r.Symbol === pureSym,
+        );
+        if (row) {
+          const rate = store.marketDataMap?.krw_usd_rate || 0;
+          row.Price_Raw = newPriceKrw / rate; // 달러 환산 가격
+          if (row.utc0_open_Raw) {
+            const openPrice = parseFloat(row.utc0_open_Raw);
+            row.Change_Today_Raw =
+              ((row.Price_Raw - openPrice) / openPrice) * 100;
+          }
+        }
+
+        const normalizedData = {
+          s: krwTicker,
+          c: newPriceKrw,
+          P: res.signed_change_rate * 100,
+          isUpbitRealtime: true,
+        };
+        renderSniperPrice(normalizedData);
+      } catch (err) {
+        console.error("Upbit sniper parse error:", err);
+      }
+    };
     store.upbitSniperWs.onclose = () => {
       setTimeout(initSniperSocket, CONFIG.UI_UPDATE_INTERVAL);
     };
@@ -240,7 +277,11 @@ export function startUpbitMarketRadar() {
       q_upbit: ticker.acc_trade_price_24h,
     };
     store.tickerBuffer[ticker.code] = normalizedTicker;
-    if (store.visibleSymbols && store.visibleSymbols.has(pureSym)) {
+    const hasSymbol =
+      store.visibleSymbols.has(pureSym) ||
+      store.visibleSymbols.has(pureSym + "KRW") ||
+      store.visibleSymbols.has(ticker.code);
+    if (store.visibleSymbols && hasSymbol) {
       requestAnimationFrame(() => {
         if (typeof window.renderRealtimeRow === "function") {
           window.renderRealtimeRow(ticker.code, normalizedTicker);

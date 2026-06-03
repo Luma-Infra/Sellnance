@@ -79,9 +79,6 @@ export function simpleSortData() {
   };
 
   let key = sortKeyMap[store.currentSortCol] || store.currentSortCol;
-  if (store.currentSortCol === "Volume") {
-    key = store.currentMarket === "FUTURES" ? "Binance_Vol_Futures" : "Binance_Vol_Spot";
-  }
   const isAsc = store.sortState === "asc";
 
   store.currentTableData.sort((a, b) => {
@@ -89,40 +86,52 @@ export function simpleSortData() {
     if (store.currentSortCol === "Listing_Date") {
       valA = getListingDate(a);
       valB = getListingDate(b);
-      if (valA === "-" && valB === "-") return 0;
-      if (valA === "-") return 1;
-      if (valB === "-") return -1;
-      return isAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
-    } else if (store.currentSortCol === "Kimchi") {
-      const hasA =
-        a.Kimchi_Raw !== undefined &&
-        a.Kimchi_Raw !== null &&
-        a.Kimchi_Raw !== "-" &&
-        !isNaN(Number(a.Kimchi_Raw));
-      const hasB =
-        b.Kimchi_Raw !== undefined &&
-        b.Kimchi_Raw !== null &&
-        b.Kimchi_Raw !== "-" &&
-        !isNaN(Number(b.Kimchi_Raw));
-
-      if (!hasA && !hasB) return 0;
-      if (!hasA) return 1; // a의 값이 없으므로 뒤(하단)로 보냄
-      if (!hasB) return -1; // b의 값이 없으므로 뒤(하단)로 보냄
-
-      valA = Number(a.Kimchi_Raw);
-      valB = Number(b.Kimchi_Raw);
-      return isAsc ? valA - valB : valB - valA;
     } else {
       valA = a[key];
       valB = b[key];
     }
 
-    if (typeof valA === "number" && typeof valB === "number") {
-      return isAsc ? valA - valB : valB - valA;
+    // 🚀 0, null, undefined, "-", "" 등 빈 값이나 0인 데이터 판별 함수
+    const isEmptyOrZero = (val) => {
+      const isTextCol =
+        store.currentSortCol === "Ticker" ||
+        store.currentSortCol === "Listing_Date";
+      if (isTextCol) {
+        return val === undefined || val === null || val === "" || val === "-";
+      }
+      return (
+        val === undefined ||
+        val === null ||
+        val === "" ||
+        val === "-" ||
+        Number(val) === 0 ||
+        isNaN(Number(val))
+      );
+    };
+
+    const isAEmpty = isEmptyOrZero(valA);
+    const isBEmpty = isEmptyOrZero(valB);
+
+    // 둘 다 비어있거나 0이면 순서 유지
+    if (isAEmpty && isBEmpty) return 0;
+    // 비어있는/0인 값은 정렬 방향(오름차순/내림차순)에 상관없이 무조건 가장 뒤(하단)로 보냄
+    if (isAEmpty) return 1;
+    if (isBEmpty) return -1;
+
+    // 둘 다 정상적인 값인 경우 정렬 시작
+    if (store.currentSortCol === "Listing_Date") {
+      return isAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
     }
 
-    const strA = (valA || "").toString();
-    const strB = (valB || "").toString();
+    const numA = Number(valA);
+    const numB = Number(valB);
+
+    if (!isNaN(numA) && !isNaN(numB)) {
+      return isAsc ? numA - numB : numB - numA;
+    }
+
+    const strA = valA.toString();
+    const strB = valB.toString();
     return isAsc ? strA.localeCompare(strB) : strB.localeCompare(strA);
   });
 }

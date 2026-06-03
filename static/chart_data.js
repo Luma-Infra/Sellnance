@@ -508,8 +508,8 @@ export async function fetchHistory(
     if (store.currentAsset !== snapshotAsset || store.currentTF !== snapshotTF)
       return;
 
-    store.mainData = newMainData.map((d) => mapTime(d));
-    store.volumeData = newVolumeData.map((d) => mapTime(d));
+    store.mainData = sanitizeChartData(newMainData.map((d) => mapTime(d)));
+    store.volumeData = sanitizeChartData(newVolumeData.map((d) => mapTime(d)), true);
 
     // 🚀 과거 데이터 추가 로딩을 위해 현재 요청 인자값 백업
     store.lastFetchParams = {
@@ -933,7 +933,7 @@ export async function fetchHistory(
           if (wrapper)
             wrapper.style.setProperty("--kimchi-color", "transparent");
           const noDataMsg = document.getElementById("kimchi-no-data");
-          if (noDataMsg) {
+          if (noDataMsg && !isTfChange) {
             noDataMsg.classList.remove("hidden");
             const pTag = noDataMsg.querySelector("p");
             // if (pTag)
@@ -1253,11 +1253,11 @@ export async function loadMoreHistory() {
         store.subRawData,
         params,
       );
-      store.kimchiData = newKimchiData.map((d) => mapTime(d, params.tf));
+      store.kimchiData = sanitizeChartData(newKimchiData.map((d) => mapTime(d, params.tf)), true);
     }
 
-    store.mainData = newMainData.map((d) => mapTime(d, params.tf));
-    store.volumeData = newVolumeData.map((d) => mapTime(d, params.tf));
+    store.mainData = sanitizeChartData(newMainData.map((d) => mapTime(d, params.tf)));
+    store.volumeData = sanitizeChartData(newVolumeData.map((d) => mapTime(d, params.tf)), true);
 
     // 🚀 [핵심] 차트 캔들 추가 시 화면이 밀리는 현상을 원천 방어하기 위해 Visible Logical Range를 N만큼 밀어줌
     const timeScale = store.chart.timeScale();

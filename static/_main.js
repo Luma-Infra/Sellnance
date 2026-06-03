@@ -9,7 +9,9 @@ import {
 } from "./ui_control.js";
 import { fetchHistory, clearChartData } from "./chart_data.js";
 import { initChart } from "./chart.js";
+import { initSniperSocket } from "./stream_table.js";
 import { initMeasureEvents } from "./chart_measure.js";
+import { initDrawingEvents } from "./chart_draw.js";
 import "./chart_utils.js";
 import "./chart_layout.js";
 import "./sim_engine.js";
@@ -228,6 +230,11 @@ window.updateHeaderDisplay = (row, newPrice, p) => {
       container.classList.add("hidden");
     }
   });
+  // 🚀 [수정] 가격은 agg(실시간 차트 체결)를 통해 갱신하고, 변동등락폭 및 기타 지표(시총/거래대금)는 테이블 데이터만 따라가도록 분리!
+  // newPrice가 제공된 경우(aggTrade를 통한 차트 호출) 가격 업데이트만 완료한 뒤 조기 리턴(return)하여 등락률 영역을 보존합니다.
+  if (newPrice !== undefined) {
+    return;
+  }
 
   // 🚀 activeExchange 기준으로 거래소별 변동률 선택 (UPBIT ↔ BINANCE 스위칭 시 각자 수치 표시)
   const isActiveFutures =
@@ -318,9 +325,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       console.log("✅ 1-B. 실시간 시세 장부(currentTableData) 입고 완료");
     }
 
-    // 2️⃣ [엔진 준비] 이제 장부가 확실히 있으니 차트를 그린다
+    // 2️⃣ [엔진 준비] 이제 장부가 확실히 있으니 차트를 그리고 엔진을 점화한다
     if (store.currentTableData && store.currentTableData.length > 0) {
       initMeasureEvents();
+      initDrawingEvents();
       initInfiniteScroll();
       // 🚀 [추가] 사령관님 요청: 서버 시작 시 테이블 코인들의 실시간 등락 움직임(Market Radar)은 즉시 점화!!!
       if (typeof window.startBinanceMarketRadar === "function")
@@ -328,9 +336,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (typeof window.startUpbitMarketRadar === "function")
         window.startUpbitMarketRadar();
 
-      console.log(
-        "✅ 2. 테이블 실시간 시세 점화 완료! (차트 및 스나이퍼 소켓은 사용자 최초 선택 시 점화 대기 중...)",
-      );
+      // 🚀 [수정] 최초 선택을 기다리지 않고 차트 엔진 및 스나이퍼 소켓 즉시 점화!!!
+      store.isEngineStarted = true;
+      if (typeof window.initChart === "function") window.initChart();
+      else if (typeof initChart === "function") initChart();
+      initSniperSocket();
+
+      console.log("✅ 2. 테이블 실시간 시세 및 차트/스나이퍼 소켓 점화 완료!");
     } else {
       // 🚀 [수정] 성급하게 에러 던지지 말고 재시도 유도
       console.warn("⚠️ 장부가 아직 비어있습니다. 수집 완료를 기다리는 중...");
@@ -403,12 +415,6 @@ function setupButtonEvents() {
       store.useFlip = e.target.checked;
       console.log("Flip animation status changed:", store.useFlip);
     });
-  }
-
-  // 🚀 countdown-toggle 초기 상태 동기화
-  const countdownToggle = document.getElementById("toggle-countdown");
-  if (countdownToggle && typeof window.toggleCountdown === "function") {
-    window.toggleCountdown(countdownToggle.checked);
   }
 }
 
@@ -491,6 +497,7 @@ document.addEventListener("visibilitychange", () => {
     store.isTabHidden = true;
   } else if (document.visibilityState === "visible") {
     console.log("☀️ 탭 활성화: 절전 모드 해제 및 데이터 클렌징");
+    store.isRestoringTab = true;
     store.isTabHidden = false;
 
     // 1. 잠든 사이 폭주해서 쌓인 찌꺼기 버퍼 즉시 소각
@@ -506,6 +513,11 @@ document.addEventListener("visibilitychange", () => {
       }
     }
     tabHiddenTime = 0;
+
+    // 🚀 100ms 지연을 주어 히스토리와 실시간 스트림이 엉키지 않고 순차적으로 수립되도록 보장
+    setTimeout(() => {
+      store.isRestoringTab = false;
+    }, 100);
   }
 });
 
@@ -553,7 +565,7 @@ document.addEventListener("keydown", (e) => {
     e.preventDefault();
 
     const activeRow = document.querySelector(
-      `#table-body tr[data-sym="${store.currentSelectedSymbol}"]`
+      `#table-body tr[data-sym="${store.currentSelectedSymbol}"]`,
     );
 
     let nextRow = null;
@@ -563,7 +575,11 @@ document.addEventListener("keydown", (e) => {
       const firstRow = document.querySelector("#table-body tr");
       if (firstRow) {
         nextRow = firstRow;
-        while (nextRow && (nextRow.style.display === "none" || nextRow.classList.contains("hidden"))) {
+        while (
+          nextRow &&
+          (nextRow.style.display === "none" ||
+            nextRow.classList.contains("hidden"))
+        ) {
           nextRow = nextRow.nextElementSibling;
         }
       }
@@ -577,10 +593,13 @@ document.addEventListener("keydown", (e) => {
           sortedList = store.currentTableData || [];
         }
         let currentIndex = sortedList.findIndex(
-          (item) => item.Ticker === store.currentSelectedSymbol
+          (item) => item.Ticker === store.currentSelectedSymbol,
         );
         if (currentIndex !== -1 && currentIndex + 1 < sortedList.length) {
-          store.currentRenderLimit = Math.min(sortedList.length, store.currentRenderLimit + 15);
+          store.currentRenderLimit = Math.min(
+            sortedList.length,
+            store.currentRenderLimit + 15,
+          );
           if (typeof window.renderTable === "function") window.renderTable();
           else if (typeof renderTable === "function") renderTable();
         }
@@ -590,7 +609,10 @@ document.addEventListener("keydown", (e) => {
       let temp = activeRow;
       do {
         temp = up ? temp.previousElementSibling : temp.nextElementSibling;
-      } while (temp && (temp.style.display === "none" || temp.classList.contains("hidden")));
+      } while (
+        temp &&
+        (temp.style.display === "none" || temp.classList.contains("hidden"))
+      );
       nextRow = temp;
     }
 
@@ -599,9 +621,11 @@ document.addEventListener("keydown", (e) => {
     const nextSym = nextRow.getAttribute("data-sym");
     if (!nextSym) return;
 
-    const nextCoin = (store.originalTableData || store.currentTableData || []).find(
-      (c) => c.Ticker === nextSym
-    );
+    const nextCoin = (
+      store.originalTableData ||
+      store.currentTableData ||
+      []
+    ).find((c) => c.Ticker === nextSym);
 
     if (nextCoin) {
       store.currentSelectedSymbol = nextCoin.Ticker;
@@ -610,7 +634,7 @@ document.addEventListener("keydown", (e) => {
       // 🚀 [해결] DOM 구조와 선택 상태 맵핑이 완벽히 수립된 50ms 뒤에 scroll 및 highlight 처리
       setTimeout(() => {
         const targetRow = document.querySelector(
-          `#table-body tr[data-sym="${nextCoin.Ticker}"]`
+          `#table-body tr[data-sym="${nextCoin.Ticker}"]`,
         );
         if (targetRow) {
           targetRow.scrollIntoView({ block: "nearest", behavior: "instant" });
@@ -626,18 +650,31 @@ document.addEventListener("keydown", (e) => {
 });
 
 // 🚀 [추가] 차트 우측 패널 상단부 접고 펼치는 기능
-window.toggleHeaderTop = function() {
-  const row = document.getElementById("head-asset-row");
+window.toggleHeaderTop = function () {
+  const assetRow = document.getElementById("head-asset-row");
+  const infoRow = document.getElementById("head-info-row");
+  const badgesRow = document.getElementById("head-badges-row");
   const btn = document.getElementById("toggle-header-top-btn");
-  if (row && btn) {
-    const isHidden = row.classList.contains("hidden") || row.style.display === "none";
+
+  if (btn) {
+    const isHidden = btn.innerText.includes("펼치기");
+    const elements = [assetRow, infoRow, badgesRow];
+
     if (isHidden) {
-      row.style.display = "";
-      row.classList.remove("hidden");
+      elements.forEach((el) => {
+        if (el) {
+          el.style.display = "";
+          el.classList.remove("hidden");
+        }
+      });
       btn.innerText = "▲ 헤더 접기";
     } else {
-      row.style.display = "none";
-      row.classList.add("hidden");
+      elements.forEach((el) => {
+        if (el) {
+          el.style.display = "none";
+          el.classList.add("hidden");
+        }
+      });
       btn.innerText = "▼ 헤더 펼치기";
     }
     if (typeof window.resetChartScale === "function") {
@@ -647,4 +684,3 @@ window.toggleHeaderTop = function() {
     }
   }
 };
-

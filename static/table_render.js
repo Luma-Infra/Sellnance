@@ -214,10 +214,34 @@ export function updateRowInnerHTML(tr, row) {
   <td class="p-2 col-price overflow-hidden">
     <div class="flex flex-col leading-tight min-w-0 gap-0.5">
       <div id="price-${tId}" data-raw-price="0" class="font-black text-[14px] text-theme-text price-cell tracking-tighter truncate block flex items-center">
-        <span id="price-val-binance-${tId}" class="hidden"></span>
-        <span id="price-val-bybit-${tId}" class="hidden"></span>
-        <span id="price-val-upbit-${tId}" class="hidden"></span>
-        <span id="price-val-bithumb-${tId}" class="hidden"></span>
+        <span id="price-val-binance-${tId}" class="hidden items-center">
+          <span class="price-num">-</span>
+          <div class="relative inline-flex items-center justify-center w-[12px] h-[12px] rounded-[2px] overflow-visible bg-white/2 ml-1 align-middle flex-shrink-0">
+            <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/270.png" alt="binance" class="w-full h-full object-contain rounded-[2px]" />
+            <div class="price-futures-badge absolute -top-1.5 -right-1.5 bg-[#f0b90b] text-black text-[8px] font-black px-[2px] rounded-[2px] leading-none z-10 scale-75 hidden">F</div>
+          </div>
+        </span>
+        <span id="price-val-bybit-${tId}" class="hidden items-center">
+          <span class="price-num">-</span>
+          <div class="relative inline-flex items-center justify-center w-[12px] h-[12px] rounded-[2px] overflow-visible bg-white/2 ml-1 align-middle flex-shrink-0">
+            <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/521.png" alt="bybit" class="w-full h-full object-contain rounded-[2px]" />
+            <div class="price-futures-badge absolute -top-1.5 -right-1.5 bg-[#f0b90b] text-black text-[8px] font-black px-[2px] rounded-[2px] leading-none z-10 scale-75 hidden">F</div>
+          </div>
+        </span>
+        <span id="price-val-upbit-${tId}" class="hidden items-center">
+          <span class="price-num">-</span>
+          <div class="relative inline-flex items-center justify-center w-[12px] h-[12px] rounded-[2px] overflow-visible bg-white/2 ml-1 align-middle flex-shrink-0">
+            <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/351.png" alt="upbit" class="w-full h-full object-contain rounded-[2px]" />
+            <div class="price-futures-badge absolute -top-1.5 -right-1.5 bg-[#f0b90b] text-black text-[8px] font-black px-[2px] rounded-[2px] leading-none z-10 scale-75 hidden">F</div>
+          </div>
+        </span>
+        <span id="price-val-bithumb-${tId}" class="hidden items-center">
+          <span class="price-num">-</span>
+          <div class="relative inline-flex items-center justify-center w-[12px] h-[12px] rounded-[2px] overflow-visible bg-white/2 ml-1 align-middle flex-shrink-0">
+            <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/200.png" alt="bithumb" class="w-full h-full object-contain rounded-[2px]" />
+            <div class="price-futures-badge absolute -top-1.5 -right-1.5 bg-[#f0b90b] text-black text-[8px] font-black px-[2px] rounded-[2px] leading-none z-10 scale-75 hidden">F</div>
+          </div>
+        </span>
       </div>
       <div class="flex items-center justify-between gap-2 text-[10px] font-black text-left mt-0.5 w-full min-w-0">
         <span id="change-${tId}" class="${color24h} ${store.currentSortCol === "Change_Today" ? "opacity-40" : "opacity-100"} flex-1 text-left truncate">${n24h > 0 ? "+" : ""}${Number(n24h).toFixed(2)}%</span>
@@ -319,6 +343,17 @@ export function renderTable(isRealtime = false) {
   const filteredData = getFilteredData();
   const totalCount = filteredData.length;
 
+  // 🚀 [사건 X] 필터링, 정렬, 검색, 탭전환 등 화면 구성 변화 시 반드시 상위 20개 코인을 visibleSymbols에 등록하여 실시간 구독 시작
+  if (!isRealtime) {
+    store.visibleSymbols.clear();
+    const initLimit = Math.min(20, totalCount);
+    for (let i = 0; i < initLimit; i++) {
+      if (filteredData[i]) {
+        store.visibleSymbols.add(filteredData[i].Ticker);
+      }
+    }
+  }
+
   // 1. 최초 1회 전체 껍데기 풀(Pool) 생성 (DOM 파괴/생성 원천 차단, 가상화 스크롤 바 확보)
   if (!store.tablePoolInitialized || tbody.children.length !== totalCount) {
     tbody.innerHTML = "";
@@ -347,7 +382,10 @@ export function renderTable(isRealtime = false) {
                 changed = true;
               }
               // 🚀 [성능 최적화] 무조건 updateRowInnerHTML를 부르지 않고, 내용이나 설정이 바뀐 경우에만 선별적으로 렌더링하여 layout thrashing 차단!
-              const isPending = !!(store.pendingFavActions && store.pendingFavActions.has(rowData.UID));
+              const isPending = !!(
+                store.pendingFavActions &&
+                store.pendingFavActions.has(rowData.UID)
+              );
               const needsRender =
                 !tr.dataset.renderedSym ||
                 tr.dataset.renderedSym !== rowData.Ticker ||
@@ -398,12 +436,14 @@ export function renderTable(isRealtime = false) {
       if (rowData) {
         tr.dataset.sym = rowData.Ticker;
         store.rowDomMap.set(rowData.Ticker, tr);
-        // 최초 화면에 보일 법한 상위 40개만 즉시 렌더링, 나머지는 빈 껍데기 그리드로 Lazy 대기!
-        if (i < 40) {
+        // 최초 화면에 보일 법한 상위 20개만 즉시 렌더링, 나머지는 빈 껍데기 그리드로 Lazy 대기!
+        if (i < 20) {
           updateRowInnerHTML(tr, rowData);
           tr.dataset.renderedSym = rowData.Ticker;
           tr.dataset.renderedCurrency = store.currencyMode;
           tr.dataset.renderedLang = store.lang;
+          // 🚀 Pre-populate visibleSymbols for immediate real-time updates on load
+          store.visibleSymbols.add(rowData.Ticker);
         } else {
           // 🚀 껍데기 상태일 때도 가로 구분선이 완벽히 유지되도록 EMPTY_ROW_HTML 삽입!
           tr.innerHTML = EMPTY_ROW_HTML;
@@ -419,11 +459,17 @@ export function renderTable(isRealtime = false) {
     tbody.appendChild(fragment);
     store.tablePoolInitialized = true;
     applySelectedHighlight();
+    if (typeof window.refreshSniperTarget === "function") {
+      setTimeout(() => window.refreshSniperTarget(), 10);
+    }
     return;
   }
 
   // 2. 이미 풀이 생성되어 있다면? (정렬/실시간 갱신 시 물리적 DOM 재배치 + FLIP 애니메이션 발동!)
   if (!isRealtime) {
+    // 🚀 Clear old visible symbols and rebuild based on the new sorted layout
+    store.visibleSymbols.clear();
+
     // 🚀 [수동 정렬/필터링/초기화] 800개 전체 코인을 순서에 맞게 DOM에 즉시 배치 (FLIP 애니메이션 생략, 0초 만에 바로 꽂기)
     const fragment = document.createDocumentFragment();
     for (let i = 0; i < totalCount; i++) {
@@ -435,8 +481,15 @@ export function renderTable(isRealtime = false) {
 
           // 보이고 있는 행이거나 상위 20위권인 경우 즉각 렌더링
           const isPreRender = i < 20;
+          if (isPreRender) {
+            store.visibleSymbols.add(rowData.Ticker);
+          }
+
           if (isPreRender || store.visibleSymbols.has(rowData.Ticker)) {
-            const isPending = !!(store.pendingFavActions && store.pendingFavActions.has(rowData.UID));
+            const isPending = !!(
+              store.pendingFavActions &&
+              store.pendingFavActions.has(rowData.UID)
+            );
             const needsRender =
               !tr.dataset.renderedSym ||
               tr.dataset.renderedSym !== rowData.Ticker ||
@@ -482,7 +535,9 @@ export function renderTable(isRealtime = false) {
       const tr = store.rowDomMap.get(sym);
       const rowData = store.tickerRowMap.get(sym.toUpperCase());
       if (tr && rowData) {
-        const isPending = !!(store.pendingFavActions && store.pendingFavActions.has(rowData.UID));
+        const isPending = !!(
+          store.pendingFavActions && store.pendingFavActions.has(rowData.UID)
+        );
         const needsRender =
           !tr.dataset.renderedSym ||
           tr.dataset.renderedSym !== rowData.Ticker ||
@@ -504,7 +559,7 @@ export function renderTable(isRealtime = false) {
   store.lastSortedTickers = filteredData.slice(0, limit).map((r) => r.Ticker);
 
   const firstRects = new Map();
-  if (store.useFlip) {
+  if (store.useFlip && isRealtime) {
     for (const sym of store.visibleSymbols) {
       const tr = store.rowDomMap.get(sym);
       if (tr) {
@@ -522,7 +577,9 @@ export function renderTable(isRealtime = false) {
         tr.dataset.index = i;
 
         // 🚀 상위 20위 안의 행은 무조건 즉시 최신 정보로 렌더링
-        const isPending = !!(store.pendingFavActions && store.pendingFavActions.has(rowData.UID));
+        const isPending = !!(
+          store.pendingFavActions && store.pendingFavActions.has(rowData.UID)
+        );
         const needsRender =
           !tr.dataset.renderedSym ||
           tr.dataset.renderedSym !== rowData.Ticker ||
@@ -542,7 +599,7 @@ export function renderTable(isRealtime = false) {
   }
 
   // 🚀 [성능 극대화] FLIP 애니메이션 실행 (레이아웃 쓰레싱을 완벽 소각하기 위해 batch read/write 형태로 전면 개편!)
-  if (store.useFlip) {
+  if (store.useFlip && isRealtime) {
     const moves = [];
 
     // Pass 1: Batch Reads (동작 시작 위치 확인)
@@ -964,20 +1021,26 @@ window.updateRowPriceDisplay = (target, row) => {
         ? `${Number(displayPrice).toLocaleString()} 원`
         : window.formatSmartPrice(displayPrice, p);
 
-      const exUpper = ex.toUpperCase();
-      const isFutures = row.Listed_Exchanges?.includes(`${exUpper}_FUTURES`);
-      const badgeHtml = isFutures
-        ? `<div class="absolute -top-1.5 -right-1.5 bg-[#f0b90b] text-black text-[8px] font-black px-[2px] rounded-[2px] leading-none z-10 scale-75">F</div>`
-        : "";
+      const numEl = span.querySelector(".price-num");
+      if (numEl) numEl.innerText = formattedPrice;
 
-      span.innerHTML = `${formattedPrice}
-        <div class="relative inline-flex items-center justify-center w-[12px] h-[12px] rounded-[2px] overflow-visible bg-white/2 ml-1 align-middle flex-shrink-0">
-          <img src="${exchangeImgUrls[ex]}" alt="${ex}" class="w-full h-full object-contain rounded-[2px]" />
-          ${badgeHtml}
-        </div>`;
+      const isFutures = row.Listed_Exchanges?.includes(
+        `${ex.toUpperCase()}_FUTURES`,
+      );
+      const badge = span.querySelector(".price-futures-badge");
+      if (badge) {
+        if (isFutures) {
+          badge.classList.remove("hidden");
+        } else {
+          badge.classList.add("hidden");
+        }
+      }
+
       span.classList.remove("hidden");
+      span.classList.add("inline-flex");
     } else {
       span.classList.add("hidden");
+      span.classList.remove("inline-flex");
     }
   });
 

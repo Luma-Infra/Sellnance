@@ -97,6 +97,13 @@ export const store = {
   cachedChartTd: null,
   cachedPriceTd: null,
 
+  // 🚀 그리기 관련 전역 상태 변수들
+  activeTool: "cursor",
+  drawings: { trendlines: [], horizontals: [] },
+  drawingStart: null,
+  drawingTempEnd: null,
+  _drawingPrimitive: null,
+
   // 🚀 [단일 진실 공급원] 조건식 떡칠 제거용 전역 정밀도 캐시 맵 및 헬퍼
   precisionMap: new Map(),
   getPrecision: function (sym) {

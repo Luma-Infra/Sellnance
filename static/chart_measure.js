@@ -217,7 +217,7 @@ export function initMeasureEvents() {
     )
       return;
 
-    if (e.shiftKey && e.button === 0) {
+    if ((e.shiftKey || store.activeTool === "measure") && e.button === 0) {
       stopMeasuring();
       store.isMeasuring = true;
 

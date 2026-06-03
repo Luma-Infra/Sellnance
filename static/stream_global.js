@@ -97,7 +97,7 @@ export function startRealtimeCandle(
     requestAnimationFrame(() => {
       realtimeUpdatePending = false;
 
-      if (store.isFetchingChart || window.isFetchingChart || store.isLoadingMoreHistory) return;
+      if (store.isFetchingChart || window.isFetchingChart || store.isLoadingMoreHistory || store.isRestoringTab) return;
 
       const currentCandle = latestActiveCandle;
       const currentSymbol = latestSymbol;
@@ -147,9 +147,29 @@ export function startRealtimeCandle(
         return false;
       })();
 
+      const normalizedTime = (() => {
+        if (!isTimeValid) return null;
+        let t = chartTime;
+        if (typeof t === "string") {
+          if (/^\d{4}-\d{2}-\d{2}$/.test(t)) {
+            return t;
+          } else {
+            const num = Number(t);
+            if (!isNaN(num) && num > 0) return num;
+            const parsed = Date.parse(t.includes("T") ? t : t + "T00:00:00Z");
+            if (!isNaN(parsed)) return Math.floor(parsed / 1000);
+          }
+        }
+        if (typeof t === "number" && !isNaN(t) && t > 0) {
+          return t;
+        }
+        return null;
+      })();
+
       const isValidCandle =
         currentCandle &&
-        isTimeValid &&
+        normalizedTime !== null &&
+        normalizedTime !== undefined &&
         !isNaN(Number(currentCandle.open)) &&
         currentCandle.open !== null &&
         !isNaN(Number(currentCandle.high)) &&
@@ -162,7 +182,7 @@ export function startRealtimeCandle(
       if (store.candleSeries && isValidCandle) {
         try {
           store.candleSeries.update({
-            time: chartTime,
+            time: normalizedTime,
             open: Number(currentCandle.open),
             high: Number(currentCandle.high),
             low: Number(currentCandle.low),
@@ -171,7 +191,7 @@ export function startRealtimeCandle(
           });
           if (store.leftScaleSeries) {
             store.leftScaleSeries.update({
-              time: chartTime,
+              time: normalizedTime,
               value: Number(currentCandle.close),
             });
           }
@@ -189,7 +209,9 @@ export function startRealtimeCandle(
       if (
         store.volumeSeries &&
         currentCandle.volume !== undefined &&
-        isTimeValid
+        currentCandle.volume !== null &&
+        normalizedTime !== null &&
+        normalizedTime !== undefined
       ) {
         if (!store.upColorCache || !store.downColorCache) {
           const curStyle = getComputedStyle(document.body);
@@ -203,42 +225,48 @@ export function startRealtimeCandle(
         const curVolColor =
           currentCandle.close >= currentCandle.open ? curUpVol : curDownVol;
 
-        const safeVolume = Number(currentCandle.volume) || 0;
-        const volObj = {
-          time: chartTime,
-          value: safeVolume,
-          color: curVolColor,
-        };
-        try {
-          const lastVolItem = store.volumeData && store.volumeData.length > 0
-            ? store.volumeData[store.volumeData.length - 1]
-            : null;
+        const safeVolume = Number(currentCandle.volume);
+        if (!isNaN(safeVolume) && safeVolume !== null && safeVolume !== undefined) {
+          const volObj = {
+            time: normalizedTime,
+            value: safeVolume,
+            color: curVolColor,
+          };
+          try {
+            const lastVolItem = store.volumeData && store.volumeData.length > 0
+              ? store.volumeData[store.volumeData.length - 1]
+              : null;
 
-          if (!lastVolItem || chartTime >= lastVolItem.time) {
-            store.volumeSeries.update(volObj);
-            if (store.volumeData && store.volumeData.length > 0) {
-              if (chartTime > lastVolItem.time) {
-                store.volumeData.push(volObj);
-              } else if (chartTime === lastVolItem.time) {
-                store.volumeData[store.volumeData.length - 1] = volObj;
+            if (!lastVolItem || normalizedTime >= lastVolItem.time) {
+              store.volumeSeries.update(volObj);
+              if (store.volumeData && store.volumeData.length > 0) {
+                if (normalizedTime > lastVolItem.time) {
+                  store.volumeData.push(volObj);
+                } else if (normalizedTime === lastVolItem.time) {
+                  store.volumeData[store.volumeData.length - 1] = volObj;
+                }
               }
             }
-          }
-        } catch (e) {
-          console.warn("🚨 volumeSeries.update 예외 발생, vol-pane 자동 복구 시도:", e);
-          if (store.volumeSeries && store.volumeData && store.volumeData.length > 0) {
-            try {
-              store.volumeSeries.setData([]);
-              store.volumeSeries.setData(store.volumeData);
-            } catch (rebindErr) {}
+          } catch (e) {
+            console.warn("🚨 volumeSeries.update 예외 발생, vol-pane 자동 복구 시도:", e);
+            if (store.volumeSeries && store.volumeData && store.volumeData.length > 0) {
+              try {
+                store.volumeSeries.setData([]);
+                if (typeof window.sanitizeChartData === "function") {
+                  store.volumeSeries.setData(window.sanitizeChartData(store.volumeData, true));
+                } else {
+                  store.volumeSeries.setData(store.volumeData);
+                }
+              } catch (rebindErr) {}
+            }
           }
         }
       }
 
-      updateRealtimeKimchi(currentCandle, currentSymbol, chartTime);
+      updateRealtimeKimchi(currentCandle, currentSymbol, normalizedTime);
 
       const p = store.getPrecision(
-        store.currentSelectedSymbol || currentSymbol,
+          store.currentSelectedSymbol || currentSymbol,
       );
       if (typeof window.updateStatus === "function") {
         window.updateStatus(currentCandle, p);

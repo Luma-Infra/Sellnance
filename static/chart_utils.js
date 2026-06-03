@@ -77,28 +77,9 @@ export function formatCrosshairPrice(price, p, isLeftScale = false) {
   if (!isLeftScale) {
     return formatSmartPrice(price, p);
   }
-
-  if (
-    store.crosshairLeftPrice !== null &&
-    store.crosshairLeftPrice !== undefined &&
-    store.mainData &&
-    store.mainData.length > 0
-  ) {
-    const minMove = p > 0 ? 1 / Math.pow(10, p) : 1;
-    // 좌측 스케일 십자선 가격(crosshairLeftPrice)과 일치하는지 확인
-    if (Math.abs(price - store.crosshairLeftPrice) < minMove * 0.51) {
-      // 실제 계산은 우측 캔들의 정확한 십자선 가격(store.crosshairPrice)을 기준으로 수행!
-      const targetPrice =
-        store.crosshairPrice !== null ? store.crosshairPrice : price;
-      const currentPrice = store.mainData[store.mainData.length - 1].close;
-      if (currentPrice && currentPrice > 0) {
-        const diff = targetPrice - currentPrice;
-        const pct = (diff / currentPrice) * 100;
-        return (pct >= 0 ? "+" : "") + pct.toFixed(1) + "%";
-      }
-    }
-  }
-  return ""; // 좌측 스케일의 평소 눈금 라벨은 깔끔하게 투명 처리!
+  // 좌측 스케일: showCrosshairPct 플래그가 켜진 경우에만 퍼센트 표시
+  // (DrawingPriceAxisView.visible()이 제어하므로 여기서는 항상 비워둠)
+  return ""; // 좌측 스케일 등락률 크로스헤어 라벨 완전히 비활성화
 }
 window.formatCrosshairPrice = formatCrosshairPrice;
 
@@ -121,7 +102,19 @@ export function formatVolumeKRW(vol) {
 
 function updateLegend(d, v, k) {
   const leg = document.getElementById("ohlc-legend");
-  if (!leg || !d) return;
+  if (!leg) return;
+
+  const placeholder = document.getElementById("ohlc-placeholder");
+  const valuesContainer = document.getElementById("ohlc-values");
+
+  if (!d) {
+    if (placeholder) placeholder.classList.remove("hidden");
+    if (valuesContainer) valuesContainer.classList.add("hidden");
+    return;
+  }
+
+  if (placeholder) placeholder.classList.add("hidden");
+  if (valuesContainer) valuesContainer.classList.remove("hidden");
 
   // 🚀 [수정] 단일 진실 공급원(Single Source of Truth)인 store.getPrecision 사용! (O(1) 초광속 참조)
   const p = store.getPrecision(store.currentAsset);
@@ -143,7 +136,7 @@ function updateLegend(d, v, k) {
   // 🚀 분모 0 방지 및 chg가 0일 때 직접 처리
   const chgPercent =
     d.open && d.open !== 0 ? ((chg / d.open) * 100).toFixed(2) : "0.00";
-  const sign = chg > 0 ? "+" : "";
+  const sign = chg >= 0 ? "+" : "";
 
   // 🚀 formatSmartPrice에 0이 들어가도 안 죽게 안전하게 호출
   const safeFormat = (val, precision) => {
@@ -151,16 +144,45 @@ function updateLegend(d, v, k) {
     return formatSmartPrice(val, precision);
   };
 
-  // 🚀 볼륨 전광판 포맷팅 및 색상 적용 (배열 인덱스 오차가 발생해도 캔들 자체의 실시간 d.volume을 다이렉트로 참조하여 전광판 멈춤 완벽 방어!)
-  let volHtml = "";
+  // 🚀 값 및 클래스 업데이트
+  const openEl = document.getElementById("ohlc-open");
+  const highEl = document.getElementById("ohlc-high");
+  const lowEl = document.getElementById("ohlc-low");
+  const closeEl = document.getElementById("ohlc-close");
+  const chgEl = document.getElementById("ohlc-change");
+  const rangeEl = document.getElementById("ohlc-range");
+
+  const priceCls = `font-bold ${cls}`;
+  if (openEl) {
+    openEl.innerText = safeFormat(d.open, p);
+    openEl.className = priceCls;
+  }
+  if (highEl) {
+    highEl.innerText = safeFormat(d.high, p);
+    highEl.className = priceCls;
+  }
+  if (lowEl) {
+    lowEl.innerText = safeFormat(d.low, p);
+    lowEl.className = priceCls;
+  }
+  if (closeEl) {
+    closeEl.innerText = safeFormat(d.close, p);
+    closeEl.className = priceCls;
+  }
+  if (rangeEl) {
+    rangeEl.innerText = `${safeFormat(range, p)} (${rangePercent}%)`;
+    rangeEl.className = priceCls;
+  }
+  if (chgEl) {
+    chgEl.innerText = `${sign}${safeFormat(chg, p)} (${sign}${chgPercent}%)`;
+    chgEl.className = `px-1 py-0.5 font-black rounded text-[13px] leading-none ${cls}`;
+  }
+
+  // 🚀 볼륨 전광판 포맷팅 및 색상 적용
+  const volContainer = document.getElementById("ohlc-vol-container");
   if (store.paneConfig.volume) {
     let volValue = "-";
     let volColor = "text-theme-text";
-    // 🚀 [원인 완벽 규명 및 해결: OHLC 전광판 거래량 역산 방어 코드]
-    // 기존에는 보조지표용 히스토그램 배열인 v.value를 최우선으로 참조하느라,
-    // 실시간 소켓 체결로 누적된 최신 거래량(d.volume, 예: 8k) 대신 과거 배열에 남아있던 구닥다리 거래량(예: 7.5k)이 찍히면서
-    // 5k -> 8k -> 7.5k 처럼 거래량이 거꾸로 줄어드는 기괴한 역산 현상이 발생했습니다.
-    // 이제 공식 캔들 체결 구조체인 d.volume을 단일 진실 공급원(Single Source of Truth)으로 삼아 최우선 반영합니다!
     const rawVol =
       d && d.volume !== undefined
         ? d.volume
@@ -171,37 +193,36 @@ function updateLegend(d, v, k) {
       volValue = window.formatVolumeDollar
         ? window.formatVolumeDollar(rawVol)
         : rawVol.toLocaleString();
-      volColor = cls; // 캔들의 양봉/음봉 색상을 그대로 따라감
+      volColor = cls;
     }
-    volHtml = `<div class="flex items-center"><span class="opacity-60 text-[11px] mr-1">Vol</span><span class="${volColor} font-bold">${volValue}</span></div>`;
+    if (volContainer) volContainer.classList.remove("hidden");
+    const volEl = document.getElementById("ohlc-volume");
+    if (volEl) {
+      volEl.innerText = volValue;
+      volEl.className = `font-bold ${volColor}`;
+    }
+  } else {
+    if (volContainer) volContainer.classList.add("hidden");
   }
 
-  // 🚀 김프 전광판 포맷팅 및 다이내믹 색상(getKimchiColor) 적용
-  let kimHtml = "";
+  // 🚀 김프 전광판 포맷팅 및 다이내믹 색상 적용
+  const kimchiContainer = document.getElementById("ohlc-kimchi-container");
   if (store.paneConfig.kimchi) {
     let kimValue = "-";
     let kimColorStyle = "";
     if (k && k.value !== undefined) {
       kimValue = (k.value > 0 ? "+" : "") + k.value.toFixed(2) + "%";
-      kimColorStyle = `color: ${k.color || "#57a4fc"}`; // 부여된 무지개색 100% 반영!
+      kimColorStyle = k.color || "#57a4fc";
     }
-    kimHtml = `<div class="flex items-center"><span class="opacity-60 text-[11px] mr-1">Kimchi</span><span style="${kimColorStyle}" class="font-bold">${kimValue}</span></div>`;
+    if (kimchiContainer) kimchiContainer.classList.remove("hidden");
+    const kimchiEl = document.getElementById("ohlc-kimchi");
+    if (kimchiEl) {
+      kimchiEl.innerText = kimValue;
+      kimchiEl.style.color = kimColorStyle;
+    }
+  } else {
+    if (kimchiContainer) kimchiContainer.classList.add("hidden");
   }
-
-  leg.innerHTML = `
-    <div class="flex items-center flex-wrap gap-x-2.5">
-      <div class="flex items-center"><span class="opacity-60 text-[11px] mr-1">시</span><span class="${cls} font-bold">${safeFormat(d.open, p)}</span></div>
-      <div class="flex items-center"><span class="opacity-60 text-[11px] mr-1">고</span><span class="${cls} font-bold">${safeFormat(d.high, p)}</span></div>
-      <div class="flex items-center"><span class="opacity-60 text-[11px] mr-1">저</span><span class="${cls} font-bold">${safeFormat(d.low, p)}</span></div>
-      <div class="flex items-center"><span class="opacity-60 text-[11px] mr-1">종</span><span class="${cls} font-bold">${safeFormat(d.close, p)}</span></div>
-      <div class="px-1 py-0.5 ${cls} font-black rounded text-[10px] leading-none">${sign}${safeFormat(chg, p)} (${sign}${chgPercent}%)</div>
-    </div>
-    <div class="flex items-center flex-wrap gap-x-2.5 border-t border-white/5 pt-0.5 mt-0.5 w-full">
-      <div class="flex items-center"><span class="opacity-60 text-[11px] mr-1">Range</span><span class="${cls} font-bold">${safeFormat(range, p)} (${rangePercent}%)</span></div>
-      ${volHtml}
-      ${kimHtml}
-    </div>
-  `;
 }
 
 function updateStatus(d, p) {
@@ -227,11 +248,11 @@ function updateStatus(d, p) {
   if (row && typeof window.updateHeaderDisplay === "function") {
     const btnSim = document.getElementById("tab-btn-sim");
     const isSimMode = btnSim ? btnSim.classList.contains("active") : false;
-    // 🚀 신규 코인 최초 선택 시에만 테이블의 실시간 웹소켓 시세(undefined)를 보여주고,
-    // 동일 코인 내 TF 변경이거나 실시간 틱(d), 시뮬레이터 모드 시에는 차트의 최신 종가(last.close)를 사용!
-    const useChartPrice = d || isSimMode || !store.isNewCoinSelected;
-    const newPriceForHeader = useChartPrice ? last.close : undefined;
-    window.updateHeaderDisplay(row, newPriceForHeader, precision);
+    // 🚀 [수정] 실시간 aggTrade 틱(d)이 있거나 시뮬레이터 모드일 때만 실시간 전광판 갱신을 허용하여,
+    // 초기 로드 시 느린 역사 데이터 종가가 전광판 가격을 덮어쓰지 않도록 차단합니다.
+    if (d || isSimMode) {
+      window.updateHeaderDisplay(row, last.close, precision);
+    }
   }
 
   // 거래량 업데이트
@@ -261,6 +282,11 @@ function updateStatus(d, p) {
         ? store.kimchiData[lastIdx]
         : null;
     updateLegend(last, v, k);
+  }
+
+  // 🚀 실시간 시세 변동 시 우측 현재가 등락폭 레이블 갱신 강제 트리거
+  if (store._drawingPrimitive) {
+    store._drawingPrimitive.updateAll();
   }
 }
 
@@ -391,20 +417,71 @@ window.getKimchiColor = function (val) {
   return "#8B0000"; // 다크레드
 };
 
-export function toggleCountdown(isChecked) {
-  store.showCountdown = isChecked;
-  const knob = document.getElementById("countdown-knob");
-  if (!knob) return;
-
-  if (isChecked) {
-    knob.style.transform = "translateX(10px)";
-    knob.parentElement.classList.remove("bg-theme-border");
-    knob.parentElement.classList.add("bg-theme-accent");
+export function toggleCountdown(forceVal) {
+  if (forceVal !== undefined) {
+    store.showCountdown = forceVal;
   } else {
-    knob.style.transform = "translateX(0)";
-    knob.parentElement.classList.remove("bg-theme-accent");
-    knob.parentElement.classList.add("bg-theme-border");
-    if (store.countdownOverlay) store.countdownOverlay.style.display = "none";
+    store.showCountdown = !store.showCountdown;
+  }
+  const btn = document.getElementById("toggle-countdown-btn");
+  if (btn) {
+    btn.innerText = store.showCountdown ? "카운트다운 OFF" : "카운트다운 ON";
+    if (store.showCountdown) {
+      btn.classList.add(
+        "text-theme-accent",
+        "border-theme-accent/40",
+        "bg-theme-accent/10",
+      );
+      btn.classList.remove("bg-theme-panel/50");
+    } else {
+      btn.classList.remove(
+        "text-theme-accent",
+        "border-theme-accent/40",
+        "bg-theme-accent/10",
+      );
+      btn.classList.add("bg-theme-panel/50");
+    }
+  }
+  if (!store.showCountdown && store.countdownOverlay) {
+    store.countdownOverlay.style.display = "none";
+  }
+}
+
+export function toggleOhlc(forceVal) {
+  const isHidden = localStorage.getItem("sellnance_ohlc_hidden") === "true";
+  let active = !isHidden;
+  if (forceVal !== undefined) {
+    active = forceVal;
+  } else {
+    active = !active;
+  }
+  const leg = document.getElementById("ohlc-legend");
+  if (leg) {
+    if (active) {
+      leg.classList.remove("hidden");
+    } else {
+      leg.classList.add("hidden");
+    }
+    localStorage.setItem("sellnance_ohlc_hidden", active ? "false" : "true");
+  }
+  const btn = document.getElementById("toggle-ohlc-legend-btn");
+  if (btn) {
+    btn.innerText = active ? "OHLC 끄기" : "OHLC 켜기";
+    if (active) {
+      btn.classList.add(
+        "text-theme-accent",
+        "border-theme-accent/40",
+        "bg-theme-accent/10",
+      );
+      btn.classList.remove("bg-theme-panel/50");
+    } else {
+      btn.classList.remove(
+        "text-theme-accent",
+        "border-theme-accent/40",
+        "bg-theme-accent/10",
+      );
+      btn.classList.add("bg-theme-panel/50");
+    }
   }
 }
 
@@ -478,7 +555,43 @@ export function updateRealtimeCountdown(serverMs) {
   }
 }
 
+// 🚀 크로스헤어 퍼센트 라벨 보이기/숨기기 토글
+export function toggleCrosshairPct() {
+  // store.showCrosshairPct 없으면 기본 true(보임 상태)
+  const current =
+    typeof store.showCrosshairPct === "boolean" ? store.showCrosshairPct : true;
+  store.showCrosshairPct = !current;
+
+  const btn = document.getElementById("toggle-crosshair-pct-btn");
+  if (btn) {
+    if (store.showCrosshairPct) {
+      btn.innerText = "등락률 끄기";
+      btn.classList.add(
+        "text-theme-accent",
+        "border-theme-accent/40",
+        "bg-theme-accent/10",
+      );
+      btn.classList.remove("bg-theme-panel/50");
+    } else {
+      btn.innerText = "등락률 켜기";
+      btn.classList.remove(
+        "text-theme-accent",
+        "border-theme-accent/40",
+        "bg-theme-accent/10",
+      );
+      btn.classList.add("bg-theme-panel/50");
+    }
+  }
+
+  // DrawingPrimitive 재렌더 요청
+  if (window.store && window.store._drawingPrimitive) {
+    window.store._drawingPrimitive.updateAll();
+  }
+}
+
 window.toggleCountdown = toggleCountdown;
+window.toggleOhlc = toggleOhlc;
+window.toggleCrosshairPct = toggleCrosshairPct;
 window.updateRealtimeCountdown = updateRealtimeCountdown;
 
 setInterval(() => {
@@ -486,6 +599,15 @@ setInterval(() => {
     updateRealtimeCountdown(store.lastServerMs);
   }
 }, 250);
+
+// 🚀 페이지 로드 직후 토글 UI들의 슬라이더 슬라이딩 초기 위치 동기화
+setTimeout(() => {
+  const isOhlcHidden = localStorage.getItem("sellnance_ohlc_hidden") === "true";
+  if (typeof toggleOhlc === "function") toggleOhlc(!isOhlcHidden);
+  if (typeof toggleLogScale === "function") toggleLogScale(store.isLogMode);
+  if (typeof toggleCountdown === "function")
+    toggleCountdown(store.showCountdown);
+}, 200);
 
 // 🎯 브라우저 탭 제목 실시간 스위칭 통합 매니저 (소켓 중복 생성 ZERO, 메인 차트 소켓 100% 재활용)
 let lastTabTitleUpdateMs = 0;

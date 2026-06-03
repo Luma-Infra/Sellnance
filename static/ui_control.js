@@ -490,7 +490,7 @@ export function searchSymbols(v) {
 export function selectSymbol(s, forceMarket = null) {
   const allSourceData = store.originalTableData || store.currentTableData || [];
   const rowInfo = allSourceData.find(
-    (c) => c.Ticker === s || c.DisplayTicker === s || c.UID === s
+    (c) => c.Ticker === s || c.DisplayTicker === s || c.UID === s,
   );
   const uniqueTicker = rowInfo ? rowInfo.Ticker : s;
 
@@ -512,18 +512,6 @@ export function selectSymbol(s, forceMarket = null) {
   // 2. 테이블 행 즉시 하이라이트 반영 (시각적 피드백 선행)
   if (typeof applySelectedHighlight === "function") {
     applySelectedHighlight();
-  }
-
-  // 🚀 최초 코인 선택 시 보류되었던 차트 엔진 및 호가창 소켓 점화
-  if (!store.isEngineStarted) {
-    console.log(
-      "🚀 최초 코인 선택 감지: 보류되었던 차트 엔진 및 호가창 소켓 점화 시작!",
-    );
-    store.isEngineStarted = true;
-    if (typeof window.initChart === "function") window.initChart();
-    else if (typeof initChart === "function") initChart();
-    if (typeof window.initSniperSocket === "function")
-      window.initSniperSocket();
   }
 
   // 🚀 [INP 최적화 Phase 2] 무거운 배열 탐색, DOM 재생성, API 통신, 차트 렌더링(fetchHistory)을 다음 페인트 이후로 양보(Yielding)
@@ -628,8 +616,12 @@ export function selectSymbol(s, forceMarket = null) {
               const favorites2 = JSON.parse(
                 localStorage.getItem("sellnance_favs2") || "[]",
               );
-              const isFav = favorites.includes(rowInfo ? rowInfo.UID : uniqueTicker);
-              const isFav2 = favorites2.includes(rowInfo ? rowInfo.UID : uniqueTicker);
+              const isFav = favorites.includes(
+                rowInfo ? rowInfo.UID : uniqueTicker,
+              );
+              const isFav2 = favorites2.includes(
+                rowInfo ? rowInfo.UID : uniqueTicker,
+              );
 
               let starText = "☆";
               let starColor = "gray";
@@ -679,7 +671,8 @@ export function selectSymbol(s, forceMarket = null) {
       // 테이블 스크롤 이동
       const sortedList = store.currentTableData;
       const targetIdx = sortedList.findIndex(
-        (item) => item.DisplayTicker === uniqueTicker || item.Ticker === uniqueTicker,
+        (item) =>
+          item.DisplayTicker === uniqueTicker || item.Ticker === uniqueTicker,
       );
 
       if (targetIdx !== -1) {
@@ -716,17 +709,48 @@ export function updateExchangeBadges(s) {
   let badges = "";
   if (rowInfo) {
     const list = [
-      { id: "UPBIT", label: "UPBIT", bg: "bg-[#093687]", text: "text-white", market: "UPBIT", condition: rowInfo.Listed_Exchanges?.includes("UPBIT") || rowInfo.Upbit === "O" },
-      { id: "B-FUT", label: "B-FUT", bg: "bg-[#f0b90b]", text: "text-black", market: "FUTURES", condition: rowInfo.Listed_Exchanges?.includes("BINANCE_FUTURES") },
-      { id: "B-SPOT", label: "B-SPOT", bg: "bg-[#444]", text: "text-white", market: "SPOT", condition: rowInfo.Listed_Exchanges?.includes("BINANCE") },
-      { id: "BITHUMB", label: "BITHUMB", bg: "bg-[#ff8b00]", text: "text-white", market: "BITHUMB", condition: rowInfo.Listed_Exchanges?.includes("BITHUMB") }
+      {
+        id: "UPBIT",
+        label: "UPBIT",
+        bg: "bg-[#093687]",
+        text: "text-white",
+        market: "UPBIT",
+        condition:
+          rowInfo.Listed_Exchanges?.includes("UPBIT") || rowInfo.Upbit === "O",
+      },
+      {
+        id: "B-FUT",
+        label: "B-FUT",
+        bg: "bg-[#f0b90b]",
+        text: "text-black",
+        market: "FUTURES",
+        condition: rowInfo.Listed_Exchanges?.includes("BINANCE_FUTURES"),
+      },
+      {
+        id: "B-SPOT",
+        label: "B-SPOT",
+        bg: "bg-[#444]",
+        text: "text-white",
+        market: "SPOT",
+        condition: rowInfo.Listed_Exchanges?.includes("BINANCE"),
+      },
+      {
+        id: "BITHUMB",
+        label: "BITHUMB",
+        bg: "bg-[#ff8b00]",
+        text: "text-white",
+        market: "BITHUMB",
+        condition: rowInfo.Listed_Exchanges?.includes("BITHUMB"),
+      },
     ];
 
     list.forEach((item) => {
       if (item.condition) {
         // Highlight active market badge
         const isActive = store.currentMarket === item.market;
-        const ringClass = isActive ? "ring-2 ring-white scale-105 shadow-lg brightness-110" : "opacity-60 hover:opacity-100 hover:scale-105";
+        const ringClass = isActive
+          ? "ring-2 ring-white scale-105 shadow-lg brightness-110"
+          : "opacity-60 hover:opacity-100 hover:scale-105";
         badges += `<button onclick="selectSymbol('${rowInfo.Ticker}', '${item.market}')" class="${item.bg} ${item.text} ${ringClass} text-[11px] font-black px-2.5 py-1 rounded transition-all duration-200 cursor-pointer select-none active:scale-95 ml-1.5 first:ml-0">${item.label}</button>`;
       }
     });
@@ -785,17 +809,35 @@ export function executeSetTF(tf) {
     fetchHistory(store.currentAsset, true);
 }
 
-export function toggleLogScale() {
-  store.isLogMode = !store.isLogMode;
-  const btn = document.getElementById("log-btn");
-  if (btn) {
-    btn.innerText = store.isLogMode ? "Log ON" : "Log Off";
-    btn.classList.toggle("active", store.isLogMode);
+export function toggleLogScale(forceVal) {
+  if (forceVal !== undefined) {
+    store.isLogMode = forceVal;
+  } else {
+    store.isLogMode = !store.isLogMode;
   }
   if (store.chart) {
     store.chart
       .priceScale("right")
       .applyOptions({ mode: store.isLogMode ? 1 : 0 });
+  }
+  const btn = document.getElementById("toggle-log-scale-btn");
+  if (btn) {
+    btn.innerText = store.isLogMode ? "Log 축" : "Linear 축";
+    if (!store.isLogMode) {
+      btn.classList.add(
+        "text-theme-accent",
+        "border-theme-accent/40",
+        "bg-theme-accent/10",
+      );
+      btn.classList.remove("bg-theme-panel/50");
+    } else {
+      btn.classList.remove(
+        "text-theme-accent",
+        "border-theme-accent/40",
+        "bg-theme-accent/10",
+      );
+      btn.classList.add("bg-theme-panel/50");
+    }
   }
 }
 
@@ -832,3 +874,145 @@ window.executeSetTF = executeSetTF;
 window.toggleLogScale = toggleLogScale;
 window.switchViewMode = switchViewMode;
 window.moveTabSlider = moveTabSlider;
+
+// 🚀 제일 우측 끝에 나란히 차트 전체화면 버튼 구현 및 전체화면 시 tf-container 노출 연동 래퍼
+setTimeout(() => {
+  const originalRenderTimeframeButtons = window.renderTimeframeButtons;
+  if (typeof originalRenderTimeframeButtons === "function") {
+    window.renderTimeframeButtons = function (currentTF) {
+      originalRenderTimeframeButtons(currentTF);
+
+      const container = document.getElementById("tf-container");
+      if (!container) return;
+
+      let fullscreenBtn = document.getElementById("chart-fullscreen-btn");
+      if (!fullscreenBtn) {
+        fullscreenBtn = document.createElement("button");
+        fullscreenBtn.id = "chart-fullscreen-btn";
+        fullscreenBtn.className =
+          "px-2.5 py-1 text-[11px] font-bold bg-transparent text-theme-text opacity-60 border border-theme-border/30 rounded hover:bg-theme-border/50 hover:opacity-100 transition-all ml-auto cursor-pointer flex items-center gap-1";
+
+        // 동적 전체화면 CSS 스타일 주입
+        if (!document.getElementById("fullscreen-tf-css")) {
+          const styleEl = document.createElement("style");
+          styleEl.id = "fullscreen-tf-css";
+          styleEl.innerHTML = `
+            .fullscreen-tf-style {
+              background-color: var(--panel, #131722) !important;
+              padding: 10px 15px !important;
+              border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.1)) !important;
+              z-index: 150 !important;
+              position: relative !important;
+            }
+          `;
+          document.head.appendChild(styleEl);
+        }
+
+        // 오리지널 부모 저장
+        const originalParent = container.parentElement;
+        const originalHeadCtrlParent =
+          document.getElementById("head-control-buttons")?.parentElement ||
+          null;
+
+        fullscreenBtn.onclick = () => {
+          const wrapper = document.getElementById("chart-wrapper");
+          if (!document.fullscreenElement) {
+            wrapper.requestFullscreen().catch((err) => {
+              console.error(
+                `Error attempting to enable fullscreen: ${err.message}`,
+              );
+            });
+          } else {
+            document.exitFullscreen();
+          }
+        };
+
+        document.addEventListener("fullscreenchange", () => {
+          const wrapper = document.getElementById("chart-wrapper");
+          const legend = document.getElementById("ohlc-legend");
+          const headCtrl = document.getElementById("head-control-buttons");
+          if (document.fullscreenElement === wrapper) {
+            // 전체화면 진입: tf-container를 차트 내부 최상단으로 이동
+            container.classList.add("fullscreen-tf-style");
+            wrapper.insertBefore(container, wrapper.firstChild);
+
+            // 🚀 head-control-buttons를 tf-container 안에 함께 배치
+            if (headCtrl) {
+              headCtrl.dataset.fsOrigParent = headCtrl.parentElement
+                ? headCtrl.parentElement.id || ""
+                : "";
+              headCtrl.style.marginLeft = "auto";
+              container.insertBefore(headCtrl, fullscreenBtn);
+            }
+
+            // 🚀 OHLC 레전드가 tf-container에 겹치지 않도록 아래로 밀기
+            if (legend) {
+              legend.style.setProperty("top", "52px", "important");
+            }
+
+            fullscreenBtn.innerHTML = "<span>🎚️</span> <span>화면 복원</span>";
+            fullscreenBtn.classList.add(
+              "text-theme-accent",
+              "border-theme-accent/40",
+            );
+          } else {
+            // 전체화면 탈출: tf-container를 원래 위치로 복원
+            container.classList.remove("fullscreen-tf-style");
+
+            // 🚀 head-control-buttons를 원래 부모로 복원
+            if (headCtrl && originalHeadCtrlParent) {
+              originalHeadCtrlParent.appendChild(headCtrl);
+              headCtrl.style.marginLeft = "";
+            }
+
+            if (originalParent) {
+              originalParent.appendChild(container);
+            }
+
+            // 🚀 OHLC 레전드 탑 위치 원복
+            if (legend) {
+              legend.style.removeProperty("top");
+            }
+
+            fullscreenBtn.innerHTML = "<span>🖥️</span> <span>전체화면</span>";
+            fullscreenBtn.classList.remove(
+              "text-theme-accent",
+              "border-theme-accent/40",
+            );
+          }
+
+          // 🚀 DOM 재배치 후 캔버스 높이 재계산을 위한 차트 레이아웃 강제 갱신 (겹침 원천 방지)
+          setTimeout(() => {
+            if (typeof window.applyChartLayout === "function") {
+              window.applyChartLayout();
+            }
+          }, 50);
+        });
+      }
+
+      // 초기 렌더링 시 텍스트 설정
+      if (document.fullscreenElement) {
+        fullscreenBtn.innerHTML = "<span>🎚️</span> <span>화면 복원</span>";
+        fullscreenBtn.classList.add(
+          "text-theme-accent",
+          "border-theme-accent/40",
+        );
+      } else {
+        fullscreenBtn.innerHTML = "<span>🖥️</span> <span>전체화면</span>";
+        fullscreenBtn.classList.remove(
+          "text-theme-accent",
+          "border-theme-accent/40",
+        );
+      }
+
+      container.appendChild(fullscreenBtn);
+    };
+
+    // 강제 1회 재생성
+    if (store.currentTF) {
+      window.renderTimeframeButtons(store.currentTF);
+    } else {
+      window.renderTimeframeButtons("1d");
+    }
+  }
+}, 50);

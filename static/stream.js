@@ -173,12 +173,14 @@ function renderRealtimeRow(tId, data, isFutures = false) {
 
   const p = store.getPrecision(row.Ticker);
 
+  // 🚀 [제거] 테이블 실시간 소켓에서 우측 헤더를 직접 업데이트하면 차트 소켓과 충돌하여 값이 널뛰는 원인이 됩니다.
+  // 헤더 갱신은 오직 chart_utils.js::updateStatus(차트 전용 소켓)에서 단일 진실 공급원으로 통제합니다!
   if (
     row.Ticker === store.currentSelectedSymbol ||
     row.UID === store.currentSelectedSymbol
   ) {
     if (typeof window.updateHeaderDisplay === "function") {
-      window.updateHeaderDisplay(row, newPrice, p);
+      window.updateHeaderDisplay(row, undefined, p);
     }
   }
 
@@ -247,11 +249,14 @@ function renderRealtimeRow(tId, data, isFutures = false) {
       row.Binance_Vol_Spot = parseFloat(data.q);
     }
 
-    const currentVolModeIsFutures = store.currentMarket === "FUTURES" && row.Spot_Only !== "O";
+    const currentVolModeIsFutures =
+      store.currentMarket === "FUTURES" && row.Spot_Only !== "O";
     const isMatchingMode = currentVolModeIsFutures === isFutures;
 
     if (isMatchingMode && typeof window.formatVolumeDollar === "function") {
-      const activeVol = isFutures ? row.Binance_Vol_Futures : row.Binance_Vol_Spot;
+      const activeVol = isFutures
+        ? row.Binance_Vol_Futures
+        : row.Binance_Vol_Spot;
       row.Volume_Formatted = window.formatVolumeDollar(activeVol);
       binanceVolCell.innerText = row.Volume_Formatted;
     }
@@ -336,8 +341,11 @@ store.radarIntervalId = setInterval(() => {
       row.Binance_Vol_Futures = parseFloat(snapshot[futuresKey].q);
     }
 
-    const currentVolModeIsFutures = store.currentMarket === "FUTURES" && row.Spot_Only !== "O";
-    const activeVol = currentVolModeIsFutures ? (row.Binance_Vol_Futures || 0) : (row.Binance_Vol_Spot || 0);
+    const currentVolModeIsFutures =
+      store.currentMarket === "FUTURES" && row.Spot_Only !== "O";
+    const activeVol = currentVolModeIsFutures
+      ? row.Binance_Vol_Futures || 0
+      : row.Binance_Vol_Spot || 0;
 
     if (activeVol > 0 && typeof window.formatVolumeDollar === "function") {
       row.Volume_Formatted = window.formatVolumeDollar(activeVol);
@@ -366,6 +374,7 @@ store.radarIntervalId = setInterval(() => {
         row.Change_Today_Raw = ((row.Price_Raw - open) / open) * 100;
     }
 
+    /*
     if (
       (row.Ticker === store.currentSelectedSymbol ||
        row.UID === store.currentSelectedSymbol) &&
@@ -374,6 +383,7 @@ store.radarIntervalId = setInterval(() => {
       const p = store.getPrecision(row.Ticker);
       window.updateHeaderDisplay(row, undefined, p);
     }
+    */
 
     dataUpdated = true;
   });

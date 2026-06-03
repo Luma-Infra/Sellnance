@@ -28,15 +28,20 @@ export function updateRealtimeKimchi(liveData, symbol, chartTime) {
       ex.includes("BINANCE"),
     );
     if (hasBinance) {
-      glbPrice =
-        store.tickerBuffer[`${futSym}USDT_FUTURES`]?.c ||
-        store.tickerBuffer[`${spotSym}USDT`]?.c;
+      const hasFut = store.tickerBuffer[`${futSym}USDT_FUTURES`]?.c !== undefined;
+      glbPrice = hasFut
+        ? store.tickerBuffer[`${futSym}USDT_FUTURES`]?.c
+        : store.tickerBuffer[`${spotSym}USDT`]?.c;
+
+      if (glbPrice) {
+        const glbMulti = getMultiplier(hasFut ? futSym : spotSym);
+        glbPrice = parseFloat(glbPrice) / glbMulti;
+      }
     }
 
     if (!glbPrice && row && row.Price_Raw) {
-      glbPrice = row.Price_Raw;
-    } else if (glbPrice) {
-      glbPrice = parseFloat(glbPrice) / getMultiplier(pureSymbol);
+      const glbMulti = getMultiplier(row.Exact_Futures || row.Exact_Spot || pureSymbol);
+      glbPrice = row.Price_Raw / glbMulti;
     }
     unitGlbPrice = glbPrice;
   } else {

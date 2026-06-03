@@ -621,6 +621,9 @@ export function initChart() {
             }
           }
           store.isCrosshairActive = true;
+          if (store._drawingPrimitive) {
+            store._drawingPrimitive.updateAll();
+          }
           // 🚀 [미래 타임스탬프 완벽 연동] param.time이 undefined일 때, 위에서 역산한 targetTime(미래 시간)을 십자선 시간으로 사용!
           const activeTime = param.time !== undefined ? param.time : targetTime;
           const pTime = getUnixSeconds(activeTime);
@@ -685,6 +688,9 @@ export function initChart() {
               if (store._mainCrosshair) store._mainCrosshair.setX(null);
             });
             store.isCrosshairActive = false;
+            if (store._drawingPrimitive) {
+              store._drawingPrimitive.updateAll();
+            }
             if (
               store.mainData &&
               store.mainData.length > 0 &&
@@ -877,10 +883,14 @@ export function initChart() {
   initResizers();
   applyChartLayout();
 
-  // 🚀 자 대고 그리는 측정 도구(Measure Tool) 부착
+  // 🚀 자 대고 그리는 측정 도구(Measure Tool) 및 그리기 도구(Drawing Tool) 프리미티브 부착
   setTimeout(() => {
     if (typeof window.setupMeasureTool === "function")
       window.setupMeasureTool();
+    if (store.candleSeries && !store._drawingPrimitive && typeof window.DrawingPrimitive === "function") {
+      store._drawingPrimitive = new window.DrawingPrimitive();
+      store.candleSeries.attachPrimitive(store._drawingPrimitive);
+    }
   }, 50);
 }
 

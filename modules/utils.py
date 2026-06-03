@@ -84,6 +84,28 @@ def get_pure_base_asset(ticker):
 def is_scaled_symbol(symbol):
     return bool(re.match(r'^(10+)|^(1[MB])', symbol))
 
+def get_multiplier(ticker):
+    if not ticker:
+        return 1
+    # Quote 제거 후 스케일 찾기 (예: 1000SHIBUSDT -> 1000SHIB)
+    for quote in ['USDT', 'KRW', 'BTC', 'ETH']:
+        if ticker.endswith(quote):
+            if len(ticker) > len(quote):
+                ticker = ticker[:-len(quote)]
+                break
+    match = re.match(r'^(?P<scale>10+|1[MB])', ticker, re.IGNORECASE)
+    if not match:
+        return 1
+    p = match.group('scale').upper()
+    if p == "1M":
+        return 1000000
+    if p == "1B":
+        return 1000000000
+    try:
+        return int(p)
+    except ValueError:
+        return 1
+
 _SKIP_LIST_CACHE = None
 
 def is_valid_ticker(ticker, skip_list=None):

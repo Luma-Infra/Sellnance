@@ -210,9 +210,14 @@ def assemble_final_dashboard(
                     target_overseas_p = b_price or by_futures_p or by_spot_p
 
                     if target_overseas_p > 0 and krw_usd_rate > 0:
-                        kimchi = (
-                            (row["Price_KRW"] / (target_overseas_p * krw_usd_rate)) - 1
-                        ) * 100
+                        dom_mult = utils.get_multiplier(row.get("Upbit_Symbol") or base)
+                        ovs_mult = utils.get_multiplier(final_results[uid].get("Symbol") or base)
+
+                        dom_unit_price = row["Price_KRW"] / dom_mult
+                        ovs_unit_price = target_overseas_p / ovs_mult
+
+                        overseas_krw = ovs_unit_price * krw_usd_rate
+                        kimchi = ((dom_unit_price / overseas_krw) - 1) * 100
                         final_results[uid]["Kimchi_Raw"] = kimchi
                         final_results[uid]["Kimchi_Formatted"] = f"{kimchi:+.2f}%"
 
@@ -224,8 +229,14 @@ def assemble_final_dashboard(
                 by_futures_p = bybit_data.get(base, {}).get("futures_price", 0.0) if base not in duplicated_bases else 0.0
                 target_by_p = by_futures_p or by_spot_p
                 if target_by_p > 0 and row.get("Price_KRW"):
-                    overseas_krw = target_by_p * krw_usd_rate
-                    kimchi = ((row["Price_KRW"] / overseas_krw) - 1) * 100
+                    dom_mult = utils.get_multiplier(row.get("Upbit_Symbol") or base)
+                    ovs_mult = utils.get_multiplier(base)
+
+                    dom_unit_price = row["Price_KRW"] / dom_mult
+                    ovs_unit_price = target_by_p / ovs_mult
+
+                    overseas_krw = ovs_unit_price * krw_usd_rate
+                    kimchi = ((dom_unit_price / overseas_krw) - 1) * 100
                     row["Kimchi_Raw"] = kimchi
                     row["Kimchi_Formatted"] = f"{kimchi:+.2f}%"
                     if by_futures_p > 0:

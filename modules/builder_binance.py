@@ -245,6 +245,18 @@ def build_binance_row(
         else 0.0
     )
 
+    # 🚀 Bithumb 심볼 명확화 (중복 티커 처리)
+    bithumb_symbol = None
+    bithumb_price = 0.0
+
+    if bithumb_direct_match:
+        bithumb_symbol = target_bi_base
+        bithumb_price = bithumb_data.get(target_bi_base, {}).get("price", 0.0)
+
+    if bithumb_price == 0 and bithumb_aliases:
+        bithumb_symbol = bithumb_aliases[0]
+        bithumb_price = bithumb_data.get(bithumb_aliases[0].upper(), {}).get("price", 0.0)
+
     # 🚀 [핵심] 김프(현현갭) & 현선갭 연산 (라벨 추가)
     kimchi_raw = 0.0
     kimchi_label = "-"
@@ -252,32 +264,46 @@ def build_binance_row(
     # 1. 국내 거래소 결정 (업비트 -> 빗썸)
     dom_p = 0.0
     dom_name = ""
+    dom_base = ""
     if up_price_krw > 0:
         dom_p = up_price_krw
         dom_name = "UPBIT"
-    elif base in bithumb_krw_set:
-        # 빗썸 가격은 현재 upbit_data 구조에 없으므로 (필요시 추가 로직) 일단 업비트 위주
-        pass
+        dom_base = target_up_base
+    elif bithumb_price > 0:
+        dom_p = bithumb_price
+        dom_name = "BITHUMB"
+        dom_base = bithumb_symbol
 
     # 2. 해외 거래소 결정 (바낸 선물 -> 바낸 현물 -> 바이빗 선물 -> 바이빗 현물)
     ovs_p = 0.0
     ovs_name = ""
+    ovs_base = ""
     if binance_futures_price > 0:
         ovs_p = binance_futures_price
         ovs_name = "BIN FUT"
+        ovs_base = base
     elif binance_spot_price > 0:
         ovs_p = binance_spot_price
         ovs_name = "BIN SPOT"
+        ovs_base = base
     elif by_futures_p > 0:
         ovs_p = by_futures_p
         ovs_name = "BYB FUT"
+        ovs_base = base
     elif by_spot_p > 0:
         ovs_p = by_spot_p
         ovs_name = "BYB SPOT"
+        ovs_base = base
 
     if dom_p > 0 and ovs_p > 0 and krw_usd_rate > 0:
-        overseas_krw = ovs_p * krw_usd_rate
-        kimchi_raw = ((dom_p / overseas_krw) - 1) * 100
+        dom_mult = utils.get_multiplier(dom_base)
+        ovs_mult = utils.get_multiplier(ovs_base)
+
+        dom_unit_price = dom_p / dom_mult
+        ovs_unit_price = ovs_p / ovs_mult
+
+        overseas_krw = ovs_unit_price * krw_usd_rate
+        kimchi_raw = ((dom_unit_price / overseas_krw) - 1) * 100
         kimchi_label = f"{dom_name} <> {ovs_name}"
 
     basis_raw = 0.0
@@ -293,18 +319,6 @@ def build_binance_row(
         if "FUTURES" in str(listed_on) and funding_rate != 0
         else "-"
     )
-
-    # 🚀 Bithumb 심볼 명확화 (중복 티커 처리)
-    bithumb_symbol = base
-    if bithumb_aliases:
-        bithumb_symbol = bithumb_aliases[0]
-
-    bithumb_price = bithumb_data.get(base, {}).get("price", 0.0)
-    if bithumb_price == 0 and target_up_base:
-        bithumb_price = bithumb_data.get(target_up_base, {}).get("price", 0.0)
-    for a in bithumb_aliases:
-        if bithumb_price == 0:
-            bithumb_price = bithumb_data.get(a.upper(), {}).get("price", 0.0)
 
     # 7. 데이터 조립
     row = {
