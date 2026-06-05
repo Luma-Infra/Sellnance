@@ -1,9 +1,9 @@
 # 🚀 Sellnance - Edge-Optimized Crypto Terminal & Simulator
 
 ---
-
-<img width="1460" height="883" alt="화면 캡처 2026-05-22 174928" src="https://github.com/user-attachments/assets/b71eeab3-2695-48d1-b1f4-83efee863bd4" />
-<img width="1457" height="890" alt="화면 캡처 2026-05-22 174903" src="https://github.com/user-attachments/assets/42c98aca-c0c6-4bf0-948f-39dd63ff55aa" />
+<img width="1444" height="888" alt="화면 캡처 2026-05-22 174903" src="https://github.com/user-attachments/assets/42c98aca-c0c6-4bf0-948f-39dd63ff55aa" />
+<img width="1444" height="888" alt="화면 캡처 2026-05-22 174928" src="https://github.com/user-attachments/assets/b71eeab3-2695-48d1-b1f4-83efee863bd4" />
+<img width="1444" height="888" alt="화면 캡처 2026-06-05 142314" src="https://github.com/user-attachments/assets/50fba030-7b48-4803-bbed-cba60c7cc529" />
 
 ---
 
