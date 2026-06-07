@@ -55,6 +55,15 @@ document.addEventListener("mousemove", (e) => {
   });
 });
 
+document.addEventListener("mouseup", () => {
+  isResizing = false;
+  document.body.classList.remove("resizing-active");
+  if (animationFrameId) cancelAnimationFrame(animationFrameId);
+});
+
+// ⭐️ 2. 초기화 및 이벤트 바인딩 ⭐️
+let lastClickedSymbol = null;
+let lastClickedTime = 0;
 
 document.addEventListener("DOMContentLoaded", () => {
   const tbody = document.getElementById("table-body");
@@ -95,8 +104,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // ⭐️ 3. [HTS급 실시간 정렬 엔진] 1초마다 순위 재배치 및 가시 영역 고속 FLIP 실행 ⭐️
 setInterval(() => {
+  const slowCols = ["MarketCap", "Kimchi", "Gap", "Funding", "VMC", "Listing_Date", "Ticker"];
   if (store.currentSortCol && store.sortState !== "" && store.isEngineStarted) {
-    applyRealtimeSort();
+    if (!slowCols.includes(store.currentSortCol)) {
+      applyRealtimeSort();
+    }
   }
 }, 1000);
 

@@ -5,6 +5,7 @@ import { loadTableData } from "./table_api.js";
 
 export function isStockCoin(row) {
   if (!row) return false;
+  if (row.Is_Stock === true) return true;
   const name = (row.Name || "").toLowerCase();
   if (name.includes("rootstock")) return false; // Rootstock (RIF) 등 일반 크립토 제외
   return name.includes("stock") || name.includes("derivative");
@@ -217,13 +218,13 @@ export function switchFilter(mode) {
   const updateUI = (activeBtn, offset) => {
     [btnAll, btnBinance, btnUpbit].forEach((btn) => {
       if (btn) {
-        btn.classList.remove("text-white", "font-black");
+        btn.classList.remove("text-white", "font-bold");
         btn.classList.add("text-theme-text", "opacity-50");
       }
     });
     if (activeBtn) {
       activeBtn.classList.remove("text-theme-text", "opacity-50");
-      activeBtn.classList.add("text-white", "font-black");
+      activeBtn.classList.add("text-white", "font-bold");
     }
     if (slider) slider.style.left = offset;
   };
@@ -464,13 +465,13 @@ export function updateExchFilterUI() {
   let modeBtnClass = "bg-theme-panel/10 border-theme-border/30 text-theme-text";
   if (currentMode === "AND")
     modeBtnClass =
-      "bg-theme-accent/20 border-theme-accent text-theme-accent font-black";
+      "bg-theme-accent/20 border-theme-accent text-theme-accent font-bold";
   else if (currentMode === "OR")
     modeBtnClass =
-      "bg-green-500/10 border-green-500/50 text-green-400 font-black";
+      "bg-green-500/10 border-green-500/50 text-green-400 font-bold";
   else if (currentMode === "ONLY")
     modeBtnClass =
-      "bg-orange-500/25 border-orange-500/80 text-orange-400 font-black";
+      "bg-orange-500/25 border-orange-500/80 text-orange-400 font-bold";
 
   const modeToggleHtml = `
     <button onclick="window.switchExchFilterMode()" 
@@ -530,7 +531,7 @@ export function updateExchFilterUI() {
               style="${bgStyle} ${filterStyle}" title="${ex.name || ex.id} (클릭: 순환 토글 / 우클릭: 제외 토글)">
         <img src="${imgUrl}" alt="${ex.name || ex.id}" class="w-full h-full object-contain rounded" style="${imgStyle}" />
         ${badgeText
-          ? `<div class="absolute -top-1 -right-1 ${badgeBg} text-white text-[8px] px-0.5 rounded-sm leading-none font-black scale-[0.8]">${badgeText}</div>`
+          ? `<div class="absolute -top-1 -right-1 ${badgeBg} text-white text-[8px] px-0.5 rounded-sm leading-none font-bold scale-[0.8]">${badgeText}</div>`
           : ""
         }
       </button>
@@ -568,14 +569,14 @@ export function updateExchFilterUI() {
         title += `(클릭: 선택 및 불러오기)`;
 
         if (isActive) {
-          borderStyle = "border-purple-500 text-purple-400 bg-purple-500/25 font-black scale-105 ring-2 ring-purple-500/20";
+          borderStyle = "border-purple-500 text-purple-400 bg-purple-500/25 font-bold scale-105 ring-2 ring-purple-500/20";
         } else {
           borderStyle = "border-purple-500/40 text-purple-400/80 bg-purple-500/10 hover:scale-105";
         }
       } else {
         title += "(비어 있음 - 선택 후 우측 [저장] 클릭 시 저장)";
         if (isActive) {
-          borderStyle = "border-purple-500 text-purple-400 bg-purple-500/25 font-black scale-105 ring-2 ring-purple-500/20";
+          borderStyle = "border-purple-500 text-purple-400 bg-purple-500/25 font-bold scale-105 ring-2 ring-purple-500/20";
         }
       }
 

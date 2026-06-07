@@ -11,7 +11,7 @@ import {
 import { fetchPaginated } from "./chart_api.js";
 import { formatSmartPrice, formatCrosshairPrice } from "./chart_utils.js";
 import { updateExchangeBadges } from "./ui_control.js";
-import { formatListingDateWithExchange } from "./table_render.js";
+import { formatListingDateWithExchange, updateRowInnerHTML } from "./table_render.js";
 
 export function mapTime(d, tf) {
   let activeTF = "1h";
@@ -160,7 +160,7 @@ export async function fetchHistory(
         <div class="flex flex-col items-center gap-3 p-6 rounded-2xl bg-theme-panel/90 border border-theme-border shadow-2xl text-center">
           <div class="w-10 h-10 border-4 border-theme-accent border-t-transparent rounded-full animate-spin"></div>
           <div class="flex flex-col gap-1">
-            <span class="text-[15px] font-black text-theme-accent tracking-wider uppercase">라이브러리 호출 중...</span>
+            <span class="text-[15px] font-bold text-theme-accent tracking-wider uppercase">라이브러리 호출 중...</span>
             <span class="text-[11px] font-bold text-theme-text opacity-60 tracking-tighter">과거 차트 단절 구간을 채우는 중이에요</span>
           </div>
         </div>
@@ -553,6 +553,44 @@ export async function fetchHistory(
     if (store.mainData.length > 0 && store.candleSeries) {
       const p = store.getPrecision(displayName);
 
+      // 🚀 [실시간 시세 업데이트] 테이블 클릭(선택) 시, 5분 주기의 서버 캐시 데이터 대신
+      // 방금 REST API로 받아온 가장 따끈따끈한 최신 봉 종가(lastCandle.close)를 반영합니다.
+      // 🚨 단, 시간 프레임(TF) 변경 시에는 이미 소켓에서 최신 실시간 가격을 잘 받고 있으므로 과거 REST 데이터로 덮어쓰지 않고 보존합니다.
+      const lastCandle = store.mainData[store.mainData.length - 1];
+      if (lastCandle && rowInfo) {
+        if (!isTfChange) {
+          if (isUpbit) {
+            rowInfo.Upbit_Price = lastCandle.close;
+            rowInfo.Price_KRW = lastCandle.close;
+          } else if (isBithumb) {
+            rowInfo.Bithumb_Price = lastCandle.close;
+          } else if (isFutures) {
+            rowInfo.Binance_Price_Futures = lastCandle.close;
+            rowInfo.Binance_Price = lastCandle.close;
+          } else if (isSpot) {
+            rowInfo.Binance_Price_Spot = lastCandle.close;
+            rowInfo.Binance_Price = lastCandle.close;
+          } else if (isBybitFutures) {
+            rowInfo.Bybit_Price_Futures = lastCandle.close;
+            rowInfo.Bybit_Price = lastCandle.close;
+          } else if (isBybit) {
+            rowInfo.Bybit_Price_Spot = lastCandle.close;
+            rowInfo.Bybit_Price = lastCandle.close;
+          }
+          rowInfo.Price_Raw = lastCandle.close;
+        }
+
+        if (typeof window.updateHeaderDisplay === "function") {
+          // TF 변경 시에는 newPrice 파라미터를 비워서 현재 rowInfo에 있는 최신 라이브 가격을 유지
+          window.updateHeaderDisplay(rowInfo, isTfChange ? undefined : lastCandle.close, p);
+        }
+
+        const tr = store.rowDomMap && store.rowDomMap.get(rowInfo.Ticker);
+        if (tr && typeof updateRowInnerHTML === "function") {
+          updateRowInnerHTML(tr, rowInfo);
+        }
+      }
+
       store.candleSeries.applyOptions({
         priceFormat: {
           type: "custom",
@@ -604,6 +642,13 @@ export async function fetchHistory(
             isBithumb,
           );
         }
+
+        // 🚀 [해결] 차트 레이아웃, 오토핏 및 렌더링 프레임이 완벽히 정렬 완료된 직후에 로딩 상태를 해제하여
+        // timescale 조작 이벤트 오작동으로 인한 의도치 않은 Lazy Load 발동을 차단합니다!
+        window.isFetchingChart = false;
+        store.isFetchingChart = false;
+        if (typeof window.syncPriceScaleWidths === "function")
+          window.syncPriceScaleWidths();
       });
 
       if (
@@ -622,10 +667,14 @@ export async function fetchHistory(
     if (loadingModal) loadingModal.classList.add("hidden");
     if (wrapper) wrapper.classList.remove("chart-loading");
     if (gapOverlay) gapOverlay.style.display = "none";
-    window.isFetchingChart = false;
-    store.isFetchingChart = false;
-    if (typeof window.syncPriceScaleWidths === "function")
-      window.syncPriceScaleWidths();
+
+    // 데이터가 없거나 캔들 시리즈가 없어 requestAnimationFrame으로 진입하지 않은 경우에 대한 동기식 클리어 폴백
+    if (!store.candleSeries || !store.mainData || store.mainData.length === 0) {
+      window.isFetchingChart = false;
+      store.isFetchingChart = false;
+      if (typeof window.syncPriceScaleWidths === "function")
+        window.syncPriceScaleWidths();
+    }
 
     // ==========================================
     // 3️⃣ 김프 데이터 Lazy 렌더링 (백그라운드 비동기)
@@ -664,14 +713,14 @@ export async function fetchHistory(
               pureSym: exactFutures,
             });
           if (listedEx.includes("BYBIT_FUTURES"))
-            if (loadingModal) loadingModal.classList.add("hidden");
-          if (wrapper) wrapper.classList.remove("chart-loading");
-          if (gapOverlay) gapOverlay.style.display = "none";
-
-          // 데이터가 없거나 캔들 시리즈가 없어 requestAnimationFrame으로 진입하지 않은 경우에 대한 동기식 클리어 폴백
-          if (!store.candleSeries || !store.mainData || store.mainData.length === 0) {
-            window.isFetchingChart = false;
-          });
+            availableSubs.push({
+              id: "bybit_futures",
+              name: "BYB-FUT",
+              bg: "#f7a600",
+              text: "#000",
+              sym: `${exactBybit}USDT`,
+              pureSym: exactBybit,
+            });
           if (listedEx.includes("BYBIT"))
             availableSubs.push({
               id: "bybit_spot",
@@ -691,104 +740,110 @@ export async function fetchHistory(
               name: "UPBIT",
               bg: "#093687",
               text: "#fff",
-              store.currentMarket === "UPBIT" ||
-                store.currentMarket === "BITHUMB"
-        ) {
-            if (listedEx.includes("BINANCE"))
-              availableSubs.push({
-                id: "binance_spot",
-                text: "#fff",
-                sym: `${exactBithumb}_KRW`,
-                sym: `${exactSpot}USDT`,
-                pureSym: exactSpot,
-              });
-            if (listedEx.includes("BINANCE_FUTURES"))
-              availableSubs.push({
-                id: "binance_futures",
-                name: "B-FUT",
-                id: "upbit",
-                sym: `${exactFutures}USDT`,
-                pureSym: exactFutures,
-              });
-            if (listedEx.includes("BYBIT_FUTURES"))
-              availableSubs.push({
-                id: "bybit_futures",
-                name: "BYB-FUT",
-                bg: "#f7a600",
-                text: "#000",
-                sym: `${exactBybit}USDT`,
-                pureSym: exactBybit,
-              });
-            if (listedEx.includes("BYBIT"))
-              availableSubs.push({
-                id: "bybit_spot",
-                name: "BYBIT",
-                bg: "#f7a600",
-                text: "#fff",
-                sym: `${exactBybit}USDT`,
-                pureSym: exactBybit,
-              });
-            if (availableSubs.length === 0)
-              missingTarget = "글로벌 거래소(바이낸스/바이비트)";
-          } else if (isBybit) {
-
-            // 🚀 [추가] 김프 로딩 메시지 UI 동적 렌더링
-            let loadingMessageContainer = document.getElementById(
-              "kimchi-loading-message",
-            );
-            if (!loadingMessageContainer) {
-              loadingMessageContainer = document.createElement("div");
-              loadingMessageContainer.id = "kimchi-loading-message";
-              loadingMessageContainer.className =
-                "absolute right-3 z-[110] flex gap-1.5 transition-all duration-300 pointer-events-none";
-              if (wrapper) wrapper.appendChild(loadingMessageContainer);
-            }
-            // loadingMessageContainer.innerHTML = `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded opacity-60 bg-theme-panel text-theme-text">?3 불러오는중...</span>`;
-            // loadingMessageContainer.style.display = "flex"; // Show loading message
-
-            let switcherContainer = document.getElementById("kimchi-switcher");
-            if (!switcherContainer) {
-              switcherContainer = document.createElement("div");
-              switcherContainer.id = "kimchi-switcher";
-              switcherContainer.className =
-                "absolute right-3 z-[110] flex gap-1.5 transition-all duration-300 pointer-events-auto";
-              if (wrapper) wrapper.appendChild(switcherContainer);
-            }
-
-            if (availableSubs.length > 1) {
-              switcherContainer.innerHTML = availableSubs
-                .map((s) => {
-                  const isActive = s.id === subExchange;
-                  const opacity = isActive
-                    ? "opacity-100 ring-2 ring-white/50 scale-105"
-                    : "opacity-40 hover:opacity-80";
-                  return `<button class="text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm transition-all ${opacity}" style="background-color: ${s.bg}; color: ${s.text};" onclick="switchKimchiSub('${s.id}')">${s.name}</button>`;
-                })
-                .join("");
-              switcherContainer.style.display = "flex";
-            } else {
-              const s = availableSubs[0];
-              switcherContainer.innerHTML = `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded opacity-60 pointer-events-none" style="background-color: ${s.bg}; color: ${s.text};">vs ${s.name}</span>`;
-              switcherContainer.style.display = "flex";
-            }
-
-            store.paneConfig.kimchi = true;
-            const noDataMsg = document.getElementById("kimchi-no-data");
-            if (noDataMsg) noDataMsg.classList.add("hidden");
-            requestAnimationFrame(() => {
-              try {
-                if (typeof applyChartLayout === "function") applyChartLayout();
-              } catch (layoutErr) {
-                console.warn("🚨 fetchHistory 내 applyChartLayout 예외 우회:", layoutErr);
-              }
+              sym: `KRW-${exactUpbit}`,
+              pureSym: exactUpbit,
             });
-            subExchange = selected.id;
-            subSymbol = selected.sym;
-            subMulti = getMultiplier(selected.sym);
-            store.preferredKimchiSub = subExchange;
+          if (listedEx.includes("BITHUMB"))
+            availableSubs.push({
+              id: "bithumb",
+              name: "BITHUMB",
+              bg: "#ff8b00",
+              text: "#fff",
+              sym: `${exactBithumb}_KRW`,
+              pureSym: exactBithumb,
+            });
+          if (availableSubs.length === 0)
+            missingTarget = "국내 원화 거래소(업비트/빗썸)";
+        } else {
+          if (listedEx.includes("UPBIT") || rowInfo?.Upbit === "O")
+            availableSubs.push({
+              id: "upbit",
+              name: "UPBIT",
+              bg: "#093687",
+              text: "#fff",
+              sym: `KRW-${exactUpbit}`,
+              pureSym: exactUpbit,
+            });
+          if (listedEx.includes("BITHUMB"))
+            availableSubs.push({
+              id: "bithumb",
+              name: "BITHUMB",
+              bg: "#ff8b00",
+              text: "#fff",
+              sym: `${exactBithumb}_KRW`,
+              pureSym: exactBithumb,
+            });
+          if (availableSubs.length === 0)
+            missingTarget = "국내 원화 거래소(업비트/빗썸)";
+        }
 
-            // 🚀 [추가] 김프 로딩 메시지 UI 동적 렌더링
-            let loadingMessageContainer = document.getElementById(
+        if (availableSubs.length > 0) {
+          const preferred = availableSubs.find(
+            (s) => s.id === store.preferredKimchiSub,
+          );
+          const selected = preferred || availableSubs[0];
+          subExchange = selected.id;
+          subSymbol = selected.sym;
+          subMulti = getMultiplier(selected.sym);
+          store.preferredKimchiSub = subExchange;
+
+          // 🚀 [추가] 김프 로딩 메시지 UI 동적 렌더링
+          let loadingMessageContainer = document.getElementById(
+            "kimchi-loading-message",
+          );
+          if (!loadingMessageContainer) {
+            loadingMessageContainer = document.createElement("div");
+            loadingMessageContainer.id = "kimchi-loading-message";
+            loadingMessageContainer.className =
+              "absolute right-3 z-[110] flex gap-1.5 transition-all duration-300 pointer-events-none";
+            if (wrapper) wrapper.appendChild(loadingMessageContainer);
+          }
+          // loadingMessageContainer.innerHTML = `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded opacity-60 bg-theme-panel text-theme-text">?3 불러오는중...</span>`;
+          // loadingMessageContainer.style.display = "flex"; // Show loading message
+
+          let switcherContainer = document.getElementById("kimchi-switcher");
+          if (!switcherContainer) {
+            switcherContainer = document.createElement("div");
+            switcherContainer.id = "kimchi-switcher";
+            switcherContainer.className =
+              "absolute right-3 z-[110] flex gap-1.5 transition-all duration-300 pointer-events-auto";
+            if (wrapper) wrapper.appendChild(switcherContainer);
+          }
+
+          if (availableSubs.length > 1) {
+            switcherContainer.innerHTML = availableSubs
+              .map((s) => {
+                const isActive = s.id === subExchange;
+                const opacity = isActive
+                  ? "opacity-100 ring-2 ring-white/50 scale-105"
+                  : "opacity-40 hover:opacity-80";
+                return `<button class="text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm transition-all ${opacity}" style="background-color: ${s.bg}; color: ${s.text};" onclick="switchKimchiSub('${s.id}')">${s.name}</button>`;
+              })
+              .join("");
+            switcherContainer.style.display = "flex";
+          } else {
+            const s = availableSubs[0];
+            switcherContainer.innerHTML = `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded opacity-60 pointer-events-none" style="background-color: ${s.bg}; color: ${s.text};">vs ${s.name}</span>`;
+            switcherContainer.style.display = "flex";
+          }
+
+          store.paneConfig.kimchi = true;
+          const noDataMsg = document.getElementById("kimchi-no-data");
+          if (noDataMsg) noDataMsg.classList.add("hidden");
+          requestAnimationFrame(() => {
+            try {
+              if (typeof applyChartLayout === "function") applyChartLayout();
+            } catch (layoutErr) {
+              console.warn("🚨 fetchHistory 내 applyChartLayout 예외 우회:", layoutErr);
+            }
+          });
+
+          // 🚀 김프 데이터 Fetch (Lazy Load)
+          const u = store.currentTF.replace(/[0-9]/g, "");
+          const totalSec = tfSec[store.currentTF] || 60;
+          let upbitInterval = "minutes/1";
+          if (u === "d" || u === "w" || u === "M") {
+            upbitInterval = u === "w" ? "weeks" : u === "M" ? "months" : "days";
           } else {
             const baseMin =
               [1, 3, 5, 10, 15, 30, 60, 240]
@@ -1056,7 +1111,7 @@ export async function loadMoreHistory() {
     lazyIndicator = document.createElement("div");
     lazyIndicator.id = "chart-lazy-loading-indicator";
     lazyIndicator.className =
-      "absolute left-4 top-4 z-[120] flex items-center gap-2 px-3 py-1.5 rounded-full bg-theme-panel/90 border border-theme-border shadow-lg text-[11px] font-bold text-theme-text opacity-0 pointer-events-none transition-all duration-300 transform -translate-y-2";
+      "absolute left-1/2 top-1/2 z-[120] flex items-center gap-2 px-3 py-1.5 rounded-full bg-theme-panel/90 border border-theme-border shadow-lg text-[11px] font-bold text-theme-text opacity-0 pointer-events-none transition-all duration-300 transform -translate-x-1/2 -translate-y-1/2 scale-95";
     lazyIndicator.innerHTML = `
       <div class="w-3.5 h-3.5 border-2 border-theme-accent border-t-transparent rounded-full animate-spin"></div>
       <span id="chart-lazy-loading-text">과거 데이터 불러오는 중...</span>
@@ -1066,10 +1121,10 @@ export async function loadMoreHistory() {
   }
   lazyIndicator.classList.remove(
     "opacity-0",
-    "-translate-y-2",
+    "scale-95",
     "pointer-events-none",
   );
-  lazyIndicator.classList.add("opacity-100", "translate-y-0");
+  lazyIndicator.classList.add("opacity-100", "scale-100");
 
   const params = store.lastFetchParams;
   const oldestCandle = store.mainData[0];
@@ -1134,10 +1189,10 @@ export async function loadMoreHistory() {
     if (!fetchedMain || fetchedMain.length === 0) {
       params.hasMoreHistory = false;
       store.isLoadingMoreHistory = false;
-      lazyIndicator.classList.remove("opacity-100", "translate-y-0");
+      lazyIndicator.classList.remove("opacity-100", "scale-100");
       lazyIndicator.classList.add(
         "opacity-0",
-        "-translate-y-2",
+        "scale-95",
         "pointer-events-none",
       );
 
@@ -1185,10 +1240,10 @@ export async function loadMoreHistory() {
     if (N <= 0) {
       params.hasMoreHistory = false;
       store.isLoadingMoreHistory = false;
-      lazyIndicator.classList.remove("opacity-100", "translate-y-0");
+      lazyIndicator.classList.remove("opacity-100", "scale-100");
       lazyIndicator.classList.add(
         "opacity-0",
-        "-translate-y-2",
+        "scale-95",
         "pointer-events-none",
       );
 
@@ -1309,10 +1364,10 @@ export async function loadMoreHistory() {
     console.error("🚨 과거 데이터 Lazy Loading 실패:", err);
   } finally {
     store.isLoadingMoreHistory = false;
-    lazyIndicator.classList.remove("opacity-100", "translate-y-0");
+    lazyIndicator.classList.remove("opacity-100", "scale-100");
     lazyIndicator.classList.add(
       "opacity-0",
-      "-translate-y-2",
+      "scale-95",
       "pointer-events-none",
     );
   }

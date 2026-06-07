@@ -4,6 +4,7 @@ export const store = {
   originalTableData: [],
   currentTableData: [],
   tickerBuffer: {},
+  tickerCache: {},
   visibleSymbols: new Set(),
   btcRateCache: {}, // 🚀 합성 환율 전용 메모리 캐시 엔진 추가
   tickerRowMap: new Map(), // 🚀 [단일 진실 공급원] 전역 테이블 행 O(1) 광속 탐색 맵
@@ -86,8 +87,8 @@ export const store = {
   localTimeAtUpdate: 0,
   lastServerMs: 0,
   displayTime: "Wait...",
-  currentSortCol: "",
-  sortState: "",
+  currentSortCol: "Volume",
+  sortState: "desc",
   tableObserver: null,
   isCrosshairActive: false, // 🚀 십자선(크로스헤어) 활성화 상태 추적용
 
@@ -99,9 +100,13 @@ export const store = {
 
   // 🚀 그리기 관련 전역 상태 변수들
   activeTool: "cursor",
-  drawings: { trendlines: [], horizontals: [] },
+  drawings: { trendlines: [], horizontals: [], fibs: [], brushes: [] },
   drawingStart: null,
   drawingTempEnd: null,
+  drawingBrush: null, // 임시 브러시 궤적
+  drawingsHidden: false,
+  drawingsLocked: false,
+  magnetActive: false,
   _drawingPrimitive: null,
 
   // 🚀 [단일 진실 공급원] 조건식 떡칠 제거용 전역 정밀도 캐시 맵 및 헬퍼

@@ -889,3 +889,10 @@ export function selectDrawingTool(toolName) {
 window.selectDrawingTool = selectDrawingTool;
 window.initDrawingEvents = initDrawingEvents;
 window.DrawingPrimitive = DrawingPrimitive;
+
+export function initDrawingToolbar() {
+  if (typeof selectDrawingTool === "function") {
+    selectDrawingTool("cursor");
+  }
+}
+window.initDrawingToolbar = initDrawingToolbar;

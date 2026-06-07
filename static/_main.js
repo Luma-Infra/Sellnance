@@ -11,7 +11,7 @@ import { fetchHistory, clearChartData } from "./chart_data.js";
 import { initChart } from "./chart.js";
 import { initSniperSocket } from "./stream_table.js";
 import { initMeasureEvents } from "./chart_measure.js";
-import { initDrawingEvents } from "./chart_draw.js";
+import { initDrawingEvents, initDrawingToolbar } from "./chart_draw.js";
 import "./chart_utils.js";
 import "./chart_layout.js";
 import "./sim_engine.js";
@@ -277,7 +277,7 @@ window.updateHeaderDisplay = (row, newPrice, p) => {
         : n24 < 0
           ? "text-theme-down"
           : "text-theme-text";
-    headChg24h.className = `text-[12px] md:text-[13px] font-mono mt-0.5 ${c24}`;
+    headChg24h.className = `text-[12px] md:text-[13px] font-tempTestDss mt-0.5 ${c24}`;
     headChg24h.innerText = `${n24 > 0 ? "+" : ""}${Number(n24).toFixed(2)}%`;
   }
   if (headChgDay) {
@@ -287,7 +287,7 @@ window.updateHeaderDisplay = (row, newPrice, p) => {
         : nDay < 0
           ? "text-theme-down"
           : "text-theme-text";
-    headChgDay.className = `text-[12px] md:text-[13px] font-mono mt-0.5 ${cDay}`;
+    headChgDay.className = `text-[12px] md:text-[13px] font-tempTestDss mt-0.5 ${cDay}`;
     headChgDay.innerText = `${nDay > 0 ? "+" : ""}${Number(nDay).toFixed(2)}%`;
   }
 
@@ -329,6 +329,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (store.currentTableData && store.currentTableData.length > 0) {
       initMeasureEvents();
       initDrawingEvents();
+      initDrawingToolbar();
       initInfiniteScroll();
       // 🚀 [추가] 사령관님 요청: 서버 시작 시 테이블 코인들의 실시간 등락 움직임(Market Radar)은 즉시 점화!!!
       if (typeof window.startBinanceMarketRadar === "function")
@@ -684,3 +685,55 @@ window.toggleHeaderTop = function () {
     }
   }
 };
+
+// 🚀 [신규] 프론트엔드 정밀 타이머 리셋 (매일 오전 9시 정각 00분 00초 000밀리초 KST 무지연 덮어쓰기)
+function scheduleDailyReset() {
+  const now = new Date();
+  const nextReset = new Date();
+
+  // UTC 기준 자정 (KST 오전 9시 0분 0초 000밀리초)
+  // 단 1밀리초의 지연도 없이 경주마(펌핑 코인) 등락률을 잡기 위해 00초 정각으로 세팅
+  nextReset.setUTCHours(0, 0, 0, 0);
+
+  if (now > nextReset) {
+    nextReset.setUTCDate(nextReset.getUTCDate() + 1);
+  }
+
+  const timeUntilReset = nextReset.getTime() - now.getTime();
+  console.log(`⏰ 다음 9시 정각(KST) 무지연 일일 리셋까지 ${(timeUntilReset / 1000 / 3600).toFixed(2)}시간 남았습니다.`);
+
+  setTimeout(() => {
+    console.log("🚨 09:00:00.000 KST 정각! 프론트엔드 무지연 0% 리셋 발동!");
+
+    // 1. [무지연 덮어쓰기] 백엔드를 기다리지 않고, 프론트가 들고 있는 현재 웹소켓 가격을 즉시 '오늘의 시가'로 확정!
+    if (store.currentTableData && Array.isArray(store.currentTableData)) {
+      store.currentTableData.forEach(row => {
+        if (row.Price_Raw) {
+          row.utc0_open_Raw = row.Price_Raw; // 9시 정각 가격을 시가로 덮어쓰기
+          row.Change_Today_Raw = 0; // 등락률 즉각 0% 리셋
+        }
+      });
+      // 화면 즉시 리렌더링 (0% 리셋 적용)
+      if (typeof window.renderTable === "function") window.renderTable();
+    }
+
+    // 2. 현재 열려있는 차트 전광판 가격도 최신화
+    if (store.currentAsset && typeof window.selectSymbol === "function") {
+      window.selectSymbol(store.currentAsset.DisplayTicker || store.currentAsset.Ticker);
+    }
+
+    // 3. [백그라운드 사후 동기화] 2초 뒤에 백엔드를 조용히 찔러서, 거래소의 공식 데이터와 장부를 완벽하게 일치시킴
+    setTimeout(() => {
+      console.log("🔄 09:00:02 KST 백그라운드 서버 동기화 진행");
+      if (typeof window.loadTableData === "function") {
+        window.loadTableData(true); // force=true로 백엔드 캐시 초기화 및 재조회
+      }
+    }, 2000);
+
+    // 4. 내일 9시를 위해 다시 스케줄링
+    scheduleDailyReset();
+  }, timeUntilReset);
+}
+
+// 타이머 최초 가동
+scheduleDailyReset();

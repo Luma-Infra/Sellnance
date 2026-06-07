@@ -25,7 +25,7 @@ export function initOrderbookDOM() {
     const askRow = document.createElement("div");
     askRow.id = `ob-ask-${i}`;
     askRow.className =
-      "relative flex items-center justify-between text-[10px] h-5 font-mono px-1.5 z-10 hidden hover:bg-theme-text/5 cursor-pointer transition-colors";
+      "relative flex items-center justify-between text-[10px] h-5 font-tempTestDss px-1.5 z-10 hidden hover:bg-theme-text/5 cursor-pointer transition-colors";
     askRow.innerHTML = `
     <div id="ob-ask-bg-${i}" class="absolute right-0 top-0 bottom-0 bg-theme-down/15 will-change-[width] z-[-1] transition-all duration-[50ms]" style="width: 0%;"></div>
     <span id="ob-ask-price-${i}" class="text-theme-down font-bold w-[35%] text-left tracking-tighter"></span>
@@ -38,7 +38,7 @@ export function initOrderbookDOM() {
     const bidRow = document.createElement("div");
     bidRow.id = `ob-bid-${i}`;
     bidRow.className =
-      "relative flex items-center justify-between text-[10px] h-5 font-mono px-1.5 z-10 hidden hover:bg-theme-text/5 cursor-pointer transition-colors";
+      "relative flex items-center justify-between text-[10px] h-5 font-tempTestDss px-1.5 z-10 hidden hover:bg-theme-text/5 cursor-pointer transition-colors";
     bidRow.innerHTML = `
     <div id="ob-bid-bg-${i}" class="absolute right-0 top-0 bottom-0 bg-theme-up/15 will-change-[width] z-[-1] transition-all duration-[50ms]" style="width: 0%;"></div>
     <span id="ob-bid-price-${i}" class="text-theme-up font-bold w-[35%] text-left tracking-tighter"></span>
@@ -115,6 +115,16 @@ export function startOrderbookStream(symbol, market) {
   if (!panel || panel.classList.contains("hidden")) return;
 
   obState.precisionModifier = 0;
+
+  // 🚀 [안전 가드] symbol 또는 market이 전달되지 않았을 시 스토어 기본값으로 폴백 처리
+  if (!symbol) {
+    symbol = store.currentSelectedSymbol || store.currentAsset || "";
+  }
+  if (!symbol) return;
+
+  if (!market) {
+    market = store.currentMarket || "UPBIT";
+  }
 
   // 🚀 [버그 픽스] 테이블에서 "BTCUSDT" 또는 "BTCKRW"가 넘어오더라도 순수 심볼("BTC")만 추출하여 소켓 경로 중복 오류 방지
   const baseSym = symbol

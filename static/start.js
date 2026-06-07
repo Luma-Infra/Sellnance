@@ -21,7 +21,7 @@ function getStartScreenHTML() {
       >
         <div>
           <h1
-            class="text-4xl font-black text-theme-accent uppercase tracking-widest mb-2 drop-shadow-md"
+            class="text-4xl font-bold text-theme-accent uppercase tracking-widest mb-2 drop-shadow-md"
           >
             sellance
           </h1>
@@ -52,7 +52,7 @@ function getStartScreenHTML() {
             id="cmc-api-input"
             placeholder="Loading..."
             disabled
-            class="w-full bg-theme-bg text-theme-text border-2 border-theme-border px-4 py-3.5 rounded-xl text-center font-mono text-sm focus:outline-none focus:border-theme-accent transition-all shadow-inner opacity-50 cursor-not-allowed"
+            class="w-full bg-theme-bg text-theme-text border-2 border-theme-border px-4 py-3.5 rounded-xl text-center font-tempTestDss text-sm focus:outline-none focus:border-theme-accent transition-all shadow-inner opacity-50 cursor-not-allowed"
             autocomplete="off"
             spellcheck="false"
           />
@@ -75,7 +75,7 @@ function getStartScreenHTML() {
             id="btn-start-engine"
             disabled
             onclick="saveAndStart()"
-            class="w-full py-3.5 bg-theme-accent/50 text-white/50 font-black rounded-xl shadow-lg transition-all tracking-widest uppercase cursor-not-allowed pointer-events-none"
+            class="w-full py-3.5 bg-theme-accent/50 text-white/50 font-bold rounded-xl shadow-lg transition-all tracking-widest uppercase cursor-not-allowed pointer-events-none"
           >
             ?1 불러오는 중.. 📡
           </button>
@@ -149,7 +149,7 @@ async function initStartScreen() {
       btnStart.disabled = false;
       btnStart.innerText = "Start Engine 🚀";
       btnStart.className =
-        "w-full py-3.5 bg-theme-accent text-white font-black rounded-xl shadow-lg hover:brightness-110 active:scale-[0.98] transition-all tracking-widest uppercase cursor-pointer pointer-events-auto";
+        "w-full py-3.5 bg-theme-accent text-white font-bold rounded-xl shadow-lg hover:brightness-110 active:scale-[0.98] transition-all tracking-widest uppercase cursor-pointer pointer-events-auto";
     }
 
     if (btnSkip) {

@@ -60,10 +60,10 @@ export async function initQuickView() {
   sortBtns.forEach((btn) => {
     if (btn.id === `qv-sort-${qvState.sortType}`) {
       btn.className =
-        "px-3 py-1.5 text-[10px] font-black rounded-md transition-all qv-sort-btn text-white bg-theme-accent";
+        "px-3 py-1.5 text-[10px] font-bold rounded-md transition-all qv-sort-btn text-white bg-theme-accent";
     } else {
       btn.className =
-        "px-3 py-1.5 text-[10px] font-black rounded-md transition-all qv-sort-btn text-theme-text opacity-50 hover:opacity-100";
+        "px-3 py-1.5 text-[10px] font-bold rounded-md transition-all qv-sort-btn text-theme-text opacity-50 hover:opacity-100";
     }
   });
 
@@ -71,10 +71,10 @@ export async function initQuickView() {
   tfBtns.forEach((btn) => {
     if (btn.id === `qv-tf-${qvState.timeframe}`) {
       btn.className =
-        "px-2.5 py-1.5 text-[10px] font-black rounded-md transition-all qv-tf-btn text-white bg-theme-accent";
+        "px-2.5 py-1.5 text-[10px] font-bold rounded-md transition-all qv-tf-btn text-white bg-theme-accent";
     } else {
       btn.className =
-        "px-2.5 py-1.5 text-[10px] font-black rounded-md transition-all qv-tf-btn text-theme-text opacity-50 hover:opacity-100";
+        "px-2.5 py-1.5 text-[10px] font-bold rounded-md transition-all qv-tf-btn text-theme-text opacity-50 hover:opacity-100";
     }
   });
 
@@ -236,14 +236,14 @@ async function rebuildQuickViewCharts() {
 
     header.innerHTML = `
       <div class="flex items-center gap-1.5">
-        <span class="text-[8px] font-black uppercase ${tagClass}">${exTag}</span>
+        <span class="text-[8px] font-bold uppercase ${tagClass}">${exTag}</span>
         <div class="w-4 h-4 flex items-center justify-center rounded-full overflow-hidden flex-shrink-0 bg-white/5 [&>img]:w-full [&>img]:h-full [&>img]:object-contain">
           ${asset.Logo || ""}
         </div>
-        <span class="text-xs text-theme-text font-black">${asset.Ticker}</span>
+        <span class="text-xs text-theme-text font-bold">${asset.Ticker}</span>
       </div>
-      <div class="flex items-center gap-2 font-mono">
-        <span id="qv-change-${idx}" class="text-[10px] font-black ${chgColor}">${chgText}</span>
+      <div class="flex items-center gap-2 font-tempTestDss">
+        <span id="qv-change-${idx}" class="text-[10px] font-bold ${chgColor}">${chgText}</span>
       </div>
     `;
 
@@ -578,7 +578,7 @@ function renderOverlapLegend() {
 
   legend.classList.remove("hidden");
   legend.innerHTML = `
-    <div class="qv-legend-header text-[10px] font-black text-theme-accent border-b border-theme-border/20 flex items-center justify-between uppercase">
+    <div class="qv-legend-header text-[10px] font-bold text-theme-accent border-b border-theme-border/20 flex items-center justify-between uppercase">
     </div>
   `;
 
@@ -604,8 +604,8 @@ function renderOverlapLegend() {
 
     item.innerHTML = `
       <span class="qv-legend-color-dot" style="background-color: ${color}; box-shadow: 0 0 6px ${color}"></span>
-      <span class="text-[10px] text-theme-text font-black">${asset.Ticker}</span>
-      <span class="ml-auto font-mono text-[9px] ${chgColor}">${chgText}</span>
+      <span class="text-[10px] text-theme-text font-bold">${asset.Ticker}</span>
+      <span class="ml-auto font-tempTestDss text-[9px] ${chgColor}">${chgText}</span>
     `;
 
     // 범례 호버 시 해당 차트 포커스
@@ -869,7 +869,7 @@ function updateLiveHeaderPrice(idx, price, changePct, isFlash = false) {
   const numericChg = parseFloat(changePct);
   if (changeEl) {
     changeEl.innerText = `${numericChg > 0 ? "+" : ""}${numericChg.toFixed(2)}%`;
-    changeEl.className = `text-[10px] font-black ${numericChg > 0 ? "text-theme-up" : numericChg < 0 ? "text-theme-down" : ""}`;
+    changeEl.className = `text-[10px] font-bold ${numericChg > 0 ? "text-theme-up" : numericChg < 0 ? "text-theme-down" : ""}`;
   }
 
   // 실시간 체결 번쩍임(Flash) 효과
@@ -891,7 +891,7 @@ function updateLiveHeaderPrice(idx, price, changePct, isFlash = false) {
     const chgSpan = legendItem.querySelector("span:last-child");
     if (chgSpan) {
       chgSpan.innerText = `${numericChg > 0 ? "+" : ""}${numericChg.toFixed(2)}%`;
-      chgSpan.className = `ml-auto font-mono text-[9px] ${numericChg > 0 ? "text-theme-up" : numericChg < 0 ? "text-theme-down" : ""}`;
+      chgSpan.className = `ml-auto font-tempTestDss text-[9px] ${numericChg > 0 ? "text-theme-up" : numericChg < 0 ? "text-theme-down" : ""}`;
     }
   }
 }
@@ -1031,10 +1031,10 @@ export function changeQuickViewSort(type) {
     const id = btn.id;
     if (id === `qv-sort-${type}`) {
       btn.className =
-        "px-3 py-1.5 text-[10px] font-black rounded-md transition-all qv-sort-btn text-white bg-theme-accent";
+        "px-3 py-1.5 text-[10px] font-bold rounded-md transition-all qv-sort-btn text-white bg-theme-accent";
     } else {
       btn.className =
-        "px-3 py-1.5 text-[10px] font-black rounded-md transition-all qv-sort-btn text-theme-text opacity-50 hover:opacity-100";
+        "px-3 py-1.5 text-[10px] font-bold rounded-md transition-all qv-sort-btn text-theme-text opacity-50 hover:opacity-100";
     }
   });
 
@@ -1053,10 +1053,10 @@ export function changeQuickViewTF(tf) {
     const id = btn.id;
     if (id === `qv-tf-${tf}`) {
       btn.className =
-        "px-2.5 py-1.5 text-[10px] font-black rounded-md transition-all qv-tf-btn text-white bg-theme-accent";
+        "px-2.5 py-1.5 text-[10px] font-bold rounded-md transition-all qv-tf-btn text-white bg-theme-accent";
     } else {
       btn.className =
-        "px-2.5 py-1.5 text-[10px] font-black rounded-md transition-all qv-tf-btn text-theme-text opacity-50 hover:opacity-100";
+        "px-2.5 py-1.5 text-[10px] font-bold rounded-md transition-all qv-tf-btn text-theme-text opacity-50 hover:opacity-100";
     }
   });
 
@@ -1154,10 +1154,10 @@ export function toggleQuickViewCandleColor() {
   if (btn) {
     if (qvState.candleColorMode === "asset") {
       btn.className =
-        "px-3 py-1.5 text-[10px] font-black rounded-lg border border-theme-accent text-white bg-theme-accent transition-all flex items-center gap-1.5 cursor-pointer";
+        "px-3 py-1.5 text-[10px] font-bold rounded-lg border border-theme-accent text-white bg-theme-accent transition-all flex items-center gap-1.5 cursor-pointer";
     } else {
       btn.className =
-        "px-3 py-1.5 text-[10px] font-black rounded-lg border border-theme-border/50 hover:border-theme-accent text-theme-text hover:text-theme-accent bg-transparent transition-all flex items-center gap-1.5 cursor-pointer";
+        "px-3 py-1.5 text-[10px] font-bold rounded-lg border border-theme-border/50 hover:border-theme-accent text-theme-text hover:text-theme-accent bg-transparent transition-all flex items-center gap-1.5 cursor-pointer";
     }
   }
 
@@ -1177,14 +1177,14 @@ export function setQuickViewBase(base) {
     [btnAll, btnFav, btnFav2].forEach((btn) => {
       if (btn) {
         btn.className =
-          "px-4 py-2 text-xs font-black rounded-lg transition-all text-theme-text opacity-50 hover:opacity-100 cursor-pointer";
+          "px-4 py-2 text-xs font-bold rounded-lg transition-all text-theme-text opacity-50 hover:opacity-100 cursor-pointer";
       }
     });
     const activeBtn =
       base === "ALL" ? btnAll : base === "FAV" ? btnFav : btnFav2;
     if (activeBtn) {
       activeBtn.className =
-        "px-4 py-2 text-xs font-black rounded-lg transition-all text-white bg-theme-accent cursor-pointer";
+        "px-4 py-2 text-xs font-bold rounded-lg transition-all text-white bg-theme-accent cursor-pointer";
     }
   }
 }
@@ -1223,15 +1223,15 @@ export function updateLayoutToggleUI(layout) {
   if (btnSpread && btnOverlap && slider) {
     if (layout === "spread") {
       btnSpread.className =
-        "relative z-10 px-4 py-2 text-xs font-black rounded-md transition-all text-white cursor-pointer";
+        "relative z-10 px-4 py-2 text-xs font-bold rounded-md transition-all text-white cursor-pointer";
       btnOverlap.className =
-        "relative z-10 px-4 py-2 text-xs font-black rounded-md transition-all text-theme-text opacity-60 hover:opacity-100 cursor-pointer";
+        "relative z-10 px-4 py-2 text-xs font-bold rounded-md transition-all text-theme-text opacity-60 hover:opacity-100 cursor-pointer";
       slider.style.transform = "translateX(0px)";
     } else {
       btnSpread.className =
-        "relative z-10 px-4 py-2 text-xs font-black rounded-md transition-all text-theme-text opacity-60 hover:opacity-100 cursor-pointer";
+        "relative z-10 px-4 py-2 text-xs font-bold rounded-md transition-all text-theme-text opacity-60 hover:opacity-100 cursor-pointer";
       btnOverlap.className =
-        "relative z-10 px-4 py-2 text-xs font-black rounded-md transition-all text-white cursor-pointer";
+        "relative z-10 px-4 py-2 text-xs font-bold rounded-md transition-all text-white cursor-pointer";
       // offsetLeft 측정으로 동적인 슬라이딩 트랜지션 연출
       const offset = btnOverlap.offsetLeft - btnSpread.offsetLeft;
       slider.style.transform = `translateX(${offset}px)`;
