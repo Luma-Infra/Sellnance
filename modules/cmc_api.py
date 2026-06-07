@@ -77,7 +77,8 @@ def build_cmc_lookup_lists(binance_base_set, upbit_krw_set, MAPPING_DATA):
 
         # --- 장부 기록 ---
         if cmc_id and cmc_id not in ["None", ""]:
-            id_lookup.append(cmc_id)
+            if cmc_id.isdigit():
+                id_lookup.append(cmc_id)
             asset_to_lookup_key[lookup_name] = cmc_id
         else:
             if a in HARDCODE_VERIFY_SKIP_LIST or base in HARDCODE_VERIFY_SKIP_LIST:

@@ -27,28 +27,28 @@ export function startRealtimeCandle(
   if (!(isFutures || isSpot) && store.binanceChartWs) {
     try {
       store.binanceChartWs.close();
-    } catch (e) {}
+    } catch (e) { }
     store.binanceChartWs = null;
     store.currentKlineStream = null;
   }
   if (!isUpbit && store.upbitChartWs) {
     try {
       store.upbitChartWs.close();
-    } catch (e) {}
+    } catch (e) { }
     store.upbitChartWs = null;
     store.currentUpbitStream = null;
   }
   if (!isBithumb && store.bithumbChartWs) {
     try {
       store.bithumbChartWs.close();
-    } catch (e) {}
+    } catch (e) { }
     store.bithumbChartWs = null;
     store.currentBithumbStream = null;
   }
   if (!isBybit && store.bybitChartWs) {
     try {
       store.bybitChartWs.close();
-    } catch (e) {}
+    } catch (e) { }
     store.bybitChartWs = null;
     store.currentBybitStream = null;
   }
@@ -107,28 +107,28 @@ export function startRealtimeCandle(
       const isDayUnit = !(store.currentTF || "1h").match(/[hm]/);
       const chartTime = isDayUnit
         ? (() => {
-            if (
-              typeof currentCandle.time === "string" &&
-              currentCandle.time.includes("-")
-            )
-              return currentCandle.time;
-            const numTime = Number(currentCandle.time);
-            if (isNaN(numTime)) return currentCandle.time;
-            const dt = new Date(numTime * 1000);
-            return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, "0")}-${String(dt.getUTCDate()).padStart(2, "0")}`;
-          })()
-        : (() => {
-            if (
-              typeof currentCandle.time === "string" &&
-              currentCandle.time.includes("-")
-            ) {
-              const parsedUnix = Math.floor(
-                new Date(currentCandle.time).getTime() / 1000,
-              );
-              return isNaN(parsedUnix) ? currentCandle.time : parsedUnix;
-            }
+          if (
+            typeof currentCandle.time === "string" &&
+            currentCandle.time.includes("-")
+          )
             return currentCandle.time;
-          })();
+          const numTime = Number(currentCandle.time);
+          if (isNaN(numTime)) return currentCandle.time;
+          const dt = new Date(numTime * 1000);
+          return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, "0")}-${String(dt.getUTCDate()).padStart(2, "0")}`;
+        })()
+        : (() => {
+          if (
+            typeof currentCandle.time === "string" &&
+            currentCandle.time.includes("-")
+          ) {
+            const parsedUnix = Math.floor(
+              new Date(currentCandle.time).getTime() / 1000,
+            );
+            return isNaN(parsedUnix) ? currentCandle.time : parsedUnix;
+          }
+          return currentCandle.time;
+        })();
 
       const isTimeValid = (() => {
         if (chartTime === undefined || chartTime === null) return false;
@@ -257,7 +257,7 @@ export function startRealtimeCandle(
                 } else {
                   store.volumeSeries.setData(store.volumeData);
                 }
-              } catch (rebindErr) {}
+              } catch (rebindErr) { }
             }
           }
         }
@@ -266,7 +266,7 @@ export function startRealtimeCandle(
       updateRealtimeKimchi(currentCandle, currentSymbol, normalizedTime);
 
       const p = store.getPrecision(
-          store.currentSelectedSymbol || currentSymbol,
+        store.currentSelectedSymbol || currentSymbol,
       );
       if (typeof window.updateStatus === "function") {
         window.updateStatus(currentCandle, p);
@@ -463,7 +463,7 @@ export function startRealtimeCandle(
       if (store.binanceChartWs) {
         try {
           store.binanceChartWs.close();
-        } catch (e) {}
+        } catch (e) { }
       }
       store.binanceChartWs = new WebSocket(wsBase);
       store.binanceChartWs.onopen = () => {
@@ -494,7 +494,7 @@ export function startRealtimeCandle(
           }),
         );
         store.currentKlineStream = `${aggStream}/${klineStream}`;
-      } catch (e) {}
+      } catch (e) { }
     }
     store.binanceChartWs.onmessage = handleBinanceMessage;
   } else if (isUpbit) {
@@ -523,7 +523,7 @@ export function startRealtimeCandle(
           ]),
         );
         store.currentUpbitStream = upbitCode;
-      } catch (e) {}
+      } catch (e) { }
     }
     store.upbitChartWs.onmessage = getUpbitMessageHandler(
       symbol,
@@ -538,7 +538,7 @@ export function startRealtimeCandle(
       if (store.bithumbChartWs) {
         try {
           store.bithumbChartWs.close();
-        } catch (e) {}
+        } catch (e) { }
       }
       store.bithumbChartWs = new WebSocket("wss://pubwss.bithumb.com/pub/ws");
       store.bithumbChartWs.onopen = () => {
@@ -553,7 +553,7 @@ export function startRealtimeCandle(
     } else if (store.currentBithumbStream !== bithumbCode) {
       try {
         store.bithumbChartWs.close();
-      } catch (e) {}
+      } catch (e) { }
       store.bithumbChartWs = new WebSocket("wss://pubwss.bithumb.com/pub/ws");
       store.bithumbChartWs.onopen = () => {
         store.bithumbChartWs.send(
@@ -583,7 +583,7 @@ export function startRealtimeCandle(
       if (store.bybitChartWs) {
         try {
           store.bybitChartWs.close();
-        } catch (e) {}
+        } catch (e) { }
       }
       store.bybitChartWs = new WebSocket(wsUrl);
       store.bybitChartWs.onopen = () => {
@@ -610,7 +610,7 @@ export function startRealtimeCandle(
           }),
         );
         store.currentBybitStream = bybitCode;
-      } catch (e) {}
+      } catch (e) { }
     }
     store.bybitChartWs.onmessage = handleBybitMessage;
   }

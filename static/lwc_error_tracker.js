@@ -215,7 +215,7 @@
         lwcTemp = val;
         try {
           initTracker();
-        } catch (e) {}
+        } catch (e) { }
       },
       configurable: true,
       enumerable: true,

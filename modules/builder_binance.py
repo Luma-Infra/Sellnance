@@ -2,6 +2,7 @@
 import re
 from modules import utils, config_manager
 
+
 def build_binance_row(
     ticker,
     b_info,
@@ -67,6 +68,8 @@ def build_binance_row(
     # CMC에서 새로운 ucid를 찾았다면 최종 업데이트
     if not final_ucid and info:
         final_ucid = info.get("ucid", "")
+    if not final_ucid:
+        final_ucid = base
     if final_ucid:
         processed_uids.add(final_ucid)
 
@@ -255,7 +258,9 @@ def build_binance_row(
 
     if bithumb_price == 0 and bithumb_aliases:
         bithumb_symbol = bithumb_aliases[0]
-        bithumb_price = bithumb_data.get(bithumb_aliases[0].upper(), {}).get("price", 0.0)
+        bithumb_price = bithumb_data.get(bithumb_aliases[0].upper(), {}).get(
+            "price", 0.0
+        )
 
     # 🚀 [핵심] 김프(현현갭) & 현선갭 연산 (라벨 추가)
     kimchi_raw = 0.0
@@ -321,6 +326,10 @@ def build_binance_row(
     )
 
     # 7. 데이터 조립
+    u_type = str(b_info.get("underlying_type", "")) if isinstance(b_info, dict) else ""
+    c_type = str(b_info.get("contract_type", "")) if isinstance(b_info, dict) else ""
+    is_stock = ("EQUITY" in u_type) or (c_type == "TRADIFI_PERPETUAL")
+
     row = {
         "UID": final_ucid,
         "Symbol": raw_symbol,
@@ -329,17 +338,34 @@ def build_binance_row(
         "Logo": logo,
         "Name": coin_name,
         "Chain": chain,
+        "Is_Stock": is_stock,
         "Upbit": "O" if target_up_base else "X",
         "Bithumb_Symbol": bithumb_symbol,
         "precision": precision,
         "Price": utils.format_dynamic_price(b_info["price"], precision),
         "Price_KRW": up_price_krw if up_price_krw > 0 else None,
-        "Binance_Price": (binance_futures_price or binance_spot_price) if (binance_futures_price > 0 or binance_spot_price > 0) else None,
-        "Bybit_Price": (by_futures_p or by_spot_p) if (by_futures_p > 0 or by_spot_p > 0) else None,
+        "Binance_Price": (
+            (binance_futures_price or binance_spot_price)
+            if (binance_futures_price > 0 or binance_spot_price > 0)
+            else None
+        ),
+        "Bybit_Price": (
+            (by_futures_p or by_spot_p) if (by_futures_p > 0 or by_spot_p > 0) else None
+        ),
         "Upbit_Price": up_price_krw if up_price_krw > 0 else None,
         "Bithumb_Price": bithumb_price if bithumb_price > 0 else None,
-        "Upbit_Vol_Formatted": (utils.format_volume_string(up_vol_24h / krw_usd_rate) if krw_usd_rate > 0 else "-") if up_vol_24h > 0 else "-",
-        "Upbit_Vol_KRW_Formatted": utils.format_volume_krw_string(up_vol_24h) if up_vol_24h > 0 else "-",
+        "Upbit_Vol_Formatted": (
+            (
+                utils.format_volume_string(up_vol_24h / krw_usd_rate)
+                if krw_usd_rate > 0
+                else "-"
+            )
+            if up_vol_24h > 0
+            else "-"
+        ),
+        "Upbit_Vol_KRW_Formatted": (
+            utils.format_volume_krw_string(up_vol_24h) if up_vol_24h > 0 else "-"
+        ),
         "Upbit_Vol_Raw": up_vol_24h,
         "Change_24h": utils.format_change(change_24h),
         "Change_Today": utils.format_change(change_today),

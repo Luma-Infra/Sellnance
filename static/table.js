@@ -55,15 +55,6 @@ document.addEventListener("mousemove", (e) => {
   });
 });
 
-document.addEventListener("mouseup", () => {
-  isResizing = false;
-  document.body.classList.remove("resizing-active");
-  if (animationFrameId) cancelAnimationFrame(animationFrameId);
-});
-
-// ⭐️ 2. 초기화 및 이벤트 바인딩 ⭐️
-let lastClickedSymbol = null;
-let lastClickedTime = 0;
 
 document.addEventListener("DOMContentLoaded", () => {
   const tbody = document.getElementById("table-body");

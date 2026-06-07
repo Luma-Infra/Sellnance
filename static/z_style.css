@@ -1,8 +1,10 @@
 /* z_style.css */
 /* css-disable unknownAtRules */
 @import "tailwindcss";
+
 @theme {
   --color-theme-bg: var(--bg);
+  --color-theme-panel: var(--panel);
   --color-theme-panel: var(--panel);
   --color-theme-border: var(--border);
   --color-theme-text: var(--text);
@@ -20,47 +22,60 @@
   --down: #1261c4;
   --accent: #093687;
 
+  /* ?? ?�이�?컬럼 ?�비 배수 관리소 (?�하??배수 비율???�으�??�아??100% 기�? ?�금비율�??�동 계산?�니??) */
+  --ratio-asset: 2.3; /*    1?? 코인�?*/
+  --ratio-price: 2; /*      2?? 가�?  */
+  --ratio-mcap: 2; /*       3?? ?�총   */
+  --ratio-kimch: 1; /*    4?? 김??  */
+  --ratio-exch: 1.2; /*       5?? 거래??*/
+  --ratio-listing: 2.2; /*    6?? ?�장??*/
+
+  --accent: #093687;
+
   /* 🚀 테이블 컬럼 너비 배수 관리소 (원하는 배수 비율을 적으면 알아서 100% 기준 황금비율로 자동 계산됩니다!) */
-  --ratio-asset: 2.3; /*    1열: 코인명 */
-  --ratio-price: 2; /*      2열: 가격   */
-  --ratio-mcap: 2; /*       3열: 시총   */
-  --ratio-kimch: 1; /*    4열: 김프   */
-  --ratio-exch: 1.2; /*       5열: 거래소 */
-  --ratio-listing: 2.2; /*    6열: 상장일 */
+  --ratio-asset: 2.3;
+  /*    1열: 코인명 */
+  --ratio-price: 2;
+  /*      2열: 가격   */
+  --ratio-mcap: 2;
+  /*       3열: 시총   */
+  --ratio-kimch: 1;
+  /*    4열: 김프   */
+  --ratio-exch: 1.2;
+  /*       5열: 거래소 */
+  --ratio-listing: 2.2;
+  /*    6열: 상장일 */
 
   /* 💡 자동 합산 및 퍼센트 변환 엔진 (절대 건드리지 마세요!) */
-  --ratio-total: calc(
-    var(--ratio-asset) + var(--ratio-price) + var(--ratio-mcap) +
-      var(--ratio-kimch) + var(--ratio-exch) + var(--ratio-listing)
-  );
+  --ratio-total: calc(var(--ratio-asset) + var(--ratio-price) + var(--ratio-mcap) + var(--ratio-kimch) + var(--ratio-exch) + var(--ratio-listing));
 }
 
 /* 🚀 계산된 비율을 각 컬럼 클래스에 자동 주입 (HTML과 JS에 이미 연결되어 있어 즉시 100% 동기화 작동!) */
-.col-asset {
   width: calc((var(--ratio-asset) / var(--ratio-total)) * 100%) !important;
 }
+
 .col-price {
   width: calc((var(--ratio-price) / var(--ratio-total)) * 100%) !important;
 }
+
 .col-mcap {
   width: calc((var(--ratio-mcap) / var(--ratio-total)) * 100%) !important;
 }
+
 .col-kimch {
   width: calc((var(--ratio-kimch) / var(--ratio-total)) * 100%) !important;
 }
+
 .col-exch {
   width: calc((var(--ratio-exch) / var(--ratio-total)) * 100%) !important;
 }
+
 .col-listing {
   width: calc((var(--ratio-listing) / var(--ratio-total)) * 100%) !important;
 }
-
-html,
-body {
-  height: 100% !important;
 }
 
-/* 변수들을 실제 사용할 클래스로 연결 */
+/* 변?�들???�제 ?�용???�래?�로 ?�결 */
 .text-theme-up {
   color: var(--up) !important;
 }
@@ -111,7 +126,7 @@ body {
   background-color: var(--bg);
   color: var(--text);
   transition: background-color 0.1s ease;
-  /* 테마 전환 시 부드럽게 */
+  /* ?�마 ?�환 ??부?�럽�?*/
 }
 
 body.theme-binance {
@@ -134,7 +149,7 @@ body.theme-binance {
   }
 }
 
-/* 🚀 테마 전환 시 주요 컨테이너들이 부드럽게 변하도록 설정 (전역 !important 오염 제거하여 JS 애니메이션 완벽 부활!) */
+/* ?? ?�마 ?�환 ??주요 컨테?�너?�이 부?�럽�?변?�도�??�정 (?�역 !important ?�염 ?�거?�여 JS ?�니메이???�벽 부??) */
 body.theme-binance:not(.resizing-active),
 body.theme-upbit:not(.resizing-active),
 body.theme-binance:not(.resizing-active) #left-panel,
@@ -148,7 +163,7 @@ body.theme-upbit:not(.resizing-active) #right-panel {
     box-shadow 0.3s ease-in-out;
 }
 
-/* 🚀 차트 로딩 시 쫀득한 애니메이션 효과 */
+/* ?? 차트 로딩 ??쫀?�한 ?�니메이???�과 */
 #chart-wrapper {
   transition:
     transform 0.1s cubic-bezier(0.1, 0, 0.1, 1),
@@ -156,7 +171,7 @@ body.theme-upbit:not(.resizing-active) #right-panel {
   will-change: transform, filter;
 }
 
-/* 데이터 로딩 중일 때 (어둡고 축소) */
+/* ?�이??로딩 중일 ??(?�둡�?축소) */
 #chart-wrapper.chart-loading {
   filter: brightness(0.8) blur(1px);
 }
@@ -188,7 +203,7 @@ body.theme-upbit:not(.resizing-active) #right-panel {
   height: 52px !important;
   border-bottom: 1px solid rgba(128, 128, 128, 0.05);
 
-  /* 🚀 [HTS급 최적화] 하드웨어 가속 및 레이어 격리 */
+  /* ?? [HTS�?최적?? ?�드?�어 가??�??�이??격리 */
   will-change: transform;
   backface-visibility: hidden;
   transform: translateZ(0);
@@ -212,7 +227,7 @@ body.theme-upbit:not(.resizing-active) #right-panel {
   background: rgba(var(--accent-rgb), 0.05) !important;
 }
 
-/* 🚀 [신규] 상단 컨트롤러 디자인 */
+/* ?? [?�규] ?�단 컨트롤러 ?�자??*/
 #mcap-slider {
   -webkit-appearance: none;
   appearance: none;
@@ -239,20 +254,20 @@ body.theme-upbit:not(.resizing-active) #right-panel {
   transform: scale(1.2);
 }
 
-/* 🚀 테이블 바디 스크롤 필살기 */
+/* ?? ?�이�?바디 ?�크�??�살�?*/
 #market-table {
   display: flex !important;
   flex-direction: column !important;
   height: 100% !important;
-  /* 부모 div 높이를 다 써라! */
+  /* 부�?div ?�이�????�라! */
 }
 
 #market-table thead {
   flex-shrink: 0 !important;
-  /* 헤더는 절대 찌그러지지 마라! */
+  /* ?�더???��? 찌그?��?지 마라! */
 }
 
-/* 🚀 줄 맞춤을 위해 아래 코드도 세트로 확인! */
+/* ?? �?맞춤???�해 ?�래 코드???�트�??�인! */
 #market-table thead,
 #market-table tbody tr {
   display: table;
@@ -262,16 +277,16 @@ body.theme-upbit:not(.resizing-active) #right-panel {
 
 #table-body {
   display: block !important;
-  /* 👈 이걸 해야 스크롤이 먹힘! */
+  /* ?�� ?�걸 ?�야 ?�크롤이 먹힘! */
   flex: 1 !important;
-  /* 남은 공간을 바디가 다 채워라! */
+  /* ?��? 공간??바디가 ??채워?? */
   overflow-y: auto !important;
-  /* 드디어 스크롤바 등장! */
+  /* ?�디???�크롤바 ?�장! */
   min-height: 0;
-  /* flex 자식일 때 스크롤이 안 생기는 버그 방지 */
+  /* flex ?�식?????�크롤이 ???�기??버그 방�? */
 }
 
-/* 🚀 줄 맞춤 (헤더랑 바디 칸 너비 맞추기) */
+/* ?? �?맞춤 (?�더??바디 �??�비 맞추�? */
 #market-table thead tr,
 #market-table tbody tr {
   display: table !important;
@@ -279,7 +294,7 @@ body.theme-upbit:not(.resizing-active) #right-panel {
   table-layout: fixed !important;
 }
 
-/* 🚨 전역 CSS 오염 및 라이브러리 네이티브 스케일 구분선 근본 박멸 */
+/* ?�� ?�역 CSS ?�염 �??�이브러�??�이?�브 ?��???구분??근본 박멸 */
 .tv-lightweight-charts table {
   table-layout: auto !important;
   margin: 0 !important;
@@ -290,47 +305,47 @@ body.theme-upbit:not(.resizing-active) #right-panel {
 
 .tv-lightweight-charts td,
 .tv-lightweight-charts th,
-.tv-lightweight-charts td > div {
+.tv-lightweight-charts td>div {
+  padding: 0 !important;
+
+.tv-lightweight-charts td,
+.tv-lightweight-charts th,
+.tv-lightweight-charts td>div {
   padding: 0 !important;
   border: none !important;
   background: transparent !important;
-}
-
-/* 가격 변화에 따른 flash 플래시 번쩍거림 반짝임 효과 */
-.flash-up {
+  /* text-shadow: 0 0 12px color-mix(in srgb, var(--up), transparent 80%) !important; */
+  background: radial-gradient(
+      /* circle, */
+      var(--flash-up) 0%,
   color: color-mix(in srgb, var(--up), transparent 20%) !important;
   /* text-shadow: 0 0 12px color-mix(in srgb, var(--up), transparent 80%) !important; */
   background: radial-gradient(
-    /* circle, */ var(--flash-up) 0%,
-    transparent 40%
-  ) !important;
+      /* circle, */
+      var(--flash-up) 0%,
+      transparent 40%) !important;
   /* box-shadow: inset 2px 0 0 0 var(--up) !important; */
   transition: none !important;
 }
-
-.flash-down {
+      /* circle, */
   color: color-mix(in srgb, var(--down), transparent 20%) !important;
   /* text-shadow: 0 0 12px color-mix(in srgb, var(--down), transparent 80%) !important; */
   background: radial-gradient(
-    /* circle, */ var(--flash-down) 0%,
-    transparent 40%
-  ) !important;
+      /* circle, */
+      var(--flash-down) 0%,
+      transparent 40%) !important;
   /* box-shadow: inset 2px 0 0 0 var(--down) !important; */
   transition: none !important;
 }
-
-/* 🚀 평소 상태로 복귀할 때 (부드러운 잔상 효과) */
-.price-cell {
-  transition:
     color 0.4s ease,
     text-shadow 0.4s ease,
     background 0.4s ease,
     box-shadow 0.4s ease;
   padding-left: 8px;
-  /* 좌측 보더 공간 확보 */
+  /* 좌측 보더 공간 ?�보 */
 }
 
-/* 🚨 고급 HTS 스타일 커스텀 스크롤바 */
+/* ?�� 고급 HTS ?��???커스?� ?�크롤바 */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -349,20 +364,20 @@ body.theme-upbit:not(.resizing-active) #right-panel {
   background: rgba(120, 123, 134, 0.8);
 }
 
-/* 드래그 중일 때만 모든 부드러운 효과를 강제로 끕니다 */
+/* ?�래�?중일 ?�만 모든 부?�러???�과�?강제�??�니??*/
 .resizing-active #left-panel,
 .resizing-active #right-panel {
   transition: none !important;
   user-select: none;
 }
 
-/* 테이블 행 경주마 애니메이션용 */
+/* ?�이�???경주�??�니메이?�용 */
 .flip-row {
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  /* 쫀득한 이동 속도 */
+  /* 쫀?�한 ?�동 ?�도 */
 }
 
-/* 즐겨찾기 별 토글 애니메이션 */
+/* 즐겨찾기 �??��? ?�니메이??*/
 .star-btn {
   cursor: pointer;
   transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -383,9 +398,9 @@ body.theme-upbit:not(.resizing-active) #right-panel {
 
 #mobile-chart-content #right-panel {
   display: flex !important;
-  /* 모바일 컨텐츠 안에 들어오면 무조건 보여라! */
+  /* 모바??컨텐�??�에 ?�어?�면 무조�?보여?? */
   flex: 1 !important;
-  /* 👈 부모 안에서 꽉 차게 늘어나라! */
+  /* ?�� 부�??�에??�?차게 ?�어?�라! */
   width: 100% !important;
   height: 100% !important;
 }
@@ -393,19 +408,19 @@ body.theme-upbit:not(.resizing-active) #right-panel {
 #mobile-chart-overlay.active {
   display: block !important;
   pointer-events: auto !important;
-  /* 🚀 활성화될 때만 클릭을 받음 */
+  /* ?? ?�성?�될 ?�만 ?�릭??받음 */
   opacity: 1 !important;
 }
 
-/* 모바일 오버레이 전체 높이 확보 */
+/* 모바???�버?�이 ?�체 ?�이 ?�보 */
 #mobile-chart-overlay {
   display: none;
   pointer-events: none;
   align-items: flex-end;
-  /* 아래서 위로 올라오니까! */
+  /* ?�래???�로 ?�라?�니�? */
 }
 
-/* 차트가 들어갈 알맹이 공간 */
+/* 차트가 ?�어�??�맹??공간 */
 #mobile-chart-content {
   z-index: 120;
   display: flex !important;
@@ -413,22 +428,23 @@ body.theme-upbit:not(.resizing-active) #right-panel {
   height: 100% !important;
 }
 
+/* ??모바???�합 최적??(768px ?�하) */
+@media (max-width: 768px) {
+  /* 가�??�크�??�전 차단 */
+  body,
+
 /* ✅ 모바일 통합 최적화 (768px 이하) */
 @media (max-width: 768px) {
+
   /* 가로 스크롤 완전 차단 */
   body,
   html {
-    overflow-x: hidden !important;
-    position: relative;
-  }
-
-  /* 1. 리스트 패널: 화면에 박제 & 스크롤 허용 */
   #left-panel.flex {
     position: fixed !important;
     top: 0;
     left: 0;
     width: 100vw !important;
-    /* 🚀 오타수정: 10x -> 10px */
+    /* ?? ?��??�정: 10x -> 10px */
     height: calc(100dvh - 10px) !important;
     max-height: calc(100dvh - 10px) !important;
     overflow-y: hidden !important;
@@ -436,16 +452,16 @@ body.theme-upbit:not(.resizing-active) #right-panel {
     background-color: var(--bg);
     padding-bottom: 20px;
     display: flex !important;
-    /* 🚀 1. 플렉스 박스로 선언 */
+    /* ?? 1. ?�렉??박스�??�언 */
     flex-direction: column !important;
-    /* 🚀 2. 내용물을 세로로 쌓기 */
-    /* 🚀 밑바닥 여유 살짝 추가 */
+    /* ?? 2. ?�용물을 ?�로�??�기 */
+    /* ?? 밑바???�유 ?�짝 추�? */
   }
 
-  /* 2. [잔상박멸] 평소 우측 패널은 안드로메다 유배 */
+  /* 2. [?�상박멸] ?�소 ?�측 ?�널?� ?�드로메???�배 */
   #right-panel {
     display: none;
-    /* !important 제거하고 JS에서 제어하게 두세요 */
+    /* !important ?�거?�고 JS?�서 ?�어?�게 ?�세??*/
   }
 
   /* 
@@ -458,7 +474,7 @@ body.theme-upbit:not(.resizing-active) #right-panel {
     opacity: 0 !important;
   } */
 
-  /* 3. [부활] 팝업 활성화 시에만 정중하게 재소환 */
+  /* 3. [부?? ?�업 ?�성???�에�??�중?�게 ?�소??*/
   #mobile-chart-overlay.active #right-panel,
   #mobile-chart-overlay.active #right-panel *,
   #mobile-chart-overlay.active #chart-container canvas {
@@ -469,7 +485,7 @@ body.theme-upbit:not(.resizing-active) #right-panel {
     opacity: 1 !important;
   }
 
-  /* 4. 테이블 & 차트 세부 조정 */
+  /* 4. ?�이�?& 차트 ?��? 조정 */
   /* #table-body {
     display: block !important;
     height: 500px !important;
@@ -477,10 +493,10 @@ body.theme-upbit:not(.resizing-active) #right-panel {
     width: 100%;
   } */
 
-  /* 3. 헤더는 딱 붙어있게 고정 (이미 되어있겠지만 확인!) */
+  /* 3. ?�더????붙어?�게 고정 (?��? ?�어?�겠지�??�인!) */
   thead {
     flex-shrink: 0;
-    /* 헤더가 찌그러지지 않게 */
+    /* ?�더가 찌그?��?지 ?�게 */
     display: table;
     width: 100%;
     table-layout: fixed;
@@ -500,7 +516,7 @@ body.theme-upbit:not(.resizing-active) #right-panel {
   }
 }
 
-/* 🚀 테이블 가격 옆 거래소 마크 태그 */
+/* ?? ?�이�?가�???거래??마크 ?�그 */
 .exchange-tag {
   display: inline-block;
   font-size: 8px;
@@ -512,77 +528,96 @@ body.theme-upbit:not(.resizing-active) #right-panel {
   line-height: 1;
   text-transform: uppercase;
 }
+
+.exchange-tag.binance-tag {
+  line-height: 1;
+  text-transform: uppercase;
+}
+
 .exchange-tag.binance-tag {
   background-color: rgba(240, 185, 11, 0.15) !important;
   color: #f0b90b !important;
-  border: 0.5px solid rgba(240, 185, 11, 0.3) !important;
 }
+
 .exchange-tag.bybit-tag {
   background-color: rgba(247, 166, 0, 0.15) !important;
   color: #f7a600 !important;
-  border: 0.5px solid rgba(247, 166, 0, 0.3) !important;
 }
+
 .exchange-tag.upbit-tag {
   background-color: rgba(30, 83, 229, 0.15) !important;
   color: #1e53e5 !important;
-  border: 0.5px solid rgba(30, 83, 229, 0.3) !important;
 }
+
 .exchange-tag.bithumb-tag {
+  background-color: rgba(255, 139, 0, 0.15) !important;
+  color: #ff8b00 !important;
   background-color: rgba(255, 139, 0, 0.15) !important;
   color: #ff8b00 !important;
   border: 0.5px solid rgba(255, 139, 0, 0.3) !important;
 }
 
-/* 🚀 정렬 시 테이블 영역 로딩/어두워짐 효과 (chart-loading 참고) */
+/* ?? ?�렬 ???�이�??�역 로딩/?�두?�짐 ?�과 (chart-loading 참고) */
 #table-body {
+  will-change: filter;
   will-change: filter;
   transition: filter 0.1s cubic-bezier(0.1, 0, 0.1, 1);
 }
+
 /* 1. 다크 모드 (바이낸스): 기존대로 어둡고 흐리게 */
 body.theme-binance #table-body.table-loading {
   filter: brightness(0.7) blur(0.5px);
-  pointer-events: none;
 }
+
 /* 2. 라이트 모드 (업비트): 어두워지는 대신 반투명(opacity)하고 흐리게 처리 */
 body.theme-upbit #table-body.table-loading {
-  filter: opacity(0.5) blur(0.5px); /* 또는 단순히 opacity: 0.6; blur(0.5px); */
+  filter: opacity(0.5) blur(0.5px);
+  /* 또는 단순히 opacity: 0.6; blur(0.5px); */
   pointer-events: none;
 }
 
 /* ==================================================
-   🚀 3단 뷰 모드 동적 반응형 및 퀵뷰 인라인 오버라이드
-================================================== */
+   ?? 3??�?모드 ?�적 반응??�??�뷰 ?�라???�버?�이??
 #left-panel {
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
 #left-panel.view-mode-simple {
   width: 360px !important;
 }
+
 #left-panel.view-mode-basic {
   width: 560px !important;
 }
+
 #left-panel.view-mode-expert {
   width: 640px !important;
 }
 
-/* 컬럼 가시성 조절 */
-.col-listing,
-#left-panel.view-mode-simple .col-kimch,
+#left-panel.view-mode-expert {
+  width: 640px !important;
+}
+
+/* 컬럼 가?�성 조절 */
 #left-panel.view-mode-simple .col-exch {
   display: none !important;
+}
+
+#left-panel.view-mode-expert .col-listing {
+  display: table-cell !important;
 }
 #left-panel.view-mode-expert .col-listing {
   display: table-cell !important;
 }
 
-/* simple 모드: 상단 USD/KR/Flip 컨트롤 숨김 */
+/* simple 모드: ?�단 USD/KR/Flip 컨트�??��? */
 #left-panel.view-mode-simple #currency-toggle,
 #left-panel.view-mode-simple #lang-toggle,
 #left-panel.view-mode-simple label:has(#flip-toggle) {
   display: none !important;
 }
 
-/* ⚡ 퀵뷰 레이아웃 */
+/* ???�뷰 ?�이?�웃 */
 #quickview-container {
   display: none;
   flex-direction: column !important;
@@ -594,15 +629,14 @@ body.theme-upbit #table-body.table-loading {
   width: 100vw !important;
   height: 100vh !important;
   z-index: 2000 !important;
-  background: rgba(13, 16, 23, 0.85) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
   margin: 0 !important;
   padding: 24px !important;
   box-sizing: border-box !important;
-  transform: translateZ(
-    0
-  ); /* 🚀 GPU 레이어 격리로 테두리 필터 번짐 및 번쩍임 방지 */
+  transform: translateZ(0);
+  /* 🚀 GPU 레이어 격리로 테두리 필터 번짐 및 번쩍임 방지 */
+}
+
+body.theme-upbit #quickview-container.qv-modal {
 }
 
 body.theme-upbit #quickview-container.qv-modal {
@@ -612,15 +646,17 @@ body.theme-upbit #quickview-container.qv-modal {
   border: 1px solid rgba(0, 0, 0, 0.05) !important;
 }
 
-/* ⚡ 퀵뷰 실행 중 placeholder */
+/* ???�뷰 ?�행 �?placeholder */
 #quickview-placeholder {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
   height: 100%;
   width: 100%;
 }
+
+#quickview-body {
+  flex-direction: column !important;
+  flex: 1 !important;
+
 #quickview-body {
   flex-direction: column !important;
   flex: 1 !important;
@@ -630,39 +666,45 @@ body.theme-upbit #quickview-container.qv-modal {
   display: flex !important;
 }
 
-/* 🗂️ Spread 모드: 4x2 그리드 */
+/* ?���?Spread 모드: 4x2 그리??*/
 .qv-spread-mode {
   display: grid !important;
-  grid-template-columns: repeat(4, 1fr) !important;
-  grid-template-rows: repeat(2, 1fr) !important;
-  gap: 6px !important;
-  width: 100% !important;
   height: 100% !important;
   min-height: 0 !important;
 }
+
 .qv-spread-mode .qv-chart-card {
   width: 100% !important;
   height: 100% !important;
 }
 
-/* 겹치기 모드 */
-.qv-overlap-mode {
+.qv-spread-mode .qv-chart-card {
+  width: 100% !important;
   display: block !important;
   position: relative !important;
 }
+
+.qv-overlap-mode .qv-chart-card {
+  opacity: 0.4;
+  z-index: 2;
+  position: relative !important;
+}
+
 .qv-overlap-mode .qv-chart-card {
   opacity: 0.4;
   z-index: 2;
   border-color: var(--border);
-  pointer-events: none;
-  width: 100% !important;
-  height: 100% !important;
-  box-shadow: none !important;
-  background: transparent !important;
-  position: absolute !important;
   top: 0 !important;
   left: 0 !important;
 }
+
+.qv-overlap-mode .qv-chart-card.qv-focus-active {
+  opacity: 0.8 !important;
+  z-index: 10 !important;
+  top: 0 !important;
+  left: 0 !important;
+}
+
 .qv-overlap-mode .qv-chart-card.qv-focus-active {
   opacity: 0.8 !important;
   z-index: 10 !important;
@@ -670,24 +712,30 @@ body.theme-upbit #quickview-container.qv-modal {
   border-color: var(--accent) !important;
 }
 
-/* 🎴 차트 카드 */
+/* ?�� 차트 카드 */
 .qv-chart-card {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  will-change: transform, opacity, top, left, width, height;
-  border-radius: 16px;
-  display: flex;
-  flex-direction: column;
-  transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
   position: relative;
   overflow: hidden;
 }
+
 body.theme-binance .qv-chart-card {
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
 }
+
 body.theme-upbit .qv-chart-card {
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
 }
+
+.qv-chart-card:hover {
+  border-color: var(--accent);
+  box-shadow:
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+body.theme-upbit .qv-chart-card {
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
 .qv-chart-card:hover {
   border-color: var(--accent);
   box-shadow:
@@ -695,7 +743,7 @@ body.theme-upbit .qv-chart-card {
     inset 0 0 10px rgba(var(--accent-rgb), 0.05);
 }
 
-/* 📐 캔버스 영역 */
+/* ?�� 캔버???�역 */
 .qv-chart-canvas-area {
   position: relative;
   flex: 1 !important;
@@ -704,61 +752,75 @@ body.theme-upbit .qv-chart-card {
   min-height: 0 !important;
 }
 
-/* 🏷️ 카드 헤더 */
-.qv-chart-header {
-  user-select: none;
-  background: rgba(0, 0, 0, 0.15);
-  border-bottom: 1px solid rgba(128, 128, 128, 0.05);
-  display: flex;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+body.theme-upbit .qv-chart-header {
+  background: rgba(0, 0, 0, 0.02);
+}
   justify-content: space-between;
   align-items: center;
   padding: 6px 12px;
   font-family: "Outfit", sans-serif;
-  font-size: 10px;
-  font-weight: 700;
-}
-body.theme-upbit .qv-chart-header {
-  background: rgba(0, 0, 0, 0.02);
+  background: var(--panel) !important;
+  border-color: var(--border) !important;
 }
 
-/* 🎯 초기 정렬 선택 카드 */
+.qv-init-card:hover {
+  border-color: var(--accent) !important;
+  box-shadow: 0 15px 35px rgba(var(--accent-rgb), 0.3) !important;
+}
+
+/* ?�� 초기 ?�렬 ?�택 카드 */
 .qv-init-card {
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
   background: var(--panel) !important;
   border-color: var(--border) !important;
 }
+
 .qv-init-card:hover {
   border-color: var(--accent) !important;
   box-shadow: 0 15px 35px rgba(var(--accent-rgb), 0.3) !important;
-  transform: translateY(-6px) scale(1.03) !important;
-}
-
-/* 📋 겹치기 범례판 */
-#qv-overlap-legend {
-  opacity: 1;
-  width: 170px;
-  transition:
-    width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1),
-    opacity 0.3s,
-    padding 0.3s,
-    background-color 0.3s,
     border-color 0.3s;
   overflow: hidden;
 }
+
 body.theme-binance #qv-overlap-legend {
   background-color: rgba(15, 17, 26, 0.85) !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
-}
+
 body.theme-upbit #qv-overlap-legend {
   background-color: rgba(244, 245, 248, 0.9) !important;
   border: 1px solid rgba(0, 0, 0, 0.1) !important;
-}
+
 #qv-overlap-legend.collapsed {
   opacity: 0.8;
   width: 32px;
-  padding-left: 12px;
   padding-right: 12px;
 }
+
+#qv-overlap-legend.collapsed .qv-legend-header {
+  opacity: 0;
+  pointer-events: none;
+  background-color: rgba(15, 17, 26, 0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  padding-bottom: 0;
+  overflow: hidden;
+}
+
+.qv-legend-header {
+  transition:
+    opacity 0.2s,
+    margin-bottom 0.3s,
+    padding-bottom 0.3s;
+}
+
+.qv-legend-item {
+  cursor: pointer;
+  user-select: none;
+}
+
 #qv-overlap-legend.collapsed .qv-legend-header {
   opacity: 0;
   pointer-events: none;
@@ -766,94 +828,124 @@ body.theme-upbit #qv-overlap-legend {
   height: 0;
   margin-bottom: 0;
   padding-bottom: 0;
-  overflow: hidden;
-}
-.qv-legend-header {
-  transition:
-    opacity 0.2s,
-    height 0.3s,
-    margin-bottom 0.3s,
-    padding-bottom 0.3s;
-}
-.qv-legend-item {
-  cursor: pointer;
-  user-select: none;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
   padding: 4px 8px;
   transition: all 0.2s;
 }
+
+#qv-overlap-legend.collapsed .qv-legend-item {
+  justify-content: center;
+  padding-left: 0;
+}
+
+#qv-overlap-legend.collapsed .qv-legend-item span:not(.qv-legend-color-dot) {
+  display: none;
+}
+
+.qv-legend-item:hover,
+.qv-legend-item.active {
+  background: rgba(255, 255, 255, 0.08);
+
+body.theme-upbit .qv-legend-item:hover,
+body.theme-upbit .qv-legend-item.active {
+  background: rgba(0, 0, 0, 0.05);
+
+.qv-legend-color-dot {
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
 #qv-overlap-legend.collapsed .qv-legend-item {
   justify-content: center;
   padding-left: 0;
   padding-right: 0;
 }
-#qv-overlap-legend.collapsed .qv-legend-item span:not(.qv-legend-color-dot) {
-  display: none;
-}
-.qv-legend-item:hover,
-.qv-legend-item.active {
-  background: rgba(255, 255, 255, 0.08);
-}
-body.theme-upbit .qv-legend-item:hover,
-body.theme-upbit .qv-legend-item.active {
-  background: rgba(0, 0, 0, 0.05);
-}
-.qv-legend-color-dot {
-  border-radius: 50%;
-  flex-shrink: 0;
-  width: 8px;
-  height: 8px;
+
+body.theme-binance .qv-chart-card {
+  background-color: var(--panel) !important;
 }
 
-/* 🚀 다크 테마 배경 및 트레이딩뷰 로고 소각 */
+.tv-lightweight-charts a,
+.tv-lightweight-charts-watermark,
+#tv-attr-logo,
+  display: none !important;
+}
+
+.qv-overlap-mode .qv-chart-card {
+  background-color: transparent !important;
+}
+#quickview-init-overlay {
+  background-color: rgba(255, 255, 255, 0.9);
+}
+
+body.theme-binance #quickview-init-overlay {
+  background-color: rgba(19, 23, 34, 0.9);
+}
+
+body.theme-upbit #quickview-init-overlay {
+  background-color: rgba(255, 255, 255, 0.9);
+}
+
+/* ?? ?�크 ?�마 배경 �??�레?�딩�?로고 ?�각 */
 body.theme-binance #quickview-body,
 body.theme-binance .qv-chart-card {
   background-color: var(--panel) !important;
 }
+
 .tv-lightweight-charts a,
 .tv-lightweight-charts-watermark,
 #tv-attr-logo,
 table[class*="tv-lightweight-charts"] {
   display: none !important;
 }
-.qv-overlap-mode .qv-chart-card {
-  background-color: transparent !important;
+  border: 1px solid rgba(34, 197, 94, 0.3) !important;
+  color: #22c55e !important;
 }
 
-#quickview-init-overlay {
-  background-color: rgba(255, 255, 255, 0.9);
+.confirm-fav-btn:hover {
+  background-color: rgba(34, 197, 94, 0.3) !important;
 }
-body.theme-binance #quickview-init-overlay {
-  background-color: rgba(19, 23, 34, 0.9);
+
+.cancel-fav-btn {
+  background-color: rgba(239, 68, 68, 0.15) !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+
+.cancel-fav-btn:hover {
+  background-color: rgba(239, 68, 68, 0.3) !important;
 }
 body.theme-upbit #quickview-init-overlay {
-  background-color: rgba(255, 255, 255, 0.9);
+  color: #4ade80 !important;
+  border-color: rgba(74, 222, 128, 0.3) !important;
 }
 
-/* ✨ 애니메이션 강제 끄기용 마법의 클래스 */
-body.disable-animations * {
-  transition: none !important;
+body.theme-binance .cancel-fav-btn {
+  color: #f87171 !important;
+  border-color: rgba(248, 113, 113, 0.3) !important;
   animation: none !important;
   scroll-behavior: auto !important;
 }
 
-/* 🚀 즐겨찾기 대기 상태 확인/취소 버튼 테마별 최적화 (라이트 모드 흰색 글씨 시인성 개선) */
+/* ?? 즐겨찾기 ?��??�태 ?�인/취소 버튼 ?�마�?최적??(?�이??모드 ?�색 글???�인??개선) */
 .confirm-fav-btn {
-  background-color: rgba(34, 197, 94, 0.15) !important;
-  border: 1px solid rgba(34, 197, 94, 0.3) !important;
-  color: #22c55e !important;
+  border-color: rgba(21, 128, 61, 0.4) !important;
+  background-color: rgba(21, 128, 61, 0.1) !important;
 }
-.confirm-fav-btn:hover {
-  background-color: rgba(34, 197, 94, 0.3) !important;
+
+body.theme-upbit .confirm-fav-btn:hover {
+  background-color: rgba(21, 128, 61, 0.2) !important;
 }
-.cancel-fav-btn {
-  background-color: rgba(239, 68, 68, 0.15) !important;
-  border: 1px solid rgba(239, 68, 68, 0.3) !important;
-  color: #ef4444 !important;
+
+body.theme-upbit .cancel-fav-btn {
+  color: #b91c1c !important;
+  border-color: rgba(185, 28, 28, 0.4) !important;
 }
+
+body.theme-upbit .cancel-fav-btn:hover {
+  background-color: rgba(185, 28, 28, 0.2) !important;
+}
+}
+
 .cancel-fav-btn:hover {
   background-color: rgba(239, 68, 68, 0.3) !important;
 }
@@ -862,6 +954,7 @@ body.theme-binance .confirm-fav-btn {
   color: #4ade80 !important;
   border-color: rgba(74, 222, 128, 0.3) !important;
 }
+
 body.theme-binance .cancel-fav-btn {
   color: #f87171 !important;
   border-color: rgba(248, 113, 113, 0.3) !important;
@@ -872,14 +965,39 @@ body.theme-upbit .confirm-fav-btn {
   border-color: rgba(21, 128, 61, 0.4) !important;
   background-color: rgba(21, 128, 61, 0.1) !important;
 }
+
 body.theme-upbit .confirm-fav-btn:hover {
   background-color: rgba(21, 128, 61, 0.2) !important;
 }
+
 body.theme-upbit .cancel-fav-btn {
   color: #b91c1c !important;
   border-color: rgba(185, 28, 28, 0.4) !important;
   background-color: rgba(185, 28, 28, 0.1) !important;
 }
+
 body.theme-upbit .cancel-fav-btn:hover {
   background-color: rgba(185, 28, 28, 0.2) !important;
+}
+
+/* 🚀 트레이딩뷰 앱 방식: 모바일 터치 시 A/L 버튼 강제 표시 */
+.scale-mode-container.mobile-show-scale-btn {
+  opacity: 1 !important;
+}
+
+/* 시총/거래대금 등 하단 숫자들 숨김 (Price, 24H Chg, Day Chg만 남기기) */
+#mobile-chart-content #head-info-row>div:nth-child(n+4) {
+  display: none !important;
+}
+
+#mobile-chart-content .layout__area--left {
+  display: none !important;
+}
+
+#mobile-chart-content .flex-1.flex.flex-col.relative.min-w-0.h-full.overflow-hidden {
+  padding-left: 0 !important;
+}
+/* 🚀 트레이딩뷰 앱 방식: 모바일 터치 시 A/L 버튼 강제 표시 */
+.scale-mode-container.mobile-show-scale-btn {
+  opacity: 1 !important;
 }

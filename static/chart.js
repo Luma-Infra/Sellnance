@@ -41,7 +41,7 @@ class CanvasCrosshairPrimitive {
     if (this._requestUpdate) {
       try {
         this._requestUpdate();
-      } catch (e) {}
+      } catch (e) { }
     }
   }
 }
@@ -226,7 +226,6 @@ export function initChart() {
     },
     leftPriceScale: {
       autoScale: true,
-      visible: true, // 🚀 시간축 동기화를 위해 보이지 않는 축 유지
       borderColor: "transparent",
       // entireTextOnly: true,
     },
@@ -249,13 +248,12 @@ export function initChart() {
     rightPriceScale: {
       autoScale: true,
       visible: true,
+      visible: true,
       borderColor: gridColor,
       scaleMargins: { top: 0.5, bottom: 0 },
     },
     leftPriceScale: {
       autoScale: true,
-      visible: true,
-      borderColor: "transparent", // 🚀 [좌측 테두리 박멸] 메인 차트와 동일하게 좌측 테두리 선 투명화
       scaleMargins: { top: 0.1, bottom: 0.1 },
     },
   });
@@ -563,335 +561,335 @@ export function initChart() {
                   // 이를 원천 차단하기 위해, 비활성 타겟 차트의 네이티브 크로스헤어를 완벽하게 꺼버립니다.
                   // (세로선 동기화는 바로 아래의 캔버스 플러그인이 완벽하게 그려주므로 시간축 스냅 등 마그네틱 기능은 100% 유지됩니다!)
                   tChart.clearCrosshairPosition();
-                } catch (e) {}
-              }
+                } catch (e) { }
+                // 이를 원천 차단하기 위해, 비활성 타겟 차트의 네이티브 크로스헤어를 완벽하게 꺼버립니다.
+                // (세로선 동기화는 바로 아래의 캔버스 플러그인이 완벽하게 그려주므로 시간축 스냅 등 마그네틱 기능은 100% 유지됩니다!)
+                tChart.clearCrosshairPosition();
+              } catch (e) { }
+            }
 
-              // 🚀 targetTime을 문자열(YYYY-MM-DD HH:mm)로 변환하여 플러그인에 전달할 준비!
-              let timeStr = null;
-              if (targetTime !== undefined && targetTime !== null) {
-                const isDay = !(store.currentTF || "1h").match(/[hm]/);
-                if (isDay && typeof targetTime === "string") {
-                  timeStr = targetTime;
-                } else {
-                  const dt = new Date(
-                    (typeof targetTime === "string"
-                      ? getUnixSeconds(targetTime)
-                      : targetTime) * 1000,
-                  );
-                  if (!isNaN(dt.getTime())) {
-                    const yyyy = dt.getUTCFullYear();
-                    const mm = String(dt.getUTCMonth() + 1).padStart(2, "0");
-                    const dd = String(dt.getUTCDate()).padStart(2, "0");
-                    if (isDay) {
-                      timeStr = `${yyyy}-${mm}-${dd}`;
-                    } else {
-                      const HH = String(dt.getHours()).padStart(2, "0");
-                      const MM = String(dt.getMinutes()).padStart(2, "0");
-                      timeStr = `${yyyy}-${mm}-${dd} ${HH}:${MM}`;
-                    }
-                  }
-                }
-              }
+            // 🚀 targetTime을 문자열(YYYY-MM-DD HH:mm)로 변환하여 플러그인에 전달할 준비!
+            timeStr = targetTime;
+          } else {
+            const dt = new Date(
+              (typeof targetTime === "string"
+                ? getUnixSeconds(targetTime)
+                : targetTime) * 1000,
+            );
+            if(!isNaN(dt.getTime())) {
+            const yyyy = dt.getUTCFullYear();
+            const mm = String(dt.getUTCMonth() + 1).padStart(2, "0");
+            const dd = String(dt.getUTCDate()).padStart(2, "0");
+            if (isDay) {
+              timeStr = `${yyyy}-${mm}-${dd}`;
+            } else {
+              const HH = String(dt.getHours()).padStart(2, "0");
+              const MM = String(dt.getMinutes()).padStart(2, "0");
+              timeStr = `${yyyy}-${mm}-${dd} ${HH}:${MM}`;
+            }
+          }
+        }
+      }
 
               // 🚀 2. [핵심] 타겟 차트(tChart) 캔버스 플러그인 점선 및 하단 시간 라벨 최종 렌더링!
               // timeStr을 던져주면, 방금 만든 CanvasCrosshairTimeAxisView가 X축에 라벨을 예쁘게 그려냅니다.
               if (tChart === store.chartVol && store._volCrosshair) {
-                store._volCrosshair.setX(magnetX, timeStr);
-              } else if (tChart === store.chart && store._mainCrosshair) {
-                store._mainCrosshair.setX(magnetX, timeStr);
-              }
-            }
+        store._volCrosshair.setX(magnetX, timeStr);
+      } else if (tChart === store.chart && store._mainCrosshair) {
+        store._mainCrosshair.setX(magnetX, timeStr);
+      }
+    }
           });
 
-          // 🚀 5. 레전드 업데이트 등 기존 로직 유지
-          if (
-            sourceChart === store.chart &&
-            store.candleSeries &&
-            typeof store.candleSeries.coordinateToPrice === "function"
-          ) {
-            store.crosshairPrice = store.candleSeries.coordinateToPrice(
-              param.point.y,
-            );
-            if (
-              store.leftScaleSeries &&
-              typeof store.leftScaleSeries.coordinateToPrice === "function"
-            ) {
-              store.crosshairLeftPrice =
-                store.leftScaleSeries.coordinateToPrice(param.point.y);
-            }
-          }
-          store.isCrosshairActive = true;
-          if (store._drawingPrimitive) {
-            store._drawingPrimitive.updateAll();
-          }
-          // 🚀 [미래 타임스탬프 완벽 연동] param.time이 undefined일 때, 위에서 역산한 targetTime(미래 시간)을 십자선 시간으로 사용!
-          const activeTime = param.time !== undefined ? param.time : targetTime;
-          const pTime = getUnixSeconds(activeTime);
+  // 🚀 5. 레전드 업데이트 등 기존 로직 유지
+  if (
+    sourceChart === store.chart &&
+    store.candleSeries &&
+    typeof store.candleSeries.coordinateToPrice === "function"
+  ) {
+    store.crosshairPrice = store.candleSeries.coordinateToPrice(
+      param.point.y,
+    );
+    if (
+      store.leftScaleSeries &&
+      typeof store.leftScaleSeries.coordinateToPrice === "function"
+    ) {
+      store.crosshairLeftPrice =
+        store.leftScaleSeries.coordinateToPrice(param.point.y);
+    }
+  }
+  store.isCrosshairActive = true;
+  if (store._drawingPrimitive) {
+    store._drawingPrimitive.updateAll();
+  }
+  // 🚀 [미래 타임스탬프 완벽 연동] param.time이 undefined일 때, 위에서 역산한 targetTime(미래 시간)을 십자선 시간으로 사용!
+  const activeTime = param.time !== undefined ? param.time : targetTime;
+  const pTime = getUnixSeconds(activeTime);
 
-          let d = null;
-          if (sourceChart === store.chart) {
-            d = param.seriesData.get(store.candleSeries);
-            // 🚀 [완벽 폴백 보강] 라이브러리 내부 캔들 구조체(d)에는 volume 필드가 없으므로, 원본 메인 장부(store.mainData)에서 찾아 volume을 주입합니다!
-            const mainCandle = store.mainData?.find(
-              (item) => getUnixSeconds(item.time) === pTime,
-            );
-            if (d && mainCandle && mainCandle.volume !== undefined) {
-              d.volume = mainCandle.volume;
-            } else if (!d && mainCandle) {
-              // 🚀 [미래 캔들 폴백] param.seriesData에 없어도(허공) mainData에 있으면 강제 표시!
-              d = { ...mainCandle };
-            }
-          } else {
-            d =
-              store.mainData?.find(
-                (item) => getUnixSeconds(item.time) === pTime,
-              ) || null;
-          }
-          const v =
-            store.volumeData?.find(
-              (item) => getUnixSeconds(item.time) === pTime,
-            ) || null;
-          const k =
-            store.kimchiData?.find(
-              (item) => getUnixSeconds(item.time) === pTime,
-            ) || null;
-          if (d && typeof window.updateLegend === "function") {
-            window.updateLegend(d, v, k);
-          } else {
-            if (
-              store.mainData &&
-              store.mainData.length > 0 &&
-              typeof window.updateLegend === "function"
-            ) {
-              const lastIdx = store.mainData.length - 1;
-              const vLast = store.volumeData ? store.volumeData[lastIdx] : null;
-              const kLast = store.kimchiData ? store.kimchiData[lastIdx] : null;
-              window.updateLegend(store.mainData[lastIdx], vLast, kLast);
-            }
-            if (typeof window.updateStatus === "function") {
-              // 허공일 때는 현재 활성 가격(updateStatus)으로 복구!
-              window.updateStatus();
-            }
-          }
-        } else {
-          // 🚀 [핵심 방어책] isHover === false 일 때, 현재 activeChart가 내 차트(sourceChart)인 경우에만 초기화 실행!!!
-          // (즉, 마우스가 다른 차트로 넘어갔을 때는 이전 차트의 else 블록이 방해하지 못하도록 원천 차단!!!)
-          if (store.activeChart === sourceChart) {
-            store.activeChart = null;
-            if (sourceChart === store.chart) {
-              store.crosshairPrice = null;
-              store.crosshairLeftPrice = null;
-            }
-            targetCharts.forEach((targetObj) => {
-              if (targetObj.chart) targetObj.chart.clearCrosshairPosition();
-              if (store._volCrosshair) store._volCrosshair.setX(null);
-              if (store._mainCrosshair) store._mainCrosshair.setX(null);
-            });
-            store.isCrosshairActive = false;
-            if (store._drawingPrimitive) {
-              store._drawingPrimitive.updateAll();
-            }
-            if (
-              store.mainData &&
-              store.mainData.length > 0 &&
-              typeof window.updateLegend === "function"
-            ) {
-              const lastIdx = store.mainData.length - 1;
-              const v = store.volumeData ? store.volumeData[lastIdx] : null;
-              const k = store.kimchiData ? store.kimchiData[lastIdx] : null;
-              window.updateLegend(store.mainData[lastIdx], v, k);
+  let d = null;
+  if (sourceChart === store.chart) {
+    d = param.seriesData.get(store.candleSeries);
+    // 🚀 [완벽 폴백 보강] 라이브러리 내부 캔들 구조체(d)에는 volume 필드가 없으므로, 원본 메인 장부(store.mainData)에서 찾아 volume을 주입합니다!
+    const mainCandle = store.mainData?.find(
+      (item) => getUnixSeconds(item.time) === pTime,
+    );
+    if (d && mainCandle && mainCandle.volume !== undefined) {
+      d.volume = mainCandle.volume;
+    } else if (!d && mainCandle) {
+      // 🚀 [미래 캔들 폴백] param.seriesData에 없어도(허공) mainData에 있으면 강제 표시!
+      d = { ...mainCandle };
+    }
+  } else {
+    d =
+      store.mainData?.find(
+        (item) => getUnixSeconds(item.time) === pTime,
+      ) || null;
+  }
+  const v =
+    store.volumeData?.find(
+      (item) => getUnixSeconds(item.time) === pTime,
+    ) || null;
+  const k =
+    store.kimchiData?.find(
+      (item) => getUnixSeconds(item.time) === pTime,
+    ) || null;
+  if (d && typeof window.updateLegend === "function") {
+    window.updateLegend(d, v, k);
+  } else {
+    if (
+      store.mainData &&
+      store.mainData.length > 0 &&
+      typeof window.updateLegend === "function"
+    ) {
+      const lastIdx = store.mainData.length - 1;
+      const vLast = store.volumeData ? store.volumeData[lastIdx] : null;
+      const kLast = store.kimchiData ? store.kimchiData[lastIdx] : null;
+      window.updateLegend(store.mainData[lastIdx], vLast, kLast);
+    }
+    if (typeof window.updateStatus === "function") {
+      // 허공일 때는 현재 활성 가격(updateStatus)으로 복구!
+      window.updateStatus();
+    }
+  }
+} else {
+  // 🚀 [핵심 방어책] isHover === false 일 때, 현재 activeChart가 내 차트(sourceChart)인 경우에만 초기화 실행!!!
+  // (즉, 마우스가 다른 차트로 넘어갔을 때는 이전 차트의 else 블록이 방해하지 못하도록 원천 차단!!!)
+  if (store.activeChart === sourceChart) {
+    store.activeChart = null;
+    if (sourceChart === store.chart) {
+      store.crosshairPrice = null;
+      store.crosshairLeftPrice = null;
+    }
+    targetCharts.forEach((targetObj) => {
+      if (targetObj.chart) targetObj.chart.clearCrosshairPosition();
+      if (store._volCrosshair) store._volCrosshair.setX(null);
+      if (store._mainCrosshair) store._mainCrosshair.setX(null);
+    });
+    store.isCrosshairActive = false;
+    if (store._drawingPrimitive) {
+      store._drawingPrimitive.updateAll();
+    }
+    if (
+      store.mainData &&
+      store.mainData.length > 0 &&
+      typeof window.updateLegend === "function"
+    ) {
+      const lastIdx = store.mainData.length - 1;
+      const v = store.volumeData ? store.volumeData[lastIdx] : null;
+      const k = store.kimchiData ? store.kimchiData[lastIdx] : null;
+      window.updateLegend(store.mainData[lastIdx], v, k);
+    }
+  }
+}
+      } catch (err) { }
             }
           }
         }
-      } catch (err) {}
+      } catch (err) { }
     });
   };
 
-  syncCrosshair(store.chart, [
-    { chart: store.chartVol, series: store.volumeSeries },
-  ]);
-  syncCrosshair(store.chartVol, [
-    { chart: store.chart, series: store.candleSeries },
+{ chart: store.chart, series: store.candleSeries },
   ]);
 
-  // 🚀 Y축(Price Scale) 가로폭 완벽 동기화 엔진 (좌/우측 스케일 동시 관리)
-  let currentMaxRight = 0;
-  let currentMaxLeft = 0;
-  window.isResettingWidth = false; // 🚀 [레이스 컨디션 방어 락] 리셋 중 이벤트 폭주 원천 차단!
+// 🚀 Y축(Price Scale) 가로폭 완벽 동기화 엔진 (좌/우측 스케일 동시 관리)
+let currentMaxRight = 0;
+let currentMaxLeft = 0;
+window.isResettingWidth = false; // 🚀 [레이스 컨디션 방어 락] 리셋 중 이벤트 폭주 원천 차단!
 
-  let lastWidthSyncTime = 0;
-  let widthSyncPending = false;
-  window.syncPriceScaleWidths = (force = false) => {
-    if (window.isResettingWidth) return; // 🚨 리셋 피팅(fitContent) 중에는 라이브러리 과거 너비 조회를 원천 차단!
-    if (widthSyncPending) return;
-    const now = performance.now();
-    if (!force && now - lastWidthSyncTime < 100) return;
-    widthSyncPending = true;
+let lastWidthSyncTime = 0;
+let widthSyncPending = false;
+window.syncPriceScaleWidths = (force = false) => {
+  if (window.isResettingWidth) return; // 🚨 리셋 피팅(fitContent) 중에는 라이브러리 과거 너비 조회를 원천 차단!
+  if (widthSyncPending) return;
+  const now = performance.now();
+  if (!force && now - lastWidthSyncTime < 100) return;
+  widthSyncPending = true;
 
-    requestAnimationFrame(() => {
-      widthSyncPending = false;
-      lastWidthSyncTime = performance.now();
-      const charts = [store.chart, store.chartVol].filter(Boolean);
-      let maxRight = 0;
-      let maxLeft = 0;
+  requestAnimationFrame(() => {
+    widthSyncPending = false;
+    lastWidthSyncTime = performance.now();
+    const charts = [store.chart, store.chartVol].filter(Boolean);
+    let maxRight = 0;
+    let maxLeft = 0;
 
-      charts.forEach((c) => {
-        maxRight = Math.max(maxRight, c.priceScale("right").width());
-        maxLeft = Math.max(maxLeft, c.priceScale("left").width());
-      });
-
-      // 🚀 [초고속 캐시 방어벽] 너비가 이전과 동일하면 applyOptions 호출을 원천 스킵하여 60fps 렌더링 성능 100% 보장!
-      if (maxRight > 0 && maxRight !== currentMaxRight) {
-        currentMaxRight = maxRight;
-        charts.forEach((c) =>
-          c.priceScale("right").applyOptions({ minimumWidth: maxRight }),
-        );
-      }
-      if (maxLeft > 0 && maxLeft !== currentMaxLeft) {
-        currentMaxLeft = maxLeft;
-        charts.forEach((c) =>
-          c.priceScale("left").applyOptions({ minimumWidth: maxLeft }),
-        );
-      }
+    charts.forEach((c) => {
+      maxRight = Math.max(maxRight, c.priceScale("right").width());
+      maxLeft = Math.max(maxLeft, c.priceScale("left").width());
     });
-  };
 
-  const allCharts = [store.chart, store.chartVol].filter(Boolean);
-  // 🚀 창 크기 변경뿐만 아니라, 줌인/줌아웃, 좌우 스크롤(VisibleLogicalRangeChange) 및 마우스 이동 시에도 실시간 자동 싱크!
+    // 🚀 [초고속 캐시 방어벽] 너비가 이전과 동일하면 applyOptions 호출을 원천 스킵하여 60fps 렌더링 성능 100% 보장!
+    if (maxRight > 0 && maxRight !== currentMaxRight) {
+      currentMaxRight = maxRight;
+      charts.forEach((c) =>
+        c.priceScale("right").applyOptions({ minimumWidth: maxRight }),
+      );
+    }
+    if (maxLeft > 0 && maxLeft !== currentMaxLeft) {
+      currentMaxLeft = maxLeft;
+      charts.forEach((c) =>
+        c.priceScale("left").applyOptions({ minimumWidth: maxLeft }),
+      );
+    }
+  });
+};
+
+const allCharts = [store.chart, store.chartVol].filter(Boolean);
+// 🚀 창 크기 변경뿐만 아니라, 줌인/줌아웃, 좌우 스크롤(VisibleLogicalRangeChange) 및 마우스 이동 시에도 실시간 자동 싱크!
+allCharts.forEach((c) => {
+  c.timeScale().subscribeSizeChange(() =>
+    setTimeout(window.syncPriceScaleWidths, 50),
+  );
+  c.timeScale().subscribeVisibleLogicalRangeChange(
+    window.syncPriceScaleWidths,
+  );
+});
+
+// 🚀 [메모리 누수 방지] 이전 더블클릭 이벤트 리스너 제거
+[elMain, elVol].forEach((el) => {
+  if (el && typeof window.resetPriceScaleWidthSync === "function") {
+    el.removeEventListener("dblclick", window.resetPriceScaleWidthSync);
+  }
+});
+
+// 🚀 전역 리셋 함수 (데이터 로드 전 초기화 및 로드 후 자동 싱크 보장)
+window.resetPriceScaleWidthSync = () => {
+  window.isResettingWidth = true; // 🚨 락 활성화!
+  currentMaxRight = 0;
+  currentMaxLeft = 0;
   allCharts.forEach((c) => {
-    c.timeScale().subscribeSizeChange(() =>
-      setTimeout(window.syncPriceScaleWidths, 50),
-    );
-    c.timeScale().subscribeVisibleLogicalRangeChange(
-      window.syncPriceScaleWidths,
-    );
+    c.priceScale("right").applyOptions({ minimumWidth: 0, autoScale: true });
+    c.priceScale("left").applyOptions({ minimumWidth: 0, autoScale: true });
   });
 
-  // 🚀 [메모리 누수 방지] 이전 더블클릭 이벤트 리스너 제거
-  [elMain, elVol].forEach((el) => {
-    if (el && typeof window.resetPriceScaleWidthSync === "function") {
-      el.removeEventListener("dblclick", window.resetPriceScaleWidthSync);
+  // 🚀 브라우저 렌더링 사이클(Repaint)이 완벽히 끝나 라이브러리 내부 width()가 순수하게 줄어든 150ms 뒤에 락 해제 및 최종 싱크!
+  setTimeout(() => {
+    window.isResettingWidth = false;
+    window.syncPriceScaleWidths();
+  }, 150);
+};
+
+window.resetPriceScaleWidthSync();
+
+// 캡처는 렉 겁나게 걸려서 일단 보류
+/* 🚀 차트 마우스 우클릭 시 전체 차트(메인+볼륨)를 병합한 고화질 캡처 이미지를 클립보드 복사 가능하도록 img 오버레이 생성
+const wrapper = document.getElementById("chart-wrapper");
+if (wrapper) {
+  if (window._chartRightClickListener) {
+    wrapper.removeEventListener("mousedown", window._chartRightClickListener);
+  }
+
+  window._chartRightClickListener = (e) => {
+    if (e.button !== 2) return; // 마우스 우클릭만 처리
+    if (store.isMeasuring || store.measureStart) return; // 🚀 측정 중에는 이미지 오버레이 방지 (측정 취소 로직에 양보)
+    if (!store.chart) return;
+
+    const mainCanvas = store.chart.takeScreenshot();
+    const paneVol = document.getElementById("pane-vol");
+    const isVolVisible = paneVol && !paneVol.classList.contains("hidden");
+    const volCanvas = isVolVisible && store.chartVol ? store.chartVol.takeScreenshot() : null;
+
+    if (!mainCanvas) return;
+
+    const combinedCanvas = document.createElement("canvas");
+    const ctx = combinedCanvas.getContext("2d");
+
+    const width = mainCanvas.width;
+    let height = mainCanvas.height;
+    if (volCanvas) {
+      height += volCanvas.height;
     }
-  });
 
-  // 🚀 전역 리셋 함수 (데이터 로드 전 초기화 및 로드 후 자동 싱크 보장)
-  window.resetPriceScaleWidthSync = () => {
-    window.isResettingWidth = true; // 🚨 락 활성화!
-    currentMaxRight = 0;
-    currentMaxLeft = 0;
-    allCharts.forEach((c) => {
-      c.priceScale("right").applyOptions({ minimumWidth: 0, autoScale: true });
-      c.priceScale("left").applyOptions({ minimumWidth: 0, autoScale: true });
-    });
+    combinedCanvas.width = width;
+    combinedCanvas.height = height;
 
-    // 🚀 브라우저 렌더링 사이클(Repaint)이 완벽히 끝나 라이브러리 내부 width()가 순수하게 줄어든 150ms 뒤에 락 해제 및 최종 싱크!
-    setTimeout(() => {
-      window.isResettingWidth = false;
-      window.syncPriceScaleWidths();
-    }, 150);
-  };
+    // 배경색 채우기
+    const bgColor = getComputedStyle(wrapper).backgroundColor || "#131722";
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, width, height);
 
-  window.resetPriceScaleWidthSync();
-
-  // 캡처는 렉 겁나게 걸려서 일단 보류
-  /* 🚀 차트 마우스 우클릭 시 전체 차트(메인+볼륨)를 병합한 고화질 캡처 이미지를 클립보드 복사 가능하도록 img 오버레이 생성
-  const wrapper = document.getElementById("chart-wrapper");
-  if (wrapper) {
-    if (window._chartRightClickListener) {
-      wrapper.removeEventListener("mousedown", window._chartRightClickListener);
+    // 드로잉
+    ctx.drawImage(mainCanvas, 0, 0);
+    if (volCanvas) {
+      ctx.drawImage(volCanvas, 0, mainCanvas.height);
     }
 
-    window._chartRightClickListener = (e) => {
-      if (e.button !== 2) return; // 마우스 우클릭만 처리
-      if (store.isMeasuring || store.measureStart) return; // 🚀 측정 중에는 이미지 오버레이 방지 (측정 취소 로직에 양보)
-      if (!store.chart) return;
+    // 심볼 워터마크 추가
+    ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+    ctx.font = "bold 16px sans-serif";
+    const symbolText = (store.currentSelectedSymbol || "Sellnance").toUpperCase();
+    ctx.fillText(symbolText, 20, 30);
 
-      const mainCanvas = store.chart.takeScreenshot();
-      const paneVol = document.getElementById("pane-vol");
-      const isVolVisible = paneVol && !paneVol.classList.contains("hidden");
-      const volCanvas = isVolVisible && store.chartVol ? store.chartVol.takeScreenshot() : null;
+    let overlayImg = document.getElementById("chart-screenshot-overlay");
+    if (!overlayImg) {
+      overlayImg = document.createElement("img");
+      overlayImg.id = "chart-screenshot-overlay";
+      overlayImg.style.cssText = "position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0.01; z-index: 999999; pointer-events: auto;";
+      wrapper.appendChild(overlayImg);
+    }
 
-      if (!mainCanvas) return;
+    overlayImg.src = combinedCanvas.toDataURL("image/png");
+    overlayImg.style.pointerEvents = "auto";
 
-      const combinedCanvas = document.createElement("canvas");
-      const ctx = combinedCanvas.getContext("2d");
-
-      const width = mainCanvas.width;
-      let height = mainCanvas.height;
-      if (volCanvas) {
-        height += volCanvas.height;
+    const clearOverlay = () => {
+      if (overlayImg) {
+        overlayImg.style.pointerEvents = "none";
+        overlayImg.removeAttribute("src");
+        overlayImg.remove(); // 🚀 DOM에서 엘리먼트 파괴하여 메모리 누수 방지
       }
-
-      combinedCanvas.width = width;
-      combinedCanvas.height = height;
-
-      // 배경색 채우기
-      const bgColor = getComputedStyle(wrapper).backgroundColor || "#131722";
-      ctx.fillStyle = bgColor;
-      ctx.fillRect(0, 0, width, height);
-
-      // 드로잉
-      ctx.drawImage(mainCanvas, 0, 0);
-      if (volCanvas) {
-        ctx.drawImage(volCanvas, 0, mainCanvas.height);
-      }
-
-      // 심볼 워터마크 추가
-      ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
-      ctx.font = "bold 16px sans-serif";
-      const symbolText = (store.currentSelectedSymbol || "Sellnance").toUpperCase();
-      ctx.fillText(symbolText, 20, 30);
-
-      let overlayImg = document.getElementById("chart-screenshot-overlay");
-      if (!overlayImg) {
-        overlayImg = document.createElement("img");
-        overlayImg.id = "chart-screenshot-overlay";
-        overlayImg.style.cssText = "position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0.01; z-index: 999999; pointer-events: auto;";
-        wrapper.appendChild(overlayImg);
-      }
-
-      overlayImg.src = combinedCanvas.toDataURL("image/png");
-      overlayImg.style.pointerEvents = "auto";
-
-      const clearOverlay = () => {
-        if (overlayImg) {
-          overlayImg.style.pointerEvents = "none";
-          overlayImg.removeAttribute("src");
-          overlayImg.remove(); // 🚀 DOM에서 엘리먼트 파괴하여 메모리 누수 방지
-        }
-        // 🚀 캔버스 백버퍼 강제 해제 (GPU & RAM 즉각 반환)
-        combinedCanvas.width = 0;
-        combinedCanvas.height = 0;
-        document.removeEventListener("mousemove", clearOverlay);
-        document.removeEventListener("mousedown", clearOverlay);
-      };
-
-      setTimeout(() => {
-        document.addEventListener("mousemove", clearOverlay);
-        document.addEventListener("mousedown", clearOverlay);
-      }, 300);
+      // 🚀 캔버스 백버퍼 강제 해제 (GPU & RAM 즉각 반환)
+      combinedCanvas.width = 0;
+      combinedCanvas.height = 0;
+      document.removeEventListener("mousemove", clearOverlay);
+      document.removeEventListener("mousedown", clearOverlay);
     };
 
-    wrapper.addEventListener("mousedown", window._chartRightClickListener);
-  } */
+    setTimeout(() => {
+      document.addEventListener("mousemove", clearOverlay);
+      document.addEventListener("mousedown", clearOverlay);
+    }, 300);
+  };
 
-  // 🚀 차트 스케일 리셋(더블클릭) 시 이전 넓이의 저주를 풀고 즉시 0으로 리셋 후 재계산 연동!
-  [elMain, elVol].forEach((el) => {
-    if (el) el.addEventListener("dblclick", window.resetPriceScaleWidthSync);
-  });
+  wrapper.addEventListener("mousedown", window._chartRightClickListener);
+} */
 
-  initResizers();
-  applyChartLayout();
+// 🚀 차트 스케일 리셋(더블클릭) 시 이전 넓이의 저주를 풀고 즉시 0으로 리셋 후 재계산 연동!
+[elMain, elVol].forEach((el) => {
+  if (el) el.addEventListener("dblclick", window.resetPriceScaleWidthSync);
+});
 
-  // 🚀 자 대고 그리는 측정 도구(Measure Tool) 및 그리기 도구(Drawing Tool) 프리미티브 부착
-  setTimeout(() => {
-    if (typeof window.setupMeasureTool === "function")
-      window.setupMeasureTool();
-    if (store.candleSeries && !store._drawingPrimitive && typeof window.DrawingPrimitive === "function") {
-      store._drawingPrimitive = new window.DrawingPrimitive();
-      store.candleSeries.attachPrimitive(store._drawingPrimitive);
-    }
-  }, 50);
+initResizers();
+applyChartLayout();
+
+// 🚀 자 대고 그리는 측정 도구(Measure Tool) 및 그리기 도구(Drawing Tool) 프리미티브 부착
+setTimeout(() => {
+  if (typeof window.setupMeasureTool === "function")
+    window.setupMeasureTool();
+  if (store.candleSeries && !store._drawingPrimitive && typeof window.DrawingPrimitive === "function") {
+    store._drawingPrimitive = new window.DrawingPrimitive();
+    store.candleSeries.attachPrimitive(store._drawingPrimitive);
+  }
+}, 50);
 }
 
 export function updateChartTheme() {
@@ -1193,3 +1191,18 @@ export function updateChartTheme() {
 //     window.chartResizeObserver.observe(chartContainer);
 //   }
 // }
+
+
+// 초기 L 버튼 활성화 스타일 세팅
+if (store.isLogMode) {
+  mainL.className = "w-5 h-5 flex items-center justify-center text-[9px] font-bold rounded cursor-pointer transition-colors bg-theme-accent text-white shadow-sm border border-theme-accent";
+} else {
+  mainL.className = "w-5 h-5 flex items-center justify-center text-[9px] font-bold rounded cursor-pointer transition-colors bg-theme-border/20 text-theme-text hover:bg-theme-border/40 border border-theme-border/30";
+}
+
+// 초기 L 버튼 활성화 스타일 세팅
+if (store.isLogMode) {
+  volL.className = "w-5 h-5 flex items-center justify-center text-[9px] font-bold rounded cursor-pointer transition-colors bg-theme-accent text-white shadow-sm border border-theme-accent";
+} else {
+  volL.className = "w-5 h-5 flex items-center justify-center text-[9px] font-bold rounded cursor-pointer transition-colors bg-theme-border/20 text-theme-text hover:bg-theme-border/40 border border-theme-border/30";
+}

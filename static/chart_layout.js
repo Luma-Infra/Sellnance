@@ -24,17 +24,17 @@ export function applyChartLayout() {
     store.volumeSeries.applyOptions({ visible: v });
     store.chartVol.priceScale("right").applyOptions({ visible: v });
   }
-  
+
   // 🚀 [정렬 수정] 김프 데이터가 없더라도 좌측 스케일을 유지하여 상하 차트의 레이아웃 어긋남을 방지합니다.
   if (store.kimchiSeries) {
     store.kimchiSeries.applyOptions({ visible: !!k });
     // 항상 visible: true를 유지하되, k가 없을 때는 라벨만 숨기는 방식 등으로 정렬 유지
-    store.chartVol.priceScale("left").applyOptions({ 
-      visible: true, 
+    store.chartVol.priceScale("left").applyOptions({
+      visible: true,
       minimumWidth: 60,
       borderColor: "transparent" // 🚀 김프 활성화 시에도 좌측 검은 실선이 생기지 않도록 상시 투명 유지
     });
-    
+
     // 메인 차트도 동일한 너비로 맞춰서 완벽한 수직 정렬 구현
     store.chart.priceScale("left").applyOptions({
       visible: true,

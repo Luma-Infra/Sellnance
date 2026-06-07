@@ -152,7 +152,7 @@ export function syncSniperSubscriptions() {
             { type: "ticker", codes: uniqueUpbitCodes },
           ]),
         );
-      } catch (e) {}
+      } catch (e) { }
     }
   }
 }

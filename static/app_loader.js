@@ -6,17 +6,17 @@ const EngineUI = {
       <div id="loading-overlay" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-theme-bg transition-opacity duration-1000">
         <div class="w-full max-w-md p-6 bg-theme-panel border border-theme-border rounded-xl shadow-2xl">
           <div class="text-center mb-8">
-            <h1 class="text-2xl font-black text-theme-accent tracking-tighter mb-2 italic">SELLNANCE ENGINE</h1>
+            <h1 class="text-2xl font-bold text-theme-accent tracking-tighter mb-2 italic">SELLNANCE ENGINE</h1>
             <p class="text-[10px] opacity-50 uppercase tracking-[0.3em]">System Boot Sequence v1.0</p>
           </div>
           <div class="relative h-2 bg-theme-border rounded-full overflow-hidden mb-6">
-            <div id="progress-bar" class="absolute h-full bg-theme-accent transition-all duration-500 w-0"></div>
           </div>
           <div class="flex justify-between items-end mb-4 px-1">
             <span class="text-[10px] font-bold opacity-70">CORE TRACING...</span>
-            <span id="percent-text" class="text-2xl font-black text-theme-accent leading-none">0%</span>
+            <span id="percent-text" class="text-2xl font-bold text-theme-accent leading-none">0%</span>
           </div>
           <div id="status-list" class="space-y-1.5 text-[12px] font-medium max-h-72 overflow-y-auto pr-2 custom-scrollbar"></div>
+        </div>
         </div>
       </div>
     `;

@@ -90,7 +90,9 @@ def build_upbit_row(
     # 🚀 CMC에서 새로운 ucid를 찾았다면 최종 업데이트
     if not final_ucid and info:
         final_ucid = info.get("ucid", "")
-
+    if not final_ucid:
+        final_ucid = base
+        
     # 중복 UID 체크 및 방어
     if final_ucid and final_ucid in processed_uids and raw_key not in DUPLICATED_LIST:
         return None, False

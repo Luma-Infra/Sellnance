@@ -727,7 +727,7 @@ function connectQuickViewSockets() {
         try {
           series.update(candle);
           updateLiveHeaderPrice(idx, candle.close, k.P || "0.0");
-        } catch (err) {}
+        } catch (err) { }
       } else if (eventType === "aggTrade") {
         // aggTrade 실시간 단가 및 봉 내부 업데이트 반영!
         const newPrice = parseFloat(data.p);
@@ -753,7 +753,7 @@ function connectQuickViewSockets() {
               ? asset.Change_Today_Raw || 0
               : asset.Change_24h_Raw || 0;
           updateLiveHeaderPrice(idx, newPrice, chgValue.toString(), true);
-        } catch (err) {}
+        } catch (err) { }
       }
     };
 
@@ -1194,7 +1194,7 @@ export function resetQuickViewChartsScale() {
     if (chart) {
       try {
         chart.timeScale().fitContent();
-      } catch (e) {}
+      } catch (e) { }
     }
   });
 }

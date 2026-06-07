@@ -1,0 +1,46 @@
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+=== [1] PROJECT STRUCTURE ===
+.env
+.gitignore
+.python-version
+bybit_instruments.json
+bybit_linear_blend.json
+config.py
+context_for_ai.txt
+go.mod
+go.sum
+LICENSE
+lines_for_ai.txt
+listing.json
+mapping.json
+package-lock.json
+package.json
+postcss.config.js
+pyproject.toml
+README.md
+requirements.txt
+run.py
+start.bat
+tailwind.config.js
+utc0_prices.json
+uv.lock
+vite.config.js
+wrangler.jsonc
+
++---modules
+|   __pycache__
+|   adapter.py
+|   api_manager.py
+|   app.py
+|   builder.py
+|   builder_binance.py
+|   builder_bybit.py
+|   builder_upbit.py
+|   cache.go
+|   cmc_api.py
+|   config_manager.py
+|   exchange_api.py
+|   fetcher.go
+|   get_market.py
+|   main.go
+

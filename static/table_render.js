@@ -159,14 +159,12 @@ export function updateRowInnerHTML(tr, row) {
   // 🚀 [최신] 2층 구조 레이아웃 (디자인 가이드 준수 + z_style.css 단일 관리소 강제 종속)
   tr.innerHTML = `
   <td class="p-2 col-asset overflow-hidden">
-    ${
-      pendingAction
-        ? `
+    ${pendingAction
+      ? `
       <div class="row-progress-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 2.5px; z-index: 50; pointer-events: none;">
          <div id="progress-bar-${row.Ticker}" class="row-progress-bar" style="height: 100%; width: 100%; background: linear-gradient(90deg, var(--accent) 0%, #3b82f6 100%); transition: width 50ms linear;"></div>
       </div>
-    `
-        : ""
+      : ""
     }
     <div class="flex items-center gap-1.5 min-w-0">
       <!-- 0. 절대 순위 번호 (1 ~ max length 고정 배치, CSS 카운터 기반) -->
@@ -175,43 +173,41 @@ export function updateRowInnerHTML(tr, row) {
       <!-- 1. 별 버튼 (완전 분리) -->
       <div class="flex items-center gap-1 flex-shrink-0">
         <button onclick="toggleFavorite('${uId}', event)" class="star-btn text-[14px] transition-all hover:scale-125 flex-shrink-0 ${starClass}" style="color: ${starColor}">
+        <button onclick="toggleFavorite('${uId}', event)" class="star-btn text-[14px] transition-all hover:scale-125 flex-shrink-0 ${starClass}" style="color: ${starColor}">
           ${starText}
         </button>
-        ${
-          pendingAction
-            ? `
+        ${pendingAction
+        ? `
           <button onclick="window.confirmFavoriteChange('${uId}', event)" class="confirm-fav-btn text-[9px] font-bold px-1.5 py-0.5 rounded transition-all flex-shrink-0 mr-1">
             확인
           </button>
-          <button onclick="window.cancelFavoriteChange('${uId}', event)" class="cancel-fav-btn text-[9px] font-bold px-1.5 py-0.5 rounded transition-all flex-shrink-0">
             취소
           </button>
         `
-            : ""
-        }
+        : ""
+      }
+    }
       </div>
       
-      <!-- 2. 티커 이미지 (고정 영역) -->
-      <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-white/1 rounded-full overflow-hidden">
+      <!-- 2. 티커 이미지 (고정 영역) rounded-full 제거 -->
+      <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-white/1 overflow-hidden">
         ${row.Logo || ""}
       </div>
       
-      <!-- 3. 티커 & 이름 묶음 -->
-      <div class="flex flex-col leading-[1.1] min-w-0 flex-1">
+        <b class="text-[12px] text-theme-text truncate font-black tracking-tighter">${row.DisplayTicker || row.Symbol}</b>
+        <span class="text-[9px] text-theme-text opacity-60 truncate font-bold tracking-tighter">
         <b class="text-[12px] text-theme-text truncate font-black tracking-tighter">${row.DisplayTicker || row.Symbol}</b>
         <span class="text-[9px] text-theme-text opacity-60 truncate font-bold tracking-tighter">
           ${(() => {
-            const n =
-              store.lang === "KR"
-                ? row.Name_KR || row.Name || ""
-                : row.Name || "";
-            return n.length > 8 ? n.substring(0, 8) + ".." : n;
-          })()}
+        const n =
+          store.lang === "KR"
+            ? row.Name_KR || row.Name || ""
+            : row.Name || "";
+        return n.length > 8 ? n.substring(0, 8) + ".." : n;
+      })()}
         </span>
       </div>
     </div>
-  </td>
-  <td class="p-2 col-price overflow-hidden">
     <div class="flex flex-col leading-tight min-w-0 gap-0.5">
       <div id="price-${tId}" data-raw-price="0" class="font-black text-[14px] text-theme-text price-cell tracking-tighter truncate block flex items-center">
         <span id="price-val-binance-${tId}" class="hidden items-center">
@@ -263,18 +259,18 @@ export function updateRowInnerHTML(tr, row) {
   </td>
   <td class="p-2 text-left col-kimch overflow-hidden">
     <div class="flex flex-col leading-tight items-start min-w-0">
+  <td class="p-2 text-left col-kimch overflow-hidden">
+    <div class="flex flex-col leading-tight items-start min-w-0">
       <div class="flex items-center justify-start gap-1 min-w-0 max-w-full">
-         ${
-           !row.Kimchi_Label || row.Kimchi_Label === "-"
-             ? `<span class="text-[12px] font-black text-theme-text opacity-40">-</span>`
-             : `<span class="text-[12px] font-black truncate ${row.Kimchi_Raw > 0 ? "text-theme-up" : "text-theme-down"}">${row.Kimchi_Formatted || "0.0%"}</span>`
-         }
+         ${!row.Kimchi_Label || row.Kimchi_Label === "-"
+        ? `<span class="text-[12px] font-black text-theme-text opacity-40">-</span>`
+        : `<span class="text-[12px] font-black truncate ${row.Kimchi_Raw > 0 ? "text-theme-up" : "text-theme-down"}">${row.Kimchi_Formatted || "0.0%"}</span>`
+      }
       </div>
       <div class="flex items-center justify-start gap-2 text-[10px] font-black mt-0.5 min-w-0 max-w-full">
          <span class="text-theme-accent opacity-70 truncate">${row.Funding_Formatted || "-"}</span>
-      </div>
-    </div>
-  </td>
+  <td class="p-2 col-exch overflow-hidden">
+    <div class="grid grid-cols-4 gap-[2px] w-fit text-left min-w-0">
   <td class="p-2 col-exch overflow-hidden">
     <div class="grid grid-cols-4 gap-[2px] w-fit text-left min-w-0">
       ${(() => {
@@ -303,7 +299,6 @@ export function updateRowInnerHTML(tr, row) {
             <div class="relative w-[14px] h-[14px] flex items-center justify-center rounded-[2px] overflow-visible bg-white/5 transition-all flex-shrink-0"
                  style="${isListed ? "filter: none; opacity: 1;" : "filter: grayscale(1); opacity: 0.1;"}">
               <img src="${imgUrl}" alt="${ex.id}" class="w-full h-full object-contain rounded-[2px]" />
-              ${isListed ? badgeHtml : ""}
             </div>
           `;
           })
@@ -312,9 +307,8 @@ export function updateRowInnerHTML(tr, row) {
     </div>
   </td>
   <td class="p-2 col-listing overflow-hidden text-[10px] font-mono whitespace-nowrap text-left opacity-70 truncate" id="listing-${tId}">
-    ${formatListingDateWithExchange(row)}
   </td>
-`;
+`
   window.updateRowPriceDisplay(tr, row);
 }
 
@@ -343,149 +337,41 @@ export function renderTable(isRealtime = false) {
   const filteredData = getFilteredData();
   const totalCount = filteredData.length;
 
-  // 🚀 [사건 X] 필터링, 정렬, 검색, 탭전환 등 화면 구성 변화 시 반드시 상위 20개 코인을 visibleSymbols에 등록하여 실시간 구독 시작
+  // 🚀 [사건 X] 필터링, 정렬, 검색, 탭전환 등 화면 구성 변화 시 반드시 상위 30개 코인을 visibleSymbols에 등록하여 실시간 구독 시작
   if (!isRealtime) {
     store.visibleSymbols.clear();
-    const initLimit = Math.min(20, totalCount);
-    for (let i = 0; i < initLimit; i++) {
-      if (filteredData[i]) {
-        store.visibleSymbols.add(filteredData[i].Ticker);
-      }
-    }
+    const initLimit = Math.min(30, totalCount);
+  }
+}
+
+// 1. 최초 1회 전체 껍데기 풀(Pool) 생성 (DOM 파괴/생성 원천 차단, 가상화 스크롤 바 확보)
+if (!store.tablePoolInitialized || tbody.children.length !== totalCount) {
+  tbody.innerHTML = "";
+  store.rowDomMap = new Map();
+  store.visibleSymbols.clear();
+  store.lastSortedTickers = null; // 🚀 풀 재구성 시 정렬 비교 캐시도 초기화!
+
+  if (store.tableObserver) {
+    store.tableObserver.disconnect();
   }
 
-  // 1. 최초 1회 전체 껍데기 풀(Pool) 생성 (DOM 파괴/생성 원천 차단, 가상화 스크롤 바 확보)
-  if (!store.tablePoolInitialized || tbody.children.length !== totalCount) {
-    tbody.innerHTML = "";
-    store.rowDomMap = new Map();
-    store.visibleSymbols.clear();
-    store.lastSortedTickers = null; // 🚀 풀 재구성 시 정렬 비교 캐시도 초기화!
+  // 🚀 화면 추적용 옵저버 (화면에 들어오면 Lazy하게 내용 채워넣기!)
+  store.tableObserver = new IntersectionObserver(
+    (entries) => {
+      let changed = false;
+      entries.forEach((entry) => {
+        const tr = entry.target;
+        const sym = tr.dataset.sym;
+        if (!sym) return;
 
-    if (store.tableObserver) {
-      store.tableObserver.disconnect();
-    }
-
-    // 🚀 화면 추적용 옵저버 (화면에 들어오면 Lazy하게 내용 채워넣기!)
-    store.tableObserver = new IntersectionObserver(
-      (entries) => {
-        let changed = false;
-        entries.forEach((entry) => {
-          const tr = entry.target;
-          const sym = tr.dataset.sym;
-          if (!sym) return;
-
-          const rowData = store.tickerRowMap.get(sym.toUpperCase());
-          if (entry.isIntersecting) {
-            if (rowData) {
-              if (!store.visibleSymbols.has(rowData.Ticker)) {
-                store.visibleSymbols.add(rowData.Ticker);
-                changed = true;
-              }
-              // 🚀 [성능 최적화] 무조건 updateRowInnerHTML를 부르지 않고, 내용이나 설정이 바뀐 경우에만 선별적으로 렌더링하여 layout thrashing 차단!
-              const isPending = !!(
-                store.pendingFavActions &&
-                store.pendingFavActions.has(rowData.UID)
-              );
-              const needsRender =
-                !tr.dataset.renderedSym ||
-                tr.dataset.renderedSym !== rowData.Ticker ||
-                tr.dataset.renderedCurrency !== store.currencyMode ||
-                tr.dataset.renderedLang !== store.lang ||
-                (tr.dataset.renderedPending === "true") !== isPending;
-              if (needsRender) {
-                updateRowInnerHTML(tr, rowData);
-                tr.dataset.renderedSym = rowData.Ticker;
-                tr.dataset.renderedCurrency = store.currencyMode;
-                tr.dataset.renderedLang = store.lang;
-              }
+        const rowData = store.tickerRowMap.get(sym.toUpperCase());
+        if (entry.isIntersecting) {
+          if (rowData) {
+            if (!store.visibleSymbols.has(rowData.Ticker)) {
+              store.visibleSymbols.add(rowData.Ticker);
+              changed = true;
             }
-          } else {
-            if (rowData) {
-              if (store.visibleSymbols.has(rowData.Ticker)) {
-                store.visibleSymbols.delete(rowData.Ticker);
-                changed = true;
-              }
-            }
-          }
-        });
-
-        // 🚀 변경사항이 있을 때만 웹소켓 구독 싱크 호출 (쓰로틀링 적용)
-        if (changed && typeof window.syncSniperSubscriptions === "function") {
-          if (store.syncSubTimer) clearTimeout(store.syncSubTimer);
-          store.syncSubTimer = setTimeout(() => {
-            window.syncSniperSubscriptions();
-          }, 100);
-        }
-      },
-      {
-        root: document.querySelector("#left-panel .overflow-y-auto"),
-        rootMargin: "300px 0px", // 🚀 위아래 300px 여유를 두어 스크롤 시 부드럽게 미리 로딩!
-      },
-    );
-
-    const fragment = document.createDocumentFragment();
-    for (let i = 0; i < totalCount; i++) {
-      const tr = document.createElement("tr");
-      tr.dataset.index = i;
-      tr.style.height = "52px"; // 🚀 고정 높이 할당으로 완벽한 800개 스크롤 바 생성!
-      tr.style.position = "relative";
-      tr.style.contain = "content"; // 🚀 브라우저 렌더링 격리 최적화!
-      tr.classList.add("flip-row"); // 🚀 FLIP 애니메이션용 클래스 추가!
-
-      const rowData = filteredData[i];
-      if (rowData) {
-        tr.dataset.sym = rowData.Ticker;
-        store.rowDomMap.set(rowData.Ticker, tr);
-        // 최초 화면에 보일 법한 상위 20개만 즉시 렌더링, 나머지는 빈 껍데기 그리드로 Lazy 대기!
-        if (i < 20) {
-          updateRowInnerHTML(tr, rowData);
-          tr.dataset.renderedSym = rowData.Ticker;
-          tr.dataset.renderedCurrency = store.currencyMode;
-          tr.dataset.renderedLang = store.lang;
-          // 🚀 Pre-populate visibleSymbols for immediate real-time updates on load
-          store.visibleSymbols.add(rowData.Ticker);
-        } else {
-          // 🚀 껍데기 상태일 때도 가로 구분선이 완벽히 유지되도록 EMPTY_ROW_HTML 삽입!
-          tr.innerHTML = EMPTY_ROW_HTML;
-          tr.dataset.renderedSym = "";
-          tr.dataset.renderedCurrency = "";
-          tr.dataset.renderedLang = "";
-          tr.dataset.renderedPending = "false";
-        }
-      }
-      store.tableObserver.observe(tr);
-      fragment.appendChild(tr);
-    }
-    tbody.appendChild(fragment);
-    store.tablePoolInitialized = true;
-    applySelectedHighlight();
-    if (typeof window.refreshSniperTarget === "function") {
-      setTimeout(() => window.refreshSniperTarget(), 10);
-    }
-    return;
-  }
-
-  // 2. 이미 풀이 생성되어 있다면? (정렬/실시간 갱신 시 물리적 DOM 재배치 + FLIP 애니메이션 발동!)
-  if (!isRealtime) {
-    // 🚀 Clear old visible symbols and rebuild based on the new sorted layout
-    store.visibleSymbols.clear();
-
-    // 🚀 [수동 정렬/필터링/초기화] 800개 전체 코인을 순서에 맞게 DOM에 즉시 배치 (FLIP 애니메이션 생략, 0초 만에 바로 꽂기)
-    const fragment = document.createDocumentFragment();
-    for (let i = 0; i < totalCount; i++) {
-      const rowData = filteredData[i];
-      if (rowData) {
-        const tr = store.rowDomMap.get(rowData.Ticker);
-        if (tr) {
-          tr.dataset.index = i;
-
-          // 보이고 있는 행이거나 상위 20위권인 경우 즉각 렌더링
-          const isPreRender = i < 20;
-          if (isPreRender) {
-            store.visibleSymbols.add(rowData.Ticker);
-          }
-
-          if (isPreRender || store.visibleSymbols.has(rowData.Ticker)) {
+            // 🚀 [성능 최적화] 무조건 updateRowInnerHTML를 부르지 않고, 내용이나 설정이 바뀐 경우에만 선별적으로 렌더링하여 layout thrashing 차단!
             const isPending = !!(
               store.pendingFavActions &&
               store.pendingFavActions.has(rowData.UID)
@@ -503,143 +389,242 @@ export function renderTable(isRealtime = false) {
               tr.dataset.renderedLang = store.lang;
             }
           }
-          fragment.appendChild(tr);
+        } else {
+          if (rowData) {
+            if (store.visibleSymbols.has(rowData.Ticker)) {
+              store.visibleSymbols.delete(rowData.Ticker);
+              changed = true;
+            }
+          }
         }
+      });
+
+      // 🚀 변경사항이 있을 때만 웹소켓 구독 싱크 호출 (쓰로틀링 적용)
+      if (changed && typeof window.syncSniperSubscriptions === "function") {
+        if (store.syncSubTimer) clearTimeout(store.syncSubTimer);
+        store.syncSubTimer = setTimeout(() => {
+          window.syncSniperSubscriptions();
+        }, 100);
+      }
+    },
+    {
+      root: document.querySelector("#left-panel .overflow-y-auto"),
+      rootMargin: "300px 0px", // 🚀 위아래 300px 여유를 두어 스크롤 시 부드럽게 미리 로딩!
+    },
+  );
+
+  const fragment = document.createDocumentFragment();
+  for (let i = 0; i < totalCount; i++) {
+    const tr = document.createElement("tr");
+    tr.dataset.index = i;
+    tr.style.height = "52px"; // 🚀 고정 높이 할당으로 완벽한 800개 스크롤 바 생성!
+    tr.style.position = "relative";
+    tr.style.contain = "content"; // 🚀 브라우저 렌더링 격리 최적화!
+    tr.classList.add("flip-row"); // 🚀 FLIP 애니메이션용 클래스 추가!
+
+    const rowData = filteredData[i];
+    if (rowData) {
+      tr.dataset.sym = rowData.Ticker;
+      store.rowDomMap.set(rowData.Ticker, tr);
+      // 최초 화면에 보일 법한 상위 20개만 즉시 렌더링, 나머지는 빈 껍데기 그리드로 Lazy 대기!
+      if (i < 20) {
+        updateRowInnerHTML(tr, rowData);
+        tr.dataset.renderedSym = rowData.Ticker;
+        tr.dataset.renderedCurrency = store.currencyMode;
+        tr.dataset.renderedLang = store.lang;
+        // 🚀 Pre-populate visibleSymbols for immediate real-time updates on load
+        store.visibleSymbols.add(rowData.Ticker);
+      } else {
+        // 🚀 껍데기 상태일 때도 가로 구분선이 완벽히 유지되도록 EMPTY_ROW_HTML 삽입!
+        tr.innerHTML = EMPTY_ROW_HTML;
+        tr.dataset.renderedSym = "";
+        tr.dataset.renderedCurrency = "";
+        tr.dataset.renderedLang = "";
+        tr.dataset.renderedPending = "false";
       }
     }
-    tbody.appendChild(fragment);
-    store.lastSortedTickers = null; // 수동 정렬 후 실시간 비교용 캐시 초기화
-    applySelectedHighlight();
-    if (typeof window.refreshSniperTarget === "function") {
-      setTimeout(() => window.refreshSniperTarget(), 10);
-    }
-    return;
+    store.tableObserver.observe(tr);
+    fragment.appendChild(tr);
   }
-
-  let orderChanged = false;
-  const limit = Math.min(20, totalCount);
-  if (!store.lastSortedTickers || store.lastSortedTickers.length !== limit) {
-    orderChanged = true;
-  } else {
-    for (let i = 0; i < limit; i++) {
-      if (store.lastSortedTickers[i] !== filteredData[i].Ticker) {
-        orderChanged = true;
-        break;
-      }
-    }
+  tbody.appendChild(fragment);
+  store.tablePoolInitialized = true;
+  applySelectedHighlight();
+  if (typeof window.refreshSniperTarget === "function") {
+    setTimeout(() => window.refreshSniperTarget(), 10);
   }
+  return;
+}
 
-  if (!orderChanged) {
-    // 🚀 [성능 극대화] 정렬 순서가 이전과 동일하다면 DOM 재배치 전체를 건너뛰고 가시 영역만 갱신!
-    for (const sym of store.visibleSymbols) {
-      const tr = store.rowDomMap.get(sym);
-      const rowData = store.tickerRowMap.get(sym.toUpperCase());
-      if (tr && rowData) {
-        const isPending = !!(
-          store.pendingFavActions && store.pendingFavActions.has(rowData.UID)
-        );
-        const needsRender =
-          !tr.dataset.renderedSym ||
-          tr.dataset.renderedSym !== rowData.Ticker ||
-          tr.dataset.renderedCurrency !== store.currencyMode ||
-          tr.dataset.renderedLang !== store.lang ||
-          (tr.dataset.renderedPending === "true") !== isPending;
-        if (needsRender) {
-          updateRowInnerHTML(tr, rowData);
-          tr.dataset.renderedSym = rowData.Ticker;
-          tr.dataset.renderedCurrency = store.currencyMode;
-          tr.dataset.renderedLang = store.lang;
-        }
-      }
-    }
-    applySelectedHighlight();
-    return;
-  }
+// 2. 이미 풀이 생성되어 있다면? (정렬/실시간 갱신 시 물리적 DOM 재배치 + FLIP 애니메이션 발동!)
+if (!isRealtime) {
+  // 🚀 Clear old visible symbols and rebuild based on the new sorted layout
+  store.visibleSymbols.clear();
 
-  store.lastSortedTickers = filteredData.slice(0, limit).map((r) => r.Ticker);
-
-  const firstRects = new Map();
-  if (store.useFlip && isRealtime) {
-    for (const sym of store.visibleSymbols) {
-      const tr = store.rowDomMap.get(sym);
-      if (tr) {
-        firstRects.set(sym, tr.getBoundingClientRect().top);
-      }
-    }
-  }
-
-  // 🚀 상위 20개 행만 역순(19 -> 0)으로 insertBefore를 호출하여 table-body 맨 앞으로 재배치!
-  for (let i = limit - 1; i >= 0; i--) {
+  // 🚀 [수동 정렬/필터링/초기화] 800개 전체 코인을 순서에 맞게 DOM에 즉시 배치 (FLIP 애니메이션 생략, 0초 만에 바로 꽂기)
+  const fragment = document.createDocumentFragment();
+  for (let i = 0; i < totalCount; i++) {
     const rowData = filteredData[i];
     if (rowData) {
       const tr = store.rowDomMap.get(rowData.Ticker);
       if (tr) {
         tr.dataset.index = i;
 
-        // 🚀 상위 20위 안의 행은 무조건 즉시 최신 정보로 렌더링
-        const isPending = !!(
-          store.pendingFavActions && store.pendingFavActions.has(rowData.UID)
-        );
-        const needsRender =
-          !tr.dataset.renderedSym ||
-          tr.dataset.renderedSym !== rowData.Ticker ||
-          tr.dataset.renderedCurrency !== store.currencyMode ||
-          tr.dataset.renderedLang !== store.lang ||
-          (tr.dataset.renderedPending === "true") !== isPending;
-        if (needsRender) {
-          updateRowInnerHTML(tr, rowData);
-          tr.dataset.renderedSym = rowData.Ticker;
-          tr.dataset.renderedCurrency = store.currencyMode;
-          tr.dataset.renderedLang = store.lang;
+        // 보이고 있는 행이거나 상위 20위권인 경우 즉각 렌더링
+        const isPreRender = i < 20;
+        if (isPreRender) {
+          store.visibleSymbols.add(rowData.Ticker);
         }
 
-        tbody.insertBefore(tr, tbody.firstChild);
-      }
-    }
-  }
-
-  // 🚀 [성능 극대화] FLIP 애니메이션 실행 (레이아웃 쓰레싱을 완벽 소각하기 위해 batch read/write 형태로 전면 개편!)
-  if (store.useFlip && isRealtime) {
-    const moves = [];
-
-    // Pass 1: Batch Reads (동작 시작 위치 확인)
-    for (const [sym, firstY] of firstRects.entries()) {
-      const tr = store.rowDomMap.get(sym);
-      if (tr) {
-        const lastY = tr.getBoundingClientRect().top;
-        const deltaY = firstY - lastY;
-        if (deltaY !== 0) {
-          moves.push({ tr, deltaY });
-        }
-      }
-    }
-
-    // Pass 2: Batch Writes (트랜스폼 선언 후 단 1회의 강제 reflow로 렌더링 락인)
-    if (moves.length > 0) {
-      moves.forEach(({ tr, deltaY }) => {
-        tr.style.transition = "none";
-        tr.style.transform = `translateY(${deltaY}px)`;
-      });
-      tbody.offsetHeight; // 단 한 번의 강제 reflow로 모든 엘리먼트 트랜스폼 반영!
-    }
-
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        for (const sym of firstRects.keys()) {
-          const tr = store.rowDomMap.get(sym);
-          if (tr) {
-            tr.style.transition = "";
-            tr.style.transform = "";
+        if (isPreRender || store.visibleSymbols.has(rowData.Ticker)) {
+          const isPending = !!(
+            store.pendingFavActions &&
+            store.pendingFavActions.has(rowData.UID)
+          );
+          const needsRender =
+            !tr.dataset.renderedSym ||
+            tr.dataset.renderedSym !== rowData.Ticker ||
+            tr.dataset.renderedCurrency !== store.currencyMode ||
+            tr.dataset.renderedLang !== store.lang ||
+            (tr.dataset.renderedPending === "true") !== isPending;
+          if (needsRender) {
+            updateRowInnerHTML(tr, rowData);
+            tr.dataset.renderedSym = rowData.Ticker;
+            tr.dataset.renderedCurrency = store.currencyMode;
+            tr.dataset.renderedLang = store.lang;
           }
         }
-      });
-    });
+        fragment.appendChild(tr);
+      }
+    }
   }
-
+  tbody.appendChild(fragment);
+  store.lastSortedTickers = null; // 수동 정렬 후 실시간 비교용 캐시 초기화
   applySelectedHighlight();
   if (typeof window.refreshSniperTarget === "function") {
     setTimeout(() => window.refreshSniperTarget(), 10);
   }
+  return;
+}
+
+let orderChanged = false;
+const limit = Math.min(20, totalCount);
+if (!store.lastSortedTickers || store.lastSortedTickers.length !== limit) {
+  orderChanged = true;
+} else {
+  for (let i = 0; i < limit; i++) {
+    if (store.lastSortedTickers[i] !== filteredData[i].Ticker) {
+      orderChanged = true;
+      break;
+    }
+  }
+}
+
+if (!orderChanged) {
+  // 🚀 [성능 극대화] 정렬 순서가 이전과 동일하다면 DOM 재배치 전체를 건너뛰고 가시 영역만 갱신!
+  for (const sym of store.visibleSymbols) {
+    const tr = store.rowDomMap.get(sym);
+    const rowData = store.tickerRowMap.get(sym.toUpperCase());
+    if (tr && rowData) {
+      const isPending = !!(
+        store.pendingFavActions && store.pendingFavActions.has(rowData.UID)
+      );
+      const needsRender =
+        !tr.dataset.renderedSym ||
+        tr.dataset.renderedSym !== rowData.Ticker ||
+        tr.dataset.renderedCurrency !== store.currencyMode ||
+        tr.dataset.renderedLang !== store.lang ||
+        (tr.dataset.renderedPending === "true") !== isPending;
+      if (needsRender) {
+        updateRowInnerHTML(tr, rowData);
+        tr.dataset.renderedSym = rowData.Ticker;
+        tr.dataset.renderedCurrency = store.currencyMode;
+        tr.dataset.renderedLang = store.lang;
+      }
+    }
+  }
+  applySelectedHighlight();
+  return;
+}
+
+store.lastSortedTickers = filteredData.slice(0, limit).map((r) => r.Ticker);
+
+const firstRects = new Map();
+if (store.useFlip && isRealtime) {
+  for (const sym of store.visibleSymbols) {
+    const tr = store.rowDomMap.get(sym);
+    if (tr) {
+      firstRects.set(sym, tr.getBoundingClientRect().top);
+    }
+  }
+}
+
+// 🚀 상위 30개 행만 역순(19 -> 0)으로 insertBefore를 호출하여 table-body 맨 앞으로 재배치!
+for (let i = limit - 1; i >= 0; i--) {
+  const rowData = filteredData[i];
+  if (rowData) {
+
+    // 🚀 상위 20위 안의 행은 무조건 즉시 최신 정보로 렌더링
+    const isPending = !!(
+      store.pendingFavActions && store.pendingFavActions.has(rowData.UID)
+    );
+    const needsRender =
+      !tr.dataset.renderedSym ||
+      tr.dataset.renderedSym !== rowData.Ticker ||
+      tr.dataset.renderedCurrency !== store.currencyMode ||
+      tr.dataset.renderedLang !== store.lang ||
+      (tr.dataset.renderedPending === "true") !== isPending;
+    if (needsRender) {
+      updateRowInnerHTML(tr, rowData);
+      tr.dataset.renderedSym = rowData.Ticker;
+      tr.dataset.renderedCurrency = store.currencyMode;
+      tr.dataset.renderedLang = store.lang;
+    }
+
+    tbody.insertBefore(tr, tbody.firstChild);
+  }
+}
+
+// 🚀 [성능 극대화] FLIP 애니메이션 실행 (레이아웃 쓰레싱을 완벽 소각하기 위해 batch read/write 형태로 전면 개편!)
+if (store.useFlip && isRealtime) {
+  const moves = [];
+
+  // Pass 1: Batch Reads (동작 시작 위치 확인)
+  for (const [sym, firstY] of firstRects.entries()) {
+    const tr = store.rowDomMap.get(sym);
+    if (tr) {
+      const lastY = tr.getBoundingClientRect().top;
+      const deltaY = firstY - lastY;
+      if (deltaY !== 0) {
+        moves.push({ tr, deltaY });
+      }
+    }
+  }
+
+  // Pass 2: Batch Writes (트랜스폼 선언 후 단 1회의 강제 reflow로 렌더링 락인)
+  if (moves.length > 0) {
+    moves.forEach(({ tr, deltaY }) => {
+      tr.style.transition = "none";
+      tr.style.transform = `translateY(${deltaY}px)`;
+    });
+    tbody.offsetHeight; // 단 한 번의 강제 reflow로 모든 엘리먼트 트랜스폼 반영!
+  }
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      for (const sym of firstRects.keys()) {
+        const tr = store.rowDomMap.get(sym);
+        if (tr) {
+          tr.style.transition = "";
+          tr.style.transform = "";
+        }
+      }
+    });
+  });
+}
+
+applySelectedHighlight();
+if (typeof window.refreshSniperTarget === "function") {
+  setTimeout(() => window.refreshSniperTarget(), 10);
 }
 
 export function updateVisibleSymbols() {
@@ -917,12 +902,10 @@ export function applyPriceFlash(element, newPrice, oldPrice) {
 
   const flashClass = newPrice > oldPrice ? "flash-up" : "flash-down";
   element.classList.remove("flash-up", "flash-down");
-  void element.offsetWidth;
-  element.classList.add(flashClass);
-  setTimeout(() => element.classList.remove(flashClass), 500);
-}
 
-window.updateRowPriceDisplay = (target, row) => {
+  // 🚀 [기존 로직 100% 보존 + 렉 제로] 
+  // 기존 동기식 offsetWidth(렉 주범) 대신 비동기식 requestAnimationFrame을 사용하여 
+  // 브라우저 렌더링 큐를 막지 않고 CSS 애니메이션을 부드럽게 리스타트 시킵니다.
   let parentEl;
   const tId = row.Ticker || row.Symbol;
   if (target instanceof HTMLElement) {

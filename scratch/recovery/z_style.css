@@ -1,0 +1,46 @@
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+/* z_style.css */
+/* css-disable unknownAtRules */
+@import "tailwindcss";
+
+@theme {
+  --color-theme-bg: var(--bg);
+  --color-theme-panel: var(--panel);
+  --color-theme-border: var(--border);
+  --color-theme-text: var(--text);
+  --color-theme-up: var(--up);
+  --color-theme-down: var(--down);
+  --color-theme-accent: var(--accent);
+
+  /* 🚀 메인 폰트 (Pretendard) */
+  --font-pretendard: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+}
+
+@layer base {
+  body {
+    /* 🚀 기본적으로 프리텐다드 적용 및 금융 필수 옵션(숫자 고정폭) 강제 활성화 */
+    font-family: var(--font-pretendard);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+:root {
+  --bg: #ffffff;
+  --panel: #f4f5f8;
+  --border: #d5d5d5;
+  --text: #333;
+  --up: #c84a31;
+  --down: #1261c4;
+  --accent: #093687;
+
+  /* 🚀 테이블 컬럼 너비 배수 관리소 (원하는 배수 비율을 적으면 알아서 100% 기준 황금비율로 자동 계산됩니다!) */
+  --ratio-asset: 2.3;
+  /*    1열: 코인명 */
+  --ratio-price: 2;
+  /*      2열: 가격   */
+  --ratio-mcap: 2;
+  /*       3열: 시총   */
+  --ratio-kimch: 1;
+  /*    4열: 김프   */
+  --ratio-exch: 1.2;
+

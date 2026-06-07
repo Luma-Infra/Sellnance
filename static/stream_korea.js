@@ -113,7 +113,7 @@ export function updateRealtimeKimchi(liveData, symbol, chartTime) {
           try {
             store.kimchiSeries.setData([]);
             store.kimchiSeries.setData(store.kimchiData);
-          } catch (rebindErr) {}
+          } catch (rebindErr) { }
         }
       }
     }
