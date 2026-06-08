@@ -110,10 +110,15 @@ export function updateRealtimeKimchi(liveData, symbol, chartTime) {
       } catch (e) {
         console.warn("🚨 kimchiSeries.update 예외 발생, vol-pane 자동 복구 시도:", e);
         if (store.kimchiSeries && store.kimchiData && store.kimchiData.length > 0) {
-          try {
-            store.kimchiSeries.setData([]);
-            store.kimchiSeries.setData(store.kimchiData);
-          } catch (rebindErr) { }
+          // 김프 데이터 내부의 value가 null이 되지 않도록 0층 방어벽 가동
+          const sterileKimchiData = store.kimchiData.map(item => ({
+            ...item,
+            value: (item.value === null || item.value === undefined || isNaN(item.value)) ? 0 : Number(item.value)
+          }));
+
+          store.kimchiSeries.setData(
+            sanitizeChartData(sterileKimchiData, true),
+          );
         }
       }
     }

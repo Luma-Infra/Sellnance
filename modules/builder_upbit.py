@@ -198,6 +198,10 @@ def build_upbit_row(
     exact_futures_ticker = ""
     binance_spot_price = 0.0
     binance_futures_price = 0.0
+    binance_spot_change_24h = 0.0
+    binance_futures_change_24h = 0.0
+    binance_spot_change_today = 0.0
+    binance_futures_change_today = 0.0
 
     for b_tick, b_inf in binance_data.items():
         b_base = utils.get_pure_base_asset(b_tick.replace("USDT", "")).upper()
@@ -214,10 +218,18 @@ def build_upbit_row(
                     listed_on.add("BINANCE")
                     exact_spot_ticker = b_tick.replace("USDT", "")
                     binance_spot_price = float(b_inf.get("price") or 0.0)
+                    binance_spot_change_24h = float(b_inf.get("change_24h") or 0.0)
+                    spot_utc0 = b_inf.get("utc0_open") or 0.0
+                    if spot_utc0 > 0:
+                        binance_spot_change_today = utils.js_round(((binance_spot_price - spot_utc0) / spot_utc0 * 100), 2)
                 if b_inf.get("is_futures"):
                     listed_on.add("BINANCE_FUTURES")
                     exact_futures_ticker = b_tick.replace("USDT", "")
                     binance_futures_price = float(b_inf.get("price") or 0.0)
+                    binance_futures_change_24h = float(b_inf.get("change_24h") or 0.0)
+                    futures_utc0 = b_inf.get("utc0_open") or 0.0
+                    if futures_utc0 > 0:
+                        binance_futures_change_today = utils.js_round(((binance_futures_price - futures_utc0) / futures_utc0 * 100), 2)
     if base in upbit_krw_set:
         listed_on.add("UPBIT")
 
@@ -230,17 +242,35 @@ def build_upbit_row(
     if base in bithumb_krw_set or any(a in bithumb_krw_set for a in bithumb_aliases):
         listed_on.add("BITHUMB")
 
-    # 🚀 [수정] CMC 거래량 대신 거래소 실시간 거래량 합산
-    binance_vol = 0.0
+    # 🚀 [수정] 바낸은 선물만, 선물 없으면 현물만 사용
+    binance_futures_vol = 0.0
+    binance_spot_vol = 0.0
+    has_binance_futures = False
     for b_tick, b_inf in binance_data.items():
         b_base = utils.get_pure_base_asset(b_tick.replace("USDT", "")).upper()
         if b_base == base:
-            binance_vol += (b_inf.get("vol_futures") or 0.0) + (
-                b_inf.get("vol_spot") or 0.0
+            # 🚀 [수정] 바이낸스 티커가 실제로 같은 코인인지 검증 (EDGE 등 중복 티커 충돌 방어)
+            alias_binance_raw = str(
+                REVERSE_LOOKUP.get(f"{b_base}_BINANCE", b_base) or b_base
             )
+            alias_binance_clean = re.sub(
+                r"_(binance|upbit|bithumb)$", "", alias_binance_raw, flags=re.IGNORECASE
+            )
+            if alias_binance_clean == display_name:
+                if b_inf.get("is_futures"):
+                    has_binance_futures = True
+                    binance_futures_vol += (b_inf.get("vol_futures") or 0.0)
+                if b_inf.get("is_spot"):
+                    binance_spot_vol += (b_inf.get("vol_spot") or 0.0)
 
+    if has_binance_futures:
+        binance_vol = binance_futures_vol
+    else:
+        binance_vol = binance_spot_vol
+
+    # 🚀 업비트는 업비트 기준 거래대금만 환율 고려 (acc_trade_price_24h / krw_usd_rate)
     up_vol_24h = (
-        up_price_krw * float(upbit_data[base].get("volume_24h") or 0.0) / krw_usd_rate
+        float(upbit_data[base].get("volume_24h") or 0.0) / krw_usd_rate
         if base in upbit_data and krw_usd_rate > 0
         else 0.0
     )
@@ -295,7 +325,17 @@ def build_upbit_row(
         "Price": utils.format_dynamic_price(p, up_precision),
         "Price_KRW": up_price_krw if up_price_krw > 0 else None,
         "Binance_Price": (binance_spot_price or binance_futures_price) if (binance_spot_price > 0 or binance_futures_price > 0) else None,
+        "Binance_Price_Spot": binance_spot_price if binance_spot_price > 0 else None,
+        "Binance_Price_Futures": binance_futures_price if binance_futures_price > 0 else None,
         "Bybit_Price": (by_futures_p or by_spot_p) if (by_futures_p > 0 or by_spot_p > 0) else None,
+        "Bybit_Price_Spot": by_spot_p if by_spot_p > 0 else None,
+        "Bybit_Price_Futures": by_futures_p if by_futures_p > 0 else None,
+        "Change_24h_Binance": binance_spot_change_24h,
+        "Change_24h_Futures_Ex": binance_futures_change_24h,
+        "Change_24h_Bybit": binance_spot_change_24h,
+        "Change_Today_Binance": binance_spot_change_today,
+        "Change_Today_Futures": binance_futures_change_today,
+        "Change_Today_Bybit": binance_spot_change_today,
         "Upbit_Price": up_price_krw if up_price_krw > 0 else None,
         "Bithumb_Price": bithumb_price if bithumb_price > 0 else None,
         "Change_24h": utils.format_change(up_change_24h),

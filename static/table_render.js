@@ -104,8 +104,23 @@ export function updateRowInnerHTML(tr, row) {
   // );
 
   const p = row.precision || 2;
-  const n24h = row.Change_24h_Raw ?? 0;
-  const nPrice = row.Price_Raw ?? 0;
+  const currentMarket = store.currentMarket || "ALL";
+  let nPrice = row.Price_Raw ?? 0;
+  let n24h = row.Change_24h_Raw ?? 0;
+
+  if (currentMarket === "UPBIT") {
+    nPrice = row.Upbit_Price ?? nPrice;
+    n24h = row.Change_24h_Upbit ?? n24h;
+  } else if (currentMarket === "BITHUMB") {
+    nPrice = row.Bithumb_Price ?? nPrice;
+    n24h = row.Change_24h_Bithumb ?? n24h;
+  } else if (currentMarket === "FUTURES" || currentMarket === "BYBIT_FUTURES") {
+    nPrice = (currentMarket === "FUTURES" ? row.Binance_Price_Futures : row.Bybit_Price_Futures) ?? nPrice;
+    n24h = row.Change_24h_Futures_Ex ?? n24h;
+  } else if (currentMarket === "SPOT" || currentMarket === "BYBIT") {
+    nPrice = (currentMarket === "SPOT" ? row.Binance_Price_Spot : row.Bybit_Price_Spot) ?? nPrice;
+    n24h = (currentMarket === "SPOT" ? row.Change_24h_Binance : row.Change_24h_Bybit) ?? n24h;
+  }
 
   const formattedPrice = formatSmartPrice(nPrice, p);
 
@@ -148,13 +163,25 @@ export function updateRowInnerHTML(tr, row) {
   }
 
   const isDetailed = store.viewMode === "detailed";
-  const nDay = row.Change_Today_Raw ?? 0;
+  let nDay = row.Change_Today_Raw ?? 0;
+  if (currentMarket === "UPBIT") {
+    nDay = row.Change_Today_Upbit ?? nDay;
+  } else if (currentMarket === "BITHUMB") {
+    nDay = row.Change_Today_Bithumb ?? nDay;
+  } else if (currentMarket === "FUTURES" || currentMarket === "BYBIT_FUTURES") {
+    nDay = row.Change_Today_Futures ?? nDay;
+  } else if (currentMarket === "SPOT" || currentMarket === "BYBIT") {
+    nDay = (currentMarket === "SPOT" ? row.Change_Today_Binance : row.Change_Today_Bybit) ?? nDay;
+  }
   const colorDay =
     nDay > 0
       ? "text-theme-up"
       : nDay < 0
         ? "text-theme-down"
         : "text-theme-text";
+
+  const vmcFormatted = row.VMC_Formatted || "-";
+  const vmcColorClass = "text-theme-text";
 
   // 🚀 [최신] 2층 구조 레이아웃 (디자인 가이드 준수 + z_style.css 단일 관리소 강제 종속)
   tr.innerHTML = `
@@ -167,21 +194,22 @@ export function updateRowInnerHTML(tr, row) {
     `
       : ""
     }
-    <div class="flex items-center gap-1.5 min-w-0">
+    <div class="flex items-center gap-0.5 min-w-0">
       <!-- 0. 절대 순위 번호 (1 ~ max length 고정 배치, CSS 카운터 기반) -->
-      <span class="row-counter text-[10px] font-tempTestDss font-bold text-theme-text opacity-40 w-[14px] text-right flex-shrink-0 mr-[2px]"></span>
- 
+      <div class="w-[20px] flex-shrink-0 text-center">
+        <span class="row-counter text-[10px] font-tempTestDss font-medium text-theme-text opacity-40 flex-shrink-0 px-0 leading-none"></span>
+      </div>
       <!-- 1. 별 버튼 (완전 분리) -->
-      <div class="flex items-center gap-1 flex-shrink-0">
+      <div class="flex items-center gap-0.5 flex-shrink-0">
         <button onclick="toggleFavorite('${uId}', event)" class="star-btn text-[14px] transition-all hover:scale-125 flex-shrink-0 ${starClass}" style="color: ${starColor}">
           ${starText}
         </button>
         ${pendingAction
       ? `
-          <button onclick="window.confirmFavoriteChange('${uId}', event)" class="confirm-fav-btn text-[9px] font-bold px-1.5 py-0.5 rounded transition-all flex-shrink-0 mr-1">
+          <button onclick="window.confirmFavoriteChange('${uId}', event)" class="confirm-fav-btn text-[9px] font-medium px-1.5 py-0.5 rounded transition-all flex-shrink-0 mr-1">
             확인
           </button>
-          <button onclick="window.cancelFavoriteChange('${uId}', event)" class="cancel-fav-btn text-[9px] font-bold px-1.5 py-0.5 rounded transition-all flex-shrink-0">
+          <button onclick="window.cancelFavoriteChange('${uId}', event)" class="cancel-fav-btn text-[9px] font-medium px-1.5 py-0.5 rounded transition-all flex-shrink-0">
             취소
           </button>
         `
@@ -196,8 +224,8 @@ export function updateRowInnerHTML(tr, row) {
       
       <!-- 3. 티커 & 이름 묶음 -->
       <div class="flex flex-col leading-[1.1] min-w-0 flex-1">
-        <b class="text-[12px] text-theme-text truncate font-bold tracking-tighter">${row.DisplayTicker || row.Symbol}</b>
-        <span class="text-[9px] text-theme-text opacity-60 truncate font-bold tracking-tighter">
+        <b class="text-[12px] text-theme-text truncate font-medium tracking-tighter">${row.DisplayTicker || row.Symbol}</b>
+        <span class="text-[9px] text-theme-text opacity-60 truncate font-medium tracking-tighter">
           ${(() => {
       const n =
         store.lang === "KR"
@@ -211,63 +239,63 @@ export function updateRowInnerHTML(tr, row) {
   </td>
   <td class="p-2 col-price overflow-hidden">
     <div class="flex flex-col leading-tight min-w-0 gap-0.5">
-      <div id="price-${tId}" data-raw-price="0" class="font-bold text-[14px] text-theme-text price-cell tracking-tighter truncate block flex items-center">
+      <div id="price-${tId}" data-raw-price="0" class="font-medium text-[14px] text-theme-text price-cell tracking-tighter truncate block flex items-center">
         <span id="price-val-binance-${tId}" class="hidden items-center">
           <span class="price-num">-</span>
           <div class="relative inline-flex items-center justify-center w-[12px] h-[12px] rounded-[2px] overflow-visible bg-white/2 ml-1 align-middle flex-shrink-0">
             <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/270.png" alt="binance" class="w-full h-full object-contain rounded-[2px]" />
-            <div class="price-futures-badge absolute -top-1.5 -right-1.5 bg-[#f0b90b] text-black text-[8px] font-bold px-[2px] rounded-[2px] leading-none z-10 scale-75 hidden">F</div>
+            <div class="price-futures-badge absolute -top-1.5 -right-1.5 bg-[#f0b90b] text-black text-[8px] font-medium px-[2px] rounded-[2px] leading-none z-10 scale-75 hidden">F</div>
           </div>
         </span>
         <span id="price-val-bybit-${tId}" class="hidden items-center">
           <span class="price-num">-</span>
           <div class="relative inline-flex items-center justify-center w-[12px] h-[12px] rounded-[2px] overflow-visible bg-white/2 ml-1 align-middle flex-shrink-0">
             <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/521.png" alt="bybit" class="w-full h-full object-contain rounded-[2px]" />
-            <div class="price-futures-badge absolute -top-1.5 -right-1.5 bg-[#f0b90b] text-black text-[8px] font-bold px-[2px] rounded-[2px] leading-none z-10 scale-75 hidden">F</div>
+            <div class="price-futures-badge absolute -top-1.5 -right-1.5 bg-[#f0b90b] text-black text-[8px] font-medium px-[2px] rounded-[2px] leading-none z-10 scale-75 hidden">F</div>
           </div>
         </span>
         <span id="price-val-upbit-${tId}" class="hidden items-center">
           <span class="price-num">-</span>
           <div class="relative inline-flex items-center justify-center w-[12px] h-[12px] rounded-[2px] overflow-visible bg-white/2 ml-1 align-middle flex-shrink-0">
             <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/351.png" alt="upbit" class="w-full h-full object-contain rounded-[2px]" />
-            <div class="price-futures-badge absolute -top-1.5 -right-1.5 bg-[#f0b90b] text-black text-[8px] font-bold px-[2px] rounded-[2px] leading-none z-10 scale-75 hidden">F</div>
+            <div class="price-futures-badge absolute -top-1.5 -right-1.5 bg-[#f0b90b] text-black text-[8px] font-medium px-[2px] rounded-[2px] leading-none z-10 scale-75 hidden">F</div>
           </div>
         </span>
         <span id="price-val-bithumb-${tId}" class="hidden items-center">
           <span class="price-num">-</span>
           <div class="relative inline-flex items-center justify-center w-[12px] h-[12px] rounded-[2px] overflow-visible bg-white/2 ml-1 align-middle flex-shrink-0">
             <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/200.png" alt="bithumb" class="w-full h-full object-contain rounded-[2px]" />
-            <div class="price-futures-badge absolute -top-1.5 -right-1.5 bg-[#f0b90b] text-black text-[8px] font-bold px-[2px] rounded-[2px] leading-none z-10 scale-75 hidden">F</div>
+            <div class="price-futures-badge absolute -top-1.5 -right-1.5 bg-[#f0b90b] text-black text-[8px] font-medium px-[2px] rounded-[2px] leading-none z-10 scale-75 hidden">F</div>
           </div>
         </span>
       </div>
-      <div class="flex items-center justify-between gap-2 text-[10px] font-bold text-left mt-0.5 w-full min-w-0">
+      <div class="flex items-center justify-between gap-2 text-[10px] font-medium text-left mt-0.5 w-full min-w-0">
         <span id="change-${tId}" class="${color24h} ${store.currentSortCol === "Change_Today" ? "opacity-40" : "opacity-100"} flex-1 text-left truncate">${n24h > 0 ? "+" : ""}${Number(n24h).toFixed(2)}%</span>
         <span id="today-${tId}" class="${colorDay} ${store.currentSortCol === "Change_Today" ? "opacity-100" : "opacity-40"} flex-1 text-left truncate">${nDay > 0 ? "+" : ""}${Number(nDay).toFixed(2)}%</span>
       </div>
     </div>
   </td>
-  <td class="p-2 col-mcap overflow-hidden">
+  <td class="p-2 col-vol-b overflow-hidden">
     <div class="flex flex-col leading-tight min-w-0 gap-0.5">
-      <div class="flex items-center justify-between gap-1 w-full min-w-0 truncate text-[11px] font-tempTestDss">
-        <span id="vol-binance-${tId}" class="text-[#f0b90b] font-bold truncate">${row.Volume_Formatted && row.Volume_Formatted !== "-" && row.Volume_Formatted !== "0" ? row.Volume_Formatted : "-"}</span>
-        <span id="vol-upbit-${tId}" class="text-[#093687] font-bold truncate">${row.Upbit_Vol_Formatted && row.Upbit_Vol_Formatted !== "-" && row.Upbit_Vol_Formatted !== "0" ? row.Upbit_Vol_Formatted : "-"}</span>
+      <span id="vol-binance-${tId}" class="text-[#f0b90b] text-[11px] font-tempTestDss font-bold truncate">${row.Volume_Formatted && row.Volume_Formatted !== "-" && row.Volume_Formatted !== "0" ? row.Volume_Formatted : "-"}</span>
+      <span id="mcap-${tId}" class="text-[10px] font-bold opacity-60 text-left mt-0.5 truncate">${row.MarketCap_Formatted || "-"}</span>
       </div>
-      <div class="flex items-center justify-between gap-2 text-[10px] font-bold opacity-60 text-left mt-0.5 w-full min-w-0">
-        <span class="flex-1 text-left truncate">${row.MarketCap_Formatted || "0"}</span>
-        <span class="text-theme-accent flex-1 text-left truncate">${row.VMC_Formatted || "0.0%"}</span>
-      </div>
+  </td>
+  <td class="p-2 col-vol-u overflow-hidden">
+    <div class="flex flex-col leading-tight min-w-0 gap-0.5 text-right">
+      <span id="vol-upbit-${tId}" class="text-[#093687] text-[11px] font-tempTestDss font-bold truncate">${row.Upbit_Vol_Formatted && row.Upbit_Vol_Formatted !== "-" && row.Upbit_Vol_Formatted !== "0" ? row.Upbit_Vol_Formatted : "-"}</span>
+      <span id="vmc-${tId}" class="text-[10px] font-bold opacity-60 mt-0.5 truncate ${vmcColorClass}">${vmcFormatted}</span>
     </div>
   </td>
   <td class="p-2 text-left col-kimch overflow-hidden">
     <div class="flex flex-col leading-tight items-start min-w-0">
       <div class="flex items-center justify-start gap-1 min-w-0 max-w-full">
          ${!row.Kimchi_Label || row.Kimchi_Label === "-"
-      ? `<span class="text-[12px] font-bold text-theme-text opacity-40">-</span>`
-      : `<span class="text-[12px] font-bold truncate ${row.Kimchi_Raw > 0 ? "text-theme-up" : "text-theme-down"}">${row.Kimchi_Formatted || "0.0%"}</span>`
+      ? `<span class="text-[12px] font-medium text-theme-text opacity-40">-</span>`
+      : `<span class="text-[12px] font-medium truncate ${row.Kimchi_Raw > 0 ? "text-theme-up" : "text-theme-down"}">${row.Kimchi_Formatted || "0.0%"}</span>`
     }
       </div>
-      <div class="flex items-center justify-start gap-2 text-[10px] font-bold mt-0.5 min-w-0 max-w-full">
+      <div class="flex items-center justify-start gap-2 text-[10px] font-medium mt-0.5 min-w-0 max-w-full">
          <span class="text-theme-accent opacity-70 truncate">${row.Funding_Formatted || "-"}</span>
       </div>
     </div>
@@ -293,7 +321,7 @@ export function updateRowInnerHTML(tr, row) {
             (ex.id === "UPBIT" && row.Upbit === "O");
           const isFutures = exchanges.includes(`${ex.id}_FUTURES`);
           const badgeHtml = isFutures
-            ? `<div class="absolute -top-1.5 -right-1.5 bg-[#f0b90b] text-black text-[8px] font-bold px-[2px] rounded-[2px] leading-none z-10 scale-[0.65]">F</div>`
+            ? `<div class="absolute -top-1.5 -right-1.5 bg-[#f0b90b] text-black text-[8px] font-medium px-[2px] rounded-[2px] leading-none z-10 scale-[0.65]">F</div>`
             : "";
           const imgUrl = `https://s2.coinmarketcap.com/static/img/exchanges/64x64/${ex.cmcId}.png`;
           return `
@@ -323,11 +351,12 @@ const EMPTY_ROW_HTML = `
   <td class="p-2 col-asset overflow-hidden">
     <div class="flex items-center gap-1.5 min-w-0">
       <!-- 빈 껍데기 상태에서도 고정된 행 번호는 보이도록 유지 (CSS 카운터 기반) -->
-      <span class="row-counter text-[10px] font-tempTestDss font-bold text-theme-text opacity-40 w-[14px] text-right flex-shrink-0 mr-[2px]"></span>
+      <span class="row-counter text-[10px] font-tempTestDss font-medium text-theme-text opacity-40 w-[14px] text-right flex-shrink-0 mr-[2px]"></span>
     </div>
   </td>
   <td class="p-2 col-price overflow-hidden"></td>
-  <td class="p-2 col-mcap overflow-hidden"></td>
+  <td class="p-2 col-vol-b overflow-hidden"></td>
+  <td class="p-2 col-vol-u overflow-hidden"></td>
   <td class="p-2 col-kimch overflow-hidden"></td>
   <td class="p-2 col-exch overflow-hidden"></td>
   <td class="p-2 col-listing overflow-hidden"></td>
@@ -940,8 +969,22 @@ window.updateRowPriceDisplay = (target, row) => {
   const isKrwMode = store.currencyMode === "KRW";
   const p = store.getPrecision(row.DisplayTicker || row.Symbol);
 
-  const binanceP = row.Binance_Price || null;
-  const bybitP = row.Bybit_Price || null;
+  const currentMarket = store.currentMarket || "ALL";
+  let binanceP = row.Binance_Price || null;
+  let bybitP = row.Bybit_Price || null;
+
+  if (currentMarket === "FUTURES") {
+    binanceP = row.Binance_Price_Futures ?? binanceP;
+    bybitP = row.Bybit_Price_Futures ?? bybitP;
+  } else if (currentMarket === "SPOT") {
+    binanceP = row.Binance_Price_Spot ?? binanceP;
+    bybitP = row.Bybit_Price_Spot ?? bybitP;
+  } else if (currentMarket === "BYBIT") {
+    bybitP = row.Bybit_Price_Spot ?? bybitP;
+  } else if (currentMarket === "BYBIT_FUTURES") {
+    bybitP = row.Bybit_Price_Futures ?? bybitP;
+  }
+
   const upbitP = row.Upbit_Price || null;
   const bithumbP = row.Bithumb_Price || null;
 

@@ -25,14 +25,14 @@ def start_engine():
     print("      🚀 SELLNANCE ENGINE v1.2 - BOOTING...")
     print("="*50)
     print(f"📂 [PATH] {os.getcwd()}")
-    print(f"🌐 [HOST] http://127.0.0.1:{port}")
+    print(f"🌐 [HOST] http://127.0.0.1:{port}  |  📱 [LAN] http://192.168.0.6:{port}")
     print("-" * 50)
     
     # Uvicorn 가동 (modules/app.py의 app 객체 실행)
     cmd = [
         sys.executable, "-m", "uvicorn", 
         "modules.app:app", 
-        "--host", "127.0.0.1", 
+        "--host", "0.0.0.0", 
         "--port", str(port), 
         "--log-level", "info",
         "--reload"

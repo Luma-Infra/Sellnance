@@ -28,7 +28,7 @@ export function initOrderbookDOM() {
       "relative flex items-center justify-between text-[10px] h-5 font-tempTestDss px-1.5 z-10 hidden hover:bg-theme-text/5 cursor-pointer transition-colors";
     askRow.innerHTML = `
     <div id="ob-ask-bg-${i}" class="absolute right-0 top-0 bottom-0 bg-theme-down/15 will-change-[width] z-[-1] transition-all duration-[50ms]" style="width: 0%;"></div>
-    <span id="ob-ask-price-${i}" class="text-theme-down font-bold w-[35%] text-left tracking-tighter"></span>
+    <span id="ob-ask-price-${i}" class="text-theme-down font-medium w-[35%] text-left tracking-tighter"></span>
     <span id="ob-ask-size-${i}" class="text-theme-text w-[30%] text-right opacity-90 tracking-tighter"></span>
     <span id="ob-ask-total-${i}" class="text-theme-text w-[35%] text-right opacity-50 tracking-tighter"></span>
   `;
@@ -41,7 +41,7 @@ export function initOrderbookDOM() {
       "relative flex items-center justify-between text-[10px] h-5 font-tempTestDss px-1.5 z-10 hidden hover:bg-theme-text/5 cursor-pointer transition-colors";
     bidRow.innerHTML = `
     <div id="ob-bid-bg-${i}" class="absolute right-0 top-0 bottom-0 bg-theme-up/15 will-change-[width] z-[-1] transition-all duration-[50ms]" style="width: 0%;"></div>
-    <span id="ob-bid-price-${i}" class="text-theme-up font-bold w-[35%] text-left tracking-tighter"></span>
+    <span id="ob-bid-price-${i}" class="text-theme-up font-medium w-[35%] text-left tracking-tighter"></span>
     <span id="ob-bid-size-${i}" class="text-theme-text w-[30%] text-right opacity-90 tracking-tighter"></span>
     <span id="ob-bid-total-${i}" class="text-theme-text w-[35%] text-right opacity-50 tracking-tighter"></span>
   `;

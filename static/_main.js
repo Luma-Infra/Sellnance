@@ -39,7 +39,7 @@ function getKrwPrecision(price) {
 }
 
 // 🚀 [역할 분리] 스트림 엔진(stream.js)의 렌더링 과부하를 막기 위해, 차트 상단 헤더 전광판 조작 전담 함수를 메인 UI 컨트롤러 영역에 선언합니다!
-window.updateHeaderDisplay = (row, newPrice, p) => {
+window.updateHeaderDisplay = (row, newPrice, p, isRealtimeStream = false) => {
   const headChg24h = document.getElementById("head-chg-24h");
   const headChgDay = document.getElementById("head-chg-day");
   const headMcap = document.getElementById("head-mcap");
@@ -49,148 +49,106 @@ window.updateHeaderDisplay = (row, newPrice, p) => {
   const rate = store.marketDataMap?.krw_usd_rate || 0;
   const isKrwMode = store.currencyMode === "KRW";
 
-  // 🚀 [추가] 퀵뷰 전용 마켓을 기준으로 현물/선물 데이터 선택
-  const isQvFutures =
-    store.qvMarket === "FUTURES" || store.qvMarket === "BYBIT_FUTURES";
-  const isQvSpot = store.qvMarket === "SPOT";
+  const activeMarket = (store.currentTab === "quickview" || store.currentTab === "quickview-container")
+    ? (store.qvMarket || "ALL")
+    : (store.currentMarket || "ALL");
 
-  let binanceP = row.Binance_Price || null;
-  if (isQvFutures && row.Binance_Price_Futures !== undefined)
-    binanceP = row.Binance_Price_Futures;
-  else if (isQvSpot && row.Binance_Price_Spot !== undefined)
-    binanceP = row.Binance_Price_Spot;
+  const isFuturesMode = activeMarket === "FUTURES" || activeMarket === "BYBIT_FUTURES";
+  const isSpotMode = activeMarket === "SPOT" || activeMarket === "BYBIT";
 
-  let bybitP = row.Bybit_Price || null;
-  if (isQvFutures && row.Bybit_Price_Futures !== undefined)
-    bybitP = row.Bybit_Price_Futures;
-  else if (isQvSpot && row.Bybit_Price_Spot !== undefined)
-    bybitP = row.Bybit_Price_Spot;
+  let binanceP = null;
+  if (isFuturesMode) {
+    binanceP = (row.Binance_Price_Futures !== undefined && row.Binance_Price_Futures !== null)
+      ? row.Binance_Price_Futures
+      : null;
+  } else if (isSpotMode) {
+    binanceP = (row.Binance_Price_Spot !== undefined && row.Binance_Price_Spot !== null)
+      ? row.Binance_Price_Spot
+      : null;
+  } else {
+    binanceP = (row.Binance_Price_Spot !== undefined && row.Binance_Price_Spot !== null)
+      ? row.Binance_Price_Spot
+      : ((row.Binance_Price_Futures !== undefined && row.Binance_Price_Futures !== null)
+        ? row.Binance_Price_Futures
+        : row.Binance_Price || null);
+  }
+
+  let bybitP = null;
+  if (isFuturesMode) {
+    bybitP = (row.Bybit_Price_Futures !== undefined && row.Bybit_Price_Futures !== null)
+      ? row.Bybit_Price_Futures
+      : null;
+  } else if (isSpotMode) {
+    bybitP = (row.Bybit_Price_Spot !== undefined && row.Bybit_Price_Spot !== null)
+      ? row.Bybit_Price_Spot
+      : null;
+  } else {
+    bybitP = (row.Bybit_Price_Spot !== undefined && row.Bybit_Price_Spot !== null)
+      ? row.Bybit_Price_Spot
+      : ((row.Bybit_Price_Futures !== undefined && row.Bybit_Price_Futures !== null)
+        ? row.Bybit_Price_Futures
+        : row.Bybit_Price || null);
+  }
 
   // Upbit/Bithumb: row.Upbit_Price가 0이거나 없으면 Price_KRW를 fallback으로 사용
   let upbitP = row.Upbit_Price || row.Price_KRW || null;
   let bithumbP = row.Bithumb_Price || null;
 
   if (newPrice !== undefined) {
-    // 🚀 currentMarket(뱃지 클릭)을 1순위로 라우팅 → qvMarket은 퀵뷰 전용이라 뱃지 클릭과 무관
-    if (store.currentMarket === "UPBIT") {
+    if (activeMarket === "UPBIT") {
       upbitP = newPrice;
-    } else if (store.currentMarket === "BITHUMB") {
+    } else if (activeMarket === "BITHUMB") {
       bithumbP = newPrice;
-    } else if (
-      store.currentMarket === "BYBIT" ||
-      store.currentMarket === "BYBIT_FUTURES"
-    ) {
-      bybitP = newPrice;
-    } else if (
-      store.currentMarket === "FUTURES" ||
-      store.currentMarket === "SPOT"
-    ) {
-      binanceP = newPrice;
-    } else if (store.qvMarket === "UPBIT") {
-      upbitP = newPrice;
-    } else if (store.qvMarket === "BITHUMB") {
-      bithumbP = newPrice;
-    } else if (
-      store.qvMarket === "BYBIT" ||
-      store.qvMarket === "BYBIT_FUTURES"
-    ) {
+    } else if (activeMarket === "BYBIT" || activeMarket === "BYBIT_FUTURES") {
       bybitP = newPrice;
     } else {
       binanceP = newPrice;
     }
   }
 
-  // 🚀 [핵심] qvMarket(뱃지 선택)을 1순위로 해당 거래소 div를 강제 활성화
-  //  → KRW 모드면 해당 거래소 원화가 상단(크게), USD가 하단(작게)
-  //  → USD 모드면 해당 거래소 달러가 상단(크게), 원화가 하단(작게)
-  let activeExchange = "";
+  let activeExchange = "binance";
+  if (activeMarket === "UPBIT") activeExchange = "upbit";
+  else if (activeMarket === "BITHUMB") activeExchange = "bithumb";
+  else if (activeMarket === "BYBIT" || activeMarket === "BYBIT_FUTURES") activeExchange = "bybit";
+
   let displayPrice = 0;
   let subPrice = null;
 
-  const marketToEx = {
-    UPBIT: "upbit",
-    BITHUMB: "bithumb",
-    FUTURES: "binance",
-    SPOT: "binance",
-    BYBIT: "bybit",
-    BYBIT_FUTURES: "bybit",
-  };
-  // 뱃지 클릭 시 selectSymbol → store.currentMarket을 업데이트하므로 이걸 우선 사용
-  const forcedEx = store.currentMarket ? marketToEx[store.currentMarket] : null;
-
-  if (!isKrwMode) {
-    // ── USD 모드 ──────────────────────────────────────────────
-    if (forcedEx === "upbit" && upbitP !== null) {
-      activeExchange = "upbit";
-      displayPrice = upbitP / rate;
-      subPrice = upbitP; // 하단: 원화
-    } else if (forcedEx === "bithumb" && bithumbP !== null) {
-      activeExchange = "bithumb";
-      displayPrice = bithumbP / rate;
-      subPrice = bithumbP; // 하단: 원화
-    } else if (forcedEx === "bybit" && bybitP !== null) {
-      activeExchange = "bybit";
-      displayPrice = bybitP;
-      subPrice = bybitP * rate;
-    } else if (binanceP !== null) {
-      activeExchange = "binance";
-      displayPrice = binanceP;
-      subPrice = binanceP * rate;
-    } else if (bybitP !== null) {
-      activeExchange = "bybit";
-      displayPrice = bybitP;
-      subPrice = bybitP * rate;
-    } else if (upbitP !== null) {
-      activeExchange = "upbit";
-      displayPrice = upbitP / rate;
-      subPrice = upbitP;
-    } else if (bithumbP !== null) {
-      activeExchange = "bithumb";
-      displayPrice = bithumbP / rate;
-      subPrice = bithumbP;
+  if (activeExchange === "binance") {
+    const rawP = binanceP || 0;
+    if (isKrwMode) {
+      displayPrice = rawP * rate;
+      subPrice = rawP;
     } else {
-      activeExchange = "binance";
-      displayPrice = row.Price_Raw || 0;
-      subPrice = displayPrice * rate;
+      displayPrice = rawP;
+      subPrice = rawP * rate;
     }
-  } else {
-    // ── KRW 모드 ──────────────────────────────────────────────
-    if (forcedEx === "upbit" && upbitP !== null) {
-      activeExchange = "upbit";
-      displayPrice = upbitP; // 상단: 원화 크게
-      subPrice = rate > 0 ? upbitP / rate : null; // 하단: USD 작게
-    } else if (forcedEx === "bithumb" && bithumbP !== null) {
-      activeExchange = "bithumb";
-      displayPrice = bithumbP;
-      subPrice = rate > 0 ? bithumbP / rate : null;
-    } else if (forcedEx === "binance" && binanceP !== null) {
-      activeExchange = "binance";
-      displayPrice = rate > 0 ? binanceP * rate : 0; // 상단: 원화 환산
-      subPrice = binanceP; // 하단: USD 작게
-    } else if (forcedEx === "bybit" && bybitP !== null) {
-      activeExchange = "bybit";
-      displayPrice = rate > 0 ? bybitP * rate : 0;
-      subPrice = bybitP;
-    } else if (upbitP !== null) {
-      activeExchange = "upbit";
-      displayPrice = upbitP;
-      subPrice = rate > 0 ? upbitP / rate : null;
-    } else if (bithumbP !== null) {
-      activeExchange = "bithumb";
-      displayPrice = bithumbP;
-      subPrice = rate > 0 ? bithumbP / rate : null;
-    } else if (binanceP !== null) {
-      activeExchange = "binance";
-      displayPrice = rate > 0 ? binanceP * rate : 0;
-      subPrice = binanceP;
-    } else if (bybitP !== null) {
-      activeExchange = "bybit";
-      displayPrice = rate > 0 ? bybitP * rate : 0;
-      subPrice = bybitP;
+  } else if (activeExchange === "bybit") {
+    const rawP = bybitP || 0;
+    if (isKrwMode) {
+      displayPrice = rawP * rate;
+      subPrice = rawP;
     } else {
-      activeExchange = "upbit";
-      displayPrice = row.Price_KRW || 0;
-      subPrice = rate > 0 ? displayPrice / rate : null;
+      displayPrice = rawP;
+      subPrice = rawP * rate;
+    }
+  } else if (activeExchange === "upbit") {
+    const rawP = upbitP || 0;
+    if (isKrwMode) {
+      displayPrice = rawP;
+      subPrice = rate > 0 ? rawP / rate : null;
+    } else {
+      displayPrice = rate > 0 ? rawP / rate : 0;
+      subPrice = rawP;
+    }
+  } else if (activeExchange === "bithumb") {
+    const rawP = bithumbP || 0;
+    if (isKrwMode) {
+      displayPrice = rawP;
+      subPrice = rate > 0 ? rawP / rate : null;
+    } else {
+      displayPrice = rate > 0 ? rawP / rate : 0;
+      subPrice = rawP;
     }
   }
 
@@ -230,9 +188,9 @@ window.updateHeaderDisplay = (row, newPrice, p) => {
       container.classList.add("hidden");
     }
   });
-  // 🚀 [수정] 가격은 agg(실시간 차트 체결)를 통해 갱신하고, 변동등락폭 및 기타 지표(시총/거래대금)는 테이블 데이터만 따라가도록 분리!
-  // newPrice가 제공된 경우(aggTrade를 통한 차트 호출) 가격 업데이트만 완료한 뒤 조기 리턴(return)하여 등락률 영역을 보존합니다.
-  if (newPrice !== undefined) {
+  // 🚀 [수정] 가격은 agg(실시간 차트 체결) 및 실시간 스트림을 통해 갱신하고, 변동등락폭 및 기타 지표(시총/거래대금)는 테이블 데이터만 따라가도록 분리!
+  // newPrice가 제공되거나 실시간 스트림 업데이트인 경우, 가격 업데이트만 완료한 뒤 조기 리턴(return)하여 나머지 지표 영역을 보존합니다.
+  if (newPrice !== undefined || isRealtimeStream) {
     return;
   }
 

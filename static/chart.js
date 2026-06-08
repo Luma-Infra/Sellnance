@@ -345,6 +345,43 @@ export function initChart() {
     },
   );
 
+  // ========================================================
+  // 🚀 [고차원 프록시 가로채기] 볼륨 시리즈 원천 방어막 주입
+  // ========================================================
+  if (store.volumeSeries) {
+    const rawVolumeSetData = store.volumeSeries.setData.bind(store.volumeSeries);
+    const rawVolumeUpdate = store.volumeSeries.update.bind(store.volumeSeries);
+
+    // .setData() 통로 가로채기 및 완전 소독
+    store.volumeSeries.setData = (dataArr) => {
+      if (!Array.isArray(dataArr)) return rawVolumeSetData([]);
+
+      const sterilized = dataArr.map(d => {
+        if (!d) return null;
+        const safeVal = (d.value === null || d.value === undefined || isNaN(Number(d.value))) ? 0 : Number(d.value);
+        return { ...d, value: safeVal };
+      }).filter(Boolean);
+
+      // 시간 정제 및 중복 정렬은 기존 엔진(sanitizeChartData)을 거치되, value 필드 안전 장치가 완전히 끝난 배열 전달
+      rawVolumeSetData(window.sanitizeChartData ? window.sanitizeChartData(sterilized, true) : sterilized);
+    };
+
+    // .update() 통로 가로채기 및 완전 소독
+    store.volumeSeries.update = (dataObj) => {
+      if (!dataObj || dataObj.time === undefined || dataObj.time === null) return;
+
+      // value 강제 변환 및 오염 박멸 (기존 d.color 등 메타데이터 100% 계승)
+      const safeVal = (dataObj.value === null || dataObj.value === undefined || isNaN(Number(dataObj.value))) ? 0 : Number(dataObj.value);
+
+      const sterileObj = {
+        ...dataObj,
+        value: safeVal
+      };
+
+      rawVolumeUpdate(sterileObj);
+    };
+  }
+
   // 🚀 김프를 오버레이 라인 시리즈로 업그레이드 (다채로운 색상 포기, 가독성 우선)
   store.kimchiSeries = store.chartVol.addSeries(
     window.LightweightCharts.LineSeries,
@@ -362,6 +399,30 @@ export function initChart() {
       },
     },
   );
+
+  // ========================================================
+  // 🚀 [고차원 프록시] 김프 시리즈 원천 방어막 주입
+  // ========================================================
+  if (store.kimchiSeries) {
+    const rawKimchiSetData = store.kimchiSeries.setData.bind(store.kimchiSeries);
+    const rawKimchiUpdate = store.kimchiSeries.update.bind(store.kimchiSeries);
+
+    store.kimchiSeries.setData = (dataArr) => {
+      if (!Array.isArray(dataArr)) return rawKimchiSetData([]);
+      const sterilized = dataArr.map(d => {
+        if (!d) return null;
+        const safeVal = (d.value === null || d.value === undefined || isNaN(Number(d.value))) ? 0 : Number(d.value);
+        return { ...d, value: safeVal };
+      }).filter(Boolean);
+      rawKimchiSetData(window.sanitizeChartData ? window.sanitizeChartData(sterilized, true) : sterilized);
+    };
+
+    store.kimchiSeries.update = (dataObj) => {
+      if (!dataObj || dataObj.time === undefined || dataObj.time === null) return;
+      const safeVal = (dataObj.value === null || dataObj.value === undefined || isNaN(Number(dataObj.value))) ? 0 : Number(dataObj.value);
+      rawKimchiUpdate({ ...dataObj, value: safeVal });
+    };
+  }
 
   // 🚀 [메인 & 거래량 차트 양방향 대칭 십자선 플러그인 초기화 및 부착]
   if (store.candleSeries && !store._mainCrosshair) {
@@ -804,88 +865,6 @@ export function initChart() {
   // 🚀 [추가] 차트 가격 스케일별 트레이딩뷰 스타일 A / L 모드 버튼 오버레이 생성
   setupScaleModeButtons();
 
-  // 캡처는 렉 겁나게 걸려서 일단 보류
-  /* 🚀 차트 마우스 우클릭 시 전체 차트(메인+볼륨)를 병합한 고화질 캡처 이미지를 클립보드 복사 가능하도록 img 오버레이 생성
-  const wrapper = document.getElementById("chart-wrapper");
-  if (wrapper) {
-    if (window._chartRightClickListener) {
-      wrapper.removeEventListener("mousedown", window._chartRightClickListener);
-    }
-
-    window._chartRightClickListener = (e) => {
-      if (e.button !== 2) return; // 마우스 우클릭만 처리
-      if (store.isMeasuring || store.measureStart) return; // 🚀 측정 중에는 이미지 오버레이 방지 (측정 취소 로직에 양보)
-      if (!store.chart) return;
-
-      const mainCanvas = store.chart.takeScreenshot();
-      const paneVol = document.getElementById("pane-vol");
-      const isVolVisible = paneVol && !paneVol.classList.contains("hidden");
-      const volCanvas = isVolVisible && store.chartVol ? store.chartVol.takeScreenshot() : null;
-
-      if (!mainCanvas) return;
-
-      const combinedCanvas = document.createElement("canvas");
-      const ctx = combinedCanvas.getContext("2d");
-
-      const width = mainCanvas.width;
-      let height = mainCanvas.height;
-      if (volCanvas) {
-        height += volCanvas.height;
-      }
-
-      combinedCanvas.width = width;
-      combinedCanvas.height = height;
-
-      // 배경색 채우기
-      const bgColor = getComputedStyle(wrapper).backgroundColor || "#131722";
-      ctx.fillStyle = bgColor;
-      ctx.fillRect(0, 0, width, height);
-
-      // 드로잉
-      ctx.drawImage(mainCanvas, 0, 0);
-      if (volCanvas) {
-        ctx.drawImage(volCanvas, 0, mainCanvas.height);
-      }
-
-      // 심볼 워터마크 추가
-      ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
-      ctx.font = "bold 16px sans-serif";
-      const symbolText = (store.currentSelectedSymbol || "Sellnance").toUpperCase();
-      ctx.fillText(symbolText, 20, 30);
-
-      let overlayImg = document.getElementById("chart-screenshot-overlay");
-      if (!overlayImg) {
-        overlayImg = document.createElement("img");
-        overlayImg.id = "chart-screenshot-overlay";
-        overlayImg.style.cssText = "position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0.01; z-index: 999999; pointer-events: auto;";
-        wrapper.appendChild(overlayImg);
-      }
-
-      overlayImg.src = combinedCanvas.toDataURL("image/png");
-      overlayImg.style.pointerEvents = "auto";
-
-      const clearOverlay = () => {
-        if (overlayImg) {
-          overlayImg.style.pointerEvents = "none";
-          overlayImg.removeAttribute("src");
-          overlayImg.remove(); // 🚀 DOM에서 엘리먼트 파괴하여 메모리 누수 방지
-        }
-        // 🚀 캔버스 백버퍼 강제 해제 (GPU & RAM 즉각 반환)
-        combinedCanvas.width = 0;
-        combinedCanvas.height = 0;
-        document.removeEventListener("mousemove", clearOverlay);
-        document.removeEventListener("mousedown", clearOverlay);
-      };
-
-      setTimeout(() => {
-        document.addEventListener("mousemove", clearOverlay);
-        document.addEventListener("mousedown", clearOverlay);
-      }, 300);
-    };
-
-    wrapper.addEventListener("mousedown", window._chartRightClickListener);
-  } */
-
   // 🚀 차트 스케일 리셋(더블클릭) 시 이전 넓이의 저주를 풀고 즉시 0으로 리셋 후 재계산 연동!
   [elMain, elVol].forEach((el) => {
     if (el) el.addEventListener("dblclick", window.resetPriceScaleWidthSync);
@@ -1000,212 +979,6 @@ export function updateChartTheme() {
   applyChartLayout();
 }
 
-// function initChart() {
-//   const container = document.getElementById("chart-container");
-//   // 🚀 과거와의 작별 (이게 메모리 아끼는 핵심!)
-//   if (chart) {
-//     chart.remove(); // 엔진 내부 메모리 해제
-//     chart = null;
-//     candleSeries = null;
-//     countdownPriceLine = null; // 👈 유령 방지
-//   }
-
-//   const isDark = currentTheme === "binance" || currentTheme === "upbit-dark";
-//   const upColor = currentTheme === "binance" ? "#26a69a" : "#c84a31";
-//   const downColor = currentTheme === "binance" ? "#ef5350" : "#1261c4";
-
-//   chart = LightweightCharts.createChart(container, {
-//     width: container.clientWidth,
-//     height: container.clientHeight,
-//     layout: {
-//       background: {
-//         color: getComputedStyle(document.body).getPropertyValue("--bg").trim(),
-//       },
-//       textColor: getComputedStyle(document.body)
-//         .getPropertyValue("--text")
-//         .trim(),
-//     },
-//     grid: {
-//       vertLines: { color: isDark ? "#2a2a22" : "#f1f1f11f" },
-//       horzLines: { color: isDark ? "#2a2a22" : "#f1f1f11f" },
-//     },
-//     timeScale: {
-//       borderColor: isDark ? "#2a2a22" : "#f1f1f11f",
-//       timeVisible: true,
-//       secondsVisible: false,
-//       fixRightEdge: false,
-//       tickMarkFormatter: (time, tickMarkType) => {
-//         const d = new Date(getUnixSeconds(time) * 1000);
-//         if (isNaN(d.getTime())) return "";
-
-//         // 🚀 핵심: tickMarkType이 'Year'(0)이면 연도를 최우선으로 반환
-//         // LightweightCharts.TickMarkType.Year 값은 보통 0입니다.
-//         if (tickMarkType === 0) {
-//           return `${d.getFullYear()}년`;
-//         }
-
-//         const isDayUnit = !(currentTF || "1h").match(/[hm]/);
-
-//         if (isDayUnit) {
-//           // 일봉 이상: 연도 첫날이 아니면 '월/일' 표시
-//           return `${d.getMonth() + 1}/${d.getDate()}`;
-//         } else {
-//           // 분/시간봉: '시:분' 표시
-//           return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-//         }
-//       },
-//     },
-//     localization: {
-//       locale: navigator.language,
-//       timeFormatter: (tick) => {
-//         const d = new Date(getUnixSeconds(tick) * 1000);
-//         if (isNaN(d.getTime())) return "";
-
-//         const y = d.getFullYear();
-//         const m = String(d.getMonth() + 1).padStart(2, "0");
-//         const date = String(d.getDate()).padStart(2, "0");
-//         const h = String(d.getHours()).padStart(2, "0");
-//         const min = String(d.getMinutes()).padStart(2, "0");
-
-//         // 🚀 십자선(Crosshair) 라벨도 동일한 규칙 적용
-//         if ((currentTF || "1h").match(/[hm]/)) {
-//           return `${y}-${m}-${date} ${h}:${min}`;
-//         } else {
-//           return `${y}-${m}-${date}`;
-//         }
-//       },
-//     },
-//     rightPriceScale: {
-//       autoScale: true,
-//       visible: true,
-//       entireTextOnly: false,
-//       borderColor: isDark ? "#2a2a22" : "#f1f1f11f",
-//       mode: isLogMode ? 1 : 0,
-//     },
-//     crosshair: {
-//       mode: LightweightCharts.CrosshairMode.Normal,
-//     },
-//   });
-
-//   // 🚀 공통 커스텀 가격 포맷 설정 (함수 추가 없이 기존 formatSmartPrice 재활용!)
-//   // 🚀 p 값을 무조건 '순수 숫자(Number)'로 강제 변환! (문자열 방어)
-//   const row = currentTableData.find((c) => c.Symbol === currentAsset);
-//   const p = row && row.precision !== undefined ? Number(row.precision) : 2;
-
-//   // 🚀 minMove도 안전하게 계산
-//   const safeMinMove = p > 0 ? Number((1 / Math.pow(10, p)).toFixed(p)) : 1;
-//   const customPriceFormat = {
-//     type: "price",
-//     precision: p,
-//     minMove: safeMinMove,
-//     formatter: (price) => {
-//       if (price === null || price === undefined || isNaN(price)) return "";
-//       // 💡 formatSmartPrice가 똑똑하게 소수점을 찍어줄 겁니다.
-//       return formatSmartPrice(price, p);
-//     },
-//   };
-
-//   candleSeries = chart.addCandlestickSeries({
-//     upColor,
-//     downColor,
-//     borderUpColor: upColor,
-//     borderDownColor: downColor,
-//     wickUpColor: upColor,
-//     wickDownColor: downColor,
-//     priceFormat: customPriceFormat, // 👈 여기 추가
-//     lastValueVisible: false,
-//   });
-
-//   previewSeries = chart.addCandlestickSeries({
-//     upColor: upColor + "4D",
-//     downColor: downColor + "4D",
-//     borderVisible: false,
-//     wickVisible: false,
-//     priceFormat: customPriceFormat, // 👈 여기 추가
-//   });
-
-//   chart.subscribeCrosshairMove((p) => {
-//     // 1. 마우스가 차트 위에 있고 데이터가 존재할 때 (탐색 모드)
-//     if (p && p.time) {
-//       const d = p.seriesData.get(candleSeries);
-//       if (d) {
-//         updateLegend(d);
-//       }
-//     }
-//     // 2. 마우스가 차트를 벗어났을 때 (실시간 추적 모드)
-//     else if (mainData && mainData.length > 0) {
-//       // 가장 최근 봉(현재가) 데이터를 전광판에 고정!
-//       updateLegend(mainData[mainData.length - 1]);
-//     }
-//   });
-
-//   // 🚀 설정 변수를 활용한 유령 데이터 렌더링
-//   if (mainData.length > 1) {
-//     const lastTime = getUnixSeconds(mainData[mainData.length - 1].time);
-//     const interval =
-//       lastTime - getUnixSeconds(mainData[mainData.length - 2].time);
-
-//     // 🚀 전역 변수 적용
-//     const ghostData = Array.from(
-//       { length: CHART_CONFIG.GHOST_COUNT },
-//       (_, i) => ({
-//         time: lastTime + interval * (i + 1),
-//       }),
-//     );
-
-//     candleSeries.setData([...mainData, ...ghostData]);
-
-//     // VISIBLE_COUNT, RIGHT_PADDING 변수 사용
-//     chart.timeScale().setVisibleLogicalRange({
-//       from: Math.max(0, mainData.length - CHART_CONFIG.VISIBLE_COUNT),
-//       to: mainData.length + CHART_CONFIG.RIGHT_PADDING,
-//     });
-//   } else if (mainData.length === 1) {
-//     candleSeries.setData(mainData);
-//     autoFit();
-//   }
-
-//   // 측정 도구 세팅
-//   setTimeout(setupMeasureTool, 50);
-
-//   // 리사이즈 옵저버 디바운스
-//   if (window.chartResizeObserver) window.chartResizeObserver.disconnect();
-
-//   let resizeTimeout;
-//   window.chartResizeObserver = new ResizeObserver(([entry]) => {
-//     // 1. 부모 컨테이너 크기 실시간 감지
-//     const { width, height } = entry.contentRect;
-
-//     // 2. 0달러 방지 (크기가 0일 땐 패스)
-//     if (!width || !height) return;
-
-//     // 3. 디바운스 (너무 자주 그리면 렉 걸리니까 잠시 대기)
-//     clearTimeout(resizeTimeout);
-//     resizeTimeout = setTimeout(() => {
-//       if (chart) {
-//         chart.resize(width, height);
-//         // 🚀 리사이즈 직후 차트 범위를 다시 맞춰야 안 찌그러짐
-//         // chart.timeScale().fitContent();
-//         // console.log(`📏 리사이즈 완료: ${width}x${height}`);
-//       }
-
-//       // 🚀 모바일 오버레이 방어 (아까 그 기준 적용!)
-//       if (width >= SCREEN_WIDTH) {
-//         const overlay = document.getElementById("mobile-chart-overlay");
-//         if (overlay && !overlay.classList.contains("hidden")) {
-//           closeMobileChart();
-//         }
-//       }
-//     }, 50);
-//   });
-//   // 🎯 차트 컨테이너 감시 시작!
-//   const chartContainer = document.getElementById("chart-container");
-//   if (chartContainer) {
-//     window.chartResizeObserver.observe(chartContainer);
-//   }
-// }
-
-// 🚀 [신규 추가] 가격 축 오버레이 A / L 스위치 버튼 이벤트 처리
 export function setupScaleModeButtons() {
   const mainA = document.getElementById("main-scale-a-btn");
   const mainL = document.getElementById("main-scale-l-btn");
@@ -1228,9 +1001,9 @@ export function setupScaleModeButtons() {
 
     // 초기 L 버튼 활성화 스타일 세팅
     if (store.isLogMode) {
-      mainL.className = "w-5 h-5 flex items-center justify-center text-[9px] font-bold rounded cursor-pointer transition-colors bg-theme-accent text-white shadow-sm border border-theme-accent";
+      mainL.className = "w-5 h-5 flex items-center justify-center text-[9px] font-medium rounded cursor-pointer transition-colors bg-theme-accent text-white shadow-sm border border-theme-accent";
     } else {
-      mainL.className = "w-5 h-5 flex items-center justify-center text-[9px] font-bold rounded cursor-pointer transition-colors bg-theme-border/20 text-theme-text hover:bg-theme-border/40 border border-theme-border/30";
+      mainL.className = "w-5 h-5 flex items-center justify-center text-[9px] font-medium rounded cursor-pointer transition-colors bg-theme-border/20 text-theme-text hover:bg-theme-border/40 border border-theme-border/30";
     }
   }
 
@@ -1253,9 +1026,9 @@ export function setupScaleModeButtons() {
 
     // 초기 L 버튼 활성화 스타일 세팅
     if (store.isLogMode) {
-      volL.className = "w-5 h-5 flex items-center justify-center text-[9px] font-bold rounded cursor-pointer transition-colors bg-theme-accent text-white shadow-sm border border-theme-accent";
+      volL.className = "w-5 h-5 flex items-center justify-center text-[9px] font-medium rounded cursor-pointer transition-colors bg-theme-accent text-white shadow-sm border border-theme-accent";
     } else {
-      volL.className = "w-5 h-5 flex items-center justify-center text-[9px] font-bold rounded cursor-pointer transition-colors bg-theme-border/20 text-theme-text hover:bg-theme-border/40 border border-theme-border/30";
+      volL.className = "w-5 h-5 flex items-center justify-center text-[9px] font-medium rounded cursor-pointer transition-colors bg-theme-border/20 text-theme-text hover:bg-theme-border/40 border border-theme-border/30";
     }
   }
 }

@@ -108,32 +108,47 @@ function renderRealtimeRow(tId, data, isFutures = false) {
     }
   }
 
+  // 🚀 [추가] 실시간 등락률 오염 방어용 분기 결정
+  let shouldUpdateChg = false;
+  if (isKrwCoin) {
+    if (store.currentMarket === "UPBIT") {
+      shouldUpdateChg = data.isUpbitRealtime || (row.Upbit === "O" && !data.isBithumbRealtime);
+    } else if (store.currentMarket === "BITHUMB") {
+      shouldUpdateChg = data.isBithumbRealtime || (row.Upbit !== "O" && !data.isUpbitRealtime);
+    } else {
+      // ALL, KIMCHI 등
+      if (row.Upbit === "O") {
+        shouldUpdateChg = data.isUpbitRealtime || !data.isBithumbRealtime;
+      } else {
+        shouldUpdateChg = data.isBithumbRealtime || !data.isUpbitRealtime;
+      }
+    }
+  } else {
+    const activeIsFutures = store.currentMarket === "FUTURES";
+    const isSpotOnly = row.Spot_Only === "O";
+    const isAllMode =
+      store.currentMarket === "ALL" ||
+      store.currentMarket === "KIMCHI" ||
+      store.currentMarket === "NEW";
+    const isFuturesOnly = row.Binance === "X" && row.Binance_Futures === "O";
+    if (isAllMode) {
+      shouldUpdateChg = isFuturesOnly ? isFutures : !isFutures;
+    } else {
+      shouldUpdateChg = isSpotOnly
+        ? !isFutures
+        : activeIsFutures === isFutures;
+    }
+  }
+
   if (data.P !== undefined) {
+    const chg = parseFloat(data.P);
     if (isKrwCoin) {
-      const chg = parseFloat(data.P);
-      row.Change_24h_Raw = chg;
       if (data.isUpbitRealtime) row.Change_24h_Upbit = chg;
       else if (data.isBithumbRealtime) row.Change_24h_Bithumb = chg;
       else if (row.Upbit === "O" && store.currentMarket !== "BITHUMB")
         row.Change_24h_Upbit = chg;
       else row.Change_24h_Bithumb = chg;
     } else {
-      const activeIsFutures = store.currentMarket === "FUTURES";
-      const isSpotOnly = row.Spot_Only === "O";
-      const isAllMode =
-        store.currentMarket === "ALL" ||
-        store.currentMarket === "KIMCHI" ||
-        store.currentMarket === "NEW";
-      const isFuturesOnly = row.Binance === "X" && row.Binance_Futures === "O";
-      let shouldUpdateChg = false;
-      if (isAllMode) {
-        shouldUpdateChg = isFuturesOnly ? isFutures : !isFutures;
-      } else {
-        shouldUpdateChg = isSpotOnly
-          ? !isFutures
-          : activeIsFutures === isFutures;
-      }
-      const chg = parseFloat(data.P);
       if (isFutures) row.Change_24h_Futures_Ex = chg;
       else if (
         row.Listed_Exchanges?.includes("BINANCE") ||
@@ -144,30 +159,38 @@ function renderRealtimeRow(tId, data, isFutures = false) {
       } else {
         row.Change_24h_Bybit = chg;
       }
-      if (shouldUpdateChg) row.Change_24h_Raw = chg;
+    }
+    if (shouldUpdateChg) {
+      row.Change_24h_Raw = chg;
     }
   }
 
   if (isKrwCoin && row.utc0_open_KRW) {
     const openPriceKRW = parseFloat(row.utc0_open_KRW);
-    if (openPriceKRW > 0 && row.Price_KRW) {
-      const todayKrw = ((row.Price_KRW - openPriceKRW) / openPriceKRW) * 100;
-      row.Change_Today_Raw = todayKrw;
+    if (openPriceKRW > 0) {
+      const todayKrw = ((newPrice - openPriceKRW) / openPriceKRW) * 100;
       if (data.isUpbitRealtime) row.Change_Today_Upbit = todayKrw;
       else if (data.isBithumbRealtime) row.Change_Today_Bithumb = todayKrw;
       else if (row.Upbit === "O" && store.currentMarket !== "BITHUMB")
         row.Change_Today_Upbit = todayKrw;
       else row.Change_Today_Bithumb = todayKrw;
+
+      if (shouldUpdateChg) {
+        row.Change_Today_Raw = todayKrw;
+      }
     }
   } else if (row.utc0_open_Raw) {
     const openPrice = parseFloat(row.utc0_open_Raw);
     if (openPrice > 0) {
-      const todayUsd = ((row.Price_Raw - openPrice) / openPrice) * 100;
-      row.Change_Today_Raw = todayUsd;
+      const todayUsd = ((newPrice - openPrice) / openPrice) * 100;
       if (isFutures) row.Change_Today_Futures = todayUsd;
       else if (row.Listed_Exchanges?.includes("BINANCE") || row.Exact_Spot)
         row.Change_Today_Binance = todayUsd;
       else row.Change_Today_Bybit = todayUsd;
+
+      if (shouldUpdateChg) {
+        row.Change_Today_Raw = todayUsd;
+      }
     }
   }
 
@@ -180,7 +203,7 @@ function renderRealtimeRow(tId, data, isFutures = false) {
     row.UID === store.currentSelectedSymbol
   ) {
     if (typeof window.updateHeaderDisplay === "function") {
-      window.updateHeaderDisplay(row, undefined, p);
+      window.updateHeaderDisplay(row, undefined, p, true);
     }
   }
 
@@ -222,7 +245,7 @@ function renderRealtimeRow(tId, data, isFutures = false) {
         : change24h < 0
           ? "text-theme-down"
           : "text-theme-text";
-    changeCell.className = `${themeClass} font-bold flex-1 text-left truncate ${isFocus ? "opacity-100" : "opacity-40"}`;
+    changeCell.className = `${themeClass} font-medium flex-1 text-left truncate ${isFocus ? "opacity-100" : "opacity-40"}`;
     changeCell.innerText = `${change24h > 0 ? "+" : ""}${change24h.toFixed(2)}%`;
   }
 
@@ -237,7 +260,7 @@ function renderRealtimeRow(tId, data, isFutures = false) {
           ? "text-theme-down"
           : "text-theme-text";
     const safeChange = todayChange < -99.9 ? -99.9 : todayChange;
-    todayCell.className = `${tThemeClass} font-bold flex-1 text-left truncate ${isFocus ? "opacity-100" : "opacity-40"}`;
+    todayCell.className = `${tThemeClass} font-medium flex-1 text-left truncate ${isFocus ? "opacity-100" : "opacity-40"}`;
     todayCell.innerText = `${safeChange > 0 ? "+" : ""}${safeChange.toFixed(2)}%`;
   }
 
@@ -295,19 +318,23 @@ store.radarIntervalId = setInterval(() => {
 
   let dataUpdated = false;
   store.currentTableData.forEach((row) => {
-    const suffix =
-      store.currentMarket === "FUTURES" && row.Spot_Only !== "O"
-        ? "_FUTURES"
-        : "";
-    const ticker =
-      snapshot[row.Ticker + suffix] ||
-      snapshot[row.Ticker] ||
-      (row.Ticker.endsWith("KRW")
-        ? snapshot[`KRW-${row.Ticker.replace("KRW", "")}`]
-        : null);
+    const isKrwCoin = row.Ticker.endsWith("KRW");
+    let ticker = null;
+    let isFuturesTicker = false;
+
+    if (isKrwCoin) {
+      ticker = snapshot[`KRW-${row.Ticker.replace("KRW", "")}`] || snapshot[row.Ticker];
+    } else {
+      const hasFutures = row.Listed_Exchanges?.includes("BINANCE_FUTURES") || row.Listed_Exchanges?.includes("BYBIT_FUTURES");
+      const useFutures = store.currentMarket === "FUTURES" && hasFutures && row.Spot_Only !== "O";
+      const lookupKey = useFutures ? row.Ticker + "_FUTURES" : row.Ticker;
+      ticker = snapshot[lookupKey];
+      isFuturesTicker = useFutures;
+    }
+
     if (!ticker) return;
 
-    if (row.Ticker.endsWith("KRW")) {
+    if (isKrwCoin) {
       const rate = store.marketDataMap?.krw_usd_rate || 0;
       row.Price_KRW = parseFloat(ticker.c);
       row.Price_Raw = row.Price_KRW / rate;
@@ -317,18 +344,49 @@ store.radarIntervalId = setInterval(() => {
         row.Bithumb_Price = row.Price_KRW;
       }
     } else {
-      row.Price_Raw = parseFloat(ticker.c);
+      const newPrice = parseFloat(ticker.c);
+      if (isFuturesTicker) {
+        row.Binance_Price_Futures = newPrice;
+        if (!row.Listed_Exchanges?.includes("BINANCE_FUTURES")) {
+          row.Bybit_Price_Futures = newPrice;
+        }
+      } else {
+        row.Binance_Price_Spot = newPrice;
+        if (!row.Listed_Exchanges?.includes("BINANCE") && !row.Exact_Spot) {
+          row.Bybit_Price_Spot = newPrice;
+        }
+      }
+
+      row.Price_Raw = newPrice;
       if (
         row.Listed_Exchanges?.includes("BINANCE") ||
         row.Exact_Spot ||
         row.Exact_Futures
       ) {
-        row.Binance_Price = row.Price_Raw;
+        row.Binance_Price = newPrice;
       } else {
-        row.Bybit_Price = row.Price_Raw;
+        row.Bybit_Price = newPrice;
       }
     }
-    row.Change_24h_Raw = parseFloat(ticker.P);
+
+    const chg = parseFloat(ticker.P);
+    row.Change_24h_Raw = chg;
+
+    if (isKrwCoin) {
+      if (row.Upbit === "O" || store.currentMarket !== "BITHUMB") {
+        row.Change_24h_Upbit = chg;
+      } else {
+        row.Change_24h_Bithumb = chg;
+      }
+    } else {
+      if (isFuturesTicker) {
+        row.Change_24h_Futures_Ex = chg;
+      } else if (row.Listed_Exchanges?.includes("BINANCE") || row.Exact_Spot) {
+        row.Change_24h_Binance = chg;
+      } else {
+        row.Change_24h_Bybit = chg;
+      }
+    }
 
     // 🚀 바이낸스 현물 / 선물 거래대금 분리 누적 반영
     const spotKey = row.Ticker;
@@ -352,21 +410,25 @@ store.radarIntervalId = setInterval(() => {
     }
 
     if (ticker.q_upbit) {
-      row.Upbit_Vol_KRW = parseFloat(ticker.q_upbit);
+      row.Upbit_Vol = parseFloat(ticker.q_upbit);
       if (typeof window.formatVolumeDollar === "function") {
         const rate = store.marketDataMap?.krw_usd_rate || 1;
         row.Upbit_Vol_Formatted = window.formatVolumeDollar(
-          row.Upbit_Vol_KRW / (rate > 0 ? rate : 1),
+          row.Upbit_Vol / (rate > 0 ? rate : 1),
         );
       }
     }
 
-    const isKrwCoin = row.Ticker.endsWith("KRW");
     if (isKrwCoin && row.utc0_open_KRW) {
       const openPriceKRW = parseFloat(row.utc0_open_KRW);
       if (openPriceKRW > 0 && row.Price_KRW) {
-        row.Change_Today_Raw =
-          ((row.Price_KRW - openPriceKRW) / openPriceKRW) * 100;
+        const todayKrw = ((row.Price_KRW - openPriceKRW) / openPriceKRW) * 100;
+        row.Change_Today_Raw = todayKrw;
+        if (row.Upbit === "O" || store.currentMarket !== "BITHUMB") {
+          row.Change_Today_Upbit = todayKrw;
+        } else {
+          row.Change_Today_Bithumb = todayKrw;
+        }
       }
     } else if (row.utc0_open_Raw) {
       const open = parseFloat(row.utc0_open_Raw);

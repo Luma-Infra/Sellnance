@@ -14,10 +14,11 @@
   <script src="../static/sweetalert2@11.js"></script>
 
   <!-- 🚀 추천 폰트 로드 (로컬 다운로드 완료) -->
-  <link rel="stylesheet" href="/static/pretendard.css" />
+  <link rel="preload" href="../static/PretendardVariable.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="../static/pretendard.css" />
 
   <!-- <link rel="stylesheet" href="/static/z_style.css"> -->
-  <link rel="stylesheet" href="/static/z_style.min.css" />
+  <link rel="stylesheet" href="../static/z_style.min.css" />
 
   <!-- 🚀 Vite 호환: 단일 Entry Point(ES Module) 사용 -->
   <!-- _main.js 내부에서 필요한 모든 모듈을 import 하도록 묶습니다. -->
@@ -67,7 +68,7 @@
           tf.value === currentTF
             ? "active !opacity-100 border-theme-accent"
             : "border-transparent";
-        btn.className = `tf-btn px-2.5 py-1 text-[11px] font-bold bg-transparent text-theme-text opacity-50 border rounded hover:bg-theme-border/50 hover:opacity-100 transition-all ${activeClass}`;
+        btn.className = `tf-btn px-2.5 py-1 text-[11px] font-medium bg-transparent text-theme-text opacity-50 border rounded hover:bg-theme-border/50 hover:opacity-100 transition-all ${activeClass}`;
         btn.innerText = tf.label;
         btn.onclick = () => {
           setTF(tf.value);
@@ -78,7 +79,6 @@
       });
       timeframes.reverse(); // 배열 원복
     }
-
     // 🚀 초기 실행
     window.addEventListener("DOMContentLoaded", () => {
       renderTimeframeButtons("1d");
@@ -91,7 +91,7 @@
   </script>
 </head>
 
-<!-- 스타트뷰(cmc api 로그인), 모바일 하단 네비바, 멀티 차트 퀵 탐색(4~8개) 메모 -->
+<!-- 스타트뷰(cmc api 로그인), 모바일 하단 네비바, 멀티 차트 퀵 탐색(4~8개) 메모 / 추가 완료 -->
 
 <body
   class="theme-binance text-theme-text font-sans h-screen w-screen overflow-hidden flex justify-center transition-colors duration-10">
@@ -99,7 +99,7 @@
   <div id="loading-modal"
     class="fixed z-[200] inset-0 w-screen h-screen bg-[#131313]/85 backdrop-blur-[5px] flex flex-col justify-center items-center text-white transition-opacity duration-10">
     <div class="spinner"></div>
-    <h2 class="m-0 mb-3 text-theme-accent text-xl font-bold tracking-wide">
+    <h2 class="m-0 mb-3 text-theme-accent text-xl font-medium tracking-wide">
       Fetching Market Data...
     </h2>
     <p class="text-[#d4d4d4] opacity-80 text-center text-sm leading-relaxed">
@@ -108,36 +108,11 @@
     </p>
   </div>
 
-  <!-- theme-binance  -->
-  <div class="md:hidden flex w-full bg-theme-panel border-b border-theme-border shrink-0 z-50">
-    <button onclick="switchMobileView('list')" id="mob-btn-list"
-      class="flex-1 py-3 text-sm font-bold border-b-2 border-theme-accent text-theme-accent transition-colors">
-      📋 마켓 리스트
-    </button>
-    <button onclick="switchMobileView('chart')" id="mob-btn-chart"
-      class="flex-1 py-3 text-sm font-bold border-b-2 border-transparent opacity-50 transition-colors">
-      📈 차트 보기
-    </button>
-  </div>
-
-  <div id="mobile-chart-overlay"
-    class="fixed z-[110] inset-0 bg-black/60 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300"
-    onclick="closeMobileChart()">
-    <div id="mobile-chart-panel"
-      class="fixed z-[120] bottom-0 right-0 w-[88%] h-[92%] bg-theme-panel rounded-t-3xl shadow-[0_-10px_10px_rgba(0,0,0,0.1)] translate-y-full transition-transform duration-300 ease-out flex flex-col"
-      onclick="event.stopPropagation()">
-      <div class="w-full flex justify-center py-3" onclick="closeMobileChart()">
-        <div class="w-12 h-1.5 bg-theme-border/50 rounded-full"></div>
-      </div>
-      <div id="mobile-chart-content" class="flex-1 flex flex-col overflow-hidden"></div>
-    </div>
-  </div>
-
   <!-- hidden -->
   <div id="main-dashboard-content"
-    class="flex flex-col md:flex-row h-[100dvh] md:h-[98dvh] max-h-[100dvh] md:max-h-[880px] w-full max-w-[1440px] bg-theme-bg relative shadow-2xl overflow-hidden shrink-0 mx-auto md:mb-[2dvh]">
+    class="flex flex-col md:flex-row h-[100dvh] md:h-[98dvh] max-h-[100dvh] md:max-h-[880px] w-full max-w-[1440px] bg-theme-bg relative shadow-none md:shadow-2xl overflow-hidden shrink-0 mx-auto md:mb-[2dvh] rounded-none md:rounded-md">
     <div
-      class="flex flex-col w-full h-[calc(100vh-64px)] md:h-full md:w-[768px] lg:w-[560px] border-r border-theme-border bg-theme-bg transition-all duration-300 shrink-0 overflow-hidden"
+      class="flex flex-col w-full flex-1 md:flex-none md:h-full md:w-[768px] lg:w-[560px] border-r border-theme-border bg-theme-bg transition-all duration-300 shrink-0 overflow-hidden pb-[70px] md:pb-0"
       id="left-panel">
       <div
         class="flex justify-between items-center h-14 px-4 border-b border-theme-border bg-theme-panel/40 backdrop-blur-md">
@@ -147,7 +122,7 @@
             class="w-8 h-8 flex items-center justify-center bg-theme-border/20 border border-theme-border/30 text-theme-text rounded-lg cursor-pointer text-sm hover:bg-theme-accent hover:text-white transition-all shadow-sm">
             ☀️
           </button>
-          <h2 class="m-0 text-lg font-bold tracking-tighter text-theme-accent uppercase">
+          <h2 class="m-0 text-lg font-medium tracking-tighter text-theme-accent uppercase">
             sellance
           </h2>
         </div>
@@ -205,7 +180,7 @@
       <!-- [연결 상태 일시 주석 처리]
       <div id="connection-status" class="flex items-center gap-2 px-2 py-2 text-[11px]">
         <span id="status-dot" class="w-2 h-2 rounded-full bg-gray-500 shadow-[0_0_5px_rgba(0,0,0,0.5)]"></span>
-        <span id="status-text" class="font-bold opacity-70 tracking-wide">Waiting...</span>
+        <span id="status-text" class="font-medium opacity-70 tracking-wide">Waiting...</span>
       </div>
       -->
 
@@ -218,22 +193,22 @@
               class="absolute top-1 left-1 bottom-1 w-[calc(33.33%-4px)] bg-theme-accent rounded-lg transition-all duration-300 ease-out z-0 shadow-lg">
             </div>
             <button onclick="switchFilter('ALL')" id="filter-all-main"
-              class="relative z-10 flex-1 px-2 py-1.5 text-[10px] font-bold transition-all text-white">
+              class="relative z-10 flex-1 px-2 py-1.5 text-[10px] font-medium transition-all text-white">
               ALL
             </button>
             <button onclick="switchFilter('BINANCE')" id="filter-binance"
-              class="relative z-10 flex-1 px-2 py-1.5 text-[10px] font-bold transition-all text-theme-text opacity-50 hover:opacity-100">
+              class="relative z-10 flex-1 px-2 py-1.5 text-[10px] font-medium transition-all text-theme-text opacity-50 hover:opacity-100">
               BINANCE
             </button>
             <button onclick="switchFilter('UPBIT')" id="filter-upbit"
-              class="relative z-10 flex-1 px-2 py-1.5 text-[10px] font-bold transition-all text-theme-text opacity-50 hover:opacity-100">
+              class="relative z-10 flex-1 px-2 py-1.5 text-[10px] font-medium transition-all text-theme-text opacity-50 hover:opacity-100">
               UPBIT
             </button>
           </div>
 
           <div class="flex items-center gap-2">
             <button id="currency-toggle" onclick="window.toggleCurrency()"
-              class="px-3 py-1.5 bg-theme-accent text-white border border-theme-border/40 rounded-lg text-[10px] font-bold transition-all shadow-sm">
+              class="px-3 py-1.5 bg-theme-accent text-white border border-theme-border/40 rounded-lg text-[10px] font-medium transition-all shadow-sm">
               USD ($) / EN
             </button>
             <label class="relative inline-flex items-center cursor-pointer scale-90">
@@ -241,7 +216,7 @@
               <div
                 class="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-theme-accent">
               </div>
-              <span class="ml-2 text-[10px] font-bold opacity-60 uppercase tracking-tighter">Flip</span>
+              <span class="ml-2 text-[10px] font-medium opacity-60 uppercase tracking-tighter">Flip</span>
             </label>
           </div>
         </div>
@@ -258,21 +233,21 @@
           <!-- 동적으로 table_filter.js::updateExchFilterUI()가 프리셋 라인을 그립니다 -->
         </div>
 
-        <!-- 2층: 테이블 모드 토글 (심플, 베이직, 엑스퍼트) -->
-        <div class="flex items-center gap-1 mt-2 mb-1 px-1">
+        <!-- 2층: 테이블 모드 토글 (심플, 베이직, 엑스퍼 => 애매해서 주석처리) -->
+        <div class="hidden md:flex items-center gap-1 mt-2 mb-1 px-1">
           <button onclick="window.switchViewMode('simple')" id="view-mode-simple-btn"
-            class="flex-1 py-1 text-[10px] font-bold rounded border border-theme-border opacity-50 hover:opacity-100 transition-all text-theme-text">
+            class="flex-1 py-1 text-[10px] font-medium rounded border border-theme-border opacity-50 hover:opacity-100 transition-all text-theme-text">
             SIMPLE
           </button>
           <button onclick="window.switchViewMode('basic')" id="view-mode-basic-btn"
-            class="flex-1 py-1 text-[10px] font-bold rounded border border-theme-accent bg-theme-accent text-white transition-all shadow-md">
+            class="flex-1 py-1 text-[10px] font-medium rounded border border-theme-accent bg-theme-accent text-white transition-all shadow-md">
             BASIC
           </button>
           <!--
             <button
               onclick="window.switchViewMode('expert')"
               id="view-mode-expert-btn"
-              class="flex-1 py-1 text-[10px] font-bold rounded border border-theme-border opacity-50 hover:opacity-100 transition-all text-theme-text"
+              class="flex-1 py-1 text-[10px] font-medium rounded border border-theme-border opacity-50 hover:opacity-100 transition-all text-theme-text"
             >
               EXPERT
             </button>
@@ -282,16 +257,16 @@
         <!-- 3층: 카테고리 탭 및 간편 필터 -->
         <div class="flex items-center gap-1 overflow-x-auto scrollbar-hide px-1 mt-1">
           <button onclick="switchTab('ALL')" id="tab-all"
-            class="tab-btn px-4 py-1.5 text-[10px] font-bold rounded-full transition-all bg-theme-accent text-white border border-theme-accent shadow-md whitespace-nowrap">
-            MAIN LIST
+            class="tab-btn px-4 py-1.5 text-[10px] font-medium rounded-full transition-all bg-theme-accent text-white border border-theme-accent shadow-md whitespace-nowrap">
+            ALL LIST
           </button>
           <button onclick="switchTab('FAV')" id="tab-fav"
-            class="tab-btn px-4 py-1.5 text-[10px] font-bold rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap">
+            class="tab-btn px-4 py-1.5 text-[10px] font-medium rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap">
             <span style="color: #e3b30a; margin-right: 2px">★</span> FAVORITES
             1
           </button>
           <button onclick="switchTab('FAV2')" id="tab-fav2"
-            class="tab-btn px-4 py-1.5 text-[10px] font-bold rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap">
+            class="tab-btn px-4 py-1.5 text-[10px] font-medium rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap">
             <span style="color: #3b82f6; margin-right: 2px">★</span> FAVORITES
             2
           </button>
@@ -300,7 +275,7 @@
           <!-- 구분선 -->
 
           <button onclick="toggleSmallCap()" id="btn-small-cap"
-            class="tab-btn px-4 py-1.5 text-[10px] font-bold rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap">
+            class="tab-btn px-4 py-1.5 text-[10px] font-medium rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap">
             🚫 Hiding Mcap &lt; 1M
           </button>
         </div>
@@ -310,12 +285,12 @@
       <div class="flex-1 flex flex-col min-h-0 h-full overflow-hidden">
         <table id="market-table" class="w-full border-collapse text-left text-[13px] table-fixed">
           <thead
-            class="sticky top-0 z-10 bg-theme-panel shadow-sm border-b border-theme-border text-[9px] font-bold uppercase tracking-widest opacity-60">
+            class="sticky top-0 z-10 bg-theme-panel shadow-sm border-b border-theme-border text-[9px] font-medium uppercase tracking-widest opacity-60">
             <!-- 🚀 1층 헤더: 대분류 (가로폭 조절: z_style.css 상단에서 단일 관리) -->
             <tr class="border-b border-theme-border/30">
               <th onclick="sortTable('Ticker')" class="p-2 cursor-pointer hover:bg-white/5 transition-colors col-asset">
                 <div class="flex items-center gap-1">
-                  Asset <span id="sort-Ticker" class="sort-arrow"></span>
+                  Ticker <span id="sort-Ticker" class="sort-arrow"></span>
                 </div>
               </th>
               <th onclick="sortTable('Price')" class="p-2 cursor-pointer hover:bg-white/5 transition-colors col-price">
@@ -323,10 +298,25 @@
                   Price <span id="sort-Price" class="sort-arrow"></span>
                 </div>
               </th>
-              <th onclick="sortTable('Volume')" class="p-2 cursor-pointer hover:bg-white/5 transition-colors col-mcap">
+              <th onclick="sortTable('Volume')" class="p-2 cursor-pointer hover:bg-white/5 transition-colors col-vol-b">
                 <div class="flex items-center gap-1">
-                  Volume
-                  <span id="sort-Volume" class="sort-arrow"></span>
+                  <div
+                    class="relative w-3.5 h-3.5 flex items-center justify-center rounded-full bg-white/5 overflow-visible">
+                    <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/270.png"
+                      class="w-full h-full rounded-full" alt="B">
+                    <div
+                      class="absolute -top-1.5 -right-1.5 bg-[#f0b90b] text-black text-[8px] font-bold px-[2px] rounded-[2px] leading-none z-10 scale-[0.65]">
+                      F</div>
+                  </div>
+                  Vol <span id="sort-Volume" class="sort-arrow"></span>
+                </div>
+              </th>
+              <th onclick="sortTable('VolumeUpbit')"
+                class="p-2 cursor-pointer hover:bg-white/5 transition-colors col-vol-u">
+                <div class="flex items-center gap-1">
+                  <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/351.png"
+                    class="w-3.5 h-3.5 rounded-full" alt="U">
+                  Vol <span id="sort-VolumeUpbit" class="sort-arrow"></span>
                 </div>
               </th>
               <th onclick="sortTable('Kimchi')"
@@ -363,15 +353,13 @@
                     <span id="sort-Change_Today" class="sort-arrow text-[8px]"></span></span>
                 </div>
               </th>
-              <th class="p-2 text-[9px] opacity-70 overflow-hidden col-mcap">
-                <div class="flex items-center justify-between gap-2 text-left w-full min-w-0">
-                  <span onclick="sortTable('MarketCap')"
-                    class="cursor-pointer hover:text-theme-accent flex-1 text-left truncate">M.Cap
-                    <span id="sort-MarketCap" class="sort-arrow text-[8px]"></span></span>
-                  <span onclick="sortTable('VMC')"
-                    class="cursor-pointer hover:text-theme-accent flex-1 text-left truncate">VMC
-                    <span id="sort-VMC" class="sort-arrow text-[8px]"></span></span>
-                </div>
+              <th class="p-2 text-[9px] opacity-70 overflow-hidden col-vol-b">
+                <span onclick="sortTable('MarketCap')" class="cursor-pointer hover:text-theme-accent truncate">Mcap
+                  <span id="sort-MarketCap" class="sort-arrow text-[8px]"></span></span>
+              </th>
+              <th class="p-2 text-[9px] opacity-70 overflow-hidden col-vol-u">
+                <span onclick="sortTable('VMC')" class="cursor-pointer hover:text-theme-accent truncate">VMC
+                  <span id="sort-VMC" class="sort-arrow text-[8px]"></span></span>
               </th>
               <th class="p-2 text-[9px] opacity-70 text-left overflow-hidden col-kimch">
                 <div class="flex justify-start gap-2 min-w-0">
@@ -384,18 +372,9 @@
                   LISTED ON
                 </div>
               </th>
-              <!--
-                <th
-                  class="p-2 text-[9px] opacity-70 text-left overflow-hidden col-listing"
-                >
-                  <div
-                    class="flex items-center justify-start gap-1 truncate min-w-0"
-                  >
-                    LISTED DATE
-                  </div>
-                </th>
-                -->
+              <th class="p-2 col-listing overflow-hidden"></th>
             </tr>
+
           </thead>
           <tbody id="table-body" class="overflow-y-auto"></tbody>
         </table>
@@ -409,7 +388,7 @@
       <div class="flex w-full shrink-0 h-14 bg-theme-panel border-b border-theme-border p-1.5 items-center gap-1.5">
         <!-- ◀ 사이드바 열기 버튼 (탭 내부 인라인에 자연스럽게 배치하여 Pure Chart 탭과 절대 겹치지 않음) -->
         <button id="sidebar-open-btn" onclick="toggleSidebar()"
-          class="hidden px-2.5 py-1.5 bg-theme-accent text-white border border-theme-border/30 rounded-lg text-[10px] font-bold transition-all shadow-md whitespace-nowrap cursor-pointer hover:bg-theme-accent/80 shrink-0">
+          class="hidden px-2.5 py-1.5 bg-theme-accent text-white border border-theme-border/30 rounded-lg text-[10px] font-medium transition-all shadow-md whitespace-nowrap cursor-pointer hover:bg-theme-accent/80 shrink-0">
           ▶ 펼치기
         </button>
 
@@ -425,7 +404,7 @@
           </div>
 
           <button id="tab-btn-chart"
-            class="chart-tabs-btn relative flex-1 h-full bg-transparent border-none text-theme-text font-bold transition-all cursor-pointer z-20 flex items-center justify-center gap-1 opacity-60 [&.active]:opacity-100 min-w-0 px-1"
+            class="chart-tabs-btn relative flex-1 h-full bg-transparent border-none text-theme-text font-medium transition-all cursor-pointer z-20 flex items-center justify-center gap-1 opacity-60 [&.active]:opacity-100 min-w-0 px-1"
             onclick="
                 switchChartTab('chart');
                 moveTabSlider(0);
@@ -435,7 +414,7 @@
           </button>
 
           <button id="tab-btn-sim"
-            class="chart-tabs-btn relative flex-1 h-full bg-transparent border-none text-theme-text font-bold transition-all cursor-pointer z-20 flex items-center justify-center gap-1 opacity-60 [&.active]:opacity-100 min-w-0 px-1"
+            class="chart-tabs-btn relative flex-1 h-full bg-transparent border-none text-theme-text font-medium transition-all cursor-pointer z-20 flex items-center justify-center gap-1 opacity-60 [&.active]:opacity-100 min-w-0 px-1"
             onclick="
                 switchChartTab('sim');
                 moveTabSlider(1);
@@ -445,7 +424,7 @@
           </button>
 
           <button id="tab-btn-quickview"
-            class="chart-tabs-btn active:opacity-100 [&.active]:opacity-100 relative flex-1 h-full bg-transparent border-none text-theme-text font-bold transition-all cursor-pointer z-20 flex items-center justify-center gap-1 opacity-70 overflow-hidden rounded-md group hover:opacity-100 min-w-0 px-1"
+            class="chart-tabs-btn active:opacity-100 [&.active]:opacity-100 relative flex-1 h-full bg-transparent border-none text-theme-text font-medium transition-all cursor-pointer z-20 flex items-center justify-center gap-1 opacity-70 overflow-hidden rounded-md group hover:opacity-100 min-w-0 px-1"
             style="isolation: isolate; transform: translate3d(0,0,0);" onclick="
                 switchChartTab('quickview');
                 moveTabSlider(2);
@@ -480,7 +459,7 @@
             class="relative flex items-center bg-theme-panel border border-theme-border rounded-md px-3 py-1.5 focus-within:border-theme-accent transition-all shadow-inner">
             <input type="text" id="symbol-input" placeholder="Search Ticker..." oninput="searchSymbols(this.value)"
               onclick="searchSymbols(this.value)" onfocus="searchSymbols(this.value)"
-              class="bg-transparent text-theme-text w-full text-xs font-bold focus:outline-none placeholder-opacity-40" />
+              class="bg-transparent text-theme-text w-full text-xs font-medium focus:outline-none placeholder-opacity-40" />
             <div id="search-results"
               class="absolute top-full right-0 mt-2 bg-theme-panel border border-theme-border w-[340px] z-[1000] max-h-[400px] overflow-y-auto hidden rounded-md shadow-[0_10px_30px_rgba(0,0,0,0.5)] custom-scrollbar">
             </div>
@@ -495,7 +474,7 @@
           class="flex items-center gap-6 justify-start flex-wrap w-full border-t border-theme-border/30 pt-2 px-3 pb-1.5">
           <!-- 🚀 1. 실시간 가격 전광판 (USD & KRW 동시 표기) -->
           <div class="flex flex-col text-xs text-left min-w-0">
-            <span class="opacity-50 text-[10px] uppercase font-bold tracking-wider">Price</span>
+            <span class="opacity-50 text-[10px] uppercase font-medium tracking-wider">Price</span>
             <div class="flex flex-col min-w-0 leading-none mt-0.5 gap-1">
               <!-- Binance Header Price -->
               <div id="head-price-binance" class="hidden flex flex-col gap-0.5">
@@ -521,27 +500,27 @@
           </div>
           <!-- 🚀 2. 24H 변동률 전광판 -->
           <div class="flex flex-col text-xs text-left shrink-0 min-w-fit">
-            <span class="opacity-50 text-[10px] uppercase font-bold tracking-wider">24H Chg</span>
+            <span class="opacity-50 text-[10px] uppercase font-medium tracking-wider">24H Chg</span>
             <b id="head-chg-24h" class="text-[12px] md:text-[13px] font-tempTestDss mt-0.5">-</b>
           </div>
           <!-- 🚀 3. DAY 변동률 전광판 -->
           <div class="flex flex-col text-xs text-left shrink-0 min-w-fit">
-            <span class="opacity-50 text-[10px] uppercase font-bold tracking-wider">Day Chg</span>
+            <span class="opacity-50 text-[10px] uppercase font-medium tracking-wider">Day Chg</span>
             <b id="head-chg-day" class="text-[12px] md:text-[13px] font-tempTestDss mt-0.5">-</b>
           </div>
           <!-- Market Cap -->
           <div class="flex flex-col text-xs text-left shrink-0 min-w-fit">
-            <span class="opacity-50 text-[10px] uppercase font-bold tracking-wider">Market Cap</span>
+            <span class="opacity-50 text-[10px] uppercase font-medium tracking-wider">Market Cap</span>
             <b id="head-mcap" class="text-[12px] md:text-[13px] font-tempTestDss mt-0.5">-</b>
           </div>
           <!-- Vol(24h) -->
           <div class="flex flex-col text-xs text-left shrink-0 min-w-fit">
-            <span class="opacity-50 text-[10px] uppercase font-bold tracking-wider">Vol(24h)</span>
+            <span class="opacity-50 text-[10px] uppercase font-medium tracking-wider">Vol(24h)</span>
             <b id="head-vol-binance" class="text-[12px] md:text-[13px] font-tempTestDss mt-0.5 text-[#f0b90b]">-</b>
           </div>
           <!-- U-Vol(24h) -->
           <div class="flex flex-col text-xs text-left shrink-0 min-w-fit">
-            <span class="opacity-50 text-[10px] uppercase font-bold tracking-wider">U-Vol(24h)</span>
+            <span class="opacity-50 text-[10px] uppercase font-medium tracking-wider">U-Vol(24h)</span>
             <b id="head-vol-upbit" class="text-[12px] md:text-[13px] font-tempTestDss mt-0.5 text-[#093687]">-</b>
           </div>
         </div>
@@ -551,7 +530,7 @@
           class="flex items-center justify-between w-full border-t border-theme-border/30 pt-2 mt-2 px-3 pb-2">
           <!-- 🚀 헤더 접기/펼치기 토글 버튼 (좌측 정렬) -->
           <button id="toggle-header-top-btn"
-            class="px-2 py-1 text-[10px] md:text-[11px] font-bold text-theme-text opacity-70 hover:opacity-100 border border-theme-border/50 rounded bg-theme-panel/50 transition-all whitespace-nowrap mr-1 cursor-pointer"
+            class="px-2 py-1 text-[10px] md:text-[11px] font-medium text-theme-text opacity-70 hover:opacity-100 border border-theme-border/50 rounded bg-theme-panel/50 transition-all whitespace-nowrap mr-1 cursor-pointer"
             onclick="if (window.toggleHeaderTop) window.toggleHeaderTop();">
             ▲ 헤더 접기
           </button>
@@ -560,7 +539,7 @@
           <div id="head-control-buttons" class="flex items-center gap-2.5 md:gap-3">
             <!-- 🚀 크로스헤어 등락률(%) 라벨 보이기/숨기기 토글 버튼 -->
             <button id="toggle-crosshair-pct-btn"
-              class="px-2.5 py-1 text-[10px] md:text-[11px] font-bold text-theme-text opacity-70 hover:opacity-100 border border-theme-border/50 rounded bg-theme-accent/10 text-theme-accent border-theme-accent/40 transition-all whitespace-nowrap mr-1 cursor-pointer"
+              class="px-2.5 py-1 text-[10px] md:text-[11px] font-medium text-theme-text opacity-70 hover:opacity-100 border border-theme-border/50 rounded bg-theme-accent/10 text-theme-accent border-theme-accent/40 transition-all whitespace-nowrap mr-1 cursor-pointer"
               onclick="
                   if (window.toggleCrosshairPct) window.toggleCrosshairPct();
                 ">
@@ -569,14 +548,14 @@
 
             <!-- 🚀 OHLC 레전드 보이기 가리기 토글 버튼 -->
             <button id="toggle-ohlc-legend-btn"
-              class="px-2.5 py-1 text-[10px] md:text-[11px] font-bold text-theme-text opacity-70 hover:opacity-100 border border-theme-border/50 rounded bg-theme-panel/50 transition-all whitespace-nowrap mr-1 cursor-pointer"
+              class="px-2.5 py-1 text-[10px] md:text-[11px] font-medium text-theme-text opacity-70 hover:opacity-100 border border-theme-border/50 rounded bg-theme-panel/50 transition-all whitespace-nowrap mr-1 cursor-pointer"
               onclick="if (window.toggleOhlc) window.toggleOhlc();">
               OHLC 끄기
             </button>
 
             <!-- 🚀 로그/리니어 스케일 토글 버튼 (주석 처리됨, 차트 내 A/L 스위치로 대체)
             <button id="toggle-log-scale-btn"
-              class="px-2.5 py-1 text-[10px] md:text-[11px] font-bold text-theme-text opacity-70 hover:opacity-100 border border-theme-border/50 rounded bg-theme-panel/50 transition-all whitespace-nowrap mr-1 cursor-pointer"
+              class="px-2.5 py-1 text-[10px] md:text-[11px] font-medium text-theme-text opacity-70 hover:opacity-100 border border-theme-border/50 rounded bg-theme-panel/50 transition-all whitespace-nowrap mr-1 cursor-pointer"
               onclick="if (window.toggleLogScale) window.toggleLogScale();">
               Linear 축
             </button>
@@ -584,14 +563,14 @@
 
             <!-- 🚀 카운트다운 토글 버튼 -->
             <button id="toggle-countdown-btn"
-              class="px-2.5 py-1 text-[10px] md:text-[11px] font-bold text-theme-text opacity-70 hover:opacity-100 border border-theme-border/50 rounded bg-theme-panel/50 transition-all whitespace-nowrap mr-1 cursor-pointer"
+              class="px-2.5 py-1 text-[10px] md:text-[11px] font-medium text-theme-text opacity-70 hover:opacity-100 border border-theme-border/50 rounded bg-theme-panel/50 transition-all whitespace-nowrap mr-1 cursor-pointer"
               onclick="if (window.toggleCountdown) window.toggleCountdown();">
               카운트다운 ON
             </button>
 
             <!-- 🚀 차트 스케일 리셋 버튼 -->
             <!-- <button
-              class="reset-btn px-2.5 py-1 text-[10px] md:text-[11px] font-bold text-theme-down bg-theme-down/5 border border-theme-down/30 rounded hover:bg-theme-down/15 transition-all shadow-sm whitespace-nowrap cursor-pointer"
+              class="reset-btn px-2.5 py-1 text-[10px] md:text-[11px] font-medium text-theme-down bg-theme-down/5 border border-theme-down/30 rounded hover:bg-theme-down/15 transition-all shadow-sm whitespace-nowrap cursor-pointer"
               onclick="
                   if (window.resetPriceScaleWidthSync)
                     window.resetPriceScaleWidthSync();
@@ -600,7 +579,7 @@
               차트 스케일 리셋
             </button> -->
             <button id="toggle-orderbook-btn"
-              class="px-2.5 py-1 text-[10px] md:text-[11px] font-bold text-theme-accent bg-theme-accent/5 border border-theme-accent/30 rounded hover:bg-theme-accent/15 transition-all shadow-sm whitespace-nowrap"
+              class="px-2.5 py-1 text-[10px] md:text-[11px] font-medium text-theme-accent bg-theme-accent/5 border border-theme-accent/30 rounded hover:bg-theme-accent/15 transition-all shadow-sm whitespace-nowrap"
               onclick="if (window.toggleOrderbook) window.toggleOrderbook();">
               호가창 열기
             </button>
@@ -619,28 +598,34 @@
         > -->
       <!-- 차트 전체를 감싸는 부모 (기존 chart-container 자리를 대체) -->
       <!-- 차트와 호가창을 감싸는 Flex 부모 -->
-      <div class="flex-1 flex flex-col md:flex-row overflow-hidden m-[15px] w-[calc(100%-30px)] gap-[15px]">
+      <div
+        class="flex-1 flex flex-col md:flex-row overflow-hidden m-[5px] w-[calc(100%-10px)] gap-[5px] chart-container">
         <!-- 1. 메인 차트 -->
         <div id="chart-wrapper"
           class="flex-1 flex flex-col relative overflow-hidden border border-theme-border rounded-lg bg-theme-panel min-w-0">
+          <!-- 🚀 [신규] 초기 안내 오버레이 -->
+          <div id="chart-init-message"
+            class="absolute inset-0 z-[95] flex flex-col items-center justify-center bg-theme-panel text-theme-text/80 select-none">
+            <span class="text-sm font-bold opacity-60">📈 테이블 목록에서 코인을 선택해 보세요</span>
+          </div>
           <!-- 🎨 차트 좌측 그리기 도구 툴바 (TradingView style) -->
-          <div class="layout__area--left"
+          <div class="layout-area--left drawing-toolbar-wrap"
             style="position: absolute; top: 0px; left: 0px; width: 52px; height: 100%; z-index: 100; border-right: 1px solid var(--border); background-color: var(--panel);">
-            <div data-mouse-click-auto-blur="true" id="drawing-toolbar" class="drawingToolbar-BfVZxb4b" role="toolbar"
+            <div data-mouse-click-auto-blur="true" id="drawing-toolbar" class="draw-toolbar" role="toolbar"
               aria-orientation="vertical" data-tooltip-show-on-focus="true">
-              <div class="wrap-Z4M3tWHb">
-                <div class="scrollWrap-Z4M3tWHb noScrollBar-Z4M3tWHb">
-                  <div class="content-Z4M3tWHb">
-                    <div class="inner-BfVZxb4b">
-                      <div class="group-BfVZxb4b">
+              <div class="draw-toolbar-wrap">
+                <div class="scrolldraw-toolbar-wrap draw-toolbar-no-scrollbar">
+                  <div class="draw-toolbar-content">
+                    <div class="draw-toolbar-inner">
+                      <div class="draw-toolbar-group">
                         <span>
-                          <div data-name="linetool-group-cursors" class="dropdown-pbhJWNrt undefined">
-                            <div class="control-pbhJWNrt">
-                              <div class="buttonWrap-pbhJWNrt accessible-pbhJWNrt">
+                          <div data-name="linetool-group-cursors" class="draw-tool-dropdown undefined">
+                            <div class="draw-tool-control">
+                              <div class="draw-tool-btn-wrap draw-tool-accessible">
                                 <button aria-label="크로스" data-tooltip-delay="1500" tabindex="-1" type="button"
-                                  class="button-KTgbfaP5 button-GwQQdU8S apply-common-tooltip common-tooltip-vertical isActive-GwQQdU8S isInteractive-GwQQdU8S accessible-GwQQdU8S"
+                                  class="draw-tool-btn-alt draw-tool-btn apply-common-tooltip common-tooltip-vertical draw-tool-btn--active draw-tool-btn--interactive draw-tool-btn--a11y"
                                   data-tooltip="크로스">
-                                  <span role="img" class="icon-GwQQdU8S" aria-hidden="true">
+                                  <span role="img" class="draw-tool-icon" aria-hidden="true">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" width="28" height="28">
                                       <g fill="currentColor">
                                         <path d="M18 15h8v-1h-8z"></path>
@@ -651,8 +636,8 @@
                                 </button>
                               </div>
                               <!-- 상세 기능 선택 주석 처리
-                                <button class="arrow-pbhJWNrt apply-common-tooltip common-tooltip-vertical accessible-pbhJWNrt" type="button" tabindex="-1" aria-pressed="true" aria-label="커서" data-tooltip="커서">
-                                  <span role="img" class="arrowIcon-pbhJWNrt" aria-hidden="true">
+                                <button class="draw-tool-arrow apply-common-tooltip common-tooltip-vertical draw-tool-accessible" type="button" tabindex="-1" aria-pressed="true" aria-label="커서" data-tooltip="커서">
+                                  <span role="img" class="draw-tool-arrow-icon" aria-hidden="true">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 16" width="10" height="16">
                                       <path d="M.6 1.4l1.4-1.4 8 8-8 8-1.4-1.4 6.389-6.532-6.389-6.668z"></path>
                                     </svg>
@@ -663,13 +648,13 @@
                           </div>
                         </span>
                         <span>
-                          <div data-name="linetool-group-trend-line" class="dropdown-pbhJWNrt">
-                            <div class="control-pbhJWNrt">
-                              <div class="buttonWrap-pbhJWNrt accessible-pbhJWNrt">
+                          <div data-name="linetool-group-trend-line" class="draw-tool-dropdown">
+                            <div class="draw-tool-control">
+                              <div class="draw-tool-btn-wrap draw-tool-accessible">
                                 <button aria-label="추세선" data-tooltip-delay="1500" tabindex="-1" type="button"
-                                  class="button-KTgbfaP5 button-GwQQdU8S apply-common-tooltip common-tooltip-vertical isInteractive-GwQQdU8S accessible-GwQQdU8S"
+                                  class="draw-tool-btn-alt draw-tool-btn apply-common-tooltip common-tooltip-vertical draw-tool-btn--interactive draw-tool-btn--a11y"
                                   data-tooltip="추세선">
-                                  <span role="img" class="icon-GwQQdU8S" aria-hidden="true">
+                                  <span role="img" class="draw-tool-icon" aria-hidden="true">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" width="28" height="28">
                                       <g fill="currentColor" fill-rule="nonzero">
                                         <path d="M7.354 21.354l14-14-.707-.707-14 14z"></path>
@@ -682,8 +667,8 @@
                                 </button>
                               </div>
                               <!-- 상세 기능 선택 주석 처리
-                                <button class="arrow-pbhJWNrt apply-common-tooltip common-tooltip-vertical accessible-pbhJWNrt" type="button" tabindex="-1" aria-pressed="false" aria-label="추세 도구" data-tooltip="추세 도구">
-                                  <span role="img" class="arrowIcon-pbhJWNrt" aria-hidden="true">
+                                <button class="draw-tool-arrow apply-common-tooltip common-tooltip-vertical draw-tool-accessible" type="button" tabindex="-1" aria-pressed="false" aria-label="추세 도구" data-tooltip="추세 도구">
+                                  <span role="img" class="draw-tool-arrow-icon" aria-hidden="true">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 16" width="10" height="16">
                                       <path d="M.6 1.4l1.4-1.4 8 8-8 8-1.4-1.4 6.389-6.532-6.389-6.668z"></path>
                                     </svg>
@@ -694,13 +679,13 @@
                           </div>
                         </span>
                         <span>
-                          <div data-name="linetool-group-gann-and-fibonacci" class="dropdown-pbhJWNrt">
-                            <div class="control-pbhJWNrt">
-                              <div class="buttonWrap-pbhJWNrt accessible-pbhJWNrt">
+                          <div data-name="linetool-group-gann-and-fibonacci" class="draw-tool-dropdown">
+                            <div class="draw-tool-control">
+                              <div class="draw-tool-btn-wrap draw-tool-accessible">
                                 <button aria-label="피보나치 되돌림" data-tooltip-delay="1500" tabindex="-1" type="button"
-                                  class="button-KTgbfaP5 button-GwQQdU8S apply-common-tooltip common-tooltip-vertical isInteractive-GwQQdU8S accessible-GwQQdU8S"
+                                  class="draw-tool-btn-alt draw-tool-btn apply-common-tooltip common-tooltip-vertical draw-tool-btn--interactive draw-tool-btn--a11y"
                                   data-tooltip="피보나치 되돌림">
-                                  <span role="img" class="icon-GwQQdU8S" aria-hidden="true">
+                                  <span role="img" class="draw-tool-icon" aria-hidden="true">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" width="28" height="28">
                                       <g fill="currentColor" fill-rule="nonzero">
                                         <path d="M3 5h22v-1h-22z"></path>
@@ -716,8 +701,8 @@
                                 </button>
                               </div>
                               <!-- 상세 기능 선택 주석 처리
-                                <button class="arrow-pbhJWNrt apply-common-tooltip common-tooltip-vertical accessible-pbhJWNrt" type="button" tabindex="-1" aria-pressed="false" aria-label="갠 및 피보나치 도구" data-tooltip="갠 및 피보나치 도구">
-                                  <span role="img" class="arrowIcon-pbhJWNrt" aria-hidden="true">
+                                <button class="draw-tool-arrow apply-common-tooltip common-tooltip-vertical draw-tool-accessible" type="button" tabindex="-1" aria-pressed="false" aria-label="갠 및 피보나치 도구" data-tooltip="갠 및 피보나치 도구">
+                                  <span role="img" class="draw-tool-arrow-icon" aria-hidden="true">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 16" width="10" height="16">
                                       <path d="M.6 1.4l1.4-1.4 8 8-8 8-1.4-1.4 6.389-6.532-6.389-6.668z"></path>
                                     </svg>
@@ -728,13 +713,13 @@
                           </div>
                         </span>
                         <span>
-                          <div data-name="linetool-group-geometric-shapes" class="dropdown-pbhJWNrt">
-                            <div class="control-pbhJWNrt">
-                              <div class="buttonWrap-pbhJWNrt accessible-pbhJWNrt">
+                          <div data-name="linetool-group-geometric-shapes" class="draw-tool-dropdown">
+                            <div class="draw-tool-control">
+                              <div class="draw-tool-btn-wrap draw-tool-accessible">
                                 <button aria-label="브러시" data-tooltip-delay="1500" tabindex="-1" type="button"
-                                  class="button-KTgbfaP5 button-GwQQdU8S apply-common-tooltip common-tooltip-vertical isInteractive-GwQQdU8S accessible-GwQQdU8S"
+                                  class="draw-tool-btn-alt draw-tool-btn apply-common-tooltip common-tooltip-vertical draw-tool-btn--interactive draw-tool-btn--a11y"
                                   data-tooltip="브러시">
-                                  <span role="img" class="icon-GwQQdU8S" aria-hidden="true">
+                                  <span role="img" class="draw-tool-icon" aria-hidden="true">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" width="28" height="28">
                                       <g fill="currentColor" fill-rule="nonzero">
                                         <path
@@ -749,8 +734,8 @@
                                 </button>
                               </div>
                               <!-- 상세 기능 선택 주석 처리
-                                <button class="arrow-pbhJWNrt apply-common-tooltip common-tooltip-vertical accessible-pbhJWNrt" type="button" tabindex="-1" aria-pressed="false" aria-label="기하학적 도형" data-tooltip="기하학적 도형">
-                                  <span role="img" class="arrowIcon-pbhJWNrt" aria-hidden="true">
+                                <button class="draw-tool-arrow apply-common-tooltip common-tooltip-vertical draw-tool-accessible" type="button" tabindex="-1" aria-pressed="false" aria-label="기하학적 도형" data-tooltip="기하학적 도형">
+                                  <span role="img" class="draw-tool-arrow-icon" aria-hidden="true">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 16" width="10" height="16">
                                       <path d="M.6 1.4l1.4-1.4 8 8-8 8-1.4-1.4 6.389-6.532-6.389-6.668z"></path>
                                     </svg>
@@ -761,11 +746,11 @@
                           </div>
                         </span>
                       </div>
-                      <div class="group-BfVZxb4b">
+                      <div class="draw-toolbar-group">
                         <button aria-label="재기" tabindex="-1" type="button"
-                          class="button-KTgbfaP5 button-GwQQdU8S apply-common-tooltip common-tooltip-vertical isInteractive-GwQQdU8S accessible-GwQQdU8S"
+                          class="draw-tool-btn-alt draw-tool-btn apply-common-tooltip common-tooltip-vertical draw-tool-btn--interactive draw-tool-btn--a11y"
                           data-name="measure" data-tooltip="재기">
-                          <span role="img" class="icon-GwQQdU8S" aria-hidden="true">
+                          <span role="img" class="draw-tool-icon" aria-hidden="true">
                             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28">
                               <path fill="currentColor"
                                 d="M2 9.75a1.5 1.5 0 0 0-1.5 1.5v5.5a1.5 1.5 0 0 0 1.5 1.5h24a1.5 1.5 0 0 0 1.5-1.5v-5.5a1.5 1.5 0 0 0-1.5-1.5zm0 1h3v2.5h1v-2.5h3.25v3.9h1v-3.9h3.25v2.5h1v-2.5h3.25v3.9h1v-3.9H22v2.5h1v-2.5h3a.5.5 0 0 1 .5.5v5.5a.5.5 0 0 1-.5.5H2a.5.5 0 0 1-.5-.5v-5.5a.5.5 0 0 1 .5-.5z"
@@ -773,14 +758,14 @@
                             </svg>
                           </span>
                         </button>
-                        <div data-name="hide-all" class="dropdown-pbhJWNrt">
-                          <div class="control-pbhJWNrt">
-                            <div class="buttonWrap-pbhJWNrt accessible-pbhJWNrt">
+                        <div data-name="hide-all" class="draw-tool-dropdown">
+                          <div class="draw-tool-control">
+                            <div class="draw-tool-btn-wrap draw-tool-accessible">
                               <button aria-pressed="false" aria-label="드로잉 툴 모두 숨기기" data-tooltip-delay="1500"
                                 tabindex="-1" type="button"
-                                class="button-KTgbfaP5 button-GwQQdU8S apply-common-tooltip common-tooltip-vertical isInteractive-GwQQdU8S accessible-GwQQdU8S"
+                                class="draw-tool-btn-alt draw-tool-btn apply-common-tooltip common-tooltip-vertical draw-tool-btn--interactive draw-tool-btn--a11y"
                                 data-tooltip="드로잉 툴 모두 숨기기">
-                                <span role="img" class="icon-GwQQdU8S" aria-hidden="true">
+                                <span role="img" class="draw-tool-icon" aria-hidden="true">
                                   <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28">
                                     <path fill="currentColor" fill-rule="evenodd"
                                       d="M5 10.76l-.41-.72-.03-.04.03-.04a15 15 0 012.09-2.9c1.47-1.6 3.6-3.12 6.32-3.12 2.73 0 4.85 1.53 6.33 3.12a15.01 15.01 0 012.08 2.9l.03.04-.03.04a15 15 0 01-2.09 2.9c-1.47 1.6-3.6 3.12-6.32 3.12-2.73 0-4.85-1.53-6.33-3.12a15 15 0 01-1.66-2.18zm17.45-.98L22 10l.45.22-.01.02a5.04 5.04 0 01-.15.28 16.01 16.01 0 01-2.23 3.1c-1.56 1.69-3.94 3.44-7.06 3.44-3.12 0-5.5-1.75-7.06-3.44a16 16 0 01-2.38-3.38v-.02h-.01L4 10l-.45-.22.01-.02a5.4 5.4 0 01.15-.28 16 16 0 012.23-3.1C7.5 4.69 9.88 2.94 13 2.94c3.12 0 5.5 1.75 7.06 3.44a16.01 16.01 0 012.38 3.38v.02h.01zM22 10l.45-.22.1.22-.1.22L22 10zM3.55 9.78L4 10l-.45.22-.1-.22.1-.22zm6.8.22A2.6 2.6 0 0113 7.44 2.6 2.6 0 0115.65 10 2.6 2.6 0 0113 12.56 2.6 2.6 0 0110.35 10zM13 6.44A3.6 3.6 0 009.35 10 3.6 3.6 0 0013 13.56c2 0 3.65-1.58 3.65-3.56A3.6 3.6 0 0013 6.44zm7.85 12l.8-.8.7.71-.79.8a.5.5 0 000 .7l.59.59c.2.2.5.2.7 0l1.8-1.8.7.71-1.79 1.8a1.5 1.5 0 01-2.12 0l-.59-.59a1.5 1.5 0 010-2.12zM16.5 21.5l-.35-.35a.5.5 0 00-.07.07l-1 1.5-1 1.5a.5.5 0 00.42.78h4a2.5 2.5 0 001.73-.77A2.5 2.5 0 0021 22.5a2.5 2.5 0 00-.77-1.73A2.5 2.5 0 0018.5 20a3.1 3.1 0 00-1.65.58 5.28 5.28 0 00-.69.55v.01h-.01l.35.36zm.39.32l-.97 1.46-.49.72h3.07c.34 0 .72-.17 1.02-.48.3-.3.48-.68.48-1.02 0-.34-.17-.72-.48-1.02-.3-.3-.68-.48-1.02-.48-.35 0-.75.18-1.1.42a4.27 4.27 0 00-.51.4z">
@@ -792,14 +777,14 @@
                           </div>
                         </div>
                       </div>
-                      <div class="group-BfVZxb4b">
-                        <div data-name="removeAllDrawingTools" class="dropdown-pbhJWNrt">
-                          <div class="control-pbhJWNrt">
-                            <div class="buttonWrap-pbhJWNrt accessible-pbhJWNrt">
+                      <div class="draw-toolbar-group">
+                        <div data-name="removeAllDrawingTools" class="draw-tool-dropdown">
+                          <div class="draw-tool-control">
+                            <div class="draw-tool-btn-wrap draw-tool-accessible">
                               <button aria-label="오브젝트 없애기" data-tooltip-delay="1500" tabindex="-1" type="button"
-                                class="button-KTgbfaP5 button-GwQQdU8S apply-common-tooltip common-tooltip-vertical isInteractive-GwQQdU8S accessible-GwQQdU8S"
+                                class="draw-tool-btn-alt draw-tool-btn apply-common-tooltip common-tooltip-vertical draw-tool-btn--interactive draw-tool-btn--a11y"
                                 data-tooltip="오브젝트 없애기">
-                                <span role="img" class="icon-GwQQdU8S" aria-hidden="true">
+                                <span role="img" class="draw-tool-icon" aria-hidden="true">
                                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" width="28" height="28">
                                     <path fill="currentColor"
                                       d="M18 7h5v1h-2.01l-1.33 14.64a1.5 1.5 0 0 1-1.5 1.36H9.84a1.5 1.5 0 0 1-1.49-1.36L7.01 8H5V7h5V6c0-1.1.9-2 2-2h4a2 2 0 0 1 2 2v1Zm-6-2a1 1 0 0 0-1 1v1h6V6a1 1 0 0 0-1-1h-4ZM8.02 8l1.32 14.54a.5.5 0 0 0 .5.46h8.33a.5.5 0 0 0 .5-.46L19.99 8H8.02Z">
@@ -819,7 +804,7 @@
           </div>
 
           <!-- Chart columns container -->
-          <div class="flex-1 flex flex-col pl-[52px] relative min-w-0 h-full overflow-hidden">
+          <div class="flex-1 flex flex-col pl-[52px] relative min-w-0 h-full overflow-hidden chart-container">
             <!-- 1. 메인 차트 -->
             <div id="pane-main" class="w-full relative z-0 flex-[6] min-h-[100px] group">
               <!-- 메인 차트용 A/L 오버레이 -->
@@ -827,12 +812,12 @@
                 class="scale-mode-container absolute bottom-[4px] right-[65px] z-50 flex gap-1 bg-theme-panel/95 p-0.5 rounded border border-theme-border select-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-auto shadow-md">
                 <div class="scale-mode-btn-wrap">
                   <button id="main-scale-a-btn"
-                    class="w-5 h-5 flex items-center justify-center text-[9px] font-bold rounded cursor-pointer transition-colors bg-theme-border/20 text-theme-text hover:bg-theme-border/40 border border-theme-border/30"
+                    class="w-5 h-5 flex items-center justify-center text-[9px] font-medium rounded cursor-pointer transition-colors bg-theme-border/20 text-theme-text hover:bg-theme-border/40 border border-theme-border/30"
                     title="오토 (자동 피팅)">A</button>
                 </div>
                 <div class="scale-mode-btn-wrap">
                   <button id="main-scale-l-btn"
-                    class="w-5 h-5 flex items-center justify-center text-[9px] font-bold rounded cursor-pointer transition-colors bg-theme-border/20 text-theme-text hover:bg-theme-border/40 border border-theme-border/30"
+                    class="w-5 h-5 flex items-center justify-center text-[9px] font-medium rounded cursor-pointer transition-colors bg-theme-border/20 text-theme-text hover:bg-theme-border/40 border border-theme-border/30"
                     title="로그 스케일">L</button>
                 </div>
               </div>
@@ -851,61 +836,62 @@
                 class="scale-mode-container-vol absolute bottom-[4px] right-[65px] z-50 flex gap-1 bg-theme-panel/95 p-0.5 rounded border border-theme-border select-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-auto shadow-md">
                 <div class="scale-mode-btn-wrap">
                   <button id="vol-scale-a-btn"
-                    class="w-5 h-5 flex items-center justify-center text-[9px] font-bold rounded cursor-pointer transition-colors bg-theme-border/20 text-theme-text hover:bg-theme-border/40 border border-theme-border/30"
+                    class="w-5 h-5 flex items-center justify-center text-[9px] font-medium rounded cursor-pointer transition-colors bg-theme-border/20 text-theme-text hover:bg-theme-border/40 border border-theme-border/30"
                     title="지표 오토 스케일 리셋">A</button>
                 </div>
                 <div class="scale-mode-btn-wrap">
                   <button id="vol-scale-l-btn"
-                    class="w-5 h-5 flex items-center justify-center text-[9px] font-bold rounded cursor-pointer transition-colors bg-theme-border/20 text-theme-text hover:bg-theme-border/40 border border-theme-border/30"
+                    class="w-5 h-5 flex items-center justify-center text-[9px] font-medium rounded cursor-pointer transition-colors bg-theme-border/20 text-theme-text hover:bg-theme-border/40 border border-theme-border/30"
                     title="지표 로그 스케일">L</button>
                 </div>
               </div>
             </div>
 
             <div id="ohlc-legend"
-              class="absolute top-2.5 left-[70px] z-[50] font-tempTestDss text-[11px] flex flex-col items-start gap-0.5 px-2 py-1.5 bg-black/70 backdrop-blur-sm border border-white/5 rounded pointer-events-none w-[110px]">
+              class="absolute top-2.5 left-[70px] z-[50] font-tempTestDss text-[11px] flex flex-col items-start gap-0.5 px-2 py-1.5 text-theme-text backdrop-blur-sm border border-theme-border/50 rounded pointer-events-none w-[110px] shadow-sm"
+              style="background-color: color-mix(in srgb, var(--panel) 50%, transparent);">
               <span id="ohlc-placeholder" class="opacity-50 text-[10px]">Hover on chart...</span>
               <div id="ohlc-values" class="hidden flex flex-col items-start gap-0.5 w-full">
                 <div class="flex items-center justify-between w-full">
                   <span class="opacity-60 text-[10px]">open</span>
-                  <span id="ohlc-open" class="font-bold text-right">-</span>
+                  <span id="ohlc-open" class="font-medium text-right">-</span>
                 </div>
                 <div class="flex items-center justify-between w-full">
                   <span class="opacity-60 text-[10px]">high</span>
-                  <span id="ohlc-high" class="font-bold text-right">-</span>
+                  <span id="ohlc-high" class="font-medium text-right">-</span>
                 </div>
                 <div class="flex items-center justify-between w-full">
                   <span class="opacity-60 text-[10px]">low</span>
-                  <span id="ohlc-low" class="font-bold text-right">-</span>
+                  <span id="ohlc-low" class="font-medium text-right">-</span>
                 </div>
                 <div class="flex items-center justify-between w-full">
                   <span class="opacity-60 text-[10px]">close</span>
-                  <span id="ohlc-close" class="font-bold text-right">-</span>
+                  <span id="ohlc-close" class="font-medium text-right">-</span>
                 </div>
                 <div id="ohlc-vol-container" class="flex items-center justify-between w-full">
                   <span class="opacity-60 text-[10px]">vol</span>
-                  <span id="ohlc-volume" class="font-bold text-right">-</span>
+                  <span id="ohlc-volume" class="font-medium text-right">-</span>
                 </div>
-                <div class="w-full border-t border-white/5 my-0.5"></div>
+                <div class="w-full border-t border-theme-border/30 my-0.5"></div>
                 <div class="flex items-center justify-between w-full">
                   <span class="opacity-60 text-[10px]">chg</span>
                   <span id="ohlc-change"
-                    class="px-1 py-0.5 font-bold rounded text-[10px] block leading-normal text-right">-</span>
+                    class="px-1 py-0.5 font-medium rounded text-[10px] block leading-normal text-right">-</span>
                 </div>
                 <div class="flex items-center justify-between w-full">
                   <span class="opacity-60 text-[10px]">range</span>
-                  <span id="ohlc-range" class="font-bold block text-right">-</span>
+                  <span id="ohlc-range" class="font-medium block text-right">-</span>
                 </div>
                 <div id="ohlc-kimchi-container" class="flex items-center justify-between w-full">
                   <span class="opacity-60 text-[10px]">kimp</span>
-                  <span id="ohlc-kimchi" class="font-bold text-right">-</span>
+                  <span id="ohlc-kimchi" class="font-medium text-right">-</span>
                 </div>
               </div>
             </div>
 
             <div id="kimchi-no-data"
               class="absolute bottom-12 left-[70px] z-[110] hidden bg-black/20 backdrop-blur-md px-3 py-2 rounded-lg border border-theme-accent/20 shadow-[0_0_15px_rgba(0,0,0,0.3)] pointer-events-auto opacity-75 flex items-center justify-between gap-3">
-              <p class="text-[8px] text-theme-accent font-bold tracking-tight flex items-center gap-2">
+              <p class="text-[8px] text-theme-accent font-medium tracking-tight flex items-center gap-2">
                 <span>⚠️</span>
                 김프를 비교할 거래소 차트가 없어요
               </p>
@@ -914,7 +900,7 @@
                     .getElementById('kimchi-no-data')
                     .classList.add('hidden')
                 "
-                class="text-theme-accent text-[8px] hover:text-white transition-colors cursor-pointer font-bold leading-none p-0.5 border-none bg-transparent">
+                class="text-theme-accent text-[8px] hover:text-white transition-colors cursor-pointer font-medium leading-none p-0.5 border-none bg-transparent">
                 ✕
               </button>
             </div>
@@ -927,13 +913,13 @@
           <!-- Orderbook Header -->
           <div
             class="flex items-center justify-between p-2 border-b border-theme-border bg-theme-bg/40 shrink-0 backdrop-blur-sm">
-            <span class="text-[11px] font-bold text-theme-text opacity-80">Orderbook</span>
+            <span class="text-[11px] font-medium text-theme-text opacity-80">Orderbook</span>
             <div class="flex items-center">
               <span id="orderbook-precision-label"
-                class="text-[10px] font-tempTestDss font-bold text-theme-accent px-2 min-w-[60px] text-right whitespace-nowrap flex-shrink-0">Auto</span>
+                class="text-[10px] font-tempTestDss font-medium text-theme-accent px-2 min-w-[60px] text-right whitespace-nowrap flex-shrink-0">Auto</span>
               <div class="flex items-center bg-theme-border/20 rounded border border-theme-border/30 ml-1">
                 <button
-                  class="w-6 h-5 flex items-center justify-center text-[10px] font-bold text-theme-text opacity-70 hover:opacity-100 hover:bg-theme-border/50 transition-colors rounded-l border-r border-theme-border/30"
+                  class="w-6 h-5 flex items-center justify-center text-[10px] font-medium text-theme-text opacity-70 hover:opacity-100 hover:bg-theme-border/50 transition-colors rounded-l border-r border-theme-border/30"
                   onclick="
                       if (window.changeOrderbookPrecision)
                         window.changeOrderbookPrecision(-1);
@@ -941,7 +927,7 @@
                   -
                 </button>
                 <button
-                  class="w-6 h-5 flex items-center justify-center text-[10px] font-bold text-theme-text opacity-70 hover:opacity-100 hover:bg-theme-border/50 transition-colors border-r border-theme-border/30"
+                  class="w-6 h-5 flex items-center justify-center text-[10px] font-medium text-theme-text opacity-70 hover:opacity-100 hover:bg-theme-border/50 transition-colors border-r border-theme-border/30"
                   onclick="
                       if (window.changeOrderbookPrecision)
                         window.changeOrderbookPrecision(1);
@@ -949,7 +935,7 @@
                   +
                 </button>
                 <button
-                  class="w-6 h-5 flex items-center justify-center text-[12px] font-bold text-theme-text opacity-70 hover:opacity-100 hover:bg-theme-border/50 transition-colors rounded-r"
+                  class="w-6 h-5 flex items-center justify-center text-[12px] font-medium text-theme-text opacity-70 hover:opacity-100 hover:bg-theme-border/50 transition-colors rounded-r"
                   onclick="
                       if (window.resetOrderbookPrecision)
                         window.resetOrderbookPrecision();
@@ -968,7 +954,8 @@
           <!-- Spread / Current Price -->
           <div
             class="flex items-center justify-center py-1.5 border-y border-theme-border/50 bg-theme-bg/40 shrink-0 backdrop-blur-sm">
-            <span id="orderbook-current-price" class="text-[13px] font-tempTestDss font-bold text-theme-text">--</span>
+            <span id="orderbook-current-price"
+              class="text-[13px] font-tempTestDss font-medium text-theme-text">--</span>
           </div>
 
           <!-- Bids (매수) -->
@@ -981,7 +968,7 @@
       <!-- <div id="chart-loading-modal"
           class="absolute z-[200] inset-0 hidden flex flex-col justify-center items-center bg-transparent backdrop-blur-[2px] text-theme-text transition-opacity duration-100">
           <div class="chart-spinner"></div>
-          <div class="text-[10px] opacity-60 mt-3 font-bold tracking-[0.2em] uppercase">
+          <div class="text-[10px] opacity-60 mt-3 font-medium tracking-[0.2em] uppercase">
             Loading Chart
           </div>
         </div> -->
@@ -1072,14 +1059,14 @@
   </div>
   <!-- 🚀 #main-dashboard-content 닫기 -->
 
-  <!-- ⚙️ 전문가용 설정 모달 -->
+  <!-- ⚙️ 전문가용 설정 모달 (모바일 바텀시트) -->
   <div id="settings-modal"
-    class="fixed inset-0 z-[300] hidden flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    class="fixed inset-0 z-[300] hidden flex items-start md:items-center justify-center bg-theme-bg md:bg-black/60 md:backdrop-blur-sm">
     <form onsubmit="event.preventDefault()"
-      class="bg-theme-panel border border-theme-border p-6 rounded-2xl shadow-2xl w-[400px] flex flex-col gap-5">
+      class="bg-theme-panel md:border border-theme-border p-6 rounded-none md:rounded-2xl shadow-none md:shadow-2xl w-full h-full md:h-auto md:w-[400px] max-h-full md:max-h-[80vh] flex flex-col gap-5">
       <div class="flex justify-between items-center border-b border-theme-border pb-3">
-        <h3 class="text-lg font-bold text-theme-accent uppercase tracking-tighter">
-          Engine Settings
+        <h3 class="text-lg font-medium text-theme-accent uppercase tracking-tighter">
+          Settings
         </h3>
         <button type="button" onclick="closeSettingsModal()"
           class="text-theme-text opacity-50 hover:opacity-100 text-xl">
@@ -1090,7 +1077,7 @@
       <div class="flex flex-col gap-4">
         <!-- CMC API 키 -->
         <div class="flex flex-col gap-1.5">
-          <label class="text-[10px] font-bold opacity-40 uppercase tracking-widest">CoinMarketCap API KEY</label>
+          <label class="text-[10px] font-medium opacity-40 uppercase tracking-widest">CoinMarketCap API KEY</label>
           <div class="relative">
             <input id="setting-cmc-key" type="password" autocomplete="new-password"
               class="w-full bg-theme-bg border border-theme-border py-3 pl-3 pr-16 rounded-xl text-xs text-theme-text outline-none focus:border-theme-accent transition-all font-tempTestDss"
@@ -1112,14 +1099,14 @@
         <!-- ✨ 애니메이션 끄기/켜기 -->
         <div class="flex items-center justify-between border-t border-theme-border/50 pt-4 mt-2">
           <div class="flex flex-col">
-            <span class="text-xs font-bold text-theme-text">Disable All Animations</span>
+            <span class="text-xs font-medium text-theme-text">Disable All Animations</span>
             <span class="text-[9px] opacity-40 italic">성능을 위해 모든 애니메이션 끄기</span>
           </div>
           <label class="relative inline-flex items-center cursor-pointer">
             <input type="checkbox" id="setting-disable-animations" class="sr-only peer"
               onchange="toggleAllAnimations(this.checked)" />
             <div
-              class="w-9 h-5 bg-theme-border/30 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-theme-accent">
+              class="w-9 h-5 bg-theme-border/30 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-['] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-theme-accent">
             </div>
           </label>
         </div>
@@ -1127,11 +1114,11 @@
 
       <div class="flex gap-2 mt-2">
         <button type="button" onclick="saveSettings()"
-          class="flex-1 bg-theme-accent text-white py-3 rounded-xl font-bold text-sm shadow-lg hover:brightness-110 active:scale-95 transition-all">
+          class="flex-1 bg-theme-accent text-white py-3 rounded-xl font-medium text-sm shadow-lg hover:brightness-110 active:scale-95 transition-all">
           SAVE & APPLY
         </button>
         <button type="button" onclick="closeSettingsModal()"
-          class="flex-1 bg-theme-border/20 text-theme-text py-3 rounded-xl font-bold text-sm hover:bg-theme-border/40 transition-all">
+          class="flex-1 bg-theme-border/20 text-theme-text py-3 rounded-xl font-medium text-sm hover:bg-theme-border/40 transition-all">
           CANCEL
         </button>
       </div>
@@ -1271,7 +1258,7 @@
       class="absolute inset-0 backdrop-blur-xl z-[150] flex flex-col justify-center items-center gap-6 rounded-2xl transition-all duration-500 ease-out">
       <div class="text-center flex flex-col gap-2">
         <h2 class="m-0 text-theme-accent text-3xl font-bold tracking-widest uppercase">
-          ⚡ QUICK VIEW ENGINE
+          ⚡ Muntiple Quick View
         </h2>
         <p class="text-xs text-theme-text opacity-40 max-w-[500px] leading-relaxed mx-auto">
           퀵뷰 엔진으로 최대 32개 코인의 실시간 차트를 한눈에 정밀

@@ -8,8 +8,6 @@
     font-family: 'Pretendard Variable';
     font-weight: 45 920;
     font-style: normal;
-    font-display: swap;
+    font-display: block;
     src: url('./PretendardVariable.woff2') format('woff2-variations')
 }
-
-/*# sourceMappingURL=/sm/cb46c7e49fc38cbd97a389d4dc69706f7471d0646edc67e9dc7defe084c0b8bf.map */

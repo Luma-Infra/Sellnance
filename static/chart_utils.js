@@ -34,15 +34,8 @@ window.ensureSafeUnixSeconds = ensureSafeUnixSeconds;
 function resetChartScale() {
   if (!store.chart || !store.candleSeries) return;
 
-  // 🚀 [레이스 컨디션 완벽 차단] fitContent() 전에 전역 락(Lock)을 먼저 걸어 이벤트 폭주로 인한 너비 오염을 원천 봉쇄!
-  if (typeof window.resetPriceScaleWidthSync === "function") {
-    window.resetPriceScaleWidthSync();
-  }
-
-  // 🚀 [UX 개선] 가로 타임선은 리셋하지 않고 세로축 가격선만 리셋하도록 fitContent() 제거
-  store.chart
-    .priceScale("right")
-    .applyOptions({ minimumWidth: 0, autoScale: true });
+  // 🚀 [UX 개선] 가격 스케일 초기화 시 넓이를 0으로 강제 리셋하지 않고 autoScale만 켜서 꿀렁거림 원천 차단
+  store.chart.priceScale("right").applyOptions({ autoScale: true });
 
   // 🚀 [UX 개선] 줌(가로폭)은 유지한 채 뷰포트를 최신 봉 위치(가장 우측)로 스크롤하여 바로잡음
   try {
@@ -190,7 +183,7 @@ function updateLegend(d, v, k) {
   const chgEl = document.getElementById("ohlc-change");
   const rangeEl = document.getElementById("ohlc-range");
 
-  const priceCls = `font-bold ${cls}`;
+  const priceCls = `font-medium ${cls}`;
   if (openEl) {
     openEl.innerText = safeFormat(d.open, p);
     openEl.className = priceCls;
@@ -208,13 +201,13 @@ function updateLegend(d, v, k) {
     closeEl.className = priceCls;
   }
   if (rangeEl) {
-    // 절대값 표기 제외하고 퍼센트만 표기 (흰색 톤에서 살짝 어둡게)
-    rangeEl.innerHTML = `<span class="text-white/60 font-bold">${rangePercent}%</span>`;
+    // innerHTML 대신 innerText 사용 (클래스 유지) , 절대값 표기 제외하고 퍼센트만 표기
+    rangeEl.innerText = `${rangePercent}%`;
   }
   if (chgEl) {
     // 절대값 표기 제외하고 퍼센트만 표기
     chgEl.innerHTML = `<span>${sign}${chgPercent}%</span>`;
-    chgEl.className = `font-bold block leading-normal ${cls}`;
+    chgEl.className = `font-medium block leading-normal ${cls}`;
   }
 
   // 🚀 볼륨 전광판 포맷팅 및 색상 적용
@@ -238,7 +231,7 @@ function updateLegend(d, v, k) {
     const volEl = document.getElementById("ohlc-volume");
     if (volEl) {
       volEl.innerText = volValue;
-      volEl.className = `font-bold ${volColor}`;
+      volEl.className = `font-medium ${volColor}`;
     }
   } else {
     if (volContainer) volContainer.classList.add("hidden");
@@ -511,7 +504,7 @@ export function toggleCountdown(forceVal) {
   }
   const btn = document.getElementById("toggle-countdown-btn");
   if (btn) {
-    btn.innerText = store.showCountdown ? "카운트다운 OFF" : "카운트다운 ON";
+    btn.innerText = store.showCountdown ? "카운트다운 끄기" : "카운트다운 켜기";
     if (store.showCountdown) {
       btn.classList.add(
         "text-theme-accent",
@@ -773,16 +766,23 @@ export const sanitizeChartData = (dataArr, hasValueField = false) => {
 
     if (finalTime === null) continue;
 
+    // 🎯 변경 코드 (최신 데이터 덮어쓰기 전략)
     const timeKey = String(finalTime);
-    if (seen.has(timeKey)) continue;
+    if (seen.has(timeKey)) {
+      // 이미 들어간 중복 데이터가 있으면 지우고 최신 틱 데이터로 교체하기 위해 필터링
+      const idx = sanitized.findIndex(item => String(item.time) === timeKey);
+      if (idx !== -1) sanitized.splice(idx, 1);
+
+    } if (seen.has(timeKey)) continue;
 
     if (hasValueField) {
-      if (d.value === undefined || d.value === null || isNaN(Number(d.value)))
-        continue;
+      const isInvalidValue = d.value === undefined || d.value === null || isNaN(Number(d.value));
+      const safeValue = isInvalidValue ? 0 : Number(d.value);
+
       sanitized.push({
         ...d,
         time: finalTime,
-        value: Number(d.value),
+        value: safeValue,
       });
     } else {
       if (

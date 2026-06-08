@@ -65,12 +65,42 @@ export function sortTable(colKey) {
 }
 
 export function simpleSortData() {
+  const currentMarket = store.currentMarket || "ALL";
+
+  let priceKey = "Price_Raw";
+  let change24hKey = "Change_24h_Raw";
+  let changeTodayKey = "Change_Today_Raw";
+  let volumeKey = "Binance_Vol_Futures";
+
+  if (currentMarket === "UPBIT") {
+    priceKey = "Upbit_Price";
+    change24hKey = "Change_24h_Upbit";
+    changeTodayKey = "Change_Today_Upbit";
+    volumeKey = "Upbit_Vol";
+  } else if (currentMarket === "BITHUMB") {
+    priceKey = "Bithumb_Price";
+    change24hKey = "Change_24h_Bithumb";
+    changeTodayKey = "Change_Today_Bithumb";
+    volumeKey = "Upbit_Vol";
+  } else if (currentMarket === "FUTURES" || currentMarket === "BYBIT_FUTURES") {
+    priceKey = currentMarket === "FUTURES" ? "Binance_Price_Futures" : "Bybit_Price_Futures";
+    change24hKey = "Change_24h_Futures_Ex";
+    changeTodayKey = "Change_Today_Futures";
+    volumeKey = "Binance_Vol_Futures";
+  } else if (currentMarket === "SPOT" || currentMarket === "BYBIT") {
+    priceKey = currentMarket === "SPOT" ? "Binance_Price_Spot" : "Bybit_Price_Spot";
+    change24hKey = currentMarket === "SPOT" ? "Change_24h_Binance" : "Change_24h_Bybit";
+    changeTodayKey = currentMarket === "SPOT" ? "Change_Today_Binance" : "Change_Today_Bybit";
+    volumeKey = "Binance_Vol_Spot";
+  }
+
   const sortKeyMap = {
     MarketCap: "MarketCap_Raw",
-    Price: "Price_Raw",
-    Change_24h: "Change_24h_Raw",
-    Change_Today: "Change_Today_Raw",
-    Volume: "Binance_Vol_Futures",
+    Price: priceKey,
+    Change_24h: change24hKey,
+    Change_Today: changeTodayKey,
+    Volume: volumeKey,
+    VolumeUpbit: "Upbit_Vol",
     Ticker: "DisplayTicker",
     Kimchi: "Kimchi_Raw",
     Gap: "Basis_Raw",

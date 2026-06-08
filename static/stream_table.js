@@ -41,6 +41,7 @@ export function initSniperSocket() {
       try {
         const text = typeof e.data === "string" ? e.data : await e.data.text();
         const res = JSON.parse(text);
+        if (!res || !res.code) return;
         const pureSym = res.code.replace("KRW-", "");
         const krwTicker = pureSym + "KRW"; // 테이블의 업비트 코인 Ticker 표기법 (예: BTCKRW)
         const newPriceKrw = parseFloat(res.trade_price);
@@ -159,7 +160,8 @@ export function syncSniperSubscriptions() {
 
 function renderSniperPrice(data) {
   if (typeof window.renderRealtimeRow === "function") {
-    window.renderRealtimeRow(data.s, data);
+    const isFutures = store.currentMarket === "FUTURES";
+    window.renderRealtimeRow(data.s, data, isFutures);
   }
 }
 

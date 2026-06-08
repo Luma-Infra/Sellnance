@@ -160,8 +160,8 @@ export async function fetchHistory(
         <div class="flex flex-col items-center gap-3 p-6 rounded-2xl bg-theme-panel/90 border border-theme-border shadow-2xl text-center">
           <div class="w-10 h-10 border-4 border-theme-accent border-t-transparent rounded-full animate-spin"></div>
           <div class="flex flex-col gap-1">
-            <span class="text-[15px] font-bold text-theme-accent tracking-wider uppercase">라이브러리 호출 중...</span>
-            <span class="text-[11px] font-bold text-theme-text opacity-60 tracking-tighter">과거 차트 단절 구간을 채우는 중이에요</span>
+            <span class="text-[15px] font-medium text-theme-accent tracking-wider uppercase">라이브러리 호출 중...</span>
+            <span class="text-[11px] font-medium text-theme-text opacity-60 tracking-tighter">과거 차트 단절 구간을 채우는 중이에요</span>
           </div>
         </div>
       `;
@@ -798,7 +798,7 @@ export async function fetchHistory(
               "absolute right-3 z-[110] flex gap-1.5 transition-all duration-300 pointer-events-none";
             if (wrapper) wrapper.appendChild(loadingMessageContainer);
           }
-          // loadingMessageContainer.innerHTML = `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded opacity-60 bg-theme-panel text-theme-text">?3 불러오는중...</span>`;
+          // loadingMessageContainer.innerHTML = `<span class="text-[10px] font-medium px-1.5 py-0.5 rounded opacity-60 bg-theme-panel text-theme-text">?3 불러오는중...</span>`;
           // loadingMessageContainer.style.display = "flex"; // Show loading message
 
           let switcherContainer = document.getElementById("kimchi-switcher");
@@ -817,13 +817,13 @@ export async function fetchHistory(
                 const opacity = isActive
                   ? "opacity-100 ring-2 ring-white/50 scale-105"
                   : "opacity-40 hover:opacity-80";
-                return `<button class="text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm transition-all ${opacity}" style="background-color: ${s.bg}; color: ${s.text};" onclick="switchKimchiSub('${s.id}')">${s.name}</button>`;
+                return `<button class="text-[10px] font-medium px-1.5 py-0.5 rounded shadow-sm transition-all ${opacity}" style="background-color: ${s.bg}; color: ${s.text};" onclick="switchKimchiSub('${s.id}')">${s.name}</button>`;
               })
               .join("");
             switcherContainer.style.display = "flex";
           } else {
             const s = availableSubs[0];
-            switcherContainer.innerHTML = `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded opacity-60 pointer-events-none" style="background-color: ${s.bg}; color: ${s.text};">vs ${s.name}</span>`;
+            switcherContainer.innerHTML = `<span class="text-[10px] font-medium px-1.5 py-0.5 rounded opacity-60 pointer-events-none" style="background-color: ${s.bg}; color: ${s.text};">vs ${s.name}</span>`;
             switcherContainer.style.display = "flex";
           }
 
@@ -1031,56 +1031,56 @@ window.switchKimchiSub = function (newSubId) {
 };
 
 // 🦌 과거 좌측 제일 끝에 도달했을 때 사슴 마커(노란 원 없이)를 배치하는 함수 (김프 차트도 동시 삽입)
-export function placeDeerAtEnd(params) {
-  if (store.hasPlacedDeer) return;
-  store.hasPlacedDeer = true;
+// export function placeDeerAtEnd(params) {
+//   if (store.hasPlacedDeer) return;
+//   store.hasPlacedDeer = true;
 
-  if (!store.candleSeries || !store.mainData || store.mainData.length === 0)
-    return;
+//   if (!store.candleSeries || !store.mainData || store.mainData.length === 0)
+//     return;
 
-  const oldest = store.mainData[0];
-  let markerTime = oldest.time;
+//   const oldest = store.mainData[0];
+//   let markerTime = oldest.time;
 
-  if (params && params.tf) {
-    const isDayUnit = !params.tf.match(/[hm]/);
-    if (isDayUnit) {
-      if (typeof markerTime === "number" && !isNaN(markerTime)) {
-        const dt = new Date(markerTime * 1000);
-        markerTime = `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, "0")}-${String(dt.getUTCDate()).padStart(2, "0")}`;
-      }
-    } else {
-      if (typeof markerTime === "string" && markerTime.includes("-")) {
-        const parsedUnix = Math.floor(new Date(markerTime).getTime() / 1000);
-        if (!isNaN(parsedUnix)) markerTime = parsedUnix;
-      }
-    }
-  }
+//   if (params && params.tf) {
+//     const isDayUnit = !params.tf.match(/[hm]/);
+//     if (isDayUnit) {
+//       if (typeof markerTime === "number" && !isNaN(markerTime)) {
+//         const dt = new Date(markerTime * 1000);
+//         markerTime = `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, "0")}-${String(dt.getUTCDate()).padStart(2, "0")}`;
+//       }
+//     } else {
+//       if (typeof markerTime === "string" && markerTime.includes("-")) {
+//         const parsedUnix = Math.floor(new Date(markerTime).getTime() / 1000);
+//         if (!isNaN(parsedUnix)) markerTime = parsedUnix;
+//       }
+//     }
+//   }
 
-  if (
-    store.candleSeries &&
-    typeof store.candleSeries.setMarkers === "function"
-  ) {
-    const deerMarker = {
-      time: markerTime,
-      position: "aboveBar",
-      color: "transparent", // 노란색 원형 점을 완전히 없애고 투명하게 처리
-      text: "🦌",
-      size: 1.5,
-    };
+//   if (
+//     store.candleSeries &&
+//     typeof store.candleSeries.setMarkers === "function"
+//   ) {
+//     const deerMarker = {
+//       time: markerTime,
+//       position: "aboveBar",
+//       color: "transparent", // 노란색 원형 점을 완전히 없애고 투명하게 처리
+//       text: "🦌",
+//       size: 1.5,
+//     };
 
-    store.candleSeries.setMarkers([deerMarker]);
+//     store.candleSeries.setMarkers([deerMarker]);
 
-    if (
-      store.kimchiSeries &&
-      typeof store.kimchiSeries.setMarkers === "function"
-    ) {
-      store.kimchiSeries.setMarkers([deerMarker]);
-    }
-    console.log(
-      // "🦌 [사슴 배치 완료] X축 타임스탬프 유실 없이 메인 및 김프 차트에 마커 적용 완료!",
-    );
-  }
-}
+//     if (
+//       store.kimchiSeries &&
+//       typeof store.kimchiSeries.setMarkers === "function"
+//     ) {
+//       store.kimchiSeries.setMarkers([deerMarker]);
+//     }
+//     console.log(
+//       // "🦌 [사슴 배치 완료] X축 타임스탬프 유실 없이 메인 및 김프 차트에 마커 적용 완료!",
+//     );
+//   }
+// }
 
 // 🚀 [신규] 차트를 과거로 스크롤할 때 과거 캔들을 비동기/Lazy하게 로딩하는 페이징 엔진
 export async function loadMoreHistory() {
@@ -1111,7 +1111,7 @@ export async function loadMoreHistory() {
     lazyIndicator = document.createElement("div");
     lazyIndicator.id = "chart-lazy-loading-indicator";
     lazyIndicator.className =
-      "absolute left-1/2 top-1/2 z-[120] flex items-center gap-2 px-3 py-1.5 rounded-full bg-theme-panel/90 border border-theme-border shadow-lg text-[11px] font-bold text-theme-text opacity-0 pointer-events-none transition-all duration-300 transform -translate-x-1/2 -translate-y-1/2 scale-95";
+      "absolute left-1/2 top-1/2 z-[120] flex items-center gap-2 px-3 py-1.5 rounded-full bg-theme-panel/90 border border-theme-border shadow-lg text-[11px] font-medium text-theme-text opacity-0 pointer-events-none transition-all duration-300 transform -translate-x-1/2 -translate-y-1/2 scale-95";
     lazyIndicator.innerHTML = `
       <div class="w-3.5 h-3.5 border-2 border-theme-accent border-t-transparent rounded-full animate-spin"></div>
       <span id="chart-lazy-loading-text">과거 데이터 불러오는 중...</span>
@@ -1196,7 +1196,7 @@ export async function loadMoreHistory() {
         "pointer-events-none",
       );
 
-      placeDeerAtEnd(params);
+      // placeDeerAtEnd(params);
       return;
     }
 
@@ -1247,15 +1247,25 @@ export async function loadMoreHistory() {
         "pointer-events-none",
       );
 
-      placeDeerAtEnd(params);
+      // placeDeerAtEnd(params);
       return;
     }
 
-    const newVolumeData = newMainData.map((d) => ({
-      time: d.time,
-      value: d.volume,
-      color: d.close >= d.open ? params.upColorVol : params.downColorVol,
-    }));
+    const newVolumeData = newMainData.map((d) => {
+      // 거래량이 없거나 null인 경우를 대비해 0으로 안전하게 치환
+      const safeValue = (d.volume === null || d.volume === undefined || isNaN(d.volume)) ? 0 : Number(d.volume);
+
+      // 컬러 값이 유실되었을 경우를 대비해 기본 하드코딩 컬러(투명도 포함) 폴백 지정
+      const fallbackUpColor = params.upColorVol || "#26a69a80";
+      const fallbackDownColor = params.downColorVol || "#ef535080";
+      const safeColor = d.close >= d.open ? fallbackUpColor : fallbackDownColor;
+
+      return {
+        time: d.time,
+        value: safeValue,
+        color: safeColor
+      };
+    });
 
     // 김프 데이터 결합 및 전체 재연산
     if (params.subExchange) {

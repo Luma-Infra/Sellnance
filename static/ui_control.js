@@ -98,7 +98,7 @@ export function switchViewMode(mode) {
   const tabFav2 = document.getElementById("tab-fav2");
   const btnSmallCap = document.getElementById("btn-small-cap");
 
-  if (tabAll) tabAll.textContent = isSimple ? "MAIN" : "MAIN LIST";
+  if (tabAll) tabAll.textContent = isSimple ? "ALL" : "ALL LIST";
   if (tabFav) {
     tabFav.innerHTML = isSimple
       ? `<span style="color: var(--accent); margin-right: 2px;">★</span>FAV`
@@ -122,8 +122,8 @@ export function switchViewMode(mode) {
 function switchMobileView(view) {
   const leftPanel = document.getElementById("left-panel");
   const rightPanel = document.getElementById("right-panel");
-  const btnList = document.getElementById("mob-btn-list");
-  const btnChart = document.getElementById("mob-btn-chart");
+  const btnList = document.getElementById("nav-btn-list");
+  const btnChart = document.getElementById("nav-btn-chart");
 
   if (view === "list") {
     leftPanel.classList.remove("hidden");
@@ -137,8 +137,9 @@ function switchMobileView(view) {
     btnChart.classList.replace("text-theme-accent", "opacity-50");
 
     // 🚀 [추가] 모바일 리스트 모드일 때 높이 제한과 스크롤 주입
-    leftPanel.classList.add("overflow-y-auto", "h-[calc(100vh-64px)]", "pb-20");
-    leftPanel.style.height = "calc(100vh - 64px)";
+    leftPanel.classList.add("overflow-y-auto", "flex-1", "pb-[80px]");
+    leftPanel.classList.remove("h-[calc(100vh-64px)]");
+    leftPanel.style.removeProperty("height");
   } else {
     leftPanel.classList.remove("flex");
     leftPanel.classList.add("hidden");
@@ -149,6 +150,27 @@ function switchMobileView(view) {
     btnChart.classList.replace("opacity-50", "text-theme-accent");
     btnList.classList.replace("border-theme-accent", "border-transparent");
     btnList.classList.replace("text-theme-accent", "opacity-50");
+
+    // 🚀 [모바일] 그리기 툴바 인라인 style 강제 덮어쓰기 (CSS !important로는 인라인 style을 이길 수 없음)
+    requestAnimationFrame(() => {
+      const toolbar = document.querySelector(".drawing-toolbar-wrap");
+      if (!toolbar) return;
+      toolbar.style.cssText = [
+        "position: absolute",
+        "bottom: 0",
+        "top: auto",
+        "left: 0",
+        "width: 100%",
+        "height: 52px",
+        "z-index: 100",
+        "border-right: none",
+        "border-top: 1px solid var(--border)",
+        "background-color: var(--panel)",
+        "display: flex",
+        "flex-direction: row",
+        "overflow-x: auto",
+      ].join(";");
+    });
   }
 }
 
@@ -261,7 +283,7 @@ function executeTabSwitch(mode) {
     if (btnChart) btnChart.classList.add("active");
     if (btnSim) btnSim.classList.remove("active");
     if (btnQuick) btnQuick.classList.remove("active");
-    controls.style.display = "none";
+    if (controls) controls.style.display = "none";
 
     // 퀵뷰 퇴장 처리
     const qvContainer = document.getElementById("quickview-container");
@@ -278,7 +300,7 @@ function executeTabSwitch(mode) {
     if (btnSim) btnSim.classList.add("active");
     if (btnChart) btnChart.classList.remove("active");
     if (btnQuick) btnQuick.classList.remove("active");
-    controls.style.display = "flex";
+    if (controls) controls.style.display = "flex";
 
     // 퀵뷰 퇴장 처리
     const qvContainer = document.getElementById("quickview-container");
@@ -307,7 +329,7 @@ function executeTabSwitch(mode) {
     if (btnQuick) btnQuick.classList.add("active");
     if (btnChart) btnChart.classList.remove("active");
     if (btnSim) btnSim.classList.remove("active");
-    controls.style.display = "none";
+    if (controls) controls.style.display = "none";
 
     // 퀵뷰 엔진 점화
     if (typeof window.initQuickView === "function") {
@@ -526,6 +548,10 @@ export function selectSymbol(s, forceMarket = null) {
   }
   const searchRes = document.getElementById("search-results");
   if (searchRes) searchRes.style.display = "none";
+
+  // 🚀 [추가] 초기 안내 오버레이 숨기기
+  const initMessage = document.getElementById("chart-init-message");
+  if (initMessage) initMessage.style.display = "none";
 
   // 2. 테이블 행 즉시 하이라이트 반영 (시각적 피드백 선행)
   if (typeof applySelectedHighlight === "function") {

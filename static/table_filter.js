@@ -56,13 +56,13 @@ export function getFilteredData() {
     });
   }
 
-  // [주식 토큰 기본 필터링] B-STOCK 필터가 활성화된 상태이거나 즐겨찾기 탭이 아닐 경우 주식 코인을 목록에서 기본 제외
-  const isBStockFilterActive = store.exchFilterStates?.BINANCE_STOCK === 1;
-  const isFavoritesTab =
-    store.currentTab === "FAV" || store.currentTab === "FAV2";
-  if (!isBStockFilterActive && !isFavoritesTab) {
-    filteredData = filteredData.filter((d) => !isStockCoin(d));
-  }
+  // [주식 토큰 기본 필터링] B-STOCK 필터가 활성화된 상태이거나 즐겨찾기 탭이 아닐 경우 주식 코인을 목록에서 기본 제외 (유저 요청으로 임시 비활성화)
+  // const isBStockFilterActive = store.exchFilterStates?.BINANCE_STOCK === 1;
+  // const isFavoritesTab =
+  //   store.currentTab === "FAV" || store.currentTab === "FAV2";
+  // if (!isBStockFilterActive && !isFavoritesTab) {
+  //   filteredData = filteredData.filter((d) => !isStockCoin(d));
+  // }
 
   // 5. 거래소 다중 체크 포함(AND/OR/ONLY) & 제외(AND NOT) 복합 필터링
   const activeExchFilters = Object.entries(store.exchFilterStates || {}).filter(

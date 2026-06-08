@@ -31,9 +31,21 @@ class ExchangeAdapter:
         # 4. BYBIT
         elif exchange in ["bybit_spot", "bybit_futures"]:
             mapping = {
-                "1m": "1", "3m": "3", "5m": "5", "15m": "15", "30m": "30",
-                "1h": "60", "2h": "120", "4h": "240", "6h": "360", "12h": "720",
-                "1d": "D", "days": "D", "3d": "D", "1w": "W", "1M": "M",
+                "1m": "1",
+                "3m": "3",
+                "5m": "5",
+                "15m": "15",
+                "30m": "30",
+                "1h": "60",
+                "2h": "120",
+                "4h": "240",
+                "6h": "360",
+                "12h": "720",
+                "1d": "D",
+                "days": "D",
+                "3d": "D",
+                "1w": "W",
+                "1M": "M",
             }
             if interval.startswith("minutes/"):
                 return interval.split("/")[1]
@@ -45,7 +57,12 @@ class ExchangeAdapter:
     def normalize_symbol(exchange, symbol):
         """거래소별 마켓 코드 형식을 통일합니다."""
         # 1. BINANCE & BYBIT (BaseQuote 형식)
-        if exchange in ["binance_spot", "binance_futures", "bybit_spot", "bybit_futures"]:
+        if exchange in [
+            "binance_spot",
+            "binance_futures",
+            "bybit_spot",
+            "bybit_futures",
+        ]:
             return symbol.replace("-", "").replace("_", "").upper()
 
         # 2. UPBIT & BITHUMB (Quote-Base 형식)

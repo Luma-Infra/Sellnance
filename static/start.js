@@ -21,11 +21,11 @@ function getStartScreenHTML() {
       >
         <div>
           <h1
-            class="text-4xl font-bold text-theme-accent uppercase tracking-widest mb-2 drop-shadow-md"
+            class="text-4xl font-medium text-theme-accent uppercase tracking-widest mb-2 drop-shadow-md"
           >
             sellance
           </h1>
-          <p class="text-theme-text opacity-80 text-sm font-bold tracking-wide">
+          <p class="text-theme-text opacity-80 text-sm font-medium tracking-wide">
             Enter CMC API Key to initialize.
           </p>
 
@@ -37,7 +37,7 @@ function getStartScreenHTML() {
               <a
                 href="https://coinmarketcap.com/api/pricing/"
                 target="_blank"
-                class="text-theme-accent font-bold underline hover:brightness-125 ml-1"
+                class="text-theme-accent font-medium underline hover:brightness-125 ml-1"
               >
                 CoinMarketCap API Dashboard
               </a>
@@ -62,7 +62,7 @@ function getStartScreenHTML() {
               * Key is securely stored in your local browser.
             </p>
             <p
-              class="text-[10px] text-theme-accent/70 text-left font-bold italic"
+              class="text-[10px] text-theme-accent/70 text-left font-medium italic"
             >
               ** 키가 없어도 Skip을 누르면 서버 캐시 데이터로 대시보드 진입이
               가능합니다.
@@ -75,7 +75,7 @@ function getStartScreenHTML() {
             id="btn-start-engine"
             disabled
             onclick="saveAndStart()"
-            class="w-full py-3.5 bg-theme-accent/50 text-white/50 font-bold rounded-xl shadow-lg transition-all tracking-widest uppercase cursor-not-allowed pointer-events-none"
+            class="w-full py-3.5 bg-theme-accent/50 text-white/50 font-medium rounded-xl shadow-lg transition-all tracking-widest uppercase cursor-not-allowed pointer-events-none"
           >
             ?1 불러오는 중.. 📡
           </button>
@@ -83,7 +83,7 @@ function getStartScreenHTML() {
             id="btn-skip-start"
             disabled
             onclick="skipAndStart()"
-            class="w-full py-3 bg-transparent text-theme-text/50 border border-theme-border/50 font-bold rounded-xl transition-all tracking-wide opacity-50 cursor-not-allowed pointer-events-none"
+            class="w-full py-3 bg-transparent text-theme-text/50 border border-theme-border/50 font-medium rounded-xl transition-all tracking-wide opacity-50 cursor-not-allowed pointer-events-none"
           >
             ?2 불러오는 중.. 📡
           </button>
@@ -147,16 +147,16 @@ async function initStartScreen() {
 
     if (btnStart) {
       btnStart.disabled = false;
-      btnStart.innerText = "Start Engine 🚀";
+      btnStart.innerText = "Start DASHBOARD 🚀";
       btnStart.className =
-        "w-full py-3.5 bg-theme-accent text-white font-bold rounded-xl shadow-lg hover:brightness-110 active:scale-[0.98] transition-all tracking-widest uppercase cursor-pointer pointer-events-auto";
+        "w-full py-3.5 bg-theme-accent text-white font-medium rounded-xl shadow-lg hover:brightness-110 active:scale-[0.98] transition-all tracking-widest uppercase cursor-pointer pointer-events-auto";
     }
 
     if (btnSkip) {
       btnSkip.disabled = false;
       btnSkip.innerText = "Skip (Use Cached Data) ⏭️";
       btnSkip.className =
-        "w-full py-3 bg-transparent text-theme-text border border-theme-border font-bold rounded-xl hover:bg-white/5 active:scale-[0.98] transition-all tracking-wide opacity-50 hover:opacity-100 cursor-pointer pointer-events-auto";
+        "w-full py-3 bg-transparent text-theme-text border border-theme-border font-medium rounded-xl hover:bg-white/5 active:scale-[0.98] transition-all tracking-wide opacity-50 hover:opacity-100 cursor-pointer pointer-events-auto";
     }
   }
 
@@ -231,7 +231,7 @@ function saveAndStart() {
   // 🚀 [INP 최적화 1] 클릭 즉시 시각적 피드백 제공 (Next Paint 가속)
   const btn = document.querySelector("#start-screen button");
   if (btn) {
-    btn.innerText = "STARTING ENGINE... 🚀";
+    btn.innerText = "STARTING DASHBOARD... 🚀";
     btn.style.pointerEvents = "none";
   }
 

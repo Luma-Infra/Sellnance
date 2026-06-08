@@ -41,7 +41,7 @@ export async function loadTableData(force = false) {
   } catch (error) {
     console.error("데이터 로드 에러:", error);
     alert("서버에서 데이터를 가져오지 못했습니다.");
-    updateTimeSpan.innerText = "업데이트 실패";
+    if (updateTimeSpan) updateTimeSpan.innerText = "업데이트 실패";
   } finally {
     modal.classList.add("hidden");
   }

@@ -40,7 +40,7 @@ def start_kst_9am_scheduler():
                         is_trigger = True
                     elif now.minute in [1, 2, 3, 5] and now.second == 0:
                         is_trigger = True
-                        
+
                     if is_trigger:
                         current_key = now.minute * 60 + now.second
                         if last_captured_key != current_key:
@@ -213,7 +213,12 @@ def _fetch_and_process_data(silent_mode=False):
         print(f"🧹 [청소] 상폐/미거래 코인 {k} 족보에서 삭제 완료!")
 
     if isinstance(final_results, list):
-        final_results.sort(key=lambda x: float(x.get("MarketCap_Raw") if x.get("MarketCap_Raw") is not None else 0.0), reverse=True)
+        final_results.sort(
+            key=lambda x: float(
+                x.get("MarketCap_Raw") if x.get("MarketCap_Raw") is not None else 0.0
+            ),
+            reverse=True,
+        )
 
     if is_mapping_updated:
         config_manager.save_mapping_data(MAPPING_DATA)

@@ -128,6 +128,10 @@ def build_binance_row(
     total_vol_spot = 0.0
     binance_spot_price = 0.0
     binance_futures_price = 0.0
+    binance_spot_change_24h = 0.0
+    binance_futures_change_24h = 0.0
+    binance_spot_change_today = 0.0
+    binance_futures_change_today = 0.0
     exact_spot_ticker = ""
     exact_futures_ticker = ""
 
@@ -137,11 +141,19 @@ def build_binance_row(
             if b_inf.get("is_spot"):
                 listed_on.add("BINANCE")
                 binance_spot_price = b_inf.get("price", 0.0)
+                binance_spot_change_24h = b_inf.get("change_24h", 0.0)
                 exact_spot_ticker = b_tick.replace("USDT", "")
+                spot_utc0 = b_inf.get("utc0_open") or 0.0
+                if spot_utc0 > 0:
+                    binance_spot_change_today = utils.js_round(((binance_spot_price - spot_utc0) / spot_utc0 * 100), 2)
             if b_inf.get("is_futures"):
                 listed_on.add("BINANCE_FUTURES")
                 binance_futures_price = b_inf.get("price", 0.0)
+                binance_futures_change_24h = b_inf.get("change_24h", 0.0)
                 exact_futures_ticker = b_tick.replace("USDT", "")
+                futures_utc0 = b_inf.get("utc0_open") or 0.0
+                if futures_utc0 > 0:
+                    binance_futures_change_today = utils.js_round(((binance_futures_price - futures_utc0) / futures_utc0 * 100), 2)
             total_vol_futures += b_inf.get("vol_futures", 0.0)
             total_vol_spot += b_inf.get("vol_spot", 0.0)
 
@@ -227,14 +239,20 @@ def build_binance_row(
     if bithumb_direct_match or any(a in bithumb_krw_set for a in bithumb_aliases):
         listed_on.add("BITHUMB")
 
-    # 🚀 [수정] 화면에 표기되는 바이낸스 단일 거래대금(binance_vol)과 웹소켓 실시간 시세(data.q)를 단일 진실 공급원으로 완벽 일치!
-    binance_vol = total_vol_spot + total_vol_futures
-    up_vol_24h = (
+    # 🚀 [수정] 바낸은 선물만, 선물 없으면 현물만 사용
+    if total_vol_futures > 0:
+        binance_vol = total_vol_futures
+    else:
+        binance_vol = total_vol_spot
+
+    # 🚀 업비트는 업비트 기준 거래대금만 환율 고려 (acc_trade_price_24h / krw_usd_rate)
+    up_vol_24h_krw = (
         upbit_data[target_up_base].get("volume_24h", 0.0)
         if target_up_base and target_up_base in upbit_data
         else (upbit_data[base].get("volume_24h", 0.0) if base in upbit_data else 0.0)
     )
-    vol_24h = binance_vol + up_vol_24h + by_vol_24h
+    up_vol_24h_usd = up_vol_24h_krw / krw_usd_rate if krw_usd_rate > 0 else 0.0
+    vol_24h = binance_vol + up_vol_24h_usd + by_vol_24h
     change_24h = b_info.get("change_24h", 0.0)
     precision = b_info.get("precision", 2)
     utc0_open = (
@@ -349,24 +367,32 @@ def build_binance_row(
             if (binance_futures_price > 0 or binance_spot_price > 0)
             else None
         ),
+        "Binance_Price_Spot": binance_spot_price if binance_spot_price > 0 else None,
+        "Binance_Price_Futures": binance_futures_price if binance_futures_price > 0 else None,
         "Bybit_Price": (
             (by_futures_p or by_spot_p) if (by_futures_p > 0 or by_spot_p > 0) else None
         ),
+        "Bybit_Price_Spot": by_spot_p if by_spot_p > 0 else None,
+        "Bybit_Price_Futures": by_futures_p if by_futures_p > 0 else None,
+        "Change_24h_Binance": binance_spot_change_24h,
+        "Change_24h_Futures_Ex": binance_futures_change_24h,
+        "Change_24h_Bybit": binance_spot_change_24h,
+        "Change_Today_Binance": binance_spot_change_today,
+        "Change_Today_Futures": binance_futures_change_today,
+        "Change_Today_Bybit": binance_spot_change_today,
         "Upbit_Price": up_price_krw if up_price_krw > 0 else None,
         "Bithumb_Price": bithumb_price if bithumb_price > 0 else None,
         "Upbit_Vol_Formatted": (
-            (
-                utils.format_volume_string(up_vol_24h / krw_usd_rate)
-                if krw_usd_rate > 0
-                else "-"
-            )
-            if up_vol_24h > 0
+            utils.format_volume_string(up_vol_24h_usd)
+            if up_vol_24h_usd > 0
             else "-"
         ),
         "Upbit_Vol_KRW_Formatted": (
-            utils.format_volume_krw_string(up_vol_24h) if up_vol_24h > 0 else "-"
+            utils.format_volume_krw_string(up_vol_24h_krw)
+            if up_vol_24h_krw > 0
+            else "-"
         ),
-        "Upbit_Vol_Raw": up_vol_24h,
+        "Upbit_Vol": up_vol_24h_krw,
         "Change_24h": utils.format_change(change_24h),
         "Change_Today": utils.format_change(change_today),
         "Kimchi_Formatted": f"{kimchi_raw:+.2f}%" if kimchi_raw != 0 else "0.00%",

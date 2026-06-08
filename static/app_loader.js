@@ -6,15 +6,15 @@ const EngineUI = {
       <div id="loading-overlay" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-theme-bg transition-opacity duration-1000">
         <div class="w-full max-w-md p-6 bg-theme-panel border border-theme-border rounded-xl shadow-2xl">
           <div class="text-center mb-8">
-            <h1 class="text-2xl font-bold text-theme-accent tracking-tighter mb-2 italic">SELLNANCE ENGINE</h1>
+            <h1 class="text-2xl font-medium text-theme-accent tracking-tighter mb-2 italic">SELLNANCE DASHBOARD</h1>
             <p class="text-[10px] opacity-50 uppercase tracking-[0.3em]">System Boot Sequence v1.0</p>
           </div>
           <div class="relative h-2 bg-theme-border rounded-full overflow-hidden mb-6">
           </div>
           <div class="flex justify-between items-end mb-4 px-1">
-            <span class="text-[10px] font-bold opacity-70">CORE TRACING...</span>
-            <span id="percent-text" class="text-2xl font-bold text-theme-accent leading-none">0%</span>
-          </div>
+            <span class="text-[10px] font-medium opacity-70">CORE TRACING...</span>
+            <span id="percent-text" class="text-2xl font-medium text-theme-accent leading-none">0%</span>
+          </div>F
           <div id="status-list" class="space-y-1.5 text-[12px] font-medium max-h-72 overflow-y-auto pr-2 custom-scrollbar"></div>
         </div>
         </div>
@@ -38,7 +38,7 @@ const EngineUI = {
         return `
           <div class="flex justify-between items-center p-2.5 rounded bg-theme-border/10 border border-transparent ${isIng ? 'border-theme-accent/30 bg-theme-accent/5' : ''}">
             <span class="opacity-80">${i + 1}. ${name}</span>
-            <span class="${isDone ? 'text-theme-accent' : isIng ? 'text-blue-400 animate-pulse' : 'opacity-30'} font-bold">
+            <span class="${isDone ? 'text-theme-accent' : isIng ? 'text-blue-400 animate-pulse' : 'opacity-30'} font-medium">
               ${isDone ? 'READY' : isIng ? 'RUNNING' : 'WAIT'}
             </span>
           </div>
