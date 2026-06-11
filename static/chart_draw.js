@@ -68,8 +68,13 @@ class DrawingPriceAxisView {
     return "#2a2e39";
   }
   visible() {
-    const pctEnabled = (typeof store.showCrosshairPct === "boolean") ? store.showCrosshairPct : true;
-    return pctEnabled && store.isCrosshairActive && store.crosshairPrice !== null;
+    const pctEnabled =
+      typeof store.showCrosshairPct === "boolean"
+        ? store.showCrosshairPct
+        : true;
+    return (
+      pctEnabled && store.isCrosshairActive && store.crosshairPrice !== null
+    );
   }
   renderer() {
     return new DrawingPriceAxisRenderer(this);
@@ -161,7 +166,10 @@ class DrawingPaneRenderer {
       if (store.drawings.horizontals && store.drawings.horizontals.length > 0) {
         store.drawings.horizontals.forEach((h) => {
           const price = typeof h === "object" ? h.price : h;
-          const isSelected = store.selectedDrawing && (store.selectedDrawing === h || (typeof h === "object" && store.selectedDrawing.id === h.id));
+          const isSelected =
+            store.selectedDrawing &&
+            (store.selectedDrawing === h ||
+              (typeof h === "object" && store.selectedDrawing.id === h.id));
 
           if (isSelected) {
             ctx.strokeStyle = lineUpColor;
@@ -207,7 +215,10 @@ class DrawingPaneRenderer {
       // ─── 2. 추세선 (Trend Lines) 그리기 ───
       if (store.drawings.trendlines && store.drawings.trendlines.length > 0) {
         store.drawings.trendlines.forEach((line) => {
-          const isSelected = store.selectedDrawing && (store.selectedDrawing === line || (line.id && store.selectedDrawing.id === line.id));
+          const isSelected =
+            store.selectedDrawing &&
+            (store.selectedDrawing === line ||
+              (line.id && store.selectedDrawing.id === line.id));
 
           if (isSelected) {
             ctx.strokeStyle = accentColor;
@@ -335,7 +346,7 @@ export function deleteDrawing(drawing) {
   if (drawing.start && drawing.end) {
     // 추세선 삭제
     const idx = store.drawings.trendlines.findIndex(
-      (line) => line === drawing || (line.id && line.id === drawing.id)
+      (line) => line === drawing || (line.id && line.id === drawing.id),
     );
     if (idx !== -1) {
       store.drawings.trendlines.splice(idx, 1);
@@ -343,7 +354,7 @@ export function deleteDrawing(drawing) {
   } else {
     // 수평선 삭제
     const idx = store.drawings.horizontals.findIndex(
-      (h) => h === drawing || (typeof h === "object" && h.id === drawing.id)
+      (h) => h === drawing || (typeof h === "object" && h.id === drawing.id),
     );
     if (idx !== -1) {
       store.drawings.horizontals.splice(idx, 1);
@@ -380,7 +391,8 @@ export function updateFloatingDeleteButton() {
     btn = document.createElement("button");
     btn.id = "drawing-delete-btn";
     btn.innerHTML = "🗑️";
-    btn.style.cssText = "position: absolute; z-index: 1000; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: #ef5350; color: white; border: none; border-radius: 4px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.3); font-size: 14px; transition: transform 0.1s; transform: translate(-50%, -100%);";
+    btn.style.cssText =
+      "position: absolute; z-index: 1000; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: #ef5350; color: white; border: none; border-radius: 4px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.3); font-size: 14px; transition: transform 0.1s; transform: translate(-50%, -100%);";
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
       if (store.selectedDrawing) {
@@ -417,10 +429,16 @@ export function updateFloatingDeleteButton() {
     let startX = null;
     let endX = null;
 
-    if (line.start.logical !== null && typeof chart.timeScale().logicalToCoordinate === "function") {
+    if (
+      line.start.logical !== null &&
+      typeof chart.timeScale().logicalToCoordinate === "function"
+    ) {
       startX = chart.timeScale().logicalToCoordinate(line.start.logical);
     }
-    if (line.end.logical !== null && typeof chart.timeScale().logicalToCoordinate === "function") {
+    if (
+      line.end.logical !== null &&
+      typeof chart.timeScale().logicalToCoordinate === "function"
+    ) {
       endX = chart.timeScale().logicalToCoordinate(line.end.logical);
     }
 
@@ -433,7 +451,10 @@ export function updateFloatingDeleteButton() {
     }
   } else {
     // 수평선 (화면 중앙에 띄움)
-    const price = typeof store.selectedDrawing === "object" ? store.selectedDrawing.price : store.selectedDrawing;
+    const price =
+      typeof store.selectedDrawing === "object"
+        ? store.selectedDrawing.price
+        : store.selectedDrawing;
     const y = series.priceToCoordinate(price);
     if (y !== null) {
       const container = document.getElementById("pane-main");
@@ -482,25 +503,43 @@ function findHitDrawing(clickX, clickY) {
   const chart = store.chart;
 
   // 1. 선택된 추세선 조절점(Handle) 우선 체크
-  if (store.selectedDrawing && store.selectedDrawing.start && store.selectedDrawing.end) {
+  if (
+    store.selectedDrawing &&
+    store.selectedDrawing.start &&
+    store.selectedDrawing.end
+  ) {
     const line = store.selectedDrawing;
     const startY = series.priceToCoordinate(line.start.price);
     const endY = series.priceToCoordinate(line.end.price);
     let startX = null;
     let endX = null;
 
-    if (line.start.logical !== null && typeof chart.timeScale().logicalToCoordinate === "function") {
+    if (
+      line.start.logical !== null &&
+      typeof chart.timeScale().logicalToCoordinate === "function"
+    ) {
       startX = chart.timeScale().logicalToCoordinate(line.start.logical);
     }
-    if (line.end.logical !== null && typeof chart.timeScale().logicalToCoordinate === "function") {
+    if (
+      line.end.logical !== null &&
+      typeof chart.timeScale().logicalToCoordinate === "function"
+    ) {
       endX = chart.timeScale().logicalToCoordinate(line.end.logical);
     }
 
     // 선택된 추세선 handle 독립 체크 (14px 반경)
-    if (startX !== null && startY !== null && Math.hypot(clickX - startX, clickY - startY) < 14) {
+    if (
+      startX !== null &&
+      startY !== null &&
+      Math.hypot(clickX - startX, clickY - startY) < 14
+    ) {
       return { drawing: line, handle: "start" };
     }
-    if (endX !== null && endY !== null && Math.hypot(clickX - endX, clickY - endY) < 14) {
+    if (
+      endX !== null &&
+      endY !== null &&
+      Math.hypot(clickX - endX, clickY - endY) < 14
+    ) {
       return { drawing: line, handle: "end" };
     }
   }
@@ -513,24 +552,50 @@ function findHitDrawing(clickX, clickY) {
       let startX = null;
       let endX = null;
 
-      if (line.start.logical !== null && typeof chart.timeScale().logicalToCoordinate === "function") {
+      if (
+        line.start.logical !== null &&
+        typeof chart.timeScale().logicalToCoordinate === "function"
+      ) {
         startX = chart.timeScale().logicalToCoordinate(line.start.logical);
       }
-      if (line.end.logical !== null && typeof chart.timeScale().logicalToCoordinate === "function") {
+      if (
+        line.end.logical !== null &&
+        typeof chart.timeScale().logicalToCoordinate === "function"
+      ) {
         endX = chart.timeScale().logicalToCoordinate(line.end.logical);
       }
 
       // 시작점 handle 독립 체크 (끝점이 화면 밖이어도 동작)
-      if (startX !== null && startY !== null && Math.hypot(clickX - startX, clickY - startY) < 14) {
+      if (
+        startX !== null &&
+        startY !== null &&
+        Math.hypot(clickX - startX, clickY - startY) < 14
+      ) {
         return { drawing: line, handle: "start" };
       }
       // 끝점 handle 독립 체크 (시작점이 화면 밖이어도 동작)
-      if (endX !== null && endY !== null && Math.hypot(clickX - endX, clickY - endY) < 14) {
+      if (
+        endX !== null &&
+        endY !== null &&
+        Math.hypot(clickX - endX, clickY - endY) < 14
+      ) {
         return { drawing: line, handle: "end" };
       }
       // 선 바디 체크 — 양쪽 모두 보여야 함
-      if (startX !== null && startY !== null && endX !== null && endY !== null) {
-        const dist = getDistanceToSegment(clickX, clickY, startX, startY, endX, endY);
+      if (
+        startX !== null &&
+        startY !== null &&
+        endX !== null &&
+        endY !== null
+      ) {
+        const dist = getDistanceToSegment(
+          clickX,
+          clickY,
+          startX,
+          startY,
+          endX,
+          endY,
+        );
         if (dist < 8) {
           return { drawing: line, handle: "line" };
         }
@@ -613,18 +678,19 @@ export function initDrawingEvents() {
         if (hit.drawing.start && hit.drawing.end) {
           dragStartDrawingState = {
             start: { ...hit.drawing.start },
-            end: { ...hit.drawing.end }
+            end: { ...hit.drawing.end },
           };
         } else {
           dragStartDrawingState = {
-            price: typeof hit.drawing === "object" ? hit.drawing.price : hit.drawing
+            price:
+              typeof hit.drawing === "object" ? hit.drawing.price : hit.drawing,
           };
         }
 
         // 드래그 중 차트 스크롤/줌 잠금
         store.chart.applyOptions({
           handleScroll: false,
-          handleScale: false
+          handleScale: false,
         });
 
         if (store._drawingPrimitive) {
@@ -650,7 +716,7 @@ export function initDrawingEvents() {
     if (store.activeTool === "horizontal") {
       store.drawings.horizontals.push({
         id: Date.now() + Math.random(),
-        price: price
+        price: price,
       });
       selectDrawingTool("cursor");
       if (store._drawingPrimitive) {
@@ -700,21 +766,31 @@ export function initDrawingEvents() {
 
       if (currentPrice !== null || currentLogical !== null) {
         // price가 null이면 마지막 dragStartPrice 유지 (delta=0), logical도 마찬가지
-        const priceDelta = currentPrice !== null ? currentPrice - dragStartPrice : 0;
-        const logicalDelta = currentLogical !== null ? currentLogical - dragStartLogical : 0;
+        const priceDelta =
+          currentPrice !== null ? currentPrice - dragStartPrice : 0;
+        const logicalDelta =
+          currentLogical !== null ? currentLogical - dragStartLogical : 0;
 
         if (draggingDrawing.start && draggingDrawing.end) {
           if (draggingHandle === "start") {
-            draggingDrawing.start.price = dragStartDrawingState.start.price + priceDelta;
-            draggingDrawing.start.logical = dragStartDrawingState.start.logical + logicalDelta;
+            draggingDrawing.start.price =
+              dragStartDrawingState.start.price + priceDelta;
+            draggingDrawing.start.logical =
+              dragStartDrawingState.start.logical + logicalDelta;
           } else if (draggingHandle === "end") {
-            draggingDrawing.end.price = dragStartDrawingState.end.price + priceDelta;
-            draggingDrawing.end.logical = dragStartDrawingState.end.logical + logicalDelta;
+            draggingDrawing.end.price =
+              dragStartDrawingState.end.price + priceDelta;
+            draggingDrawing.end.logical =
+              dragStartDrawingState.end.logical + logicalDelta;
           } else if (draggingHandle === "line") {
-            draggingDrawing.start.price = dragStartDrawingState.start.price + priceDelta;
-            draggingDrawing.start.logical = dragStartDrawingState.start.logical + logicalDelta;
-            draggingDrawing.end.price = dragStartDrawingState.end.price + priceDelta;
-            draggingDrawing.end.logical = dragStartDrawingState.end.logical + logicalDelta;
+            draggingDrawing.start.price =
+              dragStartDrawingState.start.price + priceDelta;
+            draggingDrawing.start.logical =
+              dragStartDrawingState.start.logical + logicalDelta;
+            draggingDrawing.end.price =
+              dragStartDrawingState.end.price + priceDelta;
+            draggingDrawing.end.logical =
+              dragStartDrawingState.end.logical + logicalDelta;
           }
         } else {
           const newPrice = dragStartDrawingState.price + priceDelta;
@@ -740,7 +816,8 @@ export function initDrawingEvents() {
     if (store.activeTool === "cursor") {
       const hit = findHitDrawing(moveX, moveY);
       if (hit) {
-        container.style.cursor = (hit.handle === "start" || hit.handle === "end") ? "move" : "pointer";
+        container.style.cursor =
+          hit.handle === "start" || hit.handle === "end" ? "move" : "pointer";
       } else {
         container.style.cursor = "crosshair";
       }
@@ -813,7 +890,11 @@ export function initDrawingEvents() {
   window.addEventListener("keydown", (e) => {
     if (e.key === "Delete" || e.key === "Backspace") {
       // Input/Textarea 입력 중인 경우 무시
-      if (document.activeElement && (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA")) {
+      if (
+        document.activeElement &&
+        (document.activeElement.tagName === "INPUT" ||
+          document.activeElement.tagName === "TEXTAREA")
+      ) {
         return;
       }
       if (store.selectedDrawing && store.activeTool === "cursor") {

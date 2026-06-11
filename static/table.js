@@ -105,7 +105,7 @@ document.addEventListener("DOMContentLoaded", () => {
 // ⭐️ 3. [HTS급 실시간 정렬 엔진] 1초마다 순위 재배치 및 가시 영역 고속 FLIP 실행 ⭐️
 setInterval(() => {
   const slowCols = ["MarketCap", "Kimchi", "Gap", "Funding", "VMC", "Listing_Date", "Ticker"];
-  if (store.currentSortCol && store.sortState !== "" && store.isEngineStarted) {
+  if (store.currentSortCol && store.sortState !== "") {
     if (!slowCols.includes(store.currentSortCol)) {
       applyRealtimeSort();
     }

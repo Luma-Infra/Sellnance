@@ -239,6 +239,7 @@ def capture_utc0_prices_bulk():
         today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         # 🚀 9시 정각에 캐시를 비우고 (혹은 초기화하고), 다음 시세 갱신 사이클이 무결점 tradingDay 로직으로 수집하도록 유도합니다.
         # 이렇게 하면 1d 캔들의 정확한 openPrice와 100% 일치하게 됩니다.
+        UTC0_OPEN_CACHE.clear()
         UTC0_OPEN_CACHE[today_str] = {}
         save_utc0_cache()
         print(
@@ -259,6 +260,7 @@ def fetch_missing_utc0_opens_parallel(tasks):
     global UTC0_OPEN_CACHE
     today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     if today_str not in UTC0_OPEN_CACHE:
+        UTC0_OPEN_CACHE.clear()
         UTC0_OPEN_CACHE[today_str] = {}
 
     print(

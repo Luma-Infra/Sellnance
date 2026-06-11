@@ -70,7 +70,7 @@ export function simpleSortData() {
   let priceKey = "Price_Raw";
   let change24hKey = "Change_24h_Raw";
   let changeTodayKey = "Change_Today_Raw";
-  let volumeKey = "Binance_Vol_Futures";
+  let volumeKey = "Volume_Raw";
 
   if (currentMarket === "UPBIT") {
     priceKey = "Upbit_Price";
@@ -83,14 +83,20 @@ export function simpleSortData() {
     changeTodayKey = "Change_Today_Bithumb";
     volumeKey = "Upbit_Vol";
   } else if (currentMarket === "FUTURES" || currentMarket === "BYBIT_FUTURES") {
-    priceKey = currentMarket === "FUTURES" ? "Binance_Price_Futures" : "Bybit_Price_Futures";
+    priceKey =
+      currentMarket === "FUTURES"
+        ? "Binance_Price_Futures"
+        : "Bybit_Price_Futures";
     change24hKey = "Change_24h_Futures_Ex";
     changeTodayKey = "Change_Today_Futures";
     volumeKey = "Binance_Vol_Futures";
   } else if (currentMarket === "SPOT" || currentMarket === "BYBIT") {
-    priceKey = currentMarket === "SPOT" ? "Binance_Price_Spot" : "Bybit_Price_Spot";
-    change24hKey = currentMarket === "SPOT" ? "Change_24h_Binance" : "Change_24h_Bybit";
-    changeTodayKey = currentMarket === "SPOT" ? "Change_Today_Binance" : "Change_Today_Bybit";
+    priceKey =
+      currentMarket === "SPOT" ? "Binance_Price_Spot" : "Bybit_Price_Spot";
+    change24hKey =
+      currentMarket === "SPOT" ? "Change_24h_Binance" : "Change_24h_Bybit";
+    changeTodayKey =
+      currentMarket === "SPOT" ? "Change_Today_Binance" : "Change_Today_Bybit";
     volumeKey = "Binance_Vol_Spot";
   }
 
@@ -116,27 +122,58 @@ export function simpleSortData() {
     if (store.currentSortCol === "Listing_Date") {
       valA = getListingDate(a);
       valB = getListingDate(b);
+    } else if (
+      store.currentSortCol === "Change_Today" &&
+      currentMarket === "ALL"
+    ) {
+      let aDay = a.Change_Today_Raw;
+      aDay = a.Change_Today_Upbit ?? aDay;
+      aDay = a.Change_Today_Bithumb ?? aDay;
+      aDay = a.Change_Today_Futures ?? aDay;
+      aDay = a.Change_Today_Bybit ?? aDay;
+      aDay = a.Change_Today_Binance ?? aDay;
+      valA = aDay;
+
+      let bDay = b.Change_Today_Raw;
+      bDay = b.Change_Today_Upbit ?? bDay;
+      bDay = b.Change_Today_Bithumb ?? bDay;
+      bDay = b.Change_Today_Futures ?? bDay;
+      bDay = b.Change_Today_Bybit ?? bDay;
+      bDay = b.Change_Today_Binance ?? bDay;
+      valB = bDay;
+    } else if (
+      store.currentSortCol === "Change_24h" &&
+      currentMarket === "ALL"
+    ) {
+      let a24 = a.Change_24h_Raw;
+      a24 = a.Change_24h_Upbit ?? a24;
+      a24 = a.Change_24h_Bithumb ?? a24;
+      a24 = a.Change_24h_Futures_Ex ?? a24;
+      a24 = a.Change_24h_Bybit ?? a24;
+      a24 = a.Change_24h_Binance ?? a24;
+      valA = a24;
+
+      let b24 = b.Change_24h_Raw;
+      b24 = b.Change_24h_Upbit ?? b24;
+      b24 = b.Change_24h_Bithumb ?? b24;
+      b24 = b.Change_24h_Futures_Ex ?? b24;
+      b24 = b.Change_24h_Bybit ?? b24;
+      b24 = b.Change_24h_Binance ?? b24;
+      valB = b24;
     } else {
       valA = a[key];
       valB = b[key];
     }
 
-    // 🚀 0, null, undefined, "-", "" 등 빈 값이나 0인 데이터 판별 함수
+    // 🚀 0, null, undefined, "-", "" 등 빈 값 판별 (단, 지표의 0%는 정상 값이므로 제외)
     const isEmptyOrZero = (val) => {
+      if (val === undefined || val === null || val === "" || val === "-")
+        return true;
       const isTextCol =
         store.currentSortCol === "Ticker" ||
         store.currentSortCol === "Listing_Date";
-      if (isTextCol) {
-        return val === undefined || val === null || val === "" || val === "-";
-      }
-      return (
-        val === undefined ||
-        val === null ||
-        val === "" ||
-        val === "-" ||
-        Number(val) === 0 ||
-        isNaN(Number(val))
-      );
+      if (!isTextCol && isNaN(Number(val))) return true;
+      return false;
     };
 
     const isAEmpty = isEmptyOrZero(valA);

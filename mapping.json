@@ -5,7 +5,7 @@
         "SOL": "https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png",
         "SUI": "https://s2.coinmarketcap.com/static/img/coins/64x64/20947.png"
     },
-    "DEFAULT_KRW_USD_RATE": 1531.22,
+    "DEFAULT_KRW_USD_RATE": 1527.78,
     "__MEMO__1": "BTC ETH 파생형 너무 많아서 고정 + 중국어 포함 모든 언어 티커 대응",
     "__MEMO__2": "----------------------------------------------------------",
     "EXCLUSION_LIST": [
@@ -253,6 +253,12 @@
             "Vaulta",
             "A"
         ],
+        "AAOI": [
+            "40067",
+            null,
+            "Applied Optoelectronics Inc (Derivatives)",
+            "AAOI"
+        ],
         "AAPL": [
             "39491",
             null,
@@ -450,6 +456,12 @@
             null,
             "Altlayer",
             "ALT"
+        ],
+        "AMAT": [
+            "40087",
+            null,
+            "Applied Materials Inc (Derivatives)",
+            "AMAT"
         ],
         "AMD": [
             "39489",
@@ -678,6 +690,12 @@
             null,
             "Axie Infinity",
             "AXS"
+        ],
+        "AXTI": [
+            "40204",
+            null,
+            "AXT Inc (Derivatives)",
+            "AXTI"
         ],
         "AZTEC": [
             "39521",
@@ -1039,6 +1057,12 @@
             "Bulla",
             "BULLA"
         ],
+        "BX": [
+            "33691",
+            null,
+            "Blynex",
+            "BX"
+        ],
         "BZ": [
             "39804",
             null,
@@ -1237,6 +1261,12 @@
             "Contentos",
             "COS"
         ],
+        "COST": [
+            "30513",
+            null,
+            "Costco Hot Dog",
+            "COST"
+        ],
         "COTI": [
             "3992",
             null,
@@ -1261,6 +1291,12 @@
             "[Fake]Circle (crcl.top)",
             "CRCL"
         ],
+        "CRDO": [
+            "40203",
+            null,
+            "Credo Technology Group Holding Ltd (Derivatives)",
+            "CRDO"
+        ],
         "CRM": [
             "40116",
             null,
@@ -1284,6 +1320,12 @@
             null,
             "Curve DAO Token",
             "CRV"
+        ],
+        "CRWD": [
+            "40065",
+            null,
+            "CrowdStrike Holdings Inc (Derivatives)",
+            "CRWD"
         ],
         "CRWV": [
             "39497",
@@ -1405,6 +1447,12 @@
             "dKargo",
             "DKA"
         ],
+        "DKNG": [
+            "DKNG",
+            null,
+            "DKNG",
+            "DKNG"
+        ],
         "DODO": [
             "7224",
             null,
@@ -1476,6 +1524,12 @@
             null,
             "Dymension",
             "DYM"
+        ],
+        "EBAY": [
+            "39953",
+            null,
+            "eBay (Derivatives)",
+            "EBAY"
         ],
         "EDEN": [
             "38513",
@@ -1632,6 +1686,12 @@
             null,
             "Ishares Msci South Korea ETF (Derivatives)",
             "EWY"
+        ],
+        "EWZ": [
+            "EWZ",
+            null,
+            "EWZ",
+            "EWZ"
         ],
         "F": [
             "34297",
@@ -1807,6 +1867,12 @@
             "Moonbeam",
             "GLMR"
         ],
+        "GME": [
+            "GME",
+            null,
+            "GME",
+            "GME"
+        ],
         "GMT": [
             "18069",
             null,
@@ -1945,6 +2011,12 @@
             "Highstreet",
             "HIGH"
         ],
+        "HIMS": [
+            "40113",
+            null,
+            "Hims & Hers Health (Derivatives)",
+            "HIMS"
+        ],
         "HIVE": [
             "5370",
             null,
@@ -1986,6 +2058,12 @@
             "HP",
             "Hippo Protocol",
             "HP"
+        ],
+        "HPE": [
+            "40112",
+            null,
+            "Hewlett Packard Enterprise Co (Derivatives)",
+            "HPE"
         ],
         "HUMA": [
             "36576",
@@ -2142,6 +2220,12 @@
             null,
             "Irys",
             "IRYS"
+        ],
+        "IWM": [
+            "39493",
+            null,
+            "iShares Russell 2000 ETF (Derivatives)",
+            "IWM"
         ],
         "JASMY": [
             "8425",
@@ -2719,6 +2803,12 @@
             "Nexo",
             "NEXO"
         ],
+        "NFLX": [
+            "NFLX",
+            null,
+            "NFLX",
+            "NFLX"
+        ],
         "NFP": [
             "28778",
             null,
@@ -3264,6 +3354,12 @@
             null,
             "River",
             "RIVER"
+        ],
+        "RIVN": [
+            "RIVN",
+            null,
+            "RIVN",
+            "RIVN"
         ],
         "RKLB": [
             "39948",
@@ -3961,6 +4057,12 @@
             "Superform",
             "UP2"
         ],
+        "URNM": [
+            "39516",
+            null,
+            "Sprott Uranium Miners ETF (Derivatives)",
+            "URNM"
+        ],
         "US": [
             "38869",
             null,
@@ -4213,6 +4315,12 @@
             "eCash",
             "XEC"
         ],
+        "XLE": [
+            "XLE",
+            null,
+            "XLE",
+            "XLE"
+        ],
         "XLM": [
             "512",
             null,
@@ -4374,6 +4482,12 @@
             null,
             "zkPass",
             "ZKP"
+        ],
+        "ZM": [
+            "ZM",
+            null,
+            "ZM",
+            "ZM"
         ],
         "ZORA": [
             "35931",

@@ -115,11 +115,20 @@ export function updateRowInnerHTML(tr, row) {
     nPrice = row.Bithumb_Price ?? nPrice;
     n24h = row.Change_24h_Bithumb ?? n24h;
   } else if (currentMarket === "FUTURES" || currentMarket === "BYBIT_FUTURES") {
-    nPrice = (currentMarket === "FUTURES" ? row.Binance_Price_Futures : row.Bybit_Price_Futures) ?? nPrice;
+    nPrice =
+      (currentMarket === "FUTURES"
+        ? row.Binance_Price_Futures
+        : row.Bybit_Price_Futures) ?? nPrice;
     n24h = row.Change_24h_Futures_Ex ?? n24h;
   } else if (currentMarket === "SPOT" || currentMarket === "BYBIT") {
-    nPrice = (currentMarket === "SPOT" ? row.Binance_Price_Spot : row.Bybit_Price_Spot) ?? nPrice;
-    n24h = (currentMarket === "SPOT" ? row.Change_24h_Binance : row.Change_24h_Bybit) ?? n24h;
+    nPrice =
+      (currentMarket === "SPOT"
+        ? row.Binance_Price_Spot
+        : row.Bybit_Price_Spot) ?? nPrice;
+    n24h =
+      (currentMarket === "SPOT"
+        ? row.Change_24h_Binance
+        : row.Change_24h_Bybit) ?? n24h;
   }
 
   const formattedPrice = formatSmartPrice(nPrice, p);
@@ -171,7 +180,10 @@ export function updateRowInnerHTML(tr, row) {
   } else if (currentMarket === "FUTURES" || currentMarket === "BYBIT_FUTURES") {
     nDay = row.Change_Today_Futures ?? nDay;
   } else if (currentMarket === "SPOT" || currentMarket === "BYBIT") {
-    nDay = (currentMarket === "SPOT" ? row.Change_Today_Binance : row.Change_Today_Bybit) ?? nDay;
+    nDay =
+      (currentMarket === "SPOT"
+        ? row.Change_Today_Binance
+        : row.Change_Today_Bybit) ?? nDay;
   }
   const colorDay =
     nDay > 0
@@ -186,13 +198,14 @@ export function updateRowInnerHTML(tr, row) {
   // 🚀 [최신] 2층 구조 레이아웃 (디자인 가이드 준수 + z_style.css 단일 관리소 강제 종속)
   tr.innerHTML = `
   <td class="p-2 col-asset overflow-hidden">
-    ${pendingAction
-      ? `
+    ${
+      pendingAction
+        ? `
       <div class="row-progress-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 2.5px; z-index: 50; pointer-events: none;">
          <div id="progress-bar-${row.Ticker}" class="row-progress-bar" style="height: 100%; width: 100%; background: linear-gradient(90deg, var(--accent) 0%, #3b82f6 100%); transition: width 50ms linear;"></div>
       </div>
     `
-      : ""
+        : ""
     }
     <div class="flex items-center gap-0.5 min-w-0">
       <!-- 0. 절대 순위 번호 (1 ~ max length 고정 배치, CSS 카운터 기반) -->
@@ -204,8 +217,9 @@ export function updateRowInnerHTML(tr, row) {
         <button onclick="toggleFavorite('${uId}', event)" class="star-btn text-[14px] transition-all hover:scale-125 flex-shrink-0 ${starClass}" style="color: ${starColor}">
           ${starText}
         </button>
-        ${pendingAction
-      ? `
+        ${
+          pendingAction
+            ? `
           <button onclick="window.confirmFavoriteChange('${uId}', event)" class="confirm-fav-btn text-[9px] font-medium px-1.5 py-0.5 rounded transition-all flex-shrink-0 mr-1">
             확인
           </button>
@@ -213,8 +227,8 @@ export function updateRowInnerHTML(tr, row) {
             취소
           </button>
         `
-      : ""
-    }
+            : ""
+        }
       </div>
       
       <!-- 2. 티커 이미지 (고정 영역) rounded-full 제거 -->
@@ -227,12 +241,12 @@ export function updateRowInnerHTML(tr, row) {
         <b class="text-[12px] text-theme-text truncate font-medium tracking-tighter">${row.DisplayTicker || row.Symbol}</b>
         <span class="text-[9px] text-theme-text opacity-60 truncate font-medium tracking-tighter">
           ${(() => {
-      const n =
-        store.lang === "KR"
-          ? row.Name_KR || row.Name || ""
-          : row.Name || "";
-      return n.length > 8 ? n.substring(0, 8) + ".." : n;
-    })()}
+            const n =
+              store.lang === "KR"
+                ? row.Name_KR || row.Name || ""
+                : row.Name || "";
+            return n.length > 8 ? n.substring(0, 8) + ".." : n;
+          })()}
         </span>
       </div>
     </div>
@@ -290,10 +304,11 @@ export function updateRowInnerHTML(tr, row) {
   <td class="p-2 text-left col-kimch overflow-hidden">
     <div class="flex flex-col leading-tight items-start min-w-0">
       <div class="flex items-center justify-start gap-1 min-w-0 max-w-full">
-         ${!row.Kimchi_Label || row.Kimchi_Label === "-"
-      ? `<span class="text-[12px] font-medium text-theme-text opacity-40">-</span>`
-      : `<span class="text-[12px] font-medium truncate ${row.Kimchi_Raw > 0 ? "text-theme-up" : "text-theme-down"}">${row.Kimchi_Formatted || "0.0%"}</span>`
-    }
+         ${
+           !row.Kimchi_Label || row.Kimchi_Label === "-"
+             ? `<span class="text-[12px] font-medium text-theme-text opacity-40">-</span>`
+             : `<span class="text-[12px] font-medium truncate ${row.Kimchi_Raw > 0 ? "text-theme-up" : "text-theme-down"}">${row.Kimchi_Formatted || "0.0%"}</span>`
+         }
       </div>
       <div class="flex items-center justify-start gap-2 text-[10px] font-medium mt-0.5 min-w-0 max-w-full">
          <span class="text-theme-accent opacity-70 truncate">${row.Funding_Formatted || "-"}</span>
@@ -303,37 +318,37 @@ export function updateRowInnerHTML(tr, row) {
   <td class="p-2 col-exch overflow-hidden">
     <div class="grid grid-cols-4 gap-[2px] w-fit text-left min-w-0">
       ${(() => {
-      const exchanges = row.Listed_Exchanges || [];
-      const list = [
-        { id: "BINANCE", cmcId: 270 },
-        { id: "UPBIT", cmcId: 351 },
-        { id: "BITHUMB", cmcId: 200 },
-        { id: "BYBIT", cmcId: 521 },
-        { id: "OKX", cmcId: 294 },
-        { id: "BITGET", cmcId: 513 },
-        { id: "GATEIO", cmcId: 302 },
-        { id: "COINBASE", cmcId: 89 },
-      ];
-      return list
-        .map((ex) => {
-          const isListed =
-            exchanges.some((e) => e.includes(ex.id)) ||
-            (ex.id === "UPBIT" && row.Upbit === "O");
-          const isFutures = exchanges.includes(`${ex.id}_FUTURES`);
-          const badgeHtml = isFutures
-            ? `<div class="absolute -top-1.5 -right-1.5 bg-[#f0b90b] text-black text-[8px] font-medium px-[2px] rounded-[2px] leading-none z-10 scale-[0.65]">F</div>`
-            : "";
-          const imgUrl = `https://s2.coinmarketcap.com/static/img/exchanges/64x64/${ex.cmcId}.png`;
-          return `
+        const exchanges = row.Listed_Exchanges || [];
+        const list = [
+          { id: "BINANCE", cmcId: 270 },
+          { id: "UPBIT", cmcId: 351 },
+          { id: "BITHUMB", cmcId: 200 },
+          { id: "BYBIT", cmcId: 521 },
+          { id: "OKX", cmcId: 294 },
+          { id: "BITGET", cmcId: 513 },
+          { id: "GATEIO", cmcId: 302 },
+          { id: "COINBASE", cmcId: 89 },
+        ];
+        return list
+          .map((ex) => {
+            const isListed =
+              exchanges.some((e) => e.includes(ex.id)) ||
+              (ex.id === "UPBIT" && row.Upbit === "O");
+            const isFutures = exchanges.includes(`${ex.id}_FUTURES`);
+            const badgeHtml = isFutures
+              ? `<div class="absolute -top-1.5 -right-1.5 bg-[#f0b90b] text-black text-[8px] font-medium px-[2px] rounded-[2px] leading-none z-10 scale-[0.65]">F</div>`
+              : "";
+            const imgUrl = `https://s2.coinmarketcap.com/static/img/exchanges/64x64/${ex.cmcId}.png`;
+            return `
             <div class="relative w-[14px] h-[14px] flex items-center justify-center rounded-[2px] overflow-visible bg-white/5 transition-all flex-shrink-0"
                  style="${isListed ? "filter: none; opacity: 1;" : "filter: grayscale(1); opacity: 0.1;"}">
               <img src="${imgUrl}" alt="${ex.id}" class="w-full h-full object-contain rounded-[2px]" />
               ${isListed ? badgeHtml : ""}
             </div>
           `;
-        })
-        .join("");
-    })()}
+          })
+          .join("");
+      })()}
     </div>
   </td>
   <td class="p-2 col-listing overflow-hidden text-[10px] font-tempTestDss whitespace-nowrap text-left opacity-70 truncate" id="listing-${tId}">
@@ -944,8 +959,8 @@ export function applyPriceFlash(element, newPrice, oldPrice) {
   const flashClass = newPrice > oldPrice ? "flash-up" : "flash-down";
   element.classList.remove("flash-up", "flash-down");
 
-  // 🚀 [기존 로직 100% 보존 + 렉 제로] 
-  // 기존 동기식 offsetWidth(렉 주범) 대신 비동기식 requestAnimationFrame을 사용하여 
+  // 🚀 [기존 로직 100% 보존 + 렉 제로]
+  // 기존 동기식 offsetWidth(렉 주범) 대신 비동기식 requestAnimationFrame을 사용하여
   // 브라우저 렌더링 큐를 막지 않고 CSS 애니메이션을 부드럽게 리스타트 시킵니다.
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
@@ -1081,17 +1096,21 @@ window.updateRowPriceDisplay = (target, row) => {
       const badge = span.querySelector(".price-futures-badge");
       if (badge) {
         if (isFutures) {
-          if (badge.classList.contains("hidden")) badge.classList.remove("hidden");
+          if (badge.classList.contains("hidden"))
+            badge.classList.remove("hidden");
         } else {
-          if (!badge.classList.contains("hidden")) badge.classList.add("hidden");
+          if (!badge.classList.contains("hidden"))
+            badge.classList.add("hidden");
         }
       }
 
       if (span.classList.contains("hidden")) span.classList.remove("hidden");
-      if (!span.classList.contains("inline-flex")) span.classList.add("inline-flex");
+      if (!span.classList.contains("inline-flex"))
+        span.classList.add("inline-flex");
     } else {
       if (!span.classList.contains("hidden")) span.classList.add("hidden");
-      if (span.classList.contains("inline-flex")) span.classList.remove("inline-flex");
+      if (span.classList.contains("inline-flex"))
+        span.classList.remove("inline-flex");
     }
   });
 
