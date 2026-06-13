@@ -222,9 +222,15 @@ function updateLegend(d, v, k) {
           ? v.value
           : null;
     if (rawVol !== null) {
-      volValue = window.formatVolumeDollar
-        ? window.formatVolumeDollar(rawVol)
-        : rawVol.toLocaleString();
+      if (store.currencyMode === "KRW" && typeof window.formatVolumeKRW === "function") {
+        const rate = store.marketDataMap?.krw_usd_rate || 1;
+        const volToFormat = store.currentMarket === "BINANCE" ? rawVol * rate : rawVol;
+        volValue = window.formatVolumeKRW(volToFormat);
+      } else {
+        volValue = window.formatVolumeDollar
+          ? window.formatVolumeDollar(rawVol)
+          : rawVol.toLocaleString();
+      }
       volColor = cls;
     }
     if (volContainer) volContainer.classList.remove("hidden");
@@ -635,11 +641,13 @@ export function updateRealtimeCountdown(serverMs) {
 }
 
 // 🚀 크로스헤어 퍼센트 라벨 보이기/숨기기 토글
-export function toggleCrosshairPct() {
-  // store.showCrosshairPct 없으면 기본 true(보임 상태)
-  const current =
-    typeof store.showCrosshairPct === "boolean" ? store.showCrosshairPct : true;
-  store.showCrosshairPct = !current;
+export function toggleCrosshairPct(forceVal) {
+  if (forceVal !== undefined) {
+    store.showCrosshairPct = forceVal;
+  } else {
+    const current = typeof store.showCrosshairPct === "boolean" ? store.showCrosshairPct : true;
+    store.showCrosshairPct = !current;
+  }
 
   const btn = document.getElementById("toggle-crosshair-pct-btn");
   if (btn) {
@@ -684,8 +692,8 @@ setTimeout(() => {
   const isOhlcHidden = localStorage.getItem("sellnance_ohlc_hidden") === "true";
   if (typeof toggleOhlc === "function") toggleOhlc(!isOhlcHidden);
   if (typeof toggleLogScale === "function") toggleLogScale(store.isLogMode);
-  if (typeof toggleCountdown === "function")
-    toggleCountdown(store.showCountdown);
+  if (typeof toggleCountdown === "function") toggleCountdown(store.showCountdown);
+  if (typeof toggleCrosshairPct === "function") toggleCrosshairPct(store.showCrosshairPct !== false);
 }, 200);
 
 // 🎯 브라우저 탭 제목 실시간 스위칭 통합 매니저 (소켓 중복 생성 ZERO, 메인 차트 소켓 100% 재활용)

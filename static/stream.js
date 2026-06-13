@@ -276,19 +276,29 @@ function renderRealtimeRow(tId, data, isFutures = false) {
       store.currentMarket === "FUTURES" && row.Spot_Only !== "O";
     const isMatchingMode = currentVolModeIsFutures === isFutures;
 
-    if (isMatchingMode && typeof window.formatVolumeDollar === "function") {
+    if (isMatchingMode) {
       const activeVol = isFutures
         ? row.Binance_Vol_Futures
         : row.Binance_Vol_Spot;
-      row.Volume_Formatted = window.formatVolumeDollar(activeVol);
-      binanceVolCell.innerText = row.Volume_Formatted;
+      if (store.currencyMode === "KRW" && typeof window.formatVolumeKRW === "function") {
+        const rate = store.marketDataMap?.krw_usd_rate || 1;
+        row.Volume_Formatted = window.formatVolumeKRW(activeVol * rate);
+      } else if (typeof window.formatVolumeDollar === "function") {
+        row.Volume_Formatted = window.formatVolumeDollar(activeVol);
+      }
+      binanceVolCell.innerText = row.Volume_Formatted || "-";
     }
   }
   const upbitVolCell = document.getElementById(`vol-upbit-${row.Ticker}`);
   if (upbitVolCell && data.q_upbit && data.e !== "aggTrade") {
-    const rate = store.marketDataMap?.krw_usd_rate || 1;
-    const usdVol = parseFloat(data.q_upbit) / (rate > 0 ? rate : 1);
-    upbitVolCell.innerText = `${window.formatVolumeDollar(usdVol)}`;
+    row.Upbit_Vol = parseFloat(data.q_upbit);
+    if (store.currencyMode === "KRW" && typeof window.formatVolumeKRW === "function") {
+      row.Upbit_Vol_Formatted = window.formatVolumeKRW(row.Upbit_Vol);
+    } else if (typeof window.formatVolumeDollar === "function") {
+      const rate = store.marketDataMap?.krw_usd_rate || 1;
+      row.Upbit_Vol_Formatted = window.formatVolumeDollar(row.Upbit_Vol / (rate > 0 ? rate : 1));
+    }
+    upbitVolCell.innerText = row.Upbit_Vol_Formatted || "-";
   }
 }
 
@@ -405,13 +415,20 @@ store.radarIntervalId = setInterval(() => {
       ? row.Binance_Vol_Futures || 0
       : row.Binance_Vol_Spot || 0;
 
-    if (activeVol > 0 && typeof window.formatVolumeDollar === "function") {
-      row.Volume_Formatted = window.formatVolumeDollar(activeVol);
+    if (activeVol > 0) {
+      if (store.currencyMode === "KRW" && typeof window.formatVolumeKRW === "function") {
+        const rate = store.marketDataMap?.krw_usd_rate || 1;
+        row.Volume_Formatted = window.formatVolumeKRW(activeVol * rate);
+      } else if (typeof window.formatVolumeDollar === "function") {
+        row.Volume_Formatted = window.formatVolumeDollar(activeVol);
+      }
     }
 
     if (ticker.q_upbit) {
       row.Upbit_Vol = parseFloat(ticker.q_upbit);
-      if (typeof window.formatVolumeDollar === "function") {
+      if (store.currencyMode === "KRW" && typeof window.formatVolumeKRW === "function") {
+        row.Upbit_Vol_Formatted = window.formatVolumeKRW(row.Upbit_Vol);
+      } else if (typeof window.formatVolumeDollar === "function") {
         const rate = store.marketDataMap?.krw_usd_rate || 1;
         row.Upbit_Vol_Formatted = window.formatVolumeDollar(
           row.Upbit_Vol / (rate > 0 ? rate : 1),

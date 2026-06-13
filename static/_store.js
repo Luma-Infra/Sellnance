@@ -18,7 +18,7 @@ export const store = {
   useFlip: true, // 🚀 플립 애니메이션 사용 여부
   hideSmallCap: false, // 🚀 시총 1M 미만 숨기기 여부
   lang: "EN", // 🚀 한/영 토글 (KR, EN)
-  filterMode: "ALL", // 🚀 [추가] ALL, BINANCE, UPBIT, FUTURES, SPOT
+  filterMode: "BINANCE", // 🚀 [추가] ALL, BINANCE, UPBIT, FUTURES, SPOT
   currencyMode: "USD", // 🚀 [추가] USD, KRW 토글 모드
   viewMode: "DETAILED",
   tableViewMode: "basic",
@@ -27,6 +27,7 @@ export const store = {
     CMC_API_KEY: "",
   },
   currentTF: "1d",
+  visibleTfs: ["1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "12h", "1d", "3d", "1w", "1M"],
 
   chart: null,
   candleSeries: null,
@@ -151,7 +152,7 @@ export const store = {
 
 export const CONFIG = {
   SCREEN_WIDTH: 768,
-  UI_UPDATE_INTERVAL: 1500,
+  UI_UPDATE_INTERVAL: 1000,
   RENDER_CHUNK: 50,
   CHART_CONFIG: { GHOST_COUNT: 500, VISIBLE_COUNT: 200, RIGHT_PADDING: 10 },
 };

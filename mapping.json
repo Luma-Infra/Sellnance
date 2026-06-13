@@ -5,7 +5,7 @@
         "SOL": "https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png",
         "SUI": "https://s2.coinmarketcap.com/static/img/coins/64x64/20947.png"
     },
-    "DEFAULT_KRW_USD_RATE": 1527.78,
+    "DEFAULT_KRW_USD_RATE": 1520.9,
     "__MEMO__1": "BTC ETH 파생형 너무 많아서 고정 + 중국어 포함 모든 언어 티커 대응",
     "__MEMO__2": "----------------------------------------------------------",
     "EXCLUSION_LIST": [
@@ -313,6 +313,12 @@
             "Cardano",
             "ADA"
         ],
+        "ADBE": [
+            "40115",
+            null,
+            "Adobe Inc (Derivatives)",
+            "ADBE"
+        ],
         "ADX": [
             "1768",
             null,
@@ -582,6 +588,12 @@
             null,
             "ARPA",
             "ARPA"
+        ],
+        "ASML": [
+            "39677",
+            null,
+            "ASML Holding NV (Derivatives)",
+            "ASML"
         ],
         "ASR": [
             "5229",
@@ -918,6 +930,12 @@
             null,
             "Blur",
             "BLUR"
+        ],
+        "BMNR": [
+            "39670",
+            null,
+            "Bitmine Immersion Technologies (Derivatives)",
+            "BMNR"
         ],
         "BMT": [
             "35214",
@@ -1290,6 +1308,12 @@
             null,
             "[Fake]Circle (crcl.top)",
             "CRCL"
+        ],
+        "CRCLB": [
+            "CRCLB",
+            null,
+            "CRCLB",
+            "CRCLB"
         ],
         "CRDO": [
             "40203",
@@ -1866,6 +1890,12 @@
             null,
             "Moonbeam",
             "GLMR"
+        ],
+        "GLW": [
+            "40010",
+            null,
+            "Corning Inc (Derivatives)",
+            "GLW"
         ],
         "GME": [
             "GME",
@@ -2737,6 +2767,12 @@
             "Micron Technology Inc (Derivatives)",
             "MU"
         ],
+        "MUB": [
+            "MUB",
+            null,
+            "MUB",
+            "MUB"
+        ],
         "MUBARAK": [
             "36041",
             null,
@@ -2862,6 +2898,12 @@
             null,
             "NVIDIA (Derivatives)",
             "NVDA"
+        ],
+        "NVDAB": [
+            "NVDAB",
+            null,
+            "NVDAB",
+            "NVDAB"
         ],
         "NVO": [
             "40104",
@@ -3583,6 +3625,12 @@
             "SanDisk Corporation (Derivatives)",
             "SNDK"
         ],
+        "SNDKB": [
+            "SNDKB",
+            null,
+            "SNDKB",
+            "SNDKB"
+        ],
         "SNT": [
             "1759",
             "ETH",
@@ -3750,6 +3798,12 @@
             null,
             "Stacks",
             "STX"
+        ],
+        "STXX": [
+            "STXX",
+            null,
+            "STXX",
+            "STXX"
         ],
         "SUI": [
             "20947",
@@ -3967,6 +4021,12 @@
             "Tesla Tokenized Stock (Hyperliquid)",
             "TSLA"
         ],
+        "TSLAB": [
+            "TSLAB",
+            null,
+            "TSLAB",
+            "TSLAB"
+        ],
         "TSM": [
             "39490",
             null,
@@ -4128,6 +4188,12 @@
             null,
             "Usual",
             "USUAL"
+        ],
+        "UVXY": [
+            "UVXY",
+            null,
+            "UVXY",
+            "UVXY"
         ],
         "V": [
             "38113",

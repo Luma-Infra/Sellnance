@@ -585,9 +585,9 @@ export async function fetchHistory(
           window.updateHeaderDisplay(rowInfo, isTfChange ? undefined : lastCandle.close, p);
         }
 
-        const tr = store.rowDomMap && store.rowDomMap.get(rowInfo.Ticker);
-        if (tr && typeof updateRowInnerHTML === "function") {
-          updateRowInnerHTML(tr, rowInfo);
+        const rowEl = store.rowDomMap && store.rowDomMap.get(rowInfo.Ticker);
+        if (rowEl && typeof updateRowInnerHTML === "function") {
+          updateRowInnerHTML(rowEl, rowInfo);
         }
       }
 
@@ -715,7 +715,7 @@ export async function fetchHistory(
           if (listedEx.includes("BYBIT_FUTURES"))
             availableSubs.push({
               id: "bybit_futures",
-              name: "BYB-FUT",
+              name: "BYB-F",
               bg: "#f7a600",
               text: "#000",
               sym: `${exactBybit}USDT`,

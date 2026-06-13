@@ -57,7 +57,12 @@ const EngineUI = {
       if (overlay) overlay.classList.add("opacity-0", "pointer-events-none");
       if (main) {
         main.classList.remove("hidden");
-        setTimeout(() => main.classList.remove("opacity-0"), 50);
+        setTimeout(() => {
+          main.classList.remove("opacity-0");
+          if (typeof window.showOnboardingModal === "function") {
+            window.showOnboardingModal();
+          }
+        }, 50);
       }
       document.body.classList.remove("overflow-hidden");
     }, 1000);

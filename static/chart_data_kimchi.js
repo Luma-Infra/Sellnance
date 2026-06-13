@@ -6,7 +6,7 @@ export function calculateKimchiData(mainData, subRaw, params) {
   const { subExchange, subMulti, mainMulti, tf, isKor, rateCacheKey } = params;
   if (!store.fiatRateCache) store.fiatRateCache = {};
   const fiatRateMap = store.fiatRateCache[rateCacheKey] || [];
-  const currentFiatRate = store.marketDataMap.krw_usd_rate || 1400;
+  const currentFiatRate = store.marketDataMap.krw_usd_rate || 1;
 
   let newKimchiData = [];
   if (Array.isArray(subRaw) && subRaw.length > 0) {

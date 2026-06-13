@@ -18,7 +18,7 @@ export function sortTable(colKey) {
   lastSortTime = now;
 
   // 🚀 누르자마자 실행되게 즉시 로딩 클래스 추가 (차트 로딩 효과처럼 어두워짐)
-  const table = document.getElementById("table-body");
+  const table = document.getElementById("coin-list-body");
   if (table) {
     table.classList.add("table-loading");
   }
@@ -38,12 +38,7 @@ export function sortTable(colKey) {
     arrowEl.innerText = store.sortState === "asc" ? "▲" : "▼";
   }
 
-  // 🚀 정렬 기준이 바뀌면 기존 opacity 클래스가 고착되므로 가시 행 강제 재렌더
-  if (store.rowDomMap) {
-    store.rowDomMap.forEach((tr) => {
-      tr.dataset.renderedSym = "";
-    });
-  }
+
 
   // 🚀 [INP 최적화] 무거운 배열 정렬 및 DOM 렌더링을 다음 페인트 이후로 비동기 양보
   requestAnimationFrame(() => {
@@ -65,6 +60,7 @@ export function sortTable(colKey) {
 }
 
 export function simpleSortData() {
+  const dataCopy = [...store.currentTableData];
   const currentMarket = store.currentMarket || "ALL";
 
   let priceKey = "Price_Raw";
@@ -81,7 +77,8 @@ export function simpleSortData() {
     priceKey = "Bithumb_Price";
     change24hKey = "Change_24h_Bithumb";
     changeTodayKey = "Change_Today_Bithumb";
-    volumeKey = "Upbit_Vol";
+    volumeKey = "Bithumb_Vol"; // ◀ Upbit_Vol에서 수정
+    // volumeKey = "Upbit_Vol";
   } else if (currentMarket === "FUTURES" || currentMarket === "BYBIT_FUTURES") {
     priceKey =
       currentMarket === "FUTURES"
@@ -117,7 +114,7 @@ export function simpleSortData() {
   let key = sortKeyMap[store.currentSortCol] || store.currentSortCol;
   const isAsc = store.sortState === "asc";
 
-  store.currentTableData.sort((a, b) => {
+  dataCopy.sort((a, b) => {
     let valA, valB;
     if (store.currentSortCol === "Listing_Date") {
       valA = getListingDate(a);
@@ -201,6 +198,7 @@ export function simpleSortData() {
     const strB = valB.toString();
     return isAsc ? strA.localeCompare(strB) : strB.localeCompare(strA);
   });
+  store.currentTableData = dataCopy;
 }
 
 export function applyRealtimeSort() {

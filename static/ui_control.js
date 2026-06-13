@@ -46,7 +46,7 @@ function toggleTheme() {
 // 데스크탑: 좌측 패널 접기/펴기
 function toggleSidebar() {
   const leftPanel = document.getElementById("left-panel");
-  const openBtn = document.getElementById("sidebar-open-btn");
+  const toggleText = document.getElementById("sidebar-toggle-text");
 
   store.isSidebarOpen = !store.isSidebarOpen;
 
@@ -54,12 +54,12 @@ function toggleSidebar() {
     // 사이드바 열기
     leftPanel.classList.remove("md:hidden");
     leftPanel.classList.add("md:flex");
-    openBtn.classList.add("hidden");
+    if (toggleText) toggleText.innerText = "◀ 접기";
   } else {
     // 사이드바 숨기기
     leftPanel.classList.remove("md:flex");
     leftPanel.classList.add("md:hidden");
-    openBtn.classList.remove("hidden");
+    if (toggleText) toggleText.innerText = "▶ 펼치기";
   }
 }
 
@@ -83,10 +83,10 @@ export function switchViewMode(mode) {
     if (btn) {
       if (m === mode) {
         btn.className =
-          "flex-1 py-1 text-[10px] font-bold rounded border border-theme-accent bg-theme-accent text-white transition-all shadow-md";
+          "px-3 py-1 text-[10px] font-bold rounded bg-theme-accent text-white transition-all shadow-md";
       } else {
         btn.className =
-          "flex-1 py-1 text-[10px] font-bold rounded border border-theme-border opacity-50 hover:opacity-100 transition-all text-theme-text";
+          "px-3 py-1 text-[10px] font-medium rounded opacity-50 hover:opacity-100 transition-all text-theme-text";
       }
     }
   });
@@ -99,15 +99,9 @@ export function switchViewMode(mode) {
   const btnSmallCap = document.getElementById("btn-small-cap");
 
   if (tabAll) tabAll.textContent = isSimple ? "ALL" : "ALL LIST";
-  if (tabFav) {
-    tabFav.innerHTML = isSimple
-      ? `<span style="color: var(--accent); margin-right: 2px;">★</span>FAV`
-      : `<span style="color: var(--accent); margin-right: 2px;">★</span>FAVORITES`;
-  }
-  if (tabFav2) {
-    tabFav2.innerHTML = isSimple
-      ? `<span style="color: #3b82f6; margin-right: 2px;">★</span>FAV2`
-      : `<span style="color: #3b82f6; margin-right: 2px;">★</span>FAVORITES 2`;
+
+  if (typeof window.updateFavoritesCount === "function") {
+    window.updateFavoritesCount();
   }
   if (btnSmallCap)
     btnSmallCap.textContent = isSimple ? "🚫 Mcap < 1M" : "🚫 Hiding Mcap < 1M";
@@ -340,7 +334,7 @@ function executeTabSwitch(mode) {
 
 // 🚀 좌우 패널 위치 스왑 (FLIP 애니메이션 기반 무결점 스왑 엔진)
 function togglePanelSwap() {
-  const container = document.getElementById("main-dashboard-content");
+  const container = document.getElementById("panel-split-container");
   const leftPanel = document.getElementById("left-panel");
   const rightPanel = document.getElementById("right-panel");
   if (!container || !leftPanel || !rightPanel) return;
@@ -401,6 +395,40 @@ function togglePanelSwap() {
   }, 620);
 }
 
+// 🚀 온보딩 모달 제어
+function showOnboardingModal(force = false) {
+  const modal = document.getElementById("onboarding-modal");
+  const content = document.getElementById("onboarding-modal-content");
+  if (!modal || !content) return;
+
+  modal.classList.remove("hidden");
+  modal.classList.add("flex");
+
+  // 강제 리플로우
+  void modal.offsetWidth;
+
+  modal.classList.remove("opacity-0");
+  modal.classList.add("opacity-100");
+  content.classList.remove("scale-95");
+  content.classList.add("scale-100");
+}
+
+function closeOnboardingModal() {
+  const modal = document.getElementById("onboarding-modal");
+  const content = document.getElementById("onboarding-modal-content");
+  if (!modal || !content) return;
+
+  modal.classList.remove("opacity-100");
+  modal.classList.add("opacity-0");
+  content.classList.remove("scale-100");
+  content.classList.add("scale-95");
+
+  setTimeout(() => {
+    modal.classList.remove("flex");
+    modal.classList.add("hidden");
+  }, 300);
+}
+
 // 🚀 전역 스코프 노출 (HTML 인라인 onclick 이벤트용)
 window.toggleTheme = toggleTheme;
 window.toggleSidebar = toggleSidebar;
@@ -410,120 +438,32 @@ window.closeMobileChart = closeMobileChart;
 window.switchChartTab = switchChartTab;
 window.executeTabSwitch = executeTabSwitch;
 window.togglePanelSwap = togglePanelSwap;
+window.showOnboardingModal = showOnboardingModal;
+window.closeOnboardingModal = closeOnboardingModal;
 
 // ================== api.js에서 이동됨 ==================
 // 검색창 비우기 (X 버튼용)
 export function clearSearch() {
   const input = document.getElementById("symbol-input");
-  input.value = "";
-  input.focus();
+  if (input) {
+    input.value = "";
+    input.focus();
+  }
   searchSymbols("");
 }
 
-// 검색 리스트 (티커 + 태그 유지 버전 + 원본 전체 장부 탐색 + 대소문자 완벽 대응)
+// 🚀 검색 리스트 (목록 즉각 필터링 로직으로 변경됨)
 export function searchSymbols(v) {
   const resDiv = document.getElementById("search-results");
-  if (!resDiv) return;
-
-  if (!v || v.trim() === "") {
+  if (resDiv) {
     resDiv.style.display = "none";
-    return;
   }
 
-  // 🚀 [핵심] currentTableData로 잘려나간 심볼까지 모조리 찾기 위해 originalTableData 최우선 탐색!
-  const query = v.toUpperCase();
-  const sourceData = store.originalTableData || store.currentTableData || [];
-  const filtered = sourceData
-    .filter((r) => {
-      const disp = (r.DisplayTicker || "").toUpperCase();
-      const name = (r.Name || "").toUpperCase();
-      const sym = (r.Symbol || "").toUpperCase();
-      const raw = (r.Ticker || "").toUpperCase();
-      return (
-        disp.includes(query) ||
-        name.includes(query) ||
-        sym.includes(query) ||
-        raw.includes(query)
-      );
-    })
-    // 🚀 [검색 최적화] 일치율 우선순위 정렬: 0(완벽일치) > 1(티커시작) > 2(이름일치) > 3(이름시작) > 4(단순포함) 순서로 가중치 부여 (동점 시 짧은 길이 우선)
-    .sort((a, b) => {
-      const getScore = (r) => {
-        const disp = (r.DisplayTicker || "").toUpperCase();
-        const name = (r.Name || "").toUpperCase();
-        const sym = (r.Symbol || "").toUpperCase();
-        const raw = (r.Ticker || "").toUpperCase();
+  store.searchQuery = v || "";
 
-        if (disp === query || sym === query || raw === query) return 0;
-        if (
-          disp.startsWith(query) ||
-          sym.startsWith(query) ||
-          raw.startsWith(query)
-        )
-          return 1;
-        if (name === query) return 2;
-        if (name.startsWith(query)) return 3;
-        return 4;
-      };
-
-      const scoreA = getScore(a);
-      const scoreB = getScore(b);
-
-      if (scoreA !== scoreB) return scoreA - scoreB;
-
-      return (a.DisplayTicker || "").length - (b.DisplayTicker || "").length;
-    })
-    .slice(0, 20);
-
-  if (filtered.length === 0) {
-    resDiv.style.display = "none";
-    return;
-  }
-
-  resDiv.innerHTML = filtered
-    .map((r) => {
-      const s = r.DisplayTicker;
-      const exchanges = r.Listed_Exchanges || [];
-      const isUpbit = r.Upbit === "O" || exchanges.includes("UPBIT");
-      const isBithumb = exchanges.includes("BITHUMB");
-      const isBinanceSpot = exchanges.includes("BINANCE");
-      const isBinanceFutures = exchanges.includes("BINANCE_FUTURES");
-      const isBybitSpot = exchanges.includes("BYBIT");
-
-      // 각 거래소 버튼들을 독립적으로 생성 (있으면 다 보여줌)
-      let buttons = "";
-      if (isUpbit) {
-        buttons += `<button class="bg-[#093687] text-white text-[9px] px-2 py-1 rounded font-bold hover:brightness-125" onclick="event.stopPropagation(); selectSymbol('${r.Ticker}', 'UPBIT')">UPBIT</button>`;
-      }
-      if (isBithumb) {
-        buttons += `<button class="bg-[#ff8b00] text-white text-[9px] px-2 py-1 rounded font-bold hover:brightness-125" onclick="event.stopPropagation(); selectSymbol('${r.Ticker}', 'BITHUMB')">BITHUMB</button>`;
-      }
-      if (isBinanceSpot) {
-        buttons += `<button class="bg-[#333] text-white text-[9px] px-2 py-1 rounded font-bold border border-[#555] hover:bg-[#444]" onclick="event.stopPropagation(); selectSymbol('${r.Ticker}', 'SPOT')">B-SPOT</button>`;
-      }
-      if (isBinanceFutures) {
-        buttons += `<button class="bg-[#f0b90b] text-black text-[9px] px-2 py-1 rounded font-bold hover:brightness-110" onclick="event.stopPropagation(); selectSymbol('${r.Ticker}', 'FUTURES')">B-FUT</button>`;
-      }
-      if (isBybitSpot) {
-        buttons += `<button class="bg-[#1c1e23] text-[#f0b90b] text-[9px] px-2 py-1 rounded font-bold border border-[#f0b90b]/30 hover:bg-[#252930]" onclick="event.stopPropagation(); selectSymbol('${r.Ticker}', 'BYBIT')">BYBIT</button>`;
-      }
-
-      return `
-      <div class="flex items-center justify-between p-2 cursor-pointer border-b border-theme-border text-[13px] hover:bg-white/5" 
-           onclick="selectSymbol('${r.Ticker}')">
-        <div class="flex items-center gap-2">
-          ${r.Logo || ""}
-          <div class="flex flex-col">
-            <b class="w-auto text-theme-text font-bold">${s}</b>
-            <span class="text-[10px] text-theme-text opacity-60">${r.Name || ""}</span>
-          </div>
-        </div>
-        <div class="flex gap-1 flex-wrap justify-end max-w-[180px]">${buttons}</div>
-      </div>`;
-    })
-    .join("");
-
-  resDiv.style.display = "block";
+  import("./table_render.js").then(({ renderTable }) => {
+    renderTable();
+  });
 }
 
 // 선택 로직 (티커명 검색창 전송 + 이름 유지)
@@ -541,6 +481,13 @@ export function selectSymbol(s, forceMarket = null) {
   store.currentAsset = uniqueTicker;
   store.currentSelectedSymbol = uniqueTicker;
 
+  // 🚀 주소창 해시 연동 (쌀먹 라우팅 최적화)
+  if (window.history && window.history.pushState) {
+    if (window.location.hash !== "#" + uniqueTicker) {
+      window.history.pushState(null, null, "#" + uniqueTicker);
+    }
+  }
+
   // 1. 검색창 닫기 및 입력값 동기화 (가벼운 DOM 조작 즉시 실행)
   const symInput = document.getElementById("symbol-input");
   if (symInput) {
@@ -553,7 +500,7 @@ export function selectSymbol(s, forceMarket = null) {
   const initMessage = document.getElementById("chart-init-message");
   if (initMessage) initMessage.style.display = "none";
 
-  // 2. 테이블 행 즉시 하이라이트 반영 (시각적 피드백 선행)
+  // 2. 리스트(목록) 행 즉시 하이라이트 반영 (시각적 피드백 선행)
   if (typeof applySelectedHighlight === "function") {
     applySelectedHighlight();
   }
@@ -567,17 +514,26 @@ export function selectSymbol(s, forceMarket = null) {
       } else if (rowInfo && rowInfo.Listed_Exchanges) {
         const ex = rowInfo.Listed_Exchanges;
         const isQuoteCurrency = uniqueTicker.startsWith("USDT");
-        if (
+
+        // 🚀 [추가] 필터 모드가 UPBIT이면 무조건 업비트를 최우선으로 잡도록 분기 처리
+        if (store.filterMode === "UPBIT" && ex.includes("UPBIT")) {
+          store.currentMarket = "UPBIT";
+        } else if (
           isQuoteCurrency &&
           (ex.includes("UPBIT") || ex.includes("BITHUMB"))
         ) {
           store.currentMarket = ex.includes("UPBIT") ? "UPBIT" : "BITHUMB";
-        } else if (ex.includes("BINANCE_FUTURES"))
+        } else if (ex.includes("BINANCE_FUTURES")) {
           store.currentMarket = "FUTURES";
-        else if (ex.includes("BINANCE")) store.currentMarket = "SPOT";
-        else if (ex.includes("UPBIT")) store.currentMarket = "UPBIT";
-        else if (ex.includes("BITHUMB")) store.currentMarket = "BITHUMB";
-        else if (ex.includes("BYBIT")) store.currentMarket = "BYBIT";
+        } else if (ex.includes("BINANCE")) {
+          store.currentMarket = "SPOT";
+        } else if (ex.includes("UPBIT")) {
+          store.currentMarket = "UPBIT";
+        } else if (ex.includes("BITHUMB")) {
+          store.currentMarket = "BITHUMB";
+        } else if (ex.includes("BYBIT")) {
+          store.currentMarket = "BYBIT";
+        }
       }
 
       const p = store.getPrecision(uniqueTicker);
@@ -712,7 +668,7 @@ export function selectSymbol(s, forceMarket = null) {
         console.error("이름 로드 에러", e);
       }
 
-      // 테이블 스크롤 이동
+      // 리스트 스크롤 이동
       const sortedList = store.currentTableData;
       const targetIdx = sortedList.findIndex(
         (item) =>
@@ -727,7 +683,7 @@ export function selectSymbol(s, forceMarket = null) {
         setTimeout(() => {
           store.currentSelectedSymbol = uniqueTicker;
           const targetRow = document.querySelector(
-            `#table-body tr[data-sym="${uniqueTicker}"]`,
+            `#coin-list-body > div[data-sym="${uniqueTicker}"]`,
           );
           if (targetRow) {
             // targetRow.scrollIntoView({ block: "center", behavior: "smooth" });
@@ -754,15 +710,6 @@ export function updateExchangeBadges(s) {
   if (rowInfo) {
     const list = [
       {
-        id: "UPBIT",
-        label: "UPBIT",
-        bg: "bg-[#093687]",
-        text: "text-white",
-        market: "UPBIT",
-        condition:
-          rowInfo.Listed_Exchanges?.includes("UPBIT") || rowInfo.Upbit === "O",
-      },
-      {
         id: "B-FUT",
         label: "B-FUT",
         bg: "bg-[#f0b90b]",
@@ -777,6 +724,23 @@ export function updateExchangeBadges(s) {
         text: "text-white",
         market: "SPOT",
         condition: rowInfo.Listed_Exchanges?.includes("BINANCE"),
+      },
+      {
+        id: "BYBIT",
+        label: "BYBIT",
+        bg: "bg-[#f5a800]", // Bybit's brand yellow
+        text: "text-black",
+        market: "BYBIT",
+        condition: rowInfo.Listed_Exchanges?.includes("BYBIT"),
+      },
+      {
+        id: "UPBIT",
+        label: "UPBIT",
+        bg: "bg-[#093687]",
+        text: "text-white",
+        market: "UPBIT",
+        condition:
+          rowInfo.Listed_Exchanges?.includes("UPBIT") || rowInfo.Upbit === "O",
       },
       {
         id: "BITHUMB",
@@ -993,7 +957,7 @@ setTimeout(() => {
         fullscreenBtn = document.createElement("button");
         fullscreenBtn.id = "chart-fullscreen-btn";
         fullscreenBtn.className =
-          "px-2.5 py-1 text-[11px] font-bold bg-transparent text-theme-text opacity-60 border border-theme-border/30 rounded hover:bg-theme-border/50 hover:opacity-100 transition-all ml-auto cursor-pointer flex items-center gap-1";
+          "px-2.5 py-1 text-[11px] font-bold bg-transparent text-theme-text opacity-60 border border-theme-border/30 rounded hover:bg-theme-border/50 hover:opacity-100 transition-all ml-2 flex-shrink-0 cursor-pointer flex items-center gap-1";
 
         // 동적 전체화면 CSS 스타일 주입
         if (!document.getElementById("fullscreen-tf-css")) {
@@ -1111,7 +1075,13 @@ setTimeout(() => {
         );
       }
 
-      container.appendChild(fullscreenBtn);
+      // 설정 버튼 우측에 전체화면 버튼이 위치하도록 부모 컨테이너에 추가
+      const dropdown = container.parentElement.querySelector("#tf-settings-dropdown");
+      if (dropdown) {
+        container.parentElement.insertBefore(fullscreenBtn, dropdown);
+      } else {
+        container.parentElement.appendChild(fullscreenBtn);
+      }
     };
 
     // 강제 1회 재생성
@@ -1179,5 +1149,165 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }, { passive: true });
     }
+  }
+});
+
+// ================== 타임프레임 커스텀 설정 UI (index.html에서 이동됨) ==================
+const timeframes = [
+  { label: "1분", value: "1m" },
+  { label: "3분", value: "3m" },
+  { label: "5분", value: "5m" },
+  { label: "15분", value: "15m" },
+  { label: "30분", value: "30m" },
+  { label: "1시간", value: "1h" },
+  { label: "2시간", value: "2h" },
+  { label: "4시간", value: "4h" },
+  { label: "12시간", value: "12h" },
+  { label: "1D", value: "1d" },
+  { label: "3D", value: "3d" },
+  { label: "1W", value: "1w" },
+  { label: "1달", value: "1M" },
+];
+
+function getVisibleTfs() {
+  try {
+    const saved = localStorage.getItem("sellnance_tf_settings");
+    if (saved) return JSON.parse(saved);
+  } catch (e) { }
+  return timeframes.map(t => t.value);
+}
+
+function saveVisibleTfs(arr) {
+  localStorage.setItem("sellnance_tf_settings", JSON.stringify(arr));
+  if (window.store) window.store.visibleTfs = arr;
+}
+
+export function renderTimeframeButtons(currentTF = "1d") {
+  const container = document.getElementById("tf-container");
+  if (!container) return;
+  const existingButtons = container.querySelectorAll(".tf-btn");
+  existingButtons.forEach((btn) => btn.remove());
+
+  const visibleVals = getVisibleTfs();
+
+  timeframes.slice().reverse().forEach((tf) => {
+    if (!visibleVals.includes(tf.value)) return;
+    const btn = document.createElement("button");
+    const activeClass =
+      tf.value === currentTF
+        ? "active !opacity-100 border-theme-accent"
+        : "border-transparent";
+    btn.className = `tf-btn px-2.5 py-1 text-[11px] font-medium bg-transparent text-theme-text opacity-50 border rounded hover:bg-theme-border/50 hover:opacity-100 transition-all ${activeClass}`;
+    btn.innerText = tf.label;
+    btn.onclick = () => {
+      setTF(tf.value);
+      renderTimeframeButtons(tf.value);
+    };
+
+    container.prepend(btn);
+  });
+}
+window.renderTimeframeButtons = renderTimeframeButtons; // 🚀 전체화면 래퍼와의 호환성 복원!
+
+let pendingTfSettings = null; // 🚀 모달 내 임시 상태 저장소
+
+function toggleTfSettings() {
+  const dropdown = document.getElementById("tf-settings-dropdown");
+  if (!dropdown) return;
+  if (dropdown.classList.contains("hidden")) {
+    pendingTfSettings = [...getVisibleTfs()]; // 임시 상태 초기화
+    renderTfCheckboxList();
+    dropdown.classList.remove("hidden");
+    dropdown.classList.add("flex");
+    void dropdown.offsetWidth;
+    dropdown.classList.remove("opacity-0", "translate-y-[-10px]");
+    dropdown.classList.add("opacity-100", "translate-y-0");
+  } else {
+    dropdown.classList.remove("opacity-100", "translate-y-0");
+    dropdown.classList.add("opacity-0", "translate-y-[-10px]");
+    setTimeout(() => {
+      dropdown.classList.remove("flex");
+      dropdown.classList.add("hidden");
+      pendingTfSettings = null; // 닫힐 때 파기
+    }, 200);
+  }
+}
+
+function renderTfCheckboxList() {
+  const container = document.getElementById("tf-checkbox-container");
+  if (!container) return;
+  container.innerHTML = "";
+  const visibleVals = pendingTfSettings || getVisibleTfs();
+
+  timeframes.forEach((tf) => {
+    const btn = document.createElement("button");
+    const isChecked = visibleVals.includes(tf.value);
+
+    // 🚀 체크박스 대신 예쁜 뱃지 토글 디자인 적용
+    btn.className = `px-2 py-1.5 text-[11px] font-bold rounded border transition-all cursor-pointer ${isChecked
+      ? "bg-theme-accent text-white border-theme-accent shadow-sm"
+      : "bg-theme-panel/50 text-theme-text opacity-50 border-theme-border/50 hover:opacity-100 hover:border-theme-border"
+      }`;
+    btn.innerText = tf.label;
+
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation(); // 모달이 꺼지는 버그 방지
+      const newChecked = !visibleVals.includes(tf.value);
+      if (newChecked) {
+        pendingTfSettings.push(tf.value);
+      } else {
+        pendingTfSettings = pendingTfSettings.filter(v => v !== tf.value);
+      }
+      if (pendingTfSettings.length === 0) pendingTfSettings = [tf.value];
+
+      renderTfCheckboxList(); // 모달 UI만 갱신
+    });
+
+    container.appendChild(btn);
+  });
+
+  // 🚀 마지막 4x4 위치 (col-start-4)에 작게 확인 버튼 배치
+  const confirmBtn = document.createElement("button");
+  confirmBtn.className = "col-start-4 px-2 py-1.5 text-[11px] font-bold border border-theme-accent text-theme-accent hover:bg-theme-accent hover:text-white rounded transition-all shadow-sm flex items-center justify-center";
+  confirmBtn.innerText = "확인"
+  confirmBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (window.applyTfSettings) window.applyTfSettings();
+  });
+  container.appendChild(confirmBtn);
+}
+
+function applyTfSettings() {
+  if (pendingTfSettings && pendingTfSettings.length > 0) {
+    saveVisibleTfs(pendingTfSettings);
+
+    const activeBtn = document.querySelector("#tf-container .tf-btn.active");
+    let curTf = "1d";
+    if (activeBtn) {
+      const match = timeframes.find(t => t.label === activeBtn.innerText);
+      if (match) curTf = match.value;
+    }
+    renderTimeframeButtons(curTf);
+  }
+  toggleTfSettings();
+}
+window.applyTfSettings = applyTfSettings;
+window.toggleTfSettings = toggleTfSettings;
+
+document.addEventListener("click", (e) => {
+  const dropdown = document.getElementById("tf-settings-dropdown");
+  const btn = e.target.closest("button[onclick='toggleTfSettings()']");
+
+  // 모달 영역 바깥을 누르면 자동으로 취소(닫기 + 초기화)
+  if (!btn && dropdown && !dropdown.contains(e.target) && !dropdown.classList.contains("hidden")) {
+    toggleTfSettings();
+  }
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  renderTimeframeButtons("1d");
+  const isOhlcHidden = localStorage.getItem("sellnance_ohlc_hidden") === "true";
+  if (isOhlcHidden) {
+    document.getElementById("ohlc-legend")?.classList.add("hidden");
   }
 });

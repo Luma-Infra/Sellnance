@@ -14,6 +14,18 @@ export function isStockCoin(row) {
 export function getFilteredData() {
   let filteredData = [...store.currentTableData];
 
+  // 0. 텍스트 검색 필터링 (가장 우선)
+  if (store.searchQuery && store.searchQuery.trim() !== "") {
+    const q = store.searchQuery.toUpperCase();
+    filteredData = filteredData.filter((r) => {
+      const disp = (r.DisplayTicker || "").toUpperCase();
+      const name = (r.Name || "").toUpperCase();
+      const sym = (r.Symbol || "").toUpperCase();
+      const raw = (r.Ticker || "").toUpperCase();
+      return disp.includes(q) || name.includes(q) || sym.includes(q) || raw.includes(q);
+    });
+  }
+
   // 1. 탭 필터링 (ALL, FAV, FAV2)
   if (store.currentTab === "FAV") {
     const favorites = JSON.parse(
@@ -27,18 +39,9 @@ export function getFilteredData() {
     filteredData = filteredData.filter((d) => favorites2.includes(d.UID));
   }
 
-  // 2. 마켓 필터링 (ALL / BINANCE / UPBIT)
-  if (store.filterMode === "UPBIT") {
-    filteredData = filteredData.filter(
-      (d) =>
-        d.Listed_Exchanges?.includes("UPBIT") ||
-        d.Listed_Exchanges?.includes("BITHUMB"),
-    );
-  } else if (store.filterMode === "BINANCE") {
-    filteredData = filteredData.filter((d) =>
-      d.Listed_Exchanges?.some((ex) => ex.startsWith("BINANCE")),
-    );
-  }
+  // 2. 마켓/통화 필터링 (구버전의 코인 거르기 로직 삭제됨)
+  // 사용자의 요청으로, 상단 BINANCE/UPBIT 토글은 단순히 "통화(USD/KRW) 및 언어" 설정일 뿐
+  // 특정 코인을 숨기는 역할(Filtering)은 하단 '독립적인 거래소 필터바'가 전담합니다.
 
   // 3. 시총 필터링 (1M 미만 숨기기 토글)
   if (store.hideSmallCap) {
@@ -229,15 +232,16 @@ export function switchFilter(mode) {
     if (slider) slider.style.left = offset;
   };
 
-  if (mode === "ALL") {
-    store.filterMode = "ALL";
-    updateUI(btnAll, "4px");
-  } else if (mode === "BINANCE") {
+  if (mode === "BINANCE") {
     store.filterMode = "BINANCE";
-    updateUI(btnBinance, "calc(33.33% + 2px)");
+    store.currencyMode = "USD";
+    store.lang = "EN";
+    updateUI(btnBinance, "4px");
   } else if (mode === "UPBIT") {
     store.filterMode = "UPBIT";
-    updateUI(btnUpbit, "calc(66.66% + 1px)");
+    store.currencyMode = "KRW";
+    store.lang = "KR";
+    updateUI(btnUpbit, "calc(50% + 2px)");
   } else {
     store.filterMode = mode;
     document.querySelectorAll(".filter-type-btn").forEach((btn) => {
@@ -257,6 +261,12 @@ export function switchFilter(mode) {
 
   store.currentRenderLimit = 1000;
   renderTable();
+
+  // 🚀 [추가] 필터 모드가 변경되면, 이미 선택된 코인이 있을 경우 우측 패널(헤더 및 차트)도 새 우선순위에 맞춰 재갱신
+  if (store.currentSelectedSymbol && typeof window.selectSymbol === "function") {
+    // 탭 전환 등 기타 요인을 배제하고, 동일 심볼에 대해 currentMarket을 재산출하여 차트/헤더를 업데이트하도록 재호출
+    window.selectSymbol(store.currentSelectedSymbol);
+  }
 }
 
 export function switchView(mode) {
@@ -486,7 +496,7 @@ export function updateExchFilterUI() {
     <button onclick="window.resetExchFilters()" 
             class="flex items-center justify-center p-1 border border-theme-border/30 rounded-xl transition-all duration-300 w-8 h-8 hover:scale-105 active:scale-95 bg-theme-panel/10 hover:bg-theme-accent/20 hover:border-theme-accent text-theme-text opacity-70 hover:opacity-100" 
             title="필터 초기화">
-      <span class="text-[12px]">🔄</span>
+      <span class="text-[12px]">⟳</span>
     </button>
   `;
 
@@ -547,9 +557,10 @@ export function updateExchFilterUI() {
     let presets = JSON.parse(localStorage.getItem("sellnance_exch_presets") || "[]");
     while (presets.length < 5) presets.push(null);
 
-    if (store.activePresetIndex === undefined) {
-      store.activePresetIndex = 0;
-    }
+    // 선택된 프리셋이 없을 때는 저장/삭제 버튼을 숨기기 위해 undefined 유지
+    // if (store.activePresetIndex === undefined) {
+    //   store.activePresetIndex = 0;
+    // }
 
     const presetButtonsHtml = presets.map((preset, idx) => {
       const hasPreset = !!preset;
@@ -569,14 +580,14 @@ export function updateExchFilterUI() {
         title += `(클릭: 선택 및 불러오기)`;
 
         if (isActive) {
-          borderStyle = "border-purple-500 text-purple-400 bg-purple-500/25 font-bold scale-105 ring-2 ring-purple-500/20";
+          borderStyle = "border-theme-accent text-theme-accent bg-theme-accent/15 font-bold scale-105 ring-2 ring-theme-accent/20";
         } else {
-          borderStyle = "border-purple-500/40 text-purple-400/80 bg-purple-500/10 hover:scale-105";
+          borderStyle = "border-theme-border text-theme-accent/70 bg-theme-panel/30 hover:border-theme-accent hover:text-theme-accent hover:scale-105";
         }
       } else {
         title += "(비어 있음 - 선택 후 우측 [저장] 클릭 시 저장)";
         if (isActive) {
-          borderStyle = "border-purple-500 text-purple-400 bg-purple-500/25 font-bold scale-105 ring-2 ring-purple-500/20";
+          borderStyle = "border-theme-accent text-theme-accent bg-theme-accent/15 font-bold scale-105 ring-2 ring-theme-accent/20";
         }
       }
 
@@ -594,7 +605,7 @@ export function updateExchFilterUI() {
         <span class="text-[9px] font-bold opacity-60 mr-1 uppercase tracking-wider text-theme-text">거래소 프리셋 </span>
         ${presetButtonsHtml}
       </div>
-      <div class="flex items-center gap-1.5 shrink-0">
+      <div class="flex items-center gap-1.5 shrink-0 transition-opacity duration-300 ${store.activePresetIndex !== undefined ? 'opacity-100' : 'opacity-0 pointer-events-none hidden'}">
         <button onclick="window.saveCurrentPreset()" 
                 class="px-2.5 py-0.5 border border-green-500/40 hover:bg-green-500/20 text-green-400 rounded-lg transition-all duration-200 text-[9px] font-bold hover:scale-105 active:scale-95 shadow-sm"
                 title="현재 필터 설정을 선택된 프리셋 번호에 저장합니다.">저장</button>
@@ -645,6 +656,21 @@ export function resetExchFilters() {
 
 // 🚀 [추가] 거래소 필터 프리셋 저장/선택/삭제 기능 (라디오 버튼 방식 + 개별 저장/삭제 버튼)
 export function selectExchPreset(index) {
+  // 이미 활성화된 프리셋을 다시 누르면 선택 해제
+  if (store.activePresetIndex === index) {
+    store.activePresetIndex = undefined;
+    if (store.exchFilterStates) {
+      Object.keys(store.exchFilterStates).forEach((key) => {
+        store.exchFilterStates[key] = 0;
+      });
+    }
+    store.exchFilterMode = "AND";
+    store.currentRenderLimit = 1000;
+    renderTable();
+    updateExchFilterUI();
+    return;
+  }
+
   store.activePresetIndex = index;
 
   let presets = JSON.parse(localStorage.getItem("sellnance_exch_presets") || "[]");
@@ -681,6 +707,10 @@ export function saveCurrentPreset() {
 
   localStorage.setItem("sellnance_exch_presets", JSON.stringify(presets));
   updateExchFilterUI();
+
+  if (window.Swal) {
+    window.Swal.fire({ toast: true, position: 'bottom-end', icon: 'success', title: `프리셋 ${index + 1} 저장됨`, showConfirmButton: false, timer: 2000, background: 'var(--panel)', color: 'var(--text)' });
+  }
 }
 
 export function deleteCurrentPreset() {
@@ -704,4 +734,20 @@ export function deleteCurrentPreset() {
   renderTable();
 
   updateExchFilterUI();
+
+  if (window.Swal) {
+    window.Swal.fire({ toast: true, position: 'bottom-end', icon: 'info', title: `프리셋 ${index + 1} 삭제됨`, showConfirmButton: false, timer: 2000, background: 'var(--panel)', color: 'var(--text)' });
+  }
 }
+
+export function updateFavoritesCount() {
+  const f1 = JSON.parse(localStorage.getItem("sellnance_favs") || "[]").length;
+  const f2 = JSON.parse(localStorage.getItem("sellnance_favs2") || "[]").length;
+  const tabFav = document.getElementById("tab-fav");
+  const tabFav2 = document.getElementById("tab-fav2");
+  if (tabFav) tabFav.innerText = f1 > 0 ? `FAV (${f1})` : "FAV";
+  if (tabFav2) tabFav2.innerText = f2 > 0 ? `FAV2 (${f2})` : "FAV2";
+}
+
+window.updateFavoritesCount = updateFavoritesCount;
+document.addEventListener("DOMContentLoaded", () => setTimeout(updateFavoritesCount, 500));

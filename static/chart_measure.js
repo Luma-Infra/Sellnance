@@ -126,12 +126,21 @@ class MeasurePaneRenderer {
       const text3 = `(${isUp ? "+" : ""}${percentDiff.toFixed(2)}%)`;
 
       ctx.font = "bold 11px sans-serif";
-      ctx.fillStyle = tColor;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       const centerX = leftX + widthX / 2;
       const centerY = topY + heightY / 2;
 
+      // 🚀 [시각적 개선] 캔들과 텍스트가 겹칠 때 가독성을 위해 테두리(Stroke) 효과 추가
+      const bgColor = style.getPropertyValue("--panel").trim() || "#131722";
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = bgColor;
+      
+      ctx.strokeText(text1, centerX, centerY - 14);
+      ctx.strokeText(text2, centerX, centerY);
+      ctx.strokeText(text3, centerX, centerY + 14);
+
+      ctx.fillStyle = tColor;
       ctx.fillText(text1, centerX, centerY - 14);
       ctx.fillText(text2, centerX, centerY);
       ctx.fillText(text3, centerX, centerY + 14);
@@ -194,6 +203,27 @@ export function setupMeasureTool() {
   if (store.candleSeries && !store._measurePrimitive) {
     store._measurePrimitive = new MeasurePrimitive();
     store.candleSeries.attachPrimitive(store._measurePrimitive);
+  }
+
+  window.toggleMeasureTool = toggleMeasureTool;
+}
+
+export function toggleMeasureTool() {
+  if (store.activeTool === "measure") {
+    store.activeTool = null;
+    stopMeasuring();
+    const btn = document.getElementById("toggle-measure-btn");
+    if (btn) {
+      btn.classList.remove("text-theme-up", "border-theme-up/40", "bg-theme-up/10");
+      btn.classList.add("text-theme-text", "border-theme-border/50", "bg-theme-panel/50");
+    }
+  } else {
+    store.activeTool = "measure";
+    const btn = document.getElementById("toggle-measure-btn");
+    if (btn) {
+      btn.classList.remove("text-theme-text", "border-theme-border/50", "bg-theme-panel/50");
+      btn.classList.add("text-theme-up", "border-theme-up/40", "bg-theme-up/10");
+    }
   }
 }
 

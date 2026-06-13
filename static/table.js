@@ -66,16 +66,16 @@ let lastClickedSymbol = null;
 let lastClickedTime = 0;
 
 document.addEventListener("DOMContentLoaded", () => {
-  const tbody = document.getElementById("table-body");
+  const listBody = document.getElementById("coin-list-body");
   // loadTableData();
 
-  if (tbody) {
-    tbody.addEventListener("click", (e) => {
+  if (listBody) {
+    listBody.addEventListener("click", (e) => {
       if (e.target.closest(".star-btn")) return;
 
-      const tr = e.target.closest("tr");
-      if (tr && tr.dataset.sym) {
-        const ticker = tr.dataset.sym;
+      const rowDiv = e.target.closest("#coin-list-body .coin-row");
+      if (rowDiv && rowDiv.dataset.sym) {
+        const ticker = rowDiv.dataset.sym;
 
         // 🚀 같은 코인 500ms 광클 방어 (다른 코인은 즉시 전환 허용)
         const now = Date.now();

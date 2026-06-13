@@ -325,6 +325,29 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (typeof switchFilter === "function") {
       switchFilter(store.filterMode);
     }
+
+    // 🚀 [신규] 초기 로드 완료 시 주소창 해시 기반 자동 렌더링 (쌀먹 최적화)
+    if (window.location.hash && window.location.hash.length > 1) {
+      const hashTicker = window.location.hash.substring(1);
+      if (typeof window.selectSymbol === "function") {
+        window.selectSymbol(hashTicker);
+      }
+    } else if (store.currentTableData && store.currentTableData.length > 0) {
+      // 해시가 없다면 기본으로 첫 번째 코인을 자동 선택!
+      if (typeof window.selectSymbol === "function") {
+        window.selectSymbol(store.currentTableData[0].Ticker);
+      }
+    }
+
+    // 🚀 브라우저 뒤로가기/앞으로가기 대응 (해시 변경 감지)
+    window.addEventListener("hashchange", () => {
+      if (window.location.hash && window.location.hash.length > 1) {
+        const hashTicker = window.location.hash.substring(1);
+        if (typeof window.selectSymbol === "function") {
+          window.selectSymbol(hashTicker);
+        }
+      }
+    });
   } catch (err) {
     console.error("🚨 시동 실패:", err);
     // 보험: 2초 뒤 자동 새로고침 시도
@@ -524,14 +547,14 @@ document.addEventListener("keydown", (e) => {
     e.preventDefault();
 
     const activeRow = document.querySelector(
-      `#table-body tr[data-sym="${store.currentSelectedSymbol}"]`,
+      `#coin-list-body .coin-row[data-sym="${store.currentSelectedSymbol}"]`,
     );
 
     let nextRow = null;
 
     if (!activeRow) {
       // 선택된 행이 없으면 화면에 노출된 첫 번째 비숨김 행 선택
-      const firstRow = document.querySelector("#table-body tr");
+      const firstRow = document.querySelector("#coin-list-body .coin-row");
       if (firstRow) {
         nextRow = firstRow;
         while (
@@ -593,7 +616,7 @@ document.addEventListener("keydown", (e) => {
       // 🚀 [해결] DOM 구조와 선택 상태 맵핑이 완벽히 수립된 50ms 뒤에 scroll 및 highlight 처리
       setTimeout(() => {
         const targetRow = document.querySelector(
-          `#table-body tr[data-sym="${nextCoin.Ticker}"]`,
+          `#coin-list-body .coin-row[data-sym="${nextCoin.Ticker}"]`,
         );
         if (targetRow) {
           targetRow.scrollIntoView({ block: "nearest", behavior: "instant" });

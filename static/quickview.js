@@ -15,6 +15,7 @@ const qvState = {
   upbitWs: null, // 업비트 정밀 체결 소켓
   focusIndex: -1, // 겹치기 모드에서 현재 마우스 포커스(호버)된 자산 인덱스
   candleColorMode: "default", // 'default' (빨강/초록), 'asset' (자산별 고유색상)
+  maxPage: 1, // 동적으로 계산될 최대 페이지
 };
 
 // 🎨 겹치기 모드에서 각 라인을 시각적으로 뚜렷하게 구별하기 위한 8가지 네온/파스텔 자산 컬러 셋
@@ -79,7 +80,7 @@ export async function initQuickView() {
   });
 
   const pageIndicator = document.getElementById("qv-page-indicator");
-  if (pageIndicator) pageIndicator.innerText = `PAGE ${qvState.page} / 4`;
+  if (pageIndicator) pageIndicator.innerText = `PAGE ${qvState.page} / ${qvState.maxPage}`;
 
   // 레이아웃 토글 슬라이더 UI 동기화
   updateLayoutToggleUI(qvState.layout);
@@ -173,12 +174,13 @@ function resolveTopAssets() {
     source.sort((a, b) => (b.MarketCap || 0) - (a.MarketCap || 0));
   }
 
-  // 상위 32개 자산만 타겟
-  const top32 = source.slice(0, 32);
+  // 최대 페이지 계산 (무제한)
+  qvState.maxPage = Math.max(1, Math.ceil(source.length / 8));
+  if (qvState.page > qvState.maxPage) qvState.page = qvState.maxPage;
 
   // 현재 페이지네이션에 해당되는 8개 코인 추출
   const startIdx = (qvState.page - 1) * 8;
-  qvState.activeAssets = top32.slice(startIdx, startIdx + 8);
+  qvState.activeAssets = source.slice(startIdx, startIdx + 8);
 }
 
 // 🛠️ 8개 차트 카드 재생성 및 Lightweight Charts 바인딩
@@ -1067,12 +1069,12 @@ export function changeQuickViewTF(tf) {
 // 📄 페이지 이동
 export function changeQuickViewPage(dir) {
   const targetPage = qvState.page + dir;
-  if (targetPage < 1 || targetPage > 4) return; // 1~4페이지 범위 강제
+  if (targetPage < 1 || targetPage > qvState.maxPage) return; // 범위 강제
 
   qvState.page = targetPage;
 
   const pageIndicator = document.getElementById("qv-page-indicator");
-  if (pageIndicator) pageIndicator.innerText = `PAGE ${targetPage} / 4`;
+  if (pageIndicator) pageIndicator.innerText = `PAGE ${targetPage} / ${qvState.maxPage}`;
 
   // 차트 전체 갱신
   initQuickView();
