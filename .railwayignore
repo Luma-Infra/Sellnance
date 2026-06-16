@@ -1,0 +1,17 @@
+# ==========================================
+# 🚀 Railway 배포 제외용 규칙 (.railwayignore)
+# ==========================================
+
+# 로컬 개발 및 기획 폴더 배제
+.gemini/
+.antigravityignore
+scratch/
+z_Idea/
+
+# 프로젝트 설명 리드미를 제외한 기획 마크다운 파일 배제
+*.md
+!README.md
+
+# 로컬 환경 변수 배제 (Railway Dashboard Variables 사용)
+.env
+.env.*

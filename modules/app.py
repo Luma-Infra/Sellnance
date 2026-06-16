@@ -62,11 +62,20 @@ app.add_middleware(
 )
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-STATIC_DIR = BASE_DIR / "static"
-print(f"📂 [PATH CHECK] Static Directory: {STATIC_DIR.absolute()}")
 
-app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
-templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+# 🚀 Vite 빌드본(dist/) 우선 서빙 및 개발 모드 폴백 하이브리드 엔진
+DIST_DIR = BASE_DIR / "dist"
+if DIST_DIR.exists():
+    print("🌐 [ENV] Production Build Detected! Serving from /dist")
+    app.mount("/assets", StaticFiles(directory=str(DIST_DIR / "assets")), name="assets")
+    STATIC_DIR = BASE_DIR / "static"
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+    templates = Jinja2Templates(directory=str(DIST_DIR))
+else:
+    print("🛠️ [ENV] Development Mode! Serving raw templates/static")
+    STATIC_DIR = BASE_DIR / "static"
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+    templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 
 # =================================================

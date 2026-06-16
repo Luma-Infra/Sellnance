@@ -1,5 +1,5 @@
 # tailwindcss
-npx tailwindcss -i ./templates/z_style.css -o ./templates/z_style.min.css --minify
+npx tailwindcss -i ./static/z_style.css -o ./static/z_style.min.css --minify
 
 # vite
 npx vite build
