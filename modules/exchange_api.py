@@ -511,6 +511,39 @@ def fetch_binance_futures_spot(bybit_data=None):
                 if isinstance(i, dict) and i.get("symbol") in active_s
             }
 
+        # 🚀 [추가] 하드코딩 없는 범용 주식형 토큰 동적 매핑 엔진 (SPCXBUSDT -> SPCXUSDT 등)
+        # 선물에서 underlyingType이 STOCK인 심볼들(예: SPCXUSDT)에 대해,
+        # 현물(spot)에서 대응하는 티커(예: SPCXBUSDT)가 존재하면 현물 데이터의 티커명을 'B'를 제거한 형태로 치환하여 관리합니다.
+        stock_futures_symbols = {
+            s["symbol"]
+            for s in info_f.get("symbols", [])
+            if s.get("underlyingType", "").upper() == "STOCK" and s.get("quoteAsset") == "USDT"
+        }
+
+        spot_to_futures_ticker_map = {}
+        for f_sym in stock_futures_symbols:
+            if f_sym.endswith("USDT"):
+                base = f_sym.replace("USDT", "")
+                s_sym = f"{base}BUSDT"
+                if s_sym in active_s:
+                    spot_to_futures_ticker_map[s_sym] = f_sym
+
+        mapped_active_s = set()
+        mapped_s_dict = {}
+        for ticker in active_s:
+            if ticker in spot_to_futures_ticker_map:
+                mapped_ticker = spot_to_futures_ticker_map[ticker]
+                mapped_active_s.add(mapped_ticker)
+                mapped_s_dict[mapped_ticker] = s_dict.get(ticker, {})
+                if ticker in b_precisions and mapped_ticker not in b_precisions:
+                    b_precisions[mapped_ticker] = b_precisions[ticker]
+            else:
+                mapped_active_s.add(ticker)
+                mapped_s_dict[ticker] = s_dict.get(ticker, {})
+        
+        active_s = mapped_active_s
+        s_dict = mapped_s_dict
+
         all_active = active_f.union(active_s)
 
         # 4. 🚀 9시 시가 수집 (캐시 우선, 없으면 병렬 개별 호출)

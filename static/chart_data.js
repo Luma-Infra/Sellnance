@@ -8,10 +8,127 @@ import {
   ensureSafeUnixSeconds,
   sanitizeChartData,
 } from "./chart_utils.js";
-import { fetchPaginated } from "./chart_api.js";
+
 import { formatSmartPrice, formatCrosshairPrice } from "./chart_utils.js";
 import { updateExchangeBadges } from "./ui_control.js";
-import { formatListingDateWithExchange, updateRowInnerHTML } from "./table_render.js";
+import {
+  formatListingDateWithExchange,
+  updateRowInnerHTML,
+} from "./table_render.js";
+
+export async function fetchCandlesSmart(exchange, symbol, interval, limit, toVal = null, startVal = null) {
+  const pastGapMap = store.marketDataMap?.past_gap_map || {};
+  const baseSymbol = symbol.replace("USDT", "").replace("KRW-", "").replace("_KRW", "").split("(")[0];
+  const isGapRecovery = pastGapMap[baseSymbol] && (
+    interval.endsWith("d") || interval.endsWith("w") || interval.endsWith("M") ||
+    interval === "days" || interval === "weeks" || interval === "months"
+  );
+
+  if (!isGapRecovery && !toVal && !startVal) {
+    try {
+      let directUrl = null;
+      if (exchange === "binance_spot") {
+        directUrl = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
+      } else if (exchange === "binance_futures") {
+        directUrl = `https://fapi.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
+      } else if (exchange === "upbit") {
+        let fetchInterval = interval;
+        if (!interval.startsWith("minutes/")) {
+          const u = interval.replace(/[0-9]/g, "");
+          if (u === "d" || u === "w" || u === "M" || interval === "days" || interval === "weeks" || interval === "months") {
+            fetchInterval = (u === "w" || interval === "weeks") ? "weeks" : (u === "M" || interval === "months") ? "months" : "days";
+          } else {
+            const minMap = { "1m": "minutes/1", "3m": "minutes/3", "5m": "minutes/5", "15m": "minutes/15", "30m": "minutes/30", "1h": "minutes/60", "2h": "minutes/120", "4h": "minutes/240" };
+            fetchInterval = minMap[interval] || "minutes/1";
+          }
+        }
+        directUrl = `https://api.upbit.com/v1/candles/${fetchInterval}?market=${symbol}&count=${limit}`;
+      } else if (exchange === "bybit_spot" || exchange === "bybit_futures") {
+        const category = exchange === "bybit_spot" ? "spot" : "linear";
+        const bMap = { "1m": "1", "3m": "3", "5m": "5", "15m": "15", "30m": "30", "1h": "60", "2h": "120", "4h": "240", "6h": "360", "12h": "720", "1d": "D", "days": "D", "3d": "D", "1w": "W", "1M": "M" };
+        const bInt = bMap[interval] || interval;
+        directUrl = `https://api.bybit.com/v5/market/kline?category=${category}&symbol=${symbol}&interval=${bInt}&limit=${limit}`;
+      } else if (exchange === "bithumb") {
+        const bSym = symbol.replace("KRW-", "") + "_KRW";
+        directUrl = `https://api.bithumb.com/public/candlestick/${bSym}/${interval}`;
+      }
+
+      if (directUrl) {
+        const res = await fetch(directUrl);
+        if (res.ok) {
+          const data = await res.json();
+          if (exchange.startsWith("binance") && Array.isArray(data) && data.length > 0) {
+            console.log(`⚡ [DIRECT FETCH SUCCESS] ${exchange} - ${symbol} (${data.length} candles)`);
+            return data;
+          } else if (exchange === "upbit" && Array.isArray(data)) {
+            console.log(`⚡ [DIRECT FETCH SUCCESS] ${exchange} - ${symbol} (${data.length} candles)`);
+            return data;
+          } else if (exchange === "bithumb" && data && data.status === "0000") {
+            console.log(`⚡ [DIRECT FETCH SUCCESS] ${exchange} - ${symbol}`);
+            return data;
+          } else if (exchange.startsWith("bybit") && data && data.retCode === 0) {
+            console.log(`⚡ [DIRECT FETCH SUCCESS] ${exchange} - ${symbol}`);
+            return data;
+          }
+        }
+      }
+    } catch (err) {
+      console.warn(`⚠️ [DIRECT FETCH FAILED] ${exchange} - ${symbol} - ${interval}, falling back:`, err);
+    }
+
+    // SPCXB fallback logic in frontend if standard spot symbol fails
+    if (exchange === "binance_spot" && symbol.endsWith("USDT")) {
+      const baseAsset = symbol.replace("USDT", "");
+      if (!baseAsset.endsWith("B")) {
+        const fallbackSymbol = `${baseAsset}BUSDT`;
+        try {
+          const directUrl = `https://api.binance.com/api/v3/klines?symbol=${fallbackSymbol}&interval=${interval}&limit=${limit}`;
+          const res = await fetch(directUrl);
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data) && data.length > 0) {
+              console.log(`⚡ [DIRECT FALLBACK SUCCESS] ${exchange} - ${fallbackSymbol} (${data.length} candles)`);
+              return data;
+            }
+          }
+        } catch (err) {
+          console.warn(`⚠️ [DIRECT FALLBACK FAILED] ${exchange} - ${fallbackSymbol}:`, err);
+        }
+      }
+    }
+  }
+
+  // Fallback to server proxy
+  const queryTo = toVal ? `&to=${toVal}` : "";
+  const queryStart = startVal ? `&start=${startVal}` : "";
+  console.log(`🔌 [SERVER FALLBACK] ${exchange} - ${symbol} - ${interval}`);
+  const res = await fetch(
+    `/api/candles?exchange=${exchange}&symbol=${symbol}&interval=${interval}&limit=${limit}${queryTo}${queryStart}`
+  );
+  return await res.json();
+}
+
+export async function fetchPaginated(exchange, symbol, interval, totalLimit, startTo = "") {
+  let result = [];
+  let lastTo = startTo;
+  let remaining = totalLimit;
+  let retryCount = 0;
+
+  while (remaining > 0) {
+    const count = Math.min(remaining, 200);
+    const data = await fetchCandlesSmart(exchange, symbol, interval, count, lastTo);
+    if (!Array.isArray(data) || data.length === 0) break;
+
+    result = result.concat(data);
+    remaining -= data.length;
+    lastTo = data[data.length - 1].candle_date_time_utc;
+
+    if (remaining > 0) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  }
+  return result;
+}
 
 export function mapTime(d, tf) {
   let activeTF = "1h";
@@ -63,9 +180,10 @@ export function clearChartData(isTfChange = false) {
   }
   store.hasPlacedDeer = false;
 
-  console.log(
+  console
+    .log
     // "🧹 차트/타임프레임 변경: 기존 차트 잔상 유지 (사슴 마커는 즉시 제거)",
-  );
+    ();
 }
 
 export async function fetchHistory(
@@ -202,10 +320,7 @@ export async function fetchHistory(
             ? "bybit_spot"
             : "binance_spot";
       const ticker = isBybit ? `${exactBybit}USDT` : binanceTicker;
-      const res = await fetch(
-        `/api/candles?exchange=${exchange}&symbol=${ticker}&interval=${store.currentTF}&limit=500`,
-      );
-      const raw = await res.json();
+      const raw = await fetchCandlesSmart(exchange, ticker, store.currentTF, 500);
 
       // 🚀 [수정] 불필요한 두 번째 과거 조회(to=...) 로직 전면 삭제 (사용자님 통찰 1000% 적중!)
       // 이미 백엔드(app.py)에 TvDatafeed 스마트 폴백 엔진이 완벽하게 구축되어 있으므로,
@@ -226,10 +341,7 @@ export async function fetchHistory(
 
         // 🚀 bybit_futures가 빈 리스트면 bybit_spot으로 폴백
         if (rawMain.length === 0 && isBybitFutures) {
-          const resFallback = await fetch(
-            `/api/candles?exchange=bybit_spot&symbol=${ticker}&interval=${store.currentTF}&limit=500`,
-          );
-          const rawFallback = await resFallback.json();
+          const rawFallback = await fetchCandlesSmart("bybit_spot", ticker, store.currentTF, 500);
           if (rawFallback?.result?.list?.length > 0) {
             rawMain = rawFallback.result.list
               .map((d) => ({
@@ -268,10 +380,7 @@ export async function fetchHistory(
           "1d": "24h",
         };
         const bFetchInt = bMap[store.currentTF] || "24h";
-        const res = await fetch(
-          `/api/candles?exchange=bithumb&symbol=${krwTicker}&interval=${bFetchInt}&limit=500`,
-        );
-        const bData = await res.json();
+        const bData = await fetchCandlesSmart("bithumb", krwTicker, bFetchInt, 500);
         if (bData.status === "0000" && Array.isArray(bData.data)) {
           rawMain = bData.data.map((d) => ({
             time: Number(d[0]) / 1000,
@@ -288,17 +397,22 @@ export async function fetchHistory(
               const d = new Date(t * 1000);
               const day = d.getUTCDay();
               const diff = d.getUTCDate() - day + (day === 0 ? -6 : 1);
-              const mon = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), diff, 0, 0, 0));
+              const mon = new Date(
+                Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), diff, 0, 0, 0),
+              );
               return mon.getTime() / 1000;
             };
             const getStartOfMonth = (t) => {
               const d = new Date(t * 1000);
-              const first = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1, 0, 0, 0));
+              const first = new Date(
+                Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1, 0, 0, 0),
+              );
               return first.getTime() / 1000;
             };
 
             const groups = {};
-            const getGroupTime = store.currentTF === "1w" ? getStartOfWeek : getStartOfMonth;
+            const getGroupTime =
+              store.currentTF === "1w" ? getStartOfWeek : getStartOfMonth;
 
             rawMain.forEach((d) => {
               const gt = getGroupTime(d.time);
@@ -338,10 +452,7 @@ export async function fetchHistory(
           fetchInterval = `minutes/${baseMin}`;
           mainStep = targetMin / baseMin;
         }
-        const res = await fetch(
-          `/api/candles?exchange=upbit&symbol=${krwTicker}&interval=${fetchInterval}&limit=500`,
-        );
-        const raw = await res.json();
+        const raw = await fetchCandlesSmart("upbit", krwTicker, fetchInterval, 500);
         if (Array.isArray(raw)) {
           rawMain = raw
             .map((d) => ({
@@ -434,7 +545,7 @@ export async function fetchHistory(
               exchange_key: exchangeKey,
               date: newDateStr,
             }),
-          }).catch(() => { }); // 실패해도 취트 안 남의선답
+          }).catch(() => {}); // 실패해도 취트 안 남의선답
         } else {
           // 메모리의 날짜를 테이블에만 줘주기 (POST 없이)
           const listingEl = document.getElementById(
@@ -509,7 +620,10 @@ export async function fetchHistory(
       return;
 
     store.mainData = sanitizeChartData(newMainData.map((d) => mapTime(d)));
-    store.volumeData = sanitizeChartData(newVolumeData.map((d) => mapTime(d)), true);
+    store.volumeData = sanitizeChartData(
+      newVolumeData.map((d) => mapTime(d)),
+      true,
+    );
 
     // 🚀 과거 데이터 추가 로딩을 위해 현재 요청 인자값 백업
     store.lastFetchParams = {
@@ -582,7 +696,11 @@ export async function fetchHistory(
 
         if (typeof window.updateHeaderDisplay === "function") {
           // TF 변경 시에는 newPrice 파라미터를 비워서 현재 rowInfo에 있는 최신 라이브 가격을 유지
-          window.updateHeaderDisplay(rowInfo, isTfChange ? undefined : lastCandle.close, p);
+          window.updateHeaderDisplay(
+            rowInfo,
+            isTfChange ? undefined : lastCandle.close,
+            p,
+          );
         }
 
         const rowEl = store.rowDomMap && store.rowDomMap.get(rowInfo.Ticker);
@@ -600,7 +718,7 @@ export async function fetchHistory(
         },
       });
 
-      // 🚀 모든 시리즈 데이터를 동일한 실행 프레임(Tick) 내에서 동기식으로 세팅하여 
+      // 🚀 모든 시리즈 데이터를 동일한 실행 프레임(Tick) 내에서 동기식으로 세팅하여
       // 시리즈 간의 데이터 개수/시간 불일치로 인한 Value is null 에러를 방지합니다.
       try {
         store.candleSeries.setData(sanitizeChartData(store.mainData));
@@ -613,7 +731,11 @@ export async function fetchHistory(
           store.leftScaleSeries.setData(sanitizeChartData(leftData, true));
         }
 
-        if (store.volumeSeries && store.volumeData && store.volumeData.length > 0) {
+        if (
+          store.volumeSeries &&
+          store.volumeData &&
+          store.volumeData.length > 0
+        ) {
           store.volumeSeries.setData(sanitizeChartData(store.volumeData, true));
         } else if (store.volumeSeries) {
           store.volumeSeries.setData([]);
@@ -657,7 +779,7 @@ export async function fetchHistory(
       ) {
         try {
           store.candleSeries.setMarkers([]);
-        } catch (markerErr) { }
+        } catch (markerErr) {}
       }
 
       store.kimchiData = [];
@@ -834,7 +956,10 @@ export async function fetchHistory(
             try {
               if (typeof applyChartLayout === "function") applyChartLayout();
             } catch (layoutErr) {
-              console.warn("🚨 fetchHistory 내 applyChartLayout 예외 우회:", layoutErr);
+              console.warn(
+                "🚨 fetchHistory 내 applyChartLayout 예외 우회:",
+                layoutErr,
+              );
             }
           });
 
@@ -876,16 +1001,10 @@ export async function fetchHistory(
               "1w": "24h",
               "1M": "24h",
             };
-            const res = await fetch(
-              `/api/candles?exchange=bithumb&symbol=${subSymbol}&interval=${bMap[store.currentTF] || "24h"}&limit=1000`,
-            );
-            const r = await res.json();
+            const r = await fetchCandlesSmart("bithumb", subSymbol, bMap[store.currentTF] || "24h", 1000);
             subRaw = r.data || [];
           } else {
-            const res = await fetch(
-              `/api/candles?exchange=${subExchange}&symbol=${subSymbol}&interval=${store.currentTF}&limit=500`,
-            );
-            const subJson = await res.json();
+            const subJson = await fetchCandlesSmart(subExchange, subSymbol, store.currentTF, 500);
             // 🚀 바이빗 응답은 result.list 형태로 오므로 추출 처리
             if (subJson?.result?.list) {
               subRaw = subJson.result.list.sort(
@@ -997,7 +1116,10 @@ export async function fetchHistory(
             try {
               if (typeof applyChartLayout === "function") applyChartLayout();
             } catch (layoutErr) {
-              console.warn("🚨 fetchHistory (no-data) applyChartLayout 예외 우회:", layoutErr);
+              console.warn(
+                "🚨 fetchHistory (no-data) applyChartLayout 예외 우회:",
+                layoutErr,
+              );
             }
           });
         }
@@ -1142,10 +1264,7 @@ export async function loadMoreHistory() {
   try {
     let fetchedMain = [];
     if (params.isFutures || params.isSpot || params.isBybit) {
-      const res = await fetch(
-        `/api/candles?exchange=${params.exchange}&symbol=${params.ticker}&interval=${params.tf}&limit=500&to=${toVal}`,
-      );
-      const raw = await res.json();
+      const raw = await fetchCandlesSmart(params.exchange, params.ticker, params.tf, 500, toVal);
 
       if (params.isBybit && raw.result?.list) {
         fetchedMain = raw.result.list.map((d) => ({
@@ -1253,7 +1372,10 @@ export async function loadMoreHistory() {
 
     const newVolumeData = newMainData.map((d) => {
       // 거래량이 없거나 null인 경우를 대비해 0으로 안전하게 치환
-      const safeValue = (d.volume === null || d.volume === undefined || isNaN(d.volume)) ? 0 : Number(d.volume);
+      const safeValue =
+        d.volume === null || d.volume === undefined || isNaN(d.volume)
+          ? 0
+          : Number(d.volume);
 
       // 컬러 값이 유실되었을 경우를 대비해 기본 하드코딩 컬러(투명도 포함) 폴백 지정
       const fallbackUpColor = params.upColorVol || "#26a69a80";
@@ -1263,7 +1385,7 @@ export async function loadMoreHistory() {
       return {
         time: d.time,
         value: safeValue,
-        color: safeColor
+        color: safeColor,
       };
     });
 
@@ -1289,10 +1411,7 @@ export async function loadMoreHistory() {
       } else if (params.subExchange === "bithumb") {
         // 빗썸은 과거 조회가 제한적이므로 건너뜀
       } else {
-        const res = await fetch(
-          `/api/candles?exchange=${params.subExchange}&symbol=${params.subSymbol}&interval=${params.tf}&limit=500&to=${subToVal}`,
-        );
-        fetchedSub = await res.json();
+        fetchedSub = await fetchCandlesSmart(params.subExchange, params.subSymbol, params.tf, 500, subToVal);
       }
 
       if (Array.isArray(fetchedSub) && fetchedSub.length > 0) {
@@ -1312,18 +1431,26 @@ export async function loadMoreHistory() {
         store.subRawData,
         params,
       );
-      store.kimchiData = sanitizeChartData(newKimchiData.map((d) => mapTime(d, params.tf)), true);
+      store.kimchiData = sanitizeChartData(
+        newKimchiData.map((d) => mapTime(d, params.tf)),
+        true,
+      );
     }
 
-    store.mainData = sanitizeChartData(newMainData.map((d) => mapTime(d, params.tf)));
-    store.volumeData = sanitizeChartData(newVolumeData.map((d) => mapTime(d, params.tf)), true);
+    store.mainData = sanitizeChartData(
+      newMainData.map((d) => mapTime(d, params.tf)),
+    );
+    store.volumeData = sanitizeChartData(
+      newVolumeData.map((d) => mapTime(d, params.tf)),
+      true,
+    );
 
     // 🚀 [핵심] 차트 캔들 추가 시 화면이 밀리는 현상을 원천 방어하기 위해 Visible Logical Range를 N만큼 밀어줌
     const timeScale = store.chart.timeScale();
     const visibleRange = timeScale.getVisibleLogicalRange();
 
     try {
-      // 🚀 모든 시리즈 데이터를 동일한 틱 내에서 동기식으로 세팅하여 
+      // 🚀 모든 시리즈 데이터를 동일한 틱 내에서 동기식으로 세팅하여
       // 캔들 시리즈만 업데이트되고 볼륨 시리즈는 다음 프레임으로 지연되어 생기는 인덱스/시간 불일치 크래시를 원천 차단합니다.
       store.candleSeries.setData(sanitizeChartData(store.mainData));
 
@@ -1363,10 +1490,7 @@ export async function loadMoreHistory() {
         }
       });
     } catch (candleErr) {
-      console.warn(
-        "🚨 Lazy Load 데이터 세팅 예외 우회 완료:",
-        candleErr,
-      );
+      console.warn("🚨 Lazy Load 데이터 세팅 예외 우회 완료:", candleErr);
     }
 
     console.log(`✅ [Lazy Load] 과거 캔들 ${N}개 추가 결합 완료!`);
@@ -1375,11 +1499,7 @@ export async function loadMoreHistory() {
   } finally {
     store.isLoadingMoreHistory = false;
     lazyIndicator.classList.remove("opacity-100", "scale-100");
-    lazyIndicator.classList.add(
-      "opacity-0",
-      "scale-95",
-      "pointer-events-none",
-    );
+    lazyIndicator.classList.add("opacity-0", "scale-95", "pointer-events-none");
   }
 }
 

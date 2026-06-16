@@ -22,7 +22,12 @@ export function getFilteredData() {
       const name = (r.Name || "").toUpperCase();
       const sym = (r.Symbol || "").toUpperCase();
       const raw = (r.Ticker || "").toUpperCase();
-      return disp.includes(q) || name.includes(q) || sym.includes(q) || raw.includes(q);
+      return (
+        disp.includes(q) ||
+        name.includes(q) ||
+        sym.includes(q) ||
+        raw.includes(q)
+      );
     });
   }
 
@@ -49,6 +54,32 @@ export function getFilteredData() {
       (d) => (d.MarketCap_Raw || 0) >= 1000000,
     );
   }
+
+  // 3.5. 커스텀 필터링 (Market Cap & Volume 범위 필터)
+  filteredData = filteredData.filter((d) => {
+    // Mcap 검사
+    const mcap = d.MarketCap_Raw || 0;
+    if (
+      mcap < store.customMcapMin ||
+      mcap >
+        (store.customMcapMax >= 10000000000000 ? Infinity : store.customMcapMax)
+    ) {
+      return false;
+    }
+    // Volume 검사 (Upbit_Vol은 KRW 단위이므로, USD 필터 조건과 비교 시 환율로 나누어 USD로 변환)
+    const rate = store.marketDataMap?.krw_usd_rate || 1400;
+    const vol =
+      store.customVolSource === "UPBIT"
+        ? (d.Upbit_Vol || 0) / rate
+        : d.Volume_Raw || 0;
+    if (
+      vol < store.customVolMin ||
+      vol > (store.customVolMax >= 100000000000 ? Infinity : store.customVolMax)
+    ) {
+      return false;
+    }
+    return true;
+  });
 
   // 4. 바운더리 필터링
   const boundary = store.settings?.SORT_BOUNDARY;
@@ -263,7 +294,10 @@ export function switchFilter(mode) {
   renderTable();
 
   // 🚀 [추가] 필터 모드가 변경되면, 이미 선택된 코인이 있을 경우 우측 패널(헤더 및 차트)도 새 우선순위에 맞춰 재갱신
-  if (store.currentSelectedSymbol && typeof window.selectSymbol === "function") {
+  if (
+    store.currentSelectedSymbol &&
+    typeof window.selectSymbol === "function"
+  ) {
     // 탭 전환 등 기타 요인을 배제하고, 동일 심볼에 대해 currentMarket을 재산출하여 차트/헤더를 업데이트하도록 재호출
     window.selectSymbol(store.currentSelectedSymbol);
   }
@@ -288,7 +322,8 @@ export function toggleCurrency() {
   store.lang = store.currencyMode === "USD" ? "EN" : "KR";
   const btn = document.getElementById("currency-toggle");
   if (btn) {
-    btn.innerText = store.currencyMode === "USD" ? "USD ($) / EN" : "KRW (₩) / KR";
+    btn.innerText =
+      store.currencyMode === "USD" ? "USD ($) / EN" : "KRW (₩) / KR";
   }
   renderTable();
 
@@ -540,9 +575,10 @@ export function updateExchFilterUI() {
               class="relative flex items-center justify-center p-1.5 border rounded-xl transition-all duration-300 w-8 h-8 hover:scale-105 active:scale-95 ${borderStyle}"
               style="${bgStyle} ${filterStyle}" title="${ex.name || ex.id} (클릭: 순환 토글 / 우클릭: 제외 토글)">
         <img src="${imgUrl}" alt="${ex.name || ex.id}" class="w-full h-full object-contain rounded" style="${imgStyle}" />
-        ${badgeText
-          ? `<div class="absolute -top-1 -right-1 ${badgeBg} text-white text-[8px] px-0.5 rounded-sm leading-none font-bold scale-[0.8]">${badgeText}</div>`
-          : ""
+        ${
+          badgeText
+            ? `<div class="absolute -top-1 -right-1 ${badgeBg} text-white text-[8px] px-0.5 rounded-sm leading-none font-bold scale-[0.8]">${badgeText}</div>`
+            : ""
         }
       </button>
     `;
@@ -552,9 +588,13 @@ export function updateExchFilterUI() {
   container.innerHTML = buttonsHtml + modeToggleHtml + resetBtnHtml;
 
   // 🚀 [추가] 아랫줄의 #exchange-presets-container 프리셋 제어바 렌더링
-  const presetsContainer = document.getElementById("exchange-presets-container");
+  const presetsContainer = document.getElementById(
+    "exchange-presets-container",
+  );
   if (presetsContainer) {
-    let presets = JSON.parse(localStorage.getItem("sellnance_exch_presets") || "[]");
+    let presets = JSON.parse(
+      localStorage.getItem("sellnance_exch_presets") || "[]",
+    );
     while (presets.length < 5) presets.push(null);
 
     // 선택된 프리셋이 없을 때는 저장/삭제 버튼을 숨기기 위해 undefined 유지
@@ -562,50 +602,60 @@ export function updateExchFilterUI() {
     //   store.activePresetIndex = 0;
     // }
 
-    const presetButtonsHtml = presets.map((preset, idx) => {
-      const hasPreset = !!preset;
-      const num = idx + 1;
-      const isActive = store.activePresetIndex === idx;
+    const presetButtonsHtml = presets
+      .map((preset, idx) => {
+        const hasPreset = !!preset;
+        const num = idx + 1;
+        const isActive = store.activePresetIndex === idx;
 
-      let title = `프리셋 ${num}\n`;
-      let borderStyle = "border-theme-border/30 text-theme-text opacity-40 hover:opacity-100 hover:scale-105 bg-theme-panel/5";
+        let title = `프리셋 ${num}\n`;
+        let borderStyle =
+          "border-theme-border/30 text-theme-text opacity-40 hover:opacity-100 hover:scale-105 bg-theme-panel/5";
 
-      if (hasPreset) {
-        const incs = Object.entries(preset.states).filter(([_, s]) => s === 1).map(([k]) => k.replace("BINANCE_", "B-"));
-        const decs = Object.entries(preset.states).filter(([_, s]) => s === -1).map(([k]) => k.replace("BINANCE_", "B-"));
+        if (hasPreset) {
+          const incs = Object.entries(preset.states)
+            .filter(([_, s]) => s === 1)
+            .map(([k]) => k.replace("BINANCE_", "B-"));
+          const decs = Object.entries(preset.states)
+            .filter(([_, s]) => s === -1)
+            .map(([k]) => k.replace("BINANCE_", "B-"));
 
-        title += `결합모드: ${preset.mode}\n`;
-        if (incs.length > 0) title += `포함: ${incs.join(", ")}\n`;
-        if (decs.length > 0) title += `제외: ${decs.join(", ")}\n`;
-        title += `(클릭: 선택 및 불러오기)`;
+          title += `결합모드: ${preset.mode}\n`;
+          if (incs.length > 0) title += `포함: ${incs.join(", ")}\n`;
+          if (decs.length > 0) title += `제외: ${decs.join(", ")}\n`;
+          title += `(클릭: 선택 및 불러오기)`;
 
-        if (isActive) {
-          borderStyle = "border-theme-accent text-theme-accent bg-theme-accent/15 font-bold scale-105 ring-2 ring-theme-accent/20";
+          if (isActive) {
+            borderStyle =
+              "border-theme-accent text-theme-accent bg-theme-accent/15 font-bold scale-105 ring-2 ring-theme-accent/20";
+          } else {
+            borderStyle =
+              "border-theme-border text-theme-accent/70 bg-theme-panel/30 hover:border-theme-accent hover:text-theme-accent hover:scale-105";
+          }
         } else {
-          borderStyle = "border-theme-border text-theme-accent/70 bg-theme-panel/30 hover:border-theme-accent hover:text-theme-accent hover:scale-105";
+          title += "(비어 있음 - 선택 후 우측 [저장] 클릭 시 저장)";
+          if (isActive) {
+            borderStyle =
+              "border-theme-accent text-theme-accent bg-theme-accent/15 font-bold scale-105 ring-2 ring-theme-accent/20";
+          }
         }
-      } else {
-        title += "(비어 있음 - 선택 후 우측 [저장] 클릭 시 저장)";
-        if (isActive) {
-          borderStyle = "border-theme-accent text-theme-accent bg-theme-accent/15 font-bold scale-105 ring-2 ring-theme-accent/20";
-        }
-      }
 
-      return `
+        return `
         <button onclick="window.selectExchPreset(${idx})" 
                 class="flex items-center justify-center border rounded-xl text-[9px] w-6 h-6 transition-all duration-300 font-bold ${borderStyle}"
                 title="${title}">
           P${num}
         </button>
       `;
-    }).join("");
+      })
+      .join("");
 
     presetsContainer.innerHTML = `
       <div class="flex items-center gap-1.5 shrink-0">
         <span class="text-[9px] font-bold opacity-60 mr-1 uppercase tracking-wider text-theme-text">거래소 프리셋 </span>
         ${presetButtonsHtml}
       </div>
-      <div class="flex items-center gap-1.5 shrink-0 transition-opacity duration-300 ${store.activePresetIndex !== undefined ? 'opacity-100' : 'opacity-0 pointer-events-none hidden'}">
+      <div class="flex items-center gap-1.5 shrink-0 transition-opacity duration-300 ${store.activePresetIndex !== undefined ? "opacity-100" : "opacity-0 pointer-events-none hidden"}">
         <button onclick="window.saveCurrentPreset()" 
                 class="px-2.5 py-0.5 border border-green-500/40 hover:bg-green-500/20 text-green-400 rounded-lg transition-all duration-200 text-[9px] font-bold hover:scale-105 active:scale-95 shadow-sm"
                 title="현재 필터 설정을 선택된 프리셋 번호에 저장합니다.">저장</button>
@@ -673,7 +723,9 @@ export function selectExchPreset(index) {
 
   store.activePresetIndex = index;
 
-  let presets = JSON.parse(localStorage.getItem("sellnance_exch_presets") || "[]");
+  let presets = JSON.parse(
+    localStorage.getItem("sellnance_exch_presets") || "[]",
+  );
   const preset = presets[index];
   if (preset) {
     store.exchFilterStates = { ...preset.states };
@@ -695,27 +747,40 @@ export function saveCurrentPreset() {
   const index = store.activePresetIndex ?? 0;
   if (!store.exchFilterStates) return;
 
-  let presets = JSON.parse(localStorage.getItem("sellnance_exch_presets") || "[]");
+  let presets = JSON.parse(
+    localStorage.getItem("sellnance_exch_presets") || "[]",
+  );
   while (presets.length < 5) {
     presets.push(null);
   }
 
   presets[index] = {
     states: { ...store.exchFilterStates },
-    mode: store.exchFilterMode || "AND"
+    mode: store.exchFilterMode || "AND",
   };
 
   localStorage.setItem("sellnance_exch_presets", JSON.stringify(presets));
   updateExchFilterUI();
 
   if (window.Swal) {
-    window.Swal.fire({ toast: true, position: 'bottom-end', icon: 'success', title: `프리셋 ${index + 1} 저장됨`, showConfirmButton: false, timer: 2000, background: 'var(--panel)', color: 'var(--text)' });
+    window.Swal.fire({
+      toast: true,
+      position: "bottom-end",
+      icon: "success",
+      title: `프리셋 ${index + 1} 저장됨`,
+      showConfirmButton: false,
+      timer: 2000,
+      background: "var(--panel)",
+      color: "var(--text)",
+    });
   }
 }
 
 export function deleteCurrentPreset() {
   const index = store.activePresetIndex ?? 0;
-  let presets = JSON.parse(localStorage.getItem("sellnance_exch_presets") || "[]");
+  let presets = JSON.parse(
+    localStorage.getItem("sellnance_exch_presets") || "[]",
+  );
   while (presets.length < 5) {
     presets.push(null);
   }
@@ -736,7 +801,16 @@ export function deleteCurrentPreset() {
   updateExchFilterUI();
 
   if (window.Swal) {
-    window.Swal.fire({ toast: true, position: 'bottom-end', icon: 'info', title: `프리셋 ${index + 1} 삭제됨`, showConfirmButton: false, timer: 2000, background: 'var(--panel)', color: 'var(--text)' });
+    window.Swal.fire({
+      toast: true,
+      position: "bottom-end",
+      icon: "info",
+      title: `프리셋 ${index + 1} 삭제됨`,
+      showConfirmButton: false,
+      timer: 2000,
+      background: "var(--panel)",
+      color: "var(--text)",
+    });
   }
 }
 
@@ -750,4 +824,398 @@ export function updateFavoritesCount() {
 }
 
 window.updateFavoritesCount = updateFavoritesCount;
-document.addEventListener("DOMContentLoaded", () => setTimeout(updateFavoritesCount, 500));
+document.addEventListener("DOMContentLoaded", () =>
+  setTimeout(updateFavoritesCount, 500),
+);
+
+// 🚀 커스텀 로그 스케일 필터 범위 변환 함수
+export function sliderToMcap(v) {
+  if (v <= 0) return 0;
+  if (v <= 1) return v * 1000000;
+  return Math.pow(10, v + 5);
+}
+
+export function mcapToSlider(m) {
+  if (m <= 0) return 0;
+  if (m <= 1000000) return m / 1000000;
+  return Math.log10(m) - 5;
+}
+
+export function sliderToVol(v) {
+  if (v <= 0) return 0;
+  if (v <= 1) return v * 100000;
+  return Math.pow(10, v + 4);
+}
+
+export function volToSlider(vol) {
+  if (vol <= 0) return 0;
+  if (vol <= 100000) return vol / 100000;
+  return Math.log10(vol) - 4;
+}
+
+function formatFilterValue(val, isMcap) {
+  if (val <= 0) return "0";
+  if (isMcap) {
+    if (val >= 1e12) return (val / 1e12).toFixed(2) + "T";
+    if (val >= 1e9) return (val / 1e9).toFixed(2) + "B";
+    if (val >= 1e6) return (val / 1e6).toFixed(2) + "M";
+    return val.toLocaleString();
+  } else {
+    if (val >= 1e9) return (val / 1e9).toFixed(2) + "B";
+    if (val >= 1e6) return (val / 1e6).toFixed(2) + "M";
+    if (val >= 1e3) return (val / 1e3).toFixed(2) + "K";
+    return val.toLocaleString();
+  }
+}
+
+function formatKoreanMoney(usdVal) {
+  const rate = store.marketDataMap?.krw_usd_rate || 1400;
+  const krwVal = usdVal * rate;
+  if (krwVal <= 0) return "0원";
+  if (krwVal >= 1e12) {
+    return `${(krwVal / 1e12).toFixed(2)}조 원`;
+  }
+  if (krwVal >= 1e8) {
+    return `${(krwVal / 1e8).toFixed(2)}억 원`;
+  }
+  if (krwVal >= 1e6) {
+    return `${(krwVal / 1e6).toFixed(0)}백만 원`;
+  }
+  if (krwVal >= 1e4) {
+    return `${(krwVal / 1e4).toFixed(0)}만 원`;
+  }
+  return `${krwVal.toFixed(0)}원`;
+}
+
+export function updateCustomFilterUI() {
+  const minMcapEl = document.getElementById("mcap-min");
+  const maxMcapEl = document.getElementById("mcap-max");
+  const mcapRangeText = document.getElementById("mcap-range-text");
+  const mcapHighlight = document.getElementById("mcap-track-highlight");
+
+  const minVolEl = document.getElementById("vol-min");
+  const maxVolEl = document.getElementById("vol-max");
+  const volRangeText = document.getElementById("vol-range-text");
+  const volHighlight = document.getElementById("vol-track-highlight");
+
+  if (minMcapEl && maxMcapEl && mcapRangeText && mcapHighlight) {
+    const minVal = parseFloat(minMcapEl.value);
+    const maxVal = parseFloat(maxMcapEl.value);
+    const minPct = (minVal / 8) * 100;
+    const maxPct = (maxVal / 8) * 100;
+    mcapHighlight.style.left = minPct + "%";
+    mcapHighlight.style.width = maxPct - minPct + "%";
+
+    const realMin = sliderToMcap(minVal);
+    const realMax = sliderToMcap(maxVal);
+
+    const usdMin = realMin <= 0 ? "0" : `${formatFilterValue(realMin, true)}`;
+    const usdMax = `${formatFilterValue(realMax, true)}`;
+    const krwMin = formatKoreanMoney(realMin);
+    const krwMax = formatKoreanMoney(realMax);
+
+    mcapRangeText.innerHTML = `
+      <div class="font-semibold text-theme-accent text-[11.5px]">${usdMin} ~ ${usdMax}</div>
+      <div class="text-theme-text opacity-60 text-[10px] mt-0.5">${krwMin} ~ ${krwMax}</div>
+    `;
+
+    store.tempMcapMin = realMin;
+    store.tempMcapMax = realMax;
+  }
+
+  if (minVolEl && maxVolEl && volRangeText && volHighlight) {
+    const minVal = parseFloat(minVolEl.value);
+    const maxVal = parseFloat(maxVolEl.value);
+    const minPct = (minVal / 7) * 100;
+    const maxPct = (maxVal / 7) * 100;
+    volHighlight.style.left = minPct + "%";
+    volHighlight.style.width = maxPct - minPct + "%";
+
+    const realMin = sliderToVol(minVal);
+    const realMax = sliderToVol(maxVal);
+
+    const isUpbit = store.tempVolSource === "UPBIT";
+    const usdMin = realMin <= 0 ? "0" : `${formatFilterValue(realMin, false)}`;
+    const usdMax = `${formatFilterValue(realMax, false)}`;
+    const krwMin = formatKoreanMoney(realMin);
+    const krwMax = formatKoreanMoney(realMax);
+
+    if (isUpbit) {
+      volRangeText.innerHTML = `
+        <div class="font-semibold text-theme-accent text-[11.5px]">${krwMin} ~ ${krwMax}</div>
+        <div class="text-theme-text opacity-60 text-[10px] mt-0.5">${usdMin} ~ ${usdMax}</div>
+      `;
+    } else {
+      volRangeText.innerHTML = `
+        <div class="font-semibold text-theme-accent text-[11.5px]">${usdMin} ~ ${usdMax}</div>
+        <div class="text-theme-text opacity-60 text-[10px] mt-0.5">${krwMin} ~ ${krwMax}</div>
+      `;
+    }
+
+    store.tempVolMin = realMin;
+    store.tempVolMax = realMax;
+  }
+}
+
+export function toggleCustomFilter(event) {
+  if (event) event.stopPropagation();
+  const dropdown = document.getElementById("custom-filter-dropdown");
+  if (!dropdown) return;
+
+  const isHidden = dropdown.classList.contains("hidden");
+
+  // 타임프레임 드롭다운이 열려 있다면 닫음
+  const tfDropdown = document.getElementById("tf-settings-dropdown");
+  if (tfDropdown) {
+    tfDropdown.classList.add("hidden", "opacity-0", "translate-y-[-10px]");
+    tfDropdown.classList.remove("flex");
+  }
+
+  if (isHidden) {
+    // 열 때 현재 커밋된 필터 값을 임시 변수로 동기화하고 UI 슬라이더에 반영
+    store.tempMcapMin = store.customMcapMin;
+    store.tempMcapMax = store.customMcapMax;
+    store.tempVolMin = store.customVolMin;
+    store.tempVolMax = store.customVolMax;
+    store.tempVolSource = store.customVolSource;
+
+    const minMcapEl = document.getElementById("mcap-min");
+    const maxMcapEl = document.getElementById("mcap-max");
+    const minVolEl = document.getElementById("vol-min");
+    const maxVolEl = document.getElementById("vol-max");
+
+    if (minMcapEl) minMcapEl.value = mcapToSlider(store.customMcapMin);
+    if (maxMcapEl) maxMcapEl.value = mcapToSlider(store.customMcapMax);
+    if (minVolEl) minVolEl.value = volToSlider(store.customVolMin);
+    if (maxVolEl) maxVolEl.value = volToSlider(store.customVolMax);
+
+    // 볼륨 소스 버튼 UI 복구
+    const btnBinance = document.getElementById("vol-source-binance");
+    const btnUpbit = document.getElementById("vol-source-upbit");
+    if (store.tempVolSource === "BINANCE") {
+      if (btnBinance)
+        btnBinance.className =
+          "px-2.5 py-0.5 rounded text-[10px] font-bold bg-theme-accent text-white shadow-sm cursor-pointer";
+      if (btnUpbit)
+        btnUpbit.className =
+          "px-2.5 py-0.5 rounded text-[10px] font-medium text-theme-text opacity-50 cursor-pointer";
+    } else {
+      if (btnBinance)
+        btnBinance.className =
+          "px-2.5 py-0.5 rounded text-[10px] font-medium text-theme-text opacity-50 cursor-pointer";
+      if (btnUpbit)
+        btnUpbit.className =
+          "px-2.5 py-0.5 rounded text-[10px] font-bold bg-theme-accent text-white shadow-sm cursor-pointer";
+    }
+
+    updateCustomFilterUI();
+
+    const btn = document.getElementById("btn-custom-filter");
+    if (btn) {
+      const parent = document.getElementById("control-panel-parent");
+      const parentRect = parent.getBoundingClientRect();
+      const btnRect = btn.getBoundingClientRect();
+      const relativeTop = btnRect.bottom - parentRect.top + 6;
+
+      dropdown.style.top = `${relativeTop}px`;
+      dropdown.style.left = "auto";
+      dropdown.style.right = "8px";
+    }
+
+    dropdown.classList.remove("hidden");
+    dropdown.classList.add("flex");
+    setTimeout(() => {
+      dropdown.classList.remove("opacity-0", "translate-y-[-10px]");
+      dropdown.classList.add("opacity-100", "translate-y-0");
+    }, 10);
+  } else {
+    dropdown.classList.add("opacity-0", "translate-y-[-10px]");
+    dropdown.classList.remove("opacity-100", "translate-y-0");
+    setTimeout(() => {
+      dropdown.classList.add("hidden");
+      dropdown.classList.remove("flex");
+    }, 200);
+  }
+}
+
+export function setVolSource(source) {
+  store.tempVolSource = source;
+  const btnBinance = document.getElementById("vol-source-binance");
+  const btnUpbit = document.getElementById("vol-source-upbit");
+
+  if (source === "BINANCE") {
+    if (btnBinance)
+      btnBinance.className =
+        "px-2.5 py-0.5 rounded text-[10px] font-bold bg-theme-accent text-white shadow-sm cursor-pointer";
+    if (btnUpbit)
+      btnUpbit.className =
+        "px-2.5 py-0.5 rounded text-[10px] font-medium text-theme-text opacity-50 cursor-pointer";
+  } else {
+    if (btnBinance)
+      btnBinance.className =
+        "px-2.5 py-0.5 rounded text-[10px] font-medium text-theme-text opacity-50 cursor-pointer";
+    if (btnUpbit)
+      btnUpbit.className =
+        "px-2.5 py-0.5 rounded text-[10px] font-bold bg-theme-accent text-white shadow-sm cursor-pointer";
+  }
+
+  updateCustomFilterUI();
+}
+
+export function applyCustomFilter() {
+  // 임시 변수 값을 실제 커스텀 필터 변수로 복사 (적용 버튼을 누를 때만 테이블이 필터링됨)
+  store.customMcapMin = store.tempMcapMin;
+  store.customMcapMax = store.tempMcapMax;
+  store.customVolMin = store.tempVolMin;
+  store.customVolMax = store.tempVolMax;
+  store.customVolSource = store.tempVolSource;
+
+  // 테이블 렌더링 호출
+  store.currentRenderLimit = 1000;
+  renderTable();
+
+  // 드롭다운 닫기
+  toggleCustomFilter();
+}
+
+export function resetCustomFilter() {
+  const minMcapEl = document.getElementById("mcap-min");
+  const maxMcapEl = document.getElementById("mcap-max");
+  const minVolEl = document.getElementById("vol-min");
+  const maxVolEl = document.getElementById("vol-max");
+
+  if (minMcapEl) minMcapEl.value = 0;
+  if (maxMcapEl) maxMcapEl.value = 8;
+  if (minVolEl) minVolEl.value = 0;
+  if (maxVolEl) maxVolEl.value = 7;
+
+  // 즉시 임시 값들을 기본값으로 리셋
+  store.tempMcapMin = 0;
+  store.tempMcapMax = 10000000000000;
+  store.tempVolMin = 0;
+  store.tempVolMax = 100000000000;
+  store.tempVolSource = "BINANCE";
+
+  // 실제 필터 값도 리셋
+  store.customMcapMin = 0;
+  store.customMcapMax = 10000000000000;
+  store.customVolMin = 0;
+  store.customVolMax = 100000000000;
+  store.customVolSource = "BINANCE";
+
+  updateCustomFilterUI();
+
+  // 볼륨 소스 버튼 UI 복구
+  const btnBinance = document.getElementById("vol-source-binance");
+  const btnUpbit = document.getElementById("vol-source-upbit");
+  if (btnBinance)
+    btnBinance.className =
+      "px-2.5 py-0.5 rounded text-[10px] font-bold bg-theme-accent text-white shadow-sm cursor-pointer";
+  if (btnUpbit)
+    btnUpbit.className =
+      "px-2.5 py-0.5 rounded text-[10px] font-medium text-theme-text opacity-50 cursor-pointer";
+
+  store.currentRenderLimit = 1000;
+  renderTable();
+}
+
+window.toggleCustomFilter = toggleCustomFilter;
+window.setVolSource = setVolSource;
+window.applyCustomFilter = applyCustomFilter;
+window.resetCustomFilter = resetCustomFilter;
+
+// 슬라이더 및 드롭다운 외부 클릭 바인딩
+document.addEventListener("DOMContentLoaded", () => {
+  const minMcapEl = document.getElementById("mcap-min");
+  const maxMcapEl = document.getElementById("mcap-max");
+  const minVolEl = document.getElementById("vol-min");
+  const maxVolEl = document.getElementById("vol-max");
+
+  if (minMcapEl && maxMcapEl) {
+    minMcapEl.addEventListener("input", () => {
+      if (parseFloat(minMcapEl.value) > parseFloat(maxMcapEl.value)) {
+        minMcapEl.value = maxMcapEl.value;
+      }
+      updateCustomFilterUI();
+    });
+    maxMcapEl.addEventListener("input", () => {
+      if (parseFloat(maxMcapEl.value) < parseFloat(minMcapEl.value)) {
+        maxMcapEl.value = minMcapEl.value;
+      }
+      updateCustomFilterUI();
+    });
+  }
+
+  if (minVolEl && maxVolEl) {
+    minVolEl.addEventListener("input", () => {
+      if (parseFloat(minVolEl.value) > parseFloat(maxVolEl.value)) {
+        minVolEl.value = maxVolEl.value;
+      }
+      updateCustomFilterUI();
+    });
+    maxVolEl.addEventListener("input", () => {
+      if (parseFloat(maxVolEl.value) < parseFloat(minVolEl.value)) {
+        maxVolEl.value = minVolEl.value;
+      }
+      updateCustomFilterUI();
+    });
+  }
+
+  // 빈 트랙 영역 클릭 시 가까운 핸들을 이동시키는 UX 개선 기능
+  const setupTrackClick = (containerId, minElId, maxElId, maxSliderVal) => {
+    const container = document.getElementById(containerId);
+    const minEl = document.getElementById(minElId);
+    const maxEl = document.getElementById(maxElId);
+    if (!container || !minEl || !maxEl) return;
+
+    container.addEventListener("click", (e) => {
+      if (e.target.tagName === "INPUT") return;
+
+      const rect = container.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const width = rect.width;
+      const pct = Math.max(0, Math.min(1, clickX / width));
+      const clickedVal = pct * maxSliderVal;
+
+      const minVal = parseFloat(minEl.value);
+      const maxVal = parseFloat(maxEl.value);
+
+      const distMin = Math.abs(clickedVal - minVal);
+      const distMax = Math.abs(clickedVal - maxVal);
+
+      if (distMin < distMax) {
+        minEl.value = Math.min(clickedVal, maxVal).toFixed(1);
+      } else {
+        maxEl.value = Math.max(clickedVal, minVal).toFixed(1);
+      }
+
+      updateCustomFilterUI();
+    });
+  };
+
+  setupTrackClick("mcap-slider-container", "mcap-min", "mcap-max", 8);
+  setupTrackClick("vol-slider-container", "vol-min", "vol-max", 7);
+
+  // 외부 영역 클릭 시 드롭다운 닫기
+  document.addEventListener("click", (e) => {
+    const dropdown = document.getElementById("custom-filter-dropdown");
+    const btn = document.getElementById("btn-custom-filter");
+    if (
+      dropdown &&
+      btn &&
+      !dropdown.contains(e.target) &&
+      !btn.contains(e.target)
+    ) {
+      if (!dropdown.classList.contains("hidden")) {
+        dropdown.classList.add("opacity-0", "translate-y-[-10px]");
+        dropdown.classList.remove("opacity-100", "translate-y-0");
+        setTimeout(() => {
+          dropdown.classList.add("hidden");
+          dropdown.classList.remove("flex");
+        }, 200);
+      }
+    }
+  });
+
+  setTimeout(updateCustomFilterUI, 100);
+});

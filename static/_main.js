@@ -268,8 +268,79 @@ window.updateHeaderDisplay = (row, newPrice, p, isRealtimeStream = false) => {
 };
 
 // 🚀 엔진 시동 파트
+// 🚀 사용자의 테마, 사이드바, 테이블 뷰 모드 설정을 로컬 저장소로부터 복원하는 함수
+function restoreSavedUserSettings() {
+  try {
+    // 1. 테마 복원
+    const savedTheme = localStorage.getItem("sellnance_theme");
+    if (savedTheme === "upbit") {
+      const body = document.body;
+      body.classList.remove("theme-binance");
+      body.classList.add("theme-upbit");
+      store.currentTheme = "upbit";
+      
+      const btn = document.getElementById("theme-toggle-btn");
+      if (btn) btn.innerHTML = "🌙";
+      const faviconLink = document.getElementById("favicon-link");
+      if (faviconLink) faviconLink.href = "../static/_gemini-svg-light.svg";
+      const mainLogoImg = document.getElementById("main-logo-img");
+      if (mainLogoImg) mainLogoImg.src = "../static/_gemini-svg-light.svg";
+    }
+
+    // 2. 사이드바 폴딩 상태 복원
+    const isSidebarCollapsed = localStorage.getItem("sellnance_sidebar_collapsed") === "true";
+    if (isSidebarCollapsed) {
+      store.isSidebarOpen = false;
+      const leftPanel = document.getElementById("left-panel");
+      if (leftPanel) {
+        leftPanel.classList.remove("md:flex");
+        leftPanel.classList.add("md:hidden");
+      }
+      const toggleText = document.getElementById("sidebar-toggle-text");
+      if (toggleText) toggleText.innerText = "▶ 펼치기";
+    }
+
+    // 3. 차트 헤더 폴딩 상태 복원
+    const isHeaderCollapsed = localStorage.getItem("sellnance_header_collapsed") === "true";
+    if (isHeaderCollapsed) {
+      const assetRow = document.getElementById("head-asset-row");
+      const infoRow = document.getElementById("head-info-row");
+      const badgesRow = document.getElementById("head-badges-row");
+      const btn = document.getElementById("toggle-header-top-btn");
+      
+      const elements = [assetRow, infoRow, badgesRow];
+      elements.forEach((el) => {
+        if (el) {
+          el.style.display = "none";
+          el.classList.add("hidden");
+        }
+      });
+      if (btn) btn.innerText = "▼ 헤더 펼치기";
+    }
+
+    // 4. 좌우 패널 스왑 상태 복원
+    const isPanelSwapped = localStorage.getItem("sellnance_panel_swapped") === "true";
+    if (isPanelSwapped) {
+      const container = document.getElementById("panel-split-container");
+      if (container) {
+        container.classList.remove("md:flex-row");
+        container.classList.add("md:flex-row-reverse");
+      }
+    }
+
+    // 5. 테이블 상세/간편 뷰 모드 복원
+    const savedViewMode = localStorage.getItem("sellnance_table_view_mode") || "basic";
+    import("./ui_control.js").then(({ switchViewMode }) => {
+      switchViewMode(savedViewMode);
+    });
+  } catch (e) {
+    console.error("Failed to restore user settings:", e);
+  }
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("🏁 대시보드 엔진 가동 시작...");
+  restoreSavedUserSettings();
   if (typeof initOrderbookDOM === "function") initOrderbookDOM();
 
   try {
@@ -331,11 +402,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       const hashTicker = window.location.hash.substring(1);
       if (typeof window.selectSymbol === "function") {
         window.selectSymbol(hashTicker);
-      }
-    } else if (store.currentTableData && store.currentTableData.length > 0) {
-      // 해시가 없다면 기본으로 첫 번째 코인을 자동 선택!
-      if (typeof window.selectSymbol === "function") {
-        window.selectSymbol(store.currentTableData[0].Ticker);
       }
     }
 
@@ -650,6 +716,7 @@ window.toggleHeaderTop = function () {
         }
       });
       btn.innerText = "▲ 헤더 접기";
+      localStorage.setItem("sellnance_header_collapsed", "false");
     } else {
       elements.forEach((el) => {
         if (el) {
@@ -658,6 +725,7 @@ window.toggleHeaderTop = function () {
         }
       });
       btn.innerText = "▼ 헤더 펼치기";
+      localStorage.setItem("sellnance_header_collapsed", "true");
     }
     if (typeof window.resetChartScale === "function") {
       window.resetChartScale();

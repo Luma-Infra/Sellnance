@@ -5,7 +5,7 @@
         "SOL": "https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png",
         "SUI": "https://s2.coinmarketcap.com/static/img/coins/64x64/20947.png"
     },
-    "DEFAULT_KRW_USD_RATE": 1520.9,
+    "DEFAULT_KRW_USD_RATE": 1511.65,
     "__MEMO__1": "BTC ETH 파생형 너무 많아서 고정 + 중국어 포함 모든 언어 티커 대응",
     "__MEMO__2": "----------------------------------------------------------",
     "EXCLUSION_LIST": [
@@ -1310,9 +1310,9 @@
             "CRCL"
         ],
         "CRCLB": [
-            "CRCLB",
+            "40213",
             null,
-            "CRCLB",
+            "Circle Internet Group Tokenized bStocks",
             "CRCLB"
         ],
         "CRDO": [
@@ -2768,9 +2768,9 @@
             "MU"
         ],
         "MUB": [
-            "MUB",
+            "40212",
             null,
-            "MUB",
+            "Micron Technology Tokenized bStocks",
             "MUB"
         ],
         "MUBARAK": [
@@ -2900,9 +2900,9 @@
             "NVDA"
         ],
         "NVDAB": [
-            "NVDAB",
+            "40215",
             null,
-            "NVDAB",
+            "NVIDIA Tokenized bStocks",
             "NVDAB"
         ],
         "NVO": [
@@ -3626,9 +3626,9 @@
             "SNDK"
         ],
         "SNDKB": [
-            "SNDKB",
+            "40216",
             null,
-            "SNDKB",
+            "SanDisk Tokenized bStocks",
             "SNDKB"
         ],
         "SNT": [
@@ -3692,10 +3692,16 @@
             "SPACE"
         ],
         "SPCX": [
-            "36921",
+            "40217",
             null,
-            "Paimon SpaceX SPV Token",
+            "SpaceX Tokenized bStocks",
             "SPCX"
+        ],
+        "SPCXB": [
+            "40217",
+            null,
+            "SpaceX Tokenized bStocks",
+            "SPCXB"
         ],
         "SPELL": [
             "11289",
@@ -4022,9 +4028,9 @@
             "TSLA"
         ],
         "TSLAB": [
-            "TSLAB",
+            "40214",
             null,
-            "TSLAB",
+            "Tesla Tokenized bStocks",
             "TSLAB"
         ],
         "TSM": [

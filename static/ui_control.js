@@ -36,6 +36,9 @@ function toggleTheme() {
     if (mainLogoImg) mainLogoImg.src = staticPath + "_gemini-svg-dark.svg";
   }
 
+  // 🚀 테마 설정을 로컬에 영구 저장
+  localStorage.setItem("sellnance_theme", store.currentTheme);
+
   // 🚀 차트 테마 업데이트 (브라우저 스타일 재계산 및 트랜지션 즉각 반영을 위해 즉시 호출 및 50ms 후 최종 확정 호출)
   if (typeof updateChartTheme === "function") {
     updateChartTheme();
@@ -61,12 +64,18 @@ function toggleSidebar() {
     leftPanel.classList.add("md:hidden");
     if (toggleText) toggleText.innerText = "▶ 펼치기";
   }
+
+  // 🚀 사이드바 폴딩 상태를 로컬에 영구 저장
+  localStorage.setItem("sellnance_sidebar_collapsed", (!store.isSidebarOpen).toString());
 }
 
 export function switchViewMode(mode) {
   store.tableViewMode = mode;
   const panel = document.getElementById("left-panel");
   if (!panel) return;
+
+  // 🚀 뷰 모드 설정을 로컬에 영구 저장
+  localStorage.setItem("sellnance_table_view_mode", mode);
 
   // 기존 모드 클래스 제거
   panel.classList.remove(
@@ -105,6 +114,17 @@ export function switchViewMode(mode) {
   }
   if (btnSmallCap)
     btnSmallCap.textContent = isSimple ? "🚫 Mcap < 1M" : "🚫 Hiding Mcap < 1M";
+
+  const btnCustomText = document.getElementById("btn-custom-filter-text");
+  if (btnCustomText) {
+    if (isSimple) {
+      btnCustomText.classList.add("hidden");
+      btnCustomText.classList.remove("md:inline");
+    } else {
+      btnCustomText.classList.remove("hidden");
+      btnCustomText.classList.add("md:inline");
+    }
+  }
 
   // 🚀 [추가] 뷰 모드 변경 시 좌측 패널 너비 변화로 인한 겹침/렉 감지
   if (typeof checkLayoutOverlap === "function") {
@@ -179,7 +199,8 @@ function showMobileChart() {
   if (!overlay || !panel || !content || !rightPanel) return;
 
   // 1. right-panel 인라인 스타일 직접 강제 설정 (CSS 클래스 충돌 완전 차단)
-  rightPanel.style.cssText = "display:flex;flex-direction:column;height:100%;width:100%;min-width:0;overflow:hidden;";
+  rightPanel.style.cssText =
+    "display:flex;flex-direction:column;height:100%;width:100%;min-width:0;overflow:hidden;";
   rightPanel.classList.remove("hidden");
 
   // 2. DOM 이동 (아직 이동 안 된 경우만)
@@ -188,7 +209,8 @@ function showMobileChart() {
   }
 
   // 3. 오버레이 직접 표시 (.active CSS 룰 불필요)
-  overlay.style.cssText = "display:flex;align-items:flex-end;justify-content:flex-end;opacity:1;pointer-events:auto;";
+  overlay.style.cssText =
+    "display:flex;align-items:flex-end;justify-content:flex-end;opacity:1;pointer-events:auto;";
   overlay.classList.remove("hidden");
 
   // 4. 패널 초기 위치 설정 후 rAF로 트랜지션 안정적으로 트리거 (Tailwind 클래스 사용)
@@ -210,7 +232,6 @@ function showMobileChart() {
     }
   }, 380);
 }
-
 
 function closeMobileChart() {
   const overlay = document.getElementById("mobile-chart-overlay");
@@ -241,7 +262,6 @@ function closeMobileChart() {
     }
   }, 320);
 }
-
 
 // ⭐️ 1. 탭 전환 기능 (차트 ↔ 시뮬레이터) ⭐️
 function switchChartTab(mode) {
@@ -289,7 +309,8 @@ function executeTabSwitch(mode) {
       window.destroyQuickView();
     }
 
-    if (typeof fetchHistory === "function") fetchHistory(undefined, false, true);
+    if (typeof fetchHistory === "function")
+      fetchHistory(undefined, false, true);
   } else if (mode === "sim") {
     if (btnSim) btnSim.classList.add("active");
     if (btnChart) btnChart.classList.remove("active");
@@ -348,9 +369,11 @@ function togglePanelSwap() {
   if (isReverse) {
     container.classList.remove("md:flex-row-reverse");
     container.classList.add("md:flex-row");
+    localStorage.setItem("sellnance_panel_swapped", "false");
   } else {
     container.classList.remove("md:flex-row");
     container.classList.add("md:flex-row-reverse");
+    localStorage.setItem("sellnance_panel_swapped", "true");
   }
 
   // 3. Last: 변경된 위치 기록
@@ -568,8 +591,14 @@ export function selectSymbol(s, forceMarket = null) {
           const len = fullText.length;
           // 수학적 로그 방식 적용: 10글자 초과 시 길이에 반비례하여 부드럽게 폰트 크기 축소 (기본 1.125rem, 최소 0.65rem)
           let fontSizeStyle = "";
-          if (len > 10) {
-            const sizeRem = Math.max(0.65, 1.125 - Math.log10(len / 10) * 0.6);
+          const fs = CONFIG.FONT_SCALE;
+
+          if (fs && len > fs.ASSET_THRESHOLD) {
+            const sizeRem = Math.max(
+              fs.ASSET_MIN_REM,
+              fs.ASSET_BASE_REM -
+                Math.log10(len / fs.ASSET_THRESHOLD) * fs.ASSET_LOG_MULT,
+            );
             fontSizeStyle = `style="font-size: ${sizeRem.toFixed(3)}rem; line-height: 1.1; word-break: break-all; white-space: normal;"`;
           } else {
             fontSizeStyle = `style="white-space: nowrap;"`;
@@ -853,23 +882,31 @@ export function toggleLogScale(forceVal) {
   const overlayVolLBtn = document.getElementById("vol-scale-l-btn");
 
   if (store.chartVol) {
-    store.chartVol.priceScale("right").applyOptions({ mode: store.isLogMode ? 1 : 0 });
-    store.chartVol.priceScale("left").applyOptions({ mode: store.isLogMode ? 1 : 0 });
+    store.chartVol
+      .priceScale("right")
+      .applyOptions({ mode: store.isLogMode ? 1 : 0 });
+    store.chartVol
+      .priceScale("left")
+      .applyOptions({ mode: store.isLogMode ? 1 : 0 });
   }
 
   if (overlayLBtn) {
     if (store.isLogMode) {
-      overlayLBtn.className = "w-5 h-5 flex items-center justify-center text-[9px] font-bold rounded cursor-pointer transition-colors bg-theme-accent text-white shadow-sm border border-theme-accent";
+      overlayLBtn.className =
+        "w-5 h-5 flex items-center justify-center text-[9px] font-bold rounded cursor-pointer transition-colors bg-theme-accent text-white shadow-sm border border-theme-accent";
     } else {
-      overlayLBtn.className = "w-5 h-5 flex items-center justify-center text-[9px] font-bold rounded cursor-pointer transition-colors bg-theme-border/20 text-theme-text hover:bg-theme-border/40 border border-theme-border/30";
+      overlayLBtn.className =
+        "w-5 h-5 flex items-center justify-center text-[9px] font-bold rounded cursor-pointer transition-colors bg-theme-border/20 text-theme-text hover:bg-theme-border/40 border border-theme-border/30";
     }
   }
 
   if (overlayVolLBtn) {
     if (store.isLogMode) {
-      overlayVolLBtn.className = "w-5 h-5 flex items-center justify-center text-[9px] font-bold rounded cursor-pointer transition-colors bg-theme-accent text-white shadow-sm border border-theme-accent";
+      overlayVolLBtn.className =
+        "w-5 h-5 flex items-center justify-center text-[9px] font-bold rounded cursor-pointer transition-colors bg-theme-accent text-white shadow-sm border border-theme-accent";
     } else {
-      overlayVolLBtn.className = "w-5 h-5 flex items-center justify-center text-[9px] font-bold rounded cursor-pointer transition-colors bg-theme-border/20 text-theme-text hover:bg-theme-border/40 border border-theme-border/30";
+      overlayVolLBtn.className =
+        "w-5 h-5 flex items-center justify-center text-[9px] font-bold rounded cursor-pointer transition-colors bg-theme-border/20 text-theme-text hover:bg-theme-border/40 border border-theme-border/30";
     }
   }
 
@@ -920,7 +957,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const observer = new ResizeObserver(() => {
         const activeBtn = container.querySelector(".chart-tabs-btn.active");
         if (activeBtn) {
-          const buttons = Array.from(container.querySelectorAll(".chart-tabs-btn"));
+          const buttons = Array.from(
+            container.querySelectorAll(".chart-tabs-btn"),
+          );
           const idx = buttons.indexOf(activeBtn);
           if (idx !== -1) {
             moveTabSlider(idx);
@@ -932,7 +971,9 @@ document.addEventListener("DOMContentLoaded", () => {
       // 🚀 [추가] 페이지 첫 로딩 시 현재 active 클래스가 설정된 탭(기본 Pure Chart) 위치로 즉시 하이라이터 이동
       const activeBtn = container.querySelector(".chart-tabs-btn.active");
       if (activeBtn) {
-        const buttons = Array.from(container.querySelectorAll(".chart-tabs-btn"));
+        const buttons = Array.from(
+          container.querySelectorAll(".chart-tabs-btn"),
+        );
         const idx = buttons.indexOf(activeBtn);
         if (idx !== -1) {
           moveTabSlider(idx);
@@ -1076,7 +1117,9 @@ setTimeout(() => {
       }
 
       // 설정 버튼 우측에 전체화면 버튼이 위치하도록 부모 컨테이너에 추가
-      const dropdown = container.parentElement.querySelector("#tf-settings-dropdown");
+      const dropdown = container.parentElement.querySelector(
+        "#tf-settings-dropdown",
+      );
       if (dropdown) {
         container.parentElement.insertBefore(fullscreenBtn, dropdown);
       } else {
@@ -1137,17 +1180,21 @@ document.addEventListener("DOMContentLoaded", () => {
   if (paneMain) {
     const scaleContainer = paneMain.querySelector(".scale-mode-container");
     if (scaleContainer) {
-      paneMain.addEventListener("touchstart", (e) => {
-        if (!e.touches || e.touches.length === 0) return;
-        const rect = paneMain.getBoundingClientRect();
-        const touchX = e.touches[0].clientX - rect.left;
-        // 우측 가격 축 영역(약 70px)을 터치하면 버튼 표시, 아니면 숨김
-        if (rect.width - touchX <= 75) {
-          scaleContainer.classList.add("mobile-show-scale-btn");
-        } else {
-          scaleContainer.classList.remove("mobile-show-scale-btn");
-        }
-      }, { passive: true });
+      paneMain.addEventListener(
+        "touchstart",
+        (e) => {
+          if (!e.touches || e.touches.length === 0) return;
+          const rect = paneMain.getBoundingClientRect();
+          const touchX = e.touches[0].clientX - rect.left;
+          // 우측 가격 축 영역(약 70px)을 터치하면 버튼 표시, 아니면 숨김
+          if (rect.width - touchX <= 75) {
+            scaleContainer.classList.add("mobile-show-scale-btn");
+          } else {
+            scaleContainer.classList.remove("mobile-show-scale-btn");
+          }
+        },
+        { passive: true },
+      );
     }
   }
 });
@@ -1173,8 +1220,8 @@ function getVisibleTfs() {
   try {
     const saved = localStorage.getItem("sellnance_tf_settings");
     if (saved) return JSON.parse(saved);
-  } catch (e) { }
-  return timeframes.map(t => t.value);
+  } catch (e) {}
+  return timeframes.map((t) => t.value);
 }
 
 function saveVisibleTfs(arr) {
@@ -1190,22 +1237,25 @@ export function renderTimeframeButtons(currentTF = "1d") {
 
   const visibleVals = getVisibleTfs();
 
-  timeframes.slice().reverse().forEach((tf) => {
-    if (!visibleVals.includes(tf.value)) return;
-    const btn = document.createElement("button");
-    const activeClass =
-      tf.value === currentTF
-        ? "active !opacity-100 border-theme-accent"
-        : "border-transparent";
-    btn.className = `tf-btn px-2.5 py-1 text-[11px] font-medium bg-transparent text-theme-text opacity-50 border rounded hover:bg-theme-border/50 hover:opacity-100 transition-all ${activeClass}`;
-    btn.innerText = tf.label;
-    btn.onclick = () => {
-      setTF(tf.value);
-      renderTimeframeButtons(tf.value);
-    };
+  timeframes
+    .slice()
+    .reverse()
+    .forEach((tf) => {
+      if (!visibleVals.includes(tf.value)) return;
+      const btn = document.createElement("button");
+      const activeClass =
+        tf.value === currentTF
+          ? "active !opacity-100 border-theme-accent"
+          : "border-transparent";
+      btn.className = `tf-btn px-2.5 py-1 text-[11px] font-medium bg-transparent text-theme-text opacity-50 border rounded hover:bg-theme-border/50 hover:opacity-100 transition-all ${activeClass}`;
+      btn.innerText = tf.label;
+      btn.onclick = () => {
+        setTF(tf.value);
+        renderTimeframeButtons(tf.value);
+      };
 
-    container.prepend(btn);
-  });
+      container.prepend(btn);
+    });
 }
 window.renderTimeframeButtons = renderTimeframeButtons; // 🚀 전체화면 래퍼와의 호환성 복원!
 
@@ -1244,10 +1294,11 @@ function renderTfCheckboxList() {
     const isChecked = visibleVals.includes(tf.value);
 
     // 🚀 체크박스 대신 예쁜 뱃지 토글 디자인 적용
-    btn.className = `px-2 py-1.5 text-[11px] font-bold rounded border transition-all cursor-pointer ${isChecked
-      ? "bg-theme-accent text-white border-theme-accent shadow-sm"
-      : "bg-theme-panel/50 text-theme-text opacity-50 border-theme-border/50 hover:opacity-100 hover:border-theme-border"
-      }`;
+    btn.className = `px-2 py-1.5 text-[11px] font-bold rounded border transition-all cursor-pointer ${
+      isChecked
+        ? "bg-theme-accent text-white border-theme-accent shadow-sm"
+        : "bg-theme-panel/50 text-theme-text opacity-50 border-theme-border/50 hover:opacity-100 hover:border-theme-border"
+    }`;
     btn.innerText = tf.label;
 
     btn.addEventListener("click", (e) => {
@@ -1256,7 +1307,7 @@ function renderTfCheckboxList() {
       if (newChecked) {
         pendingTfSettings.push(tf.value);
       } else {
-        pendingTfSettings = pendingTfSettings.filter(v => v !== tf.value);
+        pendingTfSettings = pendingTfSettings.filter((v) => v !== tf.value);
       }
       if (pendingTfSettings.length === 0) pendingTfSettings = [tf.value];
 
@@ -1268,8 +1319,9 @@ function renderTfCheckboxList() {
 
   // 🚀 마지막 4x4 위치 (col-start-4)에 작게 확인 버튼 배치
   const confirmBtn = document.createElement("button");
-  confirmBtn.className = "col-start-4 px-2 py-1.5 text-[11px] font-bold border border-theme-accent text-theme-accent hover:bg-theme-accent hover:text-white rounded transition-all shadow-sm flex items-center justify-center";
-  confirmBtn.innerText = "확인"
+  confirmBtn.className =
+    "col-start-4 px-2 py-1.5 text-[11px] font-bold border border-theme-accent text-theme-accent hover:bg-theme-accent hover:text-white rounded transition-all shadow-sm flex items-center justify-center";
+  confirmBtn.innerText = "확인";
   confirmBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     if (window.applyTfSettings) window.applyTfSettings();
@@ -1284,7 +1336,7 @@ function applyTfSettings() {
     const activeBtn = document.querySelector("#tf-container .tf-btn.active");
     let curTf = "1d";
     if (activeBtn) {
-      const match = timeframes.find(t => t.label === activeBtn.innerText);
+      const match = timeframes.find((t) => t.label === activeBtn.innerText);
       if (match) curTf = match.value;
     }
     renderTimeframeButtons(curTf);
@@ -1299,7 +1351,12 @@ document.addEventListener("click", (e) => {
   const btn = e.target.closest("button[onclick='toggleTfSettings()']");
 
   // 모달 영역 바깥을 누르면 자동으로 취소(닫기 + 초기화)
-  if (!btn && dropdown && !dropdown.contains(e.target) && !dropdown.classList.contains("hidden")) {
+  if (
+    !btn &&
+    dropdown &&
+    !dropdown.contains(e.target) &&
+    !dropdown.classList.contains("hidden")
+  ) {
     toggleTfSettings();
   }
 });

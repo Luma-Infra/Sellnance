@@ -112,9 +112,11 @@ function renderRealtimeRow(tId, data, isFutures = false) {
   let shouldUpdateChg = false;
   if (isKrwCoin) {
     if (store.currentMarket === "UPBIT") {
-      shouldUpdateChg = data.isUpbitRealtime || (row.Upbit === "O" && !data.isBithumbRealtime);
+      shouldUpdateChg =
+        data.isUpbitRealtime || (row.Upbit === "O" && !data.isBithumbRealtime);
     } else if (store.currentMarket === "BITHUMB") {
-      shouldUpdateChg = data.isBithumbRealtime || (row.Upbit !== "O" && !data.isUpbitRealtime);
+      shouldUpdateChg =
+        data.isBithumbRealtime || (row.Upbit !== "O" && !data.isUpbitRealtime);
     } else {
       // ALL, KIMCHI 등
       if (row.Upbit === "O") {
@@ -134,9 +136,7 @@ function renderRealtimeRow(tId, data, isFutures = false) {
     if (isAllMode) {
       shouldUpdateChg = isFuturesOnly ? isFutures : !isFutures;
     } else {
-      shouldUpdateChg = isSpotOnly
-        ? !isFutures
-        : activeIsFutures === isFutures;
+      shouldUpdateChg = isSpotOnly ? !isFutures : activeIsFutures === isFutures;
     }
   }
 
@@ -245,8 +245,10 @@ function renderRealtimeRow(tId, data, isFutures = false) {
         : change24h < 0
           ? "text-theme-down"
           : "text-theme-text";
-    changeCell.className = `${themeClass} font-medium flex-1 text-left truncate ${isFocus ? "opacity-100" : "opacity-40"}`;
-    changeCell.innerText = `${change24h > 0 ? "+" : ""}${change24h.toFixed(2)}%`;
+    const chgText = `${change24h > 0 ? "+" : ""}${change24h.toFixed(2)}%`;
+    const chgFontSize = chgText.length > 7 ? "text-[8px]" : "text-[10px]";
+    changeCell.className = `${themeClass} font-medium whitespace-nowrap flex-shrink-0 ${isFocus ? "opacity-100" : "opacity-40"} ${chgFontSize}`;
+    changeCell.textContent = chgText;
   }
 
   const todayCell = document.getElementById(`today-${row.Ticker}`);
@@ -260,8 +262,10 @@ function renderRealtimeRow(tId, data, isFutures = false) {
           ? "text-theme-down"
           : "text-theme-text";
     const safeChange = todayChange < -99.9 ? -99.9 : todayChange;
-    todayCell.className = `${tThemeClass} font-medium flex-1 text-left truncate ${isFocus ? "opacity-100" : "opacity-40"}`;
-    todayCell.innerText = `${safeChange > 0 ? "+" : ""}${safeChange.toFixed(2)}%`;
+    const todayText = `${safeChange > 0 ? "+" : ""}${safeChange.toFixed(2)}%`;
+    const todayFontSize = todayText.length > 7 ? "text-[8px]" : "text-[10px]";
+    todayCell.className = `${tThemeClass} font-medium whitespace-nowrap flex-shrink-0 ${isFocus ? "opacity-100" : "opacity-40"} ${todayFontSize}`;
+    todayCell.textContent = todayText;
   }
 
   const binanceVolCell = document.getElementById(`vol-binance-${row.Ticker}`);
@@ -280,7 +284,10 @@ function renderRealtimeRow(tId, data, isFutures = false) {
       const activeVol = isFutures
         ? row.Binance_Vol_Futures
         : row.Binance_Vol_Spot;
-      if (store.currencyMode === "KRW" && typeof window.formatVolumeKRW === "function") {
+      if (
+        store.currencyMode === "KRW" &&
+        typeof window.formatVolumeKRW === "function"
+      ) {
         const rate = store.marketDataMap?.krw_usd_rate || 1;
         row.Volume_Formatted = window.formatVolumeKRW(activeVol * rate);
       } else if (typeof window.formatVolumeDollar === "function") {
@@ -292,11 +299,16 @@ function renderRealtimeRow(tId, data, isFutures = false) {
   const upbitVolCell = document.getElementById(`vol-upbit-${row.Ticker}`);
   if (upbitVolCell && data.q_upbit && data.e !== "aggTrade") {
     row.Upbit_Vol = parseFloat(data.q_upbit);
-    if (store.currencyMode === "KRW" && typeof window.formatVolumeKRW === "function") {
+    if (
+      store.currencyMode === "KRW" &&
+      typeof window.formatVolumeKRW === "function"
+    ) {
       row.Upbit_Vol_Formatted = window.formatVolumeKRW(row.Upbit_Vol);
     } else if (typeof window.formatVolumeDollar === "function") {
       const rate = store.marketDataMap?.krw_usd_rate || 1;
-      row.Upbit_Vol_Formatted = window.formatVolumeDollar(row.Upbit_Vol / (rate > 0 ? rate : 1));
+      row.Upbit_Vol_Formatted = window.formatVolumeDollar(
+        row.Upbit_Vol / (rate > 0 ? rate : 1),
+      );
     }
     upbitVolCell.innerText = row.Upbit_Vol_Formatted || "-";
   }
@@ -333,10 +345,17 @@ store.radarIntervalId = setInterval(() => {
     let isFuturesTicker = false;
 
     if (isKrwCoin) {
-      ticker = snapshot[`KRW-${row.Ticker.replace("KRW", "")}`] || snapshot[row.Ticker];
+      ticker =
+        snapshot[`KRW-${row.Ticker.replace("KRW", "")}`] ||
+        snapshot[row.Ticker];
     } else {
-      const hasFutures = row.Listed_Exchanges?.includes("BINANCE_FUTURES") || row.Listed_Exchanges?.includes("BYBIT_FUTURES");
-      const useFutures = store.currentMarket === "FUTURES" && hasFutures && row.Spot_Only !== "O";
+      const hasFutures =
+        row.Listed_Exchanges?.includes("BINANCE_FUTURES") ||
+        row.Listed_Exchanges?.includes("BYBIT_FUTURES");
+      const useFutures =
+        store.currentMarket === "FUTURES" &&
+        hasFutures &&
+        row.Spot_Only !== "O";
       const lookupKey = useFutures ? row.Ticker + "_FUTURES" : row.Ticker;
       ticker = snapshot[lookupKey];
       isFuturesTicker = useFutures;
@@ -416,7 +435,10 @@ store.radarIntervalId = setInterval(() => {
       : row.Binance_Vol_Spot || 0;
 
     if (activeVol > 0) {
-      if (store.currencyMode === "KRW" && typeof window.formatVolumeKRW === "function") {
+      if (
+        store.currencyMode === "KRW" &&
+        typeof window.formatVolumeKRW === "function"
+      ) {
         const rate = store.marketDataMap?.krw_usd_rate || 1;
         row.Volume_Formatted = window.formatVolumeKRW(activeVol * rate);
       } else if (typeof window.formatVolumeDollar === "function") {
@@ -426,7 +448,10 @@ store.radarIntervalId = setInterval(() => {
 
     if (ticker.q_upbit) {
       row.Upbit_Vol = parseFloat(ticker.q_upbit);
-      if (store.currencyMode === "KRW" && typeof window.formatVolumeKRW === "function") {
+      if (
+        store.currencyMode === "KRW" &&
+        typeof window.formatVolumeKRW === "function"
+      ) {
         row.Upbit_Vol_Formatted = window.formatVolumeKRW(row.Upbit_Vol);
       } else if (typeof window.formatVolumeDollar === "function") {
         const rate = store.marketDataMap?.krw_usd_rate || 1;

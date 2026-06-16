@@ -12,7 +12,11 @@
   --color-theme-accent: var(--accent);
 
   /* 🚀 메인 폰트 (Pretendard) */
-  --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+  --font-sans:
+    "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+    system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo",
+    "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji",
+    "Segoe UI Symbol", sans-serif;
 }
 
 @layer base {
@@ -35,11 +39,11 @@
   /* 🚀 테이블 컬럼 너비 배수 관리소 (원하는 배수 비율을 적으면 알아서 100% 기준 황금비율로 자동 계산됩니다!) */
   --ratio-asset: 2;
   /* 1열: 코인명    */
-  --ratio-price: 2;
+  --ratio-price: 1.8;
   /* 2열: 가격      */
-  --ratio-vol-b: 1.1;
+  --ratio-vol-b: 1;
   /* 3열: 거래량(B) */
-  --ratio-vol-u: 1.1;
+  --ratio-vol-u: 1;
   /* 4열: 거래량(U) */
   --ratio-kimch: 1;
   /* 5열: 김프      */
@@ -49,7 +53,10 @@
   /* 7열: 상장일    */
 
   /* 💡 자동 합산 및 퍼센트 변환 엔진 (절대 건드리지 마세요!) */
-  --ratio-total: calc(var(--ratio-asset) + var(--ratio-price) + var(--ratio-vol-b) + var(--ratio-vol-u) + var(--ratio-kimch) + var(--ratio-exch));
+  --ratio-total: calc(
+    var(--ratio-asset) + var(--ratio-price) + var(--ratio-vol-b) +
+      var(--ratio-vol-u) + var(--ratio-kimch) + var(--ratio-exch)
+  );
 }
 
 /* 🚀 계산된 비율을 각 컬럼 클래스에 자동 주입 (HTML과 JS에 이미 연결되어 있어 즉시 100% 동기화 작동!) */
@@ -228,47 +235,53 @@ body.theme-upbit:not(.resizing-active) #right-panel {
   }
 }
 
-/* CSS counter removed to fix duplicate numbers since we now inject them via JS */
-
-/* 🚀 테이블 자동 순위 카운터 설정 (DOM 물리적 순서 기준) */
 #coin-list-body {
-  counter-reset: table-rank;
+  position: relative;
+  width: 100%;
 }
 
 #coin-list-body .coin-row {
-  counter-increment: table-rank;
   display: flex !important;
   width: 100%;
   height: 52px !important;
   border-bottom: 1px solid rgba(128, 128, 128, 0.05);
-  position: relative;
+  position: absolute;
+  left: 0;
+  top: 0;
+  will-change: transform;
 }
 
 #coin-list-body .coin-row .row-counter::before {
-  content: counter(table-rank);
+  content: none;
 }
 
-#coin-list-body .coin-row>div {
-  display: block !important;
+#coin-list-body .coin-row > div {
+  display: flex !important;
+  align-items: center !important;
   padding: 4px 8px;
   cursor: pointer;
   white-space: nowrap;
   overflow: hidden;
-  vertical-align: middle;
 }
 
-#coin-list-body .coin-row:hover>div {
+#coin-list-body .coin-row:hover > div {
   background: rgba(var(--accent-rgb), 0.05) !important;
 }
 
-/* 🚀 실시간 정렬 경마장 영역 (1~30위) 가시성 표시 */
-#coin-list-body .coin-row:nth-child(-n+30) {
-  background-color: rgba(var(--accent-rgb), 0.03);
+/* 🚀 실시간 정렬 경마장 영역 (1~30위) 가시성 표시 (행 자체의 가장 좌측에 세로 포인트 라인 주입, 높이 60% 정도 여백 생성) */
+#coin-list-body .coin-row.realtime-live-row {
+  background: transparent !important;
 }
 
-/* 30번째 행 아래에 경계선 추가 (실시간 정렬 경계) */
-#coin-list-body .coin-row.realtime-boundary-row>div {
-  border-bottom: 1px dashed rgba(var(--accent-rgb), 0.3) !important;
+#coin-list-body .coin-row.realtime-live-row::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 20%;
+  height: 60%;
+  width: 2px;
+  background-color: rgba(var(--accent-rgb), 0.35);
+  border-radius: 0 1px 1px 0;
 }
 
 /* 🚀 [신규] 상단 컨트롤러 디자인 */
@@ -309,7 +322,7 @@ body.theme-upbit:not(.resizing-active) #right-panel {
 
 .tv-lightweight-charts td,
 .tv-lightweight-charts th,
-.tv-lightweight-charts td>div {
+.tv-lightweight-charts td > div {
   padding: 0 !important;
   border: none !important;
   background: transparent !important;
@@ -320,9 +333,9 @@ body.theme-upbit:not(.resizing-active) #right-panel {
   color: color-mix(in srgb, var(--up), transparent 20%) !important;
   /* text-shadow: 0 0 12px color-mix(in srgb, var(--up), transparent 80%) !important; */
   background: radial-gradient(
-      /* circle, */
-      var(--flash-up) 0%,
-      transparent 40%) !important;
+    /* circle, */ var(--flash-up) 0%,
+    transparent 40%
+  ) !important;
   /* box-shadow: inset 2px 0 0 0 var(--up) !important; */
   transition: none !important;
 }
@@ -331,9 +344,9 @@ body.theme-upbit:not(.resizing-active) #right-panel {
   color: color-mix(in srgb, var(--down), transparent 20%) !important;
   /* text-shadow: 0 0 12px color-mix(in srgb, var(--down), transparent 80%) !important; */
   background: radial-gradient(
-      /* circle, */
-      var(--flash-down) 0%,
-      transparent 40%) !important;
+    /* circle, */ var(--flash-down) 0%,
+    transparent 40%
+  ) !important;
   /* box-shadow: inset 2px 0 0 0 var(--down) !important; */
   transition: none !important;
 }
@@ -377,7 +390,7 @@ body.theme-upbit:not(.resizing-active) #right-panel {
 
 /* 테이블 행 경주마 애니메이션용 */
 .flip-row {
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
   /* 쫀득한 이동 속도 */
 }
 
@@ -434,7 +447,6 @@ body.theme-upbit:not(.resizing-active) #right-panel {
 
 /* ✅ 모바일 통합 최적화 (768px 이하) */
 @media (max-width: 768px) {
-
   /* 가로 스크롤 완전 차단 */
   body,
   html {
@@ -1097,12 +1109,13 @@ button[data-name="hide-all"].draw-tool-btn--active button {
 
 /* 좌측 그리기 도구 바: 모바일에서 하단 가로 바로 표시 (미디어쿼리에서 처리) */
 
-#mobile-chart-content .flex-1.flex.flex-col.relative.min-w-0.h-full.overflow-hidden {
+#mobile-chart-content
+  .flex-1.flex.flex-col.relative.min-w-0.h-full.overflow-hidden {
   padding-left: 0 !important;
 }
 
 /* 시총/거래대금 등 하단 숫자들 숨김 (Price, 24H Chg, Day Chg만 남기기) */
-#mobile-chart-content #head-info-row>div:nth-child(n+4) {
+#mobile-chart-content #head-info-row > div:nth-child(n + 4) {
   display: none !important;
 }
 
@@ -1156,20 +1169,54 @@ button[data-name="hide-all"].draw-tool-btn--active button {
   }
 }
 
-/* 🚀 [신규] 상위 30위 경마장(실시간 정렬) 경계선 마커 */
-.coin-row.realtime-boundary-row {
-  border-bottom: 1px dashed rgba(var(--accent-rgb), 0.4);
-  margin-bottom: 4px;
-  padding-bottom: 2px;
+/* 🚀 커스텀 이중 슬라이더용 인풋 트랙/핸들 스타일 */
+.custom-slider-input {
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+}
+.custom-slider-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent, #3b82f6);
+  cursor: pointer;
+  pointer-events: auto;
+  border: 2px solid var(--panel, #1e222d);
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+}
+.custom-slider-input::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent, #3b82f6);
+  cursor: pointer;
+  pointer-events: auto;
+  border: 2px solid var(--panel, #1e222d);
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
 }
 
-.coin-row.realtime-boundary-row::after {
-  content: '▼ LIVE SORTING BOUNDARY ▼';
-  position: absolute;
-  bottom: -16px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 10px;
-  color: rgba(var(--accent-rgb), 0.6);
-  pointer-events: none;
+.coin-row.selected-highlight {
+  outline: 1.5px solid var(--accent) !important;
+  outline-offset: -2px !important;
+  box-shadow: inset 0 0 10px rgba(var(--accent-rgb), 0.2) !important;
+  z-index: 10 !important;
 }
+
+/* 🚀 정렬 기준에 따른 24h vs Today 변동률 불투명도(Opacity) 즉시 동기화 */
+#coin-list-body span[id^="change-"] {
+  opacity: 1 !important;
+}
+#coin-list-body span[id^="today-"] {
+  opacity: 0.4 !important;
+}
+
+#coin-list-body[data-sort-col="Change_Today"] span[id^="change-"] {
+  opacity: 0.4 !important;
+}
+#coin-list-body[data-sort-col="Change_Today"] span[id^="today-"] {
+  opacity: 1 !important;
+}
+

@@ -1134,6 +1134,9 @@
   "DKA": {
     "upbit_listing": "2025-11-10"
   },
+  "DKNGUSDT": {
+    "binance_listing": "2026-06-10"
+  },
   "DMC": {
     "binance_listing": "2025-06-24"
   },
@@ -1321,7 +1324,8 @@
     "binance_listing": "2025-01-14"
   },
   "ETHUSDT": {
-    "binance_listing": "2019-11-01"
+    "binance_listing": "2019-11-01",
+    "upbit_listing": "2025-11-29"
   },
   "ETHW": {
     "binance_listing": "2023-11-28"
@@ -1502,7 +1506,7 @@
     "binance_listing": "2026-03-19"
   },
   "GAME2": {
-    "upbit_listing": "2026-05-22"
+    "upbit_listing": "2025-11-26"
   },
   "GAS": {
     "binance_listing": "2023-10-25"
@@ -3180,6 +3184,9 @@
   "SPACEUSDT": {
     "binance_listing": "2026-01-19"
   },
+  "SPCXBUSDT": {
+    "binance_listing": "2026-06-12"
+  },
   "SPCXUSDT": {
     "binance_listing": "2026-05-21"
   },
@@ -3620,6 +3627,9 @@
   },
   "UUSDT": {
     "binance_listing": "2026-01-13"
+  },
+  "UVXYUSDT": {
+    "binance_listing": "2026-06-11"
   },
   "UXLINK": {
     "binance_listing": "2024-09-15"

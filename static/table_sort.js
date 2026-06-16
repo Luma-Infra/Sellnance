@@ -38,8 +38,6 @@ export function sortTable(colKey) {
     arrowEl.innerText = store.sortState === "asc" ? "▲" : "▼";
   }
 
-
-
   // 🚀 [INP 최적화] 무거운 배열 정렬 및 DOM 렌더링을 다음 페인트 이후로 비동기 양보
   requestAnimationFrame(() => {
     setTimeout(() => {
@@ -55,54 +53,20 @@ export function sortTable(colKey) {
       if (table) {
         table.classList.remove("table-loading");
       }
-    }, 50); // 50ms 딜레이를 주어 브라우저가 어두워진 로딩 필터를 화면에 먼저 칠할 시간을 줌
+    }, 10); // 딜레이를 주어 브라우저가 어두워진 로딩 필터를 화면에 먼저 칠할 시간을 줌
   });
 }
 
 export function simpleSortData() {
   const dataCopy = [...store.currentTableData];
-  const currentMarket = store.currentMarket || "ALL";
 
-  let priceKey = "Price_Raw";
-  let change24hKey = "Change_24h_Raw";
-  let changeTodayKey = "Change_Today_Raw";
-  let volumeKey = "Volume_Raw";
-
-  if (currentMarket === "UPBIT") {
-    priceKey = "Upbit_Price";
-    change24hKey = "Change_24h_Upbit";
-    changeTodayKey = "Change_Today_Upbit";
-    volumeKey = "Upbit_Vol";
-  } else if (currentMarket === "BITHUMB") {
-    priceKey = "Bithumb_Price";
-    change24hKey = "Change_24h_Bithumb";
-    changeTodayKey = "Change_Today_Bithumb";
-    volumeKey = "Bithumb_Vol"; // ◀ Upbit_Vol에서 수정
-    // volumeKey = "Upbit_Vol";
-  } else if (currentMarket === "FUTURES" || currentMarket === "BYBIT_FUTURES") {
-    priceKey =
-      currentMarket === "FUTURES"
-        ? "Binance_Price_Futures"
-        : "Bybit_Price_Futures";
-    change24hKey = "Change_24h_Futures_Ex";
-    changeTodayKey = "Change_Today_Futures";
-    volumeKey = "Binance_Vol_Futures";
-  } else if (currentMarket === "SPOT" || currentMarket === "BYBIT") {
-    priceKey =
-      currentMarket === "SPOT" ? "Binance_Price_Spot" : "Bybit_Price_Spot";
-    change24hKey =
-      currentMarket === "SPOT" ? "Change_24h_Binance" : "Change_24h_Bybit";
-    changeTodayKey =
-      currentMarket === "SPOT" ? "Change_Today_Binance" : "Change_Today_Bybit";
-    volumeKey = "Binance_Vol_Spot";
-  }
-
+  // 🚀 마켓/거래소 선택과 관계없이 언제나 공통 대표 변수(Raw)만을 일관되게 정렬 기준으로 사용
   const sortKeyMap = {
     MarketCap: "MarketCap_Raw",
-    Price: priceKey,
-    Change_24h: change24hKey,
-    Change_Today: changeTodayKey,
-    Volume: volumeKey,
+    Price: "Price_Raw",
+    Change_24h: "Change_24h_Raw",
+    Change_Today: "Change_Today_Raw",
+    Volume: "Volume_Raw",
     VolumeUpbit: "Upbit_Vol",
     Ticker: "DisplayTicker",
     Kimchi: "Kimchi_Raw",
@@ -111,94 +75,52 @@ export function simpleSortData() {
     VMC: "VMC_Raw",
   };
 
-  let key = sortKeyMap[store.currentSortCol] || store.currentSortCol;
+  const key = sortKeyMap[store.currentSortCol] || store.currentSortCol;
   const isAsc = store.sortState === "asc";
+  const isTextCol =
+    store.currentSortCol === "Ticker" ||
+    store.currentSortCol === "Listing_Date";
 
-  dataCopy.sort((a, b) => {
-    let valA, valB;
+  // 🚀 [Schwartzian Transform] 공통 Raw 변수 값 및 비어있음 판단을 O(N)으로 1회만 선계산하여 캐싱
+  const mapped = dataCopy.map((d) => {
+    let val =
+      store.currentSortCol === "Listing_Date" ? getListingDate(d) : d[key];
+
+    let isEmpty = false;
+    if (val === undefined || val === null || val === "" || val === "-") {
+      isEmpty = true;
+    } else if (!isTextCol) {
+      const num = Number(val);
+      if (isNaN(num)) {
+        isEmpty = true;
+      } else {
+        val = num; // 비교 시 재변환을 없애기 위해 숫자형으로 교체
+      }
+    }
+
+    return { val, isEmpty, d };
+  });
+
+  // 🚀 가벼운 캐시 데이터 정렬 (O(N log N)의 비교 비용 최소화)
+  mapped.sort((a, b) => {
+    if (a.isEmpty && b.isEmpty) return 0;
+    if (a.isEmpty) return 1;
+    if (b.isEmpty) return -1;
+
     if (store.currentSortCol === "Listing_Date") {
-      valA = getListingDate(a);
-      valB = getListingDate(b);
-    } else if (
-      store.currentSortCol === "Change_Today" &&
-      currentMarket === "ALL"
-    ) {
-      let aDay = a.Change_Today_Raw;
-      aDay = a.Change_Today_Upbit ?? aDay;
-      aDay = a.Change_Today_Bithumb ?? aDay;
-      aDay = a.Change_Today_Futures ?? aDay;
-      aDay = a.Change_Today_Bybit ?? aDay;
-      aDay = a.Change_Today_Binance ?? aDay;
-      valA = aDay;
-
-      let bDay = b.Change_Today_Raw;
-      bDay = b.Change_Today_Upbit ?? bDay;
-      bDay = b.Change_Today_Bithumb ?? bDay;
-      bDay = b.Change_Today_Futures ?? bDay;
-      bDay = b.Change_Today_Bybit ?? bDay;
-      bDay = b.Change_Today_Binance ?? bDay;
-      valB = bDay;
-    } else if (
-      store.currentSortCol === "Change_24h" &&
-      currentMarket === "ALL"
-    ) {
-      let a24 = a.Change_24h_Raw;
-      a24 = a.Change_24h_Upbit ?? a24;
-      a24 = a.Change_24h_Bithumb ?? a24;
-      a24 = a.Change_24h_Futures_Ex ?? a24;
-      a24 = a.Change_24h_Bybit ?? a24;
-      a24 = a.Change_24h_Binance ?? a24;
-      valA = a24;
-
-      let b24 = b.Change_24h_Raw;
-      b24 = b.Change_24h_Upbit ?? b24;
-      b24 = b.Change_24h_Bithumb ?? b24;
-      b24 = b.Change_24h_Futures_Ex ?? b24;
-      b24 = b.Change_24h_Bybit ?? b24;
-      b24 = b.Change_24h_Binance ?? b24;
-      valB = b24;
-    } else {
-      valA = a[key];
-      valB = b[key];
+      return isAsc ? a.val.localeCompare(b.val) : b.val.localeCompare(a.val);
     }
 
-    // 🚀 0, null, undefined, "-", "" 등 빈 값 판별 (단, 지표의 0%는 정상 값이므로 제외)
-    const isEmptyOrZero = (val) => {
-      if (val === undefined || val === null || val === "" || val === "-")
-        return true;
-      const isTextCol =
-        store.currentSortCol === "Ticker" ||
-        store.currentSortCol === "Listing_Date";
-      if (!isTextCol && isNaN(Number(val))) return true;
-      return false;
-    };
-
-    const isAEmpty = isEmptyOrZero(valA);
-    const isBEmpty = isEmptyOrZero(valB);
-
-    // 둘 다 비어있거나 0이면 순서 유지
-    if (isAEmpty && isBEmpty) return 0;
-    // 비어있는/0인 값은 정렬 방향(오름차순/내림차순)에 상관없이 무조건 가장 뒤(하단)로 보냄
-    if (isAEmpty) return 1;
-    if (isBEmpty) return -1;
-
-    // 둘 다 정상적인 값인 경우 정렬 시작
-    if (store.currentSortCol === "Listing_Date") {
-      return isAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+    if (!isTextCol) {
+      return isAsc ? a.val - b.val : b.val - a.val;
     }
 
-    const numA = Number(valA);
-    const numB = Number(valB);
-
-    if (!isNaN(numA) && !isNaN(numB)) {
-      return isAsc ? numA - numB : numB - numA;
-    }
-
-    const strA = valA.toString();
-    const strB = valB.toString();
+    const strA = a.val.toString();
+    const strB = b.val.toString();
     return isAsc ? strA.localeCompare(strB) : strB.localeCompare(strA);
   });
-  store.currentTableData = dataCopy;
+
+  store.currentTableData = mapped.map((item) => item.d);
 }
 
 export function applyRealtimeSort() {

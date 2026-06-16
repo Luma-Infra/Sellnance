@@ -136,13 +136,14 @@ export function updateRowStaticHTML(rowEl, row) {
   // 동적 수치 데이터 영역은 빈 Placeholder div 구조로 생성하여 레이아웃 깨짐을 방지하고 스크롤 시 공백(하얀 칸) 노출을 방어합니다.
   rowEl.innerHTML = `
   <div class="p-2 col-asset overflow-hidden">
-    ${pendingAction
-      ? `
+    ${
+      pendingAction
+        ? `
       <div class="row-progress-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 2.5px; z-index: 50; pointer-events: none;">
          <div id="progress-bar-${row.Ticker}" class="row-progress-bar" style="height: 100%; width: 100%; background: linear-gradient(90deg, var(--accent) 0%, #3b82f6 100%); transition: width 50ms linear;"></div>
       </div>
     `
-      : ""
+        : ""
     }
     <div class="flex items-center gap-0.5 min-w-0">
       <!-- 0. 절대 순위 번호 (CSS 카운터로 1부터 800까지 순차 자동 렌더링) -->
@@ -154,8 +155,9 @@ export function updateRowStaticHTML(rowEl, row) {
         <button onclick="toggleFavorite('${uId}', event)" class="star-btn text-[14px] transition-all hover:scale-125 flex-shrink-0 ${starClass}" style="color: ${starColor}">
           ${starText}
         </button>
-        ${pendingAction
-      ? `
+        ${
+          pendingAction
+            ? `
           <button onclick="window.confirmFavoriteChange('${uId}', event)" class="confirm-fav-btn text-[9px] font-medium px-1.5 py-0.5 rounded transition-all flex-shrink-0 mr-1">
             확인
           </button>
@@ -163,8 +165,8 @@ export function updateRowStaticHTML(rowEl, row) {
             취소
           </button>
         `
-      : ""
-    }
+            : ""
+        }
       </div>
       
       <!-- 2. 티커 이미지 -->
@@ -177,12 +179,12 @@ export function updateRowStaticHTML(rowEl, row) {
         <b class="text-[12px] text-theme-text truncate font-medium tracking-tighter">${row.DisplayTicker || row.Symbol}</b>
         <span class="text-[9px] text-theme-text opacity-60 truncate font-medium tracking-tighter">
           ${(() => {
-      const n =
-        store.lang === "KR"
-          ? row.Name_KR || row.Name || ""
-          : row.Name || "";
-      return n.length > 8 ? n.substring(0, 8) + ".." : n;
-    })()}
+            const n =
+              store.lang === "KR"
+                ? row.Name_KR || row.Name || ""
+                : row.Name || "";
+            return n.length > 8 ? n.substring(0, 8) + ".." : n;
+          })()}
         </span>
       </div>
     </div>
@@ -197,19 +199,19 @@ export function updateRowStaticHTML(rowEl, row) {
     </div>
   </div>
   <div class="p-2 col-vol-b overflow-hidden vol-b-placeholder text-[11px] font-bold text-theme-text">
-    <div class="flex flex-col leading-tight min-w-0 gap-0.5">
+    <div class="flex flex-col h-full justify-center leading-tight min-w-0 gap-0.5">
       <span class="text-[11px] font-tempTestDss font-bold truncate">-</span>
       <span class="text-[10px] font-bold mt-0.5 truncate opacity-0">-</span>
     </div>
   </div>
   <div class="p-2 col-vol-u overflow-hidden vol-u-placeholder text-[11px] font-bold text-theme-text text-right">
-    <div class="flex flex-col leading-tight min-w-0 gap-0.5 text-right">
+    <div class="flex flex-col h-full justify-center leading-tight min-w-0 gap-0.5 text-right">
       <span class="text-[11px] font-tempTestDss font-bold truncate">-</span>
       <span class="text-[10px] font-bold mt-0.5 truncate opacity-0">-</span>
     </div>
   </div>
   <div class="p-2 col-kimch overflow-hidden kimchi-placeholder text-[12px] font-medium text-theme-text">
-    <div class="flex flex-col leading-tight items-start min-w-0">
+    <div class="flex flex-col h-full justify-center leading-tight items-start min-w-0">
       <div class="flex items-center justify-start gap-1 min-w-0 max-w-full">
         <span class="text-[12px] font-medium">-</span>
       </div>
@@ -219,7 +221,7 @@ export function updateRowStaticHTML(rowEl, row) {
     </div>
   </div>
   <div class="p-2 col-exch overflow-hidden exch-placeholder">
-    <div class="grid grid-cols-4 gap-[2px] w-fit text-left min-w-0 opacity-0">
+    <div class="grid grid-cols-4 content-center h-full gap-[2px] w-fit text-left min-w-0 opacity-0">
       <div class="w-[14px] h-[14px]"></div>
       <div class="w-[14px] h-[14px]"></div>
       <div class="w-[14px] h-[14px]"></div>
@@ -231,6 +233,12 @@ export function updateRowStaticHTML(rowEl, row) {
   `;
 
   rowEl.dataset.metricsRendered = "false";
+
+  // 🚀 코인 클릭/업데이트 시 순위 번호가 증발하는 현상 원천 방지
+  const counterEl = rowEl.querySelector(".row-counter");
+  if (counterEl && rowEl.dataset.index !== undefined) {
+    counterEl.textContent = parseInt(rowEl.dataset.index) + 1;
+  }
 }
 
 export function updateRowDynamicHTML(rowEl, row) {
@@ -332,9 +340,22 @@ export function updateRowDynamicHTML(rowEl, row) {
             </div>
           </span>
         </div>
-        <div class="flex items-center justify-between gap-2 text-[10px] font-medium text-left mt-0.5 w-full min-w-0">
-          <span id="change-${tId}" class="${color24h} ${store.currentSortCol === "Change_Today" ? "opacity-40" : "opacity-100"} flex-1 text-left truncate">${n24h > 0 ? "+" : ""}${Number(n24h).toFixed(2)}%</span>
-          <span id="today-${tId}" class="${colorDay} ${store.currentSortCol === "Change_Today" ? "opacity-100" : "opacity-40"} flex-1 text-left truncate">${nDay > 0 ? "+" : ""}${Number(nDay).toFixed(2)}%</span>
+        <div class="flex items-center justify-between gap-1 text-[10px] font-medium text-left mt-0.5 w-full min-w-0">
+          ${(() => {
+            const chgText = `${n24h > 0 ? "+" : ""}${Number(n24h).toFixed(2)}%`;
+            const todayText = `${nDay > 0 ? "+" : ""}${Number(nDay).toFixed(2)}%`;
+
+            // 🚀 세자리/네자리 폭등락 대응: 글자 수가 7글자(예: +123.45%)를 넘으면 폰트 크기를 동적으로 축소
+            const chgFontSize =
+              chgText.length > 7 ? "text-[8px]" : "text-[10px]";
+            const todayFontSize =
+              todayText.length > 7 ? "text-[8px]" : "text-[10px]";
+
+            return `
+              <span id="change-${tId}" class="${color24h} ${chgFontSize} whitespace-nowrap flex-shrink-0">${chgText}</span>
+              <span id="today-${tId}" class="${colorDay} ${todayFontSize} whitespace-nowrap flex-shrink-0">${todayText}</span>
+            `;
+          })()}
         </div>
       </div>
     `;
@@ -343,11 +364,39 @@ export function updateRowDynamicHTML(rowEl, row) {
   // 🚀 바이낸스 볼륨/시총 렌더링
   const volBCell = rowEl.querySelector(".col-vol-b");
   if (volBCell) {
+    const volBText =
+      row.Volume_Formatted &&
+      row.Volume_Formatted !== "-" &&
+      row.Volume_Formatted !== "0"
+        ? row.Volume_Formatted
+        : "-";
+    let volBStyle = "";
+    const fs = CONFIG.FONT_SCALE;
+    if (fs && volBText.length > fs.VOL_THRESHOLD) {
+      const size = Math.max(
+        fs.VOL_MIN_SIZE,
+        fs.VOL_BASE_SIZE -
+          (volBText.length - fs.VOL_THRESHOLD) * fs.VOL_REDUCE_STEP,
+      );
+      volBStyle = `style="font-size: ${size}px;"`;
+    }
+
+    const mcapText = row.MarketCap_Formatted || "-";
+    let mcapStyle = "";
+    if (fs && mcapText.length > fs.MCAP_THRESHOLD) {
+      const size = Math.max(
+        fs.MCAP_MIN_SIZE,
+        fs.MCAP_BASE_SIZE -
+          (mcapText.length - fs.MCAP_THRESHOLD) * fs.MCAP_REDUCE_STEP,
+      );
+      mcapStyle = `style="font-size: ${size}px;"`;
+    }
+
     volBCell.classList.remove("vol-b-placeholder");
     volBCell.innerHTML = `
-      <div class="flex flex-col leading-tight min-w-0 gap-0.5">
-        <span id="vol-binance-${tId}" class="text-[#f0b90b] text-[11px] font-tempTestDss font-bold truncate">${row.Volume_Formatted && row.Volume_Formatted !== "-" && row.Volume_Formatted !== "0" ? row.Volume_Formatted : "-"}</span>
-        <span id="mcap-${tId}" class="text-[10px] font-bold opacity-60 text-left mt-0.5 truncate">${row.MarketCap_Formatted || "-"}</span>
+      <div class="flex flex-col h-full justify-center leading-tight min-w-0 gap-0.5">
+        <span id="vol-binance-${tId}" class="text-[#f0b90b] text-[11px] font-tempTestDss font-bold truncate" ${volBStyle}>${volBText}</span>
+        <span id="mcap-${tId}" class="text-[10px] font-bold opacity-60 text-left mt-0.5 truncate" ${mcapStyle}>${mcapText}</span>
       </div>
     `;
   }
@@ -355,11 +404,38 @@ export function updateRowDynamicHTML(rowEl, row) {
   // 🚀 업비트 볼륨/VMC 렌더링
   const volUCell = rowEl.querySelector(".col-vol-u");
   if (volUCell) {
+    const volUText =
+      row.Upbit_Vol_Formatted &&
+      row.Upbit_Vol_Formatted !== "-" &&
+      row.Upbit_Vol_Formatted !== "0"
+        ? row.Upbit_Vol_Formatted
+        : "-";
+    let volUStyle = "";
+    const fs = CONFIG.FONT_SCALE;
+    if (fs && volUText.length > fs.VOL_THRESHOLD) {
+      const size = Math.max(
+        fs.VOL_MIN_SIZE,
+        fs.VOL_BASE_SIZE -
+          (volUText.length - fs.VOL_THRESHOLD) * fs.VOL_REDUCE_STEP,
+      );
+      volUStyle = `style="font-size: ${size}px;"`;
+    }
+
+    let vmcStyle = "";
+    if (fs && vmcFormatted.length > fs.VMC_THRESHOLD) {
+      const size = Math.max(
+        fs.VMC_MIN_SIZE,
+        fs.VMC_BASE_SIZE -
+          (vmcFormatted.length - fs.VMC_THRESHOLD) * fs.VMC_REDUCE_STEP,
+      );
+      vmcStyle = `style="font-size: ${size}px;"`;
+    }
+
     volUCell.classList.remove("vol-u-placeholder");
     volUCell.innerHTML = `
-      <div class="flex flex-col leading-tight min-w-0 gap-0.5 text-right">
-        <span id="vol-upbit-${tId}" class="text-[#093687] text-[11px] font-tempTestDss font-bold truncate">${row.Upbit_Vol_Formatted && row.Upbit_Vol_Formatted !== "-" && row.Upbit_Vol_Formatted !== "0" ? row.Upbit_Vol_Formatted : "-"}</span>
-        <span id="vmc-${tId}" class="text-[10px] font-bold opacity-60 mt-0.5 truncate ${vmcColorClass}">${vmcFormatted}</span>
+      <div class="flex flex-col h-full justify-center leading-tight min-w-0 gap-0.5 text-right">
+        <span id="vol-upbit-${tId}" class="text-[#093687] text-[11px] font-tempTestDss font-bold truncate" ${volUStyle}>${volUText}</span>
+        <span id="vmc-${tId}" class="text-[10px] font-bold opacity-60 mt-0.5 truncate ${vmcColorClass}" ${vmcStyle}>${vmcFormatted}</span>
       </div>
     `;
   }
@@ -369,12 +445,13 @@ export function updateRowDynamicHTML(rowEl, row) {
   if (kimchiCell) {
     kimchiCell.classList.remove("kimchi-placeholder");
     kimchiCell.innerHTML = `
-      <div class="flex flex-col leading-tight items-start min-w-0">
+      <div class="flex flex-col h-full justify-center leading-tight items-start min-w-0">
         <div class="flex items-center justify-start gap-1 min-w-0 max-w-full">
-           ${!row.Kimchi_Label || row.Kimchi_Label === "-"
-        ? `<span class="text-[12px] font-medium text-theme-text opacity-40">-</span>`
-        : `<span class="text-[12px] font-medium truncate ${row.Kimchi_Raw > 0 ? "text-theme-up" : "text-theme-down"}">${row.Kimchi_Formatted || "0.0%"}</span>`
-      }
+           ${
+             !row.Kimchi_Label || row.Kimchi_Label === "-"
+               ? `<span class="text-[12px] font-medium text-theme-text opacity-40">-</span>`
+               : `<span class="text-[12px] font-medium truncate ${row.Kimchi_Raw > 0 ? "text-theme-up" : "text-theme-down"}">${row.Kimchi_Formatted || "0.0%"}</span>`
+           }
         </div>
         <div class="flex items-center justify-start gap-2 text-[10px] font-medium mt-0.5 min-w-0 max-w-full">
            <span class="text-theme-accent opacity-70 truncate">${row.Funding_Formatted || "-"}</span>
@@ -388,39 +465,39 @@ export function updateRowDynamicHTML(rowEl, row) {
   if (exchCell) {
     exchCell.classList.remove("exch-placeholder");
     exchCell.innerHTML = `
-      <div class="grid grid-cols-4 gap-[2px] w-fit text-left min-w-0">
+      <div class="grid grid-cols-4 content-center h-full gap-[2px] w-fit text-left min-w-0">
         ${(() => {
-        const exchanges = row.Listed_Exchanges || [];
-        const list = [
-          { id: "BINANCE", cmcId: 270 },
-          { id: "UPBIT", cmcId: 351 },
-          { id: "BITHUMB", cmcId: 200 },
-          { id: "BYBIT", cmcId: 521 },
-          { id: "OKX", cmcId: 294 },
-          { id: "BITGET", cmcId: 513 },
-          { id: "GATEIO", cmcId: 302 },
-          { id: "COINBASE", cmcId: 89 },
-        ];
-        return list
-          .map((ex) => {
-            const isListed =
-              exchanges.some((e) => e.includes(ex.id)) ||
-              (ex.id === "UPBIT" && row.Upbit === "O");
-            const isFutures = exchanges.includes(`${ex.id}_FUTURES`);
-            const badgeHtml = isFutures
-              ? `<div class="absolute -top-1.5 -right-1.5 bg-[#f0b90b] text-black text-[8px] font-medium px-[2px] rounded-[2px] leading-none z-10 scale-[0.65]">F</div>`
-              : "";
-            const imgUrl = `https://s2.coinmarketcap.com/static/img/exchanges/64x64/${ex.cmcId}.png`;
-            return `
+          const exchanges = row.Listed_Exchanges || [];
+          const list = [
+            { id: "BINANCE", cmcId: 270 },
+            { id: "UPBIT", cmcId: 351 },
+            { id: "BITHUMB", cmcId: 200 },
+            { id: "BYBIT", cmcId: 521 },
+            { id: "OKX", cmcId: 294 },
+            { id: "BITGET", cmcId: 513 },
+            { id: "GATEIO", cmcId: 302 },
+            { id: "COINBASE", cmcId: 89 },
+          ];
+          return list
+            .map((ex) => {
+              const isListed =
+                exchanges.some((e) => e.includes(ex.id)) ||
+                (ex.id === "UPBIT" && row.Upbit === "O");
+              const isFutures = exchanges.includes(`${ex.id}_FUTURES`);
+              const badgeHtml = isFutures
+                ? `<div class="absolute -top-1.5 -right-1.5 bg-[#f0b90b] text-black text-[8px] font-medium px-[2px] rounded-[2px] leading-none z-10 scale-[0.65]">F</div>`
+                : "";
+              const imgUrl = `https://s2.coinmarketcap.com/static/img/exchanges/64x64/${ex.cmcId}.png`;
+              return `
               <div class="relative w-[14px] h-[14px] flex items-center justify-center rounded-[2px] overflow-visible bg-white/5 transition-all flex-shrink-0"
                    style="${isListed ? "filter: none; opacity: 1;" : "filter: grayscale(1); opacity: 0.1;"}">
                 <img src="${imgUrl}" alt="${ex.id}" class="w-full h-full object-contain rounded-[2px]" />
                 ${isListed ? badgeHtml : ""}
               </div>
             `;
-          })
-          .join("");
-      })()}
+            })
+            .join("");
+        })()}
       </div>
     `;
   }
@@ -446,20 +523,39 @@ export function updateRowInnerHTML(rowEl, row) {
 // 🚀 [신규 아키텍처] 고정 DOM 풀 및 Lazy 렌더링 상태 관리
 store.tablePoolInitialized = false;
 
-// 🚀 [신규] 상위 30위 경마장(실시간 정렬) 경계선 관리 함수
+// 🚀 [신규] 상위 30위 경마장(실시간 정렬) 경계선 및 배경 그라데이션 관리 함수
 export function updateBoundaryClass(tbody) {
+  // 1. 기존 클래스 O(N) 전체 초기화 방지 및 효율적인 target 초기화
+  tbody.querySelectorAll(".realtime-live-row").forEach((el) => {
+    el.classList.remove("realtime-live-row");
+  });
   tbody.querySelectorAll(".realtime-boundary-row").forEach((el) => {
     el.classList.remove("realtime-boundary-row");
   });
-  const boundaryRow = tbody.children[29]; // 30번째 행 (0-indexed 29)
-  if (boundaryRow) {
-    boundaryRow.classList.add("realtime-boundary-row");
+
+  const filteredData = getFilteredData();
+  const limit = Math.min(30, filteredData.length);
+
+  for (let i = 0; i < limit; i++) {
+    const rowData = filteredData[i];
+    if (rowData) {
+      const rowEl = store.rowDomMap.get(rowData.Ticker);
+      if (rowEl) {
+        rowEl.classList.add("realtime-live-row");
+        // 30등 코인(index 29)의 밑바닥에만 절취선 표시
+        if (i === 29) {
+          rowEl.classList.add("realtime-boundary-row");
+        }
+      }
+    }
   }
 }
 
 export function renderTable(isRealtime = false) {
   const tbody = document.getElementById("coin-list-body");
   if (!tbody) return;
+
+  tbody.dataset.sortCol = store.currentSortCol || "";
 
   const filteredData = getFilteredData();
   const totalCount = filteredData.length;
@@ -559,10 +655,14 @@ export function renderTable(isRealtime = false) {
     const fragment = document.createDocumentFragment();
     for (let i = 0; i < totalCount; i++) {
       const rowEl = document.createElement("div");
-      rowEl.classList.add("coin-row", "flip-row");
+      rowEl.classList.add("coin-row");
+      if (i < 30) {
+        rowEl.classList.add("flip-row");
+      }
       rowEl.dataset.index = i;
       rowEl.style.height = "52px"; // 🚀 고정 높이 할당으로 완벽한 800개 스크롤 바 생성!
-      rowEl.style.position = "relative";
+      rowEl.style.position = "absolute";
+      rowEl.style.transform = `translateY(${i * 52}px)`;
       rowEl.style.contain = "content"; // 🚀 브라우저 렌더링 격리 최적화!
 
       const rowData = filteredData[i];
@@ -574,6 +674,12 @@ export function renderTable(isRealtime = false) {
         updateRowStaticHTML(rowEl, rowData);
         rowEl.dataset.renderedSym = rowData.Ticker;
         rowEl.dataset.renderedLang = store.lang;
+
+        // 🚀 자바스크립트로 절대 순위 주입
+        const counterEl = rowEl.querySelector(".row-counter");
+        if (counterEl) {
+          counterEl.textContent = i + 1;
+        }
 
         // 🚀 상위 30개만 동적 데이터 즉시 채워넣기
         if (i < 30) {
@@ -587,6 +693,7 @@ export function renderTable(isRealtime = false) {
       store.tableObserver.observe(rowEl);
       fragment.appendChild(rowEl);
     }
+    tbody.style.height = `${totalCount * 52}px`;
     tbody.appendChild(fragment);
     store.tablePoolInitialized = true;
     updateBoundaryClass(tbody);
@@ -597,140 +704,43 @@ export function renderTable(isRealtime = false) {
     return;
   }
 
-  // 2. 이미 풀이 생성되어 있다면? (정렬/실시간 갱신 시 물리적 DOM 재배치 + FLIP 애니메이션 발동!)
-  if (!isRealtime) {
-    // 🚀 Clear old visible symbols and rebuild based on the new sorted layout
-    store.visibleSymbols.clear();
+  // 2. 이미 풀이 생성되어 있다면? (물리적 DOM 추가/삭제 없이 각 코인의 고유 상자 위치를 translateY로 재배치!)
+  store.visibleSymbols.clear();
+  tbody.style.height = `${totalCount * 52}px`;
 
-    // 🚀 [수동 정렬/필터링/초기화] 800개 전체 코인을 순서에 맞게 DOM에 즉시 배치 (FLIP 애니메이션 생략, 0초 만에 바로 꽂기)
-    const fragment = document.createDocumentFragment();
-    for (let i = 0; i < totalCount; i++) {
-      const rowData = filteredData[i];
-      if (rowData) {
-        const rowEl = store.rowDomMap.get(rowData.Ticker);
-        if (rowEl) {
-          rowEl.dataset.index = i;
-
-          // 보이고 있는 행이거나 상위 30위권인 경우 즉각 렌더링
-          const isPreRender = i < 30;
-          if (isPreRender) {
-            store.visibleSymbols.add(rowData.Ticker);
-          }
-
-          const isPending = !!(
-            store.pendingFavActions &&
-            store.pendingFavActions.has(rowData.UID)
-          );
-
-          // 🚀 정적 식별 정보 갱신 검사
-          const needsStatic =
-            !rowEl.dataset.renderedSym ||
-            rowEl.dataset.renderedSym !== rowData.Ticker ||
-            rowEl.dataset.renderedLang !== store.lang ||
-            (rowEl.dataset.renderedPending === "true") !== isPending;
-          if (needsStatic) {
-            updateRowStaticHTML(rowEl, rowData);
-            rowEl.dataset.renderedSym = rowData.Ticker;
-            rowEl.dataset.renderedLang = store.lang;
-          }
-
-          // 🚀 동적 데이터 갱신 검사 (상위 30개 또는 가시 영역만)
-          if (isPreRender || store.visibleSymbols.has(rowData.Ticker)) {
-            const needsDynamic =
-              rowEl.dataset.metricsRendered !== "true" ||
-              rowEl.dataset.renderedCurrency !== store.currencyMode ||
-              rowEl.dataset.renderedLang !== store.lang;
-            if (needsDynamic) {
-              updateRowDynamicHTML(rowEl, rowData);
-              rowEl.dataset.renderedCurrency = store.currencyMode;
-              rowEl.dataset.renderedLang = store.lang;
-            }
-          }
-          fragment.appendChild(rowEl);
-        }
-      }
-    }
-    tbody.appendChild(fragment);
-    store.lastSortedTickers = null; // 수동 정렬 후 실시간 비교용 캐시 초기화
-    updateBoundaryClass(tbody);
-    applySelectedHighlight();
-    if (typeof window.refreshSniperTarget === "function") {
-      setTimeout(() => window.refreshSniperTarget(), 10);
-    }
-    return;
-  }
-
-  let orderChanged = false;
-  const limit = Math.min(30, totalCount);
-  if (!store.lastSortedTickers || store.lastSortedTickers.length !== limit) {
-    orderChanged = true;
-  } else {
-    for (let i = 0; i < limit; i++) {
-      if (store.lastSortedTickers[i] !== filteredData[i].Ticker) {
-        orderChanged = true;
-        break;
-      }
-    }
-  }
-
-  if (!orderChanged) {
-    // 🚀 [성능 극대화] 정렬 순서가 이전과 동일하다면 DOM 재배치 전체를 건너뛰고 가시 영역만 갱신!
-    for (const sym of store.visibleSymbols) {
-      const rowEl = store.rowDomMap.get(sym);
-      const rowData = store.tickerRowMap.get(sym.toUpperCase());
-      if (rowEl && rowData) {
-        const isPending = !!(
-          store.pendingFavActions && store.pendingFavActions.has(rowData.UID)
-        );
-        const needsStatic =
-          !rowEl.dataset.renderedSym ||
-          rowEl.dataset.renderedSym !== rowData.Ticker ||
-          rowEl.dataset.renderedLang !== store.lang ||
-          (rowEl.dataset.renderedPending === "true") !== isPending;
-        if (needsStatic) {
-          updateRowStaticHTML(rowEl, rowData);
-          rowEl.dataset.renderedSym = rowData.Ticker;
-          rowEl.dataset.renderedLang = store.lang;
-        }
-
-        const needsDynamic =
-          rowEl.dataset.metricsRendered !== "true" ||
-          rowEl.dataset.renderedCurrency !== store.currencyMode ||
-          rowEl.dataset.renderedLang !== store.lang;
-        if (needsDynamic) {
-          updateRowDynamicHTML(rowEl, rowData);
-          rowEl.dataset.renderedCurrency = store.currencyMode;
-          rowEl.dataset.renderedLang = store.lang;
-        }
-      }
-    }
-    applySelectedHighlight();
-    return;
-  }
-
-  store.lastSortedTickers = filteredData.slice(0, limit).map((r) => r.Ticker);
-
-  const firstRects = new Map();
-  if (store.useFlip && isRealtime) {
-    for (const sym of store.visibleSymbols) {
-      const rowEl = store.rowDomMap.get(sym);
-      if (rowEl) {
-        firstRects.set(sym, rowEl.getBoundingClientRect().top);
-      }
-    }
-  }
-
-  // 🚀 상위 30개 행만 역순(29 -> 0)으로 insertBefore를 호출하여 table-body 맨 앞으로 재배치!
-  for (let i = limit - 1; i >= 0; i--) {
+  for (let i = 0; i < totalCount; i++) {
     const rowData = filteredData[i];
     if (rowData) {
+      // 코인의 Ticker에 고정 매핑된 DOM 행을 맵에서 가져옵니다.
       const rowEl = store.rowDomMap.get(rowData.Ticker);
       if (rowEl) {
         rowEl.dataset.index = i;
 
+        // 🚀 30위 바깥 코인들은 실시간 정렬(경주마 효과) 애니메이션 제거 (즉시 순간이동)
+        if (i < 30) {
+          rowEl.classList.add("flip-row");
+        } else {
+          rowEl.classList.remove("flip-row");
+        }
+
+        rowEl.style.transform = `translateY(${i * 52}px)`;
+
+        // 🚀 자바스크립트로 절대 순위 실시간 주입
+        const counterEl = rowEl.querySelector(".row-counter");
+        if (counterEl) {
+          counterEl.textContent = i + 1;
+        }
+
+        const isPreRender = i < 30;
+        if (isPreRender) {
+          store.visibleSymbols.add(rowData.Ticker);
+        }
+
         const isPending = !!(
           store.pendingFavActions && store.pendingFavActions.has(rowData.UID)
         );
+
+        // 🚀 정적 식별 정보 갱신 검사
         const needsStatic =
           !rowEl.dataset.renderedSym ||
           rowEl.dataset.renderedSym !== rowData.Ticker ||
@@ -740,61 +750,31 @@ export function renderTable(isRealtime = false) {
           updateRowStaticHTML(rowEl, rowData);
           rowEl.dataset.renderedSym = rowData.Ticker;
           rowEl.dataset.renderedLang = store.lang;
-        }
 
-        const needsDynamic =
-          rowEl.dataset.metricsRendered !== "true" ||
-          rowEl.dataset.renderedCurrency !== store.currencyMode ||
-          rowEl.dataset.renderedLang !== store.lang;
-        if (needsDynamic) {
-          updateRowDynamicHTML(rowEl, rowData);
-          rowEl.dataset.renderedCurrency = store.currencyMode;
-          rowEl.dataset.renderedLang = store.lang;
-        }
-
-        tbody.insertBefore(rowEl, tbody.firstChild);
-      }
-    }
-  }
-
-  // 🚀 [성능 극대화] FLIP 애니메이션 실행 (레이아웃 쓰레싱을 완벽 소각하기 위해 batch read/write 형태로 전면 개편!)
-  if (store.useFlip && isRealtime) {
-    const moves = [];
-
-    // Pass 1: Batch Reads (동작 시작 위치 확인)
-    for (const [sym, firstY] of firstRects.entries()) {
-      const rowEl = store.rowDomMap.get(sym);
-      if (rowEl) {
-        const lastY = rowEl.getBoundingClientRect().top;
-        const deltaY = firstY - lastY;
-        if (deltaY !== 0) {
-          moves.push({ rowEl, deltaY });
-        }
-      }
-    }
-
-    // Pass 2: Batch Writes (트랜스폼 선언 후 단 1회의 강제 reflow로 렌더링 락인)
-    if (moves.length > 0) {
-      moves.forEach(({ rowEl, deltaY }) => {
-        rowEl.style.transition = "none";
-        rowEl.style.transform = `translateY(${deltaY}px)`;
-      });
-      tbody.offsetHeight; // 단 한 번의 강제 reflow로 모든 엘리먼트 트랜스폼 반영!
-    }
-
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        for (const sym of firstRects.keys()) {
-          const rowEl = store.rowDomMap.get(sym);
-          if (rowEl) {
-            rowEl.style.transition = "";
-            rowEl.style.transform = "";
+          // 🚀 HTML 재할당으로 밀렸을 수도 있는 순위 카운터 다시 복구
+          const reCounterEl = rowEl.querySelector(".row-counter");
+          if (reCounterEl) {
+            reCounterEl.textContent = i + 1;
           }
         }
-      });
-    });
+
+        // 🚀 동적 데이터 갱신 검사 (상위 30개 또는 가시 영역만)
+        if (isPreRender || store.visibleSymbols.has(rowData.Ticker)) {
+          const needsDynamic =
+            rowEl.dataset.metricsRendered !== "true" ||
+            rowEl.dataset.renderedCurrency !== store.currencyMode ||
+            rowEl.dataset.renderedLang !== store.lang;
+          if (needsDynamic) {
+            updateRowDynamicHTML(rowEl, rowData);
+            rowEl.dataset.renderedCurrency = store.currencyMode;
+            rowEl.dataset.renderedLang = store.lang;
+          }
+        }
+      }
+    }
   }
 
+  store.lastSortedTickers = null; // 캐시 무효화
   updateBoundaryClass(tbody);
   applySelectedHighlight();
   if (typeof window.refreshSniperTarget === "function") {
@@ -811,19 +791,25 @@ export function applySelectedHighlight() {
   const selectedSymbol = store.currentSelectedSymbol;
   if (!selectedSymbol) return;
 
-  document.querySelectorAll("#coin-list-body .coin-row").forEach((rowEl) => {
-    rowEl.style.outline = "none";
-    rowEl.style.boxShadow = "none";
-  });
-
-  const targetRow = document.querySelector(
-    `#coin-list-body .coin-row[data-sym="${selectedSymbol}"]`,
+  // 1. 기존 선택된 행 하이라이트 클래스 제거
+  const prevSelected = document.querySelector(
+    "#coin-list-body .coin-row.selected-highlight",
   );
-  if (targetRow) {
-    targetRow.style.outline = "2px solid var(--accent)";
-    targetRow.style.outlineOffset = "-2px";
-    targetRow.style.boxShadow = "inset 0 0 10px rgba(var(--accent-rgb), 0.2)";
-    targetRow.style.zIndex = "10";
+  if (prevSelected) {
+    prevSelected.classList.remove("selected-highlight");
+  }
+
+  // 2. 현재 선택된 행에 하이라이트 클래스 적용
+  const targetRow = store.rowDomMap
+    ? store.rowDomMap.get(selectedSymbol)
+    : null;
+  const actualRow =
+    targetRow ||
+    document.querySelector(
+      `#coin-list-body .coin-row[data-sym="${selectedSymbol}"]`,
+    );
+  if (actualRow) {
+    actualRow.classList.add("selected-highlight");
   }
 }
 
@@ -1207,6 +1193,20 @@ window.updateRowPriceDisplay = (target, row) => {
       // 🚀 또한 값이 실제로 다를 때만 DOM을 건드리도록 방어코드 추가 (DOM Mutation 렉 차단)
       if (numEl && numEl.textContent !== formattedPrice) {
         numEl.textContent = formattedPrice;
+      }
+
+      // 🚀 글자 수에 비례하여 동적으로 폰트 크기 축소
+      const len = formattedPrice.length;
+      const fs = CONFIG.FONT_SCALE;
+      if (fs && len > fs.PRICE_THRESHOLD) {
+        const sizePx = Math.max(
+          fs.PRICE_MIN_SIZE,
+          fs.PRICE_BASE_SIZE -
+            (len - fs.PRICE_THRESHOLD) * fs.PRICE_REDUCE_STEP,
+        );
+        parentEl.style.fontSize = `${sizePx}px`;
+      } else {
+        parentEl.style.fontSize = "";
       }
 
       const isFutures = row.Listed_Exchanges?.includes(

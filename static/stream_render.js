@@ -7,6 +7,22 @@ import { store } from "./_store.js";
 export function renderRealtimeUpdate(normalizedTime, currentCandle) {
     if (!store.candleSeries || !currentCandle || normalizedTime === null) return;
 
+    // 🚀 [방어 코드] 차트 캔들 데이터가 없거나 완전히 비어 있는 상태인 경우 실시간 업데이트 차단
+    const chartData = store.mainData || [];
+    if (chartData.length === 0) {
+        return;
+    }
+
+    // 🚀 [방어 코드] 실시간 캔들의 타임스탬프가 차트의 마지막 캔들보다 이전(과거)이면 업데이트를 스킵하여 시간 역행 예외 방지
+    const lastItem = chartData[chartData.length - 1];
+    if (lastItem) {
+        const lastTimeVal = typeof lastItem.time === "object" ? lastItem.time.time || 0 : lastItem.time;
+        const newTimeVal = typeof normalizedTime === "object" ? normalizedTime.time || 0 : normalizedTime;
+        if (newTimeVal < lastTimeVal) {
+            return;
+        }
+    }
+
     // 1️⃣ 메인 봉 차트 & 좌측 스케일 보조 라인 업데이트
     try {
         store.candleSeries.update({

@@ -15,6 +15,16 @@ export const store = {
   isEngineStarted: false, // 🚀 최초 코인 선택 시 소켓 및 차트 점화 여부 플래그
   mcapMin: 0, // 🚀 시총 최소값 (기본 0)
   mcapMax: 10000000000, // 🚀 시총 최대값 (기본 10B)
+  customMcapMin: 0, // 🚀 커스텀 시총 최소값
+  customMcapMax: 10000000000000, // 🚀 커스텀 시총 최대값 (기본 10T)
+  customVolMin: 0, // 🚀 커스텀 거래량 최소값
+  customVolMax: 100000000000, // 🚀 커스텀 거래량 최대값 (기본 100B)
+  customVolSource: "BINANCE", // 🚀 커스텀 거래량 소스 (BINANCE 또는 UPBIT)
+  tempMcapMin: 0,
+  tempMcapMax: 10000000000000,
+  tempVolMin: 0,
+  tempVolMax: 100000000000,
+  tempVolSource: "BINANCE",
   useFlip: true, // 🚀 플립 애니메이션 사용 여부
   hideSmallCap: false, // 🚀 시총 1M 미만 숨기기 여부
   lang: "EN", // 🚀 한/영 토글 (KR, EN)
@@ -27,7 +37,21 @@ export const store = {
     CMC_API_KEY: "",
   },
   currentTF: "1d",
-  visibleTfs: ["1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "12h", "1d", "3d", "1w", "1M"],
+  visibleTfs: [
+    "1m",
+    "3m",
+    "5m",
+    "15m",
+    "30m",
+    "1h",
+    "2h",
+    "4h",
+    "12h",
+    "1d",
+    "3d",
+    "1w",
+    "1M",
+  ],
 
   chart: null,
   candleSeries: null,
@@ -155,6 +179,28 @@ export const CONFIG = {
   UI_UPDATE_INTERVAL: 1000,
   RENDER_CHUNK: 50,
   CHART_CONFIG: { GHOST_COUNT: 500, VISIBLE_COUNT: 200, RIGHT_PADDING: 10 },
+  FONT_SCALE: {
+    PRICE_THRESHOLD: 8,
+    PRICE_MIN_SIZE: 8,
+    PRICE_BASE_SIZE: 14,
+    PRICE_REDUCE_STEP: 0.8,
+    ASSET_THRESHOLD: 10,
+    ASSET_MIN_REM: 0.65,
+    ASSET_BASE_REM: 1.125,
+    ASSET_LOG_MULT: 0.6,
+    VOL_THRESHOLD: 8,
+    VOL_MIN_SIZE: 8,
+    VOL_BASE_SIZE: 11,
+    VOL_REDUCE_STEP: 0.4,
+    MCAP_THRESHOLD: 8,
+    MCAP_MIN_SIZE: 7.5,
+    MCAP_BASE_SIZE: 10,
+    MCAP_REDUCE_STEP: 0.4,
+    VMC_THRESHOLD: 5,
+    VMC_MIN_SIZE: 7.5,
+    VMC_BASE_SIZE: 10,
+    VMC_REDUCE_STEP: 0.4,
+  },
 };
 
 export const tfSec = {
