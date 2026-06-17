@@ -21,6 +21,7 @@ export function sortTable(colKey) {
   const table = document.getElementById("coin-list-body");
   if (table) {
     table.classList.add("table-loading");
+    table.classList.add("no-transition");
   }
 
   // 🚀 [2단 토글 개편] 모든 정렬 가능 컬럼을 3단(desc -> asc -> 해제)이 아닌 2단(desc <-> asc)으로 토글합니다.
@@ -38,23 +39,22 @@ export function sortTable(colKey) {
     arrowEl.innerText = store.sortState === "asc" ? "▲" : "▼";
   }
 
-  // 🚀 [INP 최적화] 무거운 배열 정렬 및 DOM 렌더링을 다음 페인트 이후로 비동기 양보
-  requestAnimationFrame(() => {
-    setTimeout(() => {
-      const scrollContainer = document.querySelector(
-        "#left-panel .overflow-y-auto",
-      );
-      if (scrollContainer) scrollContainer.scrollTop = 0;
+  // 🚀 [INP 해결] 즉시 동기 실행하여 렌더링 스케줄 대기를 완전히 없앱니다.
+  const scrollContainer = document.querySelector(
+    "#left-panel .overflow-y-auto",
+  );
+  if (scrollContainer) {
+    scrollContainer.scrollTo({ top: 0, behavior: "instant" });
+  }
 
-      simpleSortData();
-      renderTable(false); // 수동 정렬이므로 0초 컷으로 즉시 전체 배치
+  simpleSortData();
+  renderTable(false); // 수동 정렬이므로 0초 컷으로 즉시 전체 배치
 
-      // 🚀 정렬 및 렌더링이 끝나면 즉시 로딩 클래스 제거
-      if (table) {
-        table.classList.remove("table-loading");
-      }
-    }, 10); // 딜레이를 주어 브라우저가 어두워진 로딩 필터를 화면에 먼저 칠할 시간을 줌
-  });
+  // 🚀 정렬 및 렌더링이 끝나면 즉시 로딩 클래스 제거
+  if (table) {
+    table.classList.remove("table-loading");
+    table.classList.remove("no-transition");
+  }
 }
 
 export function simpleSortData() {
@@ -136,7 +136,7 @@ export function applyRealtimeSort() {
   store.isRealtimeSorting = true;
   setTimeout(() => {
     store.isRealtimeSorting = false;
-  }, 250);
+  }, 25);
 
   simpleSortData();
   renderTable(true);

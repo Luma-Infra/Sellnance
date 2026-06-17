@@ -603,6 +603,15 @@ export function renderTable(isRealtime = false) {
                 store.pendingFavActions.has(rowData.UID)
               );
 
+              // 🚀 화면에 들어온 행의 순위만 갱신
+              const targetIdx = parseInt(rowEl.dataset.index);
+              if (!isNaN(targetIdx)) {
+                const counterEl = rowEl.querySelector(".row-counter");
+                if (counterEl) {
+                  counterEl.textContent = targetIdx + 1;
+                }
+              }
+
               // 🚀 정적 레이어 갱신 체크 (티커 변화, 언어 번역, 즐겨찾기 대기 상태 반영)
               const needsStatic =
                 !rowEl.dataset.renderedSym ||
@@ -711,10 +720,12 @@ export function renderTable(isRealtime = false) {
   for (let i = 0; i < totalCount; i++) {
     const rowData = filteredData[i];
     if (rowData) {
-      // 코인의 Ticker에 고정 매핑된 DOM 행을 맵에서 가져옵니다.
       const rowEl = store.rowDomMap.get(rowData.Ticker);
       if (rowEl) {
         rowEl.dataset.index = i;
+
+        // 🚀 위치(translateY)는 모든 브라우저 렌더링 정상 노출을 위해 0초 컷으로 즉시 100% 반영! (이 부분이 누락되면 레이아웃 붕괴)
+        rowEl.style.transform = `translateY(${i * 52}px)`;
 
         // 🚀 30위 바깥 코인들은 실시간 정렬(경주마 효과) 애니메이션 제거 (즉시 순간이동)
         if (i < 30) {
@@ -723,7 +734,10 @@ export function renderTable(isRealtime = false) {
           rowEl.classList.remove("flip-row");
         }
 
-        rowEl.style.transform = `translateY(${i * 52}px)`;
+        const isPreRender = i < 30;
+        if (isPreRender) {
+          store.visibleSymbols.add(rowData.Ticker);
+        }
 
         // 🚀 자바스크립트로 절대 순위 실시간 주입
         const counterEl = rowEl.querySelector(".row-counter");
@@ -731,35 +745,30 @@ export function renderTable(isRealtime = false) {
           counterEl.textContent = i + 1;
         }
 
-        const isPreRender = i < 30;
-        if (isPreRender) {
-          store.visibleSymbols.add(rowData.Ticker);
-        }
-
         const isPending = !!(
           store.pendingFavActions && store.pendingFavActions.has(rowData.UID)
         );
 
-        // 🚀 정적 식별 정보 갱신 검사
-        const needsStatic =
-          !rowEl.dataset.renderedSym ||
-          rowEl.dataset.renderedSym !== rowData.Ticker ||
-          rowEl.dataset.renderedLang !== store.lang ||
-          (rowEl.dataset.renderedPending === "true") !== isPending;
-        if (needsStatic) {
-          updateRowStaticHTML(rowEl, rowData);
-          rowEl.dataset.renderedSym = rowData.Ticker;
-          rowEl.dataset.renderedLang = store.lang;
-
-          // 🚀 HTML 재할당으로 밀렸을 수도 있는 순위 카운터 다시 복구
-          const reCounterEl = rowEl.querySelector(".row-counter");
-          if (reCounterEl) {
-            reCounterEl.textContent = i + 1;
-          }
-        }
-
-        // 🚀 동적 데이터 갱신 검사 (상위 30개 또는 가시 영역만)
+        // 🚀 정적 식별 정보 갱신 검사 (화면에 보이지 않는 행은 IntersectionObserver 콜백이 알아서 채움)
         if (isPreRender || store.visibleSymbols.has(rowData.Ticker)) {
+          const needsStatic =
+            !rowEl.dataset.renderedSym ||
+            rowEl.dataset.renderedSym !== rowData.Ticker ||
+            rowEl.dataset.renderedLang !== store.lang ||
+            (rowEl.dataset.renderedPending === "true") !== isPending;
+          if (needsStatic) {
+            updateRowStaticHTML(rowEl, rowData);
+            rowEl.dataset.renderedSym = rowData.Ticker;
+            rowEl.dataset.renderedLang = store.lang;
+
+            // 🚀 HTML 재할당으로 밀렸을 수도 있는 순위 카운터 다시 복구
+            const reCounterEl = rowEl.querySelector(".row-counter");
+            if (reCounterEl) {
+              reCounterEl.textContent = i + 1;
+            }
+          }
+
+          // 🚀 동적 데이터 갱신 검사
           const needsDynamic =
             rowEl.dataset.metricsRendered !== "true" ||
             rowEl.dataset.renderedCurrency !== store.currencyMode ||

@@ -825,8 +825,6 @@ export function initChart() {
     });
   };
 
-  const allCharts = [store.chart, store.chartVol].filter(Boolean);
-  // 🚀 창 크기 변경뿐만 아니라, 줌인/줌아웃, 좌우 스크롤(VisibleLogicalRangeChange) 및 마우스 이동 시에도 실시간 자동 싱크!
   allCharts.forEach((c) => {
     c.timeScale().subscribeSizeChange(() =>
       setTimeout(window.syncPriceScaleWidths, 50),

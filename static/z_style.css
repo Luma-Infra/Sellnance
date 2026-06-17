@@ -61,64 +61,64 @@
 
 /* 🚀 계산된 비율을 각 컬럼 클래스에 자동 주입 (HTML과 JS에 이미 연결되어 있어 즉시 100% 동기화 작동!) */
 .col-asset {
-  width: calc((var(--ratio-asset) / var(--ratio-total)) * 100%) !important;
-  flex: none !important;
-  min-width: 0 !important;
+  width: calc((var(--ratio-asset) / var(--ratio-total)) * 100%);
+  flex: none;
+  min-width: 0;
 }
 
 .col-price {
-  width: calc((var(--ratio-price) / var(--ratio-total)) * 100%) !important;
-  flex: none !important;
-  min-width: 0 !important;
+  width: calc((var(--ratio-price) / var(--ratio-total)) * 100%);
+  flex: none;
+  min-width: 0;
 }
 
 .col-vol-b {
-  width: calc((var(--ratio-vol-b) / var(--ratio-total)) * 100%) !important;
-  flex: none !important;
-  min-width: 0 !important;
+  width: calc((var(--ratio-vol-b) / var(--ratio-total)) * 100%);
+  flex: none;
+  min-width: 0;
 }
 
 .col-vol-u {
-  width: calc((var(--ratio-vol-u) / var(--ratio-total)) * 100%) !important;
-  flex: none !important;
-  min-width: 0 !important;
+  width: calc((var(--ratio-vol-u) / var(--ratio-total)) * 100%);
+  flex: none;
+  min-width: 0;
 }
 
 .col-kimch {
-  width: calc((var(--ratio-kimch) / var(--ratio-total)) * 100%) !important;
-  flex: none !important;
-  min-width: 0 !important;
+  width: calc((var(--ratio-kimch) / var(--ratio-total)) * 100%);
+  flex: none;
+  min-width: 0;
 }
 
 .col-exch {
-  width: calc((var(--ratio-exch) / var(--ratio-total)) * 100%) !important;
-  flex: none !important;
-  min-width: 0 !important;
+  width: calc((var(--ratio-exch) / var(--ratio-total)) * 100%);
+  flex: none;
+  min-width: 0;
 }
 
 /* 
 .col-listing {
-  width: calc((var(--ratio-listing) / var(--ratio-total)) * 100%) !important;
-  flex: none !important;
-  min-width: 0 !important;
+  width: calc((var(--ratio-listing) / var(--ratio-total)) * 100%);
+  flex: none;
+  min-width: 0;
 } */
 
 html,
 body {
-  height: 100% !important;
+  height: 100%;
 }
 
 /* 변수들을 실제 사용할 클래스로 연결 */
 .text-theme-up {
-  color: var(--up) !important;
+  color: var(--up);
 }
 
 .text-theme-down {
-  color: var(--down) !important;
+  color: var(--down);
 }
 
 .text-theme-text {
-  color: var(--text) !important;
+  color: var(--text);
 }
 
 body.theme-binance {
@@ -273,7 +273,7 @@ body.theme-upbit:not(.resizing-active) #right-panel {
   background: transparent !important;
 }
 
-#coin-list-body .coin-row.realtime-live-row::before {
+/* #coin-list-body .coin-row.realtime-live-row::before {
   content: "";
   position: absolute;
   left: 0;
@@ -282,7 +282,7 @@ body.theme-upbit:not(.resizing-active) #right-panel {
   width: 2px;
   background-color: rgba(var(--accent-rgb), 0.35);
   border-radius: 0 1px 1px 0;
-}
+} */
 
 /* 🚀 [신규] 상단 컨트롤러 디자인 */
 #mcap-slider {
@@ -392,6 +392,11 @@ body.theme-upbit:not(.resizing-active) #right-panel {
 .flip-row {
   transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
   /* 쫀득한 이동 속도 */
+}
+
+/* 수동 정렬 시 순간 이동을 위한 예외 클래스 */
+#coin-list-body.no-transition .flip-row {
+  transition: none !important;
 }
 
 /* 즐겨찾기 별 토글 애니메이션 */
@@ -570,9 +575,9 @@ body.theme-upbit:not(.resizing-active) #right-panel {
 }
 
 /* 🚀 정렬 시 테이블 영역 로딩/어두워짐 효과 (chart-loading 참고) */
+/* transition: filter 0.1s cubic-bezier(0.1, 0, 0.1, 1); */
 #coin-list-body {
   will-change: filter;
-  transition: filter 0.1s cubic-bezier(0.1, 0, 0.1, 1);
 }
 
 /* 1. 다크 모드 (바이낸스): 기존대로 어둡고 흐리게 */
@@ -1207,16 +1212,22 @@ button[data-name="hide-all"].draw-tool-btn--active button {
 
 /* 🚀 정렬 기준에 따른 24h vs Today 변동률 불투명도(Opacity) 즉시 동기화 */
 #coin-list-body span[id^="change-"] {
-  opacity: 1 !important;
+  opacity: 1;
 }
 #coin-list-body span[id^="today-"] {
-  opacity: 0.4 !important;
+  opacity: 0.4;
 }
 
 #coin-list-body[data-sort-col="Change_Today"] span[id^="change-"] {
-  opacity: 0.4 !important;
+  opacity: 0.4;
 }
 #coin-list-body[data-sort-col="Change_Today"] span[id^="today-"] {
-  opacity: 1 !important;
+  opacity: 1;
 }
 
+/* 🚀 [성능 극대화] 실시간 OHLC 텍스트 변경 시 브라우저 레이아웃 무효화 전파 방지 */
+#ohlc-legend {
+  contain: strict;
+  width: 110px;
+  height: 140px; /* 고정 크기 할당으로 리플로우 완전 차단 */
+}

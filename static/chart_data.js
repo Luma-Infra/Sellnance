@@ -1233,7 +1233,7 @@ export async function loadMoreHistory() {
     lazyIndicator = document.createElement("div");
     lazyIndicator.id = "chart-lazy-loading-indicator";
     lazyIndicator.className =
-      "absolute left-1/2 top-1/2 z-[120] flex items-center gap-2 px-3 py-1.5 rounded-full bg-theme-panel/90 border border-theme-border shadow-lg text-[11px] font-medium text-theme-text opacity-0 pointer-events-none transition-all duration-300 transform -translate-x-1/2 -translate-y-1/2 scale-95";
+      "absolute left-1/2 top-4 z-[120] flex items-center gap-2 px-3 py-1.5 rounded-full bg-theme-panel/90 border border-theme-border shadow-lg text-[11px] font-medium text-theme-text opacity-0 pointer-events-none transition-all duration-300 transform -translate-x-1/2 scale-95";
     lazyIndicator.innerHTML = `
       <div class="w-3.5 h-3.5 border-2 border-theme-accent border-t-transparent rounded-full animate-spin"></div>
       <span id="chart-lazy-loading-text">과거 데이터 불러오는 중...</span>
