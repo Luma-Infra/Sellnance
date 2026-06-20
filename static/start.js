@@ -117,13 +117,13 @@ async function initStartScreen() {
 
   // 1. 서버 환경변수(env)에서 키 가져오기 (확실히 올 때까지 기다림)
   try {
-    console.log("📡 서버에서 env 키 조회 중...");
+    // Xconsole.log("📡 서버에서 env 키 조회 중...");
     const res = await fetch("/api/get-env-key");
     const data = await res.json();
 
     if (data.key && data.key.trim() !== "") {
       rawCmcKey = data.key;
-      console.log("✅ env 키 로드 성공!");
+      // Xconsole.log("✅ env 키 로드 성공!");
 
       // 🚀 env 키가 존재하면 즉시 로컬 스토리지에 저장하고 시작 화면을 스킵합니다.
       localStorage.setItem("CMC_API_KEY", rawCmcKey);
@@ -132,7 +132,7 @@ async function initStartScreen() {
     } else {
       // env에 없으면 로컬 스토리지 확인
       rawCmcKey = localStorage.getItem("CMC_API_KEY") || "";
-      console.log("ℹ️ env에 키가 없어 로컬 스토리지를 확인했습니다.");
+      // Xconsole.log("ℹ️ env에 키가 없어 로컬 스토리지를 확인했습니다.");
     }
   } catch (e) {
     console.error("🚨 서버 통신 실패, 로컬 스토리지로 대체합니다.");
@@ -246,7 +246,7 @@ function saveAndStart() {
 
 // 🚀 Skip (쌀먹 모드 유지)
 function skipAndStart() {
-  console.log("⏭️ [스킵] 캐시 데이터로 진입합니다.");
+  // Xconsole.log("⏭️ [스킵] 캐시 데이터로 진입합니다.");
 
   // 🚀 [INP 최적화 1] 클릭 즉시 시각적 피드백 제공
   const buttons = document.querySelectorAll("#start-screen button");

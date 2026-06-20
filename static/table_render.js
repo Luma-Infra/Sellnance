@@ -247,7 +247,7 @@ export function updateRowDynamicHTML(rowEl, row) {
   const currentMarket = store.currentMarket || "ALL";
   let nPrice = row.Price_Raw ?? 0;
   let n24h = row.Change_24h_Raw ?? 0;
-
+  0.0;
   if (currentMarket === "UPBIT") {
     nPrice = row.Upbit_Price ?? nPrice;
     n24h = row.Change_24h_Upbit ?? n24h;
@@ -347,9 +347,9 @@ export function updateRowDynamicHTML(rowEl, row) {
 
             // 🚀 세자리/네자리 폭등락 대응: 글자 수가 7글자(예: +123.45%)를 넘으면 폰트 크기를 동적으로 축소
             const chgFontSize =
-              chgText.length > 7 ? "text-[8px]" : "text-[10px]";
+              chgText.length > 7 ? "text-[9px]" : "text-[10px]";
             const todayFontSize =
-              todayText.length > 7 ? "text-[8px]" : "text-[10px]";
+              todayText.length > 7 ? "text-[9px]" : "text-[10px]";
 
             return `
               <span id="change-${tId}" class="${color24h} ${chgFontSize} whitespace-nowrap flex-shrink-0">${chgText}</span>
@@ -505,9 +505,14 @@ export function updateRowDynamicHTML(rowEl, row) {
   // 🚀 상장일 렌더링
   const listingCell = rowEl.querySelector(".col-listing");
   if (listingCell) {
-    listingCell.classList.remove("listing-placeholder");
-    listingCell.id = `listing-${tId}`;
-    listingCell.textContent = formatListingDateWithExchange(row);
+    if (store.tableViewMode === "simple" || store.viewMode === "simple") {
+      listingCell.style.display = "none";
+    } else {
+      listingCell.style.display = "";
+      listingCell.classList.remove("listing-placeholder");
+      listingCell.id = `listing-${tId}`;
+      listingCell.textContent = formatListingDateWithExchange(row);
+    }
   }
 
   window.updateRowPriceDisplay(rowEl, row);
@@ -552,6 +557,7 @@ export function updateBoundaryClass(tbody) {
 }
 
 export function renderTable(isRealtime = false) {
+  if (store.blockTableTabScroll && !isRealtime) return;
   const tbody = document.getElementById("coin-list-body");
   if (!tbody) return;
 
@@ -722,10 +728,19 @@ export function renderTable(isRealtime = false) {
     if (rowData) {
       const rowEl = store.rowDomMap.get(rowData.Ticker);
       if (rowEl) {
-        rowEl.dataset.index = i;
+        const oldIndex = parseInt(rowEl.dataset.index);
+        const needsPositionUpdate = !isRealtime || i < 30 || oldIndex < 30 || isNaN(oldIndex);
 
-        // 🚀 위치(translateY)는 모든 브라우저 렌더링 정상 노출을 위해 0초 컷으로 즉시 100% 반영! (이 부분이 누락되면 레이아웃 붕괴)
-        rowEl.style.transform = `translateY(${i * 52}px)`;
+        if (needsPositionUpdate) {
+          rowEl.dataset.index = i;
+          rowEl.style.transform = `translateY(${i * 52}px)`;
+
+          // 🚀 자바스크립트로 절대 순위 실시간 주입
+          const counterEl = rowEl.querySelector(".row-counter");
+          if (counterEl) {
+            counterEl.textContent = i + 1;
+          }
+        }
 
         // 🚀 30위 바깥 코인들은 실시간 정렬(경주마 효과) 애니메이션 제거 (즉시 순간이동)
         if (i < 30) {
@@ -737,12 +752,6 @@ export function renderTable(isRealtime = false) {
         const isPreRender = i < 30;
         if (isPreRender) {
           store.visibleSymbols.add(rowData.Ticker);
-        }
-
-        // 🚀 자바스크립트로 절대 순위 실시간 주입
-        const counterEl = rowEl.querySelector(".row-counter");
-        if (counterEl) {
-          counterEl.textContent = i + 1;
         }
 
         const isPending = !!(
@@ -1067,6 +1076,7 @@ export function clearAllPendingFavActions() {
 }
 
 export function applyPriceFlash(element, newPrice, oldPrice) {
+  if (store.blockLeftDom || store.blockTableUpdate) return;
   if (!element || newPrice === oldPrice) return;
   if (!store.useFlip) return;
 

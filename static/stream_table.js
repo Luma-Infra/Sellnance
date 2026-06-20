@@ -12,7 +12,7 @@ export function initSniperSocket() {
 
     store.sniperWs = new WebSocket(wsUrl);
     store.sniperWs.onopen = () => {
-      console.log("🎯 바이낸스 스나이퍼 엔진 가동: 보이는 놈들 정밀 타격 시작");
+      // Xconsole.log("🎯 바이낸스 스나이퍼 엔진 가동: 보이는 놈들 정밀 타격 시작");
       syncSniperSubscriptions();
     };
     const SNIPER_ROUTER = {
@@ -34,7 +34,7 @@ export function initSniperSocket() {
   ) {
     store.upbitSniperWs = new WebSocket("wss://api.upbit.com/websocket/v1");
     store.upbitSniperWs.onopen = () => {
-      console.log("🎯 업비트 스나이퍼 엔진 가동: 김치 코인들 정밀 타격 시작");
+      // Xconsole.log("🎯 업비트 스나이퍼 엔진 가동: 김치 코인들 정밀 타격 시작");
       syncSniperSubscriptions();
     };
     store.upbitSniperWs.onmessage = async (e) => {
@@ -153,7 +153,7 @@ export function syncSniperSubscriptions() {
             { type: "ticker", codes: uniqueUpbitCodes },
           ]),
         );
-      } catch (e) { }
+      } catch (e) {}
     }
   }
 }

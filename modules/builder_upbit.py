@@ -88,8 +88,10 @@ def build_upbit_row(
     info = market_data_map.get(str(final_ucid)) or market_data_map.get(lookup_id)
 
     # 🚀 CMC에서 새로운 ucid를 찾았다면 최종 업데이트
-    if not final_ucid and info:
-        final_ucid = info.get("ucid", "")
+    if (not final_ucid or not final_ucid.isdigit()) and info:
+        new_ucid = info.get("ucid", "")
+        if new_ucid and new_ucid.isdigit():
+            final_ucid = new_ucid
     if not final_ucid:
         final_ucid = base
         
@@ -129,7 +131,7 @@ def build_upbit_row(
 
     # 🚀 [신규 상장 캐치 & 족보 세탁기]
     if not ticker_info or (
-        isinstance(ticker_info, list) and (len(ticker_info) < 4 or not ticker_info[0])
+        isinstance(ticker_info, list) and (len(ticker_info) < 4 or not ticker_info[0] or ticker_info[0] != final_ucid)
     ):
         TICKER_DATA[display_name] = [
             final_ucid,
@@ -318,6 +320,7 @@ def build_upbit_row(
         "Name": coin_name,  # 🚀 추출된 정확한 이름 삽입
         "Chain": chain,
         "Upbit": "O",
+        "Upbit_Symbol": base,
         "Bithumb_Symbol": bithumb_symbol,
         "Note": NOTE_MAP.get(base, "Upbit Only"),
         "precision": up_precision,

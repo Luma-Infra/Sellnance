@@ -334,24 +334,24 @@ function restoreSavedUserSettings() {
       switchViewMode(savedViewMode);
     });
   } catch (e) {
-    console.error("Failed to restore user settings:", e);
+    // Xconsole.error("Failed to restore user settings:", e);
   }
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
-  console.log("🏁 대시보드 엔진 가동 시작...");
+  // Xconsole.log("🏁 대시보드 엔진 가동 시작...");
   restoreSavedUserSettings();
   if (typeof initOrderbookDOM === "function") initOrderbookDOM();
 
   try {
     // 1️⃣ [데이터 로드] 마켓 구성 정보 + 실제 테이블 장부를 '순서대로' 가져온다
     await loadSymbols(); // 코인 맵핑 정보 로드
-    console.log("✅ 1-A. 마켓 맵 로드 완료");
+    // Xconsole.log("✅ 1-A. 마켓 맵 로드 완료");
 
     if (typeof loadTableData === "function") {
       // 🚨 핵심: 실시간 시세가 기록될 '진짜 장부'가 채워질 때까지 기다립니다.
       await loadTableData();
-      console.log("✅ 1-B. 실시간 시세 장부(currentTableData) 입고 완료");
+      // Xconsole.log("✅ 1-B. 실시간 시세 장부(currentTableData) 입고 완료");
     }
 
     // 2️⃣ [엔진 준비] 이제 장부가 확실히 있으니 차트를 그리고 엔진을 점화한다
@@ -372,16 +372,16 @@ document.addEventListener("DOMContentLoaded", async () => {
       else if (typeof initChart === "function") initChart();
       initSniperSocket();
 
-      console.log("✅ 2. 테이블 실시간 시세 및 차트/스나이퍼 소켓 점화 완료!");
+      // Xconsole.log("✅ 2. 테이블 실시간 시세 및 차트/스나이퍼 소켓 점화 완료!");
     } else {
       // 🚀 [수정] 성급하게 에러 던지지 말고 재시도 유도
-      console.warn("⚠️ 장부가 아직 비어있습니다. 수집 완료를 기다리는 중...");
+      // Xconsole.warn("⚠️ 장부가 아직 비어있습니다. 수집 완료를 기다리는 중...");
       const loadingText = document.querySelector("#loading-modal h2");
       if (loadingText)
         loadingText.innerText = "데이터 수집 완료 대기 중 (5초 후 재시도)...";
 
       setTimeout(() => {
-        console.log("🔄 데이터 수집 완료 재확인 시도...");
+        // Xconsole.log("🔄 데이터 수집 완료 재확인 시도...");
         location.reload();
       }, 5000);
       return;
@@ -415,7 +415,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     });
   } catch (err) {
-    console.error("🚨 시동 실패:", err);
+    // Xconsole.error("🚨 시동 실패:", err);
     // 보험: 2초 뒤 자동 새로고침 시도
     // setTimeout(() => location.reload(), 2000);
   }
@@ -461,7 +461,7 @@ function setupButtonEvents() {
     store.useFlip = flipToggle.checked;
     flipToggle.addEventListener("change", (e) => {
       store.useFlip = e.target.checked;
-      console.log("Flip animation status changed:", store.useFlip);
+      // Xconsole.log("Flip animation status changed:", store.useFlip);
     });
   }
 }
@@ -544,7 +544,7 @@ document.addEventListener("visibilitychange", () => {
     tabHiddenTime = Date.now();
     store.isTabHidden = true;
   } else if (document.visibilityState === "visible") {
-    console.log("☀️ 탭 활성화: 절전 모드 해제 및 데이터 클렌징");
+    // Xconsole.log("☀️ 탭 활성화: 절전 모드 해제 및 데이터 클렌징");
     store.isRestoringTab = true;
     store.isTabHidden = false;
 
@@ -555,7 +555,7 @@ document.addEventListener("visibilitychange", () => {
     // (소켓은 유지되므로 소켓 재연결은 건너뛰고 최신 캔들 동기화만 수행)
     const hiddenDuration = Date.now() - tabHiddenTime;
     if (tabHiddenTime > 0 && hiddenDuration > 5000) {
-      console.log("🔄 백그라운드 복귀: 차트 히스토리 실시간 동기화");
+      // Xconsole.log("🔄 백그라운드 복귀: 차트 히스토리 실시간 동기화");
       if (store.currentAsset && typeof fetchHistory === "function") {
         fetchHistory(store.currentAsset, false, true); // 🚀 isTabRestore = true로 전달하여 줌 원복 방어!
       }
@@ -749,10 +749,10 @@ function scheduleDailyReset() {
   }
 
   const timeUntilReset = nextReset.getTime() - now.getTime();
-  console.log(`⏰ 다음 9시 정각(KST) 무지연 일일 리셋까지 ${(timeUntilReset / 1000 / 3600).toFixed(2)}시간 남았습니다.`);
+  // Xconsole.log(`⏰ 다음 9시 정각(KST) 무지연 일일 리셋까지 ${(timeUntilReset / 1000 / 3600).toFixed(2)}시간 남았습니다.`);
 
   setTimeout(() => {
-    console.log("🚨 09:00:00.000 KST 정각! 프론트엔드 무지연 0% 리셋 발동!");
+    // Xconsole.log("🚨 09:00:00.000 KST 정각! 프론트엔드 무지연 0% 리셋 발동!");
 
     // 1. [무지연 덮어쓰기] 백엔드를 기다리지 않고, 프론트가 들고 있는 현재 웹소켓 가격을 즉시 '오늘의 시가'로 확정!
     if (store.currentTableData && Array.isArray(store.currentTableData)) {
@@ -773,9 +773,9 @@ function scheduleDailyReset() {
 
     // 3. [백그라운드 사후 동기화] 2초 뒤에 백엔드를 조용히 찔러서, 거래소의 공식 데이터와 장부를 완벽하게 일치시킴
     setTimeout(() => {
-      console.log("🔄 09:00:02 KST 백그라운드 서버 동기화 진행");
+      // Xconsole.log("🔄 09:00:02 KST 백그라운드 서버 동기화 진행");
       if (typeof window.loadTableData === "function") {
-        window.loadTableData(true); // force=true로 백엔드 캐시 초기화 및 재조회
+        window.loadTableData(true, true); // force=true, silent=true 로 로딩 마스크 없이 동기화
       }
     }, 2000);
 

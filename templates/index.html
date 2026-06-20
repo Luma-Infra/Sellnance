@@ -16,10 +16,21 @@
     <!-- <img src="../static/_gemini-svg-light.svg" alt="logo" id="main-logo-img" class="hidden" /> -->
     <!-- <img src="../static/gemini-svg.svg" alt="logo" /> -->
     <!-- <script src="https://unpkg.com/lightweight-charts@5.2.0/dist/lightweight-charts.standalone.production.js"></script> -->
-    <script src="../static/lightweight-charts.standalone.production.js"></script>
+    <script>
+      (function () {
+        var s1 = document.createElement("script");
+        s1.src = "/static/lightweight-charts.standalone.production.js";
+        s1.async = false;
+        document.head.appendChild(s1);
+
+        var s2 = document.createElement("script");
+        s2.src = "/static/sweetalert2@11.js";
+        s2.async = false;
+        document.head.appendChild(s2);
+      })();
+    </script>
     <!-- 🚀 차트 병목 유발용 디버그 트래커 비활성화 (렉 개선 완료) -->
     <!-- <script src="../static/lwc_error_tracker.js"></script> -->
-    <script src="../static/sweetalert2@11.js"></script>
 
     <!-- 🚀 추천 폰트 로드 (로컬 다운로드 완료) -->
     <link
@@ -352,9 +363,17 @@
     <div
       id="loading-modal"
       class="fixed z-[200] inset-0 w-screen h-screen bg-[#131313]/85 backdrop-blur-[5px] flex flex-col justify-center items-center text-white transition-opacity duration-10"
+      style="
+        font-family:
+          -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto,
+          Helvetica, Arial, sans-serif;
+      "
     >
       <div class="spinner"></div>
-      <h2 class="m-0 mb-3 text-theme-accent text-xl font-medium tracking-wide">
+      <h2
+        class="m-0 mb-3 text-xl font-medium tracking-wide"
+        style="color: #d4d4d4; opacity: 0.8"
+      >
         Fetching Market Data...
       </h2>
       <p class="text-[#d4d4d4] opacity-80 text-center text-sm leading-relaxed">
@@ -1290,6 +1309,17 @@
                   카운트다운 ON
                 </button>
 
+                <!-- 🚀 호가창 열기/닫기 토글 버튼 -->
+                <button
+                  id="toggle-orderbook-btn"
+                  class="px-2.5 py-1 text-[10px] md:text-[11px] font-medium text-theme-text opacity-70 hover:opacity-100 border border-theme-border/50 rounded bg-theme-panel/50 transition-all whitespace-nowrap mr-1 cursor-pointer"
+                  onclick="
+                    if (window.toggleOrderbook) window.toggleOrderbook();
+                  "
+                >
+                  호가창 열기
+                </button>
+
                 <!-- 🚀 차트 스케일 리셋 버튼 -->
                 <!-- <button
               class="reset-btn px-2.5 py-1 text-[10px] md:text-[11px] font-medium text-theme-down bg-theme-down/5 border border-theme-down/30 rounded hover:bg-theme-down/15 transition-all shadow-sm whitespace-nowrap cursor-pointer"
@@ -1437,7 +1467,7 @@
 
                 <div
                   id="ohlc-legend"
-                  class="absolute top-2.5 left-20px] z-[50] font-tempTestDss text-[11px] flex flex-col items-start gap-0.5 px-2 py-1.5 text-theme-text backdrop-blur-sm border border-theme-border/50 rounded pointer-events-none w-[110px] shadow-sm"
+                  class="absolute top-2.5 left-[10px] z-[50] font-tempTestDss text-[11px] flex flex-col items-start gap-0.5 px-2 pt-1.5 pb-2 text-theme-text backdrop-blur-sm border border-theme-border/50 rounded pointer-events-none w-auto min-w-[110px] shadow-sm"
                   style="
                     background-color: color-mix(
                       in srgb,
@@ -1446,32 +1476,42 @@
                     );
                   "
                 >
-                  <span id="ohlc-placeholder" class="opacity-50 text-[10px]"
+                  <span
+                    id="ohlc-placeholder"
+                    class="opacity-50 text-[10px] whitespace-nowrap"
                     >Hover on chart...</span
                   >
                   <div
                     id="ohlc-values"
                     class="hidden flex flex-col items-start gap-0.5 w-full"
                   >
-                    <div class="flex items-center justify-between w-full">
+                    <div
+                      class="flex items-center justify-between w-full whitespace-nowrap"
+                    >
                       <span class="opacity-60 text-[10px]">open</span>
                       <span id="ohlc-open" class="font-medium text-right"
                         >-</span
                       >
                     </div>
-                    <div class="flex items-center justify-between w-full">
+                    <div
+                      class="flex items-center justify-between w-full whitespace-nowrap"
+                    >
                       <span class="opacity-60 text-[10px]">high</span>
                       <span id="ohlc-high" class="font-medium text-right"
                         >-</span
                       >
                     </div>
-                    <div class="flex items-center justify-between w-full">
+                    <div
+                      class="flex items-center justify-between w-full whitespace-nowrap"
+                    >
                       <span class="opacity-60 text-[10px]">low</span>
                       <span id="ohlc-low" class="font-medium text-right"
                         >-</span
                       >
                     </div>
-                    <div class="flex items-center justify-between w-full">
+                    <div
+                      class="flex items-center justify-between w-full whitespace-nowrap"
+                    >
                       <span class="opacity-60 text-[10px]">close</span>
                       <span id="ohlc-close" class="font-medium text-right"
                         >-</span
@@ -1479,7 +1519,7 @@
                     </div>
                     <div
                       id="ohlc-vol-container"
-                      class="flex items-center justify-between w-full"
+                      class="flex items-center justify-between w-full whitespace-nowrap"
                     >
                       <span class="opacity-60 text-[10px]">vol</span>
                       <span id="ohlc-volume" class="font-medium text-right"
@@ -1489,7 +1529,9 @@
                     <div
                       class="w-full border-t border-theme-border/30 my-0.5"
                     ></div>
-                    <div class="flex items-center justify-between w-full">
+                    <div
+                      class="flex items-center justify-between w-full whitespace-nowrap"
+                    >
                       <span class="opacity-60 text-[10px]">chg</span>
                       <span
                         id="ohlc-change"
@@ -2183,28 +2225,427 @@
         </div>
       </div>
 
-      <!-- 🚀 폰트 테스트 UI (우측 하단 플로팅 패널) -->
-      <!-- <div id="font-tester-panel"
-    class="fixed bottom-4 right-4 z-[9999] bg-theme-panel/90 backdrop-blur-md border border-theme-border shadow-2xl rounded-2xl p-4 flex flex-col gap-2 w-[220px]">
-    <div class="flex items-center justify-between">
-      <span class="text-xs font-bold text-theme-text">🎨 폰트 테스터</span>
-      <button onclick="document.getElementById('font-tester-panel').style.display='none'"
-        class="text-theme-text/50 hover:text-theme-text text-xs">✕</button>
-    </div>
-    <div class="flex flex-col gap-1.5 mt-1">
-      <button onclick="document.body.className=''; document.body.classList.add('font-pretendard')"
-        class="px-3 py-1.5 text-[11px] font-bold rounded-lg border border-theme-border hover:bg-theme-accent hover:text-white transition-colors text-left flex items-center justify-between">
-        1. Pretendard <span class="opacity-50 text-[9px]">(원탑)</span>
-      </button>
-      <button onclick="document.body.className=''; document.body.classList.add('font-inter')"
-        class="px-3 py-1.5 text-[11px] font-bold rounded-lg border border-theme-border hover:bg-theme-accent hover:text-white transition-colors text-left flex items-center justify-between font-inter">
-        2. Inter + SUIT <span class="opacity-50 text-[9px]">(월스트리트)</span>
-      </button>
-      <button onclick="document.body.className=''; document.body.classList.add('font-outfit')"
-        class="px-3 py-1.5 text-[11px] font-bold rounded-lg border border-theme-border hover:bg-theme-accent hover:text-white transition-colors text-left flex items-center justify-between font-outfit">
-        3. Outfit + SUIT <span class="opacity-50 text-[9px]">(크립토 힙스터)</span>
-      </button>
-    </div> -->
+      <!-- 🚀 성능 디버그 도구 UI (우측 하단 플로팅 패널) -->
+      <div
+        id="perf-debug-panel"
+        class="fixed bottom-4 right-4 z-[9999] bg-theme-panel/95 backdrop-blur-md border border-theme-border shadow-2xl rounded-2xl p-4 flex flex-col gap-3 w-[270px]"
+      >
+        <div
+          class="flex items-center justify-between border-b border-theme-border/30 pb-2"
+        >
+          <span
+            class="text-xs font-bold text-theme-text flex items-center gap-1"
+            >⚡ 렉 유발 디버거</span
+          >
+          <button
+            onclick="
+              document.getElementById('perf-debug-panel').style.display = 'none'
+            "
+            class="text-theme-text/50 hover:text-theme-text text-xs cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+        <div class="flex flex-col gap-2.5">
+          <!-- 1. [부모] 우측 패널 DOM 차단 -->
+          <div
+            class="flex flex-col gap-2 bg-white/2 p-2.5 rounded-xl border border-theme-border/20"
+          >
+            <div class="flex items-center justify-between">
+              <div class="flex flex-col gap-0.5">
+                <span class="text-[11px] font-bold text-theme-text"
+                  >우측 패널 DOM 차단 (부모)</span
+                >
+                <span class="text-[9px] opacity-40 leading-tight"
+                  >우측 헤더/레전드 글자 갱신 차단</span
+                >
+              </div>
+              <label
+                class="relative inline-flex items-center cursor-pointer select-none"
+              >
+                <input
+                  type="checkbox"
+                  id="block-right-dom-toggle"
+                  class="sr-only peer"
+                  onchange="window.toggleRightDomBlock(this.checked)"
+                  checked
+                />
+                <div
+                  class="w-9 h-5 bg-theme-border rounded-full peer peer-checked:after:translate-x-[16px] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-theme-accent"
+                ></div>
+              </label>
+            </div>
+
+            <!-- [자식] 우측 종속 요소들 -->
+            <div
+              class="pl-3 border-l-2 border-theme-border/30 flex flex-col gap-2.5"
+            >
+              <div
+                class="flex items-center justify-between opacity-80"
+                id="child-chart-container"
+              >
+                <div class="flex flex-col gap-0.5">
+                  <span class="text-[10px] font-bold text-theme-text"
+                    >차트 실시간 갱신 차단</span
+                  >
+                  <span class="text-[8px] opacity-40 leading-tight"
+                    >캔들/거래량 그리기 API 중단</span
+                  >
+                </div>
+                <label
+                  class="relative inline-flex items-center cursor-pointer select-none"
+                >
+                  <input
+                    type="checkbox"
+                    id="block-chart-dom-toggle"
+                    class="sr-only peer"
+                    onchange="window.toggleChartDomBlock(this.checked)"
+                    checked
+                  />
+                  <div
+                    class="w-8 h-4 bg-theme-border rounded-full peer peer-checked:after:translate-x-[16px] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-theme-accent"
+                  ></div>
+                </label>
+              </div>
+
+              <div
+                class="flex items-center justify-between opacity-80"
+                id="child-orderbook-container"
+              >
+                <div class="flex flex-col gap-0.5">
+                  <span class="text-[10px] font-bold text-theme-text"
+                    >실시간 호가창 차단</span
+                  >
+                  <span class="text-[8px] opacity-40 leading-tight"
+                    >호가 렌더링/소켓 수신 중단</span
+                  >
+                </div>
+                <label
+                  class="relative inline-flex items-center cursor-pointer select-none"
+                >
+                  <input
+                    type="checkbox"
+                    id="block-orderbook-toggle"
+                    class="sr-only peer"
+                    onchange="window.toggleOrderbookBlock(this.checked)"
+                    checked
+                  />
+                  <div
+                    class="w-8 h-4 bg-theme-border rounded-full peer peer-checked:after:translate-x-[16px] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-theme-accent"
+                  ></div>
+                </label>
+              </div>
+
+              <div
+                class="flex items-center justify-between opacity-80"
+                id="child-legend-container"
+              >
+                <div class="flex flex-col gap-0.5">
+                  <span class="text-[10px] font-bold text-theme-text"
+                    >OHLC 레전드 갱신 차단</span
+                  >
+                  <span class="text-[8px] opacity-40 leading-tight"
+                    >상단 십자선 가격표 갱신 중단</span
+                  >
+                </div>
+                <label
+                  class="relative inline-flex items-center cursor-pointer select-none"
+                >
+                  <input
+                    type="checkbox"
+                    id="block-legend-toggle"
+                    class="sr-only peer"
+                    onchange="window.toggleLegendBlock(this.checked)"
+                    checked
+                  />
+                  <div
+                    class="w-8 h-4 bg-theme-border rounded-full peer peer-checked:after:translate-x-[16px] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-theme-accent"
+                  ></div>
+                </label>
+              </div>
+
+              <div
+                class="flex items-center justify-between opacity-80"
+                id="child-resize-container"
+              >
+                <div class="flex flex-col gap-0.5">
+                  <span class="text-[10px] font-bold text-theme-text"
+                    >차트 리사이즈 동기화 차단</span
+                  >
+                  <span class="text-[8px] opacity-40 leading-tight"
+                    >레이아웃 리사이징 리플로우 차단</span
+                  >
+                </div>
+                <label
+                  class="relative inline-flex items-center cursor-pointer select-none"
+                >
+                  <input
+                    type="checkbox"
+                    id="block-resize-toggle"
+                    class="sr-only peer"
+                    onchange="window.toggleResizeBlock(this.checked)"
+                    checked
+                  />
+                  <div
+                    class="w-8 h-4 bg-theme-border rounded-full peer peer-checked:after:translate-x-[16px] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-theme-accent"
+                  ></div>
+                </label>
+              </div>
+
+              <div
+                class="flex items-center justify-between opacity-80"
+                id="child-mouse-event-container"
+              >
+                <div class="flex flex-col gap-0.5">
+                  <span class="text-[10px] font-bold text-theme-text"
+                    >차트 마우스 이벤트 차단</span
+                  >
+                  <span class="text-[8px] opacity-40 leading-tight"
+                    >십자선 싱크 & 마우스 렉 차단</span
+                  >
+                </div>
+                <label
+                  class="relative inline-flex items-center cursor-pointer select-none"
+                >
+                  <input
+                    type="checkbox"
+                    id="block-mouse-event-toggle"
+                    class="sr-only peer"
+                    onchange="window.toggleChartMouseEventBlock(this.checked)"
+                    checked
+                  />
+                  <div
+                    class="w-8 h-4 bg-theme-border rounded-full peer peer-checked:after:translate-x-[16px] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-theme-accent"
+                  ></div>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. [부모] 좌측 테이블 DOM 차단 -->
+          <div
+            class="flex flex-col gap-2 bg-white/2 p-2.5 rounded-xl border border-theme-border/20"
+          >
+            <div class="flex items-center justify-between">
+              <div class="flex flex-col gap-0.5">
+                <span class="text-[11px] font-bold text-theme-text"
+                  >좌측 테이블 DOM 차단 (부모)</span
+                >
+                <span class="text-[9px] opacity-40 leading-tight"
+                  >실시간 테이블 셀 교체 차단</span
+                >
+              </div>
+              <label
+                class="relative inline-flex items-center cursor-pointer select-none"
+              >
+                <input
+                  type="checkbox"
+                  id="block-left-dom-toggle"
+                  class="sr-only peer"
+                  onchange="window.toggleLeftDomBlock(this.checked)"
+                  checked
+                />
+                <div
+                  class="w-9 h-5 bg-theme-border rounded-full peer peer-checked:after:translate-x-[16px] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-theme-accent"
+                ></div>
+              </label>
+            </div>
+
+            <!-- [자식] 좌측 종속 요소들 -->
+            <div
+              class="pl-3 border-l-2 border-theme-border/30 flex flex-col gap-2.5"
+            >
+              <div
+                class="flex items-center justify-between opacity-80"
+                id="child-sort-container"
+              >
+                <div class="flex flex-col gap-0.5">
+                  <span class="text-[10px] font-bold text-theme-text"
+                    >테이블 실시간 정렬 차단</span
+                  >
+                  <span class="text-[8px] opacity-40 leading-tight"
+                    >소켓 수신 시 행 자동 재배치 중단</span
+                  >
+                </div>
+                <label
+                  class="relative inline-flex items-center cursor-pointer select-none"
+                >
+                  <input
+                    type="checkbox"
+                    id="block-sort-toggle"
+                    class="sr-only peer"
+                    onchange="window.toggleSortBlock(this.checked)"
+                    checked
+                  />
+                  <div
+                    class="w-8 h-4 bg-theme-border rounded-full peer peer-checked:after:translate-x-[16px] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-theme-accent"
+                  ></div>
+                </label>
+              </div>
+
+              <div
+                class="flex items-center justify-between opacity-80"
+                id="child-tabscroll-container"
+              >
+                <div class="flex flex-col gap-0.5">
+                  <span class="text-[10px] font-bold text-theme-text"
+                    >테이블 스크롤/탭 갱신 차단</span
+                  >
+                  <span class="text-[8px] opacity-40 leading-tight"
+                    >스크롤/필터 시 DOM 전면 재기록 차단</span
+                  >
+                </div>
+                <label
+                  class="relative inline-flex items-center cursor-pointer select-none"
+                >
+                  <input
+                    type="checkbox"
+                    id="block-tabscroll-toggle"
+                    class="sr-only peer"
+                    onchange="window.toggleTabScrollBlock(this.checked)"
+                  />
+                  <div
+                    class="w-8 h-4 bg-theme-border rounded-full peer peer-checked:after:translate-x-[16px] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-theme-accent"
+                  ></div>
+                </label>
+              </div>
+
+              <div
+                class="flex items-center justify-between opacity-80"
+                id="child-table-update-container"
+              >
+                <div class="flex flex-col gap-0.5">
+                  <span class="text-[10px] font-bold text-theme-text"
+                    >테이블 실시간 셀 갱신 차단</span
+                  >
+                  <span class="text-[8px] opacity-40 leading-tight"
+                    >소켓 수신 시 가격/플래시 갱신 중단</span
+                  >
+                </div>
+                <label
+                  class="relative inline-flex items-center cursor-pointer select-none"
+                >
+                  <input
+                    type="checkbox"
+                    id="block-table-update-toggle"
+                    class="sr-only peer"
+                    onchange="window.toggleTableUpdateBlock(this.checked)"
+                    checked
+                  />
+                  <div
+                    class="w-8 h-4 bg-theme-border rounded-full peer peer-checked:after:translate-x-[16px] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-theme-accent"
+                  ></div>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. [부모] 실시간 김프 연산 차단 -->
+          <div
+            class="flex flex-col gap-2 bg-white/2 p-2.5 rounded-xl border border-theme-border/20"
+          >
+            <div class="flex items-center justify-between">
+              <div class="flex flex-col gap-0.5">
+                <span class="text-[11px] font-bold text-theme-text"
+                  >실시간 김프 연산 차단 (부모)</span
+                >
+                <span class="text-[9px] opacity-40 leading-tight"
+                  >초단위 해외 시세 비교/프리미엄 공식 스킵</span
+                >
+              </div>
+              <label
+                class="relative inline-flex items-center cursor-pointer select-none"
+              >
+                <input
+                  type="checkbox"
+                  id="block-kimchi-toggle"
+                  class="sr-only peer"
+                  onchange="window.toggleKimchiBlock(this.checked)"
+                />
+                <div
+                  class="w-9 h-5 bg-theme-border rounded-full peer peer-checked:after:translate-x-[16px] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-theme-accent"
+                ></div>
+              </label>
+            </div>
+
+            <!-- [자식] 김프 종속 요소들 -->
+            <div
+              class="pl-3 border-l-2 border-theme-border/30 flex flex-col gap-2.5"
+            >
+              <div
+                class="flex items-center justify-between opacity-80"
+                id="child-radardatabatch-container"
+              >
+                <div class="flex flex-col gap-0.5">
+                  <span class="text-[10px] font-bold text-theme-text"
+                    >레이더 3초 배치 갱신 차단</span
+                  >
+                  <span class="text-[8px] opacity-40 leading-tight"
+                    >백그라운드 스냅샷 일괄 갱신 중단</span
+                  >
+                </div>
+                <label
+                  class="relative inline-flex items-center cursor-pointer select-none"
+                >
+                  <input
+                    type="checkbox"
+                    id="block-radardatabatch-toggle"
+                    class="sr-only peer"
+                    onchange="window.toggleRadarBatchBlock(this.checked)"
+                  />
+                  <div
+                    class="w-8 h-4 bg-theme-border rounded-full peer peer-checked:after:translate-x-[16px] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-theme-accent"
+                  ></div>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. aggTrade 실시간 주기 조절 -->
+          <div
+            class="flex flex-col gap-2 bg-white/2 p-2.5 rounded-xl border border-theme-border/20"
+          >
+            <div class="flex flex-col gap-1">
+              <span class="text-[11px] font-bold text-theme-text"
+                >aggTrade 실시간 주기 조절</span
+              >
+              <span class="text-[8px] opacity-40 leading-tight"
+                >체결 틱 렌더링 빈도 쓰로틀링 주기 설정</span
+              >
+            </div>
+            <div class="grid grid-cols-4 gap-1 mt-1 text-[9px]">
+              <button
+                id="aggtrade-interval-raw"
+                onclick="window.setAggTradeInterval(0)"
+                class="py-1 px-1 rounded bg-theme-accent text-white font-bold cursor-pointer text-center transition-all"
+              >
+                Raw
+              </button>
+              <button
+                id="aggtrade-interval-100"
+                onclick="window.setAggTradeInterval(100)"
+                class="py-1 px-1 rounded bg-theme-border/40 text-theme-text/80 hover:bg-theme-border/60 cursor-pointer text-center transition-all"
+              >
+                100ms
+              </button>
+              <button
+                id="aggtrade-interval-500"
+                onclick="window.setAggTradeInterval(500)"
+                class="py-1 px-1 rounded bg-theme-border/40 text-theme-text/80 hover:bg-theme-border/60 cursor-pointer text-center transition-all"
+              >
+                500ms
+              </button>
+              <button
+                id="aggtrade-interval-1500"
+                onclick="window.setAggTradeInterval(1500)"
+                class="py-1 px-1 rounded bg-theme-border/40 text-theme-text/80 hover:bg-theme-border/60 cursor-pointer text-center transition-all"
+              >
+                1500ms
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </body>
 </html>

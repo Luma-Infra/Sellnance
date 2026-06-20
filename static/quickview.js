@@ -80,7 +80,8 @@ export async function initQuickView() {
   });
 
   const pageIndicator = document.getElementById("qv-page-indicator");
-  if (pageIndicator) pageIndicator.innerText = `PAGE ${qvState.page} / ${qvState.maxPage}`;
+  if (pageIndicator)
+    pageIndicator.innerText = `PAGE ${qvState.page} / ${qvState.maxPage}`;
 
   // 레이아웃 토글 슬라이더 UI 동기화
   updateLayoutToggleUI(qvState.layout);
@@ -97,7 +98,7 @@ export async function initQuickView() {
 
 // 🛑 퀵뷰 강제 파괴 및 자원 소각 (탭 이탈 시 메모리 누수 원천 차단)
 export function destroyQuickView() {
-  console.log("🧹 퀵뷰 전용 자원 및 실시간 소켓 소각 시작...");
+  // Xconsole.log("🧹 퀵뷰 전용 자원 및 실시간 소켓 소각 시작...");
 
   // 1. 웹소켓 차단
   disconnectQuickViewSockets();
@@ -690,7 +691,7 @@ function connectQuickViewSockets() {
     qvState.binanceWs = new WebSocket(wsBase + streams);
 
     qvState.binanceWs.onopen = () => {
-      console.log("⚡ 퀵뷰 바이낸스 실시간 스트림 채널 점화:", streams);
+      // Xconsole.log("⚡ 퀵뷰 바이낸스 실시간 스트림 채널 점화:", streams);
     };
 
     qvState.binanceWs.onmessage = (e) => {
@@ -729,7 +730,7 @@ function connectQuickViewSockets() {
         try {
           series.update(candle);
           updateLiveHeaderPrice(idx, candle.close, k.P || "0.0");
-        } catch (err) { }
+        } catch (err) {}
       } else if (eventType === "aggTrade") {
         // aggTrade 실시간 단가 및 봉 내부 업데이트 반영!
         const newPrice = parseFloat(data.p);
@@ -755,12 +756,12 @@ function connectQuickViewSockets() {
               ? asset.Change_Today_Raw || 0
               : asset.Change_24h_Raw || 0;
           updateLiveHeaderPrice(idx, newPrice, chgValue.toString(), true);
-        } catch (err) { }
+        } catch (err) {}
       }
     };
 
     qvState.binanceWs.onclose = () => {
-      console.log("⚡ 퀵뷰 바이낸스 웹소켓 닫힘");
+      // Xconsole.log("⚡ 퀵뷰 바이낸스 웹소켓 닫힘");
     };
   }
 
@@ -774,7 +775,7 @@ function connectQuickViewSockets() {
         (a) =>
           `KRW-${a.Upbit_Symbol || a.Symbol || a.Ticker.replace("KRW", "")}`,
       );
-      console.log("⚡ 퀵뷰 업비트 실시간 스트림 채널 점화:", codes);
+      // Xconsole.log("⚡ 퀵뷰 업비트 실시간 스트림 채널 점화:", codes);
       qvState.upbitWs.send(
         JSON.stringify([
           { ticket: "quickview_upbit_engine" },
@@ -833,7 +834,7 @@ function connectQuickViewSockets() {
     };
 
     qvState.upbitWs.onclose = () => {
-      console.log("⚡ 퀵뷰 업비트 웹소켓 닫힘");
+      // Xconsole.log("⚡ 퀵뷰 업비트 웹소켓 닫힘");
     };
   }
 }
@@ -1074,7 +1075,8 @@ export function changeQuickViewPage(dir) {
   qvState.page = targetPage;
 
   const pageIndicator = document.getElementById("qv-page-indicator");
-  if (pageIndicator) pageIndicator.innerText = `PAGE ${targetPage} / ${qvState.maxPage}`;
+  if (pageIndicator)
+    pageIndicator.innerText = `PAGE ${targetPage} / ${qvState.maxPage}`;
 
   // 차트 전체 갱신
   initQuickView();
@@ -1130,6 +1132,14 @@ export function resetQuickView() {
   qvState.sortType = "";
   qvState.page = 1;
   destroyQuickView();
+
+  // destroyQuickView가 컨테이너를 display: none으로 만들기 때문에 다시 노출 처리
+  const container = document.getElementById("quickview-container");
+  if (container) {
+    container.classList.remove("hidden");
+    container.classList.add("qv-modal");
+    container.style.display = "flex";
+  }
 
   const initOverlay = document.getElementById("quickview-init-overlay");
   if (initOverlay) {
@@ -1196,7 +1206,7 @@ export function resetQuickViewChartsScale() {
     if (chart) {
       try {
         chart.timeScale().fitContent();
-      } catch (e) { }
+      } catch (e) {}
     }
   });
 }

@@ -2,17 +2,19 @@
 import { store } from "./_store.js";
 
 // 1. 데이터 로드 함수
-export async function loadTableData(force = false) {
+export async function loadTableData(force = false, silent = false) {
   const modal = document.getElementById("loading-modal");
   const updateTimeSpan = document.getElementById("update-time");
 
-  modal.classList.remove("hidden");
+  if (!silent && modal) {
+    modal.classList.remove("hidden");
+  }
   // updateTimeSpan.innerText = "업데이트 중...";
 
   try {
-    console.log("1. 파이썬 서버에 테이블 데이터 요청 시작!"); // ⭐️ 추가
+    // Xconsole.log("1. 파이썬 서버에 테이블 데이터 요청 시작!"); // ⭐️ 추가
     const res = await fetch(`/api/market-data?force=${force}`);
-    console.log("2. 파이썬 서버가 응답 완료!"); // ⭐️ 추가
+    // Xconsole.log("2. 파이썬 서버가 응답 완료!"); // ⭐️ 추가
     const result = await res.json();
     // updateTimeSpan.innerText = `마지막 업데이트: ${result.last_updated}`;
 
@@ -43,7 +45,9 @@ export async function loadTableData(force = false) {
     alert("서버에서 데이터를 가져오지 못했습니다.");
     if (updateTimeSpan) updateTimeSpan.innerText = "업데이트 실패";
   } finally {
-    modal.classList.add("hidden");
+    if (modal) {
+      modal.classList.add("hidden");
+    }
   }
 }
 
@@ -82,9 +86,7 @@ export async function loadTableDataSilent() {
       // 2. 신규 유입 코인만 찾아서 장부에 꽂아넣기
       result.data.forEach((freshItem) => {
         if (!currentTickers.has(freshItem.Ticker)) {
-          console.log(
-            `➕ [사일런트 동기화] 신규 코인 장부 주입: ${freshItem.Ticker}`,
-          );
+          // Xconsole.log(`➕ [사일런트 동기화] 신규 코인 장부 주입: ${freshItem.Ticker}`,);
 
           freshItem.DisplayTicker = (
             freshItem.DisplayTicker || freshItem.Symbol

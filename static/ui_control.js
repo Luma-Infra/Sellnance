@@ -420,6 +420,11 @@ function togglePanelSwap() {
 
 // 🚀 온보딩 모달 제어
 function showOnboardingModal(force = false) {
+  // force가 true가 아니고, 이미 보지 않기 설정을 한 경우 모달을 띄우지 않음
+  if (!force && localStorage.getItem("sellnance_onboarding_shown") === "true") {
+    return;
+  }
+
   const modal = document.getElementById("onboarding-modal");
   const content = document.getElementById("onboarding-modal-content");
   if (!modal || !content) return;
@@ -441,6 +446,12 @@ function closeOnboardingModal() {
   const content = document.getElementById("onboarding-modal-content");
   if (!modal || !content) return;
 
+  // '다시 보지 않기' 체크박스 선택 여부 확인 후 로컬스토리지에 저장
+  const neverShowChk = document.getElementById("onboarding-never-show");
+  if (neverShowChk && neverShowChk.checked) {
+    localStorage.setItem("sellnance_onboarding_shown", "true");
+  }
+
   modal.classList.remove("opacity-100");
   modal.classList.add("opacity-0");
   content.classList.remove("scale-100");
@@ -452,9 +463,194 @@ function closeOnboardingModal() {
   }, 300);
 }
 
+function toggleRightDomBlock(checked) {
+  store.blockRightDom = checked;
+  console.log(`⚡ [DEBUG] 우측 패널 DOM 차단 모드: ${checked ? "ON" : "OFF"}`);
+  
+  // 🚀 부모 차단 시 자식 체크박스들 강제 제어 (disabled 및 opacity 비주얼 싱크)
+  const childChart = document.getElementById("block-chart-dom-toggle");
+  const childOb = document.getElementById("block-orderbook-toggle");
+  const childLegend = document.getElementById("block-legend-toggle");
+  const childResize = document.getElementById("block-resize-toggle");
+  const childMouseEvent = document.getElementById("block-mouse-event-toggle");
+
+  const containerChart = document.getElementById("child-chart-container");
+  const containerOb = document.getElementById("child-orderbook-container");
+  const containerLegend = document.getElementById("child-legend-container");
+  const containerResize = document.getElementById("child-resize-container");
+  const containerMouseEvent = document.getElementById("child-mouse-event-container");
+
+  if (checked) {
+    if (childChart) { childChart.disabled = true; childChart.checked = true; store.blockChartDom = true; }
+    if (childOb) { childOb.disabled = true; childOb.checked = true; store.blockOrderbook = true; if (typeof window.stopOrderbookStream === "function") window.stopOrderbookStream(); }
+    if (childLegend) { childLegend.disabled = true; childLegend.checked = true; store.blockLegend = true; }
+    if (childResize) { childResize.disabled = true; childResize.checked = true; store.blockChartResize = true; }
+    if (childMouseEvent) {
+      childMouseEvent.disabled = true;
+      childMouseEvent.checked = true;
+      toggleChartMouseEventBlock(true);
+    }
+
+    if (containerChart) containerChart.style.opacity = "0.4";
+    if (containerOb) containerOb.style.opacity = "0.4";
+    if (containerLegend) containerLegend.style.opacity = "0.4";
+    if (containerResize) containerResize.style.opacity = "0.4";
+    if (containerMouseEvent) containerMouseEvent.style.opacity = "0.4";
+  } else {
+    if (childChart) { childChart.disabled = false; childChart.checked = false; store.blockChartDom = false; }
+    if (childOb) { childOb.disabled = false; childOb.checked = false; store.blockOrderbook = false; if (typeof window.startOrderbookStream === "function") window.startOrderbookStream(store.currentAsset, store.currentMarket); }
+    if (childLegend) { childLegend.disabled = false; childLegend.checked = false; store.blockLegend = false; }
+    if (childResize) { childResize.disabled = false; childResize.checked = false; store.blockChartResize = false; }
+    if (childMouseEvent) {
+      childMouseEvent.disabled = false;
+      childMouseEvent.checked = false;
+      toggleChartMouseEventBlock(false);
+    }
+
+    if (containerChart) containerChart.style.opacity = "1.0";
+    if (containerOb) containerOb.style.opacity = "1.0";
+    if (containerLegend) containerLegend.style.opacity = "1.0";
+    if (containerResize) containerResize.style.opacity = "1.0";
+    if (containerMouseEvent) containerMouseEvent.style.opacity = "1.0";
+  }
+}
+
+export function toggleChartMouseEventBlock(checked) {
+  store.blockChartMouseEvent = checked;
+  console.log(`⚡ [DEBUG] 차트 마우스 이벤트 차단 모드: ${checked ? "ON" : "OFF"}`);
+  if (checked) {
+    if (store._mainCrosshair) store._mainCrosshair.setX(null);
+    if (store._volCrosshair) store._volCrosshair.setX(null);
+    try {
+      if (store.chart) store.chart.clearCrosshairPosition();
+      if (store.chartVol) store.chartVol.clearCrosshairPosition();
+    } catch (e) {}
+  }
+}
+
+function toggleLeftDomBlock(checked) {
+  store.blockLeftDom = checked;
+  console.log(`⚡ [DEBUG] 좌측 테이블 DOM 차단 모드: ${checked ? "ON" : "OFF"}`);
+
+  // 🚀 부모 차단 시 자식 체크박스들 강제 제어
+  const childSort = document.getElementById("block-sort-toggle");
+  const childTabScroll = document.getElementById("block-tabscroll-toggle");
+  const childTableUpdate = document.getElementById("block-table-update-toggle");
+
+  const containerSort = document.getElementById("child-sort-container");
+  const containerTabScroll = document.getElementById("child-tabscroll-container");
+  const containerTableUpdate = document.getElementById("child-table-update-container");
+
+  if (checked) {
+    if (childSort) { childSort.disabled = true; childSort.checked = true; store.blockSort = true; }
+    if (childTabScroll) { childTabScroll.disabled = true; childTabScroll.checked = true; store.blockTableTabScroll = true; }
+    if (childTableUpdate) {
+      childTableUpdate.disabled = true;
+      childTableUpdate.checked = true;
+      toggleTableUpdateBlock(true);
+    }
+
+    if (containerSort) containerSort.style.opacity = "0.4";
+    if (containerTabScroll) containerTabScroll.style.opacity = "0.4";
+    if (containerTableUpdate) containerTableUpdate.style.opacity = "0.4";
+  } else {
+    if (childSort) { childSort.disabled = false; childSort.checked = false; store.blockSort = false; }
+    if (childTabScroll) { childTabScroll.disabled = false; childTabScroll.checked = false; store.blockTableTabScroll = false; }
+    if (childTableUpdate) {
+      childTableUpdate.disabled = false;
+      childTableUpdate.checked = false;
+      toggleTableUpdateBlock(false);
+    }
+
+    if (containerSort) containerSort.style.opacity = "1.0";
+    if (containerTabScroll) containerTabScroll.style.opacity = "1.0";
+    if (containerTableUpdate) containerTableUpdate.style.opacity = "1.0";
+  }
+}
+
+export function toggleTableUpdateBlock(checked) {
+  store.blockTableUpdate = checked;
+  console.log(`⚡ [DEBUG] 좌측 테이블 실시간 셀/시세 갱신 차단 모드: ${checked ? "ON" : "OFF"}`);
+}
+
+function toggleChartDomBlock(checked) {
+  store.blockChartDom = checked;
+  console.log(`⚡ [DEBUG] 차트 실시간 갱신 차단 모드: ${checked ? "ON" : "OFF"}`);
+}
+
+function toggleOrderbookBlock(checked) {
+  store.blockOrderbook = checked;
+  console.log(`⚡ [DEBUG] 호가창 실시간 갱신 차단 모드: ${checked ? "ON" : "OFF"}`);
+  if (checked && typeof window.stopOrderbookStream === "function") {
+    window.stopOrderbookStream();
+  } else if (!checked && typeof window.startOrderbookStream === "function") {
+    window.startOrderbookStream(store.currentAsset, store.currentMarket);
+  }
+}
+
+function toggleSortBlock(checked) {
+  store.blockSort = checked;
+  console.log(`⚡ [DEBUG] 테이블 실시간 정렬 차단 모드: ${checked ? "ON" : "OFF"}`);
+}
+
+function toggleKimchiBlock(checked) {
+  store.blockKimchi = checked;
+  console.log(`⚡ [DEBUG] 김프 실시간 연산 차단 모드: ${checked ? "ON" : "OFF"}`);
+
+  const childRadar = document.getElementById("block-radardatabatch-toggle");
+  const containerRadar = document.getElementById("child-radardatabatch-container");
+
+  if (checked) {
+    if (childRadar) { childRadar.disabled = true; childRadar.checked = true; store.blockRadarBatch = true; }
+    if (containerRadar) containerRadar.style.opacity = "0.4";
+  } else {
+    if (childRadar) { childRadar.disabled = false; childRadar.checked = false; store.blockRadarBatch = false; }
+    if (containerRadar) containerRadar.style.opacity = "1.0";
+  }
+}
+
+function toggleLegendBlock(checked) {
+  store.blockLegend = checked;
+  console.log(`⚡ [DEBUG] OHLC 레전드 갱신 차단 모드: ${checked ? "ON" : "OFF"}`);
+}
+
+function toggleResizeBlock(checked) {
+  store.blockChartResize = checked;
+  console.log(`⚡ [DEBUG] 차트 리사이즈 차단 모드: ${checked ? "ON" : "OFF"}`);
+}
+
+function toggleTabScrollBlock(checked) {
+  store.blockTableTabScroll = checked;
+  console.log(`⚡ [DEBUG] 테이블 스크롤/탭 갱신 차단 모드: ${checked ? "ON" : "OFF"}`);
+}
+
+function toggleRadarBatchBlock(checked) {
+  store.blockRadarBatch = checked;
+  console.log(`⚡ [DEBUG] 레이더 배치 갱신 차단 모드: ${checked ? "ON" : "OFF"}`);
+}
+
+function setAggTradeInterval(ms) {
+  store.aggTradeInterval = ms;
+  console.log(`⚡ [DEBUG] aggTrade 주기 변경: ${ms === 0 ? "Raw" : ms + "ms"}`);
+
+  const intervals = [0, 100, 500, 1500];
+  intervals.forEach((val) => {
+    const btnId = val === 0 ? "aggtrade-interval-raw" : `aggtrade-interval-${val}`;
+    const btn = document.getElementById(btnId);
+    if (btn) {
+      if (val === ms) {
+        btn.className = "py-1 px-1.5 rounded bg-theme-accent text-white font-bold cursor-pointer text-center transition-all";
+      } else {
+        btn.className = "py-1 px-1.5 rounded bg-theme-border/40 text-theme-text/80 hover:bg-theme-border/60 cursor-pointer text-center transition-all";
+      }
+    }
+  });
+}
+
 // 🚀 전역 스코프 노출 (HTML 인라인 onclick 이벤트용)
 window.toggleTheme = toggleTheme;
 window.toggleSidebar = toggleSidebar;
+window.setAggTradeInterval = setAggTradeInterval;
 window.switchMobileView = switchMobileView;
 window.showMobileChart = showMobileChart;
 window.closeMobileChart = closeMobileChart;
@@ -463,6 +659,18 @@ window.executeTabSwitch = executeTabSwitch;
 window.togglePanelSwap = togglePanelSwap;
 window.showOnboardingModal = showOnboardingModal;
 window.closeOnboardingModal = closeOnboardingModal;
+window.toggleRightDomBlock = toggleRightDomBlock;
+window.toggleLeftDomBlock = toggleLeftDomBlock;
+window.toggleChartDomBlock = toggleChartDomBlock;
+window.toggleOrderbookBlock = toggleOrderbookBlock;
+window.toggleSortBlock = toggleSortBlock;
+window.toggleKimchiBlock = toggleKimchiBlock;
+window.toggleLegendBlock = toggleLegendBlock;
+window.toggleResizeBlock = toggleResizeBlock;
+window.toggleTabScrollBlock = toggleTabScrollBlock;
+window.toggleRadarBatchBlock = toggleRadarBatchBlock;
+window.toggleChartMouseEventBlock = toggleChartMouseEventBlock;
+window.toggleTableUpdateBlock = toggleTableUpdateBlock;
 
 // ================== api.js에서 이동됨 ==================
 // 검색창 비우기 (X 버튼용)
@@ -755,10 +963,18 @@ export function updateExchangeBadges(s) {
         condition: rowInfo.Listed_Exchanges?.includes("BINANCE"),
       },
       {
-        id: "BYBIT",
-        label: "BYBIT",
+        id: "BYBIT-FUT",
+        label: "BYBIT-FUT",
         bg: "bg-[#f5a800]", // Bybit's brand yellow
         text: "text-black",
+        market: "BYBIT_FUTURES",
+        condition: rowInfo.Listed_Exchanges?.includes("BYBIT_FUTURES"),
+      },
+      {
+        id: "BYBIT-SPOT",
+        label: "BYBIT-SPOT",
+        bg: "bg-[#444]", // Spot Bybit
+        text: "text-white",
         market: "BYBIT",
         condition: rowInfo.Listed_Exchanges?.includes("BYBIT"),
       },
@@ -1361,10 +1577,30 @@ document.addEventListener("click", (e) => {
   }
 });
 
+function syncCheckboxesFromStore() {
+  const check = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.checked = !!val;
+  };
+  check("block-right-dom-toggle", store.blockRightDom);
+  check("block-chart-dom-toggle", store.blockChartDom);
+  check("block-orderbook-toggle", store.blockOrderbook);
+  check("block-legend-toggle", store.blockLegend);
+  check("block-resize-toggle", store.blockChartResize);
+  check("block-mouse-event-toggle", store.blockChartMouseEvent);
+  check("block-left-dom-toggle", store.blockLeftDom);
+  check("block-sort-toggle", store.blockSort);
+  check("block-table-update-toggle", store.blockTableUpdate);
+  check("block-kimchi-toggle", store.blockKimchi);
+  check("block-tabscroll-toggle", store.blockTableTabScroll);
+  check("block-radardatabatch-toggle", store.blockRadarBatch);
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   renderTimeframeButtons("1d");
   const isOhlcHidden = localStorage.getItem("sellnance_ohlc_hidden") === "true";
   if (isOhlcHidden) {
     document.getElementById("ohlc-legend")?.classList.add("hidden");
   }
+  syncCheckboxesFromStore();
 });

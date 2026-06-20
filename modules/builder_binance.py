@@ -66,8 +66,11 @@ def build_binance_row(
     info = market_data_map.get(str(final_ucid)) or market_data_map.get(lookup_id)
 
     # CMC에서 새로운 ucid를 찾았다면 최종 업데이트
-    if not final_ucid and info:
-        final_ucid = info.get("ucid", "")
+    if (not final_ucid or not final_ucid.isdigit()) and info:
+        new_ucid = info.get("ucid", "")
+        if new_ucid and new_ucid.isdigit():
+            final_ucid = new_ucid
+
     if not final_ucid:
         final_ucid = base
     if final_ucid:
@@ -107,7 +110,7 @@ def build_binance_row(
 
     # 5. 족보 업데이트 (세탁기)
     if not ticker_info or (
-        isinstance(ticker_info, list) and (len(ticker_info) < 4 or not ticker_info[0])
+        isinstance(ticker_info, list) and (len(ticker_info) < 4 or not ticker_info[0] or ticker_info[0] != final_ucid)
     ):
         TICKER_DATA[display_name] = [
             final_ucid,  # 🚀 믿음의 최종 UID

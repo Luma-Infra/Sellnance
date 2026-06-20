@@ -4,6 +4,7 @@ import { getMultiplier, getPureBase, getUnixSeconds } from "./chart_utils.js";
 
 // 🚀 실시간 김프 1초컷 업데이트 엔진 (모든 마켓 공통 적용)
 export function updateRealtimeKimchi(liveData, symbol, chartTime) {
+  if (store.blockKimchi) return;
   if (!store.kimchiSeries || !store.paneConfig.kimchi) return;
 
   const rate = store.marketDataMap?.krw_usd_rate || 0;

@@ -251,6 +251,16 @@ body.theme-upbit:not(.resizing-active) #right-panel {
   will-change: transform;
 }
 
+/* 🚀 실시간 갱신(경주마 효과)일 때만 부드러운 위치 이동 효과 활성화 */
+#coin-list-body .coin-row.realtime-live-row {
+  transition: transform 0.25s ease-out;
+}
+
+/* 🚀 수동 정렬(클릭) 버튼 클릭하여 정렬 연산 완료 직전까지는 모든 애니메이션을 완전히 제거 (0초 컷) */
+#coin-list-body.no-transition .coin-row {
+  transition: none !important;
+}
+
 #coin-list-body .coin-row .row-counter::before {
   content: none;
 }
@@ -620,7 +630,7 @@ body.theme-upbit #coin-list-body.table-loading {
 }
 
 #left-panel.view-mode-expert .col-listing {
-  display: table-cell !important;
+  display: flex !important;
 }
 
 /* simple 모드: 상단 USD/KR/Flip 컨트롤 숨김 */

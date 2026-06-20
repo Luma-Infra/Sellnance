@@ -54,7 +54,7 @@ function resetChartScale() {
   } catch (e) {
     try {
       store.chart.timeScale().scrollToRealtime();
-    } catch (err) { }
+    } catch (err) {}
   }
 
   if (store.chartVol) {
@@ -81,7 +81,7 @@ function resetChartScale() {
     } catch (e) {
       try {
         store.chartVol.timeScale().scrollToRealtime();
-      } catch (err) { }
+      } catch (err) {}
     }
   }
 }
@@ -89,13 +89,14 @@ function resetChartScale() {
 // ✅ 포맷팅 by precision
 export function formatSmartPrice(price, p) {
   try {
-    if (price === 0) return (0).toFixed(p || 2);
+    const targetP = typeof p === "number" ? Math.max(0, p) : 2;
+    if (price === 0) return (0).toFixed(targetP);
     if (!price) return "";
 
     // 🚀 거래소가 준 precision 그대로 사용 (toLocaleString이 콤마도 찍어줌)
     return price.toLocaleString(undefined, {
-      minimumFractionDigits: p,
-      maximumFractionDigits: p,
+      minimumFractionDigits: targetP,
+      maximumFractionDigits: targetP,
     });
   } catch (error) {
     console.error("❌ formatSmartPrice 에러:", error.message);
@@ -132,6 +133,16 @@ export function formatVolumeKRW(vol) {
 }
 
 function updateLegend(d, v, k) {
+  // 🚀 [디버그 옵션] 우측 패널 DOM 차단 또는 레전드 개별 차단 시 범인 추적용 즉시 리턴
+  if (store.blockRightDom || store.blockLegend) {
+    const nowTime = Date.now();
+    if (!window._lastLegendUpdateTime) window._lastLegendUpdateTime = 0;
+    if (nowTime - window._lastLegendUpdateTime < 100) {
+      return;
+    }
+    window._lastLegendUpdateTime = nowTime;
+  }
+
   const leg = document.getElementById("ohlc-legend");
   if (!leg) return;
 
@@ -222,9 +233,13 @@ function updateLegend(d, v, k) {
           ? v.value
           : null;
     if (rawVol !== null) {
-      if (store.currencyMode === "KRW" && typeof window.formatVolumeKRW === "function") {
+      if (
+        store.currencyMode === "KRW" &&
+        typeof window.formatVolumeKRW === "function"
+      ) {
         const rate = store.marketDataMap?.krw_usd_rate || 1;
-        const volToFormat = store.currentMarket === "BINANCE" ? rawVol * rate : rawVol;
+        const volToFormat =
+          store.currentMarket === "BINANCE" ? rawVol * rate : rawVol;
         volValue = window.formatVolumeKRW(volToFormat);
       } else {
         volValue = window.formatVolumeDollar
@@ -264,6 +279,16 @@ function updateLegend(d, v, k) {
 }
 
 function updateStatus(d, p) {
+  // 🚀 [디버그 옵션] 우측 패널 DOM 차단 또는 레전드 개별 차단 시 범인 추적용 즉시 리턴
+  if (store.blockRightDom || store.blockLegend) {
+    const nowTime = Date.now();
+    if (!window._lastStatusUpdateTime) window._lastStatusUpdateTime = 0;
+    if (nowTime - window._lastStatusUpdateTime < 100) {
+      return;
+    }
+    window._lastStatusUpdateTime = nowTime;
+  }
+
   // 🚀 핵심: d(실시간 데이터)가 들어오면 그걸 최우선으로 쓴다!
   // d가 없으면(마우스 이벤트 등) 그때만 mainData에서 꺼내온다.
   const last =
@@ -320,7 +345,7 @@ function updateStatus(d, p) {
     if (lastIdx !== -1) {
       const matchTime = last.time;
       if (matchTime) {
-        k = store.kimchiData?.find(item => item.time === matchTime) || null;
+        k = store.kimchiData?.find((item) => item.time === matchTime) || null;
       }
       if (!k && store.kimchiData && store.kimchiData.length > 0) {
         k = store.kimchiData[lastIdx];
@@ -373,7 +398,7 @@ function autoFit(isTabRestore = false) {
           store.chartVol.priceScale("left").applyOptions({ autoScale: true });
         }
       }
-    } catch (e) { }
+    } catch (e) {}
     return;
   }
   if (store.chart && store.mainData.length) {
@@ -395,7 +420,7 @@ function autoFit(isTabRestore = false) {
         if (store.kimchiSeries) {
           store.chartVol.priceScale("left").applyOptions({ autoScale: true });
         }
-      } catch (e) { }
+      } catch (e) {}
     }
   }
 }
@@ -645,7 +670,10 @@ export function toggleCrosshairPct(forceVal) {
   if (forceVal !== undefined) {
     store.showCrosshairPct = forceVal;
   } else {
-    const current = typeof store.showCrosshairPct === "boolean" ? store.showCrosshairPct : true;
+    const current =
+      typeof store.showCrosshairPct === "boolean"
+        ? store.showCrosshairPct
+        : true;
     store.showCrosshairPct = !current;
   }
 
@@ -692,8 +720,10 @@ setTimeout(() => {
   const isOhlcHidden = localStorage.getItem("sellnance_ohlc_hidden") === "true";
   if (typeof toggleOhlc === "function") toggleOhlc(!isOhlcHidden);
   if (typeof toggleLogScale === "function") toggleLogScale(store.isLogMode);
-  if (typeof toggleCountdown === "function") toggleCountdown(store.showCountdown);
-  if (typeof toggleCrosshairPct === "function") toggleCrosshairPct(store.showCrosshairPct !== false);
+  if (typeof toggleCountdown === "function")
+    toggleCountdown(store.showCountdown);
+  if (typeof toggleCrosshairPct === "function")
+    toggleCrosshairPct(store.showCrosshairPct !== false);
 }, 200);
 
 // 🎯 브라우저 탭 제목 실시간 스위칭 통합 매니저 (소켓 중복 생성 ZERO, 메인 차트 소켓 100% 재활용)
@@ -778,13 +808,14 @@ export const sanitizeChartData = (dataArr, hasValueField = false) => {
     const timeKey = String(finalTime);
     if (seen.has(timeKey)) {
       // 이미 들어간 중복 데이터가 있으면 지우고 최신 틱 데이터로 교체하기 위해 필터링
-      const idx = sanitized.findIndex(item => String(item.time) === timeKey);
+      const idx = sanitized.findIndex((item) => String(item.time) === timeKey);
       if (idx !== -1) sanitized.splice(idx, 1);
-
-    } if (seen.has(timeKey)) continue;
+    }
+    if (seen.has(timeKey)) continue;
 
     if (hasValueField) {
-      const isInvalidValue = d.value === undefined || d.value === null || isNaN(Number(d.value));
+      const isInvalidValue =
+        d.value === undefined || d.value === null || isNaN(Number(d.value));
       const safeValue = isInvalidValue ? 0 : Number(d.value);
 
       sanitized.push({
@@ -818,8 +849,8 @@ export const sanitizeChartData = (dataArr, hasValueField = false) => {
         close: Number(d.close),
         volume:
           d.volume !== undefined &&
-            d.volume !== null &&
-            !isNaN(Number(d.volume))
+          d.volume !== null &&
+          !isNaN(Number(d.volume))
             ? Number(d.volume)
             : 0,
       });

@@ -305,14 +305,38 @@ export function switchFilter(mode) {
 
 export function switchView(mode) {
   store.viewMode = mode;
-  document.getElementById("view-detailed").className =
-    mode === "detailed"
-      ? "view-btn px-3 py-1.5 text-[11px] font-bold rounded-md transition-all bg-theme-accent text-white shadow-sm"
-      : "view-btn px-3 py-1.5 text-[11px] font-bold rounded-md transition-all text-theme-text opacity-50 hover:opacity-100";
-  document.getElementById("view-simple").className =
-    mode === "simple"
-      ? "view-btn px-3 py-1.5 text-[11px] font-bold rounded-md transition-all bg-theme-accent text-white shadow-sm"
-      : "view-btn px-3 py-1.5 text-[11px] font-bold rounded-md transition-all text-theme-text opacity-50 hover:opacity-100";
+  const detailedBtn = document.getElementById("view-detailed") || document.getElementById("view-mode-basic-btn");
+  const simpleBtn = document.getElementById("view-simple") || document.getElementById("view-mode-simple-btn");
+
+  if (detailedBtn) {
+    detailedBtn.className =
+      mode === "detailed" || mode === "basic"
+        ? "px-3 py-1 text-[10px] font-bold rounded bg-theme-accent text-white transition-all shadow-md"
+        : "px-3 py-1 text-[10px] font-medium rounded opacity-50 hover:opacity-100 transition-all text-theme-text";
+  }
+  if (simpleBtn) {
+    simpleBtn.className =
+      mode === "simple"
+        ? "px-3 py-1 text-[10px] font-bold rounded bg-theme-accent text-white transition-all shadow-md"
+        : "px-3 py-1 text-[10px] font-medium rounded opacity-50 hover:opacity-100 transition-all text-theme-text";
+  }
+
+  // Sync tableViewMode
+  if (mode === "simple") {
+    store.tableViewMode = "simple";
+    const panel = document.getElementById("left-panel");
+    if (panel) {
+      panel.classList.remove("view-mode-basic", "view-mode-expert");
+      panel.classList.add("view-mode-simple");
+    }
+  } else if (mode === "detailed" || mode === "basic") {
+    store.tableViewMode = "basic";
+    const panel = document.getElementById("left-panel");
+    if (panel) {
+      panel.classList.remove("view-mode-simple", "view-mode-expert");
+      panel.classList.add("view-mode-basic");
+    }
+  }
 
   renderTable();
 }

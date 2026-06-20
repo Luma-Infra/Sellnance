@@ -1,5 +1,5 @@
 // chart_api.js - 차트 및 캔들 전용 API 통신 모듈
-import { store } from './_store.js';
+import { store } from "./_store.js";
 
 export async function loadSymbols() {
   try {
@@ -10,9 +10,9 @@ export async function loadSymbols() {
     store.marketDataMap = data;
     store.allSymbols = data.all_assets;
 
-    console.log("✅ [데이터센터] 장부 로드 완료!");
+    // Xconsole.log("✅ [데이터센터] 장부 로드 완료!");
   } catch (e) {
-    console.error("🚨 마켓 데이터 로드 실패", e);
+    // Xconsole.error("🚨 마켓 데이터 로드 실패", e);
   }
 
   // 🚀 [상장일] 서버에서 저장된 listing dates 한 번만 로드 → store.listingDates에 올려두기
@@ -20,11 +20,9 @@ export async function loadSymbols() {
     const res = await fetch("/api/listing-dates");
     const dates = await res.json();
     store.listingDates = dates || {};
-    console.log(`✅ [LISTING] ${Object.keys(store.listingDates).length}개 상장일 로드 완료`);
+    // Xconsole.log(`✅ [LISTING] ${Object.keys(store.listingDates).length}개 상장일 로드 완료`);
   } catch (e) {
     store.listingDates = {};
-    console.warn("⚠️ [LISTING] 상장일 데이터 로드 실패:", e);
+    // Xconsole.warn("⚠️ [LISTING] 상장일 데이터 로드 실패:", e);
   }
 }
-
-

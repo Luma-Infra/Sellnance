@@ -232,6 +232,7 @@ export function initMeasureEvents() {
   if (!container) return;
 
   container.addEventListener("mousedown", (e) => {
+    if (store.blockChartMouseEvent) return;
     if (
       !store.cachedChartTd ||
       !store.cachedPriceTd ||
@@ -326,6 +327,7 @@ export function initMeasureEvents() {
   });
 
   container.addEventListener("mousemove", (e) => {
+    if (store.blockChartMouseEvent) return;
     if (
       !store.isMeasuring ||
       !store.measureStart ||

@@ -214,6 +214,14 @@ export function startOrderbookStream(symbol, market) {
 }
 
 function scheduleRender() {
+  if (store.blockOrderbook) {
+    const nowTime = Date.now();
+    if (!window._lastObRenderTime) window._lastObRenderTime = 0;
+    if (nowTime - window._lastObRenderTime < 500) {
+      return;
+    }
+    window._lastObRenderTime = nowTime;
+  }
   if (!obState.isRendering) {
     obState.isRendering = true;
     requestAnimationFrame(() => {

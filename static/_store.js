@@ -79,11 +79,24 @@ export const store = {
   },
   exchFilterMode: "AND", // 🚀 거래소 필터링 결합 모드 (AND, OR, ONLY)
 
-  isFetchingChart: false,
-  lastFetchTime: 0,
-  isLogMode: false,
-  showCountdown: true,
-  currentRenderLimit: 1000,
+  isFetchingChart: false, // 🚀 차트 데이터 호출 진행 상태 플래그
+  blockLeftDom: false, // 🚀 좌측 테이블 DOM 렌더링 최적화/차단 여부
+  blockRightDom: false, // 🚀 우측 패널 DOM 렌더링 최적화/차단 여부
+  blockChartDom: false, // 🚀 실시간 차트 갱신 렌더링 최적화/차단 여부
+  blockChartMouseEvent: false, // 🚀 우측 차트 영역 마우스 이벤트/십자선 렉 유발 차단 토글
+  blockOrderbook: true, // 🚀 실시간 호가창 렌더링 최적화/차단 여부
+  blockSort: false, // 🚀 테이블 실시간 순위 재배치 정렬 최적화/차단 여부
+  blockTableUpdate: false, // 🚀 좌측 테이블 실시간 셀/시세 갱신 차단 토글
+  blockKimchi: false, // 🚀 실시간 김프 연산 차단 여부
+  blockLegend: false, // 🚀 OHLC 레전드 갱신 차단 여부
+  blockChartResize: false, // 🚀 차트 리사이즈 동기화 차단 여부
+  blockTableTabScroll: false, // 🚀 테이블 스크롤/탭 갱신 차단 여부
+  blockRadarBatch: false, // 🚀 실시간 레이더 배치 처리 차단 여부
+  aggTradeInterval: 0, // 🚀 aggTrade 주기 조절 (ms 단위, 0 = Raw)
+  lastFetchTime: 0, // 🚀 마지막 데이터 수집 시간 기록용
+  isLogMode: false, // 🚀 차트 로그 스케일 활성화 여부
+  showCountdown: true, // 🚀 차트 카운트다운 표시 여부
+  currentRenderLimit: 1000, // 🚀 최대 렌더링 캔들 제한 개수
 
   curDir: "bull",
   bullBody: 10,

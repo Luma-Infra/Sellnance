@@ -69,16 +69,18 @@ def build_cmc_lookup_lists(binance_base_set, upbit_krw_set, MAPPING_DATA):
         alias_name = REVERSE_LOOKUP.get(lookup_name, a.upper()) 
 
         # 3순위: 중복 리스트(별명) 및 족보 확인
-        if not cmc_id:
+        if not cmc_id or not cmc_id.isdigit():
             if alias_name in DUPLICATED_LIST:
                 cmc_id = str(DUPLICATED_LIST[alias_name][0])
             elif alias_name in TICKER_DATA:
                 cmc_id = str(TICKER_DATA[alias_name][0])
+            
+            if cmc_id and not cmc_id.isdigit():
+                cmc_id = None
 
         # --- 장부 기록 ---
-        if cmc_id and cmc_id not in ["None", ""]:
-            if cmc_id.isdigit():
-                id_lookup.append(cmc_id)
+        if cmc_id and cmc_id not in ["None", ""] and cmc_id.isdigit():
+            id_lookup.append(cmc_id)
             asset_to_lookup_key[lookup_name] = cmc_id
         else:
             if a in HARDCODE_VERIFY_SKIP_LIST or base in HARDCODE_VERIFY_SKIP_LIST:

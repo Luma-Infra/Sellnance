@@ -13,14 +13,26 @@ const lastRenderMap = new Map();
 
 // ⚡ [HTS 핵심] 개별 행 정밀 렌더링 엔진 (웹소켓 전용)
 function renderRealtimeRow(tId, data, isFutures = false) {
-  // 🚀 [해결] 탭 복귀/절전 해제 전환 시 밀렸던 소켓 프레임이 일시적으로 폭주하여 
+  if (store.blockTableUpdate) {
+    return;
+  }
+
+  // 🚀 [해결] 탭 복귀/절전 해제 전환 시 밀렸던 소켓 프레임이 일시적으로 폭주하여
   // 테이블 숫자가 어지럽게 번쩍이며 리플로우를 유발하는 현상 원천 차단!
   if (store.isTabHidden || store.isRestoringTab) {
     return;
   }
 
   const now = Date.now();
-  const lastRender = lastRenderMap.get(tId) || 0;
+
+  // 🚀 [입구 레벨 강제 500ms 쓰로틀링] aggTrade 및 실시간 업비트 시세 스루풋 제어
+  if (data && (data.e === "aggTrade" || data.isUpbitRealtime)) {
+    const lastT = lastRenderMap.get(tId) || 0;
+    if (now - lastT < 500) {
+      return;
+    }
+    lastRenderMap.set(tId, now);
+  }
 
   // 🚀 [해결] PEPE vs 1000PEPE, XRP vs XRPDOWN 등 심볼 헷갈림 방지 (널뛰기 버그 컷)
   const dataSym = (data.s || tId).toUpperCase();
@@ -33,6 +45,8 @@ function renderRealtimeRow(tId, data, isFutures = false) {
   }
 
   if (!row) return;
+
+  const lastRender = lastRenderMap.get(row.Ticker) || 0;
 
   // 🚨 [최종 수문장] PEPE vs 1000PEPE 등 배수 기호가 다르면 다른 코인임 (오염 차단)
   if (getMultiplier(dataSym) !== getMultiplier(row.Ticker)) return;
@@ -213,7 +227,52 @@ function renderRealtimeRow(tId, data, isFutures = false) {
     }
   }
 
+  // 🚀 [실시간 김프 연산 차단]
+  if (!store.blockKimchi) {
+    const rate = store.marketDataMap?.krw_usd_rate || 0;
+    if (rate > 0) {
+      const isKrwCoin = row.Ticker?.endsWith("KRW");
+      let unitKorPrice = null;
+      let unitGlbPrice = null;
+
+      if (isKrwCoin) {
+        unitKorPrice = row.Price_KRW || 0;
+        unitGlbPrice = row.Price_Raw || 0;
+      } else {
+        unitGlbPrice = row.Price_Raw || 0;
+        unitKorPrice = row.Price_KRW || 0;
+      }
+
+      if (unitKorPrice > 0 && unitGlbPrice > 0) {
+        const kimchiPct = (unitKorPrice / (unitGlbPrice * rate) - 1) * 100;
+        if (isFinite(kimchiPct) && kimchiPct >= -50 && kimchiPct <= 100) {
+          row.Kimchi_Raw = kimchiPct;
+          row.Kimchi_Label =
+            (kimchiPct > 0 ? "+" : "") + kimchiPct.toFixed(2) + "%";
+          row.Kimchi_Formatted =
+            (kimchiPct > 0 ? "+" : "") + kimchiPct.toFixed(1) + "%";
+        }
+      }
+    }
+  }
+
   if (!store.visibleSymbols.has(row.Ticker)) return;
+  if (store.blockLeftDom) {
+    const nowTime = Date.now();
+    if (!row._lastStreamUpdate) row._lastStreamUpdate = 0;
+    if (nowTime - row._lastStreamUpdate < 1000) {
+      return;
+    }
+    row._lastStreamUpdate = nowTime;
+  }
+
+  // 🚀 [추가] aggTrade 주기 조절 (쓰로틀링) - 입구 레벨로 통합되어 주석 처리함 (SolidJS 마이그레이션 보존용)
+  // if (store.aggTradeInterval > 0 && (data.e === "aggTrade" || data.isUpbitRealtime)) {
+  //   if (now - lastRender < store.aggTradeInterval) {
+  //     return;
+  //   }
+  // }
+  // lastRenderMap.set(row.Ticker, now);
 
   // 🚀 [렉 차단: Batch Update 버퍼링 기법]
   // 소켓 데이터가 오자마자 즉시 DOM을 갱신하면 Layout Thrashing으로 렉이 발생합니다.
@@ -358,6 +417,7 @@ export function getUpbitCandleStartTime(serverMs, tf) {
 
 if (store.radarIntervalId) clearInterval(store.radarIntervalId);
 store.radarIntervalId = setInterval(() => {
+  if (store.blockRadarBatch) return;
   if (Object.keys(store.tickerBuffer).length === 0) return;
   const snapshot = { ...store.tickerBuffer };
   store.tickerBuffer = {};
@@ -500,6 +560,35 @@ store.radarIntervalId = setInterval(() => {
       const open = parseFloat(row.utc0_open_Raw);
       if (open > 0)
         row.Change_Today_Raw = ((row.Price_Raw - open) / open) * 100;
+    }
+
+    // 🚀 [실시간 김프 연산 차단] 3초 주기 레이더 스냅샷
+    if (!store.blockKimchi) {
+      const rate = store.marketDataMap?.krw_usd_rate || 0;
+      if (rate > 0) {
+        const isKrwCoin = row.Ticker?.endsWith("KRW");
+        let unitKorPrice = null;
+        let unitGlbPrice = null;
+
+        if (isKrwCoin) {
+          unitKorPrice = row.Price_KRW || 0;
+          unitGlbPrice = row.Price_Raw || 0;
+        } else {
+          unitGlbPrice = row.Price_Raw || 0;
+          unitKorPrice = row.Price_KRW || 0;
+        }
+
+        if (unitKorPrice > 0 && unitGlbPrice > 0) {
+          const kimchiPct = (unitKorPrice / (unitGlbPrice * rate) - 1) * 100;
+          if (isFinite(kimchiPct) && kimchiPct >= -50 && kimchiPct <= 100) {
+            row.Kimchi_Raw = kimchiPct;
+            row.Kimchi_Label =
+              (kimchiPct > 0 ? "+" : "") + kimchiPct.toFixed(2) + "%";
+            row.Kimchi_Formatted =
+              (kimchiPct > 0 ? "+" : "") + kimchiPct.toFixed(1) + "%";
+          }
+        }
+      }
     }
 
     /*

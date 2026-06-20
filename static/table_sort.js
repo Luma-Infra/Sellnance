@@ -50,10 +50,12 @@ export function sortTable(colKey) {
   simpleSortData();
   renderTable(false); // 수동 정렬이므로 0초 컷으로 즉시 전체 배치
 
-  // 🚀 정렬 및 렌더링이 끝나면 즉시 로딩 클래스 제거
+  // 🚀 정렬 및 렌더링이 브라우저 레이아웃에 완전히 반영된 뒤(50ms) 로딩 및 no-transition 클래스 제거
   if (table) {
-    table.classList.remove("table-loading");
-    table.classList.remove("no-transition");
+    setTimeout(() => {
+      table.classList.remove("table-loading");
+      table.classList.remove("no-transition");
+    }, 50);
   }
 }
 
@@ -124,6 +126,7 @@ export function simpleSortData() {
 }
 
 export function applyRealtimeSort() {
+  if (store.blockSort) return;
   if (!store.currentSortCol || store.sortState === "") return;
 
   // 🚀 [스크롤 락 최적화] 사용자가 스크롤 중일 때는 실시간 정렬(DOM 재배치)을 건너뛰어 스크롤 렉을 차단!

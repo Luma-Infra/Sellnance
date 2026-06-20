@@ -635,6 +635,7 @@ export function initDrawingEvents() {
   window._drawingEventsInitialized = true;
 
   container.addEventListener("mousedown", (e) => {
+    if (store.blockChartMouseEvent) return;
     if (!store.candleSeries || !store.chart) return;
 
     const chartRect = container.getBoundingClientRect();
@@ -750,6 +751,7 @@ export function initDrawingEvents() {
   });
 
   container.addEventListener("mousemove", (e) => {
+    if (store.blockChartMouseEvent) return;
     if (!store.candleSeries || !store.chart) return;
 
     const chartRect = container.getBoundingClientRect();

@@ -5,6 +5,14 @@ import { store } from "./_store.js";
  * 정제된 틱 데이터를 받아 메인 캔들과 거래량 시리즈에 안전하게 실시간 업데이트를 주입
  */
 export function renderRealtimeUpdate(normalizedTime, currentCandle) {
+    if (store.blockChartDom) {
+        const nowTime = Date.now();
+        if (!window._lastChartRenderTime) window._lastChartRenderTime = 0;
+        if (nowTime - window._lastChartRenderTime < 500) {
+            return;
+        }
+        window._lastChartRenderTime = nowTime;
+    }
     if (!store.candleSeries || !currentCandle || normalizedTime === null) return;
 
     // 🚀 [방어 코드] 차트 캔들 데이터가 없거나 완전히 비어 있는 상태인 경우 실시간 업데이트 차단

@@ -16,13 +16,28 @@ import {
   updateRowInnerHTML,
 } from "./table_render.js";
 
-export async function fetchCandlesSmart(exchange, symbol, interval, limit, toVal = null, startVal = null) {
+export async function fetchCandlesSmart(
+  exchange,
+  symbol,
+  interval,
+  limit,
+  toVal = null,
+  startVal = null,
+) {
   const pastGapMap = store.marketDataMap?.past_gap_map || {};
-  const baseSymbol = symbol.replace("USDT", "").replace("KRW-", "").replace("_KRW", "").split("(")[0];
-  const isGapRecovery = pastGapMap[baseSymbol] && (
-    interval.endsWith("d") || interval.endsWith("w") || interval.endsWith("M") ||
-    interval === "days" || interval === "weeks" || interval === "months"
-  );
+  const baseSymbol = symbol
+    .replace("USDT", "")
+    .replace("KRW-", "")
+    .replace("_KRW", "")
+    .split("(")[0];
+  const isGapRecovery =
+    pastGapMap[baseSymbol] &&
+    (interval.endsWith("d") ||
+      interval.endsWith("w") ||
+      interval.endsWith("M") ||
+      interval === "days" ||
+      interval === "weeks" ||
+      interval === "months");
 
   if (!isGapRecovery && !toVal && !startVal) {
     try {
@@ -35,17 +50,54 @@ export async function fetchCandlesSmart(exchange, symbol, interval, limit, toVal
         let fetchInterval = interval;
         if (!interval.startsWith("minutes/")) {
           const u = interval.replace(/[0-9]/g, "");
-          if (u === "d" || u === "w" || u === "M" || interval === "days" || interval === "weeks" || interval === "months") {
-            fetchInterval = (u === "w" || interval === "weeks") ? "weeks" : (u === "M" || interval === "months") ? "months" : "days";
+          if (
+            u === "d" ||
+            u === "w" ||
+            u === "M" ||
+            interval === "days" ||
+            interval === "weeks" ||
+            interval === "months"
+          ) {
+            fetchInterval =
+              u === "w" || interval === "weeks"
+                ? "weeks"
+                : u === "M" || interval === "months"
+                  ? "months"
+                  : "days";
           } else {
-            const minMap = { "1m": "minutes/1", "3m": "minutes/3", "5m": "minutes/5", "15m": "minutes/15", "30m": "minutes/30", "1h": "minutes/60", "2h": "minutes/120", "4h": "minutes/240" };
+            const minMap = {
+              "1m": "minutes/1",
+              "3m": "minutes/3",
+              "5m": "minutes/5",
+              "15m": "minutes/15",
+              "30m": "minutes/30",
+              "1h": "minutes/60",
+              "2h": "minutes/120",
+              "4h": "minutes/240",
+            };
             fetchInterval = minMap[interval] || "minutes/1";
           }
         }
         directUrl = `https://api.upbit.com/v1/candles/${fetchInterval}?market=${symbol}&count=${limit}`;
       } else if (exchange === "bybit_spot" || exchange === "bybit_futures") {
         const category = exchange === "bybit_spot" ? "spot" : "linear";
-        const bMap = { "1m": "1", "3m": "3", "5m": "5", "15m": "15", "30m": "30", "1h": "60", "2h": "120", "4h": "240", "6h": "360", "12h": "720", "1d": "D", "days": "D", "3d": "D", "1w": "W", "1M": "M" };
+        const bMap = {
+          "1m": "1",
+          "3m": "3",
+          "5m": "5",
+          "15m": "15",
+          "30m": "30",
+          "1h": "60",
+          "2h": "120",
+          "4h": "240",
+          "6h": "360",
+          "12h": "720",
+          "1d": "D",
+          days: "D",
+          "3d": "D",
+          "1w": "W",
+          "1M": "M",
+        };
         const bInt = bMap[interval] || interval;
         directUrl = `https://api.bybit.com/v5/market/kline?category=${category}&symbol=${symbol}&interval=${bInt}&limit=${limit}`;
       } else if (exchange === "bithumb") {
@@ -57,23 +109,34 @@ export async function fetchCandlesSmart(exchange, symbol, interval, limit, toVal
         const res = await fetch(directUrl);
         if (res.ok) {
           const data = await res.json();
-          if (exchange.startsWith("binance") && Array.isArray(data) && data.length > 0) {
-            console.log(`⚡ [DIRECT FETCH SUCCESS] ${exchange} - ${symbol} (${data.length} candles)`);
+          if (
+            exchange.startsWith("binance") &&
+            Array.isArray(data) &&
+            data.length > 0
+          ) {
+            // Xconsole.log(`⚡ [DIRECT FETCH SUCCESS] ${exchange} - ${symbol} (${data.length} candles)`,);
             return data;
           } else if (exchange === "upbit" && Array.isArray(data)) {
-            console.log(`⚡ [DIRECT FETCH SUCCESS] ${exchange} - ${symbol} (${data.length} candles)`);
+            // Xconsole.log(`⚡ [DIRECT FETCH SUCCESS] ${exchange} - ${symbol} (${data.length} candles)`,);
             return data;
           } else if (exchange === "bithumb" && data && data.status === "0000") {
-            console.log(`⚡ [DIRECT FETCH SUCCESS] ${exchange} - ${symbol}`);
+            // Xconsole.log(`⚡ [DIRECT FETCH SUCCESS] ${exchange} - ${symbol}`);
             return data;
-          } else if (exchange.startsWith("bybit") && data && data.retCode === 0) {
-            console.log(`⚡ [DIRECT FETCH SUCCESS] ${exchange} - ${symbol}`);
+          } else if (
+            exchange.startsWith("bybit") &&
+            data &&
+            data.retCode === 0
+          ) {
+            // Xconsole.log(`⚡ [DIRECT FETCH SUCCESS] ${exchange} - ${symbol}`);
             return data;
           }
         }
       }
     } catch (err) {
-      console.warn(`⚠️ [DIRECT FETCH FAILED] ${exchange} - ${symbol} - ${interval}, falling back:`, err);
+      console.warn(
+        `⚠️ [DIRECT FETCH FAILED] ${exchange} - ${symbol} - ${interval}, falling back:`,
+        err,
+      );
     }
 
     // SPCXB fallback logic in frontend if standard spot symbol fails
@@ -87,12 +150,15 @@ export async function fetchCandlesSmart(exchange, symbol, interval, limit, toVal
           if (res.ok) {
             const data = await res.json();
             if (Array.isArray(data) && data.length > 0) {
-              console.log(`⚡ [DIRECT FALLBACK SUCCESS] ${exchange} - ${fallbackSymbol} (${data.length} candles)`);
+              // Xconsole.log(`⚡ [DIRECT FALLBACK SUCCESS] ${exchange} - ${fallbackSymbol} (${data.length} candles)`,);
               return data;
             }
           }
         } catch (err) {
-          console.warn(`⚠️ [DIRECT FALLBACK FAILED] ${exchange} - ${fallbackSymbol}:`, err);
+          console.warn(
+            `⚠️ [DIRECT FALLBACK FAILED] ${exchange} - ${fallbackSymbol}:`,
+            err,
+          );
         }
       }
     }
@@ -101,14 +167,20 @@ export async function fetchCandlesSmart(exchange, symbol, interval, limit, toVal
   // Fallback to server proxy
   const queryTo = toVal ? `&to=${toVal}` : "";
   const queryStart = startVal ? `&start=${startVal}` : "";
-  console.log(`🔌 [SERVER FALLBACK] ${exchange} - ${symbol} - ${interval}`);
+  // Xconsole.log(`🔌 [SERVER FALLBACK] ${exchange} - ${symbol} - ${interval}`);
   const res = await fetch(
-    `/api/candles?exchange=${exchange}&symbol=${symbol}&interval=${interval}&limit=${limit}${queryTo}${queryStart}`
+    `/api/candles?exchange=${exchange}&symbol=${symbol}&interval=${interval}&limit=${limit}${queryTo}${queryStart}`,
   );
   return await res.json();
 }
 
-export async function fetchPaginated(exchange, symbol, interval, totalLimit, startTo = "") {
+export async function fetchPaginated(
+  exchange,
+  symbol,
+  interval,
+  totalLimit,
+  startTo = "",
+) {
   let result = [];
   let lastTo = startTo;
   let remaining = totalLimit;
@@ -116,7 +188,13 @@ export async function fetchPaginated(exchange, symbol, interval, totalLimit, sta
 
   while (remaining > 0) {
     const count = Math.min(remaining, 200);
-    const data = await fetchCandlesSmart(exchange, symbol, interval, count, lastTo);
+    const data = await fetchCandlesSmart(
+      exchange,
+      symbol,
+      interval,
+      count,
+      lastTo,
+    );
     if (!Array.isArray(data) || data.length === 0) break;
 
     result = result.concat(data);
@@ -216,8 +294,39 @@ export async function fetchHistory(
     store.currentMarket === "BYBIT" || store.currentMarket === "BYBIT_FUTURES";
   const isBybitFutures = store.currentMarket === "BYBIT_FUTURES";
 
+  const pureBase = getPureBase(rawSymbol)
+    .replace(/KRW$/, "")
+    .replace(/USDT$/, "");
+
+  // 🚀 백엔드와 마찬가지로, 중복 매핑 목록(duplicated_list)을 활용하여 정확한 UID를 먼저 판별해 rowInfo를 찾습니다.
+  let expectedUid = null;
+  const dupList = store.marketDataMap?.duplicated_list;
+  if (dupList) {
+    const exchangeTag = isUpbit
+      ? "UPBIT"
+      : isBithumb
+        ? "BITHUMB"
+        : isBybit
+          ? "BYBIT"
+          : "BINANCE";
+
+    for (const [key, v] of Object.entries(dupList)) {
+      if (Array.isArray(v) && v.length >= 4) {
+        const dupBase = key.split("(")[0].toUpperCase();
+        const dupEx = v[3].toUpperCase();
+        if (dupBase === pureBase && dupEx === exchangeTag) {
+          expectedUid = v[0];
+          break;
+        }
+      }
+    }
+  }
+
   let rowInfo = store.currentTableData.find((c) => {
-    // 🚀 [수정] DisplayTicker(BTC)와 Ticker(BTCUSDT) 둘 다 대응 가능하도록 보강
+    // 1. UID가 일치하면 최우선 매칭 (동명이인 코인 정확하게 식별)
+    if (expectedUid && c.UID === expectedUid) return true;
+
+    // 2. 일반 매칭 분기
     if (c.DisplayTicker !== displayName && c.Ticker !== displayName)
       return false;
     if (isUpbit && (c.Listed_Exchanges?.includes("UPBIT") || c.Upbit === "O"))
@@ -231,17 +340,43 @@ export async function fetchHistory(
     if (isBybit && c.Listed_Exchanges?.includes("BYBIT")) return true;
     return false;
   });
-  if (!rowInfo)
+
+  if (!rowInfo) {
     rowInfo = store.currentTableData.find(
       (c) => c.DisplayTicker === displayName || c.Ticker === displayName,
     );
+  }
 
-  const pureBase = getPureBase(rawSymbol).replace(/KRW$/, "");
-  const exactSpot = rowInfo?.Exact_Spot || pureBase;
-  const exactFutures = rowInfo?.Exact_Futures || pureBase;
-  const exactUpbit = rowInfo?.Upbit_Symbol || rowInfo?.Symbol || pureBase;
-  const exactBithumb = rowInfo?.Bithumb_Symbol || pureBase;
-  const exactBybit = rowInfo?.Bybit_Symbol || pureBase;
+  let exactSpot = rowInfo?.Exact_Spot || pureBase;
+  let exactFutures = rowInfo?.Exact_Futures || pureBase;
+  let exactUpbit = rowInfo?.Upbit_Symbol || rowInfo?.Symbol || pureBase;
+  let exactBithumb = rowInfo?.Bithumb_Symbol || pureBase;
+  let exactBybit = rowInfo?.Bybit_Symbol || pureBase;
+
+  // 🚀 store.marketDataMap.duplicated_list (mapping.json 계승 데이터)를 활용한 프론트엔드 심볼 매핑 보정
+  const uid = rowInfo?.UID;
+  if (uid && dupList) {
+    for (const [key, v] of Object.entries(dupList)) {
+      if (Array.isArray(v) && v.length >= 4 && v[0] === uid) {
+        const exName = v[3].toUpperCase();
+        if (exName === "UPBIT") {
+          exactUpbit = v[2];
+        } else if (exName === "BITHUMB") {
+          exactBithumb = v[2];
+        } else if (exName === "BYBIT") {
+          exactBybit = v[2];
+        } else if (exName === "BINANCE") {
+          if (v[2].endsWith("USDT")) {
+            exactSpot = v[2].replace("USDT", "");
+            exactFutures = v[2].replace("USDT", "");
+          } else {
+            exactSpot = v[2];
+            exactFutures = v[2];
+          }
+        }
+      }
+    }
+  }
 
   const binanceTicker = isFutures ? `${exactFutures}USDT` : `${exactSpot}USDT`;
   const krwTicker = isBithumb ? `${exactBithumb}_KRW` : `KRW-${exactUpbit}`;
@@ -320,7 +455,12 @@ export async function fetchHistory(
             ? "bybit_spot"
             : "binance_spot";
       const ticker = isBybit ? `${exactBybit}USDT` : binanceTicker;
-      const raw = await fetchCandlesSmart(exchange, ticker, store.currentTF, 500);
+      const raw = await fetchCandlesSmart(
+        exchange,
+        ticker,
+        store.currentTF,
+        500,
+      );
 
       // 🚀 [수정] 불필요한 두 번째 과거 조회(to=...) 로직 전면 삭제 (사용자님 통찰 1000% 적중!)
       // 이미 백엔드(app.py)에 TvDatafeed 스마트 폴백 엔진이 완벽하게 구축되어 있으므로,
@@ -341,7 +481,12 @@ export async function fetchHistory(
 
         // 🚀 bybit_futures가 빈 리스트면 bybit_spot으로 폴백
         if (rawMain.length === 0 && isBybitFutures) {
-          const rawFallback = await fetchCandlesSmart("bybit_spot", ticker, store.currentTF, 500);
+          const rawFallback = await fetchCandlesSmart(
+            "bybit_spot",
+            ticker,
+            store.currentTF,
+            500,
+          );
           if (rawFallback?.result?.list?.length > 0) {
             rawMain = rawFallback.result.list
               .map((d) => ({
@@ -380,7 +525,12 @@ export async function fetchHistory(
           "1d": "24h",
         };
         const bFetchInt = bMap[store.currentTF] || "24h";
-        const bData = await fetchCandlesSmart("bithumb", krwTicker, bFetchInt, 500);
+        const bData = await fetchCandlesSmart(
+          "bithumb",
+          krwTicker,
+          bFetchInt,
+          500,
+        );
         if (bData.status === "0000" && Array.isArray(bData.data)) {
           rawMain = bData.data.map((d) => ({
             time: Number(d[0]) / 1000,
@@ -452,7 +602,12 @@ export async function fetchHistory(
           fetchInterval = `minutes/${baseMin}`;
           mainStep = targetMin / baseMin;
         }
-        const raw = await fetchCandlesSmart("upbit", krwTicker, fetchInterval, 500);
+        const raw = await fetchCandlesSmart(
+          "upbit",
+          krwTicker,
+          fetchInterval,
+          500,
+        );
         if (Array.isArray(raw)) {
           rawMain = raw
             .map((d) => ({
@@ -1001,10 +1156,20 @@ export async function fetchHistory(
               "1w": "24h",
               "1M": "24h",
             };
-            const r = await fetchCandlesSmart("bithumb", subSymbol, bMap[store.currentTF] || "24h", 1000);
+            const r = await fetchCandlesSmart(
+              "bithumb",
+              subSymbol,
+              bMap[store.currentTF] || "24h",
+              1000,
+            );
             subRaw = r.data || [];
           } else {
-            const subJson = await fetchCandlesSmart(subExchange, subSymbol, store.currentTF, 500);
+            const subJson = await fetchCandlesSmart(
+              subExchange,
+              subSymbol,
+              store.currentTF,
+              500,
+            );
             // 🚀 바이빗 응답은 result.list 형태로 오므로 추출 처리
             if (subJson?.result?.list) {
               subRaw = subJson.result.list.sort(
@@ -1264,7 +1429,13 @@ export async function loadMoreHistory() {
   try {
     let fetchedMain = [];
     if (params.isFutures || params.isSpot || params.isBybit) {
-      const raw = await fetchCandlesSmart(params.exchange, params.ticker, params.tf, 500, toVal);
+      const raw = await fetchCandlesSmart(
+        params.exchange,
+        params.ticker,
+        params.tf,
+        500,
+        toVal,
+      );
 
       if (params.isBybit && raw.result?.list) {
         fetchedMain = raw.result.list.map((d) => ({
@@ -1411,7 +1582,13 @@ export async function loadMoreHistory() {
       } else if (params.subExchange === "bithumb") {
         // 빗썸은 과거 조회가 제한적이므로 건너뜀
       } else {
-        fetchedSub = await fetchCandlesSmart(params.subExchange, params.subSymbol, params.tf, 500, subToVal);
+        fetchedSub = await fetchCandlesSmart(
+          params.subExchange,
+          params.subSymbol,
+          params.tf,
+          500,
+          subToVal,
+        );
       }
 
       if (Array.isArray(fetchedSub) && fetchedSub.length > 0) {
@@ -1493,7 +1670,7 @@ export async function loadMoreHistory() {
       console.warn("🚨 Lazy Load 데이터 세팅 예외 우회 완료:", candleErr);
     }
 
-    console.log(`✅ [Lazy Load] 과거 캔들 ${N}개 추가 결합 완료!`);
+    // Xconsole.log(`✅ [Lazy Load] 과거 캔들 ${N}개 추가 결합 완료!`);
   } catch (err) {
     console.error("🚨 과거 데이터 Lazy Loading 실패:", err);
   } finally {

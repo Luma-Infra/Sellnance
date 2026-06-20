@@ -465,6 +465,19 @@ export function initChart() {
   const syncCrosshair = (sourceChart, targetCharts) => {
     sourceChart.subscribeCrosshairMove((param) => {
       try {
+        // 🚀 [마우스 이벤트 차단 토글 방어막]
+        if (store.blockChartMouseEvent) {
+          if (store._mainCrosshair) store._mainCrosshair.setX(null);
+          if (store._volCrosshair) store._volCrosshair.setX(null);
+          try {
+            sourceChart.clearCrosshairPosition();
+            targetCharts.forEach(tObj => {
+              if (tObj && tObj.chart) tObj.chart.clearCrosshairPosition();
+            });
+          } catch (e) {}
+          return;
+        }
+
         // 🚀 [데이터 로딩 방어막] 차트 데이터 갱신 중(타임프레임 변경 등)일 때는 옵션 변경 및 십자선 렌더링 원천 차단!
         // (이 방어막이 없으면 렌더링 도중 applyOptions가 호출되어 Histogram Value is null 에러가 터짐)
         if (store.isFetchingChart) return;
@@ -825,13 +838,18 @@ export function initChart() {
     });
   };
 
+  let sizeChangeTimeout = null;
+  const allCharts = [store.chart, store.chartVol].filter(Boolean);
   allCharts.forEach((c) => {
-    c.timeScale().subscribeSizeChange(() =>
-      setTimeout(window.syncPriceScaleWidths, 50),
-    );
-    c.timeScale().subscribeVisibleLogicalRangeChange(
-      window.syncPriceScaleWidths,
-    );
+    c.timeScale().subscribeSizeChange(() => {
+      if (sizeChangeTimeout) clearTimeout(sizeChangeTimeout);
+      sizeChangeTimeout = setTimeout(() => {
+        window.syncPriceScaleWidths(true);
+      }, 150);
+    });
+    c.timeScale().subscribeVisibleLogicalRangeChange(() => {
+      window.syncPriceScaleWidths();
+    });
   });
 
   // 🚀 [메모리 누수 방지] 이전 더블클릭 이벤트 리스너 제거

@@ -10,6 +10,7 @@ export function togglePane(paneName) {
 let isDraggingResizer = null;
 
 export function applyChartLayout() {
+  if (store.blockChartResize) return;
   if (!store.chart || !store.candleSeries) return;
 
   const v = store.paneConfig.volume;

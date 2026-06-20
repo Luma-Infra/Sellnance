@@ -5,7 +5,7 @@
         "SOL": "https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png",
         "SUI": "https://s2.coinmarketcap.com/static/img/coins/64x64/20947.png"
     },
-    "DEFAULT_KRW_USD_RATE": 1511.08,
+    "DEFAULT_KRW_USD_RATE": 1529.89,
     "__MEMO__1": "BTC ETH 파생형 너무 많아서 고정 + 중국어 포함 모든 언어 티커 대응",
     "__MEMO__2": "----------------------------------------------------------",
     "EXCLUSION_LIST": [
@@ -71,6 +71,18 @@
         "여기에 명시된 UID가 일치하면 시세 및 뱃지가 자동으로 도킹됩니다!": ""
     },
     "DUPLICATED_LIST": {
+        "AMP(Amp)_binance": [
+            "6945",
+            "",
+            "AMP",
+            "binance"
+        ],
+        "AMP(Amp)_upbit": [
+            "6945",
+            "",
+            "AMP2",
+            "upbit"
+        ],
         "BTT(BitTorrent)_upbit": [
             "16086",
             "TRX",
@@ -476,6 +488,12 @@
             "AMD"
         ],
         "AMP": [
+            "6945",
+            null,
+            "Amp",
+            "AMP"
+        ],
+        "AMP(Amp)": [
             "6945",
             null,
             "Amp",
@@ -1273,12 +1291,6 @@
             "$COPPER",
             "COPPER"
         ],
-        "COS": [
-            "4036",
-            null,
-            "Contentos",
-            "COS"
-        ],
         "COST": [
             "30513",
             null,
@@ -1411,12 +1423,6 @@
             "Cysic",
             "CYS"
         ],
-        "D": [
-            "11374",
-            null,
-            "DAR Open Network",
-            "D"
-        ],
         "DASH": [
             "131",
             null,
@@ -1472,7 +1478,7 @@
             "DKA"
         ],
         "DKNG": [
-            "DKNG",
+            "40222",
             null,
             "DKNG",
             "DKNG"
@@ -1712,7 +1718,7 @@
             "EWY"
         ],
         "EWZ": [
-            "EWZ",
+            "39949",
             null,
             "EWZ",
             "EWZ"
@@ -1898,7 +1904,7 @@
             "GLW"
         ],
         "GME": [
-            "GME",
+            "31248",
             null,
             "GME",
             "GME"
@@ -2840,7 +2846,7 @@
             "NEXO"
         ],
         "NFLX": [
-            "NFLX",
+            "39479",
             null,
             "NFLX",
             "NFLX"
@@ -3349,6 +3355,12 @@
             "Raydium",
             "RAYSOL"
         ],
+        "RE": [
+            "40224",
+            null,
+            "RE",
+            "RE"
+        ],
         "RECALL": [
             "38669",
             null,
@@ -3398,7 +3410,7 @@
             "RIVER"
         ],
         "RIVN": [
-            "RIVN",
+            "39499",
             null,
             "RIVN",
             "RIVN"
@@ -4196,7 +4208,7 @@
             "USUAL"
         ],
         "UVXY": [
-            "UVXY",
+            "40229",
             null,
             "UVXY",
             "UVXY"
@@ -4388,7 +4400,7 @@
             "XEC"
         ],
         "XLE": [
-            "XLE",
+            "39943",
             null,
             "XLE",
             "XLE"
@@ -4556,7 +4568,7 @@
             "ZKP"
         ],
         "ZM": [
-            "ZM",
+            "39954",
             null,
             "ZM",
             "ZM"
