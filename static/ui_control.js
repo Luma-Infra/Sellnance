@@ -1235,12 +1235,6 @@ setTimeout(() => {
           document.head.appendChild(styleEl);
         }
 
-        // 오리지널 부모 저장
-        const originalParent = container.parentElement;
-        const originalHeadCtrlParent =
-          document.getElementById("head-control-buttons")?.parentElement ||
-          null;
-
         fullscreenBtn.onclick = () => {
           const wrapper = document.getElementById("chart-wrapper");
           if (!document.fullscreenElement) {
@@ -1259,18 +1253,30 @@ setTimeout(() => {
           const legend = document.getElementById("ohlc-legend");
           const headCtrl = document.getElementById("head-control-buttons");
           if (document.fullscreenElement === wrapper) {
+            // 전체화면 진입: 원래 위치 및 부모 백업
+            container._origParent = container.parentElement;
+            container._origNext = container.nextSibling;
+
+            if (headCtrl) {
+              headCtrl._origParent = headCtrl.parentElement;
+              headCtrl._origNext = headCtrl.nextSibling;
+            }
+
+            fullscreenBtn._origParent = fullscreenBtn.parentElement;
+            fullscreenBtn._origNext = fullscreenBtn.nextSibling;
+
             // 전체화면 진입: tf-container를 차트 내부 최상단으로 이동
             container.classList.add("fullscreen-tf-style");
             wrapper.insertBefore(container, wrapper.firstChild);
 
             // 🚀 head-control-buttons를 tf-container 안에 함께 배치
             if (headCtrl) {
-              headCtrl.dataset.fsOrigParent = headCtrl.parentElement
-                ? headCtrl.parentElement.id || ""
-                : "";
               headCtrl.style.marginLeft = "auto";
-              container.insertBefore(headCtrl, fullscreenBtn);
+              container.appendChild(headCtrl);
             }
+
+            // 🚀 전체화면 버튼도 tf-container 안으로 이동
+            container.appendChild(fullscreenBtn);
 
             // 🚀 OHLC 레전드가 tf-container에 겹치지 않도록 아래로 밀기
             if (legend) {
@@ -1287,13 +1293,19 @@ setTimeout(() => {
             container.classList.remove("fullscreen-tf-style");
 
             // 🚀 head-control-buttons를 원래 부모로 복원
-            if (headCtrl && originalHeadCtrlParent) {
-              originalHeadCtrlParent.appendChild(headCtrl);
+            if (headCtrl && headCtrl._origParent) {
+              headCtrl._origParent.insertBefore(headCtrl, headCtrl._origNext);
               headCtrl.style.marginLeft = "";
             }
 
-            if (originalParent) {
-              originalParent.appendChild(container);
+            // 🚀 tf-container를 원래 위치로 복원
+            if (container._origParent) {
+              container._origParent.insertBefore(container, container._origNext);
+            }
+
+            // 🚀 전체화면 버튼을 원래 위치로 복원
+            if (fullscreenBtn._origParent) {
+              fullscreenBtn._origParent.insertBefore(fullscreenBtn, fullscreenBtn._origNext);
             }
 
             // 🚀 OHLC 레전드 탑 위치 원복

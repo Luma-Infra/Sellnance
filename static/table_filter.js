@@ -843,8 +843,8 @@ export function updateFavoritesCount() {
   const f2 = JSON.parse(localStorage.getItem("sellnance_favs2") || "[]").length;
   const tabFav = document.getElementById("tab-fav");
   const tabFav2 = document.getElementById("tab-fav2");
-  if (tabFav) tabFav.innerText = f1 > 0 ? `FAV (${f1})` : "FAV";
-  if (tabFav2) tabFav2.innerText = f2 > 0 ? `FAV2 (${f2})` : "FAV2";
+  if (tabFav) tabFav.innerHTML = `<span style="color: #e3b30a; margin-right: 2px">★</span>` + (f1 > 0 ? `FAV (${f1})` : "FAV");
+  if (tabFav2) tabFav2.innerHTML = `<span style="color: #3b82f6; margin-right: 2px">★</span>` + (f2 > 0 ? `FAV (${f2})` : "FAV");
 }
 
 window.updateFavoritesCount = updateFavoritesCount;

@@ -217,7 +217,7 @@ function scheduleRender() {
   if (store.blockOrderbook) {
     const nowTime = Date.now();
     if (!window._lastObRenderTime) window._lastObRenderTime = 0;
-    if (nowTime - window._lastObRenderTime < 500) {
+    if (nowTime - window._lastObRenderTime < 250) {
       return;
     }
     window._lastObRenderTime = nowTime;

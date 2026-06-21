@@ -619,7 +619,7 @@
     "binance_listing": "2025-08-13"
   },
   "BICO": {
-    "binance_listing": "2023-09-28"
+    "binance_listing": "2023-09-25"
   },
   "BICOUSDT": {
     "binance_listing": "2025-01-18"
@@ -762,7 +762,7 @@
     "binance_listing": "2025-03-17"
   },
   "BSB": {
-    "binance_listing": "2026-03-25"
+    "binance_listing": "2026-03-23"
   },
   "BSBUSDT": {
     "binance_listing": "2026-03-01"
@@ -777,7 +777,7 @@
     "binance_listing": "2024-09-05"
   },
   "BTC": {
-    "binance_listing": "2019-09-25",
+    "binance_listing": "2019-09-01",
     "upbit_listing": "2017-09-01",
     "bithumb_listing": "2013-12-01",
     "bybit_listing": "2020-03-01"
@@ -804,7 +804,7 @@
     "upbit_listing": "2026-05-29"
   },
   "BTW": {
-    "binance_listing": "2026-06-04"
+    "binance_listing": "2026-06-01"
   },
   "BTWUSDT": {
     "binance_listing": "2026-06-04"
@@ -938,6 +938,9 @@
   },
   "CKBUSDT": {
     "binance_listing": "2026-04-29"
+  },
+  "CL": {
+    "binance_listing": "2026-03-30"
   },
   "CLANKER": {
     "binance_listing": "2025-11-12"
@@ -1740,7 +1743,7 @@
     "bithumb_listing": "2026-05-29"
   },
   "HYPE": {
-    "binance_listing": "2025-05-30"
+    "binance_listing": "2025-05-26"
   },
   "HYPER": {
     "binance_listing": "2025-04-22"
@@ -2010,7 +2013,7 @@
     "binance_listing": "2025-06-05"
   },
   "LAB": {
-    "binance_listing": "2025-10-17"
+    "binance_listing": "2025-10-13"
   },
   "LABUSDT": {
     "binance_listing": "2025-10-01"
@@ -2876,7 +2879,7 @@
     "binance_listing": "2023-04-04"
   },
   "RE": {
-    "binance_listing": "2026-06-18"
+    "binance_listing": "2026-06-15"
   },
   "RECALL": {
     "binance_listing": "2025-10-15"

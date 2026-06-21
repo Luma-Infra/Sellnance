@@ -677,7 +677,7 @@ document.addEventListener("keydown", (e) => {
 
     if (nextCoin) {
       store.currentSelectedSymbol = nextCoin.Ticker;
-      selectSymbol(nextCoin.DisplayTicker);
+      selectSymbol(nextCoin.Ticker);
 
       // 🚀 [해결] DOM 구조와 선택 상태 맵핑이 완벽히 수립된 50ms 뒤에 scroll 및 highlight 처리
       setTimeout(() => {
@@ -768,7 +768,7 @@ function scheduleDailyReset() {
 
     // 2. 현재 열려있는 차트 전광판 가격도 최신화
     if (store.currentAsset && typeof window.selectSymbol === "function") {
-      window.selectSymbol(store.currentAsset.DisplayTicker || store.currentAsset.Ticker);
+      window.selectSymbol(store.currentAsset.Ticker || store.currentAsset.DisplayTicker);
     }
 
     // 3. [백그라운드 사후 동기화] 2초 뒤에 백엔드를 조용히 찔러서, 거래소의 공식 데이터와 장부를 완벽하게 일치시킴

@@ -91,12 +91,29 @@ export function simpleSortData() {
     let isEmpty = false;
     if (val === undefined || val === null || val === "" || val === "-") {
       isEmpty = true;
-    } else if (!isTextCol) {
-      const num = Number(val);
-      if (isNaN(num)) {
+    } else {
+      // 🚀 화면에 하이픈(-)으로 노출되거나 유효값(볼륨/시총 등)이 0인 무효 데이터를 최하단 배치하기 위한 정밀 감지
+      if (store.currentSortCol === "VolumeUpbit" && (val === 0 || val === 0.0 || val === "0" || d.Upbit_Vol_Formatted === "-")) {
         isEmpty = true;
-      } else {
-        val = num; // 비교 시 재변환을 없애기 위해 숫자형으로 교체
+      } else if (store.currentSortCol === "Volume" && (val === 0 || val === 0.0 || val === "0" || d.Volume_Formatted === "-")) {
+        isEmpty = true;
+      } else if (store.currentSortCol === "MarketCap" && (val === 0 || val === 0.0 || val === "0" || d.MarketCap_Formatted === "-")) {
+        isEmpty = true;
+      } else if (store.currentSortCol === "VMC" && (val === 0 || val === 0.0 || val === "0" || d.VMC_Formatted === "-")) {
+        isEmpty = true;
+      } else if (store.currentSortCol === "Funding" && (val === 0 || val === 0.0 || val === "0" || d.Funding_Formatted === "-")) {
+        isEmpty = true;
+      } else if (store.currentSortCol === "Kimchi" && (d.Kimchi_Label === "-" || !d.Kimchi_Label)) {
+        isEmpty = true;
+      }
+
+      if (!isEmpty && !isTextCol) {
+        const num = Number(val);
+        if (isNaN(num)) {
+          isEmpty = true;
+        } else {
+          val = num; // 비교 시 재변환을 없애기 위해 숫자형으로 교체
+        }
       }
     }
 
@@ -105,6 +122,7 @@ export function simpleSortData() {
 
   // 🚀 가벼운 캐시 데이터 정렬 (O(N log N)의 비교 비용 최소화)
   mapped.sort((a, b) => {
+    // 값이 없는 데이터는 오름차순/내림차순 상관없이 항상 최하단으로 정렬
     if (a.isEmpty && b.isEmpty) return 0;
     if (a.isEmpty) return 1;
     if (b.isEmpty) return -1;
