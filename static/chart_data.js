@@ -39,6 +39,32 @@ export async function fetchCandlesSmart(
       interval === "weeks" ||
       interval === "months");
 
+  // 업비트는 toVal 있어도 브라우저 직접 fetch 지원 (to 파라미터 네이티브 지원)
+  if (!isGapRecovery && exchange === "upbit" && toVal && !startVal) {
+    try {
+      let fetchInterval = interval;
+      if (!interval.startsWith("minutes/")) {
+        const u = interval.replace(/[0-9]/g, "");
+        if (u === "d" || u === "w" || u === "M" || interval === "days" || interval === "weeks" || interval === "months") {
+          fetchInterval = u === "w" || interval === "weeks" ? "weeks" : u === "M" || interval === "months" ? "months" : "days";
+        } else {
+          const minMap = { "1m": "minutes/1", "3m": "minutes/3", "5m": "minutes/5", "15m": "minutes/15", "30m": "minutes/30", "1h": "minutes/60", "2h": "minutes/120", "4h": "minutes/240" };
+          fetchInterval = minMap[interval] || "minutes/1";
+        }
+      }
+      // 업비트 to 파라미터: ISO8601 형식 (예: 2025-12-07T00:00:00)
+      const toParam = `&to=${encodeURIComponent(toVal)}`;
+      const upbitUrl = `https://api.upbit.com/v1/candles/${fetchInterval}?market=${symbol}&count=200${toParam}`;
+      const res = await fetch(upbitUrl);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) return data;
+      }
+    } catch (err) {
+      console.warn(`⚠️ [UPBIT TO DIRECT FAIL] ${symbol} - ${toVal}, falling back:`, err);
+    }
+  }
+
   if (!isGapRecovery && !toVal && !startVal) {
     try {
       let directUrl = null;
@@ -78,7 +104,7 @@ export async function fetchCandlesSmart(
             fetchInterval = minMap[interval] || "minutes/1";
           }
         }
-        directUrl = `https://api.upbit.com/v1/candles/${fetchInterval}?market=${symbol}&count=${limit}`;
+        directUrl = `https://api.upbit.com/v1/candles/${fetchInterval}?market=${symbol}&count=200`; // 업비트 최대 한도: 200개
       } else if (exchange === "bybit_spot" || exchange === "bybit_futures") {
         const category = exchange === "bybit_spot" ? "spot" : "linear";
         const bMap = {
@@ -99,7 +125,7 @@ export async function fetchCandlesSmart(
           "1M": "M",
         };
         const bInt = bMap[interval] || interval;
-        directUrl = `https://api.bybit.com/v5/market/kline?category=${category}&symbol=${symbol}&interval=${bInt}&limit=${limit}`;
+        directUrl = `https://api.bybit.com/v5/market/kline?category=${category}&symbol=${symbol}&interval=${bInt}&limit=1000`; // 바이빗 최대 한도: 1000개
       } else if (exchange === "bithumb") {
         const bSym = symbol.replace("KRW-", "") + "_KRW";
         directUrl = `https://api.bithumb.com/public/candlestick/${bSym}/${interval}`;
@@ -164,7 +190,10 @@ export async function fetchCandlesSmart(
     }
   }
 
-  // Fallback to server proxy
+  // 🚫 바이낸스/빗썸: 직접 fetch 우선 수행 후 실패 시 서버 프록시(/api/candles) 호출 정상 처리
+  // (CORS 미지원 환경 우회용 fallback)
+
+  // Fallback to server proxy (업비트/바이빗 잔여 예외 상황 대응용)
   const queryTo = toVal ? `&to=${toVal}` : "";
   const queryStart = startVal ? `&start=${startVal}` : "";
   // Xconsole.log(`🔌 [SERVER FALLBACK] ${exchange} - ${symbol} - ${interval}`);
@@ -333,10 +362,10 @@ export async function fetchHistory(
     // 2. 일반 매칭 분기
     const t = (c.Ticker || "").toUpperCase();
     const cleanT = t.endsWith("KRW") ? t.slice(0, -3) : (t.endsWith("USDT") ? t.slice(0, -4) : t);
-    
+
     const dt = (c.DisplayTicker || "").toUpperCase();
     const cleanDt = dt.endsWith("KRW") ? dt.slice(0, -3) : (dt.endsWith("USDT") ? dt.slice(0, -4) : dt);
-    
+
     const sym = (c.Symbol || "").toUpperCase();
     const cleanSym = sym.endsWith("KRW") ? sym.slice(0, -3) : (sym.endsWith("USDT") ? sym.slice(0, -4) : sym);
 
@@ -359,7 +388,7 @@ export async function fetchHistory(
     rowInfo = store.currentTableData.find((c) => {
       const t = (c.Ticker || "").toUpperCase();
       const cleanT = t.endsWith("KRW") ? t.slice(0, -3) : (t.endsWith("USDT") ? t.slice(0, -4) : t);
-      
+
       const dt = (c.DisplayTicker || "").toUpperCase();
       const cleanDt = dt.endsWith("KRW") ? dt.slice(0, -3) : (dt.endsWith("USDT") ? dt.slice(0, -4) : dt);
 
@@ -723,7 +752,7 @@ export async function fetchHistory(
               exchange_key: exchangeKey,
               date: newDateStr,
             }),
-          }).catch(() => {}); // 실패해도 취트 안 남의선답
+          }).catch(() => { }); // 실패해도 취트 안 남의선답
         } else {
           // 메모리의 날짜를 테이블에만 줘주기 (POST 없이)
           const listingEl = document.getElementById(
@@ -957,7 +986,7 @@ export async function fetchHistory(
       ) {
         try {
           store.candleSeries.setMarkers([]);
-        } catch (markerErr) {}
+        } catch (markerErr) { }
       }
 
       store.kimchiData = [];
@@ -988,6 +1017,17 @@ export async function fetchHistory(
         let missingTarget = "";
         let availableSubs = [];
 
+        const querySym = rowInfo ? rowInfo.DisplayTicker : uniqueTicker;
+        // 🚀 coin-info 클라 캐시 - 동일 코인 중복 서버 호출 차단
+        if (!store._coinInfoCache) store._coinInfoCache = new Map();
+        const _cachedInfo = store._coinInfoCache.get(querySym);
+        const _fetchCoinInfo = _cachedInfo
+          ? Promise.resolve(_cachedInfo)
+          : fetch(`/api/coin-info/${querySym}`).then((res) => res.json()).then((d) => {
+              store._coinInfoCache.set(querySym, d);
+              return d;
+            });
+        
         const listedEx = rowInfo ? rowInfo.Listed_Exchanges || [] : [];
 
         if (

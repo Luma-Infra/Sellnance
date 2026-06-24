@@ -53,10 +53,7 @@
   /* 7열: 상장일    */
 
   /* 💡 자동 합산 및 퍼센트 변환 엔진 (절대 건드리지 마세요!) */
-  --ratio-total: calc(
-    var(--ratio-asset) + var(--ratio-price) + var(--ratio-vol-b) +
-      var(--ratio-vol-u) + var(--ratio-kimch) + var(--ratio-exch)
-  );
+  --ratio-total: calc(var(--ratio-asset) + var(--ratio-price) + var(--ratio-vol-b) + var(--ratio-vol-u) + var(--ratio-kimch) + var(--ratio-exch));
 }
 
 /* 🚀 계산된 비율을 각 컬럼 클래스에 자동 주입 (HTML과 JS에 이미 연결되어 있어 즉시 100% 동기화 작동!) */
@@ -265,7 +262,7 @@ body.theme-upbit:not(.resizing-active) #right-panel {
   content: none;
 }
 
-#coin-list-body .coin-row > div {
+#coin-list-body .coin-row>div {
   display: flex !important;
   align-items: center !important;
   padding: 4px 8px;
@@ -274,7 +271,7 @@ body.theme-upbit:not(.resizing-active) #right-panel {
   overflow: hidden;
 }
 
-#coin-list-body .coin-row:hover > div {
+#coin-list-body .coin-row:hover>div {
   background: rgba(var(--accent-rgb), 0.05) !important;
 }
 
@@ -332,7 +329,7 @@ body.theme-upbit:not(.resizing-active) #right-panel {
 
 .tv-lightweight-charts td,
 .tv-lightweight-charts th,
-.tv-lightweight-charts td > div {
+.tv-lightweight-charts td>div {
   padding: 0 !important;
   border: none !important;
   background: transparent !important;
@@ -343,9 +340,9 @@ body.theme-upbit:not(.resizing-active) #right-panel {
   color: color-mix(in srgb, var(--up), transparent 20%) !important;
   /* text-shadow: 0 0 12px color-mix(in srgb, var(--up), transparent 80%) !important; */
   background: radial-gradient(
-    /* circle, */ var(--flash-up) 0%,
-    transparent 40%
-  ) !important;
+      /* circle, */
+      var(--flash-up) 0%,
+      transparent 40%) !important;
   /* box-shadow: inset 2px 0 0 0 var(--up) !important; */
   transition: none !important;
 }
@@ -354,9 +351,9 @@ body.theme-upbit:not(.resizing-active) #right-panel {
   color: color-mix(in srgb, var(--down), transparent 20%) !important;
   /* text-shadow: 0 0 12px color-mix(in srgb, var(--down), transparent 80%) !important; */
   background: radial-gradient(
-    /* circle, */ var(--flash-down) 0%,
-    transparent 40%
-  ) !important;
+      /* circle, */
+      var(--flash-down) 0%,
+      transparent 40%) !important;
   /* box-shadow: inset 2px 0 0 0 var(--down) !important; */
   transition: none !important;
 }
@@ -462,6 +459,7 @@ body.theme-upbit:not(.resizing-active) #right-panel {
 
 /* ✅ 모바일 통합 최적화 (768px 이하) */
 @media (max-width: 768px) {
+
   /* 가로 스크롤 완전 차단 */
   body,
   html {
@@ -1124,13 +1122,12 @@ button[data-name="hide-all"].draw-tool-btn--active button {
 
 /* 좌측 그리기 도구 바: 모바일에서 하단 가로 바로 표시 (미디어쿼리에서 처리) */
 
-#mobile-chart-content
-  .flex-1.flex.flex-col.relative.min-w-0.h-full.overflow-hidden {
+#mobile-chart-content .flex-1.flex.flex-col.relative.min-w-0.h-full.overflow-hidden {
   padding-left: 0 !important;
 }
 
 /* 시총/거래대금 등 하단 숫자들 숨김 (Price, 24H Chg, Day Chg만 남기기) */
-#mobile-chart-content #head-info-row > div:nth-child(n + 4) {
+#mobile-chart-content #head-info-row>div:nth-child(n + 4) {
   display: none !important;
 }
 
@@ -1190,6 +1187,7 @@ button[data-name="hide-all"].draw-tool-btn--active button {
   appearance: none;
   outline: none;
 }
+
 .custom-slider-input::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
@@ -1202,6 +1200,7 @@ button[data-name="hide-all"].draw-tool-btn--active button {
   border: 2px solid var(--panel, #1e222d);
   box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
 }
+
 .custom-slider-input::-moz-range-thumb {
   width: 20px;
   height: 20px;
@@ -1224,6 +1223,7 @@ button[data-name="hide-all"].draw-tool-btn--active button {
 #coin-list-body span[id^="change-"] {
   opacity: 1;
 }
+
 #coin-list-body span[id^="today-"] {
   opacity: 0.4;
 }
@@ -1231,13 +1231,7 @@ button[data-name="hide-all"].draw-tool-btn--active button {
 #coin-list-body[data-sort-col="Change_Today"] span[id^="change-"] {
   opacity: 0.4;
 }
+
 #coin-list-body[data-sort-col="Change_Today"] span[id^="today-"] {
   opacity: 1;
-}
-
-/* 🚀 [성능 극대화] 실시간 OHLC 텍스트 변경 시 브라우저 레이아웃 무효화 전파 방지 */
-#ohlc-legend {
-  contain: strict;
-  width: 110px;
-  height: 140px; /* 고정 크기 할당으로 리플로우 완전 차단 */
 }

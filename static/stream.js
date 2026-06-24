@@ -1,7 +1,7 @@
 // stream.js
 // --- 🌊 실시간 웹소켓 엔진 관제탑 (Orchestrator) ---
 import { store, tfSec } from "./_store.js";
-import { getMultiplier } from "./chart_utils.js";
+import { getMultiplier, getPureBase } from "./chart_utils.js";
 
 // 하위 스트림 엔진들 통합 로드
 import "./stream_table.js";
@@ -234,30 +234,45 @@ function renderRealtimeRow(tId, data, isFutures = false) {
   if (!store.blockKimchi) {
     const rate = store.marketDataMap?.krw_usd_rate || 0;
     if (rate > 0) {
-      const isKrwCoin = row.Ticker?.endsWith("KRW");
-      let unitKorPrice = null;
-      let unitGlbPrice = null;
+      const calcKimchi = (r) => {
+        const rIsKrw = r.Ticker?.endsWith("KRW");
+        const domMult = getMultiplier(r.Upbit_Symbol || r.Symbol || r.Ticker);
+        const ovsMult = getMultiplier(r.Exact_Futures || r.Exact_Spot || r.Symbol || r.Ticker);
+        const unitKorPrice = (r.Price_KRW || 0) / domMult;
+        const unitGlbPrice = (r.Price_Raw || 0) / ovsMult;
 
-      const domMult = getMultiplier(row.Upbit_Symbol || row.Symbol || row.Ticker);
-      const ovsMult = getMultiplier(row.Exact_Futures || row.Exact_Spot || row.Symbol || row.Ticker);
-
-      if (isKrwCoin) {
-        unitKorPrice = (row.Price_KRW || 0) / domMult;
-        unitGlbPrice = (row.Price_Raw || 0) / ovsMult;
-      } else {
-        unitGlbPrice = (row.Price_Raw || 0) / ovsMult;
-        unitKorPrice = (row.Price_KRW || 0) / domMult;
-      }
-
-      if (unitKorPrice > 0 && unitGlbPrice > 0) {
-        const kimchiPct = (unitKorPrice / (unitGlbPrice * rate) - 1) * 100;
-        if (isFinite(kimchiPct) && kimchiPct >= -50 && kimchiPct <= 100) {
-          row.Kimchi_Raw = kimchiPct;
-          row.Kimchi_Label =
-            (kimchiPct > 0 ? "+" : "") + kimchiPct.toFixed(2) + "%";
-          row.Kimchi_Formatted =
-            (kimchiPct > 0 ? "+" : "") + kimchiPct.toFixed(1) + "%";
+        if (unitKorPrice > 0 && unitGlbPrice > 0) {
+          const kimchiPct = (unitKorPrice / (unitGlbPrice * rate) - 1) * 100;
+          if (isFinite(kimchiPct) && kimchiPct >= -50 && kimchiPct <= 100) {
+            r.Kimchi_Raw = kimchiPct;
+            r.Kimchi_Label = (kimchiPct > 0 ? "+" : "") + kimchiPct.toFixed(2) + "%";
+            r.Kimchi_Formatted = (kimchiPct > 0 ? "+" : "") + kimchiPct.toFixed(1) + "%";
+          }
         }
+      };
+
+      calcKimchi(row);
+
+      // If it's a KRW coin, also update and recalculate kimchi for matched multiplier/scaled rows
+      if (isKrwCoin) {
+        const pureBase = getPureBase(row.Symbol || row.Ticker);
+        store.currentTableData.forEach((r) => {
+          if (r !== row && (r.Upbit_Symbol === pureBase || getPureBase(r.Symbol) === pureBase)) {
+            r.Price_KRW = newPrice;
+            if (data.isUpbitRealtime) {
+              r.Upbit_Price = newPrice;
+            } else if (data.isBithumbRealtime) {
+              r.Bithumb_Price = newPrice;
+            } else {
+              if (r.Upbit === "O" && store.currentMarket !== "BITHUMB") {
+                r.Upbit_Price = newPrice;
+              } else {
+                r.Bithumb_Price = newPrice;
+              }
+            }
+            calcKimchi(r);
+          }
+        });
       }
     }
   }
@@ -462,6 +477,16 @@ store.radarIntervalId = setInterval(() => {
       } else {
         row.Bithumb_Price = row.Price_KRW;
       }
+
+      // Propagate KRW price to matched multiplier/scaled rows
+      const pureBase = getPureBase(row.Symbol || row.Ticker);
+      store.currentTableData.forEach((r) => {
+        if (r !== row && (r.Upbit_Symbol === pureBase || getPureBase(r.Symbol) === pureBase)) {
+          r.Price_KRW = row.Price_KRW;
+          r.Upbit_Price = row.Upbit_Price;
+          r.Bithumb_Price = row.Bithumb_Price;
+        }
+      });
     } else {
       const newPrice = parseFloat(ticker.c);
       if (isFuturesTicker) {
@@ -572,30 +597,32 @@ store.radarIntervalId = setInterval(() => {
     if (!store.blockKimchi) {
       const rate = store.marketDataMap?.krw_usd_rate || 0;
       if (rate > 0) {
-        const isKrwCoin = row.Ticker?.endsWith("KRW");
-        let unitKorPrice = null;
-        let unitGlbPrice = null;
+        const calcKimchi = (r) => {
+          const rIsKrw = r.Ticker?.endsWith("KRW");
+          const domMult = getMultiplier(r.Upbit_Symbol || r.Symbol || r.Ticker);
+          const ovsMult = getMultiplier(r.Exact_Futures || r.Exact_Spot || r.Symbol || r.Ticker);
+          const unitKorPrice = (r.Price_KRW || 0) / domMult;
+          const unitGlbPrice = (r.Price_Raw || 0) / ovsMult;
 
-        const domMult = getMultiplier(row.Upbit_Symbol || row.Symbol || row.Ticker);
-        const ovsMult = getMultiplier(row.Exact_Futures || row.Exact_Spot || row.Symbol || row.Ticker);
+          if (unitKorPrice > 0 && unitGlbPrice > 0) {
+            const kimchiPct = (unitKorPrice / (unitGlbPrice * rate) - 1) * 100;
+            if (isFinite(kimchiPct) && kimchiPct >= -50 && kimchiPct <= 100) {
+              r.Kimchi_Raw = kimchiPct;
+              r.Kimchi_Label = (kimchiPct > 0 ? "+" : "") + kimchiPct.toFixed(2) + "%";
+              r.Kimchi_Formatted = (kimchiPct > 0 ? "+" : "") + kimchiPct.toFixed(1) + "%";
+            }
+          }
+        };
+
+        calcKimchi(row);
 
         if (isKrwCoin) {
-          unitKorPrice = (row.Price_KRW || 0) / domMult;
-          unitGlbPrice = (row.Price_Raw || 0) / ovsMult;
-        } else {
-          unitGlbPrice = (row.Price_Raw || 0) / ovsMult;
-          unitKorPrice = (row.Price_KRW || 0) / domMult;
-        }
-
-        if (unitKorPrice > 0 && unitGlbPrice > 0) {
-          const kimchiPct = (unitKorPrice / (unitGlbPrice * rate) - 1) * 100;
-          if (isFinite(kimchiPct) && kimchiPct >= -50 && kimchiPct <= 100) {
-            row.Kimchi_Raw = kimchiPct;
-            row.Kimchi_Label =
-              (kimchiPct > 0 ? "+" : "") + kimchiPct.toFixed(2) + "%";
-            row.Kimchi_Formatted =
-              (kimchiPct > 0 ? "+" : "") + kimchiPct.toFixed(1) + "%";
-          }
+          const pureBase = getPureBase(row.Symbol || row.Ticker);
+          store.currentTableData.forEach((r) => {
+            if (r !== row && (r.Upbit_Symbol === pureBase || getPureBase(r.Symbol) === pureBase)) {
+              calcKimchi(r);
+            }
+          });
         }
       }
     }

@@ -21,6 +21,15 @@ export async function loadTableData(force = false, silent = false) {
     store.originalTableData = JSON.parse(JSON.stringify(result.data)); // 🛡️ 철벽 방어 원본
     store.currentTableData = JSON.parse(JSON.stringify(result.data)); // 🏃 실시간 작업용
 
+    // 🚀 [신규] 상태 데이터 동기화
+    if (result.active_users !== undefined) {
+      store.activeUsers = result.active_users;
+      if (typeof window.updateStatusBadge === "function") window.updateStatusBadge();
+    }
+    if (result.last_updated_raw !== undefined) {
+      store.lastUpdatedRaw = result.last_updated_raw;
+    }
+
     store.tickerRowMap.clear();
     store.currentTableData.forEach((row) => {
       row.DisplayTicker = (row.DisplayTicker || row.Symbol)
@@ -132,6 +141,15 @@ export async function loadTableDataSilent() {
       // 3. 신규 주입이 이루어졌다면 테이블 즉각 갱신
       if (needReRender && typeof window.renderTable === "function") {
         window.renderTable();
+      }
+
+      // 🚀 [신규] 사일런트 갱신 시 상태 바 업데이트
+      if (result.active_users !== undefined) {
+        store.activeUsers = result.active_users;
+        if (typeof window.updateStatusBadge === "function") window.updateStatusBadge();
+      }
+      if (result.last_updated_raw !== undefined) {
+        store.lastUpdatedRaw = result.last_updated_raw;
       }
 
       const updateTimeSpan = document.getElementById("update-time");

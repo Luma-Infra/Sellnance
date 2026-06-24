@@ -196,9 +196,10 @@ def build_binance_row(
         listed_on.add("UPBIT")
 
     # 🚀 [지문 완화 1] Bybit Fallback (바낸 티커 base 또는 업비트 티커 target_up_base 둘 중 하나라도 바이비트에 있다면 무조건 쌀먹 도킹!)
-    by_spot_p = bybit_data.get(base, {}).get("spot_price", 0.0)
-    by_futures_p = bybit_data.get(base, {}).get("futures_price", 0.0)
-    by_vol_24h = bybit_data.get(base, {}).get("volume_24h", 0.0)
+    # 🚀 [지문 완화 1] Bybit Fallback (바낸 티커 base 또는 업비트 티커 target_up_base 둘 중 하나라도 바이비트에 있다면 무조건 쌀먹 도킹!)
+    by_spot_p = bybit_data.get(raw_symbol, {}).get("spot_price", 0.0) or bybit_data.get(base, {}).get("spot_price", 0.0)
+    by_futures_p = bybit_data.get(raw_symbol, {}).get("futures_price", 0.0) or bybit_data.get(base, {}).get("futures_price", 0.0)
+    by_vol_24h = bybit_data.get(raw_symbol, {}).get("volume_24h", 0.0) or bybit_data.get(base, {}).get("volume_24h", 0.0)
 
     if (
         (by_spot_p == 0 and by_futures_p == 0)
@@ -314,15 +315,15 @@ def build_binance_row(
     if binance_futures_price > 0:
         ovs_p = binance_futures_price
         ovs_name = "BIN FUT"
-        ovs_base = base
+        ovs_base = exact_futures_ticker or ticker or raw_symbol
     elif binance_spot_price > 0:
         ovs_p = binance_spot_price
         ovs_name = "BIN SPOT"
-        ovs_base = base
+        ovs_base = exact_spot_ticker or base
     elif by_futures_p > 0:
         ovs_p = by_futures_p
         ovs_name = "BYB FUT"
-        ovs_base = base
+        ovs_base = raw_symbol or ticker or base
     elif by_spot_p > 0:
         ovs_p = by_spot_p
         ovs_name = "BYB SPOT"

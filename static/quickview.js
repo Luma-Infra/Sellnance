@@ -379,7 +379,7 @@ async function initSingleQuickViewChart(container, asset, idx) {
   qvState.charts[idx] = chart;
   qvState.series[idx] = series;
 
-  // 2. API 과거 데이터 로드 (최신 100개 봉)
+  // 2. API 과거 데이터 로드 (최신 100개 봉, 클라 ↔ 거래소 직통)
   try {
     let candles = [];
 
@@ -388,7 +388,7 @@ async function initSingleQuickViewChart(container, asset, idx) {
     let symbol = "";
 
     if (isUpbit) {
-      exchange = "upbit";
+      // ✅ 업비트: 브라우저 직접 (CORS 허용)
       const uTF = qvState.timeframe;
       let upbitInterval = "days";
       if (uTF === "1m") upbitInterval = "minutes/1";
@@ -398,7 +398,7 @@ async function initSingleQuickViewChart(container, asset, idx) {
       const upbitSym =
         asset.Upbit_Symbol || asset.Symbol || asset.Ticker.replace("KRW", "");
       const res = await fetch(
-        `/api/candles?exchange=upbit&symbol=KRW-${upbitSym}&interval=${upbitInterval}&limit=100`,
+        `https://api.upbit.com/v1/candles/${upbitInterval}?market=KRW-${upbitSym}&count=100`,
       );
       const raw = await res.json();
       if (Array.isArray(raw)) {
@@ -413,14 +413,14 @@ async function initSingleQuickViewChart(container, asset, idx) {
           .reverse();
       }
     } else if (asset.Bithumb === "O") {
-      exchange = "bithumb";
-      const symbol = asset.Symbol || asset.Ticker.replace("KRW", "");
+      // ✅ 빗썸: 브라우저 직접 (CORS 지원 - limit 파라미터 없이 전체 반환)
+      const bSym = (asset.Symbol || asset.Ticker.replace("KRW", "")) + "_KRW";
       const res = await fetch(
-        `/api/candles?exchange=bithumb&symbol=${symbol}KRW&interval=24h&limit=100`,
+        `https://api.bithumb.com/public/candlestick/${bSym}/24h`,
       );
       const raw = await res.json();
       if (raw && raw.status === "0000" && Array.isArray(raw.data)) {
-        candles = raw.data.map((d) => ({
+        candles = raw.data.slice(-100).map((d) => ({
           time: Number(d[0]) / 1000,
           open: Number(d[1]),
           close: Number(d[2]),
@@ -470,34 +470,50 @@ async function initSingleQuickViewChart(container, asset, idx) {
         }
       }
 
-      // 글로벌 마켓 심볼 USDT 페어명 보정
-      if (symbol && !symbol.endsWith("USDT")) {
-        symbol = `${symbol}USDT`;
-      }
+      if (symbol && !symbol.endsWith("USDT")) symbol = `${symbol}USDT`;
 
-      const res = await fetch(
-        `/api/candles?exchange=${exchange}&symbol=${symbol}&interval=${qvState.timeframe}&limit=100`,
-      );
-      const raw = await res.json();
-
-      if (exchange.includes("bybit") && raw.result?.list) {
-        candles = raw.result.list
-          .map((d) => ({
+      if (exchange.startsWith("bybit")) {
+        // ✅ 바이빗: 브라우저 직접 (CORS 허용)
+        const category = exchange === "bybit_spot" ? "spot" : "linear";
+        const bMap = {
+          "1m": "1", "3m": "3", "5m": "5", "15m": "15", "30m": "30",
+          "1h": "60", "2h": "120", "4h": "240", "6h": "360", "12h": "720",
+          "1d": "D", days: "D", "3d": "D", "1w": "W", "1M": "M",
+        };
+        const bInt = bMap[qvState.timeframe] || qvState.timeframe;
+        const res = await fetch(
+          `https://api.bybit.com/v5/market/kline?category=${category}&symbol=${symbol}&interval=${bInt}&limit=100`,
+        );
+        const raw = await res.json();
+        if (raw && raw.retCode === 0 && raw.result?.list) {
+          candles = raw.result.list
+            .map((d) => ({
+              time: Number(d[0]) / 1000,
+              open: Number(d[1]),
+              high: Number(d[2]),
+              low: Number(d[3]),
+              close: Number(d[4]),
+            }))
+            .sort((a, b) => a.time - b.time);
+        }
+      } else {
+        // ⚡ 바이낸스: 브라우저 직접 시도 (CORS 차단 시 try/catch로 조용히 빈 배열 반환)
+        const baseUrl = exchange === "binance_futures"
+          ? `https://fapi.binance.com/fapi/v1/klines`
+          : `https://api.binance.com/api/v3/klines`;
+        const res = await fetch(
+          `${baseUrl}?symbol=${symbol}&interval=${qvState.timeframe}&limit=100`,
+        );
+        const raw = await res.json();
+        if (Array.isArray(raw) && raw.length > 0) {
+          candles = raw.map((d) => ({
             time: Number(d[0]) / 1000,
             open: Number(d[1]),
             high: Number(d[2]),
             low: Number(d[3]),
             close: Number(d[4]),
-          }))
-          .sort((a, b) => a.time - b.time);
-      } else if (Array.isArray(raw)) {
-        candles = raw.map((d) => ({
-          time: Number(d[0]) / 1000,
-          open: Number(d[1]),
-          high: Number(d[2]),
-          low: Number(d[3]),
-          close: Number(d[4]),
-        }));
+          }));
+        }
       }
     }
 
@@ -730,7 +746,7 @@ function connectQuickViewSockets() {
         try {
           series.update(candle);
           updateLiveHeaderPrice(idx, candle.close, k.P || "0.0");
-        } catch (err) {}
+        } catch (err) { }
       } else if (eventType === "aggTrade") {
         // aggTrade 실시간 단가 및 봉 내부 업데이트 반영!
         const newPrice = parseFloat(data.p);
@@ -756,7 +772,7 @@ function connectQuickViewSockets() {
               ? asset.Change_Today_Raw || 0
               : asset.Change_24h_Raw || 0;
           updateLiveHeaderPrice(idx, newPrice, chgValue.toString(), true);
-        } catch (err) {}
+        } catch (err) { }
       }
     };
 
@@ -1206,7 +1222,7 @@ export function resetQuickViewChartsScale() {
     if (chart) {
       try {
         chart.timeScale().fitContent();
-      } catch (e) {}
+      } catch (e) { }
     }
   });
 }

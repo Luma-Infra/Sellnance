@@ -37,6 +37,7 @@ function getKrwPrecision(price) {
   if (price >= 1) return 3;
   return 4;
 }
+window.getKrwPrecision = getKrwPrecision;
 
 // 🚀 [역할 분리] 스트림 엔진(stream.js)의 렌더링 과부하를 막기 위해, 차트 상단 헤더 전광판 조작 전담 함수를 메인 UI 컨트롤러 영역에 선언합니다!
 window.updateHeaderDisplay = (row, newPrice, p, isRealtimeStream = false) => {
@@ -406,6 +407,42 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (typeof window.initChart === "function") window.initChart();
       else if (typeof initChart === "function") initChart();
       initSniperSocket();
+
+      // 🚀 [신규] 브라우저 로컬 타이머 루프 구동 (서버 부하 0%)
+      window.updateStatusBadge = () => {
+        const timerEl = document.getElementById("status-timer");
+        const usersEl = document.getElementById("status-users");
+        if (!timerEl || !usersEl) return;
+
+        // 1. 접속자 수 동기화
+        const users = store.activeUsers || 1;
+        usersEl.innerText = `${users} Online`;
+
+        // 2. 15분 주기 쿨타임 동기화
+        if (!store.lastUpdatedRaw) {
+          timerEl.innerText = "--:-- 후 갱신";
+          return;
+        }
+
+        const now = Math.floor(Date.now() / 1000);
+        // 서버의 마지막 갱신 시간 기준 15분(900초) 더함
+        const nextUpdate = store.lastUpdatedRaw + 900;
+        let diff = nextUpdate - now;
+
+        if (diff < 0) {
+          // 시간이 오버되면 수집 중 상태로 표시
+          timerEl.innerText = "수집 완료 대기 중...";
+          return;
+        }
+
+        const m = Math.floor(diff / 60);
+        const s = diff % 60;
+        const formattedTime = `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+        timerEl.innerText = `${formattedTime} 후 갱신`;
+      };
+
+      // 1초마다 브라우저에서 직접 카운트다운 연산 수행
+      setInterval(window.updateStatusBadge, 1000);
 
       // Xconsole.log("✅ 2. 테이블 실시간 시세 및 차트/스나이퍼 소켓 점화 완료!");
     } else {

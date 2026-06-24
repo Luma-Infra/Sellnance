@@ -562,7 +562,7 @@
     "binance_listing": "2026-05-31"
   },
   "BAS": {
-    "binance_listing": "2025-08-26"
+    "binance_listing": "2025-08-25"
   },
   "BASED": {
     "binance_listing": "2026-03-30"
@@ -958,7 +958,7 @@
     "binance_listing": "2025-11-12"
   },
   "CLO": {
-    "binance_listing": "2025-10-14",
+    "binance_listing": "2025-10-01",
     "bybit_listing": "2026-06-23"
   },
   "CLOUSDT": {
@@ -1587,6 +1587,9 @@
   "GMXUSDT": {
     "binance_listing": "2025-01-18"
   },
+  "GNO": {
+    "binance_listing": "2025-02-10"
+  },
   "GNOUSDT": {
     "binance_listing": "2021-08-30",
     "bithumb_listing": "2025-02-17"
@@ -1796,7 +1799,9 @@
     "binance_listing": "2026-03-19"
   },
   "ID": {
-    "binance_listing": "2023-03-23"
+    "binance_listing": "2023-03-20",
+    "bybit_listing": "2023-09-29",
+    "upbit_listing": "2025-12-07"
   },
   "IDEX": {
     "binance_listing": "2023-05-02"
@@ -2818,7 +2823,8 @@
     "binance_listing": "2025-07-10"
   },
   "PUMPBTC": {
-    "binance_listing": "2025-06-13"
+    "binance_listing": "2025-06-13",
+    "bithumb_listing": "2025-04-21"
   },
   "PUMPBTCUSDT": {
     "bithumb_listing": "2025-04-21"
@@ -2832,6 +2838,9 @@
   },
   "PUNDIXUSDT": {
     "binance_listing": "2025-04-01"
+  },
+  "PYR": {
+    "binance_listing": "2025-02-10"
   },
   "PYRUSDT": {
     "binance_listing": "2026-05-10"
@@ -2947,7 +2956,7 @@
     "binance_listing": "2024-07-22"
   },
   "REQ": {
-    "binance_listing": "2026-05-26"
+    "binance_listing": "2025-02-10"
   },
   "REQUSDT": {
     "binance_listing": "2021-08-01",
@@ -3248,6 +3257,9 @@
   "SOPHUSDT": {
     "binance_listing": "2025-05-28",
     "upbit_listing": "2025-11-25"
+  },
+  "SOXL": {
+    "binance_listing": "2026-06-24"
   },
   "SOXLUSDT": {
     "binance_listing": "2026-05-15"
@@ -3864,6 +3876,9 @@
   },
   "XANUSDT": {
     "binance_listing": "2025-09-29"
+  },
+  "XAU": {
+    "binance_listing": "2026-06-23"
   },
   "XAUT": {
     "binance_listing": "2026-03-26"

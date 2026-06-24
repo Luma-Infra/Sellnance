@@ -56,8 +56,54 @@ def start_kst_9am_scheduler():
     thread.start()
 
 
+# 🚀 [추가] 5분 주기 백그라운드 Silent 자동 갱신 스케줄러
+# 유저 요청과 완전히 분리 - 유저가 0명이든 500명이든 서버가 혼자 5분마다 수집
+SILENT_REFRESH_INTERVAL = 900  # 15분 (초)
+
+
+def start_silent_background_scheduler():
+    import time
+
+    def run():
+        print("🔄 [SYSTEM] Silent 백그라운드 자동 갱신 스케줄러 가동 (5분 주기)...")
+        while True:
+            time.sleep(SILENT_REFRESH_INTERVAL)
+            try:
+                print("🔄 [BG SCHEDULER] 5분 주기 silent 갱신 시작...")
+                _fetch_and_process_data_and_cache(silent_mode=True)
+            except Exception as e:
+                print(f"🚨 [BG SCHEDULER ERROR] {e}")
+
+    thread = threading.Thread(target=run, daemon=True)
+    thread.start()
+
+
+def _fetch_and_process_data_and_cache(silent_mode=False):
+    """캐시까지 업데이트하는 내부 유틸 (스케줄러 전용)"""
+    global GLOBAL_CACHE
+    kst = pytz.timezone("Asia/Seoul")
+    now_kst = datetime.now(kst)
+    try:
+        raw_data = _fetch_and_process_data(silent_mode=silent_mode)
+        if raw_data:
+            with data_lock:
+                GLOBAL_CACHE.update(
+                    {
+                        "data": raw_data,
+                        "timestamp": now_kst,
+                        "last_updated_str": now_kst.strftime("%Y-%m-%d %H:%M:%S"),
+                    }
+                )
+            print(
+                f"✅ [BG] 캐시 갱신 완료! (총 {len(raw_data)}개, Silent:{silent_mode})"
+            )
+    except Exception as e:
+        print(f"🚨 [BG CACHE ERROR] {e}")
+
+
 # 서버 로드 시 즉시 실행
 start_kst_9am_scheduler()
+start_silent_background_scheduler()
 
 # 🚀 [수정] 모듈 로드 시점에 즉시 실행하지 않고, 처음 호출될 때 초기화하도록 변경
 _INITIALIZED = False

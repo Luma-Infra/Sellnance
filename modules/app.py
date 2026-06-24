@@ -68,8 +68,6 @@ DIST_DIR = BASE_DIR / "dist"
 if DIST_DIR.exists():
     print("🌐 [ENV] Production Build Detected! Serving from /dist")
     app.mount("/assets", StaticFiles(directory=str(DIST_DIR / "assets")), name="assets")
-    STATIC_DIR = BASE_DIR / "static"
-    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
     templates = Jinja2Templates(directory=str(DIST_DIR))
 else:
     print("🛠️ [ENV] Development Mode! Serving raw templates/static")
@@ -199,19 +197,73 @@ def get_env_cmc_key():
     return {"key": env_key}
 
 
+# 👥 초경량 접속자 세션 트래커 (서버 메모리 상에 상주)
+ACTIVE_SESSIONS = {}  # { "ip_address": timestamp }
+SESSION_LOCK = threading.Lock()
+
+def track_user_session(request: Request):
+    """요청자 IP를 기반으로 최근 30초 내에 활동한 세션 수를 카운트합니다."""
+    # 프록시(Cloudflare, Railway 등)를 거친 경우 원래 IP 획득 시도
+    client_ip = request.headers.get("x-forwarded-for") or (request.client.host if request.client else "unknown")
+    if "," in client_ip:
+        client_ip = client_ip.split(",")[0].strip()
+
+    now = time.time()
+    with SESSION_LOCK:
+        ACTIVE_SESSIONS[client_ip] = now
+        # 30초 이상 지난 세션 제거
+        expired = [ip for ip, t in ACTIVE_SESSIONS.items() if now - t > 30]
+        for ip in expired:
+            del ACTIVE_SESSIONS[ip]
+        return len(ACTIVE_SESSIONS)
+
+
 # ⭐️ async 삭제됨!
 @app.get("/api/market-data")
-def get_market_data(force: bool = False):
+def get_market_data(request: Request, force: bool = False):
     """프론트엔드의 표(Table)를 그리기 위한 데이터를 JSON으로 반환합니다."""
+    user_count = track_user_session(request)
     data, last_updated = api_manager.get_cached_data(force_reload=force)
-    return {"data": data, "last_updated": last_updated}
+    
+    # 쿨타임 타이머용 raw 타임스탬프 획득
+    cache_timestamp = api_manager.GLOBAL_CACHE.get("timestamp", datetime.min)
+    # timezone-aware 대응
+    if cache_timestamp.tzinfo is not None:
+        raw_ts = cache_timestamp.timestamp()
+    else:
+        raw_ts = time.mktime(cache_timestamp.timetuple())
+
+    return {
+        "data": data, 
+        "last_updated": last_updated,
+        "last_updated_raw": raw_ts,
+        "active_users": user_count
+    }
 
 
 @app.get("/api/market-data-silent")
-def get_market_data_silent():
-    """🚨 [CMC 크레딧 방어용] CMC API 호출 없이 바이낸스/업비트 시세 및 펀딩비만 조용히 갱신하여 반환합니다."""
-    data, last_updated = api_manager.get_cached_data(force_reload=False, silent_mode=True)
-    return {"data": data, "last_updated": last_updated}
+def get_market_data_silent(request: Request):
+    """🚀 [캐시 즉시 반환] 유저 요청 시 수집 없이 GLOBAL_CACHE만 뿌림.
+    수집은 서버 자체 15분 백그라운드 스케줄러가 전담 (유저 500명 와도 수집 0번).
+    """
+    user_count = track_user_session(request)
+    data = api_manager.GLOBAL_CACHE.get("data", [])
+    last_updated = api_manager.GLOBAL_CACHE.get("last_updated_str", "")
+    
+    cache_timestamp = api_manager.GLOBAL_CACHE.get("timestamp", datetime.min)
+    if cache_timestamp.tzinfo is not None:
+        raw_ts = cache_timestamp.timestamp()
+    else:
+        raw_ts = time.mktime(cache_timestamp.timetuple())
+
+    if isinstance(data, dict):
+        data = list(data.values())
+    return {
+        "data": data, 
+        "last_updated": last_updated,
+        "last_updated_raw": raw_ts,
+        "active_users": user_count
+    }
 
 
 # app.py 내부 라우터 교체

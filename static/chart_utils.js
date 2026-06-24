@@ -54,7 +54,7 @@ function resetChartScale() {
   } catch (e) {
     try {
       store.chart.timeScale().scrollToRealtime();
-    } catch (err) {}
+    } catch (err) { }
   }
 
   if (store.chartVol) {
@@ -81,7 +81,7 @@ function resetChartScale() {
     } catch (e) {
       try {
         store.chartVol.timeScale().scrollToRealtime();
-      } catch (err) {}
+      } catch (err) { }
     }
   }
 
@@ -166,7 +166,10 @@ function updateLegend(d, v, k) {
   if (valuesContainer) valuesContainer.classList.remove("hidden");
 
   // 🚀 [수정] 단일 진실 공급원(Single Source of Truth)인 store.getPrecision 사용! (O(1) 초광속 참조)
-  const p = store.getPrecision(store.currentAsset);
+  let p = store.getPrecision(store.currentAsset);
+  if (store.currencyMode === "KRW" && typeof window.getKrwPrecision === "function") {
+    p = window.getKrwPrecision(d.close);
+  }
 
   // 🚀 0일 때를 위한 삼항 연산자 (보합색 추가)
   const cls =
@@ -405,7 +408,7 @@ function autoFit(isTabRestore = false) {
           store.chartVol.priceScale("left").applyOptions({ autoScale: true });
         }
       }
-    } catch (e) {}
+    } catch (e) { }
     return;
   }
   if (store.chart && store.mainData.length) {
@@ -427,7 +430,7 @@ function autoFit(isTabRestore = false) {
         if (store.kimchiSeries) {
           store.chartVol.priceScale("left").applyOptions({ autoScale: true });
         }
-      } catch (e) {}
+      } catch (e) { }
     }
   }
 }
@@ -884,8 +887,8 @@ export const sanitizeChartData = (dataArr, hasValueField = false) => {
         close: Number(d.close),
         volume:
           d.volume !== undefined &&
-          d.volume !== null &&
-          !isNaN(Number(d.volume))
+            d.volume !== null &&
+            !isNaN(Number(d.volume))
             ? Number(d.volume)
             : 0,
       });
