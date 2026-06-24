@@ -189,8 +189,10 @@ def build_binance_row(
     )
 
     up_price_krw = 0.0
+    up_open_krw = 0.0
     if target_up_base and target_up_base in upbit_data:
         up_price_krw = upbit_data[target_up_base].get("price", 0.0)
+        up_open_krw = upbit_data[target_up_base].get("utc0_open", 0.0)
         listed_on.add("UPBIT")
 
     # 🚀 [지문 완화 1] Bybit Fallback (바낸 티커 base 또는 업비트 티커 target_up_base 둘 중 하나라도 바이비트에 있다면 무조건 쌀먹 도킹!)
@@ -272,15 +274,20 @@ def build_binance_row(
     # 🚀 Bithumb 심볼 명확화 (중복 티커 처리)
     bithumb_symbol = None
     bithumb_price = 0.0
+    bithumb_open = 0.0
 
     if bithumb_direct_match:
         bithumb_symbol = target_bi_base
         bithumb_price = bithumb_data.get(target_bi_base, {}).get("price", 0.0)
+        bithumb_open = bithumb_data.get(target_bi_base, {}).get("utc0_open", 0.0)
 
     if bithumb_price == 0 and bithumb_aliases:
         bithumb_symbol = bithumb_aliases[0]
         bithumb_price = bithumb_data.get(bithumb_aliases[0].upper(), {}).get(
             "price", 0.0
+        )
+        bithumb_open = bithumb_data.get(bithumb_aliases[0].upper(), {}).get(
+            "utc0_open", 0.0
         )
 
     # 🚀 [핵심] 김프(현현갭) & 현선갭 연산 (라벨 추가)
@@ -345,6 +352,8 @@ def build_binance_row(
         if "FUTURES" in str(listed_on) and funding_rate != 0
         else "-"
     )
+
+    dom_open_krw = up_open_krw if up_open_krw > 0 else (bithumb_open if bithumb_open > 0 else 0.0)
 
     # 7. 데이터 조립
     u_type = str(b_info.get("underlying_type", "")) if isinstance(b_info, dict) else ""
@@ -420,6 +429,7 @@ def build_binance_row(
         "Funding_Raw": funding_rate,
         "Kimchi_Raw": kimchi_raw,
         "utc0_open_Raw": utc0_open,
+        "utc0_open_KRW": dom_open_krw if dom_open_krw > 0 else None,
         # 추가 데이터 정리 예정
         "Binance_Vol_Futures": total_vol_futures,
         "Binance_Vol_Spot": total_vol_spot,

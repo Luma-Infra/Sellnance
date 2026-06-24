@@ -729,7 +729,7 @@ export function renderTable(isRealtime = false) {
       const rowEl = store.rowDomMap.get(rowData.Ticker);
       if (rowEl) {
         const oldIndex = parseInt(rowEl.dataset.index);
-        const needsPositionUpdate = !isRealtime || i < 30 || oldIndex < 30 || isNaN(oldIndex);
+        const needsPositionUpdate = !isRealtime || i < 30 || oldIndex < 30 || isNaN(oldIndex) || oldIndex !== i;
 
         if (needsPositionUpdate) {
           rowEl.dataset.index = i;

@@ -301,14 +301,19 @@ def build_upbit_row(
     funding_f = "-"
 
     bithumb_price = bithumb_data.get(base, {}).get("price", 0.0)
+    bithumb_open = bithumb_data.get(base, {}).get("utc0_open", 0.0) or 0.0
     for a in bithumb_aliases:
         if bithumb_price == 0:
             bithumb_price = bithumb_data.get(a.upper(), {}).get("price", 0.0)
+        if bithumb_open == 0:
+            bithumb_open = bithumb_data.get(a.upper(), {}).get("utc0_open", 0.0) or 0.0
 
     # 🚀 Bithumb 심볼 명확화 (중복 티커 처리)
     bithumb_symbol = base
     if bithumb_aliases:
         bithumb_symbol = bithumb_aliases[0]
+
+    final_open_krw = up_open_krw if up_open_krw > 0 else (bithumb_open if bithumb_open > 0 else 0.0)
 
     row = {
         # --- 1. 기본 식별 정보 --- 
@@ -366,7 +371,7 @@ def build_upbit_row(
         "Funding_Raw": 0.0,
         "Kimchi_Raw": 0.0,
         "utc0_open_Raw": utc0_open,
-        "utc0_open_KRW": up_open_krw,
+        "utc0_open_KRW": final_open_krw if final_open_krw > 0 else None,
         # 추가 예정
         "Upbit_Vol": up_info.get("acc_trade_price_24h", 0.0),
         "Exact_Spot": exact_spot_ticker,

@@ -84,6 +84,13 @@ function resetChartScale() {
       } catch (err) {}
     }
   }
+
+  // 🚀 [추가] 오토 리셋 실행 후 즉각적인 Y축 가로폭 동기화 강제 적용
+  setTimeout(() => {
+    if (typeof window.syncPriceScaleWidths === "function") {
+      window.syncPriceScaleWidths(true);
+    }
+  }, 150);
 }
 
 // ✅ 포맷팅 by precision
@@ -728,36 +735,64 @@ setTimeout(() => {
 
 // 🎯 브라우저 탭 제목 실시간 스위칭 통합 매니저 (소켓 중복 생성 ZERO, 메인 차트 소켓 100% 재활용)
 let lastTabTitleUpdateMs = 0;
+let lastTabSymbol = "";
+let lastTabMarket = "";
 
-export function updateTabTitleManager(price, symbol, isUpbit) {
+export function updateTabTitleManager(price, symbol, isKor) {
   if (isNaN(price) || price <= 0) return;
 
-  // 🚀 500ms 쓰로틀링으로 브라우저 탭 깜빡임 부하 완벽 방어!
+  const activeMarket = store.currentChartMarket || "ALL";
   const nowMs = performance.now();
-  if (!lastTabTitleUpdateMs || nowMs - lastTabTitleUpdateMs > 500) {
+  const isStateChanged = (symbol !== lastTabSymbol || activeMarket !== lastTabMarket);
+
+  // 🚀 500ms 쓰로틀링으로 브라우저 탭 깜빡임 부하 완벽 방어! (단, 심볼이나 마켓이 바뀌었을 경우 즉시 갱신)
+  if (isStateChanged || !lastTabTitleUpdateMs || nowMs - lastTabTitleUpdateMs > 500) {
     lastTabTitleUpdateMs = nowMs;
+    lastTabSymbol = symbol;
+    lastTabMarket = activeMarket;
 
-    const getTargetSymbol = () => {
-      const selectedRow = store.currentTableData?.find(
-        (c) => c.Ticker === store.currentSelectedSymbol,
-      );
-      return selectedRow?.Symbol || symbol;
-    };
+    const row = store.currentTableData?.find(
+      (c) => c.Ticker === store.currentSelectedSymbol || c.Symbol === symbol || c.DisplayTicker === symbol
+    );
+    const targetSymbol = row?.Symbol || symbol;
 
-    let p = 2;
-    if (isUpbit) {
-      // 업비트 KRW 마켓 호가 단위 정밀도 자동 계산
-      if (price < 1) p = 4;
-      else if (price < 10) p = 2;
-      else if (price < 100) p = 1;
-      else p = 0;
+    const isFuturesMode = activeMarket === "FUTURES" || activeMarket === "BYBIT_FUTURES";
+
+    // 🚀 선택된 심볼 기준의 최종 대상 배수 (예: 1000SHIB인 경우 1000)
+    const storeMult = getMultiplier(targetSymbol);
+
+    // 국내/해외의 현재 모드별 배수 획득
+    const activeOvsTicker = isFuturesMode ? row?.Exact_Futures : row?.Exact_Spot;
+    const ovsMult = getMultiplier(activeOvsTicker || targetSymbol);
+    const domMult = getMultiplier(row?.Upbit_Symbol || targetSymbol);
+
+    const activeExchangeMult = isKor ? domMult : ovsMult;
+
+    // 가격 스케일 조정 (예: SHIB Spot 가격 0.000005를 1000SHIB에 맞춰 0.005로 변환)
+    const scaledPrice = price / activeExchangeMult * storeMult;
+
+    const isMainKrw = store.currencyMode === "KRW" || isKor;
+    let formatted = "";
+
+    if (isMainKrw) {
+      // 업비트/빗썸 KRW 마켓 호가 단위 정밀도 자동 계산
+      const getLocalKrwPrecision = (pr) => {
+        if (!pr || isNaN(pr)) return 0;
+        if (pr >= 100000) return 0;
+        if (pr >= 10000) return 1;
+        if (pr >= 100) return 2;
+        if (pr >= 1) return 3;
+        return 4;
+      };
+      const krwP = getLocalKrwPrecision(scaledPrice);
+      formatted = `${Number(scaledPrice).toLocaleString(undefined, { maximumFractionDigits: krwP })}`;
     } else {
-      // 바이낸스 USDT 마켓 정밀도 참조
-      p = store.getPrecision(store.currentSelectedSymbol || symbol);
+      // 바이낸스/바이빗 USDT 마켓 정밀도 참조
+      const p = store.getPrecision(store.currentSelectedSymbol || symbol);
+      formatted = `${formatSmartPrice(scaledPrice, p)}`;
     }
 
-    const formatted = formatSmartPrice(price, p);
-    document.title = `${formatted} ${getTargetSymbol().toUpperCase()} | Xsellance`;
+    document.title = `${formatted} ${targetSymbol.toUpperCase()} | sellance`;
   }
 }
 window.updateTabTitleManager = updateTabTitleManager;

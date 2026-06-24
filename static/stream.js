@@ -185,8 +185,11 @@ function renderRealtimeRow(tId, data, isFutures = false) {
     }
   }
 
-  if (isKrwCoin && row.utc0_open_KRW) {
-    const openPriceKRW = parseFloat(row.utc0_open_KRW);
+  if (isKrwCoin && (row.utc0_open_KRW || (row.utc0_open_Raw && rate > 0))) {
+    let openPriceKRW = row.utc0_open_KRW ? parseFloat(row.utc0_open_KRW) : 0;
+    if (openPriceKRW <= 0 && row.utc0_open_Raw && rate > 0) {
+      openPriceKRW = parseFloat(row.utc0_open_Raw) * rate;
+    }
     if (openPriceKRW > 0) {
       const todayKrw = ((newPrice - openPriceKRW) / openPriceKRW) * 100;
       if (data.isUpbitRealtime) row.Change_Today_Upbit = todayKrw;
@@ -235,12 +238,15 @@ function renderRealtimeRow(tId, data, isFutures = false) {
       let unitKorPrice = null;
       let unitGlbPrice = null;
 
+      const domMult = getMultiplier(row.Upbit_Symbol || row.Symbol || row.Ticker);
+      const ovsMult = getMultiplier(row.Exact_Futures || row.Exact_Spot || row.Symbol || row.Ticker);
+
       if (isKrwCoin) {
-        unitKorPrice = row.Price_KRW || 0;
-        unitGlbPrice = row.Price_Raw || 0;
+        unitKorPrice = (row.Price_KRW || 0) / domMult;
+        unitGlbPrice = (row.Price_Raw || 0) / ovsMult;
       } else {
-        unitGlbPrice = row.Price_Raw || 0;
-        unitKorPrice = row.Price_KRW || 0;
+        unitGlbPrice = (row.Price_Raw || 0) / ovsMult;
+        unitKorPrice = (row.Price_KRW || 0) / domMult;
       }
 
       if (unitKorPrice > 0 && unitGlbPrice > 0) {
@@ -570,12 +576,15 @@ store.radarIntervalId = setInterval(() => {
         let unitKorPrice = null;
         let unitGlbPrice = null;
 
+        const domMult = getMultiplier(row.Upbit_Symbol || row.Symbol || row.Ticker);
+        const ovsMult = getMultiplier(row.Exact_Futures || row.Exact_Spot || row.Symbol || row.Ticker);
+
         if (isKrwCoin) {
-          unitKorPrice = row.Price_KRW || 0;
-          unitGlbPrice = row.Price_Raw || 0;
+          unitKorPrice = (row.Price_KRW || 0) / domMult;
+          unitGlbPrice = (row.Price_Raw || 0) / ovsMult;
         } else {
-          unitGlbPrice = row.Price_Raw || 0;
-          unitKorPrice = row.Price_KRW || 0;
+          unitGlbPrice = (row.Price_Raw || 0) / ovsMult;
+          unitKorPrice = (row.Price_KRW || 0) / domMult;
         }
 
         if (unitKorPrice > 0 && unitGlbPrice > 0) {

@@ -286,13 +286,13 @@ export async function fetchHistory(
   const rawSymbol = displayName.split("(")[0].trim().toUpperCase();
   store.currentAsset = displayName;
 
-  const isFutures = store.currentMarket === "FUTURES";
-  const isSpot = store.currentMarket === "SPOT";
-  const isUpbit = store.currentMarket === "UPBIT";
-  const isBithumb = store.currentMarket === "BITHUMB";
+  const isFutures = store.currentChartMarket === "FUTURES";
+  const isSpot = store.currentChartMarket === "SPOT";
+  const isUpbit = store.currentChartMarket === "UPBIT";
+  const isBithumb = store.currentChartMarket === "BITHUMB";
   const isBybit =
-    store.currentMarket === "BYBIT" || store.currentMarket === "BYBIT_FUTURES";
-  const isBybitFutures = store.currentMarket === "BYBIT_FUTURES";
+    store.currentChartMarket === "BYBIT" || store.currentChartMarket === "BYBIT_FUTURES";
+  const isBybitFutures = store.currentChartMarket === "BYBIT_FUTURES";
 
   const pureBase = getPureBase(rawSymbol)
     .replace(/KRW$/, "")
@@ -322,13 +322,27 @@ export async function fetchHistory(
     }
   }
 
+  let cleanDisplayName = displayName.toUpperCase();
+  if (cleanDisplayName.endsWith("KRW")) cleanDisplayName = cleanDisplayName.slice(0, -3);
+  else if (cleanDisplayName.endsWith("USDT")) cleanDisplayName = cleanDisplayName.slice(0, -4);
+
   let rowInfo = store.currentTableData.find((c) => {
     // 1. UID가 일치하면 최우선 매칭 (동명이인 코인 정확하게 식별)
     if (expectedUid && c.UID === expectedUid) return true;
 
     // 2. 일반 매칭 분기
-    if (c.DisplayTicker !== displayName && c.Ticker !== displayName)
+    const t = (c.Ticker || "").toUpperCase();
+    const cleanT = t.endsWith("KRW") ? t.slice(0, -3) : (t.endsWith("USDT") ? t.slice(0, -4) : t);
+    
+    const dt = (c.DisplayTicker || "").toUpperCase();
+    const cleanDt = dt.endsWith("KRW") ? dt.slice(0, -3) : (dt.endsWith("USDT") ? dt.slice(0, -4) : dt);
+    
+    const sym = (c.Symbol || "").toUpperCase();
+    const cleanSym = sym.endsWith("KRW") ? sym.slice(0, -3) : (sym.endsWith("USDT") ? sym.slice(0, -4) : sym);
+
+    if (cleanT !== cleanDisplayName && cleanDt !== cleanDisplayName && cleanSym !== cleanDisplayName)
       return false;
+
     if (isUpbit && (c.Listed_Exchanges?.includes("UPBIT") || c.Upbit === "O"))
       return true;
     if (isFutures && c.Listed_Exchanges?.includes("BINANCE_FUTURES"))
@@ -342,9 +356,18 @@ export async function fetchHistory(
   });
 
   if (!rowInfo) {
-    rowInfo = store.currentTableData.find(
-      (c) => c.DisplayTicker === displayName || c.Ticker === displayName,
-    );
+    rowInfo = store.currentTableData.find((c) => {
+      const t = (c.Ticker || "").toUpperCase();
+      const cleanT = t.endsWith("KRW") ? t.slice(0, -3) : (t.endsWith("USDT") ? t.slice(0, -4) : t);
+      
+      const dt = (c.DisplayTicker || "").toUpperCase();
+      const cleanDt = dt.endsWith("KRW") ? dt.slice(0, -3) : (dt.endsWith("USDT") ? dt.slice(0, -4) : dt);
+
+      const sym = (c.Symbol || "").toUpperCase();
+      const cleanSym = sym.endsWith("KRW") ? sym.slice(0, -3) : (sym.endsWith("USDT") ? sym.slice(0, -4) : sym);
+
+      return cleanT === cleanDisplayName || cleanDt === cleanDisplayName || cleanSym === cleanDisplayName;
+    });
   }
 
   let exactSpot = rowInfo?.Exact_Spot || pureBase;
@@ -630,12 +653,12 @@ export async function fetchHistory(
         (rowInfo?.Listed_Exchanges?.includes("UPBIT") || rowInfo?.Upbit === "O")
       ) {
         console.warn(`⚠️ 바이빗 데이터 없음 (${exactBybit}), 업비트 폴백 시도`);
-        store.currentMarket = "UPBIT";
+        store.currentChartMarket = "UPBIT";
         fetchHistory(displayName, isTfChange, isTabRestore);
         return;
       }
       console.warn(
-        `⚠️ [No Data] ${displayName} / ${store.currentMarket} - 차트 데이터 없음`,
+        `⚠️ [No Data] ${displayName} / ${store.currentChartMarket} - 차트 데이터 없음`,
       );
       store.isFetchingChart = false;
       window.isFetchingChart = false;
@@ -813,7 +836,7 @@ export async function fetchHistory(
       mainStep: typeof mainStep !== "undefined" ? mainStep : 1,
       upColorVol: upColorVol,
       downColorVol: downColorVol,
-      isKor: ["UPBIT", "BITHUMB"].includes(store.currentMarket),
+      isKor: ["UPBIT", "BITHUMB"].includes(store.currentChartMarket),
       tf: store.currentTF,
       hasMoreHistory: true,
     };
@@ -968,8 +991,8 @@ export async function fetchHistory(
         const listedEx = rowInfo ? rowInfo.Listed_Exchanges || [] : [];
 
         if (
-          store.currentMarket === "UPBIT" ||
-          store.currentMarket === "BITHUMB"
+          store.currentChartMarket === "UPBIT" ||
+          store.currentChartMarket === "BITHUMB"
         ) {
           if (listedEx.includes("BINANCE"))
             availableSubs.push({

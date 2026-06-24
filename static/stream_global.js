@@ -23,8 +23,8 @@ export function startRealtimeCandle(
   }
 
   const isBybit =
-    store.currentMarket === "BYBIT" || store.currentMarket === "BYBIT_FUTURES";
-  const isBybitFutures = store.currentMarket === "BYBIT_FUTURES";
+    store.currentChartMarket === "BYBIT" || store.currentChartMarket === "BYBIT_FUTURES";
+  const isBybitFutures = store.currentChartMarket === "BYBIT_FUTURES";
 
   // 1️⃣ 기존 활성화된 이종 거래소 소켓 안전하게 연결 해제 제어
   if (!(isFutures || isSpot) && store.binanceChartWs) {
@@ -74,7 +74,7 @@ export function startRealtimeCandle(
 
     // 백그라운드 탭 타이틀 실시간 반영
     if (activeCandle) {
-      updateTabTitleManager(activeCandle.close, symbol, store.currentMarket === "UPBIT");
+      updateTabTitleManager(activeCandle.close, symbol, ["UPBIT", "BITHUMB"].includes(store.currentChartMarket));
     }
 
     if (realtimeUpdatePending) return;
@@ -104,6 +104,10 @@ export function startRealtimeCandle(
       if (typeof window.updateStatus === "function") {
         window.updateStatus(currentCandle, p);
       }
+
+      if (typeof window.syncPriceScaleWidths === "function") {
+        window.syncPriceScaleWidths();
+      }
     });
   };
 
@@ -112,7 +116,7 @@ export function startRealtimeCandle(
     const btnSim = document.getElementById("tab-btn-sim");
     if (btnSim && btnSim.classList.contains("active")) return;
     if (store.isFetchingChart || window.isFetchingChart || store.isLoadingMoreHistory) return;
-    if (store.currentMarket !== "SPOT" && store.currentMarket !== "FUTURES") return;
+    if (store.currentChartMarket !== "SPOT" && store.currentChartMarket !== "FUTURES") return;
 
     const res = JSON.parse(e.data);
     if (!store.mainData || store.mainData.length === 0) return;
@@ -197,7 +201,7 @@ export function startRealtimeCandle(
     if (btnSim && btnSim.classList.contains("active")) return;
     if (store.isFetchingChart || window.isFetchingChart || store.isLoadingMoreHistory) return;
 
-    const isBybitActive = store.currentMarket === "BYBIT" || store.currentMarket === "BYBIT_FUTURES";
+    const isBybitActive = store.currentChartMarket === "BYBIT" || store.currentChartMarket === "BYBIT_FUTURES";
     if (!isBybitActive) return;
 
     const res = JSON.parse(e.data);

@@ -542,6 +542,13 @@ export function initChart() {
                     });
                   }
                 });
+
+                // 🚀 [추가] 크로스헤어 활성화 여부에 따라 가격 라벨 너비가 변하므로 즉각 동기화 트리거
+                setTimeout(() => {
+                  if (typeof window.syncPriceScaleWidths === "function") {
+                    window.syncPriceScaleWidths(true);
+                  }
+                }, 50);
               } catch (applyErr) {
                 console.warn("🚨 차트 간 applyOptions 레이아웃 동기화 예외 방어 완료:", applyErr);
               }
@@ -779,6 +786,13 @@ export function initChart() {
               const k = store.kimchiData ? store.kimchiData[lastIdx] : null;
               window.updateLegend(store.mainData[lastIdx], v, k);
             }
+
+            // 🚀 [추가] 크로스헤어가 사라져 가격 라벨이 숨겨질 때도 즉각 동기화 트리거
+            setTimeout(() => {
+              if (typeof window.syncPriceScaleWidths === "function") {
+                window.syncPriceScaleWidths(true);
+              }
+            }, 50);
           }
         }
       } catch (err) { }
@@ -822,14 +836,14 @@ export function initChart() {
         maxLeft = Math.max(maxLeft, c.priceScale("left").width());
       });
 
-      // 🚀 [초고속 캐시 방어벽] 너비가 이전과 동일하면 applyOptions 호출을 원천 스킵하여 60fps 렌더링 성능 100% 보장!
-      if (maxRight > 0 && maxRight !== currentMaxRight) {
+      // 🚀 [초고속 캐시 방어벽] 너비가 이전과 동일하면 applyOptions 호출을 원천 스킵하여 60fps 렌더링 성능 100% 보장! (force 일 때는 강제 적용)
+      if (maxRight > 0 && (force || maxRight !== currentMaxRight)) {
         currentMaxRight = maxRight;
         charts.forEach((c) =>
           c.priceScale("right").applyOptions({ minimumWidth: maxRight }),
         );
       }
-      if (maxLeft > 0 && maxLeft !== currentMaxLeft) {
+      if (maxLeft > 0 && (force || maxLeft !== currentMaxLeft)) {
         currentMaxLeft = maxLeft;
         charts.forEach((c) =>
           c.priceScale("left").applyOptions({ minimumWidth: maxLeft }),
@@ -1031,6 +1045,11 @@ export function setupScaleModeButtons() {
         store.chartVol.priceScale("right").applyOptions({ autoScale: true });
         store.chartVol.priceScale("left").applyOptions({ autoScale: true });
       }
+      setTimeout(() => {
+        if (typeof window.syncPriceScaleWidths === "function") {
+          window.syncPriceScaleWidths(true);
+        }
+      }, 100);
     };
   }
 

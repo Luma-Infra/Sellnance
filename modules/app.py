@@ -114,35 +114,35 @@ def _init_listing_dates():
         LISTING_DATES.update(saved)
     print(f"📅 [LISTING] listing.json에서 {len(saved)}개 상장일 로드")
 
-    # 바이낸스 선물 exchangeInfo → onboardDate 파싱
-    try:
-        res = requests.get("https://fapi.binance.com/fapi/v1/exchangeInfo", timeout=10)
-        res.raise_for_status()
-        symbols_info = res.json().get("symbols", [])
-        updated = 0
-        dirty = False
-        for s in symbols_info:
-            if s.get("quoteAsset") != "USDT" or s.get("contractType") != "PERPETUAL":
-                continue
-            base = s.get("baseAsset", "").upper()
-            ts_ms = s.get("onboardDate", 0)
-            if not base or not ts_ms:
-                continue
-            date_str = datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc).strftime("%Y-%m-%d")
-            with _listing_dates_lock:
-                entry = LISTING_DATES.setdefault(base, {})
-                if "binance_listing" not in entry:
-                    entry["binance_listing"] = date_str
-                    dirty = True
-                    updated += 1
-        if dirty:
-            with _listing_dates_lock:
-                _save_listing_file(dict(LISTING_DATES))
-            print(f"📅 [LISTING] 바이낸스 선물 onboardDate {updated}개 신규 저장 → listing.json")
-        else:
-            print("📅 [LISTING] 바이낸스 상장일 전체 이미 저장됨 - API 스킵")
-    except Exception as e:
-        print(f"🚨 [LISTING] 바이낸스 exchangeInfo 호출 실패: {e}")
+    # 🚀 [비활성화] 요금 절감 및 기동 시간 최적화를 위해 바이낸스 API 호출 주석 처리
+    # try:
+    #     res = requests.get("https://fapi.binance.com/fapi/v1/exchangeInfo", timeout=10)
+    #     res.raise_for_status()
+    #     symbols_info = res.json().get("symbols", [])
+    #     updated = 0
+    #     dirty = False
+    #     for s in symbols_info:
+    #         if s.get("quoteAsset") != "USDT" or s.get("contractType") != "PERPETUAL":
+    #             continue
+    #         base = s.get("baseAsset", "").upper()
+    #         ts_ms = s.get("onboardDate", 0)
+    #         if not base or not ts_ms:
+    #             continue
+    #         date_str = datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc).strftime("%Y-%m-%d")
+    #         with _listing_dates_lock:
+    #             entry = LISTING_DATES.setdefault(base, {})
+    #             if "binance_listing" not in entry:
+    #                 entry["binance_listing"] = date_str
+    #                 dirty = True
+    #                 updated += 1
+    #     if dirty:
+    #         with _listing_dates_lock:
+    #             _save_listing_file(dict(LISTING_DATES))
+    #         print(f"📅 [LISTING] 바이낸스 선물 onboardDate {updated}개 신규 저장 → listing.json")
+    #     else:
+    #         print("📅 [LISTING] 바이낸스 상장일 전체 이미 저장됨 - API 스킵")
+    # except Exception as e:
+    #     print(f"🚨 [LISTING] 바이낸스 exchangeInfo 호출 실패: {e}")
 
 
 @app.get("/api/listing-dates")

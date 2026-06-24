@@ -711,6 +711,7 @@ def fetch_bithumb_prices():
                 try:
                     bithumb_data[sym.upper()] = {
                         "price": float(item.get("closing_price", 0)),
+                        # "utc0_open": float(item.get("opening_price", 0)),
                         "volume_24h": float(item.get("acc_trade_value_24H", 0)),
                     }
                 except:

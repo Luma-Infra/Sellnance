@@ -11,7 +11,7 @@ export function updateRealtimeKimchi(liveData, symbol, chartTime) {
   if (rate === 0) return;
 
   const pureSymbol = getPureBase(symbol);
-  const isKor = ["UPBIT", "BITHUMB"].includes(store.currentMarket);
+  const isKor = ["UPBIT", "BITHUMB"].includes(store.currentChartMarket);
   const row = store.currentTableData.find((c) => c.Symbol === pureSymbol);
 
   let unitKorPrice = null;
@@ -124,6 +124,10 @@ export function updateRealtimeKimchi(liveData, symbol, chartTime) {
       }
     }
   }
+
+  if (typeof window.syncPriceScaleWidths === "function") {
+    window.syncPriceScaleWidths();
+  }
 }
 
 // 🚀 업비트 실시간 웹소켓 핸들러 팩토리
@@ -132,8 +136,8 @@ export function getUpbitMessageHandler(symbol, broadcastCandleUpdate) {
     const btnSim = document.getElementById("tab-btn-sim");
     if (btnSim && btnSim.classList.contains("active")) return;
 
-    if (store.isFetchingChart || window.isFetchingChart || store.isLoadingMoreHistory) return;
-    if (store.currentMarket !== "UPBIT") return;
+    if (store.isFetchingChart || window.isFetchingChart || store.isLoadingMoreHistory || store.isRestoringTab) return;
+    if (store.currentChartMarket !== "UPBIT") return;
 
     const text = typeof e.data === "string" ? e.data : await e.data.text();
     const res = JSON.parse(text);
@@ -183,7 +187,7 @@ export function getUpbitMessageHandler(symbol, broadcastCandleUpdate) {
     }
 
     if (chartUpdateNeeded) {
-      if (store.isFetchingChart || window.isFetchingChart || store.isLoadingMoreHistory) return;
+      if (store.isFetchingChart || window.isFetchingChart || store.isLoadingMoreHistory || store.isRestoringTab) return;
 
       const currentExpected =
         `KRW-${(store.currentSelectedSymbol || "").replace("USDT", "").replace("KRW-", "").replace("KRW", "")}`.toUpperCase();
@@ -199,8 +203,8 @@ export function getBithumbMessageHandler(symbol, broadcastCandleUpdate) {
   return (e) => {
     const btnSim = document.getElementById("tab-btn-sim");
     if (btnSim && btnSim.classList.contains("active")) return;
-    if (store.isFetchingChart || window.isFetchingChart || store.isLoadingMoreHistory) return;
-    if (store.currentMarket !== "BITHUMB") return;
+    if (store.isFetchingChart || window.isFetchingChart || store.isLoadingMoreHistory || store.isRestoringTab) return;
+    if (store.currentChartMarket !== "BITHUMB") return;
 
     const res = JSON.parse(e.data);
     if (res.type !== "transaction" || !res.content?.list) return;
@@ -216,11 +220,11 @@ export function getBithumbMessageHandler(symbol, broadcastCandleUpdate) {
     const nextBarTime = lastCandleUnix + secondsPerBar;
 
     res.content.list.forEach((trade) => {
-      const newPrice = parseFloat(trade.contractPrice);
-      const tradeQty = parseFloat(trade.contractVolume) || 0;
+      const newPrice = parseFloat(trade.contPrice);
+      const tradeQty = parseFloat(trade.contQty) || 0;
       if (isNaN(newPrice)) return;
 
-      const dtStr = trade.contractTime.replace(" ", "T");
+      const dtStr = trade.contDtm.replace(" ", "T") + "+09:00";
       let currentUnix = Math.floor(new Date(dtStr).getTime() / 1000);
       if (isNaN(currentUnix)) currentUnix = Math.floor(Date.now() / 1000);
 
@@ -246,7 +250,7 @@ export function getBithumbMessageHandler(symbol, broadcastCandleUpdate) {
     });
 
     if (chartUpdateNeeded) {
-      if (store.isFetchingChart || window.isFetchingChart || store.isLoadingMoreHistory) return;
+      if (store.isFetchingChart || window.isFetchingChart || store.isLoadingMoreHistory || store.isRestoringTab) return;
       broadcastCandleUpdate(activeCandle, symbol, Date.now());
     }
   };

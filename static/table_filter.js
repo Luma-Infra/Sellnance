@@ -244,6 +244,8 @@ export function switchTab(tab) {
 }
 
 export function switchFilter(mode) {
+  store.currentMarket = mode;
+  store.currentChartMarket = mode;
   const slider = document.getElementById("filter-slider");
   const btnAll = document.getElementById("filter-all-main");
   const btnBinance = document.getElementById("filter-binance");

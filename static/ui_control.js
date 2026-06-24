@@ -3,6 +3,7 @@
 import { store, CONFIG } from "./_store.js";
 import { initChart, updateChartTheme } from "./chart.js";
 import { fetchHistory } from "./chart_data.js";
+import { getPureBase } from "./chart_utils.js";
 
 let isThemeToggling = false; // 🚀 라이트/다크 모드 연타 방어 플래그
 
@@ -498,7 +499,7 @@ function toggleRightDomBlock(checked) {
     if (containerMouseEvent) containerMouseEvent.style.opacity = "0.4";
   } else {
     if (childChart) { childChart.disabled = false; childChart.checked = false; store.blockChartDom = false; }
-    if (childOb) { childOb.disabled = false; childOb.checked = false; store.blockOrderbook = false; if (typeof window.startOrderbookStream === "function") window.startOrderbookStream(store.currentAsset, store.currentMarket); }
+    if (childOb) { childOb.disabled = false; childOb.checked = false; store.blockOrderbook = false; if (typeof window.startOrderbookStream === "function") window.startOrderbookStream(store.currentAsset, store.currentChartMarket); }
     if (childLegend) { childLegend.disabled = false; childLegend.checked = false; store.blockLegend = false; }
     if (childResize) { childResize.disabled = false; childResize.checked = false; store.blockChartResize = false; }
     if (childMouseEvent) {
@@ -584,7 +585,7 @@ function toggleOrderbookBlock(checked) {
   if (checked && typeof window.stopOrderbookStream === "function") {
     window.stopOrderbookStream();
   } else if (!checked && typeof window.startOrderbookStream === "function") {
-    window.startOrderbookStream(store.currentAsset, store.currentMarket);
+    window.startOrderbookStream(store.currentAsset, store.currentChartMarket);
   }
 }
 
@@ -699,10 +700,37 @@ export function searchSymbols(v) {
 
 // 선택 로직 (티커명 검색창 전송 + 이름 유지)
 export function selectSymbol(s, forceMarket = null) {
+  if (!s) return;
   const allSourceData = store.originalTableData || store.currentTableData || [];
-  const rowInfo = allSourceData.find(
-    (c) => c.Ticker === s || c.DisplayTicker === s || c.UID === s,
-  );
+  
+  // 1. suffix 및 순수 심볼 파싱
+  let parsedSymbol = String(s).toUpperCase();
+  let parsedMarket = null;
+  
+  if (parsedSymbol.endsWith("KRW")) {
+    parsedSymbol = parsedSymbol.slice(0, -3);
+    parsedMarket = "UPBIT";
+  } else if (parsedSymbol.endsWith("USDT")) {
+    parsedSymbol = parsedSymbol.slice(0, -4);
+    parsedMarket = "FUTURES";
+  }
+
+  // 2. rowInfo 매칭 (UID, Ticker, DisplayTicker, Symbol 및 suffix 제거 비교)
+  let rowInfo = allSourceData.find((c) => {
+    if (c.UID === s || c.Ticker === s || c.DisplayTicker === s || c.Symbol === s) return true;
+    
+    const t = (c.Ticker || "").toUpperCase();
+    const cleanT = t.endsWith("KRW") ? t.slice(0, -3) : (t.endsWith("USDT") ? t.slice(0, -4) : t);
+    
+    const dt = (c.DisplayTicker || "").toUpperCase();
+    const cleanDt = dt.endsWith("KRW") ? dt.slice(0, -3) : (dt.endsWith("USDT") ? dt.slice(0, -4) : dt);
+    
+    const sym = (c.Symbol || "").toUpperCase();
+    const cleanSym = sym.endsWith("KRW") ? sym.slice(0, -3) : (sym.endsWith("USDT") ? sym.slice(0, -4) : sym);
+    
+    return cleanT === parsedSymbol || cleanDt === parsedSymbol || cleanSym === parsedSymbol;
+  });
+
   const uniqueTicker = rowInfo ? rowInfo.Ticker : s;
 
   // 🚀 [INP 최적화 Phase 1] 클릭 즉시 최소한의 상태만 변경하고 즉각 시각적 피드백 제공 (Next Paint 0~16ms 달성!)
@@ -713,9 +741,41 @@ export function selectSymbol(s, forceMarket = null) {
   store.currentSelectedSymbol = uniqueTicker;
 
   // 🚀 주소창 해시 연동 (쌀먹 라우팅 최적화)
+  let tempMarket = forceMarket || parsedMarket;
+  if (tempMarket && rowInfo && rowInfo.Listed_Exchanges) {
+    const ex = rowInfo.Listed_Exchanges;
+    let isValid = false;
+    if (tempMarket === "FUTURES" && ex.includes("BINANCE_FUTURES")) isValid = true;
+    else if (tempMarket === "SPOT" && ex.includes("BINANCE")) isValid = true;
+    else if (tempMarket === "UPBIT" && (ex.includes("UPBIT") || rowInfo.Upbit === "O")) isValid = true;
+    else if (tempMarket === "BITHUMB" && ex.includes("BITHUMB")) isValid = true;
+    else if (tempMarket === "BYBIT" && ex.includes("BYBIT")) isValid = true;
+    else if (tempMarket === "BYBIT_FUTURES" && ex.includes("BYBIT_FUTURES")) isValid = true;
+    if (!isValid) tempMarket = null;
+  }
+  if (!tempMarket && rowInfo && rowInfo.Listed_Exchanges) {
+    const ex = rowInfo.Listed_Exchanges;
+    if (store.filterMode === "UPBIT" && ex.includes("UPBIT")) {
+      tempMarket = "UPBIT";
+    } else if (ex.includes("BINANCE_FUTURES")) {
+      tempMarket = "FUTURES";
+    } else if (ex.includes("BINANCE")) {
+      tempMarket = "SPOT";
+    } else if (ex.includes("UPBIT")) {
+      tempMarket = "UPBIT";
+    } else if (ex.includes("BITHUMB")) {
+      tempMarket = "BITHUMB";
+    } else if (ex.includes("BYBIT")) {
+      tempMarket = "BYBIT";
+    }
+  }
+
+  const symbolOnly = rowInfo ? rowInfo.Symbol : parsedSymbol;
+  const targetHash = "#" + symbolOnly;
+
   if (window.history && window.history.pushState) {
-    if (window.location.hash !== "#" + uniqueTicker) {
-      window.history.pushState(null, null, "#" + uniqueTicker);
+    if (window.location.hash !== targetHash) {
+      window.history.pushState(null, null, targetHash);
     }
   }
 
@@ -740,30 +800,30 @@ export function selectSymbol(s, forceMarket = null) {
   requestAnimationFrame(() => {
     setTimeout(() => {
       // 마켓 우선순위 결정
-      if (forceMarket) {
-        store.currentMarket = forceMarket;
+      if (tempMarket) {
+        store.currentChartMarket = tempMarket;
       } else if (rowInfo && rowInfo.Listed_Exchanges) {
         const ex = rowInfo.Listed_Exchanges;
         const isQuoteCurrency = uniqueTicker.startsWith("USDT");
 
         // 🚀 [추가] 필터 모드가 UPBIT이면 무조건 업비트를 최우선으로 잡도록 분기 처리
         if (store.filterMode === "UPBIT" && ex.includes("UPBIT")) {
-          store.currentMarket = "UPBIT";
+          store.currentChartMarket = "UPBIT";
         } else if (
           isQuoteCurrency &&
           (ex.includes("UPBIT") || ex.includes("BITHUMB"))
         ) {
-          store.currentMarket = ex.includes("UPBIT") ? "UPBIT" : "BITHUMB";
+          store.currentChartMarket = ex.includes("UPBIT") ? "UPBIT" : "BITHUMB";
         } else if (ex.includes("BINANCE_FUTURES")) {
-          store.currentMarket = "FUTURES";
+          store.currentChartMarket = "FUTURES";
         } else if (ex.includes("BINANCE")) {
-          store.currentMarket = "SPOT";
+          store.currentChartMarket = "SPOT";
         } else if (ex.includes("UPBIT")) {
-          store.currentMarket = "UPBIT";
+          store.currentChartMarket = "UPBIT";
         } else if (ex.includes("BITHUMB")) {
-          store.currentMarket = "BITHUMB";
+          store.currentChartMarket = "BITHUMB";
         } else if (ex.includes("BYBIT")) {
-          store.currentMarket = "BYBIT";
+          store.currentChartMarket = "BYBIT";
         }
       }
 
@@ -834,7 +894,7 @@ export function selectSymbol(s, forceMarket = null) {
 
       // 🚀 호가창(Orderbook) 업데이트 (호가창 패널이 열려 있을 경우 자동 재연결)
       if (typeof window.startOrderbookStream === "function") {
-        window.startOrderbookStream(uniqueTicker, store.currentMarket);
+        window.startOrderbookStream(uniqueTicker, store.currentChartMarket);
       }
 
       // 코인 상세 이름 비동기 패치
@@ -934,6 +994,11 @@ export function selectSymbol(s, forceMarket = null) {
       if (typeof fetchHistory === "function") {
         fetchHistory(uniqueTicker, false, false);
       }
+
+      // 🚀 [추가] 코인 선택 시 실시간 정렬 엔진 강제 점화 및 즉시 적용
+      if (typeof window.applyRealtimeSort === "function") {
+        window.applyRealtimeSort();
+      }
     }, 0);
   });
 }
@@ -1000,7 +1065,7 @@ export function updateExchangeBadges(s) {
     list.forEach((item) => {
       if (item.condition) {
         // Highlight active market badge
-        const isActive = store.currentMarket === item.market;
+        const isActive = store.currentChartMarket === item.market;
         const ringClass = isActive
           ? "ring-2 ring-white scale-105 shadow-lg brightness-110"
           : "opacity-60 hover:opacity-100 hover:scale-105";

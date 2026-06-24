@@ -9,6 +9,9 @@ let obState = {
   isRendering: false,
 };
 
+let bybitAsks = {};
+let bybitBids = {};
+
 export function initOrderbookDOM() {
   const asksContainer = document.getElementById("orderbook-asks");
   const bidsContainer = document.getElementById("orderbook-bids");
@@ -61,7 +64,7 @@ export function toggleOrderbook() {
     panel.classList.remove("hidden");
     panel.classList.add("flex");
     if (btn) btn.innerText = "호가창 닫기";
-    startOrderbookStream(store.currentAsset, store.currentMarket);
+    startOrderbookStream(store.currentAsset, store.currentChartMarket);
   } else {
     panel.classList.add("hidden");
     panel.classList.remove("flex");
@@ -106,6 +109,8 @@ export function stopOrderbookStream() {
   }
   obState.asks = [];
   obState.bids = [];
+  bybitAsks = {};
+  bybitBids = {};
   renderOrderbook();
 }
 
@@ -123,7 +128,7 @@ export function startOrderbookStream(symbol, market) {
   if (!symbol) return;
 
   if (!market) {
-    market = store.currentMarket || "UPBIT";
+    market = store.currentChartMarket || store.currentMarket || "UPBIT";
   }
 
   // 🚀 [버그 픽스] 테이블에서 "BTCUSDT" 또는 "BTCKRW"가 넘어오더라도 순수 심볼("BTC")만 추출하여 소켓 경로 중복 오류 방지
@@ -161,12 +166,48 @@ export function startOrderbookStream(symbol, market) {
       }
     };
   } else if (market === "BITHUMB") {
-    // 빗썸 호가창 생략 시 B-SPOT으로 폴백하거나 지원 안함 처리 가능
-  } else if (market === "BYBIT") {
-    // Bybit linear
-    store.orderbookWs = new WebSocket(
-      "wss://stream.bybit.com/v5/public/linear",
-    );
+    const rawSym = `${baseSym}_KRW`;
+    console.log(`⚡ [DEBUG] Bithumb WS Connecting... Symbol: ${rawSym}`);
+    store.orderbookWs = new WebSocket("wss://pubwss.bithumb.com/pub/ws");
+    store.orderbookWs.onopen = () => {
+      console.log(`⚡ [DEBUG] Bithumb WS Connected. Sending subscription for ${rawSym}`);
+      store.orderbookWs.send(
+        JSON.stringify({
+          type: "orderbookdepth",
+          symbols: [rawSym],
+        }),
+      );
+    };
+    store.orderbookWs.onmessage = (e) => {
+      const res = JSON.parse(e.data);
+      if (res.type === "orderbookdepth" && res.content && res.content.list) {
+        console.log(`⚡ [DEBUG] Bithumb WS Message received: ${res.content.list.length} levels`);
+        const asks = [];
+        const bids = [];
+        res.content.list.forEach((item) => {
+          const pVal = parseFloat(item.price);
+          const qVal = parseFloat(item.quantity);
+          if (item.orderType === "ask") {
+            asks.push({ price: pVal, size: qVal });
+          } else if (item.orderType === "bid") {
+            bids.push({ price: pVal, size: qVal });
+          }
+        });
+        asks.sort((a, b) => a.price - b.price);
+        bids.sort((a, b) => b.price - a.price);
+        obState.asks = asks.reverse();
+        obState.bids = bids;
+        scheduleRender();
+      } else {
+        console.log("⚡ [DEBUG] Bithumb WS Other message:", res);
+      }
+    };
+  } else if (market === "BYBIT" || market === "BYBIT_FUTURES") {
+    const isFutures = market === "BYBIT_FUTURES";
+    const wsUrl = isFutures
+      ? "wss://stream.bybit.com/v5/public/linear"
+      : "wss://stream.bybit.com/v5/public/spot";
+    store.orderbookWs = new WebSocket(wsUrl);
     const streamSym = baseSym + "USDT";
     store.orderbookWs.onopen = () => {
       store.orderbookWs.send(
@@ -179,10 +220,46 @@ export function startOrderbookStream(symbol, market) {
     store.orderbookWs.onmessage = (e) => {
       const res = JSON.parse(e.data);
       if (res.topic && res.data) {
-        if (res.data.a && res.data.a.length) {
-          // Bybit delta processing is complex (requires maintaining state), for simplicity we do snapshot if available
-          // (Assuming push snapshot. If delta, need full depth engine. For now, fallback to basic parsing)
+        if (res.type === "snapshot") {
+          bybitAsks = {};
+          bybitBids = {};
+          res.data.a.forEach(([price, size]) => {
+            bybitAsks[price] = parseFloat(size);
+          });
+          res.data.b.forEach(([price, size]) => {
+            bybitBids[price] = parseFloat(size);
+          });
+        } else if (res.type === "delta") {
+          res.data.a.forEach(([price, size]) => {
+            const sVal = parseFloat(size);
+            if (sVal === 0) {
+              delete bybitAsks[price];
+            } else {
+              bybitAsks[price] = sVal;
+            }
+          });
+          res.data.b.forEach(([price, size]) => {
+            const sVal = parseFloat(size);
+            if (sVal === 0) {
+              delete bybitBids[price];
+            } else {
+              bybitBids[price] = sVal;
+            }
+          });
         }
+        const asks = Object.keys(bybitAsks).map((p) => ({
+          price: parseFloat(p),
+          size: bybitAsks[p],
+        }));
+        const bids = Object.keys(bybitBids).map((p) => ({
+          price: parseFloat(p),
+          size: bybitBids[p],
+        }));
+        asks.sort((a, b) => a.price - b.price);
+        bids.sort((a, b) => b.price - a.price);
+        obState.asks = asks.reverse();
+        obState.bids = bids;
+        scheduleRender();
       }
     };
   } else {
@@ -214,14 +291,13 @@ export function startOrderbookStream(symbol, market) {
 }
 
 function scheduleRender() {
-  if (store.blockOrderbook) {
-    const nowTime = Date.now();
-    if (!window._lastObRenderTime) window._lastObRenderTime = 0;
-    if (nowTime - window._lastObRenderTime < 250) {
-      return;
-    }
-    window._lastObRenderTime = nowTime;
+  const nowTime = Date.now();
+  if (!window._lastObRenderTime) window._lastObRenderTime = 0;
+  if (nowTime - window._lastObRenderTime < 100) {
+    return;
   }
+  window._lastObRenderTime = nowTime;
+
   if (!obState.isRendering) {
     obState.isRendering = true;
     requestAnimationFrame(() => {

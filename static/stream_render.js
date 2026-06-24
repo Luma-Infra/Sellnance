@@ -94,6 +94,10 @@ export function renderRealtimeUpdate(normalizedTime, currentCandle) {
             restoreVolumeDataSterilized();
         }
     }
+
+    if (typeof window.syncPriceScaleWidths === "function") {
+        window.syncPriceScaleWidths();
+    }
 }
 
 // 볼륨 업데이트 실패 시 원본 배열 내부 오염물질(null/NaN)을 제거하고 차트 초기화 복구

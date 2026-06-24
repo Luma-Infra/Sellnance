@@ -12,7 +12,7 @@ import { initChart } from "./chart.js";
 import { initSniperSocket } from "./stream_table.js";
 import { initMeasureEvents } from "./chart_measure.js";
 import { initDrawingEvents, initDrawingToolbar } from "./chart_draw.js";
-import "./chart_utils.js";
+import { getMultiplier } from "./chart_utils.js";
 import "./chart_layout.js";
 import "./sim_engine.js";
 import "./stream.js";
@@ -51,10 +51,18 @@ window.updateHeaderDisplay = (row, newPrice, p, isRealtimeStream = false) => {
 
   const activeMarket = (store.currentTab === "quickview" || store.currentTab === "quickview-container")
     ? (store.qvMarket || "ALL")
-    : (store.currentMarket || "ALL");
+    : (store.currentChartMarket || "ALL");
 
   const isFuturesMode = activeMarket === "FUTURES" || activeMarket === "BYBIT_FUTURES";
   const isSpotMode = activeMarket === "SPOT" || activeMarket === "BYBIT";
+
+  // 🚀 선택된 심볼 기준의 최종 대상 배수 (예: 1000SHIB인 경우 1000)
+  const storeMult = getMultiplier(row.Symbol || row.Ticker);
+
+  // 국내/해외의 현재 모드별 배수 획득
+  const activeOvsTicker = isFuturesMode ? row.Exact_Futures : row.Exact_Spot;
+  const ovsMult = getMultiplier(activeOvsTicker || row.Symbol);
+  const domMult = getMultiplier(row.Upbit_Symbol || row.Symbol);
 
   let binanceP = null;
   if (isFuturesMode) {
@@ -111,43 +119,70 @@ window.updateHeaderDisplay = (row, newPrice, p, isRealtimeStream = false) => {
   else if (activeMarket === "BITHUMB") activeExchange = "bithumb";
   else if (activeMarket === "BYBIT" || activeMarket === "BYBIT_FUTURES") activeExchange = "bybit";
 
+  let rawPriceForTab = 0;
+  if (activeExchange === "binance") rawPriceForTab = binanceP;
+  else if (activeExchange === "bybit") rawPriceForTab = bybitP;
+  else if (activeExchange === "upbit") rawPriceForTab = upbitP;
+  else if (activeExchange === "bithumb") rawPriceForTab = bithumbP;
+
+  if (rawPriceForTab && typeof window.updateTabTitleManager === "function") {
+    window.updateTabTitleManager(
+      rawPriceForTab,
+      row.Symbol || row.Ticker,
+      ["upbit", "bithumb"].includes(activeExchange)
+    );
+  }
+
+  // 모든 가격을 선택된 심볼의 배수 스케일(storeMult)에 맞추어 스케일링
+  if (binanceP !== null) binanceP = binanceP / ovsMult * storeMult;
+  if (bybitP !== null) bybitP = bybitP / ovsMult * storeMult;
+  if (upbitP !== null) upbitP = upbitP / domMult * storeMult;
+  if (bithumbP !== null) bithumbP = bithumbP / domMult * storeMult;
+
+  const pNormalized = p;
+
   let displayPrice = 0;
   let subPrice = null;
+  const isMainKrw = isKrwMode || (activeExchange === "upbit" || activeExchange === "bithumb");
 
   if (activeExchange === "binance") {
     const rawP = binanceP || 0;
-    if (isKrwMode) {
-      displayPrice = rawP * rate;
+    const actualKrw = upbitP || bithumbP || null;
+    if (isMainKrw) {
+      displayPrice = actualKrw || (rawP * rate);
       subPrice = rawP;
     } else {
       displayPrice = rawP;
-      subPrice = rawP * rate;
+      subPrice = actualKrw || (rawP * rate);
     }
   } else if (activeExchange === "bybit") {
     const rawP = bybitP || 0;
-    if (isKrwMode) {
-      displayPrice = rawP * rate;
+    const actualKrw = upbitP || bithumbP || null;
+    if (isMainKrw) {
+      displayPrice = actualKrw || (rawP * rate);
       subPrice = rawP;
     } else {
       displayPrice = rawP;
-      subPrice = rawP * rate;
+      subPrice = actualKrw || (rawP * rate);
     }
   } else if (activeExchange === "upbit") {
     const rawP = upbitP || 0;
-    if (isKrwMode) {
+    const actualUsd = binanceP || bybitP || null;
+    if (isMainKrw) {
       displayPrice = rawP;
-      subPrice = rate > 0 ? rawP / rate : null;
+      subPrice = actualUsd || (rate > 0 ? rawP / rate : null);
     } else {
-      displayPrice = rate > 0 ? rawP / rate : 0;
+      displayPrice = actualUsd || (rate > 0 ? rawP / rate : 0);
       subPrice = rawP;
     }
   } else if (activeExchange === "bithumb") {
     const rawP = bithumbP || 0;
-    if (isKrwMode) {
+    const actualUsd = binanceP || bybitP || null;
+    if (isMainKrw) {
       displayPrice = rawP;
-      subPrice = rate > 0 ? rawP / rate : null;
+      subPrice = actualUsd || (rate > 0 ? rawP / rate : null);
     } else {
-      displayPrice = rate > 0 ? rawP / rate : 0;
+      displayPrice = actualUsd || (rate > 0 ? rawP / rate : 0);
       subPrice = rawP;
     }
   }
@@ -162,17 +197,17 @@ window.updateHeaderDisplay = (row, newPrice, p, isRealtimeStream = false) => {
       const bottomEl = container.querySelector("span");
 
       if (topEl) {
-        if (isKrwMode) {
+        if (isMainKrw) {
           const krwP = getKrwPrecision(displayPrice);
           topEl.innerText = `${Number(displayPrice).toLocaleString(undefined, { maximumFractionDigits: krwP })} 원`;
         } else {
-          topEl.innerText = window.formatSmartPrice(displayPrice, p);
+          topEl.innerText = window.formatSmartPrice(displayPrice, pNormalized);
         }
       }
       if (bottomEl) {
         if (subPrice !== null && subPrice > 0) {
-          if (isKrwMode) {
-            bottomEl.innerText = `$ ${window.formatSmartPrice(subPrice, p)}`;
+          if (isMainKrw) {
+            bottomEl.innerText = `$ ${window.formatSmartPrice(subPrice, pNormalized)}`;
           } else {
             const krwP = getKrwPrecision(subPrice);
             bottomEl.innerText = `${Number(subPrice).toLocaleString(undefined, { maximumFractionDigits: krwP })} ₩`;
@@ -196,8 +231,8 @@ window.updateHeaderDisplay = (row, newPrice, p, isRealtimeStream = false) => {
 
   // 🚀 activeExchange 기준으로 거래소별 변동률 선택 (UPBIT ↔ BINANCE 스위칭 시 각자 수치 표시)
   const isActiveFutures =
-    store.currentMarket === "FUTURES" ||
-    store.currentMarket === "BYBIT_FUTURES";
+    store.currentChartMarket === "FUTURES" ||
+    store.currentChartMarket === "BYBIT_FUTURES";
   let n24, nDay;
   if (activeExchange === "upbit") {
     n24 = row.Change_24h_Upbit ?? row.Change_24h_Raw ?? 0;
@@ -768,7 +803,7 @@ function scheduleDailyReset() {
 
     // 2. 현재 열려있는 차트 전광판 가격도 최신화
     if (store.currentAsset && typeof window.selectSymbol === "function") {
-      window.selectSymbol(store.currentAsset.Ticker || store.currentAsset.DisplayTicker);
+      window.selectSymbol(store.currentAsset);
     }
 
     // 3. [백그라운드 사후 동기화] 2초 뒤에 백엔드를 조용히 찔러서, 거래소의 공식 데이터와 장부를 완벽하게 일치시킴

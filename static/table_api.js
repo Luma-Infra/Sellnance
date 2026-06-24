@@ -61,31 +61,51 @@ export async function loadTableDataSilent() {
     if (result && result.data) {
       store.originalTableData = JSON.parse(JSON.stringify(result.data));
 
-      const freshMap = new Map(result.data.map((item) => [item.Ticker, item]));
-      const currentTickers = new Set(
-        store.currentTableData.map((d) => d.Ticker),
-      );
-
+      const freshUidMap = new Map(result.data.map((item) => [item.UID, item]));
       let needReRender = false;
 
-      // 1. 기존 장부 순회하며 값 업데이트
+      // 1. 기존 장부 순회하며 값 업데이트 및 Ticker 교체 처리
       store.currentTableData.forEach((row) => {
-        const fresh = freshMap.get(row.Ticker);
+        let fresh = freshUidMap.get(row.UID);
+        if (!fresh && row.Symbol) {
+          fresh = result.data.find(item => item.Symbol === row.Symbol);
+        }
+
         if (fresh) {
-          row.Funding_Raw = fresh.Funding_Raw;
-          row.Funding_Formatted = fresh.Funding_Formatted;
-          row.MarketCap_Raw = fresh.MarketCap_Raw;
-          row.MarketCap_Formatted = fresh.MarketCap_Formatted;
-          row.VMC_Raw = fresh.VMC_Raw;
-          row.VMC_Formatted = fresh.VMC_Formatted;
-          row.Basis_Raw = fresh.Basis_Raw;
-          row.Basis_Formatted = fresh.Basis_Formatted;
+          if (row.Ticker !== fresh.Ticker) {
+            // Ticker가 변경된 경우 (예: TAIKOKRW -> TAIKO/TAIKOUSDT)
+            if (row.Ticker) store.tickerRowMap.delete(row.Ticker.toUpperCase());
+            if (row.DisplayTicker) store.tickerRowMap.delete(row.DisplayTicker.toUpperCase());
+
+            Object.assign(row, fresh);
+
+            row.DisplayTicker = (row.DisplayTicker || row.Symbol)
+              .toString()
+              .toUpperCase();
+
+            if (row.Ticker) store.tickerRowMap.set(row.Ticker.toUpperCase(), row);
+            if (row.DisplayTicker) store.tickerRowMap.set(row.DisplayTicker.toUpperCase(), row);
+
+            needReRender = true;
+          } else {
+            row.Funding_Raw = fresh.Funding_Raw;
+            row.Funding_Formatted = fresh.Funding_Formatted;
+            row.MarketCap_Raw = fresh.MarketCap_Raw;
+            row.MarketCap_Formatted = fresh.MarketCap_Formatted;
+            row.VMC_Raw = fresh.VMC_Raw;
+            row.VMC_Formatted = fresh.VMC_Formatted;
+            row.Basis_Raw = fresh.Basis_Raw;
+            row.Basis_Formatted = fresh.Basis_Formatted;
+          }
         }
       });
 
+      const currentUids = new Set(store.currentTableData.map((d) => d.UID));
+      const currentTickers = new Set(store.currentTableData.map((d) => d.Ticker));
+
       // 2. 신규 유입 코인만 찾아서 장부에 꽂아넣기
       result.data.forEach((freshItem) => {
-        if (!currentTickers.has(freshItem.Ticker)) {
+        if (!currentUids.has(freshItem.UID) && !currentTickers.has(freshItem.Ticker)) {
           // Xconsole.log(`➕ [사일런트 동기화] 신규 코인 장부 주입: ${freshItem.Ticker}`,);
 
           freshItem.DisplayTicker = (

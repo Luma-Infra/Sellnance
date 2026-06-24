@@ -29,6 +29,8 @@ export const store = {
   hideSmallCap: false, // 🚀 시총 1M 미만 숨기기 여부
   lang: "EN", // 🚀 한/영 토글 (KR, EN)
   filterMode: "BINANCE", // 🚀 [추가] ALL, BINANCE, UPBIT, FUTURES, SPOT
+  currentMarket: "ALL", // 🚀 테이블 활성 마켓 탭 상태 추적
+  currentChartMarket: "ALL", // 🚀 우측 차트/호가창 활성 마켓 상태 추적
   currencyMode: "USD", // 🚀 [추가] USD, KRW 토글 모드
   viewMode: "DETAILED",
   tableViewMode: "basic",
@@ -159,13 +161,37 @@ export const store = {
 
     let row = store.tickerRowMap.get(key);
     if (!row) {
+      let cleanKey = key;
+      if (cleanKey.endsWith("KRW")) cleanKey = cleanKey.slice(0, -3);
+      else if (cleanKey.endsWith("USDT")) cleanKey = cleanKey.slice(0, -4);
+      
+      row = store.tickerRowMap.get(cleanKey);
+      if (!row) {
+        for (const [k, r] of store.tickerRowMap.entries()) {
+          const cleanK = k.endsWith("KRW") ? k.slice(0, -3) : (k.endsWith("USDT") ? k.slice(0, -4) : k);
+          if (cleanK === cleanKey) {
+            row = r;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!row) {
       const allSource = store.originalTableData || store.currentTableData || [];
-      row = allSource.find(
-        (r) =>
-          (r.Ticker || "").toUpperCase() === key ||
-          (r.DisplayTicker || "").toUpperCase() === key ||
-          (r.Symbol || "").toUpperCase() === key,
-      );
+      let cleanKey = key;
+      if (cleanKey.endsWith("KRW")) cleanKey = cleanKey.slice(0, -3);
+      else if (cleanKey.endsWith("USDT")) cleanKey = cleanKey.slice(0, -4);
+
+      row = allSource.find((r) => {
+        const t = (r.Ticker || "").toUpperCase();
+        const dt = (r.DisplayTicker || "").toUpperCase();
+        const s = (r.Symbol || "").toUpperCase();
+        const cleanT = t.endsWith("KRW") ? t.slice(0, -3) : (t.endsWith("USDT") ? t.slice(0, -4) : t);
+        const cleanDt = dt.endsWith("KRW") ? dt.slice(0, -3) : (dt.endsWith("USDT") ? dt.slice(0, -4) : dt);
+        const cleanS = s.endsWith("KRW") ? s.slice(0, -3) : (s.endsWith("USDT") ? s.slice(0, -4) : s);
+        return cleanT === cleanKey || cleanDt === cleanKey || cleanS === cleanKey;
+      });
     }
 
     const p =

@@ -277,6 +277,7 @@ export function startUpbitMarketRadar() {
       c: ticker.trade_price,
       P: ticker.signed_change_rate * 100,
       q_upbit: ticker.acc_trade_price_24h,
+      isUpbitRealtime: true,
     };
     store.tickerBuffer[ticker.code] = normalizedTicker;
     const hasSymbol =
