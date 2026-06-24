@@ -53,7 +53,7 @@ const EngineUI = {
   finish() {
     setTimeout(() => {
       const overlay = document.getElementById("loading-overlay");
-      const main = document.getElementById("main-content");
+      const main = document.getElementById("main-dashboard-content");
       if (overlay) overlay.classList.add("opacity-0", "pointer-events-none");
       if (main) {
         main.classList.remove("hidden");
