@@ -316,44 +316,69 @@ def build_upbit_row(
     final_open_krw = up_open_krw if up_open_krw > 0 else (bithumb_open if bithumb_open > 0 else 0.0)
 
     row = {
-        # --- 1. 기본 식별 정보 --- 
+        # ==========================================
+        # 🟢 [COMMON / 공통 파트 지표]
+        # ==========================================
         "UID": final_ucid,
         "Symbol": base,
         "DisplayTicker": display_name,
         "Ticker": f"{base}KRW",
         "Logo": logo,
-        "Name": coin_name,  # 🚀 추출된 정확한 이름 삽입
+        "Name": coin_name,
         "Chain": chain,
+        "precision": up_precision,
+
+        # 공통 거래소 상장 여부 정보
         "Upbit": "O",
         "Upbit_Symbol": base,
         "Bithumb_Symbol": bithumb_symbol,
         "Note": NOTE_MAP.get(base, "Upbit Only"),
-        "precision": up_precision,
-        # --- 2. 화면 표시용 데이터 (HTML 포함) ---
+
+        # 공통 화면 표시용 가공 가격 및 김프 연산 데이터
         "Price": utils.format_dynamic_price(p, up_precision),
         "Price_KRW": up_price_krw if up_price_krw > 0 else None,
         "Binance_Price": (binance_spot_price or binance_futures_price) if (binance_spot_price > 0 or binance_futures_price > 0) else None,
-        "Binance_Price_Spot": binance_spot_price if binance_spot_price > 0 else None,
-        "Binance_Price_Futures": binance_futures_price if binance_futures_price > 0 else None,
         "Bybit_Price": (by_futures_p or by_spot_p) if (by_futures_p > 0 or by_spot_p > 0) else None,
-        "Bybit_Price_Spot": by_spot_p if by_spot_p > 0 else None,
-        "Bybit_Price_Futures": by_futures_p if by_futures_p > 0 else None,
-        "Change_24h_Binance": binance_spot_change_24h,
-        "Change_24h_Futures_Ex": binance_futures_change_24h,
-        "Change_24h_Bybit": binance_spot_change_24h,
-        "Change_Today_Binance": binance_spot_change_today,
-        "Change_Today_Futures": binance_futures_change_today,
-        "Change_Today_Bybit": binance_spot_change_today,
         "Upbit_Price": up_price_krw if up_price_krw > 0 else None,
         "Bithumb_Price": bithumb_price if bithumb_price > 0 else None,
+
         "Change_24h": utils.format_change(up_change_24h),
         "Change_Today": utils.format_change(change_today),
         "Volume_Formatted": utils.format_volume_string(vol_24h),
+        "Kimchi_Formatted": "-",
         "Kimchi_Label": kimchi_label,
         "MarketCap_Formatted": utils.format_market_cap_string(mcap),
         "VMC_Formatted": f"{vmc_raw:.2f}%",
-        "Funding_Formatted": funding_f,
-        # 🚀 [추가] 업비트 전용 거래대금 (24h 거래대금)
+
+        # 공통 정렬 연산용 순수 숫자 데이터 (Raw)
+        "Price_Raw": current_p,
+        "Change_24h_Raw": up_change_24h,
+        "Change_Today_Raw": change_today,
+        "Volume_Raw": vol_24h,
+        "MarketCap_Raw": mcap,
+        "VMC_Raw": vmc_raw,
+        "Kimchi_Raw": None,
+        "utc0_open_Raw": utc0_open,
+        "utc0_open_KRW": final_open_krw if final_open_krw > 0 else None,
+
+        # 공통 기타 메타 정보
+        "Listed_Exchanges": list(listed_on),
+
+
+        # ==========================================
+        # 🔵 [SPOT / 현물 파트 전용 지표]
+        # ==========================================
+        "Binance_Price_Spot": binance_spot_price if binance_spot_price > 0 else None,
+        "Bybit_Price_Spot": by_spot_p if by_spot_p > 0 else None,
+
+        "Change_24h_Binance": binance_spot_change_24h,
+        "Change_24h_Bybit": float(by_raw.get("change_24h", 0.0)),
+        "Change_Today_Binance": binance_spot_change_today,
+        "Change_Today_Bybit": float(by_raw.get("change_today", 0.0)),
+
+        "Binance_Vol_Spot": binance_spot_vol,
+        "Exact_Spot": exact_spot_ticker,
+
         "Upbit_Vol_Formatted": (
             utils.format_volume_string(
                 up_info.get("acc_trade_price_24h", 0.0) / krw_usd_rate
@@ -361,23 +386,21 @@ def build_upbit_row(
             if krw_usd_rate > 0
             else "-"
         ),
-        # --- 3. 프론트엔드 정렬용 순수 숫자 데이터 (Raw) ---
-        "Price_Raw": current_p,
-        "Change_24h_Raw": up_change_24h,
-        "Change_Today_Raw": change_today,
-        "Volume_Raw": vol_24h,
-        "MarketCap_Raw": mcap,
-        "VMC_Raw": vmc_raw,
-        "Funding_Raw": 0.0,
-        "Kimchi_Raw": 0.0,
-        "utc0_open_Raw": utc0_open,
-        "utc0_open_KRW": final_open_krw if final_open_krw > 0 else None,
-        # 추가 예정
         "Upbit_Vol": up_info.get("acc_trade_price_24h", 0.0),
-        "Exact_Spot": exact_spot_ticker,
+
+
+        # ==========================================
+        # 🟡 [FUTURES / 선물 파트 전용 지표]
+        # ==========================================
+        "Binance_Price_Futures": binance_futures_price if binance_futures_price > 0 else None,
+        "Bybit_Price_Futures": by_futures_p if by_futures_p > 0 else None,
+
+        "Change_24h_Futures_Ex": binance_futures_change_24h,
+        "Change_Today_Futures": binance_futures_change_today,
+
+        "Funding_Raw": 0.0,
+        "Funding_Formatted": funding_f,
+        "Binance_Vol_Futures": binance_futures_vol,
         "Exact_Futures": exact_futures_ticker,
-        "Listed_Exchanges": list(
-            listed_on
-        ),  # 🚀 프론트엔드야, 이거 보고 이미지 박아라!
     }
     return row, is_updated

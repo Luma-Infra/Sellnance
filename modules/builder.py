@@ -9,7 +9,6 @@ from modules import utils, config_manager
 
 from modules.builder_binance import build_binance_row
 from modules.builder_upbit import build_upbit_row
-from modules.builder_bybit import build_bybit_row
 
 
 def clean_stale_tickers(binance_data, upbit_krw_set, mapping):
@@ -90,14 +89,17 @@ def assemble_final_dashboard(
             REVERSE_LOOKUP[f"{v[2].upper()}_{ex}"] = k
             REVERSE_LOOKUP[f"{k.split('(')[0].upper()}_{ex}"] = k
             duplicated_bases.add(v[2].upper())
-            duplicated_bases.add(k.split('(')[0].upper())
+            duplicated_bases.add(k.split("(")[0].upper())
 
     # 🚀 법정 환율 (USD/KRW) 실시간 수집 (tvDatafeed 단일 연동)
     krw_usd_rate = float(mapping.get("DEFAULT_KRW_USD_RATE", 0.0))
     try:
         from tvDatafeed import TvDatafeed, Interval
+
         tv = TvDatafeed()
-        df = tv.get_hist(symbol="USDKRW", exchange="FX_IDC", interval=Interval.in_1_minute, n_bars=1)
+        df = tv.get_hist(
+            symbol="USDKRW", exchange="FX_IDC", interval=Interval.in_1_minute, n_bars=1
+        )
         if df is not None and not df.empty:
             new_rate = float(df["close"].iloc[-1])
             if new_rate > 0:
@@ -105,9 +107,13 @@ def assemble_final_dashboard(
                 if mapping.get("DEFAULT_KRW_USD_RATE") != krw_usd_rate:
                     mapping["DEFAULT_KRW_USD_RATE"] = krw_usd_rate
                     any_update = True
-                    print(f"🔄 [실시간 환율 갱신] TradingView USD/KRW ({krw_usd_rate}원) mapping.json 족보에 갱신 완료!")
+                    print(
+                        f"🔄 [실시간 환율 갱신] TradingView USD/KRW ({krw_usd_rate}원) mapping.json 족보에 갱신 완료!"
+                    )
     except Exception as e:
-        print(f"⚠️ TradingView 실시간 환율 수집 실패, 족보 기본값 {krw_usd_rate}원 사용 ({e})")
+        print(
+            f"⚠️ TradingView 실시간 환율 수집 실패, 족보 기본값 {krw_usd_rate}원 사용 ({e})"
+        )
 
     # 1. 바이낸스 투입
     for ticker, b_info in binance_data.items():
@@ -205,13 +211,23 @@ def assemble_final_dashboard(
                     final_results[uid]["Price_KRW"] = row["Price_KRW"]
 
                     b_price = final_results[uid].get("Price_Raw", 0)
-                    by_spot_p = bybit_data.get(base, {}).get("spot_price", 0.0) if base not in duplicated_bases else 0.0
-                    by_futures_p = bybit_data.get(base, {}).get("futures_price", 0.0) if base not in duplicated_bases else 0.0
+                    by_spot_p = (
+                        bybit_data.get(base, {}).get("spot_price", 0.0)
+                        if base not in duplicated_bases
+                        else 0.0
+                    )
+                    by_futures_p = (
+                        bybit_data.get(base, {}).get("futures_price", 0.0)
+                        if base not in duplicated_bases
+                        else 0.0
+                    )
                     target_overseas_p = b_price or by_futures_p or by_spot_p
 
                     if target_overseas_p > 0 and krw_usd_rate > 0:
                         dom_mult = utils.get_multiplier(row.get("Upbit_Symbol") or base)
-                        ovs_mult = utils.get_multiplier(final_results[uid].get("Symbol") or base)
+                        ovs_mult = utils.get_multiplier(
+                            final_results[uid].get("Symbol") or base
+                        )
 
                         dom_unit_price = row["Price_KRW"] / dom_mult
                         ovs_unit_price = target_overseas_p / ovs_mult
@@ -225,8 +241,16 @@ def assemble_final_dashboard(
             else:
                 # Bybit Fallback for Upbit only coins
                 # 🚀 [오류 방어] 동명이인(DUPLICATED_LIST)인 경우 Bybit 가격 오염 차단
-                by_spot_p = bybit_data.get(base, {}).get("spot_price", 0.0) if base not in duplicated_bases else 0.0
-                by_futures_p = bybit_data.get(base, {}).get("futures_price", 0.0) if base not in duplicated_bases else 0.0
+                by_spot_p = (
+                    bybit_data.get(base, {}).get("spot_price", 0.0)
+                    if base not in duplicated_bases
+                    else 0.0
+                )
+                by_futures_p = (
+                    bybit_data.get(base, {}).get("futures_price", 0.0)
+                    if base not in duplicated_bases
+                    else 0.0
+                )
                 target_by_p = by_futures_p or by_spot_p
                 if target_by_p > 0 and row.get("Price_KRW"):
                     dom_mult = utils.get_multiplier(row.get("Upbit_Symbol") or base)
@@ -249,37 +273,37 @@ def assemble_final_dashboard(
         if updated:
             any_update = True
 
-    # 🚀 [임시 중단] 3단계: 바이비트 단독 코인 투입 (사령관님 지시: 바이비트 단독 선물 잡코인 제외, 현물 비교군으로만 활용)
-    if False:
-        for base, b_inf in bybit_data.items():
-            if b_inf.get("futures_price", 0) > 0:
-                already_processed = False
-                for r in final_results.values():
-                    if r.get("Symbol") == base or r.get("DisplayTicker") == base:
-                        already_processed = True
-                        break
-                if not already_processed and base not in EXCLUSION_LIST:
-                    if b_inf:
-                        precision = b_inf.get("precision", 0)
-                    elif base in bybit_data and "precision" in bybit_data[base]:
-                        precision = bybit_data[base]["precision"]
-                    else:
-                        precision = 0  # 기본 정밀도
-                    row, updated = build_bybit_row(
-                        base,
-                        b_inf,
-                        market_data_map,
-                        asset_to_lookup_key,
-                        global_listings,
-                        processed_uids,
-                        krw_usd_rate,
-                        mapping,
-                    )
-                    if row:
-                        uid = str(row.get("UID") or base)
-                        final_results[uid] = row
-                        if updated:
-                            any_update = True
+    # 🚀 [임시 중단] 3단계: 바이비트 단독 코인 투입 (바이비트 단독 선물 잡코인 제외, 현물 비교군으로만 활용)
+    # if False:
+    #     for base, b_inf in bybit_data.items():
+    #         if b_inf.get("futures_price", 0) > 0:
+    #             already_processed = False
+    #             for r in final_results.values():
+    #                 if r.get("Symbol") == base or r.get("DisplayTicker") == base:
+    #                     already_processed = True
+    #                     break
+    #             if not already_processed and base not in EXCLUSION_LIST:
+    #                 if b_inf:
+    #                     precision = b_inf.get("precision", 0)
+    #                 elif base in bybit_data and "precision" in bybit_data[base]:
+    #                     precision = bybit_data[base]["precision"]
+    #                 else:
+    #                     precision = 0  # 기본 정밀도
+    #                 row, updated = build_bybit_row(
+    #                     base,
+    #                     b_inf,
+    #                     market_data_map,
+    #                     asset_to_lookup_key,
+    #                     global_listings,
+    #                     processed_uids,
+    #                     krw_usd_rate,
+    #                     mapping,
+    #                 )
+    #                 if row:
+    #                     uid = str(row.get("UID") or base)
+    #                     final_results[uid] = row
+    #                     if updated:
+    #                         any_update = True
 
     # 3. 청소기 가동
     # if clean_stale_tickers(binance_data, upbit_krw_set, mapping):

@@ -83,6 +83,23 @@ def fetch_global_listings():
         except:
             pass
 
+    def get_okx_futures():
+        try:
+            add_tags(
+                [
+                    i["baseCcy"]
+                    for i in requests.get(
+                        "https://www.okx.com/api/v5/public/instruments?instType=SWAP",
+                        timeout=5,
+                    )
+                    .json()
+                    .get("data", [])
+                ],
+                "OKX_FUTURES",
+            )
+        except:
+            pass
+
     def get_bybit():
         try:
             add_tags(
@@ -97,6 +114,24 @@ def fetch_global_listings():
                     .get("list", [])
                 ],
                 "BYBIT",
+            )
+        except:
+            pass
+
+    def get_bybit_futures():
+        try:
+            add_tags(
+                [
+                    i["baseCoin"]
+                    for i in requests.get(
+                        "https://api.bybit.com/v5/market/instruments-info?category=linear",
+                        timeout=5,
+                    )
+                    .json()
+                    .get("result", {})
+                    .get("list", [])
+                ],
+                "BYBIT_FUTURES",
             )
         except:
             pass
@@ -117,6 +152,23 @@ def fetch_global_listings():
         except:
             pass
 
+    def get_bitget_futures():
+        try:
+            add_tags(
+                [
+                    i["baseCoin"]
+                    for i in requests.get(
+                        "https://api.bitget.com/api/v2/mix/market/contracts?productType=USDT-futures",
+                        timeout=5,
+                    )
+                    .json()
+                    .get("data", [])
+                ],
+                "BITGET_FUTURES",
+            )
+        except:
+            pass
+
     def get_gateio():
         try:
             add_tags(
@@ -127,6 +179,20 @@ def fetch_global_listings():
                     ).json()
                 ],
                 "GATEIO",
+            )
+        except:
+            pass
+
+    def get_gateio_futures():
+        try:
+            add_tags(
+                [
+                    i["name"].split("_")[0]
+                    for i in requests.get(
+                        "https://api.gateio.ws/api/v4/futures/usdt/contracts", timeout=5
+                    ).json()
+                ],
+                "GATEIO_FUTURES",
             )
         except:
             pass
@@ -145,8 +211,18 @@ def fetch_global_listings():
         except:
             pass
 
-    # 🚀 병렬로 5개 대문 동시 타격
-    target_funcs = [get_okx, get_bybit, get_bitget, get_gateio, get_coinbase]
+    # 🚀 병렬로 9개 마켓 동시 타격
+    target_funcs = [
+        get_okx,
+        get_okx_futures,
+        get_bybit,
+        get_bybit_futures,
+        get_bitget,
+        get_bitget_futures,
+        get_gateio,
+        get_gateio_futures,
+        get_coinbase,
+    ]
     try:
         with ThreadPoolExecutor(max_workers=len(target_funcs)) as executor:
             futures = [executor.submit(func) for func in target_funcs]
@@ -283,15 +359,16 @@ def fetch_missing_utc0_opens_parallel(tasks):
     except Exception as e:
         print(f"⚠️ tradingDay 벌크 실패, 백업 로직 전환: {e}")
 
-    # 2. 남은 누락분 필터링 (현물에 없고 선물에만 있는 극소수 코인 식별)
+    # 2. 남은 누락분 필터링 (현물에 없고 선물에만 있는 극소수 코인 또는 선물 시가 정밀 식별)
     remaining_tasks = []
     for sym, is_futures in tasks:
-        if sym not in UTC0_OPEN_CACHE[today_str]:
+        cache_key = f"{sym}_FUTURES" if is_futures else sym
+        if cache_key not in UTC0_OPEN_CACHE[today_str]:
             remaining_tasks.append((sym, is_futures))
 
     if remaining_tasks:
         print(
-            f"🔍 [잔여 타격] 현물에 없는 선물 단독 종목 {len(remaining_tasks)}건 감지. (max_workers=3 안전 캡처 진행)"
+            f"🔍 [잔여 타격] 시가 누락 종목 {len(remaining_tasks)}건 감지. (max_workers=5 안전 캡처 진행)"
         )
 
         def _fetch(task):
@@ -304,18 +381,19 @@ def fetch_missing_utc0_opens_parallel(tasks):
             try:
                 r = api_session.get(url, timeout=5).json()
                 if r and isinstance(r, list) and len(r) > 0:
-                    return sym, float(r[0][1])
+                    return sym, is_fut, float(r[0][1])
             except:
                 pass
-            return sym, None
+            return sym, is_fut, None
 
         # 🚀 사령관님 보호를 위해 max_workers=5으로 철벽 스로틀링!
         with ThreadPoolExecutor(max_workers=5) as executor:
             futures = [executor.submit(_fetch, t) for t in remaining_tasks]
             for f in futures:
-                sym, val = f.result()
+                sym, is_fut, val = f.result()
                 if val is not None:
-                    UTC0_OPEN_CACHE[today_str][sym] = val
+                    cache_key = f"{sym}_FUTURES" if is_fut else sym
+                    UTC0_OPEN_CACHE[today_str][cache_key] = val
 
     save_utc0_cache()
     print(
@@ -326,7 +404,8 @@ def fetch_missing_utc0_opens_parallel(tasks):
 def get_utc0_open_price(symbol, is_futures):
     """캐시된 시가가 있으면 반환, 없으면 개별 klines 호출 (보험)"""
     today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    cached = UTC0_OPEN_CACHE.get(today_str, {}).get(symbol)
+    cache_key = f"{symbol}_FUTURES" if is_futures else symbol
+    cached = UTC0_OPEN_CACHE.get(today_str, {}).get(cache_key)
     if cached:
         return cached
 
@@ -517,7 +596,8 @@ def fetch_binance_futures_spot(bybit_data=None):
         stock_futures_symbols = {
             s["symbol"]
             for s in info_f.get("symbols", [])
-            if s.get("underlyingType", "").upper() == "STOCK" and s.get("quoteAsset") == "USDT"
+            if s.get("underlyingType", "").upper() == "STOCK"
+            and s.get("quoteAsset") == "USDT"
         }
 
         spot_to_futures_ticker_map = {}
@@ -540,7 +620,7 @@ def fetch_binance_futures_spot(bybit_data=None):
             else:
                 mapped_active_s.add(ticker)
                 mapped_s_dict[ticker] = s_dict.get(ticker, {})
-        
+
         active_s = mapped_active_s
         s_dict = mapped_s_dict
 
@@ -555,10 +635,17 @@ def fetch_binance_futures_spot(bybit_data=None):
 
         for ticker in all_active:
             sym = ticker.replace("USDT", "")
-            if sym in day_cache:
-                utc0_open_dict[sym] = day_cache[sym]
-            else:
-                open_price_tasks.append((sym, ticker in active_f))
+            if ticker in active_s:
+                if sym in day_cache:
+                    utc0_open_dict[sym] = day_cache[sym]
+                else:
+                    open_price_tasks.append((sym, False))
+            if ticker in active_f:
+                f_key = f"{sym}_FUTURES"
+                if f_key in day_cache:
+                    utc0_open_dict[f_key] = day_cache[f_key]
+                else:
+                    open_price_tasks.append((sym, True))
 
         if open_price_tasks:
             print(
@@ -566,9 +653,10 @@ def fetch_binance_futures_spot(bybit_data=None):
             )
             fetch_missing_utc0_opens_parallel(open_price_tasks)
             day_cache = UTC0_OPEN_CACHE.get(today_str, {})
-            for sym, _ in open_price_tasks:
-                if sym in day_cache:
-                    utc0_open_dict[sym] = day_cache[sym]
+            for sym, is_fut in open_price_tasks:
+                cache_key = f"{sym}_FUTURES" if is_fut else sym
+                if cache_key in day_cache:
+                    utc0_open_dict[cache_key] = day_cache[cache_key]
 
         # 5. 최종 데이터 합치기
         for ticker in all_active:
@@ -579,13 +667,19 @@ def fetch_binance_futures_spot(bybit_data=None):
 
             binance_data[ticker] = {
                 "price": f_data.get("price", s_data.get("price", 0)),
+                "spot_price": s_data.get("price", 0),
+                "futures_price": f_data.get("price", 0),
                 "change_24h": f_data.get("change_24h", s_data.get("change_24h", 0)),
+                "spot_change_24h": s_data.get("change_24h", 0),
+                "futures_change_24h": f_data.get("change_24h", 0),
                 "vol_futures": f_data.get("vol", 0.0),
                 "vol_spot": s_data.get("vol", 0.0),
                 "precision": b_precisions.get(ticker, 2),
                 "is_spot_only": ticker not in active_f,
                 "is_futures": ticker in active_f,
                 "is_spot": ticker in active_s,
+                "spot_utc0_open": utc0_open_dict.get(sym),
+                "futures_utc0_open": utc0_open_dict.get(f"{sym}_FUTURES"),
                 "utc0_open": utc0_open_dict.get(sym),
                 "funding_rate": funding_map.get(ticker, 0.0),  # 🚀 펀딩비 꽂아넣기
                 "underlying_type": t_details.get("underlying_type", ""),

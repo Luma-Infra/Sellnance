@@ -34,14 +34,19 @@ function getStartScreenHTML() {
           >
             <p class="text-[11px] text-theme-text opacity-60 leading-relaxed">
               API 키가 없으신가요?
+            </p><br/>
+            <div class="mt-1">
               <a
-                href="https://coinmarketcap.com/api/pricing/"
+                href="https://coinmarketcap.com/api/"
                 target="_blank"
-                class="text-theme-accent font-medium underline hover:brightness-125 ml-1"
+                class="text-theme-accent font-medium underline hover:brightness-125 ml-1 text-[11px]"
               >
                 CoinMarketCap API Dashboard
               </a>
-              에서 무료 키를 발급받을 수 있습니다.
+              <span class="text-[11px] text-theme-text opacity-60">에서 무료 키를 발급받을 수 있습니다.</span>
+            </div>
+            <p class="text-[10px] text-theme-text opacity-40 mt-1.5 border-t border-white/5 pt-1.5 leading-normal text-center">
+              💡 무료 기본 한도: 월 20,000 크레딧 (분당 최대 50회 호출 제한)
             </p>
           </div>
         </div>
@@ -147,14 +152,14 @@ async function initStartScreen() {
 
     if (btnStart) {
       btnStart.disabled = false;
-      btnStart.innerText = "Start DASHBOARD 🚀";
+      btnStart.innerText = "Start DASHBOARD";
       btnStart.className =
         "w-full py-3.5 bg-theme-accent text-white font-medium rounded-xl shadow-lg hover:brightness-110 active:scale-[0.98] transition-all tracking-widest uppercase cursor-pointer pointer-events-auto";
     }
 
     if (btnSkip) {
       btnSkip.disabled = false;
-      btnSkip.innerText = "Skip (Use Cached Data) ⏭️";
+      btnSkip.innerText = "Skip (Use Cached Data)";
       btnSkip.className =
         "w-full py-3 bg-transparent text-theme-text border border-theme-border font-medium rounded-xl hover:bg-white/5 active:scale-[0.98] transition-all tracking-wide opacity-50 hover:opacity-100 cursor-pointer pointer-events-auto";
     }
@@ -267,7 +272,16 @@ function hideStartScreen() {
   const screen = document.getElementById("start-screen");
   if (screen) {
     screen.style.opacity = "0";
-    setTimeout(() => (screen.style.display = "none"), 500);
+    setTimeout(() => {
+      screen.style.display = "none";
+      if (typeof window.showOnboardingModal === "function") {
+        window.showOnboardingModal();
+      }
+    }, 500);
+  } else {
+    if (typeof window.showOnboardingModal === "function") {
+      window.showOnboardingModal();
+    }
   }
 }
 

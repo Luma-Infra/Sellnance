@@ -68,6 +68,9 @@ DIST_DIR = BASE_DIR / "dist"
 if DIST_DIR.exists():
     print("🌐 [ENV] Production Build Detected! Serving from /dist")
     app.mount("/assets", StaticFiles(directory=str(DIST_DIR / "assets")), name="assets")
+    # 🚀 [추가] 프로덕션 빌드에서도 /static 경로를 통해 외부 라이브러리(sweetalert2 등)가 서빙되도록 허용
+    STATIC_DIR = BASE_DIR / "static"
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
     templates = Jinja2Templates(directory=str(DIST_DIR))
 else:
     print("🛠️ [ENV] Development Mode! Serving raw templates/static")

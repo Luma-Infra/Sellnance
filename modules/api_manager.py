@@ -69,7 +69,7 @@ def start_silent_background_scheduler():
         while True:
             time.sleep(SILENT_REFRESH_INTERVAL)
             try:
-                print("🔄 [BG SCHEDULER] 5분 주기 silent 갱신 시작...")
+                print("🔄 [BG SCHEDULER] 15분 주기 silent 갱신 시작...")
                 _fetch_and_process_data_and_cache(silent_mode=True)
             except Exception as e:
                 print(f"🚨 [BG SCHEDULER ERROR] {e}")

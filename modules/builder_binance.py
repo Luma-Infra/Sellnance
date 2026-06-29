@@ -110,7 +110,8 @@ def build_binance_row(
 
     # 5. 족보 업데이트 (세탁기)
     if not ticker_info or (
-        isinstance(ticker_info, list) and (len(ticker_info) < 4 or not ticker_info[0] or ticker_info[0] != final_ucid)
+        isinstance(ticker_info, list)
+        and (len(ticker_info) < 4 or not ticker_info[0] or ticker_info[0] != final_ucid)
     ):
         TICKER_DATA[display_name] = [
             final_ucid,  # 🚀 믿음의 최종 UID
@@ -137,26 +138,40 @@ def build_binance_row(
     binance_futures_change_today = 0.0
     exact_spot_ticker = ""
     exact_futures_ticker = ""
+    spot_utc0 = 0.0
+    futures_utc0 = 0.0
 
     for b_tick, b_inf in binance_data.items():
         b_base = utils.get_pure_base_asset(b_tick.replace("USDT", "")).upper()
         if b_base == base:
             if b_inf.get("is_spot"):
                 listed_on.add("BINANCE")
-                binance_spot_price = b_inf.get("price", 0.0)
-                binance_spot_change_24h = b_inf.get("change_24h", 0.0)
+                binance_spot_price = b_inf.get("spot_price") or b_inf.get("price", 0.0)
+                binance_spot_change_24h = b_inf.get("spot_change_24h") or b_inf.get(
+                    "change_24h", 0.0
+                )
                 exact_spot_ticker = b_tick.replace("USDT", "")
-                spot_utc0 = b_inf.get("utc0_open") or 0.0
+                spot_utc0 = b_inf.get("spot_utc0_open") or b_inf.get("utc0_open") or 0.0
                 if spot_utc0 > 0:
-                    binance_spot_change_today = utils.js_round(((binance_spot_price - spot_utc0) / spot_utc0 * 100), 2)
+                    binance_spot_change_today = utils.js_round(
+                        ((binance_spot_price - spot_utc0) / spot_utc0 * 100), 2
+                    )
             if b_inf.get("is_futures"):
                 listed_on.add("BINANCE_FUTURES")
-                binance_futures_price = b_inf.get("price", 0.0)
-                binance_futures_change_24h = b_inf.get("change_24h", 0.0)
+                binance_futures_price = b_inf.get("futures_price") or b_inf.get(
+                    "price", 0.0
+                )
+                binance_futures_change_24h = b_inf.get(
+                    "futures_change_24h"
+                ) or b_inf.get("change_24h", 0.0)
                 exact_futures_ticker = b_tick.replace("USDT", "")
-                futures_utc0 = b_inf.get("utc0_open") or 0.0
+                futures_utc0 = (
+                    b_inf.get("futures_utc0_open") or b_inf.get("utc0_open") or 0.0
+                )
                 if futures_utc0 > 0:
-                    binance_futures_change_today = utils.js_round(((binance_futures_price - futures_utc0) / futures_utc0 * 100), 2)
+                    binance_futures_change_today = utils.js_round(
+                        ((binance_futures_price - futures_utc0) / futures_utc0 * 100), 2
+                    )
             total_vol_futures += b_inf.get("vol_futures", 0.0)
             total_vol_spot += b_inf.get("vol_spot", 0.0)
 
@@ -196,10 +211,15 @@ def build_binance_row(
         listed_on.add("UPBIT")
 
     # 🚀 [지문 완화 1] Bybit Fallback (바낸 티커 base 또는 업비트 티커 target_up_base 둘 중 하나라도 바이비트에 있다면 무조건 쌀먹 도킹!)
-    # 🚀 [지문 완화 1] Bybit Fallback (바낸 티커 base 또는 업비트 티커 target_up_base 둘 중 하나라도 바이비트에 있다면 무조건 쌀먹 도킹!)
-    by_spot_p = bybit_data.get(raw_symbol, {}).get("spot_price", 0.0) or bybit_data.get(base, {}).get("spot_price", 0.0)
-    by_futures_p = bybit_data.get(raw_symbol, {}).get("futures_price", 0.0) or bybit_data.get(base, {}).get("futures_price", 0.0)
-    by_vol_24h = bybit_data.get(raw_symbol, {}).get("volume_24h", 0.0) or bybit_data.get(base, {}).get("volume_24h", 0.0)
+    by_spot_p = bybit_data.get(raw_symbol, {}).get("spot_price", 0.0) or bybit_data.get(
+        base, {}
+    ).get("spot_price", 0.0)
+    by_futures_p = bybit_data.get(raw_symbol, {}).get(
+        "futures_price", 0.0
+    ) or bybit_data.get(base, {}).get("futures_price", 0.0)
+    by_vol_24h = bybit_data.get(raw_symbol, {}).get(
+        "volume_24h", 0.0
+    ) or bybit_data.get(base, {}).get("volume_24h", 0.0)
 
     if (
         (by_spot_p == 0 and by_futures_p == 0)
@@ -292,7 +312,7 @@ def build_binance_row(
         )
 
     # 🚀 [핵심] 김프(현현갭) & 현선갭 연산 (라벨 추가)
-    kimchi_raw = 0.0
+    kimchi_raw = None
     kimchi_label = "-"
 
     # 1. 국내 거래소 결정 (업비트 -> 빗썸)
@@ -354,7 +374,9 @@ def build_binance_row(
         else "-"
     )
 
-    dom_open_krw = up_open_krw if up_open_krw > 0 else (bithumb_open if bithumb_open > 0 else 0.0)
+    dom_open_krw = (
+        up_open_krw if up_open_krw > 0 else (bithumb_open if bithumb_open > 0 else 0.0)
+    )
 
     # 7. 데이터 조립
     u_type = str(b_info.get("underlying_type", "")) if isinstance(b_info, dict) else ""
@@ -362,6 +384,9 @@ def build_binance_row(
     is_stock = ("EQUITY" in u_type) or (c_type == "TRADIFI_PERPETUAL")
 
     row = {
+        # ==========================================
+        # 🟢 [COMMON / 공통 파트 지표]
+        # ==========================================
         "UID": final_ucid,
         "Symbol": raw_symbol,
         "DisplayTicker": display_name,
@@ -370,9 +395,15 @@ def build_binance_row(
         "Name": coin_name,
         "Chain": chain,
         "Is_Stock": is_stock,
-        "Upbit": "O" if target_up_base else "X",
-        "Bithumb_Symbol": bithumb_symbol,
         "precision": precision,
+
+        # 공통 거래소 상장 여부 정보
+        "Upbit": "O" if target_up_base else "X",
+        "Binance": "O" if binance_spot_price > 0 else "X",
+        "Binance_Futures": "O" if binance_futures_price > 0 else "X",
+        "Bithumb_Symbol": bithumb_symbol,
+
+        # 공통 화면 표시용 가공 가격 및 김프 연산 데이터
         "Price": utils.format_dynamic_price(b_info["price"], precision),
         "Price_KRW": up_price_krw if up_price_krw > 0 else None,
         "Binance_Price": (
@@ -380,66 +411,73 @@ def build_binance_row(
             if (binance_futures_price > 0 or binance_spot_price > 0)
             else None
         ),
-        "Binance_Price_Spot": binance_spot_price if binance_spot_price > 0 else None,
-        "Binance_Price_Futures": binance_futures_price if binance_futures_price > 0 else None,
         "Bybit_Price": (
             (by_futures_p or by_spot_p) if (by_futures_p > 0 or by_spot_p > 0) else None
         ),
-        "Bybit_Price_Spot": by_spot_p if by_spot_p > 0 else None,
-        "Bybit_Price_Futures": by_futures_p if by_futures_p > 0 else None,
-        "Change_24h_Binance": binance_spot_change_24h,
-        "Change_24h_Futures_Ex": binance_futures_change_24h,
-        "Change_24h_Bybit": binance_spot_change_24h,
-        "Change_Today_Binance": binance_spot_change_today,
-        "Change_Today_Futures": binance_futures_change_today,
-        "Change_Today_Bybit": binance_spot_change_today,
         "Upbit_Price": up_price_krw if up_price_krw > 0 else None,
         "Bithumb_Price": bithumb_price if bithumb_price > 0 else None,
-        "Upbit_Vol_Formatted": (
-            utils.format_volume_string(up_vol_24h_usd)
-            if up_vol_24h_usd > 0
-            else "-"
-        ),
-        "Upbit_Vol_KRW_Formatted": (
-            utils.format_volume_krw_string(up_vol_24h_krw)
-            if up_vol_24h_krw > 0
-            else "-"
-        ),
-        "Upbit_Vol": up_vol_24h_krw,
+
         "Change_24h": utils.format_change(change_24h),
         "Change_Today": utils.format_change(change_today),
-        "Kimchi_Formatted": f"{kimchi_raw:+.2f}%" if kimchi_raw != 0 else "0.00%",
+        "Kimchi_Formatted": f"{kimchi_raw:+.2f}%" if kimchi_raw is not None else "-",
         "Kimchi_Label": kimchi_label,
         "Basis_Formatted": f"{basis_raw:+.2f}%" if basis_raw != 0 else "0.00%",
-        "Volume_Formatted": utils.format_volume_string(
-            binance_vol
-        ),  # 🚀 화면 표기값과 일원화
+        "Volume_Formatted": utils.format_volume_string(binance_vol),
         "MarketCap_Formatted": utils.format_market_cap_string(mcap),
         "VMC_Formatted": f"{vmc_raw:.2f}%",
-        "Funding_Formatted": funding_f,
-        # 🚀 [추가] 바이낸스 전용 거래대금 (선물 + 현물)
         "Binance_Vol_Formatted": utils.format_volume_string(binance_vol),
-        # --- 3. 프론트엔드 정렬용 순수 숫자 데이터 (Raw) ---
+
+        # 공통 정렬 연산용 순수 숫자 데이터 (Raw)
         "Price_Raw": price,
         "Change_24h_Raw": change_24h,
         "Change_Today_Raw": change_today,
-        "Volume_Raw": binance_vol,  # 🚀 정렬 기준값도 일원화
+        "Volume_Raw": binance_vol,
         "MarketCap_Raw": mcap,
         "VMC_Raw": vmc_raw,
         "Basis_Raw": basis_raw,
-        "Funding_Raw": funding_rate,
         "Kimchi_Raw": kimchi_raw,
         "utc0_open_Raw": utc0_open,
         "utc0_open_KRW": dom_open_krw if dom_open_krw > 0 else None,
-        # 추가 데이터 정리 예정
-        "Binance_Vol_Futures": total_vol_futures,
-        "Binance_Vol_Spot": total_vol_spot,
-        "Exact_Spot": exact_spot_ticker,
-        "Exact_Futures": exact_futures_ticker,
+
+        # 공통 기타 메타 정보
         "Spot_Only": "O" if b_info.get("is_spot_only") else "X",
         "Tags": info.get("tags", "") if info else "",
-        "Listed_Exchanges": list(
-            listed_on
-        ),  # 🚀 프론트엔드야, 이거 보고 이미지 박아라!
+        "Listed_Exchanges": list(listed_on),
+
+
+        # ==========================================
+        # 🔵 [SPOT / 현물 파트 전용 지표]
+        # ==========================================
+        "Binance_Price_Spot": binance_spot_price if binance_spot_price > 0 else None,
+        "Bybit_Price_Spot": by_spot_p if by_spot_p > 0 else None,
+        
+        "Change_24h_Binance": binance_spot_change_24h,
+        "Change_24h_Bybit": float(bybit_data.get(raw_symbol, {}).get("change_24h", 0.0) or bybit_data.get(base, {}).get("change_24h", 0.0)),
+        "Change_Today_Binance": binance_spot_change_today,
+        "Change_Today_Bybit": float(bybit_data.get(raw_symbol, {}).get("change_today", 0.0) or bybit_data.get(base, {}).get("change_today", 0.0)),
+
+        "spot_utc0_open_Raw": spot_utc0 if spot_utc0 > 0 else None,
+        "Binance_Vol_Spot": total_vol_spot,
+        "Exact_Spot": exact_spot_ticker,
+
+        "Upbit_Vol_Formatted": (utils.format_volume_string(up_vol_24h_usd) if up_vol_24h_usd > 0 else "-"),
+        "Upbit_Vol_KRW_Formatted": (utils.format_volume_krw_string(up_vol_24h_krw) if up_vol_24h_krw > 0 else "-"),
+        "Upbit_Vol": up_vol_24h_krw,
+
+
+        # ==========================================
+        # 🟡 [FUTURES / 선물 파트 전용 지표]
+        # ==========================================
+        "Binance_Price_Futures": (binance_futures_price if binance_futures_price > 0 else None),
+        "Bybit_Price_Futures": by_futures_p if by_futures_p > 0 else None,
+
+        "Change_24h_Futures_Ex": binance_futures_change_24h,
+        "Change_Today_Futures": binance_futures_change_today,
+
+        "Funding_Raw": funding_rate,
+        "Funding_Formatted": funding_f,
+        "futures_utc0_open_Raw": futures_utc0 if futures_utc0 > 0 else None,
+        "Binance_Vol_Futures": total_vol_futures,
+        "Exact_Futures": exact_futures_ticker,
     }
     return row, is_updated

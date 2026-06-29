@@ -1,6 +1,6 @@
 // stream_global.js
 import { store, tfSec } from "./_store.js";
-import { getUnixSeconds, updateTabTitleManager } from "./chart_utils.js";
+import { getUnixSeconds, updateTabTitleManager, getPureBase } from "./chart_utils.js";
 import {
   getUpbitMessageHandler,
   getBithumbMessageHandler,
@@ -26,20 +26,35 @@ export function startRealtimeCandle(
     store.currentChartMarket === "BYBIT" || store.currentChartMarket === "BYBIT_FUTURES";
   const isBybitFutures = store.currentChartMarket === "BYBIT_FUTURES";
 
-  // 1️⃣ 기존 활성화된 이종 거래소 소켓 안전하게 연결 해제 제어
-  if (!(isFutures || isSpot) && store.binanceChartWs) {
+  // 🚀 [해결] 실시간 김프 동적 연산을 위해, 현재 탭의 거래소뿐 아니라 김프 계산의 상대방(국내 ↔ 해외) 거래소 소켓도 활성화 상태로 유지합니다.
+  const pureSymbol = getPureBase(symbol);
+  const row = store.currentTableData?.find(
+    (c) => getPureBase(c.Symbol) === pureSymbol || getPureBase(c.Ticker) === pureSymbol
+  );
+
+  const hasUpbit = row ? (row.Upbit === "O" || row.Listed_Exchanges?.includes("UPBIT")) : true;
+  const hasBithumb = row ? (row.Listed_Exchanges?.includes("BITHUMB")) : false;
+  const hasBinance = row ? row.Listed_Exchanges?.some(ex => ex.includes("BINANCE")) : true;
+  const hasBybit = row ? row.Listed_Exchanges?.some(ex => ex.includes("BYBIT")) : false;
+
+  const needBinance = (isFutures || isSpot) || (["UPBIT", "BITHUMB", "BYBIT", "BYBIT_FUTURES"].includes(store.currentChartMarket) && hasBinance);
+  const needBybit = isBybit || (["UPBIT", "BITHUMB", "SPOT", "FUTURES"].includes(store.currentChartMarket) && hasBybit && !hasBinance);
+  const needUpbit = isUpbit || (["SPOT", "FUTURES", "BYBIT", "BYBIT_FUTURES"].includes(store.currentChartMarket) && hasUpbit);
+  const needBithumb = isBithumb || (["SPOT", "FUTURES", "BYBIT", "BYBIT_FUTURES"].includes(store.currentChartMarket) && hasBithumb);
+
+  if (!needBinance && store.binanceChartWs) {
     try { store.binanceChartWs.close(); } catch (e) { }
     store.binanceChartWs = null; store.currentKlineStream = null;
   }
-  if (!isUpbit && store.upbitChartWs) {
+  if (!needUpbit && store.upbitChartWs) {
     try { store.upbitChartWs.close(); } catch (e) { }
     store.upbitChartWs = null; store.currentUpbitStream = null;
   }
-  if (!isBithumb && store.bithumbChartWs) {
+  if (!needBithumb && store.bithumbChartWs) {
     try { store.bithumbChartWs.close(); } catch (e) { }
     store.bithumbChartWs = null; store.currentBithumbStream = null;
   }
-  if (!isBybit && store.bybitChartWs) {
+  if (!needBybit && store.bybitChartWs) {
     try { store.bybitChartWs.close(); } catch (e) { }
     store.bybitChartWs = null; store.currentBybitStream = null;
   }
@@ -50,15 +65,6 @@ export function startRealtimeCandle(
     ? "wss://fstream.binance.com/market/ws"
     : "wss://stream.binance.com:9443/ws";
 
-  if (
-    (isFutures || isSpot) &&
-    store.currentKlineStream === `${aggStream}/${klineStream}` &&
-    store.binanceChartWs &&
-    store.binanceChartWs.readyState === WebSocket.OPEN &&
-    store.binanceChartWs.url.includes(isFutures ? "fstream" : "stream.binance.com")
-  )
-    return;
-
   const getWsId = () => Math.floor(Date.now() + Math.random() * 1000);
 
   let realtimeUpdatePending = false;
@@ -67,13 +73,14 @@ export function startRealtimeCandle(
   let latestServerMs = null;
 
   // 2️⃣ 소켓 수신 데이터를 메인 루프에 분배하는 게이트웨이
-  const broadcastCandleUpdate = (activeCandle, symbol, serverMs) => {
+  const broadcastCandleUpdate = (activeCandle, symbol, serverMs, marketType) => {
     latestActiveCandle = activeCandle;
     latestSymbol = symbol;
     latestServerMs = serverMs;
 
     // 백그라운드 탭 타이틀 실시간 반영
     if (activeCandle) {
+      activeCandle.marketType = marketType; // 🚀 거래소 및 현/선물 성격 마크 주입
       updateTabTitleManager(activeCandle.close, symbol, ["UPBIT", "BITHUMB"].includes(store.currentChartMarket));
     }
 
@@ -113,10 +120,37 @@ export function startRealtimeCandle(
 
   // 3️⃣ 바이낸스 소켓 메시지 파서
   const handleBinanceMessage = (e) => {
+    if (e.target !== store.binanceChartWs) return;
     const btnSim = document.getElementById("tab-btn-sim");
     if (btnSim && btnSim.classList.contains("active")) return;
     if (store.isFetchingChart || window.isFetchingChart || store.isLoadingMoreHistory) return;
-    if (store.currentChartMarket !== "SPOT" && store.currentChartMarket !== "FUTURES") return;
+    const isMsgFutures = e.target.url.includes("fstream");
+    const isActiveFutures = store.currentChartMarket === "FUTURES";
+    const isActiveSpot = store.currentChartMarket === "SPOT";
+
+    if ((isActiveSpot && isMsgFutures) || (isActiveFutures && !isMsgFutures) || (!isActiveSpot && !isActiveFutures)) {
+      // 🚀 현재 탭과 들어온 스트림 데이터의 현/선물 성격이 일치하지 않거나 바이낸스 탭이 아닌 경우,
+      // 메인 차트 데이터(store.mainData)를 오염시키지 않고 오직 김프 계산을 위한 실시간 시세 버퍼 업데이트 및 김프 갱신만 수행합니다.
+      const res = JSON.parse(e.data);
+      if (res.e === "aggTrade") {
+        const tickSymbol = res.s.replace("USDT", "").toUpperCase();
+        const expectedGlobalSymbol = (store.currentSelectedSymbol || "").replace("USDT", "").replace("KRW-", "").replace("KRW", "").toUpperCase();
+        if (tickSymbol === symbol.toUpperCase() && tickSymbol === expectedGlobalSymbol) {
+          const newPrice = parseFloat(res.p);
+          if (!isNaN(newPrice)) {
+            const bufKey = isMsgFutures ? `${tickSymbol}USDT_FUTURES` : `${tickSymbol}USDT`;
+            if (!store.tickerBuffer) store.tickerBuffer = {};
+            store.tickerBuffer[bufKey] = { c: newPrice };
+
+            if (store.mainData && store.mainData.length > 0) {
+              const lastCandle = store.mainData[store.mainData.length - 1];
+              updateRealtimeKimchi({ close: newPrice, marketType: isMsgFutures ? "FUTURES" : "SPOT" }, symbol, lastCandle.time);
+            }
+          }
+        }
+      }
+      return;
+    }
 
     const res = JSON.parse(e.data);
     if (!store.mainData || store.mainData.length === 0) return;
@@ -190,19 +224,45 @@ export function startRealtimeCandle(
       if (store.isFetchingChart || window.isFetchingChart || store.isLoadingMoreHistory) return;
       const currentExpected = (store.currentSelectedSymbol || "").replace("USDT", "").replace("KRW-", "").replace("KRW", "").toUpperCase();
       if (symbol.toUpperCase() === currentExpected) {
-        broadcastCandleUpdate(activeCandle, symbol, store.lastServerMs);
+        broadcastCandleUpdate(activeCandle, symbol, store.lastServerMs, isFutures ? "FUTURES" : "SPOT");
       }
     }
   };
 
   // 4️⃣ 바이비트 소켓 메시지 파서
   const handleBybitMessage = (e) => {
+    if (e.target !== store.bybitChartWs) return;
     const btnSim = document.getElementById("tab-btn-sim");
     if (btnSim && btnSim.classList.contains("active")) return;
     if (store.isFetchingChart || window.isFetchingChart || store.isLoadingMoreHistory) return;
 
-    const isBybitActive = store.currentChartMarket === "BYBIT" || store.currentChartMarket === "BYBIT_FUTURES";
-    if (!isBybitActive) return;
+    const isMsgFutures = e.target.url.includes("linear");
+    const isActiveFutures = store.currentChartMarket === "BYBIT_FUTURES";
+    const isActiveSpot = store.currentChartMarket === "BYBIT";
+
+    if ((isActiveSpot && isMsgFutures) || (isActiveFutures && !isMsgFutures) || (!isActiveSpot && !isActiveFutures)) {
+      // 🚀 현재 탭과 들어온 스트림 데이터의 현/선물 성격이 일치하지 않거나 바이비트 탭이 아닌 경우,
+      // 메인 차트 데이터(store.mainData)를 오염시키지 않고 오직 김프 계산을 위한 실시간 시세 버퍼 업데이트 및 김프 갱신만 수행합니다.
+      const res = JSON.parse(e.data);
+      if (res.data && res.topic.startsWith("publicTrade.")) {
+        if (res.data.length > 0) {
+          const lastTrade = res.data[res.data.length - 1];
+          const newPrice = parseFloat(lastTrade.p);
+          if (!isNaN(newPrice)) {
+            const tickSymbol = symbol.toUpperCase();
+            const bufKey = isMsgFutures ? `${tickSymbol}USDT_FUTURES` : `${tickSymbol}USDT`;
+            if (!store.tickerBuffer) store.tickerBuffer = {};
+            store.tickerBuffer[bufKey] = { c: newPrice };
+
+            if (store.mainData && store.mainData.length > 0) {
+              const lastCandle = store.mainData[store.mainData.length - 1];
+              updateRealtimeKimchi({ close: newPrice, marketType: isMsgFutures ? "BYBIT_FUTURES" : "BYBIT" }, symbol, lastCandle.time);
+            }
+          }
+        }
+      }
+      return;
+    }
 
     const res = JSON.parse(e.data);
     if (!res.data || !res.topic.startsWith("publicTrade.")) return;
@@ -238,15 +298,20 @@ export function startRealtimeCandle(
 
     if (chartUpdateNeeded) {
       if (store.isFetchingChart || window.isFetchingChart || store.isLoadingMoreHistory) return;
-      broadcastCandleUpdate(activeCandle, symbol, res.ts || Date.now());
+      broadcastCandleUpdate(activeCandle, symbol, res.ts || Date.now(), isBybitFutures ? "BYBIT_FUTURES" : "BYBIT");
     }
   };
 
   // 5️⃣ 거래소별 웹소켓 분기 커넥션 핸들러
-  if (isFutures || isSpot) {
-    if (!store.binanceChartWs || store.binanceChartWs.readyState !== WebSocket.OPEN || !store.binanceChartWs.url.includes(isFutures ? "fstream" : "stream.binance.com")) {
+  if (needBinance) {
+    const binanceIsFutures = isFutures || (store.currentChartMarket !== "SPOT" && store.currentChartMarket !== "FUTURES" && row?.Exact_Futures);
+    const wsBasePartner = binanceIsFutures
+      ? "wss://fstream.binance.com/market/ws"
+      : "wss://stream.binance.com:9443/ws";
+
+    if (!store.binanceChartWs || store.binanceChartWs.readyState !== WebSocket.OPEN || !store.binanceChartWs.url.includes(binanceIsFutures ? "fstream" : "stream.binance.com")) {
       if (store.binanceChartWs) { try { store.binanceChartWs.close(); } catch (e) { } }
-      store.binanceChartWs = new WebSocket(wsBase);
+      store.binanceChartWs = new WebSocket(wsBasePartner);
       store.binanceChartWs.onopen = () => {
         store.binanceChartWs.send(JSON.stringify({ method: "SUBSCRIBE", params: [aggStream, klineStream], id: getWsId() }));
         store.currentKlineStream = `${aggStream}/${klineStream}`;
@@ -259,7 +324,9 @@ export function startRealtimeCandle(
       } catch (e) { }
     }
     store.binanceChartWs.onmessage = handleBinanceMessage;
-  } else if (isUpbit) {
+  }
+
+  if (needUpbit) {
     const upbitCode = `KRW-${symbol}`.toUpperCase();
     if (!store.upbitChartWs || store.upbitChartWs.readyState !== WebSocket.OPEN) {
       if (store.upbitChartWs) store.upbitChartWs.close();
@@ -272,7 +339,9 @@ export function startRealtimeCandle(
       try { store.upbitChartWs.send(JSON.stringify([{ ticket: "sellnance_chart_" + getWsId() }, { type: "ticker", codes: [upbitCode] }])); store.currentUpbitStream = upbitCode; } catch (e) { }
     }
     store.upbitChartWs.onmessage = getUpbitMessageHandler(symbol, broadcastCandleUpdate);
-  } else if (isBithumb) {
+  }
+
+  if (needBithumb) {
     const bithumbCode = `${symbol}_KRW`.toUpperCase();
     if (!store.bithumbChartWs || store.bithumbChartWs.readyState !== WebSocket.OPEN) {
       if (store.bithumbChartWs) { try { store.bithumbChartWs.close(); } catch (e) { } }
@@ -290,13 +359,16 @@ export function startRealtimeCandle(
       };
     }
     store.bithumbChartWs.onmessage = getBithumbMessageHandler(symbol, broadcastCandleUpdate);
-  } else if (isBybit) {
-    const bybitCode = `${symbol}USDT`.toUpperCase();
-    const wsUrl = isBybitFutures ? "wss://stream.bybit.com/v5/public/linear" : "wss://stream.bybit.com/v5/public/spot";
+  }
 
-    if (!store.bybitChartWs || store.bybitChartWs.readyState !== WebSocket.OPEN || !store.bybitChartWs.url.includes(isBybitFutures ? "linear" : "spot")) {
+  if (needBybit) {
+    const bybitCode = `${symbol}USDT`.toUpperCase();
+    const bybitIsFutures = isBybitFutures || (store.currentChartMarket !== "BYBIT" && store.currentChartMarket !== "BYBIT_FUTURES" && row?.Exact_Futures);
+    const wsUrlPartner = bybitIsFutures ? "wss://stream.bybit.com/v5/public/linear" : "wss://stream.bybit.com/v5/public/spot";
+
+    if (!store.bybitChartWs || store.bybitChartWs.readyState !== WebSocket.OPEN || !store.bybitChartWs.url.includes(bybitIsFutures ? "linear" : "spot")) {
       if (store.bybitChartWs) { try { store.bybitChartWs.close(); } catch (e) { } }
-      store.bybitChartWs = new WebSocket(wsUrl);
+      store.bybitChartWs = new WebSocket(wsUrlPartner);
       store.bybitChartWs.onopen = () => {
         store.bybitChartWs.send(JSON.stringify({ op: "subscribe", args: [`publicTrade.${bybitCode}`] }));
         store.currentBybitStream = bybitCode;
