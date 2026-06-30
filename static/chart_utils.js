@@ -96,50 +96,15 @@ function resetChartScale() {
 // ✅ 포맷팅 by precision
 export function formatSmartPrice(price, p) {
   try {
-    if (price === 0) return "0";
-    if (!price || isNaN(price)) return "";
+    const targetP = typeof p === "number" ? Math.max(0, p) : 2;
+    if (price === 0) return (0).toFixed(targetP);
+    if (!price) return "";
 
-    const numPrice = parseFloat(price);
-
-    // 1️⃣ 100원 이상: 소수점 없이 정수 콤마 표기
-    if (numPrice >= 100) {
-      return Math.round(numPrice).toLocaleString(undefined, {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-      });
-    }
-
-    // 2️⃣ 100원 미만: 무조건 유효숫자 출몰부터 3개만 표기 (예: 1.22, 0.123, 0.000123)
-    const formattedStr = numPrice.toPrecision(3);
-
-    // 지수 표현식 (e-5 등) 우회 디코딩 처리
-    const parts = formattedStr.split("e");
-    if (parts.length === 1) {
-      // 일반 소수 형태
-      const dotIndex = formattedStr.indexOf(".");
-      let decimals = 0;
-      if (dotIndex !== -1) {
-        const sub = formattedStr.substring(dotIndex + 1);
-        const firstActive = sub.search(/[1-9]/);
-        if (firstActive !== -1) {
-          decimals = firstActive + 3;
-        } else {
-          decimals = 3;
-        }
-      }
-      return numPrice.toLocaleString(undefined, {
-        minimumFractionDigits: decimals,
-        maximumFractionDigits: decimals,
-      });
-    } else {
-      // 지수 형태일 때 소수점 아래 자릿수로 변환
-      const exp = Math.abs(parseInt(parts[1], 10));
-      const decimals = exp + 2; // e-N 일 때 유효숫자 3개를 위해 N+2 소수 자릿수가 필요함
-      return numPrice.toLocaleString(undefined, {
-        minimumFractionDigits: decimals,
-        maximumFractionDigits: decimals,
-      });
-    }
+    // 🚀 거래소가 준 precision 그대로 사용 (toLocaleString이 콤마도 찍어줌)
+    return price.toLocaleString(undefined, {
+      minimumFractionDigits: targetP,
+      maximumFractionDigits: targetP,
+    });
   } catch (error) {
     console.error("❌ formatSmartPrice 에러:", error.message);
     return String(price || "");
@@ -313,51 +278,10 @@ function updateLegend(d, v, k) {
       kimColorStyle = k.color || "#57a4fc";
     }
     if (kimchiContainer) kimchiContainer.classList.remove("hidden");
-
-    // 🚀 [분리 락킹] 실시간 소켓 업데이트 시에는 stream_korea.js가 직접 리버스 갱신하고,
-    // 여기서는 마우스 호버(Crosshair) 또는 초기 로딩 시점에만 범례를 덮어씁니다!
-    if (store.isCrosshairActive || !d) {
-      const kimchiEl = document.getElementById("ohlc-kimchi");
-      if (kimchiEl) {
-        kimchiEl.innerText = kimValue;
-        kimchiEl.style.color = kimColorStyle;
-      }
-
-      // 🚀 범례 및 김프 업데이트 추적기 (callerId)
-      const ohlcCallerEl = document.getElementById("ohlc-caller-id");
-      const kimchiCallerEl = document.getElementById("ohlc-kimchi-caller");
-
-      let callerId = "UNKNOWN";
-      if (store.traceRowCaller) {
-        const stack = new Error().stack || "";
-        if (store.isCrosshairActive === true) {
-          callerId = "2 (Chart)"; // 🚀 마우스 크로스헤어 이동 시는 무조건 Chart
-        } else if (stack.includes("stream") || stack.includes("updateStatus")) {
-          callerId = "1 (Stream)";
-        } else if (stack.includes("chart_utils.js") || stack.includes("chart.js") || stack.includes("chart_data.js")) {
-          callerId = "2 (Chart)";
-        } else if (
-          stack.includes("ui_control") ||
-          stack.includes("table_filter") ||
-          stack.includes("main")
-        ) {
-          callerId = "3 (UI/Filter)";
-        }
-      } else if (store.isCrosshairActive === true) {
-        callerId = "2 (Chart)";
-      }
-
-      if (ohlcCallerEl) ohlcCallerEl.innerText = `[${callerId}]`;
-      if (kimchiCallerEl) kimchiCallerEl.innerText = ` [${callerId}]`;
-
-      // 🚀 [디버그 동적 전파] 무조건 첫번째 행(index 0)에 있는 디버그 영역에도 함께 기록해줍니다.
-      const firstRowDebug = document.querySelector('#coin-list-body > div[data-index="0"] .first-row-debug-area');
-      if (firstRowDebug) {
-        const ohlcDebug = firstRowDebug.querySelector(".debug-ohlc-caller");
-        const kimchiDebug = firstRowDebug.querySelector(".debug-kimchi-caller");
-        if (ohlcDebug) ohlcDebug.innerText = `OHLC: ${callerId}`;
-        if (kimchiDebug) kimchiDebug.innerText = `KIMP: ${callerId}`;
-      }
+    const kimchiEl = document.getElementById("ohlc-kimchi");
+    if (kimchiEl) {
+      kimchiEl.innerText = kimValue;
+      kimchiEl.style.color = kimColorStyle;
     }
   } else {
     if (kimchiContainer) kimchiContainer.classList.add("hidden");
@@ -389,7 +313,7 @@ function updateStatus(d, p) {
 
   // 가격 업데이트
   const asset = store.currentAsset || store.currentSelectedSymbol;
-  const allSource = store.currentTableData || store.originalTableData || [];
+  const allSource = store.originalTableData || store.currentTableData || [];
   const row = allSource.find(
     (r) =>
       r.DisplayTicker === asset || r.Ticker === asset || r.Symbol === asset,
@@ -489,10 +413,9 @@ function autoFit(isTabRestore = false) {
   }
   if (store.chart && store.mainData.length) {
     const len = store.mainData.length;
-    // 🚀 [UX 개선] 저장된 가로폭(줌) 정보가 있다면 해당 값을 적용하고, 없으면 기본값인 100을 사용합니다.
-    const zoomWidth = store.savedZoomWidth || 100;
+    // 🚀 [해결] 캔들 개수가 100개보다 작을 시(예: 신규 상장 1일차) 맨 왼쪽 구석에 쳐박히는 현상을 해결하기 위해 음수 영역(여백) 확보
     const logicalRange = {
-      from: len < zoomWidth ? -Math.max(5, zoomWidth - len) : len - zoomWidth,
+      from: len < 100 ? -Math.max(5, 100 - len) : len - 100,
       to: len + 10,
     };
 
@@ -872,7 +795,7 @@ export function updateTabTitleManager(price, symbol, isKor) {
       formatted = `${formatSmartPrice(scaledPrice, p)}`;
     }
 
-    document.title = `${formatted} ${targetSymbol.toUpperCase()} | Sellnance`;
+    document.title = `${formatted} ${targetSymbol.toUpperCase()} | sellance`;
   }
 }
 window.updateTabTitleManager = updateTabTitleManager;

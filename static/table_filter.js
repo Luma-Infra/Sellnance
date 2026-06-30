@@ -16,7 +16,7 @@ export function getFilteredData() {
 
   // 0. 텍스트 검색 필터링 (가장 우선)
   if (store.searchQuery && store.searchQuery.trim() !== "") {
-    const q = store.searchQuery.trim().toUpperCase();
+    const q = store.searchQuery.toUpperCase();
     filteredData = filteredData.filter((r) => {
       const disp = (r.DisplayTicker || "").toUpperCase();
       const name = (r.Name || "").toUpperCase();
@@ -28,27 +28,6 @@ export function getFilteredData() {
         sym.includes(q) ||
         raw.includes(q)
       );
-    });
-
-    // 🚀 검색 결과 우선순위 정렬 (티커 우선 + 완전일치 최우선)
-    filteredData.sort((a, b) => {
-      const getScore = (r) => {
-        const disp = (r.DisplayTicker || "").toUpperCase();
-        const sym = (r.Symbol || "").toUpperCase();
-        const raw = (r.Ticker || "").toUpperCase();
-        const name = (r.Name || "").toUpperCase();
-
-        if (disp === q || sym === q || raw === q) return 0; // 완전일치 티커
-        if (disp.startsWith(q) || sym.startsWith(q) || raw.startsWith(q)) return 1; // 전방일치 티커
-        if (disp.includes(q) || sym.includes(q) || raw.includes(q)) return 2; // 부분일치 티커
-        if (name.startsWith(q)) return 3; // 전방일치 코인명
-        if (name.includes(q)) return 4; // 부분일치 코인명
-        return 5;
-      };
-
-      const scoreA = getScore(a);
-      const scoreB = getScore(b);
-      return scoreA - scoreB;
     });
   }
 
@@ -83,7 +62,7 @@ export function getFilteredData() {
     if (
       mcap < store.customMcapMin ||
       mcap >
-      (store.customMcapMax >= 10000000000000 ? Infinity : store.customMcapMax)
+        (store.customMcapMax >= 10000000000000 ? Infinity : store.customMcapMax)
     ) {
       return false;
     }
@@ -375,7 +354,7 @@ export function toggleCurrency() {
   renderTable();
 
   if (store.currentSelectedSymbol) {
-    const allSource = store.currentTableData || store.originalTableData || [];
+    const allSource = store.originalTableData || store.currentTableData || [];
     const row = allSource.find(
       (r) =>
         r.DisplayTicker === store.currentSelectedSymbol ||
@@ -567,7 +546,7 @@ export function updateExchFilterUI() {
 
   const modeToggleHtml = `
     <button onclick="window.switchExchFilterMode()" 
-            class="flex items-center justify-center px-2 border rounded-xl transition-all duration-300 h-9 text-[9px] min-w-[54px] hover:scale-105 active:scale-95 ${modeBtnClass}" 
+            class="flex items-center justify-center px-2 border rounded-xl transition-all duration-300 h-8 text-[9px] min-w-[54px] hover:scale-105 active:scale-95 ${modeBtnClass}" 
             title="조건 결합 모드 (클릭하여 AND -> OR -> ONLY 순환)">
       ${modeLabels[currentMode]}
     </button>
@@ -576,7 +555,7 @@ export function updateExchFilterUI() {
   // 🚀 우측 끝에 깔끔하게 초기화(리셋) 버튼 추가
   const resetBtnHtml = `
     <button onclick="window.resetExchFilters()" 
-            class="flex items-center justify-center p-1 border border-theme-border/30 rounded-xl transition-all duration-300 w-9 h-9 hover:scale-105 active:scale-95 bg-theme-panel/10 hover:bg-theme-accent/20 hover:border-theme-accent text-theme-text opacity-70 hover:opacity-100" 
+            class="flex items-center justify-center p-1 border border-theme-border/30 rounded-xl transition-all duration-300 w-8 h-8 hover:scale-105 active:scale-95 bg-theme-panel/10 hover:bg-theme-accent/20 hover:border-theme-accent text-theme-text opacity-70 hover:opacity-100" 
             title="필터 초기화">
       <span class="text-[12px]">⟳</span>
     </button>
@@ -619,12 +598,13 @@ export function updateExchFilterUI() {
       return `
       <button onclick="window.toggleExchFilter('${ex.id}', event)" 
               oncontextmenu="event.preventDefault(); window.toggleExchExclude('${ex.id}');"
-              class="relative flex items-center justify-center p-1.5 border rounded-xl transition-all duration-300 w-9 h-9 hover:scale-105 active:scale-95 ${borderStyle}"
+              class="relative flex items-center justify-center p-1.5 border rounded-xl transition-all duration-300 w-8 h-8 hover:scale-105 active:scale-95 ${borderStyle}"
               style="${bgStyle} ${filterStyle}" title="${ex.name || ex.id} (클릭: 순환 토글 / 우클릭: 제외 토글)">
         <img src="${imgUrl}" alt="${ex.name || ex.id}" class="w-full h-full object-contain rounded" style="${imgStyle}" />
-        ${badgeText
-          ? `<div class="absolute -top-1 -right-1 ${badgeBg} text-white text-[8px] px-0.5 rounded-sm leading-none font-bold scale-[0.8]">${badgeText}</div>`
-          : ""
+        ${
+          badgeText
+            ? `<div class="absolute -top-1 -right-1 ${badgeBg} text-white text-[8px] px-0.5 rounded-sm leading-none font-bold scale-[0.8]">${badgeText}</div>`
+            : ""
         }
       </button>
     `;

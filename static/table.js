@@ -76,7 +76,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const rowDiv = e.target.closest("#coin-list-body .coin-row");
       if (rowDiv && rowDiv.dataset.sym) {
         const ticker = rowDiv.dataset.sym;
-        const uid = rowDiv.dataset.uid;
 
         // 🚀 같은 코인 500ms 광클 방어 (다른 코인은 즉시 전환 허용)
         const now = Date.now();
@@ -88,7 +87,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         store.currentSelectedSymbol = ticker;
         if (typeof window.selectSymbol === "function") {
-          window.selectSymbol(ticker, null, uid);
+          window.selectSymbol(ticker);
         }
         applySelectedHighlight();
 
@@ -115,8 +114,19 @@ setInterval(() => {
     window._lastSortTime = nowTime;
   }
 
+  const slowCols = [
+    "MarketCap",
+    "Kimchi",
+    "Gap",
+    "Funding",
+    "VMC",
+    "Listing_Date",
+    "Ticker",
+  ];
   if (store.currentSortCol && store.sortState !== "") {
-    applyRealtimeSort();
+    if (!slowCols.includes(store.currentSortCol)) {
+      applyRealtimeSort();
+    }
   }
 }, 1000);
 

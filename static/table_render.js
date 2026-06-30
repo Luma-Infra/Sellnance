@@ -92,7 +92,6 @@ export function updateRowStaticHTML(rowEl, row) {
   const pureSymbol = row.Symbol;
   const tId = row.Ticker; // 🚀 DOM ID용 완벽한 고유키
   rowEl.dataset.sym = tId; // 🚀 화면 추적용
-  rowEl.dataset.uid = row.UID; // 🚀 UID 추적용 추가
 
   // 🐛 [DEBUG] 데이터 침범 및 오염 추적용 로그
   if (!row.Ticker || !row.Symbol) {
@@ -137,13 +136,14 @@ export function updateRowStaticHTML(rowEl, row) {
   // 동적 수치 데이터 영역은 빈 Placeholder div 구조로 생성하여 레이아웃 깨짐을 방지하고 스크롤 시 공백(하얀 칸) 노출을 방어합니다.
   rowEl.innerHTML = `
   <div class="p-2 col-asset overflow-hidden">
-    ${pendingAction
-      ? `
+    ${
+      pendingAction
+        ? `
       <div class="row-progress-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 2.5px; z-index: 50; pointer-events: none;">
          <div id="progress-bar-${row.Ticker}" class="row-progress-bar" style="height: 100%; width: 100%; background: linear-gradient(90deg, var(--accent) 0%, #3b82f6 100%); transition: width 50ms linear;"></div>
       </div>
     `
-      : ""
+        : ""
     }
     <div class="flex items-center gap-0.5 min-w-0">
       <!-- 0. 절대 순위 번호 (CSS 카운터로 1부터 800까지 순차 자동 렌더링) -->
@@ -155,8 +155,9 @@ export function updateRowStaticHTML(rowEl, row) {
         <button onclick="toggleFavorite('${uId}', event)" class="star-btn text-[14px] transition-all hover:scale-125 flex-shrink-0 ${starClass}" style="color: ${starColor}">
           ${starText}
         </button>
-        ${pendingAction
-      ? `
+        ${
+          pendingAction
+            ? `
           <button onclick="window.confirmFavoriteChange('${uId}', event)" class="confirm-fav-btn text-[9px] font-medium px-1.5 py-0.5 rounded transition-all flex-shrink-0 mr-1">
             확인
           </button>
@@ -164,8 +165,8 @@ export function updateRowStaticHTML(rowEl, row) {
             취소
           </button>
         `
-      : ""
-    }
+            : ""
+        }
       </div>
       
       <!-- 2. 티커 이미지 -->
@@ -178,12 +179,12 @@ export function updateRowStaticHTML(rowEl, row) {
         <b class="text-[12px] text-theme-text truncate font-medium tracking-tighter">${row.DisplayTicker || row.Symbol}</b>
         <span class="text-[9px] text-theme-text opacity-60 truncate font-medium tracking-tighter">
           ${(() => {
-      const n =
-        store.lang === "KR"
-          ? row.Name_KR || row.Name || ""
-          : row.Name || "";
-      return n.length > 8 ? n.substring(0, 8) + ".." : n;
-    })()}
+            const n =
+              store.lang === "KR"
+                ? row.Name_KR || row.Name || ""
+                : row.Name || "";
+            return n.length > 8 ? n.substring(0, 8) + ".." : n;
+          })()}
         </span>
       </div>
     </div>
@@ -204,9 +205,9 @@ export function updateRowStaticHTML(rowEl, row) {
     </div>
   </div>
   <div class="p-2 col-vol-u overflow-hidden vol-u-placeholder text-[11px] font-bold text-theme-text text-right">
-    <div class="flex flex-col h-full justify-center items-end leading-tight min-w-0 gap-0.5 text-right w-full">
-      <span class="text-[11px] font-tempTestDss font-bold truncate w-full text-right">-</span>
-      <span class="text-[10px] font-bold mt-0.5 truncate w-full text-right opacity-0">-</span>
+    <div class="flex flex-col h-full justify-center leading-tight min-w-0 gap-0.5 text-right">
+      <span class="text-[11px] font-tempTestDss font-bold truncate">-</span>
+      <span class="text-[10px] font-bold mt-0.5 truncate opacity-0">-</span>
     </div>
   </div>
   <div class="p-2 col-kimch overflow-hidden kimchi-placeholder text-[12px] font-medium text-theme-text">
@@ -219,7 +220,7 @@ export function updateRowStaticHTML(rowEl, row) {
       </div>
     </div>
   </div>
-  <div class="p-2 col-exch overflow-visible exch-placeholder">
+  <div class="p-2 col-exch overflow-hidden exch-placeholder">
     <div class="grid grid-cols-4 content-center h-full gap-[2px] w-fit text-left min-w-0 opacity-0">
       <div class="w-[14px] h-[14px]"></div>
       <div class="w-[14px] h-[14px]"></div>
@@ -235,95 +236,18 @@ export function updateRowStaticHTML(rowEl, row) {
 
   // 🚀 코인 클릭/업데이트 시 순위 번호가 증발하는 현상 원천 방지
   const counterEl = rowEl.querySelector(".row-counter");
-  const targetIdx = parseInt(rowEl.dataset.index);
-  if (counterEl && !isNaN(targetIdx)) {
-    counterEl.textContent = targetIdx + 1;
-  }
-
-  // 🚀 정적 데이터 갱신 시 Trace 기록 트리거 (1번 행일 경우)
-  if (targetIdx === 0 && typeof window.traceMetricCall === "function") {
-    window.traceMetricCall("Ticker");
-    window.traceMetricCall("Name");
-    window.traceMetricCall("Exchanges");
-    window.traceMetricCall("BF");
-  }
-
-  // 🚀 [디버그 추가] 1번 행(index 0)에만 디버그 용도의 callerId 전광판 확장 영역 추가 (store.traceRowCaller 플래그 제어)
-  if (targetIdx === 0 && store.traceRowCaller) {
-    rowEl.style.height = "221px";
-    rowEl.style.maxHeight = "221px";
-
-    // 이미 추가되어 있는지 확인하고 없으면 디버그 영역 삽입
-    let debugArea = rowEl.querySelector(".first-row-debug-area");
-    if (!debugArea) {
-      debugArea = document.createElement("div");
-      debugArea.className = "first-row-debug-area absolute bottom-1 left-[10px] right-2 h-[165px] flex flex-col justify-start border-t border-[#ff0055]/30 text-[9px] text-[#ff0055] font-semibold font-mono z-50 pointer-events-none p-1.5 bg-[#1a050f]/85 rounded-b-md";
-      debugArea.innerHTML = `
-        <div class="flex items-center gap-1.5 border-b border-[#ff0055]/20 pb-1 mb-1 flex-shrink-0">
-          <span class="opacity-80 text-[8px] uppercase text-white bg-[#ff0055] px-1 rounded flex-shrink-0 font-bold">Metrics Call Trace (Index 0 Row)</span>
-          <span class="text-white/40">Realtime Tracker</span>
-        </div>
-        <div class="grid grid-cols-3 gap-x-3 gap-y-1 overflow-y-auto max-h-[140px] pr-1">
-          <div class="flex items-center gap-1"><span class="text-white/60">TICKER:</span> <span class="trace-Ticker text-[#ff0055]">-</span></div>
-          <div class="flex items-center gap-1"><span class="text-white/60">PRICE:</span> <span class="trace-Price text-[#ff0055]">-</span></div>
-          <div class="flex items-center gap-1"><span class="text-white/60">BF:</span> <span class="trace-BF text-[#ff0055]">-</span></div>
-          <div class="flex items-center gap-1"><span class="text-white/60">VOL:</span> <span class="trace-Vol text-[#ff0055]">-</span></div>
-          <div class="flex items-center gap-1"><span class="text-white/60">UVOL:</span> <span class="trace-UVol text-[#ff0055]">-</span></div>
-          <div class="flex items-center gap-1"><span class="text-white/60">KIMCH:</span> <span class="trace-Kimch text-[#ff0055]">-</span></div>
-          <div class="flex items-center gap-1"><span class="text-white/60">EXCH:</span> <span class="trace-Exchanges text-[#ff0055]">-</span></div>
-          <div class="flex items-center gap-1"><span class="text-white/60">NAME:</span> <span class="trace-Name text-[#ff0055]">-</span></div>
-          <div class="flex items-center gap-1"><span class="text-white/60">24H:</span> <span class="trace-24H text-[#ff0055]">-</span></div>
-          <div class="flex items-center gap-1"><span class="text-white/60">TODAY:</span> <span class="trace-Day text-[#ff0055]">-</span></div>
-          <div class="flex items-center gap-1"><span class="text-white/60">MCAP:</span> <span class="trace-Mcap text-[#ff0055]">-</span></div>
-          <div class="flex items-center gap-1"><span class="text-white/60">VMC:</span> <span class="trace-VMC text-[#ff0055]">-</span></div>
-          <div class="flex items-center gap-1"><span class="text-white/60">FUNDING:</span> <span class="trace-Funding text-[#ff0055]">-</span></div>
-        </div>
-      `;
-      rowEl.appendChild(debugArea);
-    }
-  } else {
-    rowEl.style.height = "52px";
-    rowEl.style.maxHeight = "52px";
-    const debugArea = rowEl.querySelector(".first-row-debug-area");
-    if (debugArea) debugArea.remove();
-  }
-
-  // 🚀 전역 메트릭 Trace 로깅 함수 바인딩
-  if (!window.traceMetricCall) {
-    window.traceMetricCall = (metricName) => {
-      if (!store.traceRowCaller) return;
-      const stack = new Error().stack || "";
-      let callerId = "3 (UI/Filter)";
-      if (stack.includes("stream.js") || stack.includes("stream_korea.js") || stack.includes("updateStatus")) {
-        callerId = "1 (Stream)";
-      } else if (stack.includes("chart_utils.js") || stack.includes("chart.js") || stack.includes("chart_data.js")) {
-        callerId = "2 (Chart)";
-      }
-      const debugText = `${callerId}`;
-      const firstRowDebug = document.querySelector('#coin-list-body > div[data-index="0"] .first-row-debug-area');
-      if (firstRowDebug) {
-        const spanEl = firstRowDebug.querySelector(`.trace-${metricName}`);
-        if (spanEl && spanEl.textContent !== debugText) {
-          spanEl.textContent = debugText;
-        }
-      }
-    };
+  if (counterEl && rowEl.dataset.index !== undefined) {
+    counterEl.textContent = parseInt(rowEl.dataset.index) + 1;
   }
 }
 
-export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
-  if (typeof window !== "undefined" && !window.updateRowDynamicHTML) {
-    window.updateRowDynamicHTML = updateRowDynamicHTML;
-  }
-  if (typeof window.syncRowPrioritizedMetrics === "function") {
-    window.syncRowPrioritizedMetrics(row);
-  }
+export function updateRowDynamicHTML(rowEl, row) {
   const tId = row.Ticker;
   const p = row.precision || 2;
   const currentMarket = store.currentMarket || "ALL";
-  const rate = store.marketDataMap?.krw_usd_rate || 0;
   let nPrice = row.Price_Raw ?? 0;
   let n24h = row.Change_24h_Raw ?? 0;
+  0.0;
   if (currentMarket === "UPBIT") {
     nPrice = row.Upbit_Price ?? nPrice;
     n24h = row.Change_24h_Upbit ?? n24h;
@@ -345,44 +269,6 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
       (currentMarket === "SPOT"
         ? row.Change_24h_Binance
         : row.Change_24h_Bybit) ?? n24h;
-  } else if (currentMarket === "ALL" || currentMarket === "KIMCHI" || currentMarket === "NEW") {
-    // 🚀 [추가] ALL 모드에서 가격 우선순위 단일 매칭 독점 바인딩 (바낸 선물 -> 바낸 현물 -> 업비트 -> 빗썸)
-    const hasFutures = row.Binance_Futures === "O" || row.Listed_Exchanges?.includes("BINANCE_FUTURES");
-    const hasSpot = row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE");
-
-    let binanceP = null;
-    let bybitP = null;
-
-    if (hasFutures) {
-      binanceP = row.Binance_Price_Futures ?? row.Binance_Price;
-      bybitP = row.Bybit_Price_Futures ?? row.Bybit_Price;
-    } else if (hasSpot) {
-      binanceP = row.Binance_Price_Spot ?? row.Binance_Price;
-      bybitP = row.Bybit_Price_Spot ?? row.Bybit_Price;
-    }
-
-    const upbitP = row.Upbit_Price || null;
-    const bithumbP = null;
-
-    if (binanceP !== null) {
-      nPrice = binanceP;
-    } else if (bybitP !== null) {
-      nPrice = bybitP;
-    } else if (upbitP !== null) {
-      nPrice = rate > 0 ? upbitP / rate : upbitP;
-    } else {
-      nPrice = row.Ticker?.endsWith("KRW") ? (rate > 0 ? (row.Price_KRW || 0) / rate : (row.Price_KRW || 0)) : (row.Price_Raw || 0);
-    }
-
-    // 🚀 [추가] ALL 모드에서 24h 변동률 우선순위 단일 매칭 독점 바인딩 (바낸 선물 -> 바낸 현물 -> 업비트 -> 빗썸)
-    if (hasFutures) {
-      n24h = row.Change_24h_Futures_Ex ?? n24h;
-    } else if (hasSpot) {
-      n24h = row.Change_24h_Binance ?? n24h;
-    } else {
-      n24h = row.Change_24h_Upbit
-      //  ?? row.Change_24h_Bithumb ?? n24h;
-    }
   }
 
   const formattedPrice = formatSmartPrice(nPrice, p);
@@ -407,18 +293,6 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
       (currentMarket === "SPOT"
         ? row.Change_Today_Binance
         : row.Change_Today_Bybit) ?? nDay;
-  } else if (currentMarket === "ALL" || currentMarket === "KIMCHI" || currentMarket === "NEW") {
-    // 🚀 [추가] ALL 모드에서 오늘(Today) 변동률 우선순위 단일 매칭 독점 바인딩 (바낸 선물 -> 바낸 현물 -> 업비트 -> 빗썸)
-    const hasFutures = row.Binance_Futures === "O" || row.Listed_Exchanges?.includes("BINANCE_FUTURES");
-    const hasSpot = row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE");
-
-    if (hasFutures) {
-      nDay = row.Change_Today_Futures ?? nDay;
-    } else if (hasSpot) {
-      nDay = row.Change_Today_Binance ?? nDay;
-    } else {
-      nDay = row.Change_Today_Upbit ?? nDay;
-    }
   }
   const colorDay =
     nDay > 0
@@ -434,211 +308,165 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
   const priceCell = rowEl.querySelector(".col-price");
   if (priceCell) {
     priceCell.classList.remove("price-placeholder");
-
-    // 구조가 없으면 최초 1회만 innerHTML 생성
-    let container = priceCell.querySelector(".price-container");
-    if (!container) {
-      priceCell.innerHTML = `
-        <div class="price-container flex flex-col leading-tight min-w-0 gap-0.5">
-          <div id="price-${tId}" data-raw-price="0" class="font-medium text-[14px] text-theme-text price-cell tracking-tighter truncate block flex items-center">
-            <span id="price-val-binance-${tId}" class="hidden items-center">
-              <span class="price-num">-</span>
-              <div class="relative inline-flex items-center justify-center w-[12px] h-[12px] rounded-[2px] overflow-hidden bg-white/2 ml-1 align-middle flex-shrink-0">
-                <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/270.png" alt="binance" class="w-full h-full object-contain rounded-[2px]" />
-                <div class="price-futures-badge absolute bottom-[0.5px] right-[0.5px] bg-[#f0b90b] text-black text-[8px] font-black px-[0.5px] rounded-[1px] leading-none z-10 scale-[0.6] origin-bottom-right hidden">F</div>
-              </div>
-            </span>
-            <span id="price-val-bybit-${tId}" class="hidden items-center">
-              <span class="price-num">-</span>
-              <div class="relative inline-flex items-center justify-center w-[12px] h-[12px] rounded-[2px] overflow-hidden bg-white/2 ml-1 align-middle flex-shrink-0">
-                <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/521.png" alt="bybit" class="w-full h-full object-contain rounded-[2px]" />
-                <div class="price-futures-badge absolute bottom-[0.5px] right-[0.5px] bg-[#f0b90b] text-black text-[8px] font-black px-[0.5px] rounded-[1px] leading-none z-10 scale-[0.6] origin-bottom-right hidden">F</div>
-              </div>
-            </span>
-            <span id="price-val-upbit-${tId}" class="hidden items-center">
-              <span class="price-num">-</span>
-              <div class="relative inline-flex items-center justify-center w-[12px] h-[12px] rounded-[2px] overflow-hidden bg-white/2 ml-1 align-middle flex-shrink-0">
-                <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/351.png" alt="upbit" class="w-full h-full object-contain rounded-[2px]" />
-              </div>
-            </span>
-            <span id="price-val-bithumb-${tId}" class="hidden items-center">
-              <span class="price-num">-</span>
-              <div class="relative inline-flex items-center justify-center w-[12px] h-[12px] rounded-[2px] overflow-hidden bg-white/2 ml-1 align-middle flex-shrink-0">
-                <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/200.png" alt="bithumb" class="w-full h-full object-contain rounded-[2px]" />
-              </div>
-            </span>
-          </div>
-          <div class="flex items-center justify-between gap-1 text-[10px] font-medium text-left mt-0.5 w-full min-w-0">
-            <span id="change-${tId}" class="whitespace-nowrap flex-shrink-0">-</span>
-            <span id="today-${tId}" class="whitespace-nowrap flex-shrink-0">-</span>
-          </div>
+    priceCell.innerHTML = `
+      <div class="flex flex-col leading-tight min-w-0 gap-0.5">
+        <div id="price-${tId}" data-raw-price="0" class="font-medium text-[14px] text-theme-text price-cell tracking-tighter truncate block flex items-center">
+          <span id="price-val-binance-${tId}" class="hidden items-center">
+            <span class="price-num">-</span>
+            <div class="relative inline-flex items-center justify-center w-[12px] h-[12px] rounded-[2px] overflow-visible bg-white/2 ml-1 align-middle flex-shrink-0">
+              <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/270.png" alt="binance" class="w-full h-full object-contain rounded-[2px]" />
+              <div class="price-futures-badge absolute -top-1.5 -right-1.5 bg-[#f0b90b] text-black text-[8px] font-medium px-[2px] rounded-[2px] leading-none z-10 scale-75 hidden">F</div>
+            </div>
+          </span>
+          <span id="price-val-bybit-${tId}" class="hidden items-center">
+            <span class="price-num">-</span>
+            <div class="relative inline-flex items-center justify-center w-[12px] h-[12px] rounded-[2px] overflow-visible bg-white/2 ml-1 align-middle flex-shrink-0">
+              <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/521.png" alt="bybit" class="w-full h-full object-contain rounded-[2px]" />
+              <div class="price-futures-badge absolute -top-1.5 -right-1.5 bg-[#f0b90b] text-black text-[8px] font-medium px-[2px] rounded-[2px] leading-none z-10 scale-75 hidden">F</div>
+            </div>
+          </span>
+          <span id="price-val-upbit-${tId}" class="hidden items-center">
+            <span class="price-num">-</span>
+            <div class="relative inline-flex items-center justify-center w-[12px] h-[12px] rounded-[2px] overflow-visible bg-white/2 ml-1 align-middle flex-shrink-0">
+              <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/351.png" alt="upbit" class="w-full h-full object-contain rounded-[2px]" />
+              <div class="price-futures-badge absolute -top-1.5 -right-1.5 bg-[#f0b90b] text-black text-[8px] font-medium px-[2px] rounded-[2px] leading-none z-10 scale-75 hidden">F</div>
+            </div>
+          </span>
+          <span id="price-val-bithumb-${tId}" class="hidden items-center">
+            <span class="price-num">-</span>
+            <div class="relative inline-flex items-center justify-center w-[12px] h-[12px] rounded-[2px] overflow-visible bg-white/2 ml-1 align-middle flex-shrink-0">
+              <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/200.png" alt="bithumb" class="w-full h-full object-contain rounded-[2px]" />
+              <div class="price-futures-badge absolute -top-1.5 -right-1.5 bg-[#f0b90b] text-black text-[8px] font-medium px-[2px] rounded-[2px] leading-none z-10 scale-75 hidden">F</div>
+            </div>
+          </span>
         </div>
-      `;
-      container = priceCell.querySelector(".price-container");
-    }
+        <div class="flex items-center justify-between gap-1 text-[10px] font-medium text-left mt-0.5 w-full min-w-0">
+          ${(() => {
+            const chgText = `${n24h > 0 ? "+" : ""}${Number(n24h).toFixed(2)}%`;
+            const todayText = `${nDay > 0 ? "+" : ""}${Number(nDay).toFixed(2)}%`;
 
-    // Direct textContent 및 클래스 갱신 (리플로우 방지)
-    const chgText = `${n24h > 0 ? "+" : ""}${Number(n24h).toFixed(2)}%`;
-    const todayText = `${nDay > 0 ? "+" : ""}${Number(nDay).toFixed(2)}%`;
+            // 🚀 세자리/네자리 폭등락 대응: 글자 수가 7글자(예: +123.45%)를 넘으면 폰트 크기를 동적으로 축소
+            const chgFontSize =
+              chgText.length > 7 ? "text-[9px]" : "text-[10px]";
+            const todayFontSize =
+              todayText.length > 7 ? "text-[9px]" : "text-[10px]";
 
-    const changeEl = container.querySelector(`#change-${tId}`);
-    if (changeEl) {
-      changeEl.textContent = chgText;
-      changeEl.className = `${color24h} ${chgText.length > 7 ? "text-[9px]" : "text-[10px]"} whitespace-nowrap flex-shrink-0`;
-    }
-
-    const todayEl = container.querySelector(`#today-${tId}`);
-    if (todayEl) {
-      todayEl.textContent = todayText;
-      todayEl.className = `${colorDay} ${todayText.length > 7 ? "text-[9px]" : "text-[10px]"} whitespace-nowrap flex-shrink-0`;
-    }
+            return `
+              <span id="change-${tId}" class="${color24h} ${chgFontSize} whitespace-nowrap flex-shrink-0">${chgText}</span>
+              <span id="today-${tId}" class="${colorDay} ${todayFontSize} whitespace-nowrap flex-shrink-0">${todayText}</span>
+            `;
+          })()}
+        </div>
+      </div>
+    `;
   }
 
   // 🚀 바이낸스 볼륨/시총 렌더링
   const volBCell = rowEl.querySelector(".col-vol-b");
   if (volBCell) {
-    volBCell.classList.remove("vol-b-placeholder");
-
-    let container = volBCell.querySelector(".vol-b-container");
-    if (!container) {
-      volBCell.innerHTML = `
-        <div class="vol-b-container flex flex-col h-full justify-center leading-tight min-w-0 gap-0.5">
-          <span id="vol-binance-${tId}" class="text-[#f0b90b] text-[11px] font-tempTestDss font-bold truncate"></span>
-          <span id="mcap-${tId}" class="text-[10px] font-bold opacity-60 text-left mt-0.5 truncate"></span>
-        </div>
-      `;
-      container = volBCell.querySelector(".vol-b-container");
+    const volBText =
+      row.Volume_Formatted &&
+      row.Volume_Formatted !== "-" &&
+      row.Volume_Formatted !== "0"
+        ? row.Volume_Formatted
+        : "-";
+    let volBStyle = "";
+    const fs = CONFIG.FONT_SCALE;
+    if (fs && volBText.length > fs.VOL_THRESHOLD) {
+      const size = Math.max(
+        fs.VOL_MIN_SIZE,
+        fs.VOL_BASE_SIZE -
+          (volBText.length - fs.VOL_THRESHOLD) * fs.VOL_REDUCE_STEP,
+      );
+      volBStyle = `style="font-size: ${size}px;"`;
     }
 
-    const volBText = (row.Volume_Formatted && row.Volume_Formatted !== "-" && row.Volume_Formatted !== "0") ? row.Volume_Formatted : "-";
     const mcapText = row.MarketCap_Formatted || "-";
-
-    const volBEl = container.querySelector(`#vol-binance-${tId}`);
-    if (volBEl) {
-      volBEl.textContent = volBText;
-      const fs = CONFIG.FONT_SCALE;
-      if (fs && volBText.length > fs.VOL_THRESHOLD) {
-        const size = Math.max(fs.VOL_MIN_SIZE, fs.VOL_BASE_SIZE - (volBText.length - fs.VOL_THRESHOLD) * fs.VOL_REDUCE_STEP);
-        volBEl.style.fontSize = `${size}px`;
-      } else {
-        volBEl.style.fontSize = "";
-      }
+    let mcapStyle = "";
+    if (fs && mcapText.length > fs.MCAP_THRESHOLD) {
+      const size = Math.max(
+        fs.MCAP_MIN_SIZE,
+        fs.MCAP_BASE_SIZE -
+          (mcapText.length - fs.MCAP_THRESHOLD) * fs.MCAP_REDUCE_STEP,
+      );
+      mcapStyle = `style="font-size: ${size}px;"`;
     }
 
-    const mcapEl = container.querySelector(`#mcap-${tId}`);
-    if (mcapEl) {
-      mcapEl.textContent = mcapText;
-      const fs = CONFIG.FONT_SCALE;
-      if (fs && mcapText.length > fs.MCAP_THRESHOLD) {
-        const size = Math.max(fs.MCAP_MIN_SIZE, fs.MCAP_BASE_SIZE - (mcapText.length - fs.MCAP_THRESHOLD) * fs.MCAP_REDUCE_STEP);
-        mcapEl.style.fontSize = `${size}px`;
-      } else {
-        mcapEl.style.fontSize = "";
-      }
-    }
+    volBCell.classList.remove("vol-b-placeholder");
+    volBCell.innerHTML = `
+      <div class="flex flex-col h-full justify-center leading-tight min-w-0 gap-0.5">
+        <span id="vol-binance-${tId}" class="text-[#f0b90b] text-[11px] font-tempTestDss font-bold truncate" ${volBStyle}>${volBText}</span>
+        <span id="mcap-${tId}" class="text-[10px] font-bold opacity-60 text-left mt-0.5 truncate" ${mcapStyle}>${mcapText}</span>
+      </div>
+    `;
   }
 
   // 🚀 업비트 볼륨/VMC 렌더링
   const volUCell = rowEl.querySelector(".col-vol-u");
   if (volUCell) {
+    const volUText =
+      row.Upbit_Vol_Formatted &&
+      row.Upbit_Vol_Formatted !== "-" &&
+      row.Upbit_Vol_Formatted !== "0"
+        ? row.Upbit_Vol_Formatted
+        : "-";
+    let volUStyle = "";
+    const fs = CONFIG.FONT_SCALE;
+    if (fs && volUText.length > fs.VOL_THRESHOLD) {
+      const size = Math.max(
+        fs.VOL_MIN_SIZE,
+        fs.VOL_BASE_SIZE -
+          (volUText.length - fs.VOL_THRESHOLD) * fs.VOL_REDUCE_STEP,
+      );
+      volUStyle = `style="font-size: ${size}px;"`;
+    }
+
+    let vmcStyle = "";
+    if (fs && vmcFormatted.length > fs.VMC_THRESHOLD) {
+      const size = Math.max(
+        fs.VMC_MIN_SIZE,
+        fs.VMC_BASE_SIZE -
+          (vmcFormatted.length - fs.VMC_THRESHOLD) * fs.VMC_REDUCE_STEP,
+      );
+      vmcStyle = `style="font-size: ${size}px;"`;
+    }
+
     volUCell.classList.remove("vol-u-placeholder");
-
-    let container = volUCell.querySelector(".vol-u-container");
-    if (!container) {
-      volUCell.innerHTML = `
-        <div class="vol-u-container flex flex-col h-full justify-center items-end leading-tight min-w-0 gap-0.5 text-right w-full">
-          <span id="vol-upbit-${tId}" class="text-[#093687] text-[11px] font-tempTestDss font-bold truncate w-full text-right"></span>
-          <span id="vmc-${tId}" class="text-[10px] font-bold opacity-60 mt-0.5 truncate w-full text-right ${vmcColorClass}"></span>
-        </div>
-      `;
-      container = volUCell.querySelector(".vol-u-container");
-    }
-
-    const volUText = (row.Upbit_Vol_Formatted && row.Upbit_Vol_Formatted !== "-" && row.Upbit_Vol_Formatted !== "0") ? row.Upbit_Vol_Formatted : "-";
-
-    const volUEl = container.querySelector(`#vol-upbit-${tId}`);
-    if (volUEl) {
-      volUEl.textContent = volUText;
-      const fs = CONFIG.FONT_SCALE;
-      if (fs && volUText.length > fs.VOL_THRESHOLD) {
-        const size = Math.max(fs.VOL_MIN_SIZE, fs.VOL_BASE_SIZE - (volUText.length - fs.VOL_THRESHOLD) * fs.VOL_REDUCE_STEP);
-        volUEl.style.fontSize = `${size}px`;
-      } else {
-        volUEl.style.fontSize = "";
-      }
-    }
-
-    const vmcEl = container.querySelector(`#vmc-${tId}`);
-    if (vmcEl) {
-      vmcEl.textContent = vmcFormatted;
-      const fs = CONFIG.FONT_SCALE;
-      if (fs && vmcFormatted.length > fs.VMC_THRESHOLD) {
-        const size = Math.max(fs.VMC_MIN_SIZE, fs.VMC_BASE_SIZE - (vmcFormatted.length - fs.VMC_THRESHOLD) * fs.VMC_REDUCE_STEP);
-        vmcEl.style.fontSize = `${size}px`;
-      } else {
-        vmcEl.style.fontSize = "";
-      }
-    }
+    volUCell.innerHTML = `
+      <div class="flex flex-col h-full justify-center leading-tight min-w-0 gap-0.5 text-right">
+        <span id="vol-upbit-${tId}" class="text-[#093687] text-[11px] font-tempTestDss font-bold truncate" ${volUStyle}>${volUText}</span>
+        <span id="vmc-${tId}" class="text-[10px] font-bold opacity-60 mt-0.5 truncate ${vmcColorClass}" ${vmcStyle}>${vmcFormatted}</span>
+      </div>
+    `;
   }
 
   // 🚀 김프/펀딩비 렌더링
   const kimchiCell = rowEl.querySelector(".col-kimch");
   if (kimchiCell) {
     kimchiCell.classList.remove("kimchi-placeholder");
-
-    let container = kimchiCell.querySelector(".kimchi-container");
-    if (!container) {
-      kimchiCell.innerHTML = `
-        <div class="kimchi-container flex flex-col h-full justify-center leading-tight items-start min-w-0">
-          <div class="flex items-center justify-start gap-1 min-w-0 max-w-full">
-            <span class="kimchi-pct text-[12px] font-medium truncate">-</span>
-          </div>
-          <div class="flex items-center justify-start gap-2 text-[10px] font-medium mt-0.5 min-w-0 max-w-full">
-             <span class="funding-val text-theme-accent opacity-70 truncate">-</span>
-          </div>
+    kimchiCell.innerHTML = `
+      <div class="flex flex-col h-full justify-center leading-tight items-start min-w-0">
+        <div class="flex items-center justify-start gap-1 min-w-0 max-w-full">
+           ${
+             !row.Kimchi_Label || row.Kimchi_Label === "-"
+               ? `<span class="text-[12px] font-medium text-theme-text opacity-40">-</span>`
+               : `<span class="text-[12px] font-medium truncate ${row.Kimchi_Raw > 0 ? "text-theme-up" : "text-theme-down"}">${row.Kimchi_Formatted || "0.0%"}</span>`
+           }
         </div>
-      `;
-      container = kimchiCell.querySelector(".kimchi-container");
-    }
-
-    const kimchiPctEl = container.querySelector(".kimchi-pct");
-    if (kimchiPctEl) {
-      if (!row.Kimchi_Label || row.Kimchi_Label === "-" || !row.Kimchi_Formatted) {
-        kimchiPctEl.textContent = "-";
-        kimchiPctEl.className = "kimchi-pct text-[12px] font-medium text-theme-text opacity-40";
-      } else {
-        kimchiPctEl.textContent = row.Kimchi_Formatted;
-        kimchiPctEl.className = `kimchi-pct text-[12px] font-medium truncate ${row.Kimchi_Raw > 0 ? "text-theme-up" : "text-theme-down"}`;
-      }
-    }
-
-    const fundingEl = container.querySelector(".funding-val");
-    if (fundingEl) {
-      fundingEl.textContent = row.Funding_Formatted || "-";
-    }
-  }
-
-  // 🚀 [경량 렌더링 최적화 분기]
-  // lightweight=true 일 때, 렉을 유발하는 거래소 뱃지 갱신/상장일 빌드 단계를 스킵
-  // 가격과 김프 등락률만 다이렉트 텍스트 갱신 후 즉각 탈출하여 GPU/CPU 점유율 극단적 단축!
-  if (lightweight) {
-    if (typeof window.updateRowPriceDisplay === "function") {
-      window.updateRowPriceDisplay(rowEl, row);
-    }
-    rowEl.dataset.metricsRendered = "true";
-    return;
+        <div class="flex items-center justify-start gap-2 text-[10px] font-medium mt-0.5 min-w-0 max-w-full">
+           <span class="text-theme-accent opacity-70 truncate">${row.Funding_Formatted || "-"}</span>
+        </div>
+      </div>
+    `;
   }
 
   // 🚀 상장 거래소 그리드 렌더링 (그레이스케일 필터 연산)
   const exchCell = rowEl.querySelector(".col-exch");
   if (exchCell) {
     exchCell.classList.remove("exch-placeholder");
-
-    // exchCell은 변경 빈도가 극히 낮으므로 innerHTML이 없을 때만 1회 빌드
-    if (!exchCell.querySelector(".exch-grid-trigger")) {
-      exchCell.innerHTML = `
-        <div class="grid grid-cols-4 content-center h-full gap-[2px] w-fit text-left min-w-0 cursor-pointer exch-grid-trigger">
-          ${(() => {
+    exchCell.innerHTML = `
+      <div class="grid grid-cols-4 content-center h-full gap-[2px] w-fit text-left min-w-0">
+        ${(() => {
           const exchanges = row.Listed_Exchanges || [];
           const list = [
             { id: "BINANCE", cmcId: 270 },
@@ -656,31 +484,22 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
                 exchanges.some((e) => e.includes(ex.id)) ||
                 (ex.id === "UPBIT" && row.Upbit === "O");
               const isFutures = exchanges.includes(`${ex.id}_FUTURES`);
-              const isSpot = exchanges.includes(ex.id) || (ex.id === "UPBIT" && row.Upbit === "O");
-
-              let badgeHtml = "";
-              if (isListed && (isFutures || isSpot)) {
-                badgeHtml = `
-                  <div class="absolute bottom-0 right-0 flex items-center gap-[0.5px] z-10 scale-[0.55] origin-bottom-right">
-                    ${isSpot ? `<div class="badge-spot bg-[#0ecb81]/90 text-white text-[9px] font-black px-[1px] rounded-[1px] leading-none">S</div>` : ""}
-                    ${isFutures ? `<div class="badge-futures bg-[#f0b90b]/90 text-black text-[9px] font-black px-[1px] rounded-[1px] leading-none">F</div>` : ""}
-                  </div>
-                `;
-              }
+              const badgeHtml = isFutures
+                ? `<div class="absolute -top-1.5 -right-1.5 bg-[#f0b90b] text-black text-[8px] font-medium px-[2px] rounded-[2px] leading-none z-10 scale-[0.65]">F</div>`
+                : "";
               const imgUrl = `https://s2.coinmarketcap.com/static/img/exchanges/64x64/${ex.cmcId}.png`;
               return `
-                <div class="relative w-[14px] h-[14px] flex items-center justify-center rounded-[2px] overflow-hidden bg-white/5 transition-all flex-shrink-0"
-                     style="${isListed ? "filter: none; opacity: 1;" : "filter: grayscale(1); opacity: 0.1;"}">
-                  <img src="${imgUrl}" alt="${ex.id}" class="w-full h-full object-contain rounded-[2px]" />
-                  ${badgeHtml}
-                </div>
-              `;
+              <div class="relative w-[14px] h-[14px] flex items-center justify-center rounded-[2px] overflow-visible bg-white/5 transition-all flex-shrink-0"
+                   style="${isListed ? "filter: none; opacity: 1;" : "filter: grayscale(1); opacity: 0.1;"}">
+                <img src="${imgUrl}" alt="${ex.id}" class="w-full h-full object-contain rounded-[2px]" />
+                ${isListed ? badgeHtml : ""}
+              </div>
+            `;
             })
             .join("");
         })()}
-        </div>
-      `;
-    }
+      </div>
+    `;
   }
 
   // 🚀 상장일 렌더링
@@ -698,20 +517,6 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
 
   window.updateRowPriceDisplay(rowEl, row);
   rowEl.dataset.metricsRendered = "true";
-
-  // 🚀 동적 데이터 갱신 시 Trace 기록 트리거 (1번 행일 경우)
-  const targetIdx = parseInt(rowEl.dataset.index);
-  if (targetIdx === 0 && typeof window.traceMetricCall === "function") {
-    window.traceMetricCall("Price");
-    window.traceMetricCall("Vol");
-    window.traceMetricCall("UVol");
-    window.traceMetricCall("Kimch");
-    window.traceMetricCall("24H");
-    window.traceMetricCall("Day");
-    window.traceMetricCall("Mcap");
-    window.traceMetricCall("VMC");
-    window.traceMetricCall("Funding");
-  }
 }
 
 export function updateRowInnerHTML(rowEl, row) {
@@ -770,16 +575,6 @@ export function renderTable(isRealtime = false) {
         store.visibleSymbols.add(filteredData[i].Ticker);
       }
     }
-    // 🚀 선택된 코인도 무조건 실시간 구독 대상 유지
-    if (store.currentSelectedSymbol) {
-      store.visibleSymbols.add(store.currentSelectedSymbol);
-    }
-    // 🚀 화면 내 관찰 중인 심볼들도 즉시 복구
-    if (store.intersectingSymbols) {
-      store.intersectingSymbols.forEach((sym) => {
-        store.visibleSymbols.add(sym);
-      });
-    }
   }
 
   // 1. 최초 1회 전체 껍데기 풀(Pool) 생성 (DOM 파괴/생성 원천 차단, 가상화 스크롤 바 확보)
@@ -787,9 +582,6 @@ export function renderTable(isRealtime = false) {
     tbody.innerHTML = "";
     store.rowDomMap = new Map();
     store.visibleSymbols.clear();
-    if (store.intersectingSymbols) {
-      store.intersectingSymbols.clear();
-    }
     store.lastSortedTickers = null; // 🚀 풀 재구성 시 정렬 비교 캐시도 초기화!
 
     if (store.tableObserver) {
@@ -808,9 +600,6 @@ export function renderTable(isRealtime = false) {
           const rowData = store.tickerRowMap.get(sym.toUpperCase());
           if (entry.isIntersecting) {
             if (rowData) {
-              if (store.intersectingSymbols) {
-                store.intersectingSymbols.add(rowData.Ticker);
-              }
               if (!store.visibleSymbols.has(rowData.Ticker)) {
                 store.visibleSymbols.add(rowData.Ticker);
                 changed = true;
@@ -856,9 +645,6 @@ export function renderTable(isRealtime = false) {
             }
           } else {
             if (rowData) {
-              if (store.intersectingSymbols) {
-                store.intersectingSymbols.delete(rowData.Ticker);
-              }
               if (store.visibleSymbols.has(rowData.Ticker)) {
                 store.visibleSymbols.delete(rowData.Ticker);
                 changed = true;
@@ -889,10 +675,10 @@ export function renderTable(isRealtime = false) {
         rowEl.classList.add("flip-row");
       }
       rowEl.dataset.index = i;
-      rowEl.style.height = (i === 0 && store.traceRowCaller) ? "221px" : "52px";
+      rowEl.style.height = "52px"; // 🚀 고정 높이 할당으로 완벽한 800개 스크롤 바 생성!
       rowEl.style.position = "absolute";
-      rowEl.style.transform = `translateY(${(i === 0 || !store.traceRowCaller) ? i * 52 : 221 + (i - 1) * 52}px)`;
-      rowEl.style.contain = "content";
+      rowEl.style.transform = `translateY(${i * 52}px)`;
+      rowEl.style.contain = "content"; // 🚀 브라우저 렌더링 격리 최적화!
 
       const rowData = filteredData[i];
       if (rowData) {
@@ -922,7 +708,7 @@ export function renderTable(isRealtime = false) {
       store.tableObserver.observe(rowEl);
       fragment.appendChild(rowEl);
     }
-    tbody.style.height = `${store.traceRowCaller ? 221 + (totalCount - 1) * 52 : totalCount * 52}px`;
+    tbody.style.height = `${totalCount * 52}px`;
     tbody.appendChild(fragment);
     store.tablePoolInitialized = true;
     updateBoundaryClass(tbody);
@@ -935,15 +721,7 @@ export function renderTable(isRealtime = false) {
 
   // 2. 이미 풀이 생성되어 있다면? (물리적 DOM 추가/삭제 없이 각 코인의 고유 상자 위치를 translateY로 재배치!)
   store.visibleSymbols.clear();
-  if (store.currentSelectedSymbol) {
-    store.visibleSymbols.add(store.currentSelectedSymbol);
-  }
-  if (store.intersectingSymbols) {
-    store.intersectingSymbols.forEach((sym) => {
-      store.visibleSymbols.add(sym);
-    });
-  }
-  tbody.style.height = `${store.traceRowCaller ? 221 + (totalCount - 1) * 52 : totalCount * 52}px`;
+  tbody.style.height = `${totalCount * 52}px`;
 
   for (let i = 0; i < totalCount; i++) {
     const rowData = filteredData[i];
@@ -951,17 +729,11 @@ export function renderTable(isRealtime = false) {
       const rowEl = store.rowDomMap.get(rowData.Ticker);
       if (rowEl) {
         const oldIndex = parseInt(rowEl.dataset.index);
-        // 🚀 실시간 정렬 시 30위 이하(31등~) 코인은 순위 재정렬을 하지 않고 현재 위치에 고정(Fix)시킵니다.
-        // 단, 30위 내에 있다가 밖으로 처음 밀려날 때 1회(31~ 등 최초 도착지)는 배치해준 뒤 고정됩니다.
-        let needsPositionUpdate = !isRealtime || i < 30 || oldIndex < 30 || isNaN(oldIndex) || oldIndex !== i;
-        if (isRealtime && i >= 30 && oldIndex >= 30) {
-          needsPositionUpdate = false;
-        }
+        const needsPositionUpdate = !isRealtime || i < 30 || oldIndex < 30 || isNaN(oldIndex) || oldIndex !== i;
 
         if (needsPositionUpdate) {
           rowEl.dataset.index = i;
-          rowEl.style.height = (i === 0 && store.traceRowCaller) ? "221px" : "52px";
-          rowEl.style.transform = `translateY(${(i === 0 || !store.traceRowCaller) ? i * 52 : 221 + (i - 1) * 52}px)`;
+          rowEl.style.transform = `translateY(${i * 52}px)`;
 
           // 🚀 자바스크립트로 절대 순위 실시간 주입
           const counterEl = rowEl.querySelector(".row-counter");
@@ -1335,85 +1107,81 @@ window.updateRowPriceDisplay = (target, row) => {
   const rate = store.marketDataMap?.krw_usd_rate || 0;
   const isKrwMode = store.currencyMode === "KRW";
   const p = store.getPrecision(row.DisplayTicker || row.Symbol);
-  const currentMarket = store.currentMarket || "ALL";
 
-  const isFuturesOnly = row.Binance === "X" && row.Binance_Futures === "O";
-  let binanceP = null;
-  let bybitP = null;
+  const currentMarket = store.currentMarket || "ALL";
+  let binanceP = row.Binance_Price || null;
+  let bybitP = row.Bybit_Price || null;
 
   if (currentMarket === "FUTURES") {
-    binanceP = row.Binance_Price_Futures ?? row.Binance_Price;
-    bybitP = row.Bybit_Price_Futures ?? row.Bybit_Price;
+    binanceP = row.Binance_Price_Futures ?? binanceP;
+    bybitP = row.Bybit_Price_Futures ?? bybitP;
   } else if (currentMarket === "SPOT") {
-    binanceP = row.Binance_Price_Spot ?? row.Binance_Price;
-    bybitP = row.Bybit_Price_Spot ?? row.Bybit_Price;
+    binanceP = row.Binance_Price_Spot ?? binanceP;
+    bybitP = row.Bybit_Price_Spot ?? bybitP;
   } else if (currentMarket === "BYBIT") {
-    bybitP = row.Bybit_Price_Spot ?? row.Bybit_Price;
-    binanceP = row.Binance_Price_Spot ?? row.Binance_Price;
+    bybitP = row.Bybit_Price_Spot ?? bybitP;
   } else if (currentMarket === "BYBIT_FUTURES") {
-    bybitP = row.Bybit_Price_Futures ?? row.Bybit_Price;
-    binanceP = row.Binance_Price_Futures ?? row.Binance_Price;
-  } else {
-    // ALL, KIMCHI, NEW 등 기본 탭 모드일 때 독점적 전담 바인딩 우선순위 (선물 -> 현물)
-    const hasFutures = row.Binance_Futures === "O" || row.Listed_Exchanges?.includes("BINANCE_FUTURES");
-    const hasSpot = row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE");
-
-    if (hasFutures) {
-      binanceP = row.Binance_Price_Futures ?? row.Binance_Price;
-      bybitP = row.Bybit_Price_Futures ?? row.Bybit_Price;
-    } else if (hasSpot) {
-      binanceP = row.Binance_Price_Spot ?? row.Binance_Price;
-      bybitP = row.Bybit_Price_Spot ?? row.Bybit_Price;
-    } else {
-      binanceP = null;
-      bybitP = null;
-    }
+    bybitP = row.Bybit_Price_Futures ?? bybitP;
   }
 
   const upbitP = row.Upbit_Price || null;
-  const bithumbP = null;
+  const bithumbP = row.Bithumb_Price || null;
 
   let activeExchange = "";
   let displayPrice = 0;
 
   const isKrwCoin = row.Ticker?.endsWith("KRW");
 
-  // 🚀 해외 거래소 가격(Binance, Bybit)을 최우선으로 매칭하여 환율 오염 방지
   if (!isKrwMode) {
-    // 💵 달러(USD) 표시 모드
-    if (binanceP !== null) {
-      activeExchange = "binance";
-      displayPrice = binanceP;
-    } else if (bybitP !== null) {
-      activeExchange = "bybit";
-      displayPrice = bybitP;
-    } else if (upbitP !== null) {
-      activeExchange = "upbit";
-      displayPrice = rate > 0 ? upbitP / rate : upbitP;
-    } else if (bithumbP !== null) {
-      activeExchange = "bithumb";
-      displayPrice = rate > 0 ? bithumbP / rate : bithumbP;
+    if (isKrwCoin) {
+      if (upbitP !== null) {
+        activeExchange = "upbit";
+        displayPrice = upbitP / rate;
+      } else if (bithumbP !== null) {
+        activeExchange = "bithumb";
+        displayPrice = bithumbP / rate;
+      } else if (binanceP !== null) {
+        activeExchange = "binance";
+        displayPrice = binanceP;
+      } else {
+        activeExchange = "upbit";
+        displayPrice = (row.Price_KRW || 0) / rate;
+      }
     } else {
-      activeExchange = isKrwCoin ? "upbit" : "binance";
-      displayPrice = isKrwCoin ? (rate > 0 ? (row.Price_KRW || 0) / rate : (row.Price_KRW || 0)) : (row.Price_Raw || 0);
+      if (binanceP !== null) {
+        activeExchange = "binance";
+        displayPrice = binanceP;
+      } else if (bybitP !== null) {
+        activeExchange = "bybit";
+        displayPrice = bybitP;
+      } else {
+        activeExchange = "binance";
+        displayPrice = row.Price_Raw || 0;
+      }
     }
   } else {
-    // ₩ 원화(KRW) 표시 모드
-    if (upbitP !== null) {
-      activeExchange = "upbit";
-      displayPrice = upbitP;
-    } else if (bithumbP !== null) {
-      activeExchange = "bithumb";
-      displayPrice = bithumbP;
-    } else if (binanceP !== null) {
-      activeExchange = "binance";
-      displayPrice = binanceP * rate;
-    } else if (bybitP !== null) {
-      activeExchange = "bybit";
-      displayPrice = bybitP * rate;
+    if (isKrwCoin) {
+      if (upbitP !== null) {
+        activeExchange = "upbit";
+        displayPrice = upbitP;
+      } else if (bithumbP !== null) {
+        activeExchange = "bithumb";
+        displayPrice = bithumbP;
+      } else {
+        activeExchange = "upbit";
+        displayPrice = row.Price_KRW || 0;
+      }
     } else {
-      activeExchange = isKrwCoin ? "upbit" : "binance";
-      displayPrice = isKrwCoin ? (row.Price_KRW || 0) : (row.Price_Raw || 0) * rate;
+      if (binanceP !== null) {
+        activeExchange = "binance";
+        displayPrice = binanceP * rate;
+      } else if (bybitP !== null) {
+        activeExchange = "bybit";
+        displayPrice = bybitP * rate;
+      } else {
+        activeExchange = "upbit";
+        displayPrice = row.Price_KRW || 0;
+      }
     }
   }
 
@@ -1453,7 +1221,7 @@ window.updateRowPriceDisplay = (target, row) => {
         const sizePx = Math.max(
           fs.PRICE_MIN_SIZE,
           fs.PRICE_BASE_SIZE -
-          (len - fs.PRICE_THRESHOLD) * fs.PRICE_REDUCE_STEP,
+            (len - fs.PRICE_THRESHOLD) * fs.PRICE_REDUCE_STEP,
         );
         parentEl.style.fontSize = `${sizePx}px`;
       } else {
@@ -1486,176 +1254,4 @@ window.updateRowPriceDisplay = (target, row) => {
 
   parentEl.setAttribute("data-raw-price", displayPrice);
   parentEl.setAttribute("data-active-exchange", activeExchange);
-
-  // 🚀 가격 수치 갱신 시 Trace 기록 트리거 (1번 행일 경우)
-  if (target instanceof HTMLElement) {
-    const targetIdx = parseInt(target.dataset.index);
-    if (targetIdx === 0 && typeof window.traceMetricCall === "function") {
-      window.traceMetricCall("Price");
-    }
-  } else {
-    // target이 지정되지 않았을 때 DOM에서 첫 번째 행을 조회하여 매칭하는 방어 코드
-    const firstRow = document.querySelector('#coin-list-body > div[data-index="0"]');
-    if (firstRow && firstRow.dataset.sym === tId && typeof window.traceMetricCall === "function") {
-      window.traceMetricCall("Price");
-    }
-  }
 };
-
-// 🚀 [신규] Web Popover API 기반 초간단 3배 확대 프리뷰 전역 팝오버 탑재
-if (typeof window !== "undefined") {
-  document.addEventListener("DOMContentLoaded", () => {
-    let popoverEl = document.getElementById("global-exch-popover");
-    if (!popoverEl) {
-      popoverEl = document.createElement("div");
-      popoverEl.id = "global-exch-popover";
-      popoverEl.setAttribute("popover", "manual");
-      popoverEl.style.position = "fixed";
-      popoverEl.style.margin = "0";
-      popoverEl.style.padding = "6px";
-      popoverEl.style.border = "1px solid rgba(255, 255, 255, 0.15)";
-      popoverEl.style.background = "rgba(10, 10, 10, 0.96)";
-      popoverEl.style.borderRadius = "6px";
-      popoverEl.style.boxShadow = "0 20px 40px rgba(0, 0, 0, 0.85)";
-      popoverEl.style.pointerEvents = "none"; // 호버 중복 간섭 및 깜빡임 방지
-      popoverEl.style.zIndex = "999999";
-      popoverEl.style.opacity = "0";
-      popoverEl.style.transform = "scale(0.9)";
-      popoverEl.style.transition = "opacity 0.15s ease, transform 0.15s ease";
-      document.body.appendChild(popoverEl);
-    }
-
-    let fadeOutTimeout = null;
-    let hideTimeout = null;
-
-    const bodyContainer = document.getElementById("coin-list-body");
-    if (bodyContainer) {
-      bodyContainer.addEventListener("mouseover", (e) => {
-        const grid = e.target.closest(".exch-grid-trigger");
-        if (grid) {
-          if (fadeOutTimeout) clearTimeout(fadeOutTimeout);
-          if (hideTimeout) clearTimeout(hideTimeout);
-
-          const isLightMode = document.body.classList.contains("theme-upbit");
-          if (isLightMode) {
-            popoverEl.style.background = "rgba(255, 255, 255, 0.98)";
-            popoverEl.style.border = "1px solid rgba(0, 0, 0, 0.12)";
-            popoverEl.style.boxShadow = "0 20px 40px rgba(0, 0, 0, 0.12)";
-          } else {
-            popoverEl.style.background = "rgba(10, 10, 10, 0.96)";
-            popoverEl.style.border = "1px solid rgba(255, 255, 255, 0.15)";
-            popoverEl.style.boxShadow = "0 20px 40px rgba(0, 0, 0, 0.85)";
-          }
-
-          // 🚀 [디자인 엔진] 단 한 줄로 제어하는 팝오버 배율 변수 (기본 3.0배)
-          const scale = 2.5;
-          const baseIconSize = 16; // 원래 아이콘 크기인 16px 기준
-
-          const iconSize = baseIconSize * scale; // 예: 3.0배면 48px
-          const cellHeight = iconSize + (12 * scale); // 뱃지 영역 포함 높이
-          const cellGap = 4;
-          const popPadding = 6;
-
-          const rect = grid.getBoundingClientRect();
-          popoverEl.innerHTML = "";
-
-          // 1. 상장 거래소 그리드 생성
-          const gridWrapper = document.createElement("div");
-          gridWrapper.style.display = "grid";
-          gridWrapper.style.gridTemplateColumns = "repeat(4, minmax(0, 1fr))";
-          gridWrapper.style.gap = `${cellGap}px`;
-          gridWrapper.innerHTML = grid.innerHTML;
-          popoverEl.appendChild(gridWrapper);
-
-          // 2. 하단 주의 문구 생성
-          const warnEl = document.createElement("div");
-          warnEl.style.textAlign = "center";
-          warnEl.style.fontSize = `${Math.max(8, 3 * scale)}px`;
-          warnEl.style.fontWeight = "500";
-          warnEl.style.letterSpacing = "-0.025em";
-          warnEl.style.marginTop = `${6 * scale}px`;
-          warnEl.style.opacity = "0.6";
-          warnEl.style.color = isLightMode ? "#333333" : "#d2d2d2";
-          warnEl.innerText = "* 실시간 상장 정보와 다를 수 있습니다";
-          popoverEl.appendChild(warnEl);
-
-          // 개별 아이콘 및 뱃지 동적 크기 계산 적용
-          gridWrapper.querySelectorAll(".relative").forEach(el => {
-            el.style.width = `${iconSize}px`;
-            el.style.height = `${cellHeight}px`;
-            el.style.overflow = "visible";
-
-            const img = el.querySelector("img");
-            if (img) {
-              img.style.position = "absolute";
-              img.style.top = "0";
-              img.style.left = "0";
-              img.style.width = `${iconSize}px`;
-              img.style.height = `${iconSize}px`;
-            }
-
-            const badge = el.querySelector(".absolute");
-            if (badge) {
-              badge.style.transform = "none";
-              badge.className = `absolute left-0 right-0 flex flex-col justify-start items-center w-full z-10`;
-              badge.style.top = `${iconSize + 2}px`;
-              badge.style.gap = `${1 * scale}px`;
-
-              const sEl = badge.querySelector(".badge-spot");
-              if (sEl) {
-                sEl.innerText = "SPOT";
-                sEl.className = "bg-[#0ecb81] text-black font-black leading-none tracking-tight rounded-[1px]";
-                sEl.style.fontSize = `${3.1 * scale}px`;
-                sEl.style.padding = `${1 * scale}px ${1.2 * scale}px`;
-              }
-
-              const fEl = badge.querySelector(".badge-futures");
-              if (fEl) {
-                fEl.innerText = "FUTURES";
-                fEl.className = "bg-[#f0b90b] text-black font-black leading-none tracking-tight rounded-[1px]";
-                fEl.style.fontSize = `${3.1 * scale}px`;
-                fEl.style.padding = `${1 * scale}px ${1.2 * scale}px`;
-              }
-            }
-          });
-
-          // 팝오버 총 크기 및 오프셋 동적 정밀 산출
-          const popWidth = (iconSize * 4) + (cellGap * 3) + (popPadding * 2);
-          const popHeight = (cellHeight * 2) + (cellGap * 1) + (popPadding * 2) + (14 * scale);
-
-          popoverEl.style.top = `${rect.top + rect.height / 2 - popHeight / 2}px`;
-          popoverEl.style.left = `${rect.right + 12}px`; // 🚀 우측 배치
-
-          try {
-            popoverEl.showPopover();
-            // 자연스러운 페이드인 트랜지션 작동
-            requestAnimationFrame(() => {
-              popoverEl.style.opacity = "1";
-              popoverEl.style.transform = "scale(1)";
-            });
-          } catch (err) { }
-        }
-      });
-
-      bodyContainer.addEventListener("mouseout", (e) => {
-        const grid = e.target.closest(".exch-grid-trigger");
-        if (grid) {
-          if (fadeOutTimeout) clearTimeout(fadeOutTimeout);
-          if (hideTimeout) clearTimeout(hideTimeout);
-
-          fadeOutTimeout = setTimeout(() => {
-            popoverEl.style.opacity = "0";
-            popoverEl.style.transform = "scale(0.9)";
-
-            hideTimeout = setTimeout(() => {
-              try {
-                popoverEl.hidePopover();
-              } catch (err) { }
-            }, 150); // 페이드아웃 트랜지션 시간 대기
-          }, 50); // 호버 이탈 시 즉각적인 깜빡임 보정을 위한 딜레이
-        }
-      });
-    }
-  });
-}
-

@@ -79,15 +79,15 @@ export async function initQuickView() {
     }
   });
 
+  const pageIndicator = document.getElementById("qv-page-indicator");
+  if (pageIndicator)
+    pageIndicator.innerText = `PAGE ${qvState.page} / ${qvState.maxPage}`;
+
   // 레이아웃 토글 슬라이더 UI 동기화
   updateLayoutToggleUI(qvState.layout);
 
   // 1. 상태에 맞는 코인 8개 슬라이싱
   resolveTopAssets();
-
-  const pageIndicator = document.getElementById("qv-page-indicator");
-  if (pageIndicator)
-    pageIndicator.innerText = `PAGE ${qvState.page} / ${qvState.maxPage}`;
 
   // 2. 퀵뷰 UI 컨트롤러 및 차트 재생성
   await rebuildQuickViewCharts();
@@ -145,7 +145,7 @@ export function destroyQuickView() {
 // 📊 상위 32개 정렬 자산 중 현재 페이지 8개 추출
 function resolveTopAssets() {
   // store의 테이블 원본 데이터를 클론하여 정렬 진행
-  let source = [...(store.currentTableData || store.originalTableData || [])];
+  let source = [...(store.originalTableData || store.currentTableData || [])];
 
   // 🚀 즐겨찾기(FAV) 전용 모드인 경우 필터링 적용
   if (qvState.baseTarget === "FAV") {

@@ -6,7 +6,6 @@ export const store = {
   tickerBuffer: {},
   tickerCache: {},
   visibleSymbols: new Set(),
-  intersectingSymbols: new Set(),
   btcRateCache: {}, // 🚀 합성 환율 전용 메모리 캐시 엔진 추가
   tickerRowMap: new Map(), // 🚀 [단일 진실 공급원] 전역 테이블 행 O(1) 광속 탐색 맵
 
@@ -60,8 +59,6 @@ export const store = {
   candleSeries: null,
   previewSeries: null,
   volumeSeries: null,
-  savedZoomWidth: null, // 🚀 [UX 개선] 사용자가 스크롤/줌을 통해 설정한 캔들 개수(가로폭) 저장용
-  savedPriceScaleWidth: null, // 🚀 [UX 개선] 우측 가격 축의 실시간 너비 저장용 (멀티 뷰포트 정밀 동기화용)
   kimchiSeries: null,
   chartVol: null,
   chartKimchi: null,
@@ -97,34 +94,11 @@ export const store = {
   blockChartResize: false, // 🚀 차트 리사이즈 동기화 차단 여부
   blockTableTabScroll: false, // 🚀 테이블 스크롤/탭 갱신 차단 여부
   blockRadarBatch: false, // 🚀 실시간 레이더 배치 처리 차단 여부
-  blockRowDynamicHTML: true, // 🚀 [신규] 김프 전파 동적 HTML 갱신 차단 토글 (기본값: TRUE)
   aggTradeInterval: 0, // 🚀 aggTrade 주기 조절 (ms 단위, 0 = Raw)
   lastFetchTime: 0, // 🚀 마지막 데이터 수집 시간 기록용
   isLogMode: false, // 🚀 차트 로그 스케일 활성화 여부
-  traceRowCaller: true, // 🚀 [디버그 토글] 단 1줄로 좌측 1번 행(Index 0) callerId 전광판 추적 및 확장 영역 보이기/사라지기 제어!
-  enableOrderbookVisual: true,
-  savedZoomWidth: null, // 🚀 [UX 개선] 사용자가 스크롤/줌을 통해 설정한 캔들 개수(가로폭) 저장용
   showCountdown: true, // 🚀 차트 카운트다운 표시 여부
   currentRenderLimit: 1000, // 🚀 최대 렌더링 캔들 제한 개수
-
-  // 🚀 [성능 통계 카운터] 차단 가드에 의해 연산/갱신이 바이패스(빠꾸)처리된 실시간 카운트 집계기
-  bypassCounters: {
-    rightDom: 0,
-    chartDom: 0,
-    orderbook: 0,
-    legend: 0,
-    resize: 0,
-    mouseEvent: 0,
-    leftDom: 0,
-    sort: 0,
-    tabScroll: 0,
-    tableUpdate: 0,
-    kimchi: 0,
-    radarBatch: 0,
-    dynamicHtml: 0,
-    throttleBypass: 0, // 🚀 [신규] 100ms 진입 쓰로틀링 걸려 빠꾸먹은 건수
-    throttlePass: 0,   // 🚀 [신규] 100ms 가드 통과해서 실제 처리된 건수
-  },
 
   curDir: "bull",
   bullBody: 10,
@@ -190,7 +164,7 @@ export const store = {
       let cleanKey = key;
       if (cleanKey.endsWith("KRW")) cleanKey = cleanKey.slice(0, -3);
       else if (cleanKey.endsWith("USDT")) cleanKey = cleanKey.slice(0, -4);
-
+      
       row = store.tickerRowMap.get(cleanKey);
       if (!row) {
         for (const [k, r] of store.tickerRowMap.entries()) {
@@ -204,7 +178,7 @@ export const store = {
     }
 
     if (!row) {
-      const allSource = store.currentTableData || store.originalTableData || [];
+      const allSource = store.originalTableData || store.currentTableData || [];
       let cleanKey = key;
       if (cleanKey.endsWith("KRW")) cleanKey = cleanKey.slice(0, -3);
       else if (cleanKey.endsWith("USDT")) cleanKey = cleanKey.slice(0, -4);

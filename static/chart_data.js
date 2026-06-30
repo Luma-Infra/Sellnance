@@ -10,7 +10,6 @@ import {
 } from "./chart_utils.js";
 
 import { formatSmartPrice, formatCrosshairPrice } from "./chart_utils.js";
-import { findRowInfo, determineListingDate } from "./chart_history_helper.js";
 import { updateExchangeBadges } from "./ui_control.js";
 import {
   formatListingDateWithExchange,
@@ -328,12 +327,77 @@ export async function fetchHistory(
     .replace(/KRW$/, "")
     .replace(/USDT$/, "");
 
-  const exchangeFlags = { isFutures, isSpot, isUpbit, isBithumb, isBybit, isBybitFutures };
+  // 🚀 백엔드와 마찬가지로, 중복 매핑 목록(duplicated_list)을 활용하여 정확한 UID를 먼저 판별해 rowInfo를 찾습니다.
+  let expectedUid = null;
+  const dupList = store.marketDataMap?.duplicated_list;
+  if (dupList) {
+    const exchangeTag = isUpbit
+      ? "UPBIT"
+      : isBithumb
+        ? "BITHUMB"
+        : isBybit
+          ? "BYBIT"
+          : "BINANCE";
 
-  // 🚀 [역할 분리] UID 및 거래소 태그 매칭 rowInfo 찾기 도우미 호출
-  const rowInfo = findRowInfo(displayName, pureBase, exchangeFlags);
+    for (const [key, v] of Object.entries(dupList)) {
+      if (Array.isArray(v) && v.length >= 4) {
+        const dupBase = key.split("(")[0].toUpperCase();
+        const dupEx = v[3].toUpperCase();
+        if (dupBase === pureBase && dupEx === exchangeTag) {
+          expectedUid = v[0];
+          break;
+        }
+      }
+    }
+  }
 
-  const uniqueTicker = rowInfo ? rowInfo.Ticker : displayName;
+  let cleanDisplayName = displayName.toUpperCase();
+  if (cleanDisplayName.endsWith("KRW")) cleanDisplayName = cleanDisplayName.slice(0, -3);
+  else if (cleanDisplayName.endsWith("USDT")) cleanDisplayName = cleanDisplayName.slice(0, -4);
+
+  let rowInfo = store.currentTableData.find((c) => {
+    // 1. UID가 일치하면 최우선 매칭 (동명이인 코인 정확하게 식별)
+    if (expectedUid && c.UID === expectedUid) return true;
+
+    // 2. 일반 매칭 분기
+    const t = (c.Ticker || "").toUpperCase();
+    const cleanT = t.endsWith("KRW") ? t.slice(0, -3) : (t.endsWith("USDT") ? t.slice(0, -4) : t);
+
+    const dt = (c.DisplayTicker || "").toUpperCase();
+    const cleanDt = dt.endsWith("KRW") ? dt.slice(0, -3) : (dt.endsWith("USDT") ? dt.slice(0, -4) : dt);
+
+    const sym = (c.Symbol || "").toUpperCase();
+    const cleanSym = sym.endsWith("KRW") ? sym.slice(0, -3) : (sym.endsWith("USDT") ? sym.slice(0, -4) : sym);
+
+    if (cleanT !== cleanDisplayName && cleanDt !== cleanDisplayName && cleanSym !== cleanDisplayName)
+      return false;
+
+    if (isUpbit && (c.Listed_Exchanges?.includes("UPBIT") || c.Upbit === "O"))
+      return true;
+    if (isFutures && c.Listed_Exchanges?.includes("BINANCE_FUTURES"))
+      return true;
+    if (isSpot && c.Listed_Exchanges?.includes("BINANCE")) return true;
+    if (isBithumb && c.Listed_Exchanges?.includes("BITHUMB")) return true;
+    if (isBybitFutures && c.Listed_Exchanges?.includes("BYBIT_FUTURES"))
+      return true;
+    if (isBybit && c.Listed_Exchanges?.includes("BYBIT")) return true;
+    return false;
+  });
+
+  if (!rowInfo) {
+    rowInfo = store.currentTableData.find((c) => {
+      const t = (c.Ticker || "").toUpperCase();
+      const cleanT = t.endsWith("KRW") ? t.slice(0, -3) : (t.endsWith("USDT") ? t.slice(0, -4) : t);
+
+      const dt = (c.DisplayTicker || "").toUpperCase();
+      const cleanDt = dt.endsWith("KRW") ? dt.slice(0, -3) : (dt.endsWith("USDT") ? dt.slice(0, -4) : dt);
+
+      const sym = (c.Symbol || "").toUpperCase();
+      const cleanSym = sym.endsWith("KRW") ? sym.slice(0, -3) : (sym.endsWith("USDT") ? sym.slice(0, -4) : sym);
+
+      return cleanT === cleanDisplayName || cleanDt === cleanDisplayName || cleanSym === cleanDisplayName;
+    });
+  }
 
   let exactSpot = rowInfo?.Exact_Spot || pureBase;
   let exactFutures = rowInfo?.Exact_Futures || pureBase;
@@ -341,7 +405,7 @@ export async function fetchHistory(
   let exactBithumb = rowInfo?.Bithumb_Symbol || pureBase;
   let exactBybit = rowInfo?.Bybit_Symbol || pureBase;
 
-  const dupList = store.marketDataMap?.duplicated_list;
+  // 🚀 store.marketDataMap.duplicated_list (mapping.json 계승 데이터)를 활용한 프론트엔드 심볼 매핑 보정
   const uid = rowInfo?.UID;
   if (uid && dupList) {
     for (const [key, v] of Object.entries(dupList)) {
@@ -369,6 +433,7 @@ export async function fetchHistory(
   const binanceTicker = isFutures ? `${exactFutures}USDT` : `${exactSpot}USDT`;
   const krwTicker = isBithumb ? `${exactBithumb}_KRW` : `KRW-${exactUpbit}`;
 
+  // 현재 마켓의 정확한 심볼 지정 (실시간 소켓용)
   const mainTickerStr = isFutures
     ? exactFutures
     : isSpot
@@ -382,7 +447,10 @@ export async function fetchHistory(
   const loadingModal = document.getElementById("chart-loading-modal");
   const wrapper = document.getElementById("chart-wrapper");
   if (wrapper && !isTfChange) wrapper.classList.add("chart-loading");
+  // 🚀 [고급 로딩] 기존 캔들 잔상은 유지하면서 화면만 살짝 어둡게 처리
 
+  // 🚀 [신규] PAST_GAP_RECOVERY_MAP에 해당하는 녀석(AIA 등 과거 차트 단절 복구 대상)인지 감지!
+  // 해당되는 놈은 백엔드에서 TvDatafeed 라이브러리 호출하느라 차트 로딩이 매우 느리므로 전용 안내 문구 오버레이 추가!
   const pastGapMap = store.marketDataMap?.past_gap_map || {};
   let gapOverlay = document.getElementById("gap-recovery-overlay");
 
@@ -390,6 +458,7 @@ export async function fetchHistory(
     if (!gapOverlay) {
       gapOverlay = document.createElement("div");
       gapOverlay.id = "gap-recovery-overlay";
+      // 🚀 트뷰 차트 캔버스 영역(wrapper) 위에 정중하고 고급스럽게 안착!
       gapOverlay.className =
         "absolute inset-0 z-50 flex flex-col items-center justify-center bg-theme-bg/80 backdrop-blur-sm transition-all duration-300";
       gapOverlay.innerHTML = `
@@ -405,10 +474,15 @@ export async function fetchHistory(
     }
     gapOverlay.style.display = "flex";
   } else {
+    // 일반 코인이면 기존 로직 유지 (오버레이 숨김)
     if (gapOverlay) gapOverlay.style.display = "none";
   }
 
   try {
+    // 🚀 [사용자 요청 반영: 사슴 마커 즉시 제거] 차트/타임프레임 전환 또는 김프 토글 시, 기존 차트의 잔상은 남겨두되 과거 끝단 마커는 즉시 날립니다.
+    // if (store.candleSeries) store.candleSeries.setMarkers([]);
+    // if (store.volumeSeries) store.volumeSeries.setMarkers([]);
+    // if (store.kimchiSeries) store.kimchiSeries.setMarkers([]);
     store.hasPlacedDeer = false;
 
     const snapshotAsset = store.currentAsset;
@@ -440,6 +514,9 @@ export async function fetchHistory(
         500,
       );
 
+      // 🚀 [수정] 불필요한 두 번째 과거 조회(to=...) 로직 전면 삭제 (사용자님 통찰 1000% 적중!)
+      // 이미 백엔드(app.py)에 TvDatafeed 스마트 폴백 엔진이 완벽하게 구축되어 있으므로,
+      // 프론트엔드가 두 번씩 API를 날려 네트워크 렉을 유발할 필요가 전혀 없습니다.
       let combinedRaw = raw;
 
       if (isBybit && raw.result?.list) {
@@ -454,6 +531,7 @@ export async function fetchHistory(
           }))
           .sort((a, b) => a.time - b.time);
 
+        // 🚀 bybit_futures가 빈 리스트면 bybit_spot으로 폴백
         if (rawMain.length === 0 && isBybitFutures) {
           const rawFallback = await fetchCandlesSmart(
             "bybit_spot",
@@ -490,18 +568,15 @@ export async function fetchHistory(
           "1m": "1m",
           "3m": "3m",
           "5m": "5m",
-          "15m": "5m",
+          "15m": "10m",
           "30m": "30m",
           "1h": "1h",
-          "2h": "1h", // 🚀 2시간봉은 1시간씩 어긋나므로 1h 2개 조립 유지
-          "4h": "4h", // 🚀 4시간봉은 마감 경계가 일치하므로 원본 4h API 사용!
-          "12h": "12h", // 🚀 12시간봉은 마감 경계가 일치하므로 원본 12h API 사용!
+          "2h": "1h",
+          "4h": "1h",
+          "12h": "12h",
           "1d": "24h",
-          "3d": "24h",
-          "1w": "24h",
-          "1M": "24h",
         };
-        const bFetchInt = bMap[store.currentTF] || "1h";
+        const bFetchInt = bMap[store.currentTF] || "24h";
         const bData = await fetchCandlesSmart(
           "bithumb",
           krwTicker,
@@ -509,44 +584,44 @@ export async function fetchHistory(
           500,
         );
         if (bData.status === "0000" && Array.isArray(bData.data)) {
-          const is9hOffset = ["4h", "12h", "1d", "3d", "1w", "1M"].includes(store.currentTF);
-          const rawMapped = bData.data.map((d) => ({
-            time: (Number(d[0]) / 1000) + (is9hOffset ? 32400 : 0), // 🚀 4h/12h/일봉/3일봉/주봉/월봉일 때 KST 오프셋 (+9시간) 보정 적용!
+          rawMain = bData.data.map((d) => ({
+            time: Number(d[0]) / 1000,
             open: Number(d[1]),
             close: Number(d[2]),
             high: Number(d[3]),
             low: Number(d[4]),
             vol: Number(d[5]),
-          })).sort((a, b) => a.time - b.time);
+          }));
 
-          const getGroupTime = (t, tf) => {
-            const d = new Date(t * 1000);
-            if (tf === "15m") return Math.floor(t / 900) * 900;
-            if (tf === "2h") return Math.floor(t / 7200) * 7200;
-            if (tf === "3d") {
-              const dayTs = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) / 1000;
-              return Math.floor(dayTs / 259200) * 259200;
-            }
-            if (tf === "1d") {
-              return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) / 1000;
-            }
-            if (tf === "1w") {
+          // 🚀 [추가] 빗썸 일봉 -> 주봉/월봉 조립 엔진
+          if (store.currentTF === "1w" || store.currentTF === "1M") {
+            const getStartOfWeek = (t) => {
+              const d = new Date(t * 1000);
               const day = d.getUTCDay();
               const diff = d.getUTCDate() - day + (day === 0 ? -6 : 1);
-              return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), diff, 0, 0, 0) / 1000;
-            }
-            if (tf === "1M") return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1, 0, 0, 0) / 1000;
-            return t;
-          };
+              const mon = new Date(
+                Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), diff, 0, 0, 0),
+              );
+              return mon.getTime() / 1000;
+            };
+            const getStartOfMonth = (t) => {
+              const d = new Date(t * 1000);
+              const first = new Date(
+                Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1, 0, 0, 0),
+              );
+              return first.getTime() / 1000;
+            };
 
-          const tfNeedsResample = ["15m", "2h", "1d", "3d", "1w", "1M"].includes(store.currentTF);
-          if (tfNeedsResample) {
             const groups = {};
-            rawMapped.forEach((d) => {
-              const gt = getGroupTime(d.time, store.currentTF);
+            const getGroupTime =
+              store.currentTF === "1w" ? getStartOfWeek : getStartOfMonth;
+
+            rawMain.forEach((d) => {
+              const gt = getGroupTime(d.time);
               if (!groups[gt]) groups[gt] = [];
               groups[gt].push(d);
             });
+
             rawMain = Object.keys(groups)
               .sort((a, b) => Number(a) - Number(b))
               .map((gtStr) => {
@@ -561,11 +636,9 @@ export async function fetchHistory(
                   vol: chunk.reduce((sum, c) => sum + (c.vol || 0), 0),
                 };
               });
-            mainStep = 1;
-          } else {
-            rawMain = rawMapped;
-            mainStep = 1;
           }
+
+          mainStep = store.currentTF === "3d" ? 3 : 1;
         }
       } else {
         const supportedMin = [1, 3, 5, 10, 15, 30, 60, 240];
@@ -602,6 +675,7 @@ export async function fetchHistory(
       }
     }
 
+    // 🚀 No Data 처리: 바이빗 실패 시 업비트 폴백, 그래도 없으면 조용히 종료
     if (!rawMain || rawMain.length === 0) {
       if (
         isBybit &&
@@ -622,8 +696,85 @@ export async function fetchHistory(
       return;
     }
 
-    // 🚀 [역할 분리] 상장일(Listing Date) 판단 및 갱신 도우미 함수 호출
-    determineListingDate(rawMain, rowInfo, pureBase, exchangeFlags);
+    // 🚀 [타겟] 거래소별 상장일 타겟 로직
+    // - 현재 차트 모드를 파악해 exchange_key를 다르게 할당
+    // - 메모리(store.listingDates)에 이미 있는 날짜보다 오래된 경우만 POST
+    try {
+      const earliestTime = rawMain[0].time;
+      const newDateStr = new Date(earliestTime * 1000)
+        .toISOString()
+        .split("T")[0]; // YYYY-MM-DD
+
+      // 거래소 키 맵핑
+      let exchangeKey = null;
+      if (isFutures || isSpot) exchangeKey = "binance_listing";
+      else if (isUpbit) exchangeKey = "upbit_listing";
+      else if (isBithumb) exchangeKey = "bithumb_listing";
+      else if (isBybit) exchangeKey = "bybit_listing";
+
+      if (exchangeKey) {
+        // 메모리 먼저 업데이트 (UI 즉시 반영)
+        if (!store.listingDates) store.listingDates = {};
+        const entry = store.listingDates[pureBase] || {};
+        const existing = entry[exchangeKey] || "";
+        const isNewer = !existing || newDateStr < existing;
+
+        if (isNewer) {
+          // 메모리 업데이트
+          store.listingDates[pureBase] = {
+            ...entry,
+            [exchangeKey]: newDateStr,
+          };
+
+          // 테이블 셀 업데이트
+          const listingEl = document.getElementById(
+            `listing-${store.currentSelectedSymbol}`,
+          );
+          const tRow = store.originalTableData.find(
+            (r) =>
+              r.Ticker === store.currentSelectedSymbol ||
+              r.DisplayTicker === store.currentSelectedSymbol,
+          );
+          if (tRow) {
+            tRow.Listing_Date = newDateStr;
+            if (listingEl)
+              listingEl.innerText = formatListingDateWithExchange(tRow);
+          } else if (listingEl) {
+            listingEl.innerText = newDateStr;
+          }
+
+          // 백엔드에 비동기 저장 (화면 블록 제로)
+          fetch("/api/listing-dates", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              symbol: pureBase,
+              exchange_key: exchangeKey,
+              date: newDateStr,
+            }),
+          }).catch(() => { }); // 실패해도 취트 안 남의선답
+        } else {
+          // 메모리의 날짜를 테이블에만 줘주기 (POST 없이)
+          const listingEl = document.getElementById(
+            `listing-${store.currentSelectedSymbol}`,
+          );
+          const tRow = store.originalTableData.find(
+            (r) =>
+              r.Ticker === store.currentSelectedSymbol ||
+              r.DisplayTicker === store.currentSelectedSymbol,
+          );
+          if (tRow) {
+            tRow.Listing_Date = existing;
+            if (listingEl)
+              listingEl.innerText = formatListingDateWithExchange(tRow);
+          } else if (listingEl) {
+            listingEl.innerText = existing;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Listing Date Update Error:", e);
+    }
 
     // 2️⃣ 조립
     let newMainData = [];
@@ -647,15 +798,7 @@ export async function fetchHistory(
         });
       });
     } else {
-      let startIdx = 0;
-      if (store.currentTF === "2h" && rawMain.length > 0) {
-        // 첫 번째 캔들의 시간(UTC)을 구해서 짝수 시간이면 1개를 건너뛰어(startIdx=1) 홀수시 정각부터 2개씩 묶이도록 시프트합니다.
-        const firstHour = new Date(rawMain[0].time * 1000).getUTCHours();
-        if (firstHour % 2 === 0) {
-          startIdx = 1;
-        }
-      }
-      for (let i = startIdx; i < rawMain.length; i += mainStep) {
+      for (let i = 0; i < rawMain.length; i += mainStep) {
         const chunk = rawMain.slice(i, i + mainStep);
         if (chunk.length > 0) {
           const time = chunk[0].time;
@@ -677,6 +820,9 @@ export async function fetchHistory(
       }
     }
 
+    // ==========================================
+    // 2️⃣ 메인 차트 초고속 즉시 렌더링 & 로딩 해제 (Lazy의 시작)
+    // ==========================================
     if (store.currentAsset !== snapshotAsset || store.currentTF !== snapshotTF)
       return;
 
@@ -686,6 +832,7 @@ export async function fetchHistory(
       true,
     );
 
+    // 🚀 과거 데이터 추가 로딩을 위해 현재 요청 인자값 백업
     store.lastFetchParams = {
       symbol: symbol,
       displayName: displayName,
@@ -727,6 +874,9 @@ export async function fetchHistory(
     if (store.mainData.length > 0 && store.candleSeries) {
       const p = store.getPrecision(displayName);
 
+      // 🚀 [실시간 시세 업데이트] 테이블 클릭(선택) 시, 5분 주기의 서버 캐시 데이터 대신
+      // 방금 REST API로 받아온 가장 따끈따끈한 최신 봉 종가(lastCandle.close)를 반영합니다.
+      // 🚨 단, 시간 프레임(TF) 변경 시에는 이미 소켓에서 최신 실시간 가격을 잘 받고 있으므로 과거 REST 데이터로 덮어쓰지 않고 보존합니다.
       const lastCandle = store.mainData[store.mainData.length - 1];
       if (lastCandle && rowInfo) {
         if (!isTfChange) {
@@ -752,6 +902,7 @@ export async function fetchHistory(
         }
 
         if (typeof window.updateHeaderDisplay === "function") {
+          // TF 변경 시에는 newPrice 파라미터를 비워서 현재 rowInfo에 있는 최신 라이브 가격을 유지
           window.updateHeaderDisplay(
             rowInfo,
             isTfChange ? undefined : lastCandle.close,
@@ -774,6 +925,8 @@ export async function fetchHistory(
         },
       });
 
+      // 🚀 모든 시리즈 데이터를 동일한 실행 프레임(Tick) 내에서 동기식으로 세팅하여
+      // 시리즈 간의 데이터 개수/시간 불일치로 인한 Value is null 에러를 방지합니다.
       try {
         store.candleSeries.setData(sanitizeChartData(store.mainData));
 
@@ -796,12 +949,13 @@ export async function fetchHistory(
         }
 
         if (store.kimchiSeries) {
-          store.kimchiSeries.setData([]);
+          store.kimchiSeries.setData([]); // 🚀 과거 김프 잔재 초기화
         }
       } catch (err) {
         console.warn("🚨 시리즈 데이터 동기 세팅 예외 우회:", err);
       }
 
+      // 레이아웃 및 실시간 소켓 연결 등은 다음 프레임에 안전하게 처리
       requestAnimationFrame(() => {
         if (typeof applyChartLayout === "function") applyChartLayout();
         if (typeof autoFit === "function") autoFit(isTabRestore);
@@ -818,6 +972,8 @@ export async function fetchHistory(
           );
         }
 
+        // 🚀 [해결] 차트 레이아웃, 오토핏 및 렌더링 프레임이 완벽히 정렬 완료된 직후에 로딩 상태를 해제하여
+        // timescale 조작 이벤트 오작동으로 인한 의도치 않은 Lazy Load 발동을 차단합니다!
         window.isFetchingChart = false;
         store.isFetchingChart = false;
         if (typeof window.syncPriceScaleWidths === "function")
@@ -836,10 +992,12 @@ export async function fetchHistory(
       store.kimchiData = [];
     }
 
+    // 🚀 [로딩 해제 및 최종 싱크 안착] 차트 데이터가 완전히 캔버스에 렌더링된 직후, 라이브러리가 코인마다 다르게 계산해 둔 순수 너비를 최초 1회 캐치하여 기준값으로 던져놓음!
     if (loadingModal) loadingModal.classList.add("hidden");
     if (wrapper) wrapper.classList.remove("chart-loading");
     if (gapOverlay) gapOverlay.style.display = "none";
 
+    // 데이터가 없거나 캔들 시리즈가 없어 requestAnimationFrame으로 진입하지 않은 경우에 대한 동기식 클리어 폴백
     if (!store.candleSeries || !store.mainData || store.mainData.length === 0) {
       window.isFetchingChart = false;
       store.isFetchingChart = false;
@@ -847,29 +1005,362 @@ export async function fetchHistory(
         window.syncPriceScaleWidths();
     }
 
-    // 🚀 [역할 분리] 백그라운드 김프 수집 및 Lazy 렌더링 호출
-    import("./chart_history_kimchi.js").then((mod) => {
-      mod.lazyRenderKimchiData({
-        rowInfo,
-        uniqueTicker,
-        mainTickerStr,
-        exactSpot,
-        exactFutures,
-        exactUpbit,
-        exactBithumb,
-        exactBybit,
-        isBybit,
-        isTfChange,
-        snapshotAsset,
-        snapshotTF,
-        applyChartLayout
-      }).then(() => {
-        if (typeof window.updateStatus === "function") {
-          window.updateStatus();
-        }
-      });
-    });
+    // ==========================================
+    // 3️⃣ 김프 데이터 Lazy 렌더링 (백그라운드 비동기)
+    // ==========================================
+    (async () => {
+      try {
+        let subExchange = null;
+        let subSymbol = null;
+        let subMulti = 1;
+        let mainMulti = getMultiplier(mainTickerStr);
+        let missingTarget = "";
+        let availableSubs = [];
 
+        const querySym = rowInfo ? rowInfo.DisplayTicker : uniqueTicker;
+        // 🚀 coin-info 클라 캐시 - 동일 코인 중복 서버 호출 차단
+        if (!store._coinInfoCache) store._coinInfoCache = new Map();
+        const _cachedInfo = store._coinInfoCache.get(querySym);
+        const _fetchCoinInfo = _cachedInfo
+          ? Promise.resolve(_cachedInfo)
+          : fetch(`/api/coin-info/${querySym}`).then((res) => res.json()).then((d) => {
+              store._coinInfoCache.set(querySym, d);
+              return d;
+            });
+        
+        const listedEx = rowInfo ? rowInfo.Listed_Exchanges || [] : [];
+
+        if (
+          store.currentChartMarket === "UPBIT" ||
+          store.currentChartMarket === "BITHUMB"
+        ) {
+          if (listedEx.includes("BINANCE"))
+            availableSubs.push({
+              id: "binance_spot",
+              name: "B-SPOT",
+              bg: "#444",
+              text: "#fff",
+              sym: `${exactSpot}USDT`,
+              pureSym: exactSpot,
+            });
+          if (listedEx.includes("BINANCE_FUTURES"))
+            availableSubs.push({
+              id: "binance_futures",
+              name: "B-FUT",
+              bg: "#f0b90b",
+              text: "#000",
+              sym: `${exactFutures}USDT`,
+              pureSym: exactFutures,
+            });
+          if (listedEx.includes("BYBIT_FUTURES"))
+            availableSubs.push({
+              id: "bybit_futures",
+              name: "BYB-F",
+              bg: "#f7a600",
+              text: "#000",
+              sym: `${exactBybit}USDT`,
+              pureSym: exactBybit,
+            });
+          if (listedEx.includes("BYBIT"))
+            availableSubs.push({
+              id: "bybit_spot",
+              name: "BYBIT",
+              bg: "#f7a600",
+              text: "#fff",
+              sym: `${exactBybit}USDT`,
+              pureSym: exactBybit,
+            });
+          if (availableSubs.length === 0)
+            missingTarget = "글로벌 거래소(바이낸스/바이비트)";
+        } else if (isBybit) {
+          // 🚀 바이빗이 메인 차트일 때: 국내 거래소(업비트/빗썸) 김프 서브 추가
+          if (listedEx.includes("UPBIT") || rowInfo?.Upbit === "O")
+            availableSubs.push({
+              id: "upbit",
+              name: "UPBIT",
+              bg: "#093687",
+              text: "#fff",
+              sym: `KRW-${exactUpbit}`,
+              pureSym: exactUpbit,
+            });
+          if (listedEx.includes("BITHUMB"))
+            availableSubs.push({
+              id: "bithumb",
+              name: "BITHUMB",
+              bg: "#ff8b00",
+              text: "#fff",
+              sym: `${exactBithumb}_KRW`,
+              pureSym: exactBithumb,
+            });
+          if (availableSubs.length === 0)
+            missingTarget = "국내 원화 거래소(업비트/빗썸)";
+        } else {
+          if (listedEx.includes("UPBIT") || rowInfo?.Upbit === "O")
+            availableSubs.push({
+              id: "upbit",
+              name: "UPBIT",
+              bg: "#093687",
+              text: "#fff",
+              sym: `KRW-${exactUpbit}`,
+              pureSym: exactUpbit,
+            });
+          if (listedEx.includes("BITHUMB"))
+            availableSubs.push({
+              id: "bithumb",
+              name: "BITHUMB",
+              bg: "#ff8b00",
+              text: "#fff",
+              sym: `${exactBithumb}_KRW`,
+              pureSym: exactBithumb,
+            });
+          if (availableSubs.length === 0)
+            missingTarget = "국내 원화 거래소(업비트/빗썸)";
+        }
+
+        if (availableSubs.length > 0) {
+          const preferred = availableSubs.find(
+            (s) => s.id === store.preferredKimchiSub,
+          );
+          const selected = preferred || availableSubs[0];
+          subExchange = selected.id;
+          subSymbol = selected.sym;
+          subMulti = getMultiplier(selected.sym);
+          store.preferredKimchiSub = subExchange;
+
+          // 🚀 [추가] 김프 로딩 메시지 UI 동적 렌더링
+          let loadingMessageContainer = document.getElementById(
+            "kimchi-loading-message",
+          );
+          if (!loadingMessageContainer) {
+            loadingMessageContainer = document.createElement("div");
+            loadingMessageContainer.id = "kimchi-loading-message";
+            loadingMessageContainer.className =
+              "absolute right-3 z-[110] flex gap-1.5 transition-all duration-300 pointer-events-none";
+            if (wrapper) wrapper.appendChild(loadingMessageContainer);
+          }
+          // loadingMessageContainer.innerHTML = `<span class="text-[10px] font-medium px-1.5 py-0.5 rounded opacity-60 bg-theme-panel text-theme-text">?3 불러오는중...</span>`;
+          // loadingMessageContainer.style.display = "flex"; // Show loading message
+
+          let switcherContainer = document.getElementById("kimchi-switcher");
+          if (!switcherContainer) {
+            switcherContainer = document.createElement("div");
+            switcherContainer.id = "kimchi-switcher";
+            switcherContainer.className =
+              "absolute right-3 z-[110] flex gap-1.5 transition-all duration-300 pointer-events-auto";
+            if (wrapper) wrapper.appendChild(switcherContainer);
+          }
+
+          if (availableSubs.length > 1) {
+            switcherContainer.innerHTML = availableSubs
+              .map((s) => {
+                const isActive = s.id === subExchange;
+                const opacity = isActive
+                  ? "opacity-100 ring-2 ring-white/50 scale-105"
+                  : "opacity-40 hover:opacity-80";
+                return `<button class="text-[10px] font-medium px-1.5 py-0.5 rounded shadow-sm transition-all ${opacity}" style="background-color: ${s.bg}; color: ${s.text};" onclick="switchKimchiSub('${s.id}')">${s.name}</button>`;
+              })
+              .join("");
+            switcherContainer.style.display = "flex";
+          } else {
+            const s = availableSubs[0];
+            switcherContainer.innerHTML = `<span class="text-[10px] font-medium px-1.5 py-0.5 rounded opacity-60 pointer-events-none" style="background-color: ${s.bg}; color: ${s.text};">vs ${s.name}</span>`;
+            switcherContainer.style.display = "flex";
+          }
+
+          store.paneConfig.kimchi = true;
+          const noDataMsg = document.getElementById("kimchi-no-data");
+          if (noDataMsg) noDataMsg.classList.add("hidden");
+          requestAnimationFrame(() => {
+            try {
+              if (typeof applyChartLayout === "function") applyChartLayout();
+            } catch (layoutErr) {
+              console.warn(
+                "🚨 fetchHistory 내 applyChartLayout 예외 우회:",
+                layoutErr,
+              );
+            }
+          });
+
+          // 🚀 김프 데이터 Fetch (Lazy Load)
+          const u = store.currentTF.replace(/[0-9]/g, "");
+          const totalSec = tfSec[store.currentTF] || 60;
+          let upbitInterval = "minutes/1";
+          if (u === "d" || u === "w" || u === "M") {
+            upbitInterval = u === "w" ? "weeks" : u === "M" ? "months" : "days";
+          } else {
+            const baseMin =
+              [1, 3, 5, 10, 15, 30, 60, 240]
+                .reverse()
+                .find((m) => (totalSec / 60) % m === 0) || 1;
+            upbitInterval = `minutes/${baseMin}`;
+          }
+
+          let subRaw = [];
+          if (subExchange === "upbit") {
+            subRaw = await fetchPaginated(
+              subExchange,
+              subSymbol,
+              upbitInterval,
+              500,
+            );
+          } else if (subExchange === "bithumb") {
+            const bMap = {
+              "1m": "1m",
+              "3m": "3m",
+              "5m": "5m",
+              "15m": "10m",
+              "30m": "30m",
+              "1h": "1h",
+              "2h": "1h",
+              "4h": "1h",
+              "12h": "12h",
+              "1d": "24h",
+              "3d": "24h",
+              "1w": "24h",
+              "1M": "24h",
+            };
+            const r = await fetchCandlesSmart(
+              "bithumb",
+              subSymbol,
+              bMap[store.currentTF] || "24h",
+              1000,
+            );
+            subRaw = r.data || [];
+          } else {
+            const subJson = await fetchCandlesSmart(
+              subExchange,
+              subSymbol,
+              store.currentTF,
+              500,
+            );
+            // 🚀 바이빗 응답은 result.list 형태로 오므로 추출 처리
+            if (subJson?.result?.list) {
+              subRaw = subJson.result.list.sort(
+                (a, b) => Number(a[0]) - Number(b[0]),
+              );
+            } else {
+              subRaw = subJson;
+            }
+          }
+
+          const rateCacheKey = `fiat_rate_only`;
+          if (store.lastFetchParams) {
+            store.lastFetchParams.subExchange = subExchange;
+            store.lastFetchParams.subSymbol = subSymbol;
+            store.lastFetchParams.subMulti = subMulti;
+            store.lastFetchParams.mainMulti = mainMulti;
+            store.lastFetchParams.upbitInterval =
+              typeof upbitInterval !== "undefined" ? upbitInterval : null;
+            store.lastFetchParams.rateCacheKey = rateCacheKey;
+          }
+          store.subRawData = subRaw;
+
+          // 🚀 [법정 환율 맵] 타임프레임별 환율 왜곡 방지! (트뷰 과거기록 연동)
+          if (!store.fiatRateCache) store.fiatRateCache = {};
+
+          if (!store.fiatRateCache[rateCacheKey]) {
+            const res = await fetch("/api/usdkrw");
+            const usdkrwRaw = await res.json();
+
+            if (usdkrwRaw && !usdkrwRaw.error) {
+              let fiatTimeline = [];
+              // 트레이딩뷰 과거 법정환율 추가 (모든 타임프레임에서 매끄러운 과거 김프 생성)
+              for (let [ts, price] of Object.entries(usdkrwRaw)) {
+                fiatTimeline.push({
+                  time: Number(ts),
+                  price: price,
+                  source: "tv_fiat",
+                });
+              }
+              fiatTimeline.sort((a, b) => a.time - b.time);
+              store.fiatRateCache[rateCacheKey] = fiatTimeline;
+            }
+          }
+
+          // 🚀 JS 고속 김프 연산 (공통 헬퍼 함수로 중복 제거)
+          let newKimchiData = calculateKimchiData(
+            store.mainData,
+            subRaw,
+            store.lastFetchParams,
+          );
+
+          if (
+            store.currentAsset !== snapshotAsset ||
+            store.currentTF !== snapshotTF
+          )
+            return;
+
+          // 🚀 [무반동 방어막] 김프를 그리기 전 현재 X축(시간) 스케일을 캡처하고, 덮어쓰자마자 동기적으로 복구!
+          store.kimchiData = newKimchiData.map((d) => mapTime(d));
+          if (store.kimchiSeries && store.kimchiData.length > 0) {
+            // 🚀 [Premium] 최신 김프 색상을 CSS 변수에 주입하여 Glow 효과 연동
+            const lastK = store.kimchiData[store.kimchiData.length - 1];
+            const wrapper = document.getElementById("chart-wrapper");
+            if (wrapper && lastK)
+              wrapper.style.setProperty("--kimchi-color", lastK.color);
+
+            requestAnimationFrame(() => {
+              try {
+                const currentRange = store.chart
+                  .timeScale()
+                  .getVisibleLogicalRange(); // 1. 현재 화면 캡처
+                store.kimchiSeries.setData(
+                  sanitizeChartData(store.kimchiData, true),
+                ); // 2. 김프 데이터 꽂기
+                if (currentRange)
+                  store.chart.timeScale().setVisibleLogicalRange(currentRange); // 3. 미동 없이 복구!
+
+                // 🔥 [핵심] 데이터 안착 후 동일 프레임에서 레이아웃 적용
+                if (typeof applyChartLayout === "function") applyChartLayout();
+                if (typeof window.syncPriceScaleWidths === "function")
+                  setTimeout(window.syncPriceScaleWidths, 50);
+              } catch (setErr) {
+                console.warn(
+                  "🚨 kimchiSeries.setData 렌더링 예외 우회 완료:",
+                  setErr,
+                );
+              }
+            });
+          }
+        } else {
+          // No available subs, so hide loading message if it was shown
+          store.paneConfig.kimchi = false;
+          const wrapper = document.getElementById("chart-wrapper");
+          if (wrapper)
+            wrapper.style.setProperty("--kimchi-color", "transparent");
+          const noDataMsg = document.getElementById("kimchi-no-data");
+          if (noDataMsg && !isTfChange) {
+            noDataMsg.classList.remove("hidden");
+            const pTag = noDataMsg.querySelector("p");
+            // if (pTag)
+            //   pTag.innerHTML = `⚠️ 해당하는 ${missingTarget} 데이터가 없어 김프 차트를 표시할 수 없습니다.`;
+          }
+          let loadingMessageContainer = document.getElementById(
+            "kimchi-loading-message",
+          );
+          if (loadingMessageContainer)
+            loadingMessageContainer.style.display = "none";
+          requestAnimationFrame(() => {
+            try {
+              if (typeof applyChartLayout === "function") applyChartLayout();
+            } catch (layoutErr) {
+              console.warn(
+                "🚨 fetchHistory (no-data) applyChartLayout 예외 우회:",
+                layoutErr,
+              );
+            }
+          });
+        }
+      } catch (err) {
+        console.error("김프 백그라운드 렌더링 실패:", err);
+        // Hide loading message on error
+        let loadingMessageContainer = document.getElementById(
+          "kimchi-loading-message",
+        );
+        if (loadingMessageContainer)
+          loadingMessageContainer.style.display = "none";
+      }
+    })();
   } catch (e) {
     console.error("차트 로드 실패:", e);
   } finally {
@@ -878,7 +1369,7 @@ export async function fetchHistory(
     if (gapOverlay) gapOverlay.style.display = "none";
     window.isFetchingChart = false;
     store.isFetchingChart = false;
-    store.isNewCoinSelected = false;
+    store.isNewCoinSelected = false; // 🚀 신규 코인 선택 플래그 초기화
   }
 }
 
