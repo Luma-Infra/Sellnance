@@ -14,7 +14,7 @@ const EngineUI = {
           <div class="flex justify-between items-end mb-4 px-1">
             <span class="text-[10px] font-medium opacity-70">CORE TRACING...</span>
             <span id="percent-text" class="text-2xl font-medium text-theme-accent leading-none">0%</span>
-          </div>F
+          </div>
           <div id="status-list" class="space-y-1.5 text-[12px] font-medium max-h-72 overflow-y-auto pr-2 custom-scrollbar"></div>
         </div>
         </div>
@@ -59,9 +59,6 @@ const EngineUI = {
         main.classList.remove("hidden");
         setTimeout(() => {
           main.classList.remove("opacity-0");
-          if (typeof window.showOnboardingModal === "function") {
-            window.showOnboardingModal();
-          }
         }, 50);
       }
       document.body.classList.remove("overflow-hidden");

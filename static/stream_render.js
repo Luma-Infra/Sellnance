@@ -15,6 +15,11 @@ export function renderRealtimeUpdate(normalizedTime, currentCandle) {
     }
     if (!store.candleSeries || !currentCandle || normalizedTime === null) return;
 
+    // 🚀 [프론트엔드 강제 필터링] 현재 탭과 들어온 스트림 데이터의 마켓 형식이 일치하지 않으면 렌더링 즉시 차단!
+    if (store.currentChartMarket !== currentCandle.marketType) {
+        return;
+    }
+
     // 🚀 [방어 코드] 차트 캔들 데이터가 없거나 완전히 비어 있는 상태인 경우 실시간 업데이트 차단
     const chartData = store.mainData || [];
     if (chartData.length === 0) {

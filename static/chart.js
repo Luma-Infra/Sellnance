@@ -223,6 +223,7 @@ export function initChart() {
       visible: true,
       borderColor: gridColor,
       mode: store.isLogMode ? 1 : 0,
+      minimumWidth: store.savedPriceScaleWidth || 0, // 🚀 [UX 개선] 저장된 가격 축의 너비를 레이아웃 생성 시점에 복구하여 레이아웃 꿀렁임 제거
     },
     leftPriceScale: {
       autoScale: true,
@@ -251,6 +252,7 @@ export function initChart() {
       visible: true,
       borderColor: gridColor,
       scaleMargins: { top: 0.5, bottom: 0 },
+      minimumWidth: store.savedPriceScaleWidth || 0, // 🚀 [UX 개선] 저장된 가격 축의 너비를 레이아웃 생성 시점에 복구하여 레이아웃 꿀렁임 제거
     },
     leftPriceScale: {
       autoScale: true,
@@ -265,10 +267,18 @@ export function initChart() {
     store.isUserZoomed = true;
   });
 
-  // 🚀 [Lazy Load] 왼쪽으로 스크롤하여 맨 처음 영역에 도달하면 과거 데이터를 lazy하게 로드 (폭주 방지 락 도입)
+  // 🚀 [Lazy Load & Zoom Width Save] 가로폭(줌 상태) 저장 및 과거 데이터 로딩 통합 관리
   let isCheckingLoadMore = false;
   store.chart.timeScale().subscribeVisibleLogicalRangeChange(async (range) => {
-    if (!range || isCheckingLoadMore) return;
+    if (!range) return;
+
+    // 🚀 [UX 개선] 사용자가 스크롤/줌을 통해 설정한 캔들 개수(가로폭)를 실시간으로 저장합니다.
+    const width = range.to - range.from;
+    if (width > 0 && width < 1000) {
+      store.savedZoomWidth = width;
+    }
+
+    if (isCheckingLoadMore) return;
     if (range.from < 15) {
       isCheckingLoadMore = true;
       if (typeof window.loadMoreHistory === "function") {
@@ -467,6 +477,7 @@ export function initChart() {
       try {
         // 🚀 [마우스 이벤트 차단 토글 방어막]
         if (store.blockChartMouseEvent) {
+          if (store.bypassCounters) store.bypassCounters.mouseEvent++;
           if (store._mainCrosshair) store._mainCrosshair.setX(null);
           if (store._volCrosshair) store._volCrosshair.setX(null);
           try {
@@ -474,7 +485,7 @@ export function initChart() {
             targetCharts.forEach(tObj => {
               if (tObj && tObj.chart) tObj.chart.clearCrosshairPosition();
             });
-          } catch (e) {}
+          } catch (e) { }
           return;
         }
 
@@ -839,6 +850,7 @@ export function initChart() {
       // 🚀 [초고속 캐시 방어벽] 너비가 이전과 동일하면 applyOptions 호출을 원천 스킵하여 60fps 렌더링 성능 100% 보장! (force 일 때는 강제 적용)
       if (maxRight > 0 && (force || maxRight !== currentMaxRight)) {
         currentMaxRight = maxRight;
+        store.savedPriceScaleWidth = maxRight; // 🚀 [UX 개선] 우측 가격 축의 실시간 너비를 전역 store에 실시간 동기화 저장
         charts.forEach((c) =>
           c.priceScale("right").applyOptions({ minimumWidth: maxRight }),
         );

@@ -3305,7 +3305,7 @@
     "upbit_listing": "2025-11-25"
   },
   "SOXL": {
-    "binance_listing": "2026-05-15"
+    "binance_listing": "2026-06-24"
   },
   "SOXLUSDT": {
     "binance_listing": "2026-05-15"
@@ -3862,8 +3862,7 @@
     "binance_listing": "2025-03-27"
   },
   "WAVES": {
-    "binance_listing": "2019-09-25",
-    "upbit_listing": "2025-12-13"
+    "binance_listing": "2019-09-25"
   },
   "WAXP": {
     "binance_listing": "2023-10-18"
@@ -3934,7 +3933,7 @@
     "binance_listing": "2025-09-29"
   },
   "XAU": {
-    "binance_listing": "2025-12-11"
+    "binance_listing": "2026-06-23"
   },
   "XAUT": {
     "binance_listing": "2026-03-26"
