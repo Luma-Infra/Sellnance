@@ -1,6 +1,24 @@
 // stream_table.js
 import { store, CONFIG } from "./_store.js";
 import { updateVisibleSymbols } from "./table_render.js";
+import { getMultiplier, getPureBase } from "./chart_utils.js";
+
+// 🚀 [신규] 렌더링 과부하 방지용 쓰로틀 메모리 및 일괄 Batch 렌더러
+if (!window._realtimeRenderQueue) {
+  window._realtimeRenderQueue = new Map();
+  const processQueue = () => {
+    if (window._realtimeRenderQueue.size > 0) {
+      window._realtimeRenderQueue.forEach((updateFn) => {
+        try {
+          updateFn();
+        } catch (e) { }
+      });
+      window._realtimeRenderQueue.clear();
+    }
+    requestAnimationFrame(processQueue);
+  };
+  requestAnimationFrame(processQueue);
+}
 
 // 🎯 개별 스트림 스나이퍼 소켓 초기화 (바이낸스 + 업비트 상시 멀티 파이프라인 가동)
 export function initSniperSocket() {
@@ -34,6 +52,7 @@ export function initSniperSocket() {
   ) {
     store.upbitSniperWs = new WebSocket("wss://api.upbit.com/websocket/v1");
     store.upbitSniperWs.onopen = () => {
+      upbitSniperRetryDelay = 3000; // 성공 시 딜레이 리셋
       // Xconsole.log("🎯 업비트 스나이퍼 엔진 가동: 김치 코인들 정밀 타격 시작");
       syncSniperSubscriptions();
     };
@@ -47,7 +66,7 @@ export function initSniperSocket() {
         const newPriceKrw = parseFloat(res.trade_price);
 
         const allSource =
-          store.originalTableData || store.currentTableData || [];
+          store.currentTableData || store.originalTableData || [];
         const row = allSource.find(
           (r) =>
             r.Ticker === krwTicker ||
@@ -75,8 +94,13 @@ export function initSniperSocket() {
         console.error("Upbit sniper parse error:", err);
       }
     };
+    store.upbitSniperWs.onerror = () => {
+      // 에러 소화 (콘솔 경고 경감)
+    };
     store.upbitSniperWs.onclose = () => {
-      setTimeout(initSniperSocket, CONFIG.UI_UPDATE_INTERVAL);
+      const currentDelay = upbitSniperRetryDelay;
+      upbitSniperRetryDelay = Math.min(60000, Math.floor(upbitSniperRetryDelay * 1.5));
+      setTimeout(initSniperSocket, currentDelay);
     };
   }
 }
@@ -88,7 +112,7 @@ export function syncSniperSubscriptions() {
 
   const currentVisibleBinance = [];
   const currentVisibleUpbit = [];
-  const allSource = store.originalTableData || store.currentTableData || [];
+  const allSource = store.currentTableData || store.originalTableData || [];
 
   store.visibleSymbols.forEach((sym) => {
     const row = allSource.find(
@@ -153,7 +177,7 @@ export function syncSniperSubscriptions() {
             { type: "ticker", codes: uniqueUpbitCodes },
           ]),
         );
-      } catch (e) {}
+      } catch (e) { }
     }
   }
 }
@@ -256,7 +280,16 @@ export function startUpbitMarketRadar() {
   if (store.upbitRadarWs) store.upbitRadarWs.close();
   store.upbitRadarWs = new WebSocket("wss://api.upbit.com/websocket/v1");
   store.upbitRadarWs.binaryType = "arraybuffer";
+  store.upbitRadarWs.onclose = () => {
+    const currentDelay = upbitRadarRetryDelay;
+    upbitRadarRetryDelay = Math.min(60000, Math.floor(upbitRadarRetryDelay * 1.5));
+    setTimeout(startUpbitMarketRadar, currentDelay);
+  };
+  store.upbitRadarWs.onerror = () => {
+    // 에러 발생 시 콘솔 경고 누적 완화
+  };
   store.upbitRadarWs.onopen = () => {
+    upbitRadarRetryDelay = 3000; // 성공 시 백오프 초기화
     const allUpbitCodes = store.currentTableData
       .filter((row) => row.Upbit === "O" && row.Symbol)
       .map((row) => `KRW-${row.Symbol}`);
@@ -272,8 +305,9 @@ export function startUpbitMarketRadar() {
   store.upbitRadarWs.onmessage = (event) => {
     const ticker = JSON.parse(decoder.decode(event.data));
     const pureSym = ticker.code.replace("KRW-", "");
+    const krwTicker = pureSym + "KRW";
     const normalizedTicker = {
-      s: pureSym,
+      s: krwTicker,
       c: ticker.trade_price,
       P: ticker.signed_change_rate * 100,
       q_upbit: ticker.acc_trade_price_24h,
@@ -292,12 +326,11 @@ export function startUpbitMarketRadar() {
       });
     }
   };
-  store.upbitRadarWs.onclose = () => setTimeout(startUpbitMarketRadar, 3000);
 }
 
 // 윈도우 전역에 내보내기
 window.initSniperSocket = initSniperSocket;
 window.syncSniperSubscriptions = syncSniperSubscriptions;
 window.refreshSniperTarget = refreshSniperTarget;
-window.startBinanceMarketRadar = startBinanceMarketRadar;
-window.startUpbitMarketRadar = startUpbitMarketRadar;
+// window.startBinanceMarketRadar = startBinanceMarketRadar;
+// window.startUpbitMarketRadar = startUpbitMarketRadar;

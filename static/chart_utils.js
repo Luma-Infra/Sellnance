@@ -111,7 +111,7 @@ export function formatSmartPrice(price, p) {
 
     // 2️⃣ 100원 미만: 무조건 유효숫자 출몰부터 3개만 표기 (예: 1.22, 0.123, 0.000123)
     const formattedStr = numPrice.toPrecision(3);
-    
+
     // 지수 표현식 (e-5 등) 우회 디코딩 처리
     const parts = formattedStr.split("e");
     if (parts.length === 1) {

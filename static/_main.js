@@ -6,6 +6,7 @@ import {
   clearSearch,
   selectSymbol,
   updateExchangeBadges,
+  switchViewMode,
 } from "./ui_control.js";
 import { fetchHistory, clearChartData } from "./chart_data.js";
 import { initChart } from "./chart.js";
@@ -462,9 +463,7 @@ function restoreSavedUserSettings() {
 
     // 5. 테이블 상세/간편 뷰 모드 복원
     const savedViewMode = localStorage.getItem("sellnance_table_view_mode") || "basic";
-    import("./ui_control.js").then(({ switchViewMode }) => {
-      switchViewMode(savedViewMode);
-    });
+    switchViewMode(savedViewMode);
   } catch (e) {
     // Xconsole.error("Failed to restore user settings:", e);
   }

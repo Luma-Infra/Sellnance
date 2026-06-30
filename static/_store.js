@@ -101,8 +101,9 @@ export const store = {
   aggTradeInterval: 0, // 🚀 aggTrade 주기 조절 (ms 단위, 0 = Raw)
   lastFetchTime: 0, // 🚀 마지막 데이터 수집 시간 기록용
   isLogMode: false, // 🚀 차트 로그 스케일 활성화 여부
-  traceRowCaller: false, // 🚀 [디버그 토글] 단 1줄로 좌측 1번 행(Index 0) callerId 전광판 추적 및 확장 영역 보이기/사라지기 제어!
-  enableOrderbookVisual: true, // 호가창 보기
+  traceRowCaller: true, // 🚀 [디버그 토글] 단 1줄로 좌측 1번 행(Index 0) callerId 전광판 추적 및 확장 영역 보이기/사라지기 제어!
+  enableOrderbookVisual: true,
+  savedZoomWidth: null, // 🚀 [UX 개선] 사용자가 스크롤/줌을 통해 설정한 캔들 개수(가로폭) 저장용
   showCountdown: true, // 🚀 차트 카운트다운 표시 여부
   currentRenderLimit: 1000, // 🚀 최대 렌더링 캔들 제한 개수
 

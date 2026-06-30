@@ -434,7 +434,7 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
   const priceCell = rowEl.querySelector(".col-price");
   if (priceCell) {
     priceCell.classList.remove("price-placeholder");
-    
+
     // 구조가 없으면 최초 1회만 innerHTML 생성
     let container = priceCell.querySelector(".price-container");
     if (!container) {
@@ -633,7 +633,7 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
   const exchCell = rowEl.querySelector(".col-exch");
   if (exchCell) {
     exchCell.classList.remove("exch-placeholder");
-    
+
     // exchCell은 변경 빈도가 극히 낮으므로 innerHTML이 없을 때만 1회 빌드
     if (!exchCell.querySelector(".exch-grid-trigger")) {
       exchCell.innerHTML = `
