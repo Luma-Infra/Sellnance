@@ -35,11 +35,52 @@ export async function loadTableData(force = false, silent = false) {
       row.DisplayTicker = (row.DisplayTicker || row.Symbol)
         .toString()
         .toUpperCase();
-      if (row.Ticker) store.tickerRowMap.set(row.Ticker.toUpperCase(), row);
-      if (row.DisplayTicker)
-        store.tickerRowMap.set(row.DisplayTicker.toUpperCase(), row);
-      // 🚀 [오류 방어] 중복 가능성이 높은 일반 Symbol로 단일 Map 덮어쓰기 금지! (동명이인 코인 가격 오염 원인 제거)
+
+      const uid = row.UID ? String(row.UID) : null;
+      const tKey = row.Ticker ? row.Ticker.toUpperCase() : null;
+      const dKey = row.DisplayTicker ? row.DisplayTicker.toUpperCase() : null;
+
+      // 1. UID 0순위 매핑
+      if (uid) {
+        store.tickerRowMap.set(uid, row);
+      }
+
+      // 2. Ticker 및 DisplayTicker 매핑 (단, 동명이인 코인은 UID가 일치하는 녀석이 맵을 소유하게 제어)
+      if (tKey) {
+        const exist = store.tickerRowMap.get(tKey);
+        if (!exist) {
+          store.tickerRowMap.set(tKey, row);
+        } else if (exist.UID !== row.UID) {
+          // 이미 존재하는 녀석과 UID가 다르면, 업비트/빗썸/바이낸스 상장 메이저 코인에 우선권 부여 (똥코인 격리)
+          const isMajor = row.Upbit === "O" || row.Bithumb === "O" || row.Binance === "O" || row.Binance_Futures === "O";
+          const existIsMajor = exist.Upbit === "O" || exist.Bithumb === "O" || exist.Binance === "O" || exist.Binance_Futures === "O";
+          // 새 코인이 메이저고 기존 코인이 똥코인이면 탈환
+          if (isMajor && !existIsMajor) {
+            store.tickerRowMap.set(tKey, row);
+          }
+        }
+      }
+
+      if (dKey) {
+        const exist = store.tickerRowMap.get(dKey);
+        if (!exist) {
+          store.tickerRowMap.set(dKey, row);
+        } else if (exist.UID !== row.UID) {
+          const isMajor = row.Upbit === "O" || row.Bithumb === "O" || row.Binance === "O" || row.Binance_Futures === "O";
+          const existIsMajor = exist.Upbit === "O" || exist.Bithumb === "O" || exist.Binance === "O" || exist.Binance_Futures === "O";
+          if (isMajor && !existIsMajor) {
+            store.tickerRowMap.set(dKey, row);
+          }
+        }
+      }
     });
+
+    // 🚀 [추가] 최초 데이터 로드 시점에 모든 코인에 대해 대표 지표(Price_Raw, Change_Today_Raw 등) 우선순위 조율 강제 실행
+    if (typeof window.syncRowPrioritizedMetrics === "function") {
+      store.currentTableData.forEach((row) => {
+        window.syncRowPrioritizedMetrics(row);
+      });
+    }
 
     if (store.currentSortCol && store.sortState !== "") {
       // 1. 순위 재계산 (경주마 로직 실행)
@@ -92,8 +133,26 @@ export async function loadTableDataSilent() {
               .toString()
               .toUpperCase();
 
-            if (row.Ticker) store.tickerRowMap.set(row.Ticker.toUpperCase(), row);
-            if (row.DisplayTicker) store.tickerRowMap.set(row.DisplayTicker.toUpperCase(), row);
+            const uid = row.UID ? String(row.UID) : null;
+            const tKey = row.Ticker ? row.Ticker.toUpperCase() : null;
+            const dKey = row.DisplayTicker ? row.DisplayTicker.toUpperCase() : null;
+            const isDomestic = row.Upbit === "O" || row.Bithumb === "O";
+
+            if (uid) {
+              store.tickerRowMap.set(uid, row);
+            }
+            if (tKey) {
+              const exist = store.tickerRowMap.get(tKey);
+              if (!exist || isDomestic || exist.UID === row.UID) {
+                store.tickerRowMap.set(tKey, row);
+              }
+            }
+            if (dKey) {
+              const exist = store.tickerRowMap.get(dKey);
+              if (!exist || isDomestic || exist.UID === row.UID) {
+                store.tickerRowMap.set(dKey, row);
+              }
+            }
 
             needReRender = true;
           } else {
@@ -105,6 +164,26 @@ export async function loadTableDataSilent() {
             row.VMC_Formatted = fresh.VMC_Formatted;
             row.Basis_Raw = fresh.Basis_Raw;
             row.Basis_Formatted = fresh.Basis_Formatted;
+            
+            // 🚀 실시간 소켓이 없는 코인들을 위해, 백엔드로부터 최신 시세와 변동률(24h/Day) 데이터도 강제 갱신합니다.
+            row.Price_Raw = fresh.Price_Raw;
+            row.Price_KRW = fresh.Price_KRW;
+            row.Change_24h_Raw = fresh.Change_24h_Raw;
+            row.Change_Today_Raw = fresh.Change_Today_Raw;
+            
+            // 거래소별 개별 속성들도 함께 머징하여 지표 정합성 보장
+            row.Upbit_Price = fresh.Upbit_Price;
+            row.Bithumb_Price = fresh.Bithumb_Price;
+            row.Binance_Price_Spot = fresh.Binance_Price_Spot;
+            row.Binance_Price_Futures = fresh.Binance_Price_Futures;
+            row.Change_24h_Upbit = fresh.Change_24h_Upbit;
+            row.Change_Today_Upbit = fresh.Change_Today_Upbit;
+            row.Change_24h_Bithumb = fresh.Change_24h_Bithumb;
+            row.Change_Today_Bithumb = fresh.Change_Today_Bithumb;
+            row.Change_24h_Binance = fresh.Change_24h_Binance;
+            row.Change_Today_Binance = fresh.Change_Today_Binance;
+            row.Change_24h_Futures_Ex = fresh.Change_24h_Futures_Ex;
+            row.Change_Today_Futures = fresh.Change_Today_Futures;
           }
         }
       });
@@ -124,19 +203,39 @@ export async function loadTableDataSilent() {
             .toUpperCase();
           store.currentTableData.push(freshItem);
 
-          // 맵핑 캐시 동기화
-          if (freshItem.Ticker)
-            store.tickerRowMap.set(freshItem.Ticker.toUpperCase(), freshItem);
-          if (freshItem.DisplayTicker)
-            store.tickerRowMap.set(
-              freshItem.DisplayTicker.toUpperCase(),
-              freshItem,
-            );
+          // 맵핑 캐시 동기화 (UID 0순위 및 동명이인 교통정리)
+          const fUid = freshItem.UID ? String(freshItem.UID) : null;
+          const fTkey = freshItem.Ticker ? freshItem.Ticker.toUpperCase() : null;
+          const fDkey = freshItem.DisplayTicker ? freshItem.DisplayTicker.toUpperCase() : null;
+          const fIsDomestic = freshItem.Upbit === "O" || freshItem.Bithumb === "O";
+
+          if (fUid) {
+            store.tickerRowMap.set(fUid, freshItem);
+          }
+          if (fTkey) {
+            const exist = store.tickerRowMap.get(fTkey);
+            if (!exist || fIsDomestic || exist.UID === freshItem.UID) {
+              store.tickerRowMap.set(fTkey, freshItem);
+            }
+          }
+          if (fDkey) {
+            const exist = store.tickerRowMap.get(fDkey);
+            if (!exist || fIsDomestic || exist.UID === freshItem.UID) {
+              store.tickerRowMap.set(fDkey, freshItem);
+            }
+          }
           // 🚀 [오류 방어] Symbol 단일 매핑 금지
 
           needReRender = true;
         }
       });
+
+      // 🚀 [추가] 백그라운드 동기화 완료 후 대표 지표 우선순위 조율 강제 실행
+      if (typeof window.syncRowPrioritizedMetrics === "function") {
+        store.currentTableData.forEach((row) => {
+          window.syncRowPrioritizedMetrics(row);
+        });
+      }
 
       // 3. 신규 주입이 이루어졌다면 테이블 즉각 갱신
       if (needReRender && typeof window.renderTable === "function") {

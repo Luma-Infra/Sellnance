@@ -2,6 +2,7 @@
 import { store } from "./_store.js";
 
 let bybitFuturesRadarWs = null;
+const _bybitFuturesThrottleMap = new Map(); // 500ms 쓰로틀: 체결 건별 DOM 폭주 방지
 
 export function startBybitFuturesFeed() {
   if (bybitFuturesRadarWs && bybitFuturesRadarWs.readyState !== WebSocket.CLOSED) {
@@ -49,13 +50,18 @@ export function startBybitFuturesFeed() {
         row.Bybit_Price_Futures = newPrice;
       }
 
-      // 실시간 테이블 렌더 큐 위임
+      // 실시간 렌더 큐 등록 (500ms 쓰로틀 적용)
       if (
         store.visibleSymbols &&
         (store.visibleSymbols.has(pureSym) || store.visibleSymbols.has(ticker))
       ) {
+        const now = Date.now();
+        const lastT = _bybitFuturesThrottleMap.get(ticker) || 0;
+        if (now - lastT < 500) return;
+        _bybitFuturesThrottleMap.set(ticker, now);
+
         if (typeof window.renderRealtimeRow === "function") {
-          window.renderRealtimeRow(ticker, { c: newPrice }, true);
+          window.renderRealtimeRow(ticker, { s: ticker, c: newPrice, e: "trade" }, true);
         }
       }
     });

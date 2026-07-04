@@ -200,6 +200,11 @@ def assemble_final_dashboard(
         if row:
             uid = str(row.get("UID") or base)
             if uid in final_results:
+                # 🚀 [오류 방어] 동명이인(DUPLICATED_LIST)인 경우 UID 불일치 시 덮어쓰기 및 병합 전파 차단
+                if base in duplicated_bases:
+                    if final_results[uid].get("UID") != uid:
+                        continue
+
                 final_results[uid]["Upbit"] = "O"
                 final_results[uid]["Listed_Exchanges"] = list(
                     set(

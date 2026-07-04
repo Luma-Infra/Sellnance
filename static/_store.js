@@ -97,7 +97,7 @@ export const store = {
   blockChartResize: false, // 🚀 차트 리사이즈 동기화 차단 여부
   blockTableTabScroll: false, // 🚀 테이블 스크롤/탭 갱신 차단 여부
   blockRadarBatch: false, // 🚀 실시간 레이더 배치 처리 차단 여부
-  blockRowDynamicHTML: true, // 🚀 [신규] 김프 전파 동적 HTML 갱신 차단 토글 (기본값: TRUE)
+  blockRowDynamicHTML: false, // 🚀 [신규] 김프 전파 동적 HTML 갱신 차단 토글 (기본값: TRUE)
   aggTradeInterval: 0, // 🚀 aggTrade 주기 조절 (ms 단위, 0 = Raw)
   lastFetchTime: 0, // 🚀 마지막 데이터 수집 시간 기록용
   isLogMode: false, // 🚀 차트 로그 스케일 활성화 여부

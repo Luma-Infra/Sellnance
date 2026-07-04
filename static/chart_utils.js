@@ -93,53 +93,55 @@ function resetChartScale() {
   }, 150);
 }
 
-// ✅ 포맷팅 by precision
-export function formatSmartPrice(price, p) {
+// ✅ 포맷팅 by precision (원화 가격과 달러 가격 분리 규칙 적용)
+export function formatSmartPrice(price, p, isKrw = false) {
   try {
     if (price === 0) return "0";
     if (!price || isNaN(price)) return "";
 
     const numPrice = parseFloat(price);
 
-    // 1️⃣ 100원 이상: 소수점 없이 정수 콤마 표기
-    if (numPrice >= 100) {
-      return Math.round(numPrice).toLocaleString(undefined, {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-      });
+    // 1️⃣ 원화(KRW) 가격 규칙: 실제 원화 가격 또는 추정된 원화 가격
+    if (isKrw) {
+      // 100원 이상: 소수점 없이 정수 콤마 표기
+      if (numPrice >= 100) {
+        return Math.round(numPrice).toLocaleString(undefined, {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0,
+        });
+      }
+
+      // 100원 미만 원화: 무조건 유효숫자 출몰부터 3개만 표기 (예: 1.22, 0.123, 0.000123)
+      const formattedStr = numPrice.toPrecision(3);
+      const parts = formattedStr.split("e");
+      if (parts.length === 1) {
+        const dotIndex = formattedStr.indexOf(".");
+        let decimals = 0;
+        if (dotIndex !== -1) {
+          const sub = formattedStr.substring(dotIndex + 1);
+          const firstActive = sub.search(/[1-9]/);
+          decimals = firstActive !== -1 ? firstActive + 3 : 3;
+        }
+        return numPrice.toLocaleString(undefined, {
+          minimumFractionDigits: decimals,
+          maximumFractionDigits: decimals,
+        });
+      } else {
+        const exp = Math.abs(parseInt(parts[1], 10));
+        const decimals = exp + 2; // e-N 일 때 유효숫자 3개를 위해 N+2 소수 자릿수가 필요함
+        return numPrice.toLocaleString(undefined, {
+          minimumFractionDigits: decimals,
+          maximumFractionDigits: decimals,
+        });
+      }
     }
 
-    // 2️⃣ 100원 미만: 무조건 유효숫자 출몰부터 3개만 표기 (예: 1.22, 0.123, 0.000123)
-    const formattedStr = numPrice.toPrecision(3);
-    
-    // 지수 표현식 (e-5 등) 우회 디코딩 처리
-    const parts = formattedStr.split("e");
-    if (parts.length === 1) {
-      // 일반 소수 형태
-      const dotIndex = formattedStr.indexOf(".");
-      let decimals = 0;
-      if (dotIndex !== -1) {
-        const sub = formattedStr.substring(dotIndex + 1);
-        const firstActive = sub.search(/[1-9]/);
-        if (firstActive !== -1) {
-          decimals = firstActive + 3;
-        } else {
-          decimals = 3;
-        }
-      }
-      return numPrice.toLocaleString(undefined, {
-        minimumFractionDigits: decimals,
-        maximumFractionDigits: decimals,
-      });
-    } else {
-      // 지수 형태일 때 소수점 아래 자릿수로 변환
-      const exp = Math.abs(parseInt(parts[1], 10));
-      const decimals = exp + 2; // e-N 일 때 유효숫자 3개를 위해 N+2 소수 자릿수가 필요함
-      return numPrice.toLocaleString(undefined, {
-        minimumFractionDigits: decimals,
-        maximumFractionDigits: decimals,
-      });
-    }
+    // 2️⃣ 달러(USD) 가격 규칙: 무조건 내려주는 precision에만 의존
+    const decimals = p !== undefined && p !== null ? Math.max(0, parseInt(p, 10)) : 2;
+    return numPrice.toLocaleString(undefined, {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    });
   } catch (error) {
     console.error("❌ formatSmartPrice 에러:", error.message);
     return String(price || "");

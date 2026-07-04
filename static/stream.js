@@ -91,10 +91,10 @@ export function syncRowPrioritizedMetrics(row) {
   if (pPrice !== null && pPrice !== undefined) row.Price_Raw = pPrice;
   if (p24h !== null && p24h !== undefined) row.Change_24h_Raw = p24h;
   if (pToday !== null && pToday !== undefined) row.Change_Today_Raw = pToday;
-  if (pOpen !== null && pOpen !== undefined) {
-    row.spot_utc0_open_Raw = pOpen;
-    row.futures_utc0_open_Raw = pOpen;
-    row.utc0_open_Raw = pOpen;
+  if (pOpen !== null && pOpen !== undefined && parseFloat(pOpen) > 0) {
+    row.spot_utc0_open_Raw = parseFloat(pOpen);
+    row.futures_utc0_open_Raw = parseFloat(pOpen);
+    row.utc0_open_Raw = parseFloat(pOpen);
   }
   row.Inflow_Path = pInflow;
   row.activeExchange = pInflow.toLowerCase().replace("_spot", "").replace("_futures", "");
@@ -109,6 +109,7 @@ export function syncRowPrioritizedMetrics(row) {
 window.syncRowPrioritizedMetrics = syncRowPrioritizedMetrics;
 
 // 🚀 3초 주기 레이더 스냅샷 인터벌 (소켓 정체 상황 시 메모리 기반 김프/지표 갱신 전파 루프)
+/* 🚀 [유저 요청] 3초 레이더 전체 로직 주석 처리 (성능 최적화 및 짭코인 덮어쓰기 오염 방지)
 if (store.radarIntervalId) clearInterval(store.radarIntervalId);
 store.radarIntervalId = setInterval(() => {
   if (store.blockRadarBatch) {
@@ -121,13 +122,17 @@ store.radarIntervalId = setInterval(() => {
 
   let dataUpdated = false;
   store.currentTableData.forEach((row) => {
-    const isKrwCoin = row.Ticker.endsWith("KRW") || row.Upbit === "O" || row.Bithumb === "O";
+    // 🚀 [FIX] 코인의 원화 마켓 여부는 탭 선택과 무관하게 오직 Ticker가 KRW로 끝나는지 여부로만 확실히 판별하여 해외 전용 코인(DASH 등)의 연산 오염 차단
+    const isKrwCoin = row.Ticker.endsWith("KRW");
+
     let ticker = null;
     let isFuturesTicker = false;
 
     if (isKrwCoin) {
+      const cleanTicker = row.Ticker.replace("KRW", "");
       ticker =
-        snapshot[`KRW-${row.Ticker.replace("KRW", "")}`] ||
+        snapshot[`KRW-${cleanTicker}`] ||
+        snapshot[`${cleanTicker}_KRW`] ||
         snapshot[row.Ticker];
     } else {
       const hasFutures =
@@ -148,23 +153,30 @@ store.radarIntervalId = setInterval(() => {
     }
 
     if (ticker) {
+      // 🚀 [신규 방어막] 최근 3초(3000ms) 내에 실시간 소켓이 더 최신 가격을 꽂아넣었다면, 3초 레이더의 낡은 캐시로 덮어쓰는 시간 역행을 원천 차단!
+      if (Date.now() - (row._LastRealtimeUpdate || 0) < 3000) {
+        return;
+      }
+
       // 🚀 [테이블 실시간 가격(Price) 동기화 및 전파 담당]
       if (isKrwCoin) {
         const rate = store.marketDataMap?.krw_usd_rate || 0;
         row.Price_KRW = parseFloat(ticker.c);
-        row.Price_Raw = row.Price_KRW / rate;
+        if (rate > 0) {
+          row.Price_Raw = row.Price_KRW / rate;
+        }
         if (row.Upbit === "O" || store.currentMarket !== "BITHUMB") {
           row.Upbit_Price = row.Price_KRW;
         } else {
           row.Bithumb_Price = row.Price_KRW;
         }
 
-        // 🚀 [렉 차단: 최적화] O(N^2) 내부 스캔 완전 박멸. Ticker명 매핑으로 직접 O(1) 탐색 교체
+        // 🚀 [FIX] 파트너 티커 전파 시 r.Ticker가 실제로 원화 마켓 코인인지 확실히 검증하여 해외 전용 코인(DASH 등) 침범 차단
         const pureBase = getPureBase(row.Symbol || row.Ticker);
         const partnerTicker = pureBase + "KRW";
         if (partnerTicker !== row.Ticker) {
           const r = store.tickerRowMap.get(partnerTicker);
-          if (r) {
+          if (r && (r.Ticker.endsWith("KRW") || r.Upbit === "O" || r.Bithumb === "O")) {
             if (!r.UID || !row.UID || r.UID == row.UID) {
               r.Price_KRW = row.Price_KRW;
               r.Upbit_Price = row.Upbit_Price;
@@ -256,26 +268,30 @@ store.radarIntervalId = setInterval(() => {
     }
 
     // 🚀 [국내 거래소 실시간 거래대금(Volume) 누적 동기화 담당]
-    const upbitVolCell =
-      document.getElementById(`vol-upbit-${row.Ticker}`) ||
-      document.getElementById(`vol-upbit-${row.Ticker.toUpperCase()}`) ||
-      document.getElementById(`vol-upbit-${row.Ticker.toLowerCase()}`) ||
-      (row.Symbol ? document.getElementById(`vol-upbit-KRW-${row.Symbol.toUpperCase()}`) : null);
+    // snapshot에 upbit vol 데이터가 있을 때만 getElementById 실행 (이전: 모든 행마다 4회 쿼리 = 300행 × 4 = 1200 DOM 쿼리/3초)
+    const upbitSnap = snapshot[row.Ticker];
+    if (upbitSnap?.q_upbit) {
+      const upbitVolCell =
+        document.getElementById(`vol-upbit-${row.Ticker}`) ||
+        document.getElementById(`vol-upbit-${row.Ticker.toUpperCase()}`) ||
+        document.getElementById(`vol-upbit-${row.Ticker.toLowerCase()}`) ||
+        (row.Symbol ? document.getElementById(`vol-upbit-KRW-${row.Symbol.toUpperCase()}`) : null);
 
-    if (upbitVolCell && snapshot[row.Ticker] && snapshot[row.Ticker].q_upbit) {
-      row.Upbit_Vol = parseFloat(snapshot[row.Ticker].q_upbit);
-      if (
-        store.currencyMode === "KRW" &&
-        typeof window.formatVolumeKRW === "function"
-      ) {
-        row.Upbit_Vol_Formatted = window.formatVolumeKRW(row.Upbit_Vol);
-      } else if (typeof window.formatVolumeDollar === "function") {
-        const rate = store.marketDataMap?.krw_usd_rate || 1;
-        row.Upbit_Vol_Formatted = window.formatVolumeDollar(
-          row.Upbit_Vol / (rate > 0 ? rate : 1)
-        );
+      if (upbitVolCell) {
+        row.Upbit_Vol = parseFloat(upbitSnap.q_upbit);
+        if (
+          store.currencyMode === "KRW" &&
+          typeof window.formatVolumeKRW === "function"
+        ) {
+          row.Upbit_Vol_Formatted = window.formatVolumeKRW(row.Upbit_Vol);
+        } else if (typeof window.formatVolumeDollar === "function") {
+          const rate = store.marketDataMap?.krw_usd_rate || 1;
+          row.Upbit_Vol_Formatted = window.formatVolumeDollar(
+            row.Upbit_Vol / (rate > 0 ? rate : 1)
+          );
+        }
+        upbitVolCell.innerText = row.Upbit_Vol_Formatted || "-";
       }
-      upbitVolCell.innerText = row.Upbit_Vol_Formatted || "-";
     }
 
     // 🚀 [테이블 김치 프리미엄 연산 및 화면 렌더 전파 담당] 3초 주기 레이더 스냅샷 (소켓 신호 유무 관계없이 가격이 존재하면 상시 연산)
@@ -295,8 +311,13 @@ store.radarIntervalId = setInterval(() => {
             r.Kimchi_Label = "-";
             r.Kimchi_Formatted = "-";
 
-            // 🚀 [렉 차단] 동기 렌더링 대신 rAF 배치 큐에 예약 위임
-            if (window._realtimeRenderQueue) {
+            // 🚀 [렉 차단] visible 코인에만 DOM 큐 예약 (3초 주기는 setInterval이 보장)
+            const _isVisR1 = store.visibleSymbols?.has(r.Ticker) ||
+              store.visibleSymbols?.has(r.Ticker?.toUpperCase()) ||
+              store.visibleSymbols?.has(r.Ticker?.toLowerCase()) ||
+              store.visibleSymbols?.has(r.Symbol) ||
+              store.visibleSymbols?.has(r.DisplayTicker);
+            if (_isVisR1 && window._realtimeRenderQueue) {
               window._realtimeRenderQueue.set(r.Ticker, () => {
                 const rowEl = store.rowDomMap ? store.rowDomMap.get(r.Ticker) : null;
                 if (rowEl && typeof window.updateRowDynamicHTML === "function") {
@@ -323,8 +344,8 @@ store.radarIntervalId = setInterval(() => {
             }
           }
 
-          const domMult = getMultiplier(r.Upbit_Symbol || r.Symbol || r.Ticker);
-          const ovsMult = getMultiplier(r.Exact_Futures || r.Exact_Spot || r.Symbol || r.Ticker);
+          const domMult = getMultiplier(r.Upbit_Symbol || (r.Bithumb_Symbol ? r.Bithumb_Symbol : null));
+          const ovsMult = getMultiplier(r.Exact_Futures || r.Exact_Spot || r.Symbol);
           const unitKorPrice = priceKor / domMult;
           const unitGlbPrice = (r.Price_Raw || 0) / ovsMult;
 
@@ -352,8 +373,13 @@ store.radarIntervalId = setInterval(() => {
             r.Kimchi_Label = "-";
             r.Kimchi_Formatted = "-";
 
-            // 🚀 [렉 차단] 동기 렌더링 대신 rAF 배치 큐에 예약 위임
-            if (window._realtimeRenderQueue) {
+            // 🚀 [렉 차단] visible 코인에만 DOM 큐 예약 (3초 주기는 setInterval이 보장)
+            const _isVisR2 = store.visibleSymbols?.has(r.Ticker) ||
+              store.visibleSymbols?.has(r.Ticker?.toUpperCase()) ||
+              store.visibleSymbols?.has(r.Ticker?.toLowerCase()) ||
+              store.visibleSymbols?.has(r.Symbol) ||
+              store.visibleSymbols?.has(r.DisplayTicker);
+            if (_isVisR2 && window._realtimeRenderQueue) {
               window._realtimeRenderQueue.set(r.Ticker, () => {
                 const rowEl = store.rowDomMap ? store.rowDomMap.get(r.Ticker) : null;
                 if (rowEl && typeof window.updateRowDynamicHTML === "function") {
@@ -412,6 +438,7 @@ store.radarIntervalId = setInterval(() => {
     dataUpdated = true;
   });
 }, 3000);
+*/
 
 // 🚀 각 피드 드라이버 초기 기동 바인딩 (초기 기동 렉 방지를 위해 우선순위가 높은 국내 전용 소켓 피드만 점화)
 export function initAllExchangeFeeds() {
@@ -428,3 +455,4 @@ export function initAllExchangeFeeds() {
 }
 
 window.initAllExchangeFeeds = initAllExchangeFeeds;
+window.syncRowPrioritizedMetrics = syncRowPrioritizedMetrics;

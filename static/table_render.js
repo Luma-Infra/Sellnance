@@ -315,9 +315,9 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
   if (typeof window !== "undefined" && !window.updateRowDynamicHTML) {
     window.updateRowDynamicHTML = updateRowDynamicHTML;
   }
-  if (typeof window.syncRowPrioritizedMetrics === "function") {
-    window.syncRowPrioritizedMetrics(row);
-  }
+  // if (typeof window.syncRowPrioritizedMetrics === "function") {
+  //   window.syncRowPrioritizedMetrics(row);
+  // }
   const tId = row.Ticker;
   const p = row.precision || 2;
   const currentMarket = store.currentMarket || "ALL";
@@ -374,18 +374,11 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
       nPrice = row.Ticker?.endsWith("KRW") ? (rate > 0 ? (row.Price_KRW || 0) / rate : (row.Price_KRW || 0)) : (row.Price_Raw || 0);
     }
 
-    // 🚀 [추가] ALL 모드에서 24h 변동률 우선순위 단일 매칭 독점 바인딩 (바낸 선물 -> 바낸 현물 -> 업비트 -> 빗썸)
-    if (hasFutures) {
-      n24h = row.Change_24h_Futures_Ex ?? n24h;
-    } else if (hasSpot) {
-      n24h = row.Change_24h_Binance ?? n24h;
-    } else {
-      n24h = row.Change_24h_Upbit
-      //  ?? row.Change_24h_Bithumb ?? n24h;
-    }
+    // 🚀 [추가] ALL 모드에서 24h 변동률 우선순위 단일 매칭 독점 바인딩 (Change_24h_Raw 직접 락킹)
+    n24h = row.Change_24h_Raw ?? 0;
   }
-
-  const formattedPrice = formatSmartPrice(nPrice, p);
+  const isKrw = store.currencyMode === "KRW" || currentMarket === "UPBIT" || currentMarket === "BITHUMB" || row.Ticker?.endsWith("KRW");
+  const formattedPrice = formatSmartPrice(nPrice, p, isKrw);
 
   const color24h =
     n24h > 0
@@ -408,17 +401,8 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
         ? row.Change_Today_Binance
         : row.Change_Today_Bybit) ?? nDay;
   } else if (currentMarket === "ALL" || currentMarket === "KIMCHI" || currentMarket === "NEW") {
-    // 🚀 [추가] ALL 모드에서 오늘(Today) 변동률 우선순위 단일 매칭 독점 바인딩 (바낸 선물 -> 바낸 현물 -> 업비트 -> 빗썸)
-    const hasFutures = row.Binance_Futures === "O" || row.Listed_Exchanges?.includes("BINANCE_FUTURES");
-    const hasSpot = row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE");
-
-    if (hasFutures) {
-      nDay = row.Change_Today_Futures ?? nDay;
-    } else if (hasSpot) {
-      nDay = row.Change_Today_Binance ?? nDay;
-    } else {
-      nDay = row.Change_Today_Upbit ?? nDay;
-    }
+    // 🚀 [추가] ALL 모드에서 오늘(Today) 변동률 우선순위 단일 매칭 독점 바인딩 (Change_Today_Raw 직접 락킹)
+    nDay = row.Change_Today_Raw ?? 0;
   }
   const colorDay =
     nDay > 0
@@ -434,7 +418,7 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
   const priceCell = rowEl.querySelector(".col-price");
   if (priceCell) {
     priceCell.classList.remove("price-placeholder");
-    
+
     // 구조가 없으면 최초 1회만 innerHTML 생성
     let container = priceCell.querySelector(".price-container");
     if (!container) {
@@ -514,14 +498,14 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
     const mcapText = row.MarketCap_Formatted || "-";
 
     const volBEl = container.querySelector(`#vol-binance-${tId}`);
-    if (volBEl) {
+    if (volBEl && volBEl.textContent !== volBText) {
       volBEl.textContent = volBText;
       const fs = CONFIG.FONT_SCALE;
       if (fs && volBText.length > fs.VOL_THRESHOLD) {
         const size = Math.max(fs.VOL_MIN_SIZE, fs.VOL_BASE_SIZE - (volBText.length - fs.VOL_THRESHOLD) * fs.VOL_REDUCE_STEP);
-        volBEl.style.fontSize = `${size}px`;
+        if (volBEl.style.fontSize !== `${size}px`) volBEl.style.fontSize = `${size}px`;
       } else {
-        volBEl.style.fontSize = "";
+        if (volBEl.style.fontSize !== "") volBEl.style.fontSize = "";
       }
     }
 
@@ -557,7 +541,7 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
     const volUText = (row.Upbit_Vol_Formatted && row.Upbit_Vol_Formatted !== "-" && row.Upbit_Vol_Formatted !== "0") ? row.Upbit_Vol_Formatted : "-";
 
     const volUEl = container.querySelector(`#vol-upbit-${tId}`);
-    if (volUEl) {
+    if (volUEl && volUEl.textContent !== volUText) {
       volUEl.textContent = volUText;
       const fs = CONFIG.FONT_SCALE;
       if (fs && volUText.length > fs.VOL_THRESHOLD) {
@@ -569,7 +553,7 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
     }
 
     const vmcEl = container.querySelector(`#vmc-${tId}`);
-    if (vmcEl) {
+    if (vmcEl && vmcEl.textContent !== vmcFormatted) {
       vmcEl.textContent = vmcFormatted;
       const fs = CONFIG.FONT_SCALE;
       if (fs && vmcFormatted.length > fs.VMC_THRESHOLD) {
@@ -633,7 +617,7 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
   const exchCell = rowEl.querySelector(".col-exch");
   if (exchCell) {
     exchCell.classList.remove("exch-placeholder");
-    
+
     // exchCell은 변경 빈도가 극히 낮으므로 innerHTML이 없을 때만 1회 빌드
     if (!exchCell.querySelector(".exch-grid-trigger")) {
       exchCell.innerHTML = `
@@ -951,11 +935,11 @@ export function renderTable(isRealtime = false) {
       const rowEl = store.rowDomMap.get(rowData.Ticker);
       if (rowEl) {
         const oldIndex = parseInt(rowEl.dataset.index);
-        // 🚀 실시간 정렬 시 30위 이하(31등~) 코인은 순위 재정렬을 하지 않고 현재 위치에 고정(Fix)시킵니다.
-        // 단, 30위 내에 있다가 밖으로 처음 밀려날 때 1회(31~ 등 최초 도착지)는 배치해준 뒤 고정됩니다.
+        // 🚀 실시간 정렬 시 30위 이하(31등~) 코인은 불필요한 연속 렌더링 방지를 위해 위치를 고정시키되,
+        // 현재 위치(oldIndex)가 실제 정렬 순위(i)와 달라질 때만 딱 1번 올바른 목적지(31위든 300위든)에 공백/겹침 없이 정밀 배치하고 고정시킵니다.
         let needsPositionUpdate = !isRealtime || i < 30 || oldIndex < 30 || isNaN(oldIndex) || oldIndex !== i;
         if (isRealtime && i >= 30 && oldIndex >= 30) {
-          needsPositionUpdate = false;
+          needsPositionUpdate = (oldIndex !== i);
         }
 
         if (needsPositionUpdate) {
@@ -1025,6 +1009,9 @@ export function renderTable(isRealtime = false) {
   applySelectedHighlight();
   if (typeof window.refreshSniperTarget === "function") {
     setTimeout(() => window.refreshSniperTarget(), 10);
+  }
+  if (typeof window.syncSniperSubscriptions === "function") {
+    window.syncSniperSubscriptions();
   }
 }
 
@@ -1308,6 +1295,10 @@ export function applyPriceFlash(element, newPrice, oldPrice) {
   if (!element || newPrice === oldPrice) return;
   if (!store.useFlip) return;
 
+  // ✅ [비동기 누수 원천 차단] 기존에 돌고 있던 플래시 타이머 저격 해제
+  if (element._flashTimerId) {
+    clearTimeout(element._flashTimerId);
+  }
   const flashClass = newPrice > oldPrice ? "flash-up" : "flash-down";
   element.classList.remove("flash-up", "flash-down");
 
@@ -1317,7 +1308,12 @@ export function applyPriceFlash(element, newPrice, oldPrice) {
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       element.classList.add(flashClass);
-      setTimeout(() => element.classList.remove(flashClass), 500);
+
+      // ✅ 요소 자체 프로퍼티에 타이머 ID 락 보관
+      element._flashTimerId = setTimeout(() => {
+        element.classList.remove(flashClass);
+        element._flashTimerId = null;
+      }, 500);
     });
   });
 }
@@ -1435,29 +1431,24 @@ window.updateRowPriceDisplay = (target, row) => {
     if (!span) return;
 
     if (ex === activeExchange) {
-      const formattedPrice = isKrwMode
-        ? `${Number(displayPrice).toLocaleString()} 원`
-        : window.formatSmartPrice(displayPrice, p);
+      const isKrw = isKrwMode || ["upbit", "bithumb"].includes(ex);
+      const formattedPrice = window.formatSmartPrice(displayPrice, p, isKrw) + (isKrw ? " 원" : "");
 
       const numEl = span.querySelector(".price-num");
       // 🚀 [성능 극대화] innerText는 CSS 레이아웃을 계산하므로 렌더링 폭탄입니다. 단순 textContent로 교체하여 브라우저 부담을 90% 이상 줄입니다.
       // 🚀 또한 값이 실제로 다를 때만 DOM을 건드리도록 방어코드 추가 (DOM Mutation 렉 차단)
       if (numEl && numEl.textContent !== formattedPrice) {
         numEl.textContent = formattedPrice;
-      }
 
-      // 🚀 글자 수에 비례하여 동적으로 폰트 크기 축소
-      const len = formattedPrice.length;
-      const fs = CONFIG.FONT_SCALE;
-      if (fs && len > fs.PRICE_THRESHOLD) {
-        const sizePx = Math.max(
-          fs.PRICE_MIN_SIZE,
-          fs.PRICE_BASE_SIZE -
-          (len - fs.PRICE_THRESHOLD) * fs.PRICE_REDUCE_STEP,
-        );
-        parentEl.style.fontSize = `${sizePx}px`;
-      } else {
-        parentEl.style.fontSize = "";
+        // 🚀 글자 수에 비례하여 동적으로 폰트 크기 축소
+        const len = formattedPrice.length;
+        const fs = CONFIG.FONT_SCALE;
+        if (fs && len > fs.PRICE_THRESHOLD) {
+          const sizePx = Math.max(fs.PRICE_MIN_SIZE, fs.PRICE_BASE_SIZE - (len - fs.PRICE_THRESHOLD) * fs.PRICE_REDUCE_STEP);
+          if (parentEl.style.fontSize !== `${sizePx}px`) parentEl.style.fontSize = `${sizePx}px`;
+        } else {
+          if (parentEl.style.fontSize !== "") parentEl.style.fontSize = "";
+        }
       }
 
       const isFutures = row.Listed_Exchanges?.includes(
@@ -1573,7 +1564,7 @@ if (typeof window !== "undefined") {
           warnEl.style.fontSize = `${Math.max(8, 3 * scale)}px`;
           warnEl.style.fontWeight = "500";
           warnEl.style.letterSpacing = "-0.025em";
-          warnEl.style.marginTop = `${6 * scale}px`;
+          warnEl.style.marginTop = `${4 * scale}px`;
           warnEl.style.opacity = "0.6";
           warnEl.style.color = isLightMode ? "#333333" : "#d2d2d2";
           warnEl.innerText = "* 실시간 상장 정보와 다를 수 있습니다";

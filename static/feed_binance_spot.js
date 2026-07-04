@@ -85,8 +85,10 @@ export function initBinanceSniperSocket() {
     const data = JSON.parse(e.data);
     if (data.e === "aggTrade" || data.e === "24hrTicker") {
       if (typeof window.renderRealtimeRow === "function") {
-        const isFutures = store.currentMarket === "FUTURES";
-        window.renderRealtimeRow(data.s, data, isFutures);
+        const tickerKey = data.s || "";
+        const row = store.tickerRowMap.get(tickerKey + "_FUTURES") || store.tickerRowMap.get(tickerKey);
+        const isFutures = row ? (row.Binance_Futures === "O" || (row.Listed_Exchanges || []).includes("BINANCE_FUTURES")) : (store.currentMarket === "FUTURES");
+        window.renderRealtimeRow(tickerKey, data, isFutures);
       }
     }
   };

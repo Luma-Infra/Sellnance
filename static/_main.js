@@ -6,6 +6,7 @@ import {
   clearSearch,
   selectSymbol,
   updateExchangeBadges,
+  switchViewMode,
 } from "./ui_control.js";
 import { fetchHistory, clearChartData } from "./chart_data.js";
 import { initChart } from "./chart.js";
@@ -462,9 +463,7 @@ function restoreSavedUserSettings() {
 
     // 5. 테이블 상세/간편 뷰 모드 복원
     const savedViewMode = localStorage.getItem("sellnance_table_view_mode") || "basic";
-    import("./ui_control.js").then(({ switchViewMode }) => {
-      switchViewMode(savedViewMode);
-    });
+    switchViewMode(savedViewMode);
   } catch (e) {
     // Xconsole.error("Failed to restore user settings:", e);
   }
@@ -723,26 +722,36 @@ function setupButtonEvents() {
   }
 }
 
-// 💡 검색창 내 방향키 위/아래 이동 및 엔터 선택 로직
+// 💡 검색창 내 방향키 위/아래 이동 및 엔터 선택 로직 (눈에 보이는 절대 인덱스 기준 완전 동기화)
 function setupSearchNavigation() {
   const symbolInput = document.getElementById("symbol-input");
   if (!symbolInput) return;
 
   let activeIndex = -1;
 
+  // 인덱스 리셋 함수
   const resetActiveIndex = () => {
     activeIndex = -1;
+    const resDiv = document.getElementById("search-results");
+    if (resDiv) {
+      const items = Array.from(resDiv.children);
+      updateHighlight(items, -1);
+    }
   };
 
-  symbolInput.addEventListener("input", resetActiveIndex);
-  symbolInput.addEventListener("click", resetActiveIndex);
-  symbolInput.addEventListener("focus", resetActiveIndex);
+  symbolInput.addEventListener("input", () => {
+    // 검색어가 바뀔 때만 리셋하되 하이라이트를 즉각 해제
+    activeIndex = -1;
+  });
 
   symbolInput.addEventListener("keydown", (e) => {
     const resDiv = document.getElementById("search-results");
     if (!resDiv || resDiv.style.display === "none") return;
 
-    const items = Array.from(resDiv.children);
+    // 실시간으로 렌더링된 자식 노드(절대 순서)를 매번 새로 수집
+    const items = Array.from(resDiv.children).filter(
+      (item) => item.style.display !== "none"
+    );
     if (items.length === 0) return;
 
     if (e.key === "ArrowDown") {
@@ -758,18 +767,24 @@ function setupSearchNavigation() {
       if (activeIndex >= 0 && activeIndex < items.length) {
         items[activeIndex].click();
       } else if (items.length > 0) {
-        items[0].click();
+        items[0].click(); // 포커스가 없더라도 첫번째 보이는 절대 1위 아이템 선택
       }
+      resetActiveIndex();
+    } else if (e.key === "Escape") {
+      resDiv.style.display = "none";
+      resetActiveIndex();
     }
   });
 
   function updateHighlight(items, index) {
     items.forEach((item, i) => {
       if (i === index) {
-        item.style.backgroundColor = "rgba(255, 255, 255, 0.1)";
+        item.style.backgroundColor = "rgba(255, 255, 255, 0.15)";
+        item.style.color = "#0ecb81"; // 포커스 대상 글자색 강조
         item.scrollIntoView({ block: "nearest" });
       } else {
         item.style.backgroundColor = "";
+        item.style.color = "";
       }
     });
   }
@@ -870,81 +885,57 @@ document.addEventListener("keydown", (e) => {
     return;
   }
 
-  // 💡 2. 상하 방향키: 테이블 리스트 탐색 (화면상 보이는 HTML 행 기준 위/아래 전후진)
+  // 💡 2. 상하 방향키: 테이블 리스트 탐색 (논리적 정렬 데이터 절대 인덱스 기준 이동)
   if (up || down) {
     e.preventDefault();
 
-    const activeRow = document.querySelector(
-      `#coin-list-body .coin-row[data-sym="${store.currentSelectedSymbol}"]`,
-    );
-
-    let nextRow = null;
-
-    if (!activeRow) {
-      // 선택된 행이 없으면 화면에 노출된 첫 번째 비숨김 행 선택
-      const firstRow = document.querySelector("#coin-list-body .coin-row");
-      if (firstRow) {
-        nextRow = firstRow;
-        while (
-          nextRow &&
-          (nextRow.style.display === "none" ||
-            nextRow.classList.contains("hidden"))
-        ) {
-          nextRow = nextRow.nextElementSibling;
-        }
-      }
+    // 1. 현재 필터/정렬 상태가 반영된 전체 논리 데이터 목록 수집
+    let sortedList = [];
+    if (typeof window.getFilteredData === "function") {
+      sortedList = window.getFilteredData();
     } else {
-      // 🚀 아래 방향키로 탐색 시 마지막 렌더링 행에 도달하면 자동으로 한계치를 늘려 추가 렌더링 수행
-      if (down && !activeRow.nextElementSibling) {
-        let sortedList = [];
-        if (typeof window.getFilteredData === "function") {
-          sortedList = window.getFilteredData();
-        } else {
-          sortedList = store.currentTableData || [];
-        }
-        let currentIndex = sortedList.findIndex(
-          (item) => item.Ticker === store.currentSelectedSymbol,
-        );
-        if (currentIndex !== -1 && currentIndex + 1 < sortedList.length) {
-          store.currentRenderLimit = Math.min(
-            sortedList.length,
-            store.currentRenderLimit + 15,
-          );
-          if (typeof window.renderTable === "function") window.renderTable();
-          else if (typeof renderTable === "function") renderTable();
-        }
-      }
-
-      // 현재 선택된 행 기준 위/아래로 이동하며 화면에 표시된 다음 행 탐색
-      let temp = activeRow;
-      do {
-        temp = up ? temp.previousElementSibling : temp.nextElementSibling;
-      } while (
-        temp &&
-        (temp.style.display === "none" || temp.classList.contains("hidden"))
-      );
-      nextRow = temp;
+      sortedList = store.currentTableData || [];
     }
 
-    if (!nextRow) return;
+    if (sortedList.length === 0) return;
 
-    const nextSym = nextRow.getAttribute("data-sym");
-    if (!nextSym) return;
+    // 2. 현재 선택된 심볼이 논리 리스트의 몇 번째 인덱스에 있는지 탐색
+    let currentIdx = sortedList.findIndex(
+      (item) => item.Ticker === store.currentSelectedSymbol
+    );
 
-    const nextCoin = (
-      store.originalTableData ||
-      store.currentTableData ||
-      []
-    ).find((c) => c.Ticker === nextSym);
+    let nextCoin = null;
+
+    if (currentIdx === -1) {
+      // 선택된 코인이 없으면 리스트 맨 처음 코인 선택
+      nextCoin = sortedList[0];
+    } else {
+      let targetIdx = up ? currentIdx - 1 : currentIdx + 1;
+
+      // 아래 방향키로 이동 시 렌더 한계점 자동 조절
+      if (down && targetIdx >= store.currentRenderLimit) {
+        store.currentRenderLimit = Math.min(
+          sortedList.length,
+          store.currentRenderLimit + 15
+        );
+        if (typeof window.renderTable === "function") window.renderTable();
+        else if (typeof renderTable === "function") renderTable();
+      }
+
+      // 인덱스 범위 한계 도달 체크 및 보정
+      if (targetIdx >= 0 && targetIdx < sortedList.length) {
+        nextCoin = sortedList[targetIdx];
+      }
+    }
 
     if (nextCoin) {
       store.currentSelectedSymbol = nextCoin.Ticker;
       selectSymbol(nextCoin.Ticker);
 
-      // 🚀 [해결] DOM 구조와 선택 상태 맵핑이 완벽히 수립된 50ms 뒤에 scroll 및 highlight 처리
+      // 🚀 가상 스크롤로 포커싱 코인이 화면 밖으로 탈출할 때 자동 스크롤 동기화
       setTimeout(() => {
         const targetRow = document.querySelector(
-          `#coin-list-body .coin-row[data-sym="${nextCoin.Ticker}"]`,
+          `#coin-list-body .coin-row[data-sym="${nextCoin.Ticker}"]`
         );
         if (targetRow) {
           targetRow.scrollIntoView({ block: "nearest", behavior: "instant" });
@@ -954,7 +945,8 @@ document.addEventListener("keydown", (e) => {
         } else if (typeof applySelectedHighlight === "function") {
           applySelectedHighlight();
         }
-      }, 50);
+      }, 30);
+      return;
     }
   }
 });

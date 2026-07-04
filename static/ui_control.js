@@ -602,13 +602,19 @@ function toggleKimchiBlock(checked) {
 
   const childRadar = document.getElementById("block-radardatabatch-toggle");
   const containerRadar = document.getElementById("child-radardatabatch-container");
+  const childDynamicHtml = document.getElementById("block-dynamic-html-toggle");
+  const containerDynamicHtml = document.getElementById("child-dynamichtml-container");
 
   if (checked) {
     if (childRadar) { childRadar.disabled = true; childRadar.checked = true; store.blockRadarBatch = true; }
     if (containerRadar) containerRadar.style.opacity = "0.4";
+    if (childDynamicHtml) { childDynamicHtml.disabled = true; childDynamicHtml.checked = true; store.blockRowDynamicHTML = true; }
+    if (containerDynamicHtml) containerDynamicHtml.style.opacity = "0.4";
   } else {
     if (childRadar) { childRadar.disabled = false; childRadar.checked = false; store.blockRadarBatch = false; }
     if (containerRadar) containerRadar.style.opacity = "1.0";
+    if (childDynamicHtml) { childDynamicHtml.disabled = false; childDynamicHtml.checked = false; store.blockRowDynamicHTML = false; }
+    if (containerDynamicHtml) containerDynamicHtml.style.opacity = "1.0";
   }
 }
 
@@ -1354,6 +1360,12 @@ function syncCheckboxesFromStore() {
   check("block-kimchi-toggle", store.blockKimchi);
   check("block-tabscroll-toggle", store.blockTableTabScroll);
   check("block-radardatabatch-toggle", store.blockRadarBatch);
+  check("block-dynamic-html-toggle", store.blockRowDynamicHTML);
+
+  // 🚀 부모 차단 상태에 맞춰 자식 비활성화(disabled) 및 시각 피드백(opacity) 강제 싱크
+  toggleRightDomBlock(!!store.blockRightDom);
+  toggleLeftDomBlock(!!store.blockLeftDom);
+  toggleKimchiBlock(!!store.blockKimchi);
 }
 
 document.addEventListener("DOMContentLoaded", () => {

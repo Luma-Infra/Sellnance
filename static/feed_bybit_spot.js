@@ -2,6 +2,7 @@
 import { store } from "./_store.js";
 
 let bybitSpotRadarWs = null;
+const _bybitSpotThrottleMap = new Map(); // 500ms 쓰로틀: 체결 건별 DOM 폭주 방지
 
 export function startBybitSpotFeed() {
   if (bybitSpotRadarWs && bybitSpotRadarWs.readyState !== WebSocket.CLOSED) {
@@ -49,13 +50,18 @@ export function startBybitSpotFeed() {
         row.Bybit_Price_Spot = newPrice;
       }
 
-      // 실시간 테이블 렌더 큐 위임
+      // 실시간 렌더 큐 등록 (500ms 쓰로틀 적용 - publicTrade는 체결 건별 이벤트라 무제한 유입됨)
       if (
         store.visibleSymbols &&
         (store.visibleSymbols.has(pureSym) || store.visibleSymbols.has(ticker))
       ) {
+        const now = Date.now();
+        const lastT = _bybitSpotThrottleMap.get(ticker) || 0;
+        if (now - lastT < 500) return;
+        _bybitSpotThrottleMap.set(ticker, now);
+
         if (typeof window.renderRealtimeRow === "function") {
-          window.renderRealtimeRow(ticker, { c: newPrice }, false);
+          window.renderRealtimeRow(ticker, { s: ticker, c: newPrice, e: "trade" }, false);
         }
       }
     });

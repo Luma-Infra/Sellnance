@@ -50,7 +50,7 @@ export function startBithumbFeed() {
 
       // 🚀 [HTS Bithumb 전용 격리 적재] 오직 빗썸 가격 변수만 정밀 대입 (O(1) 해시 색인 탐색)
       const row = store.tickerRowMap.get(tickSymbol) || store.tickerRowMap.get(pureSym);
-      if (row) {
+      if (row && (row.Bithumb === "O" || row.Listed_Exchanges?.includes("BITHUMB") || row.Bithumb_Symbol)) {
         row.Bithumb_Price = newPrice;
         // 업비트에 상장되지 않은 빗썸 단독 상장 코인인 경우에만 Price_KRW로 전파 허용
         const exList = (row.Listed_Exchanges || []).map((e) => e.toUpperCase());

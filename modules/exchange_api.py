@@ -1,6 +1,7 @@
 # exchange_api.py
 from concurrent.futures import ThreadPoolExecutor, wait
 import requests
+from requests.adapters import HTTPAdapter
 from modules import config_manager, utils
 from modules.utils import is_valid_ticker
 from datetime import datetime, timezone
@@ -8,7 +9,7 @@ import json
 import os
 
 # 🚀 9시 시가 캐시 (메모리 & 파일)
-UTC0_CACHE_FILE = "utc0_prices.json"
+UTC0_CACHE_FILE = "static/utc0_prices.json"
 UTC0_OPEN_CACHE = {}
 
 
@@ -298,7 +299,7 @@ def fetch_exchange_market_data(mapping):
 # 전역 세션 객체 생성 (커넥션 풀링을 통한 속도 극대화)
 api_session = requests.Session()
 # 🚀 [FIX] 커넥션 풀 사이즈 확장 (기본 10 -> 100)
-adapter = requests.adapters.HTTPAdapter(pool_connections=100, pool_maxsize=100)
+adapter = HTTPAdapter(pool_connections=100, pool_maxsize=100)
 api_session.mount("https://", adapter)
 api_session.mount("http://", adapter)
 
@@ -350,9 +351,13 @@ def fetch_missing_utc0_opens_parallel(tasks):
         ).json()
         if isinstance(res_trading_day, list):
             for item in res_trading_day:
-                sym = item["symbol"].replace("USDT", "")
-                if is_valid_ticker(sym):
-                    UTC0_OPEN_CACHE[today_str][sym] = float(item["openPrice"])
+                symbol_str = item.get("symbol", "")
+                if symbol_str.endswith("USDT"):
+                    sym = symbol_str[
+                        :-4
+                    ]  # 🚀 [FIX] replace 대신 안전한 슬라이싱으로 NOMO -> NOM 오염 방지
+                    if is_valid_ticker(sym):
+                        UTC0_OPEN_CACHE[today_str][sym] = float(item["openPrice"])
             print(
                 f"✅ [벌크 도킹] 현물 tradingDay API로 {len(res_trading_day)}개 종목 09시 시가 1초컷 확보!"
             )
@@ -384,6 +389,20 @@ def fetch_missing_utc0_opens_parallel(tasks):
                     return sym, is_fut, float(r[0][1])
             except:
                 pass
+
+            # 🚀 [FIX] 바이낸스에 없는 바이비트 단독 코인은 바이비트 klines API로 시가를 백업 수집합니다.
+            try:
+                category = "linear" if is_fut else "spot"
+                bybit_url = f"https://api.bybit.com/v5/market/kline?category={category}&symbol={sym}USDT&interval=D&limit=1"
+                res = api_session.get(bybit_url, timeout=5).json()
+                k_list = res.get("result", {}).get("list", [])
+                if k_list and len(k_list) > 0:
+                    # 바이비트 klines D 응답: [startTime, openPrice, highPrice, lowPrice, closePrice, volume, turnover]
+                    # list[0][1]이 당일 시가(openPrice)를 나타냅니다.
+                    return sym, is_fut, float(k_list[0][1])
+            except:
+                pass
+
             return sym, is_fut, None
 
         # 🚀 사령관님 보호를 위해 max_workers=5으로 철벽 스로틀링!

@@ -396,13 +396,11 @@ def build_binance_row(
         "Chain": chain,
         "Is_Stock": is_stock,
         "precision": precision,
-
         # 공통 거래소 상장 여부 정보
         "Upbit": "O" if target_up_base else "X",
         "Binance": "O" if binance_spot_price > 0 else "X",
         "Binance_Futures": "O" if binance_futures_price > 0 else "X",
         "Bithumb_Symbol": bithumb_symbol,
-
         # 공통 화면 표시용 가공 가격 및 김프 연산 데이터
         "Price": utils.format_dynamic_price(b_info["price"], precision),
         "Price_KRW": up_price_krw if up_price_krw > 0 else None,
@@ -416,7 +414,6 @@ def build_binance_row(
         ),
         "Upbit_Price": up_price_krw if up_price_krw > 0 else None,
         "Bithumb_Price": bithumb_price if bithumb_price > 0 else None,
-
         "Change_24h": utils.format_change(change_24h),
         "Change_Today": utils.format_change(change_today),
         "Kimchi_Formatted": f"{kimchi_raw:+.2f}%" if kimchi_raw is not None else "-",
@@ -426,7 +423,6 @@ def build_binance_row(
         "MarketCap_Formatted": utils.format_market_cap_string(mcap),
         "VMC_Formatted": f"{vmc_raw:.2f}%",
         "Binance_Vol_Formatted": utils.format_volume_string(binance_vol),
-
         # 공통 정렬 연산용 순수 숫자 데이터 (Raw)
         "Price_Raw": price,
         "Change_24h_Raw": change_24h,
@@ -438,42 +434,46 @@ def build_binance_row(
         "Kimchi_Raw": kimchi_raw,
         "utc0_open_Raw": utc0_open,
         "utc0_open_KRW": dom_open_krw if dom_open_krw > 0 else None,
-
         # 공통 기타 메타 정보
         "Spot_Only": "O" if b_info.get("is_spot_only") else "X",
         "Tags": info.get("tags", "") if info else "",
         "Listed_Exchanges": list(listed_on),
-
-
         # ==========================================
         # 🔵 [SPOT / 현물 파트 전용 지표]
         # ==========================================
         "Binance_Price_Spot": binance_spot_price if binance_spot_price > 0 else None,
         "Bybit_Price_Spot": by_spot_p if by_spot_p > 0 else None,
-        
         "Change_24h_Binance": binance_spot_change_24h,
-        "Change_24h_Bybit": float(bybit_data.get(raw_symbol, {}).get("change_24h", 0.0) or bybit_data.get(base, {}).get("change_24h", 0.0)),
+        "Change_24h_Bybit": float(
+            bybit_data.get(raw_symbol, {}).get("change_24h", 0.0)
+            or bybit_data.get(base, {}).get("change_24h", 0.0)
+        ),
         "Change_Today_Binance": binance_spot_change_today,
-        "Change_Today_Bybit": float(bybit_data.get(raw_symbol, {}).get("change_today", 0.0) or bybit_data.get(base, {}).get("change_today", 0.0)),
-
+        "Change_Today_Bybit": float(
+            bybit_data.get(raw_symbol, {}).get("change_today", 0.0)
+            or bybit_data.get(base, {}).get("change_today", 0.0)
+        ),
         "spot_utc0_open_Raw": spot_utc0 if spot_utc0 > 0 else None,
         "Binance_Vol_Spot": total_vol_spot,
         "Exact_Spot": exact_spot_ticker,
-
-        "Upbit_Vol_Formatted": (utils.format_volume_string(up_vol_24h_usd) if up_vol_24h_usd > 0 else "-"),
-        "Upbit_Vol_KRW_Formatted": (utils.format_volume_krw_string(up_vol_24h_krw) if up_vol_24h_krw > 0 else "-"),
+        "Upbit_Vol_Formatted": (
+            utils.format_volume_string(up_vol_24h_usd) if up_vol_24h_usd > 0 else "-"
+        ),
+        "Upbit_Vol_KRW_Formatted": (
+            utils.format_volume_krw_string(up_vol_24h_krw)
+            if up_vol_24h_krw > 0
+            else "-"
+        ),
         "Upbit_Vol": up_vol_24h_krw,
-
-
         # ==========================================
         # 🟡 [FUTURES / 선물 파트 전용 지표]
         # ==========================================
-        "Binance_Price_Futures": (binance_futures_price if binance_futures_price > 0 else None),
+        "Binance_Price_Futures": (
+            binance_futures_price if binance_futures_price > 0 else None
+        ),
         "Bybit_Price_Futures": by_futures_p if by_futures_p > 0 else None,
-
         "Change_24h_Futures_Ex": binance_futures_change_24h,
         "Change_Today_Futures": binance_futures_change_today,
-
         "Funding_Raw": funding_rate,
         "Funding_Formatted": funding_f,
         "futures_utc0_open_Raw": futures_utc0 if futures_utc0 > 0 else None,

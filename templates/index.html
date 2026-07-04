@@ -288,7 +288,7 @@
       Fetching Market Data...
     </h2>
     <p class="text-[#d4d4d4] opacity-80 text-center text-sm leading-relaxed">
-      바이낸스 및 업비트 실시간 데이터를 수집 중입니다.<br />
+      바이낸스 및 업비트 실시간 데이터를 수집 중입니다. <br />
       (최대 5초 ~ 20초 소요)
     </p>
   </div>
@@ -369,7 +369,7 @@
           <div
             class="h-[28px] shrink-0 flex items-center justify-center text-[11px] sm:text-[12px] text-theme-text font-medium text-center whitespace-nowrap px-3">
             <span class="mr-1.5 opacity-90">🗠</span> (4/4) TradingView
-            Lightweight v5 사용 중이므로 대부분의 Advanced Charts 기능 (드로잉
+            Lightweight v5 버전이므로 대부분의 Advanced Charts 기능 (드로잉
             도구, 보조 지표 등, Pine script)은 제한됩니다
           </div>
         </div>
@@ -819,7 +819,7 @@
               <!-- 🚀 1. 실시간 가격 전광판 (USD & KRW 동시 표기) -->
               <div class="flex flex-col text-xs text-left min-w-0">
                 <span class="opacity-50 text-[10px] uppercase font-medium tracking-wider">Price
-                  <span id="head-caller-id-price" class="text-[9px] text-[#ff0055] font-bold ml-1"></span>
+                  <!-- <span id="head-caller-id-price" class="text-[9px] text-[#ff0055] font-bold ml-1"></span> -->
                 </span>
                 <div class="flex flex-col min-w-0 leading-none mt-0.5 gap-1">
                   <div id="head-price-active" class="flex flex-col gap-0.5">
@@ -833,14 +833,14 @@
               <!-- 🚀 2. 24H 변동률 전광판 -->
               <div class="flex flex-col text-xs text-left shrink-0 min-w-fit">
                 <span class="opacity-50 text-[10px] uppercase font-medium tracking-wider">24H Chg
-                  <span id="head-caller-id-24h" class="text-[9px] text-[#ff0055] font-bold ml-1"></span>
+                  <!-- <span id="head-caller-id-24h" class="text-[9px] text-[#ff0055] font-bold ml-1"></span> -->
                 </span>
                 <b id="head-chg-24h" class="text-[12px] md:text-[13px] font-tempTestDss mt-0.5">-</b>
               </div>
               <!-- 🚀 3. DAY 변동률 전광판 -->
               <div class="flex flex-col text-xs text-left shrink-0 min-w-fit">
                 <span class="opacity-50 text-[10px] uppercase font-medium tracking-wider">Day Chg
-                  <span id="head-caller-id" class="text-[9px] text-[#ff0055] font-bold ml-1"></span>
+                  <!-- <span id="head-caller-id" class="text-[9px] text-[#ff0055] font-bold ml-1"></span> -->
                 </span>
                 <b id="head-chg-day" class="text-[12px] md:text-[13px] font-tempTestDss mt-0.5">-</b>
               </div>
@@ -1044,7 +1044,7 @@
                   <div
                     class="flex items-center justify-between w-full border-b border-theme-border/20 pb-0.5 mb-0.5 gap-2">
                     <span class="text-[9px] uppercase font-bold tracking-wider opacity-50">OHLC Info</span>
-                    <span id="ohlc-caller-id" class="text-[8px] text-[#ff0055] font-bold"></span>
+                    <!-- <span id="ohlc-caller-id" class="text-[8px] text-[#ff0055] font-bold"></span> -->
                   </div>
                   <div class="flex items-center justify-between w-full whitespace-nowrap gap-3">
                     <span class="opacity-60 text-[10px]">open</span>
@@ -1078,7 +1078,7 @@
                   </div>
                   <div id="ohlc-kimchi-container" class="flex items-center justify-between w-full gap-3">
                     <span class="opacity-60 text-[10px]">kimp
-                      <span id="ohlc-kimchi-caller" class="text-[8px] text-[#ff0055] font-bold ml-0.5"></span>
+                      <!-- <span id="ohlc-kimchi-caller" class="text-[8px] text-[#ff0055] font-bold ml-0.5"></span> -->
                     </span>
                     <span id="ohlc-kimchi" class="font-medium text-right">-</span>
                   </div>
@@ -1533,7 +1533,8 @@
       <div class="flex items-center justify-between border-b border-theme-border/30 pb-2">
         <div class="flex items-center gap-1.5 min-w-0">
           <span class="text-xs font-bold text-theme-text flex items-center gap-1 shrink-0">⚡ 렉 디버거</span>
-          <span id="perf-run-time-display" class="text-[9px] font-mono text-[#ff0055] opacity-80 truncate">(0s 경과)</span>
+          <span id="perf-run-time-display" class="text-[9px] font-mono text-[#ff0055] opacity-80 truncate">(0s
+            경과)</span>
         </div>
         <button onclick="
               document.getElementById('perf-debug-panel').style.display = 'none';
@@ -1727,14 +1728,14 @@
               </label>
             </div>
 
-            <div class="flex items-center justify-between opacity-80">
+            <div class="flex items-center justify-between opacity-80" id="child-dynamichtml-container">
               <div class="flex flex-col gap-0.5">
                 <span class="text-[10px] font-bold text-theme-text">동적 HTML 전파 차단</span>
                 <span class="text-[8px] opacity-40 leading-tight">김프 변경 시 렌더 전파 스킵 (기본 ON)</span>
               </div>
               <label class="relative inline-flex items-center cursor-pointer select-none">
                 <input type="checkbox" id="block-dynamic-html-toggle" class="sr-only peer"
-                  onchange="window.toggleDynamicHtmlBlock(this.checked)" checked />
+                  onchange="window.toggleDynamicHtmlBlock(this.checked)" />
                 <div
                   class="w-8 h-4 bg-theme-border rounded-full peer peer-checked:after:translate-x-[16px] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-theme-accent">
                 </div>
@@ -1774,7 +1775,8 @@
           <div class="flex items-center justify-between">
             <span class="text-[10px] font-bold text-[#ff0055] uppercase font-mono">Bypass Statistics</span>
             <div class="flex items-center gap-1.5 font-mono text-[8px]">
-              <button id="copy-perf-stats-btn" onclick="window.copyPerformanceStats()" class="opacity-60 hover:opacity-100 hover:text-[#ff0055] transition-all cursor-pointer bg-transparent border-0 p-0 text-inherit">
+              <button id="copy-perf-stats-btn" onclick="window.copyPerformanceStats()"
+                class="opacity-60 hover:opacity-100 hover:text-[#ff0055] transition-all cursor-pointer bg-transparent border-0 p-0 text-inherit">
                 [📋 Copy]
               </button>
               <span class="opacity-40" id="perf-total-bypass">Total: 0</span>

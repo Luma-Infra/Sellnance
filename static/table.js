@@ -115,8 +115,19 @@ setInterval(() => {
     window._lastSortTime = nowTime;
   }
 
+  const slowCols = [
+    "MarketCap",
+    "Kimchi",
+    "Gap",
+    "Funding",
+    "VMC",
+    "Listing_Date",
+    "Ticker",
+  ];
   if (store.currentSortCol && store.sortState !== "") {
-    applyRealtimeSort();
+    if (!slowCols.includes(store.currentSortCol)) {
+      applyRealtimeSort();
+    }
   }
 }, 1000);
 

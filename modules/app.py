@@ -65,15 +65,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # 🚀 Vite 빌드본(dist/) 우선 서빙 및 개발 모드 폴백 하이브리드 엔진
 DIST_DIR = BASE_DIR / "dist"
-if DIST_DIR.exists():
-    print("🌐 [ENV] Production Build Detected! Serving from /dist")
+IS_PRODUCTION = bool(os.environ.get("RAILWAY_STATIC_URL") or os.environ.get("RAILWAY_ENVIRONMENT"))
+
+if IS_PRODUCTION and DIST_DIR.exists():
+    print("🚀 [ENV] Production (Railway) - Serving from /dist")
     app.mount("/assets", StaticFiles(directory=str(DIST_DIR / "assets")), name="assets")
-    # 🚀 [추가] 프로덕션 빌드에서도 /static 경로를 통해 외부 라이브러리(sweetalert2 등)가 서빙되도록 허용
     STATIC_DIR = BASE_DIR / "static"
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
     templates = Jinja2Templates(directory=str(DIST_DIR))
 else:
-    print("🛠️ [ENV] Development Mode! Serving raw templates/static")
+    print("🛠️ [ENV] Local Dev - Serving raw templates/ and static/")
     STATIC_DIR = BASE_DIR / "static"
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
     templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
@@ -230,11 +231,15 @@ def get_market_data(request: Request, force: bool = False):
     
     # 쿨타임 타이머용 raw 타임스탬프 획득
     cache_timestamp = api_manager.GLOBAL_CACHE.get("timestamp", datetime.min)
-    # timezone-aware 대응
-    if cache_timestamp.tzinfo is not None:
-        raw_ts = cache_timestamp.timestamp()
+    # 🚀 [FIX] datetime.min일 때 mktime 오버플로우 방지 가드
+    if cache_timestamp == datetime.min:
+        raw_ts = 0.0
     else:
-        raw_ts = time.mktime(cache_timestamp.timetuple())
+        # timezone-aware 대응
+        if cache_timestamp.tzinfo is not None:
+            raw_ts = cache_timestamp.timestamp()
+        else:
+            raw_ts = time.mktime(cache_timestamp.timetuple())
 
     return {
         "data": data, 
@@ -254,10 +259,14 @@ def get_market_data_silent(request: Request):
     last_updated = api_manager.GLOBAL_CACHE.get("last_updated_str", "")
     
     cache_timestamp = api_manager.GLOBAL_CACHE.get("timestamp", datetime.min)
-    if cache_timestamp.tzinfo is not None:
-        raw_ts = cache_timestamp.timestamp()
+    # 🚀 [FIX] datetime.min일 때 mktime 오버플로우 방지 가드
+    if cache_timestamp == datetime.min:
+        raw_ts = 0.0
     else:
-        raw_ts = time.mktime(cache_timestamp.timetuple())
+        if cache_timestamp.tzinfo is not None:
+            raw_ts = cache_timestamp.timestamp()
+        else:
+            raw_ts = time.mktime(cache_timestamp.timetuple())
 
     if isinstance(data, dict):
         data = list(data.values())

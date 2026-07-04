@@ -128,7 +128,7 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
   if (data && data.s) {
     if (!store._lastRowTickMap) store._lastRowTickMap = new Map();
     const lastTick = store._lastRowTickMap.get(data.s) || 0;
-    if (now - lastTick < 100) { // 100ms 쓰로틀링 기동
+    if (now - lastTick < 500) { // 500ms 쓰로틀 (이전 100ms에서 복원: aggTrade 등 고빈도 소켓 폭주 방지)
       if (store.bypassCounters) store.bypassCounters.throttleBypass++;
       return;
     }
@@ -141,7 +141,8 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
 
   let row = null;
   if (data.isUpbitRealtime && data.UID) {
-    row = store.currentTableData.find((r) => r.UID == data.UID);
+    // O(1) uidRowMap \uc6b0\uc120, \uc5c6\uc73c\uba74 tickerRowMap\uc73c\ub85c \ud3f4\ubc31 (\uc774\uc804: Array.find() O(N))
+    row = store.uidRowMap?.get(String(data.UID)) || null;
   }
 
   if (!row) {
@@ -161,11 +162,13 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
 
   if (row && data.isUpbitRealtime && data.UID) {
     if (row.UID != data.UID) {
-      const correctLocalRow = store.currentTableData.find((r) => r.UID == data.UID);
-      if (correctLocalRow) {
-        row = correctLocalRow;
+      // uidRowMap O(1) \uc6b0\uc120, \uc5c6\uc73c\uba74 \ud55c \ubc88\ub9cc Array.find() \ud3f4\ubc31
+      const byUid = store.uidRowMap?.get(String(data.UID))
+        || store.currentTableData?.find((r) => r.UID == data.UID);
+      if (byUid) {
+        row = byUid;
       } else {
-        return;
+        return; // \uc624\uc5fc\ub41c \uc774\uc885 \ucf54\uc778 \ub370\uc774\ud130 \ub4dc\ub86d
       }
     }
   }
@@ -309,10 +312,15 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
     }
   }
 
-  if (isKoreaSocket && (row.utc0_open_KRW || (row.utc0_open_Raw && rate > 0))) {
+  if (isKoreaSocket) {
     let openPriceKRW = row.utc0_open_KRW ? parseFloat(row.utc0_open_KRW) : 0;
     if (openPriceKRW <= 0 && row.utc0_open_Raw && rate > 0) {
       openPriceKRW = parseFloat(row.utc0_open_Raw) * rate;
+    }
+    // 시가 데이터가 0 이하로 오염되거나 빈 경우, 현재 꽂힌 실시간 시세로 강제 보정 복구
+    if (openPriceKRW <= 0) {
+      openPriceKRW = newPrice;
+      row.utc0_open_KRW = newPrice;
     }
     if (openPriceKRW > 0) {
       const todayKrw = ((newPrice - openPriceKRW) / openPriceKRW) * 100;
@@ -323,12 +331,19 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
         row.Change_Today_Raw = todayKrw;
       }
     }
-  } else if (!isKoreaSocket) {
+  } else {
     let openPrice = 0;
     if (isFutures) {
       openPrice = parseFloat(row.futures_utc0_open_Raw || row.utc0_open_Raw || 0);
     } else {
       openPrice = parseFloat(row.spot_utc0_open_Raw || row.utc0_open_Raw || 0);
+    }
+    // 시가 데이터가 0 이하로 오염되거나 빈 경우, 현재 꽂힌 실시간 시세로 강제 보정 복구
+    if (openPrice <= 0) {
+      openPrice = newPrice;
+      if (isFutures) row.futures_utc0_open_Raw = newPrice;
+      else row.spot_utc0_open_Raw = newPrice;
+      row.utc0_open_Raw = newPrice;
     }
     if (openPrice > 0) {
       const todayUsd = ((newPrice - openPrice) / openPrice) * 100;
@@ -343,6 +358,10 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
     }
   }
 
+  // 🚀 [신규 방어막] 실시간 소켓 갱신 시각 기록 (3초 레이더의 낡은 캐시 덮어쓰기 원천 차단용)
+  row._LastRealtimeUpdate = Date.now();
+  row.Last_Updated_Source = '🔌 실시간소켓';
+
   if (!store.blockKimchi) {
     if (rate > 0) {
       const calcKimchi = (r) => {
@@ -355,6 +374,7 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
           r.Kimchi_Raw = null;
           r.Kimchi_Label = "-";
           r.Kimchi_Formatted = "-";
+          const rowEl = store.rowDomMap ? store.rowDomMap.get(r.Ticker) : null;
           if (rowEl && typeof window.updateRowDynamicHTML === "function") {
             if (store.blockRowDynamicHTML) {
               if (store.bypassCounters) store.bypassCounters.dynamicHtml++;
@@ -515,26 +535,7 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
 
     const changeCell = document.getElementById(`change-${row.Ticker}`);
     if (changeCell) {
-      const currentMarket = store.currentMarket || "ALL";
       let change24h = row.Change_24h_Raw || 0;
-      if (currentMarket === "UPBIT") {
-        change24h = row.Change_24h_Upbit ?? change24h;
-      } else if (currentMarket === "BITHUMB") {
-        change24h = row.Change_24h_Bithumb ?? change24h;
-      } else if (currentMarket === "FUTURES" || currentMarket === "BYBIT_FUTURES") {
-        change24h = row.Change_24h_Futures_Ex ?? change24h;
-      } else if (currentMarket === "SPOT" || currentMarket === "BYBIT") {
-        change24h = (currentMarket === "SPOT" ? row.Change_24h_Binance : row.Change_24h_Bybit) ?? change24h;
-      } else if (currentMarket === "ALL" || currentMarket === "KIMCHI" || currentMarket === "NEW") {
-        if (row.Binance_Futures === "O" || row.Listed_Exchanges?.includes("BINANCE_FUTURES")) {
-          change24h = row.Change_24h_Futures_Ex ?? change24h;
-        } else if (row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE")) {
-          change24h = row.Change_24h_Binance ?? change24h;
-        } else {
-          change24h = row.Change_24h_Upbit;
-        }
-      }
-
       const isFocus = store.currentSortCol !== "Change_Today";
       const themeClass = change24h > 0 ? "text-theme-up" : change24h < 0 ? "text-theme-down" : "text-theme-text";
       const chgText = `${change24h > 0 ? "+" : ""}${change24h.toFixed(2)}%`;
@@ -545,26 +546,7 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
 
     const todayCell = document.getElementById(`today-${row.Ticker}`);
     if (todayCell) {
-      const currentMarket = store.currentMarket || "ALL";
       let todayChange = row.Change_Today_Raw || 0;
-      if (currentMarket === "UPBIT") {
-        todayChange = row.Change_Today_Upbit ?? todayChange;
-      } else if (currentMarket === "BITHUMB") {
-        todayChange = row.Change_Today_Bithumb ?? todayChange;
-      } else if (currentMarket === "FUTURES" || currentMarket === "BYBIT_FUTURES") {
-        todayChange = row.Change_Today_Futures ?? todayChange;
-      } else if (currentMarket === "SPOT" || currentMarket === "BYBIT") {
-        todayChange = (currentMarket === "SPOT" ? row.Change_Today_Binance : row.Change_Today_Bybit) ?? todayChange;
-      } else if (currentMarket === "ALL" || currentMarket === "KIMCHI" || currentMarket === "NEW") {
-        if (row.Binance_Futures === "O" || row.Listed_Exchanges?.includes("BINANCE_FUTURES")) {
-          todayChange = row.Change_Today_Futures ?? todayChange;
-        } else if (row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE")) {
-          todayChange = row.Change_Today_Binance ?? todayChange;
-        } else {
-          todayChange = row.Change_Today_Upbit ?? todayChange;
-        }
-      }
-
       const isFocus = store.currentSortCol === "Change_Today";
       const tThemeClass = todayChange > 0 ? "text-theme-up" : todayChange < 0 ? "text-theme-down" : "text-theme-text";
       const safeChange = todayChange < -99.9 ? -99.9 : todayChange;

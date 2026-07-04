@@ -19,7 +19,7 @@ export function startUpbitFeed() {
     setTimeout(startUpbitFeed, currentDelay);
   };
 
-  upbitRadarWs.onerror = () => {};
+  upbitRadarWs.onerror = () => { };
 
   upbitRadarWs.onopen = () => {
     upbitRadarRetryDelay = 3000;
@@ -27,7 +27,7 @@ export function startUpbitFeed() {
       .filter((row) => row.Upbit === "O" && row.Symbol)
       .map((row) => `KRW-${row.Symbol}`);
     if (allUpbitCodes.length === 0) return;
-    
+
     upbitRadarWs.send(
       JSON.stringify([
         { ticket: "UNIQUE_TICKET" },
@@ -41,15 +41,10 @@ export function startUpbitFeed() {
     const ticker = JSON.parse(decoder.decode(event.data));
     const pureSym = ticker.code.replace("KRW-", "");
     const krwTicker = pureSym + "KRW";
-    
-    let matchedUid = "";
-    const allSource = store.currentTableData || store.originalTableData || [];
-    const localRow = allSource.find(
-      (r) => r.Ticker === krwTicker || r.DisplayTicker === pureSym || r.Symbol === pureSym
-    );
-    if (localRow) {
-      matchedUid = localRow.UID;
-    }
+
+    // O(1) 해시 탐색 (이전: allSource.find() O(N) 선형 탐색 → 컵닙음)
+    const localRow = store.tickerRowMap?.get(krwTicker) || store.tickerRowMap?.get(pureSym);
+    const matchedUid = (localRow && localRow.Upbit === "O") ? localRow.UID : "";
 
     const normalizedTicker = {
       s: krwTicker,
@@ -63,7 +58,7 @@ export function startUpbitFeed() {
     if (!store.tickerBuffer) store.tickerBuffer = {};
     store.tickerBuffer[ticker.code] = normalizedTicker;
 
-    if (localRow) {
+    if (localRow && localRow.Upbit === "O") {
       localRow.Upbit_Price = parseFloat(ticker.trade_price);
       localRow.Price_KRW = parseFloat(ticker.trade_price);
     }
@@ -103,11 +98,10 @@ export function initUpbitSniperSocket() {
       const krwTicker = pureSym + "KRW";
       const newPriceKrw = parseFloat(res.trade_price);
 
+      // O(1) 해시 탐색 (이전: allSource.find() O(N) 선형 탐색 → 컵닙음)
       const allSource = store.originalTableData || store.currentTableData || [];
-      const row = allSource.find(
-        (r) => r.Ticker === krwTicker || r.DisplayTicker === pureSym || r.Symbol === pureSym
-      );
-      if (row) {
+      const row = store.tickerRowMap?.get(krwTicker) || store.tickerRowMap?.get(pureSym);
+      if (row && row.Upbit === "O") {
         const rate = store.marketDataMap?.krw_usd_rate || 0;
         row.Price_Raw = newPriceKrw / rate;
         if (row.utc0_open_Raw) {

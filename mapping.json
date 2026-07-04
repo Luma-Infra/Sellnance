@@ -5,7 +5,7 @@
         "SOL": "https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png",
         "SUI": "https://s2.coinmarketcap.com/static/img/coins/64x64/20947.png"
     },
-    "DEFAULT_KRW_USD_RATE": 1543.03,
+    "DEFAULT_KRW_USD_RATE": 1530.15,
     "__MEMO__1": "BTC ETH 파생형 너무 많아서 고정 + 중국어 포함 모든 언어 티커 대응",
     "__MEMO__2": "----------------------------------------------------------",
     "EXCLUSION_LIST": [
@@ -45,7 +45,6 @@
         "VELODROME": "20435",
         "WBETH": "24760",
         "RATS": "28452",
-        "AI": "28846",
         "GAME2": "31246",
         "MOVE": "32452",
         "USDS": "33039",
@@ -60,7 +59,6 @@
         "SPORTFUN": "38647",
         "我踏马来了": "39322",
         "龙虾": "39671",
-        "AIGENSYN": "39883",
         "SAMSUNG": "39503",
         "HYUNDAI": "39573",
         "SKHYNIX": "39500"
@@ -221,13 +219,25 @@
             "PROS",
             "upbit"
         ],
-        "AIGENSYN(Gensyn)_binance": [
+        "AI(Sleepless)_binance": [
+            "28846",
+            "",
+            "AI",
+            "binance"
+        ],
+        "AI(Gensyn)_binance": [
             "39883",
             "",
             "AIGENSYN",
             "binance"
         ],
-        "AIGENSYN(Gensyn)_bithumb": [
+        "AI(Gensyn)_upbit": [
+            "39883",
+            "",
+            "AI",
+            "upbit"
+        ],
+        "AI(Gensyn)_bithumb": [
             "39883",
             "",
             "AI",
@@ -391,17 +401,17 @@
             "Sleepless AI",
             "AI"
         ],
+        "AI(Gensyn)": [
+            "28846",
+            null,
+            "Gensyn",
+            "AI"
+        ],
         "AIA": [
             "38430",
             null,
             "DeAgentAI",
             "AIA"
-        ],
-        "AIGENSYN(Gensyn)": [
-            "39883",
-            null,
-            "Gensyn",
-            "AIGENSYN"
         ],
         "AIN": [
             "36770",
@@ -1129,6 +1139,12 @@
             "Block Street",
             "BSB"
         ],
+        "BSP": [
+            "40677",
+            null,
+            "Bending Spoons SpA (Derivatives)",
+            "BSP"
+        ],
         "BSV": [
             "3602",
             null,
@@ -1531,6 +1547,12 @@
             "Dash",
             "DASH"
         ],
+        "DATAIP": [
+            "DATAIP",
+            null,
+            "DATAIP",
+            "DATAIP"
+        ],
         "DBR": [
             "31528",
             null,
@@ -1902,6 +1924,12 @@
             null,
             "Filecoin",
             "FIL"
+        ],
+        "FLEX": [
+            "40681",
+            null,
+            "Flex Ltd. Ordinary Shares (Derivatives)",
+            "FLEX"
         ],
         "FLNC": [
             "40007",
@@ -2557,6 +2585,12 @@
             "Kusama",
             "KSM"
         ],
+        "KSTR": [
+            "40678",
+            null,
+            "KraneShares SSE STAR Market 50 Index ETF (Derivatives)",
+            "KSTR"
+        ],
         "LA": [
             "36510",
             null,
@@ -2622,6 +2656,12 @@
             null,
             "Lumentum Holdings (Derivatives)",
             "LITE"
+        ],
+        "LITEB": [
+            "40591",
+            null,
+            "Lumentum Tokenized bStocks",
+            "LITEB"
         ],
         "LLY": [
             "39509",
@@ -2815,6 +2855,12 @@
             "Metadium",
             "META"
         ],
+        "METAB": [
+            "40592",
+            null,
+            "Meta Tokenized bStocks",
+            "METAB"
+        ],
         "METIS": [
             "9640",
             null,
@@ -2922,6 +2968,12 @@
             null,
             "Microsoft Tokenized Stock (Hyperliquid)",
             "MSFT"
+        ],
+        "MSFTB": [
+            "40589",
+            null,
+            "Microsoft Tokenized bStocks",
+            "MSFTB"
         ],
         "MSTR": [
             "33356",
@@ -3343,6 +3395,12 @@
             "Palantir Technologies Inc (Derivatives)",
             "PLTR"
         ],
+        "PLTRB": [
+            "40590",
+            null,
+            "Palantir Tokenized bStocks",
+            "PLTRB"
+        ],
         "PLUME": [
             "35364",
             null,
@@ -3534,6 +3592,12 @@
             null,
             "QQQ (Derivatives)",
             "QQQ"
+        ],
+        "QQQB": [
+            "40593",
+            null,
+            "Invesco QQQ Trust Tokenized bStocks",
+            "QQQB"
         ],
         "QTUM": [
             "1684",
@@ -4093,6 +4157,12 @@
             "Xertra",
             "STRAX"
         ],
+        "STRC": [
+            "40557",
+            null,
+            "Strategy Variable Rate Perpetual Stretch (Derivatives)",
+            "STRC"
+        ],
         "STRK": [
             "22691",
             null,
@@ -4201,6 +4271,12 @@
             "Bittensor",
             "TAO"
         ],
+        "TER": [
+            "40680",
+            null,
+            "Teradyne, Inc. Common Stock (Derivatives)",
+            "TER"
+        ],
         "TFUEL": [
             "3822",
             null,
@@ -4248,12 +4324,6 @@
             "ETH",
             "Tokamak Network",
             "TOKAMAK"
-        ],
-        "TON": [
-            "11419",
-            null,
-            "Toncoin",
-            "TON"
         ],
         "TOSHI": [
             "27750",
@@ -4363,6 +4433,12 @@
             "ThunderCore",
             "TT"
         ],
+        "TTWO": [
+            "40679",
+            null,
+            "Take-Two Interactive Software, Inc. Common Stock (Derivatives)",
+            "TTWO"
+        ],
         "TURBO": [
             "24911",
             null,
@@ -4392,6 +4468,12 @@
             null,
             "Trust Wallet Token",
             "TWT"
+        ],
+        "TXN": [
+            "40682",
+            null,
+            "Texas Instruments Incorporated Common Stock (Derivatives)",
+            "TXN"
         ],
         "U": [
             "39120",
