@@ -298,10 +298,15 @@ export async function fetchHistory(
   symbol,
   isTfChange = false,
   isTabRestore = false,
+  isSubSwitch = false,
 ) {
   const now = Date.now();
   if (now - store.lastFetchTime < 10) return;
   store.lastFetchTime = now;
+
+  if (!isTfChange && !isSubSwitch) {
+    store.preferredKimchiSub = null;
+  }
 
   store.isFetchingChart = true;
   window.isFetchingChart = true;
@@ -730,25 +735,41 @@ export async function fetchHistory(
       const lastCandle = store.mainData[store.mainData.length - 1];
       if (lastCandle && rowInfo) {
         if (!isTfChange) {
+          const rate = store.marketDataMap?.krw_usd_rate || 0;
           if (isUpbit) {
             rowInfo.Upbit_Price = lastCandle.close;
             rowInfo.Price_KRW = lastCandle.close;
+            // rowInfo.Price_Raw = rate > 0 ? lastCandle.close / rate : lastCandle.close;
           } else if (isBithumb) {
             rowInfo.Bithumb_Price = lastCandle.close;
+            const exList = (rowInfo.Listed_Exchanges || []).map((e) => e.toUpperCase());
+            const hasUpbit = rowInfo.Upbit === "O" || exList.includes("UPBIT") || !!rowInfo.Upbit_Symbol;
+            if (!hasUpbit) {
+              rowInfo.Price_KRW = lastCandle.close;
+            }
+            // rowInfo.Price_Raw = rate > 0 ? lastCandle.close / rate : lastCandle.close;
           } else if (isFutures) {
             rowInfo.Binance_Price_Futures = lastCandle.close;
             rowInfo.Binance_Price = lastCandle.close;
+            // rowInfo.Price_Raw = lastCandle.close;
           } else if (isSpot) {
             rowInfo.Binance_Price_Spot = lastCandle.close;
             rowInfo.Binance_Price = lastCandle.close;
+            // rowInfo.Price_Raw = lastCandle.close;
           } else if (isBybitFutures) {
             rowInfo.Bybit_Price_Futures = lastCandle.close;
             rowInfo.Bybit_Price = lastCandle.close;
+            // rowInfo.Price_Raw = lastCandle.close;
           } else if (isBybit) {
             rowInfo.Bybit_Price_Spot = lastCandle.close;
             rowInfo.Bybit_Price = lastCandle.close;
+            // rowInfo.Price_Raw = lastCandle.close;
           }
-          rowInfo.Price_Raw = lastCandle.close;
+
+          // 🚀 [추가] 차트 가격 갱신 완료 후, ALL 모드 지향성 공식에 맞추어 대표 가격(Price_Raw) 락킹 자동 동기화
+          if (typeof window.syncRowPrioritizedMetrics === "function") {
+            window.syncRowPrioritizedMetrics(rowInfo);
+          }
         }
 
         if (typeof window.updateHeaderDisplay === "function") {
@@ -885,7 +906,7 @@ export async function fetchHistory(
 window.switchKimchiSub = function (newSubId) {
   store.preferredKimchiSub = newSubId;
   if (typeof fetchHistory === "function") {
-    fetchHistory(store.currentAsset);
+    fetchHistory(store.currentAsset, false, false, true);
   }
 };
 

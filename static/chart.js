@@ -264,13 +264,15 @@ export function initChart() {
 
   // 🚀 사용자가 차트 줌/패닝을 직접 조작했음을 감지하는 이벤트 리스너 부착
   store.chart.timeScale().subscribeVisibleTimeRangeChange(() => {
-    store.isUserZoomed = true;
+    // 🚀 사용자가 직접 마우스/터치로 조작할 때만 이벤트를 기록하므로 여기선 비워둡니다.
   });
 
   // 🚀 [Lazy Load & Zoom Width Save] 가로폭(줌 상태) 저장 및 과거 데이터 로딩 통합 관리
   let isCheckingLoadMore = false;
   store.chart.timeScale().subscribeVisibleLogicalRangeChange(async (range) => {
     if (!range) return;
+    if (store.isFetchingChart) return; // 🚀 데이터 로딩/초기 기동 중 발생한 내부 레이아웃 리액션에 의한 가로폭 오염 방지
+    if (!store.isUserZoomed) return; // 🚀 사용자가 직접 마우스/터치로 줌/스크롤 조작 시에만 가로폭 저장 진행
 
     // 🚀 [UX 개선] 사용자가 스크롤/줌을 통해 설정한 캔들 개수(가로폭)를 실시간으로 저장합니다.
     const width = range.to - range.from;
@@ -289,6 +291,17 @@ export function initChart() {
       }, 500); // 0.5초 디바운스로 스크롤 프레임 폭주 원천 차단
     }
   });
+
+  // 🚀 사용자의 마우스/터치/휠 입력을 감지하여 차트 조작 상태(isUserZoomed)를 세밀하게 설정
+  const chartWrapper = document.getElementById("chart-wrapper");
+  if (chartWrapper) {
+    const setUserZoomed = () => {
+      store.isUserZoomed = true;
+    };
+    chartWrapper.addEventListener("mousedown", setUserZoomed, { passive: true });
+    chartWrapper.addEventListener("touchstart", setUserZoomed, { passive: true });
+    chartWrapper.addEventListener("wheel", setUserZoomed, { passive: true });
+  }
 
   // 🚀 DOM 이벤트 기반 activeChart 제어 제거 (라이브러리 내부 이벤트로 100% 통합 제어)
 

@@ -117,57 +117,50 @@ const realUpdateHeaderDisplay = (row, newPrice, p, isRealtimeStream = false, cal
   if (newPrice !== undefined && newPrice !== null) {
     if (activeMarket === "UPBIT") {
       upbitP = newPrice;
+      row.Upbit_Price = newPrice;
+      row.Price_KRW = newPrice;
+      /* [대표 지표 교차 오염 방지를 위해 프론트엔드 전광판의 가격/변동률 직접 덮어쓰기 연산 주석 처리]
       const openKrw = row.utc0_open_KRW ? parseFloat(row.utc0_open_KRW) : 0;
       if (openKrw > 0) {
         const todayKrw = ((newPrice - openKrw) / openKrw) * 100;
         row.Change_Today_Upbit = todayKrw;
         row.Change_Today_Raw = todayKrw;
+        if (rate > 0) row.Price_Raw = newPrice / rate;
       }
+      */
     } else if (activeMarket === "BITHUMB") {
+      /* [빗썸 모드 ALL 탭 지향에 따른 대표가 개입 차단 및 주석 처리]
       bithumbP = newPrice;
-      const openKrw = row.utc0_open_KRW ? parseFloat(row.utc0_open_KRW) : 0;
-      if (openKrw > 0) {
-        const todayKrw = ((newPrice - openKrw) / openKrw) * 100;
-        row.Change_Today_Bithumb = todayKrw;
-        row.Change_Today_Raw = todayKrw;
-      }
+      row.Bithumb_Price = newPrice;
+      */
     } else if (activeMarket === "BYBIT" || activeMarket === "BYBIT_FUTURES") {
+      /* [바이비트 모드 ALL 탭 지향에 따른 대표가 개입 차단 및 주석 처리]
       bybitP = newPrice;
-      if (activeMarket === "BYBIT_FUTURES") {
-        row.Bybit_Price_Futures = newPrice;
-        const openPrice = parseFloat(row.futures_utc0_open_Raw || row.utc0_open_Raw || 0);
-        if (openPrice > 0) {
-          const todayUsd = ((newPrice - openPrice) / openPrice) * 100;
-          row.Change_Today_Futures = todayUsd;
-          row.Change_Today_Raw = todayUsd;
-        }
-      } else {
-        row.Bybit_Price_Spot = newPrice;
-        const openPrice = parseFloat(row.spot_utc0_open_Raw || row.utc0_open_Raw || 0);
-        if (openPrice > 0) {
-          const todayUsd = ((newPrice - openPrice) / openPrice) * 100;
-          row.Change_Today_Bybit = todayUsd;
-          row.Change_Today_Raw = todayUsd;
-        }
-      }
+      */
     } else {
       binanceP = newPrice;
       if (isFuturesMode) {
         row.Binance_Price_Futures = newPrice;
+        /* [대표 지표 교차 오염 방지를 위해 프론트엔드 전광판의 가격/변동률 직접 덮어쓰기 연산 주석 처리]
         const openPrice = parseFloat(row.futures_utc0_open_Raw || row.utc0_open_Raw || 0);
         if (openPrice > 0) {
           const todayUsd = ((newPrice - openPrice) / openPrice) * 100;
           row.Change_Today_Futures = todayUsd;
           row.Change_Today_Raw = todayUsd;
+          row.Price_Raw = newPrice;
         }
+        */
       } else if (isSpotMode) {
         row.Binance_Price_Spot = newPrice;
+        /* [대표 지표 교차 오염 방지를 위해 프론트엔드 전광판의 가격/변동률 직접 덮어쓰기 연산 주석 처리]
         const openPrice = parseFloat(row.spot_utc0_open_Raw || row.utc0_open_Raw || 0);
         if (openPrice > 0) {
           const todayUsd = ((newPrice - openPrice) / openPrice) * 100;
           row.Change_Today_Binance = todayUsd;
           row.Change_Today_Raw = todayUsd;
+          row.Price_Raw = newPrice;
         }
+        */
       }
     }
   }
@@ -347,11 +340,13 @@ const realUpdateHeaderDisplay = (row, newPrice, p, isRealtimeStream = false, cal
   if (headVolU) headVolU.innerText = row.Upbit_Vol_Formatted || "-";
 };
 
+if (!window.headerThrottleMap) {
+  window.headerThrottleMap = new Map();
+}
+
 window.updateHeaderDisplay = (row, newPrice, p, isRealtimeStream = false) => {
-  headerThrottledRow = row;
-  if (newPrice !== undefined) headerThrottledPrice = newPrice;
-  headerThrottledP = p;
-  headerThrottledRealtime = isRealtimeStream;
+  if (!row || !row.Ticker) return;
+  const tKey = row.Ticker;
 
   // Capture caller from stack trace before setTimeout
   let autoCaller = "UNKNOWN";
@@ -383,19 +378,31 @@ window.updateHeaderDisplay = (row, newPrice, p, isRealtimeStream = false) => {
       autoCaller = "3 (UI/Filter)";
     }
   }
-  headerThrottledCaller = autoCaller;
+
+  // Ticker별로 덮어쓰지 않고 격리하여 데이터 보관
+  const existing = window.headerThrottleMap.get(tKey) || {};
+  window.headerThrottleMap.set(tKey, {
+    row: row,
+    price: newPrice !== undefined ? newPrice : existing.price,
+    p: p,
+    isRealtimeStream: isRealtimeStream,
+    caller: autoCaller
+  });
 
   if (!headerThrottleTimeout) {
     headerThrottleTimeout = setTimeout(() => {
       headerThrottleTimeout = null;
-      realUpdateHeaderDisplay(
-        headerThrottledRow,
-        headerThrottledPrice,
-        headerThrottledP,
-        headerThrottledRealtime,
-        headerThrottledCaller
-      );
-      headerThrottledPrice = undefined; // 가격 초기화
+      // 대기했던 Ticker별 격리된 요청들을 꼬임 없이 각각 업데이트
+      window.headerThrottleMap.forEach((state) => {
+        realUpdateHeaderDisplay(
+          state.row,
+          state.price,
+          state.p,
+          state.isRealtimeStream,
+          state.caller
+        );
+      });
+      window.headerThrottleMap.clear();
     }, 100); // 100ms 쓰로틀 가동
   }
 };
@@ -539,7 +546,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       window.updatePerformanceDebugger = () => {
         if (!store.bypassCounters) return;
         const total = Object.values(store.bypassCounters).reduce((a, b) => a + b, 0);
-        
+
         const totalEl = document.getElementById("perf-total-bypass");
         if (totalEl) totalEl.innerText = `Total: ${total}`;
 
@@ -585,7 +592,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           }
         }
       };
-      
+
       let perfIntervalId = null;
       let perfDebugStartTime = null;
 
@@ -598,7 +605,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             store.bypassCounters[k] = 0;
           });
         }
-        
+
         // 시간 표시기 초기화
         const timeEl = document.getElementById("perf-run-time-display");
         if (timeEl) timeEl.innerText = "(0s 경과)";
@@ -614,7 +621,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           window.updatePerformanceDebugger();
         }, 1000);
       };
-      
+
       window.stopPerformanceDebugger = () => {
         if (perfIntervalId) {
           clearInterval(perfIntervalId);

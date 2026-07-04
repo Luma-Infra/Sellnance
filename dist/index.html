@@ -52,9 +52,9 @@
     //   },
     // };
   </script>
-  <script type="module" crossorigin src="/assets/main-DyUKpKNU.js"></script>
-  <link rel="modulepreload" crossorigin href="/assets/table_render-DATxC-pm.js">
-  <link rel="stylesheet" crossorigin href="/assets/main-DE6oYIL_.css">
+  <script type="module" crossorigin src="/assets/main-BjlawOyb.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/table_render-CMYXLgyv.js">
+  <link rel="stylesheet" crossorigin href="/assets/main-DwosGuMq.css">
 </head>
 
 <!-- 스타트뷰(cmc api 로그인), 모바일 하단 네비바, 멀티 차트 퀵 탐색(4~8개) 메모 / 추가 완료 -->
@@ -819,7 +819,7 @@
               <!-- 🚀 1. 실시간 가격 전광판 (USD & KRW 동시 표기) -->
               <div class="flex flex-col text-xs text-left min-w-0">
                 <span class="opacity-50 text-[10px] uppercase font-medium tracking-wider">Price
-                  <span id="head-caller-id-price" class="text-[9px] text-[#ff0055] font-bold ml-1"></span>
+                  <!-- <span id="head-caller-id-price" class="text-[9px] text-[#ff0055] font-bold ml-1"></span> -->
                 </span>
                 <div class="flex flex-col min-w-0 leading-none mt-0.5 gap-1">
                   <div id="head-price-active" class="flex flex-col gap-0.5">
@@ -833,14 +833,14 @@
               <!-- 🚀 2. 24H 변동률 전광판 -->
               <div class="flex flex-col text-xs text-left shrink-0 min-w-fit">
                 <span class="opacity-50 text-[10px] uppercase font-medium tracking-wider">24H Chg
-                  <span id="head-caller-id-24h" class="text-[9px] text-[#ff0055] font-bold ml-1"></span>
+                  <!-- <span id="head-caller-id-24h" class="text-[9px] text-[#ff0055] font-bold ml-1"></span> -->
                 </span>
                 <b id="head-chg-24h" class="text-[12px] md:text-[13px] font-tempTestDss mt-0.5">-</b>
               </div>
               <!-- 🚀 3. DAY 변동률 전광판 -->
               <div class="flex flex-col text-xs text-left shrink-0 min-w-fit">
                 <span class="opacity-50 text-[10px] uppercase font-medium tracking-wider">Day Chg
-                  <span id="head-caller-id" class="text-[9px] text-[#ff0055] font-bold ml-1"></span>
+                  <!-- <span id="head-caller-id" class="text-[9px] text-[#ff0055] font-bold ml-1"></span> -->
                 </span>
                 <b id="head-chg-day" class="text-[12px] md:text-[13px] font-tempTestDss mt-0.5">-</b>
               </div>
@@ -1006,6 +1006,12 @@
               <!-- 2. 볼륨 차트 -->
               <div id="pane-vol"
                 class="w-full relative z-0 flex-[2] hidden min-h-[50px] border-t border-theme-border group">
+                <!-- 🚀 볼륨 차트 미로드 시 안내 글자 -->
+                <div
+                  class="kimchi-vol-fallback absolute inset-0 flex items-center justify-center pointer-events-none select-none opacity-40 text-[11px] text-theme-text font-medium text-center z-10">
+                  거래량 및 김프 데이터를 불러오는데 일시적으로 문제가 있어요<br />
+                  코인 혹은 타임프레임 봉을 바꿔보세요
+                </div>
                 <!-- 거래량 & 김프 스케일 오버레이 (우하단 배치로 통일) -->
                 <div
                   class="scale-mode-container-vol absolute bottom-[4px] right-[80px] z-50 flex gap-1 bg-theme-panel/95 p-0.5 rounded border border-theme-border select-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-auto shadow-md">
@@ -1044,7 +1050,7 @@
                   <div
                     class="flex items-center justify-between w-full border-b border-theme-border/20 pb-0.5 mb-0.5 gap-2">
                     <span class="text-[9px] uppercase font-bold tracking-wider opacity-50">OHLC Info</span>
-                    <span id="ohlc-caller-id" class="text-[8px] text-[#ff0055] font-bold"></span>
+                    <!-- <span id="ohlc-caller-id" class="text-[8px] text-[#ff0055] font-bold"></span> -->
                   </div>
                   <div class="flex items-center justify-between w-full whitespace-nowrap gap-3">
                     <span class="opacity-60 text-[10px]">open</span>
@@ -1078,7 +1084,7 @@
                   </div>
                   <div id="ohlc-kimchi-container" class="flex items-center justify-between w-full gap-3">
                     <span class="opacity-60 text-[10px]">kimp
-                      <span id="ohlc-kimchi-caller" class="text-[8px] text-[#ff0055] font-bold ml-0.5"></span>
+                      <!-- <span id="ohlc-kimchi-caller" class="text-[8px] text-[#ff0055] font-bold ml-0.5"></span> -->
                     </span>
                     <span id="ohlc-kimchi" class="font-medium text-right">-</span>
                   </div>

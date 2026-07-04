@@ -1244,3 +1244,8 @@ button[data-name="hide-all"].draw-tool-btn--active button {
 #coin-list-body[data-sort-col="Change_Today"] span[id^="today-"] {
   opacity: 1;
 }
+
+/* 🚀 볼륨 차트가 로드되었을 때 (차트 내부 Lightweight-Charts 테이블 생성 시) 안내 메시지 숨김 */
+#pane-vol:has(.tv-lightweight-charts) .kimchi-vol-fallback {
+  display: none !important;
+}

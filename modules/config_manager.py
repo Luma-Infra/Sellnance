@@ -15,7 +15,9 @@ def load_mapping_data():
                 data = json.load(f)
                 # utils의 캐시 갱신
                 from modules import utils
-                utils._SKIP_LIST_CACHE = data.get("HARDCODE_VERIFY_SKIP_LIST", [])
+                skip_list = data.get("HARDCODE_VERIFY_SKIP_LIST", [])
+                sym_to_id_keys = list(data.get("SYMBOL_TO_ID_MAP", {}).keys())
+                utils._SKIP_LIST_CACHE = list(set(skip_list + sym_to_id_keys))
                 return data
         else:
             print(f"🚨 {MAPPING_FILE} 파일을 찾을 수 없습니다!")
@@ -33,7 +35,9 @@ def save_mapping_data(mapping_data):
         
         # utils의 캐시 갱신
         from modules import utils
-        utils._SKIP_LIST_CACHE = mapping_data.get("HARDCODE_VERIFY_SKIP_LIST", [])
+        skip_list = mapping_data.get("HARDCODE_VERIFY_SKIP_LIST", [])
+        sym_to_id_keys = list(mapping_data.get("SYMBOL_TO_ID_MAP", {}).keys())
+        utils._SKIP_LIST_CACHE = list(set(skip_list + sym_to_id_keys))
         
         with open(MAPPING_FILE, 'w', encoding='utf-8') as f:
             json.dump(mapping_data, f, indent=4, ensure_ascii=False)

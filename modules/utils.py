@@ -91,6 +91,10 @@ def create_image_tag(url):
 
 
 def get_pure_base_asset(ticker):
+    # 🚀 mapping.json의 HARDCODE_VERIFY_SKIP_LIST 예외 캐시 조회 시 바로 반환 (스킵 가드)
+    if _SKIP_LIST_CACHE and ticker in _SKIP_LIST_CACHE:
+        return ticker
+
     # 1. Quote(결제자산)를 뒤에서부터 안전하게 제거
     # USDT, KRW 외에 다른 마켓이 추가되어도 대응 가능하도록 리스트화
     for quote in ["USDT", "KRW", "BTC", "ETH"]:
@@ -136,7 +140,7 @@ def get_multiplier(ticker):
         return 1
 
 
-_SKIP_LIST_CACHE = None
+_SKIP_LIST_CACHE: list | None = None
 
 
 def is_valid_ticker(ticker, skip_list=None):

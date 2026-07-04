@@ -42,7 +42,7 @@ export function startUpbitFeed() {
     const pureSym = ticker.code.replace("KRW-", "");
     const krwTicker = pureSym + "KRW";
 
-    // O(1) 해시 탐색 (이전: allSource.find() O(N) 선형 탐색 → 컵닙음)
+    // O(1) 해시 탐색 (이전: allSource.find() O(N) 선형 탐색 → 개선)
     const localRow = store.tickerRowMap?.get(krwTicker) || store.tickerRowMap?.get(pureSym);
     const matchedUid = (localRow && localRow.Upbit === "O") ? localRow.UID : "";
 
@@ -98,15 +98,18 @@ export function initUpbitSniperSocket() {
       const krwTicker = pureSym + "KRW";
       const newPriceKrw = parseFloat(res.trade_price);
 
-      // O(1) 해시 탐색 (이전: allSource.find() O(N) 선형 탐색 → 컵닙음)
+      // O(1) 해시 탐색 (이전: allSource.find() O(N) 선형 탐색 → 개선)
       const allSource = store.originalTableData || store.currentTableData || [];
       const row = store.tickerRowMap?.get(krwTicker) || store.tickerRowMap?.get(pureSym);
       if (row && row.Upbit === "O") {
-        const rate = store.marketDataMap?.krw_usd_rate || 0;
-        row.Price_Raw = newPriceKrw / rate;
-        if (row.utc0_open_Raw) {
-          const openPrice = parseFloat(row.utc0_open_Raw);
-          row.Change_Today_Raw = ((row.Price_Raw - openPrice) / openPrice) * 100;
+        const hasGlobal = row.Binance === "O" || row.Binance_Futures === "O" || row.Listed_Exchanges?.includes("BINANCE") || row.Listed_Exchanges?.includes("BINANCE_FUTURES");
+        if (!hasGlobal) {
+          const rate = store.marketDataMap?.krw_usd_rate || 0;
+          row.Price_Raw = newPriceKrw / rate;
+          if (row.utc0_open_Raw) {
+            const openPrice = parseFloat(row.utc0_open_Raw);
+            row.Change_Today_Raw = ((row.Price_Raw - openPrice) / openPrice) * 100;
+          }
         }
       }
 
@@ -114,6 +117,7 @@ export function initUpbitSniperSocket() {
         s: krwTicker,
         c: newPriceKrw,
         P: res.signed_change_rate * 100,
+        q_upbit: res.acc_trade_price_24h,
         isUpbitRealtime: true,
       };
 

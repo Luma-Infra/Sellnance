@@ -141,7 +141,9 @@ export const store = {
   binanceFuturesRadarWs: null, // 🚀 선물 레이더 소켓 변수 추가
   upbitRadarWs: null,
   sniperWs: null,
+  sniperWsFutures: null,
   activeSubs: new Set(),
+  activeSubsFutures: new Set(),
   radarIntervalId: null,
 
   currentTheme: "binance",

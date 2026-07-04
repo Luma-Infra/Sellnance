@@ -54,39 +54,50 @@ export function syncRowPrioritizedMetrics(row) {
     pOpen = row.utc0_open_KRW ? (rate > 0 ? parseFloat(row.utc0_open_KRW) / rate : parseFloat(row.utc0_open_KRW)) : row.utc0_open_Raw;
     pInflow = "BITHUMB";
   } else {
-    // ALL 모드 등 기본: 해외선물 > 해외현물 > 업비트 > 빗썸 순으로 락킹
-    if (hasFutures) {
-      pPrice = row.Binance_Price_Futures ?? row.Bybit_Price_Futures ?? row.Price_Raw;
+    // ALL 모드 등 기본: 해외선물 > 해외현물 > 업비트 순으로 락킹 (바이비트와 빗썸은 메인 락킹에서 배제)
+    if (hasFutures && (row.Binance_Futures === "O" || row.Listed_Exchanges?.includes("BINANCE_FUTURES"))) {
+      pPrice = row.Binance_Price_Futures ?? row.Price_Raw;
       p24h = row.Change_24h_Futures_Ex ?? row.Change_24h_Raw;
       pToday = row.Change_Today_Futures ?? row.Change_Today_Raw;
       pOpen = row.futures_utc0_open_Raw ?? row.utc0_open_Raw;
-      pInflow = row.Binance_Futures === "O" ? "BINANCE_FUTURES" : "BYBIT_FUTURES";
-    } else if (hasSpot) {
-      pPrice = row.Binance_Price_Spot ?? row.Bybit_Price_Spot ?? row.Price_Raw;
-      p24h = row.Change_24h_Binance ?? row.Change_24h_Bybit ?? row.Change_24h_Raw;
-      pToday = row.Change_Today_Binance ?? row.Change_Today_Bybit ?? row.Change_Today_Raw;
+      pInflow = "BINANCE_FUTURES";
+    } else if (hasSpot && (row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE"))) {
+      pPrice = row.Binance_Price_Spot ?? row.Price_Raw;
+      p24h = row.Change_24h_Binance ?? row.Change_24h_Raw;
+      pToday = row.Change_Today_Binance ?? row.Change_Today_Raw;
       pOpen = row.spot_utc0_open_Raw ?? row.utc0_open_Raw;
-      pInflow = row.Binance === "O" ? "BINANCE_SPOT" : "BYBIT_SPOT";
-    } else if (row.Upbit_Price) {
+      pInflow = "BINANCE_SPOT";
+    } else if (row.Upbit_Price && (row.Upbit === "O" || row.Listed_Exchanges?.includes("UPBIT"))) {
       pPrice = rate > 0 ? row.Upbit_Price / rate : row.Upbit_Price;
       p24h = row.Change_24h_Upbit ?? row.Change_24h_Raw;
       pToday = row.Change_Today_Upbit ?? row.Change_Today_Raw;
       pOpen = row.utc0_open_KRW ? (rate > 0 ? parseFloat(row.utc0_open_KRW) / rate : parseFloat(row.utc0_open_KRW)) : row.utc0_open_Raw;
       pInflow = "UPBIT";
-    } else if (row.Bithumb_Price) {
-      pPrice = rate > 0 ? row.Bithumb_Price / rate : row.Bithumb_Price;
-      p24h = row.Change_24h_Bithumb ?? row.Change_24h_Raw;
-      pToday = row.Change_Today_Bithumb ?? row.Change_Today_Raw;
-      pOpen = row.utc0_open_KRW ? (rate > 0 ? parseFloat(row.utc0_open_KRW) / rate : parseFloat(row.utc0_open_KRW)) : row.utc0_open_Raw;
-      pInflow = "BITHUMB";
     } else {
-      // pPrice = row.Price_Raw;
-      // p24h = row.Change_24h_Raw;
-      // pToday = row.Change_Today_Raw;
-      // pOpen = row.utc0_open_Raw;
-      // pInflow = "BINANCE";
+      // 빗썸 단독 코인이나 바이비트 단독 코인의 HTS 갱신 보장을 위한 하위 폴백 처리
+      if (row.Bithumb_Price && (row.Bithumb === "O" || row.Listed_Exchanges?.includes("BITHUMB"))) {
+        pPrice = rate > 0 ? row.Bithumb_Price / rate : row.Bithumb_Price;
+        p24h = row.Change_24h_Bithumb ?? row.Change_24h_Raw;
+        pToday = row.Change_Today_Bithumb ?? row.Change_Today_Raw;
+        pOpen = row.utc0_open_KRW ? (rate > 0 ? parseFloat(row.utc0_open_KRW) / rate : parseFloat(row.utc0_open_KRW)) : row.utc0_open_Raw;
+        pInflow = "BITHUMB";
+      } else if (row.Bybit_Price_Futures) {
+        pPrice = row.Bybit_Price_Futures;
+        p24h = row.Change_24h_Raw;
+        pToday = row.Change_Today_Futures ?? row.Change_Today_Raw;
+        pOpen = row.futures_utc0_open_Raw ?? row.utc0_open_Raw;
+        pInflow = "BYBIT_FUTURES";
+      } else if (row.Bybit_Price_Spot) {
+        pPrice = row.Bybit_Price_Spot;
+        p24h = row.Change_24h_Bybit ?? row.Change_24h_Raw;
+        pToday = row.Change_Today_Bybit ?? row.Change_Today_Raw;
+        pOpen = row.spot_utc0_open_Raw ?? row.utc0_open_Raw;
+        pInflow = "BYBIT_SPOT";
+      }
     }
   }
+  // pOpen = row.utc0_open_Raw;
+  // pInflow = "BINANCE";
 
   if (pPrice !== null && pPrice !== undefined) row.Price_Raw = pPrice;
   if (p24h !== null && p24h !== undefined) row.Change_24h_Raw = p24h;
@@ -99,12 +110,14 @@ export function syncRowPrioritizedMetrics(row) {
   row.Inflow_Path = pInflow;
   row.activeExchange = pInflow.toLowerCase().replace("_spot", "").replace("_futures", "");
 
-  // 🚀 [HTS 가드 엔진] 외부 혹은 미확인 코드에 의한 김프 0.0% 강제 오염 완벽 격리 차단
+  // 🚀 [HTS 가드 엔진] 외부 혹은 미확인 코드에 의한 김프 0.0% 강제 오염 완벽 격리 차단 (0% 고착 리셋 버그 차단용 주석 처리)
+  /*
   if (row.Kimchi_Raw === null || row.Kimchi_Raw === undefined || isNaN(row.Kimchi_Raw)) {
     row.Kimchi_Raw = null;
     row.Kimchi_Label = "-";
     row.Kimchi_Formatted = "-";
   }
+  */
 }
 window.syncRowPrioritizedMetrics = syncRowPrioritizedMetrics;
 
@@ -354,10 +367,11 @@ store.radarIntervalId = setInterval(() => {
             if (isFinite(kimchiPct)) {
               r.Kimchi_Raw = kimchiPct;
               r.Kimchi_Label = (kimchiPct > 0 ? "+" : "") + kimchiPct.toFixed(2) + "%";
-              r.Kimchi_Formatted = (kimchiPct > 0 ? "+" : "") + kimchiPct.toFixed(1) + "%";
+              r.Kimchi_Formatted = (kimchiPct > 0 ? "+" : "") + kimchiPct.toFixed(2) + "%";
               return;
             }
           }
+          /*
           const isFakeZero =
             r.Kimchi_Raw === 0 ||
             r.Kimchi_Raw === 0.0 ||

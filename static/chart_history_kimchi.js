@@ -35,10 +35,10 @@ export async function lazyRenderKimchiData(params) {
     const _fetchCoinInfo = _cachedInfo
       ? Promise.resolve(_cachedInfo)
       : fetch(`/api/coin-info/${querySym}`).then((res) => res.json()).then((d) => {
-          store._coinInfoCache.set(querySym, d);
-          return d;
-        });
-    
+        store._coinInfoCache.set(querySym, d);
+        return d;
+      });
+
     const listedEx = rowInfo ? rowInfo.Listed_Exchanges || [] : [];
     const wrapper = document.getElementById("chart-wrapper");
 
@@ -46,15 +46,6 @@ export async function lazyRenderKimchiData(params) {
       store.currentChartMarket === "UPBIT" ||
       store.currentChartMarket === "BITHUMB"
     ) {
-      if (listedEx.includes("BINANCE"))
-        availableSubs.push({
-          id: "binance_spot",
-          name: "B-SPOT",
-          bg: "#444",
-          text: "#fff",
-          sym: `${exactSpot}USDT`,
-          pureSym: exactSpot,
-        });
       if (listedEx.includes("BINANCE_FUTURES"))
         availableSubs.push({
           id: "binance_futures",
@@ -63,6 +54,15 @@ export async function lazyRenderKimchiData(params) {
           text: "#000",
           sym: `${exactFutures}USDT`,
           pureSym: exactFutures,
+        });
+      if (listedEx.includes("BINANCE"))
+        availableSubs.push({
+          id: "binance_spot",
+          name: "B-SPOT",
+          bg: "#444",
+          text: "#fff",
+          sym: `${exactSpot}USDT`,
+          pureSym: exactSpot,
         });
       if (listedEx.includes("BYBIT_FUTURES"))
         availableSubs.push({

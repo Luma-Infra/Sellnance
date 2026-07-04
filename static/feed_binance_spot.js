@@ -33,7 +33,7 @@ export function startBinanceSpotFeed() {
     data.forEach((ticker) => {
       const pureSymbol = ticker.s.replace("USDT", "");
       const bufferKey = ticker.s; // Spot key: SymbolUSDT
-      
+
       if (!store.tickerBuffer) store.tickerBuffer = {};
       store.tickerBuffer[bufferKey] = ticker;
 
@@ -65,37 +65,37 @@ export function startBinanceSpotFeed() {
 
 // 🎯 테이블용 바이낸스 스나이퍼 소켓 초기화
 export function initBinanceSniperSocket() {
-  if (store.sniperWs && store.sniperWs.readyState === WebSocket.OPEN) {
-    return;
+  const currentMarket = store.currentMarket || "ALL";
+
+  // 1. 현물(Spot) 소켓 초기화
+  const needSpot = currentMarket !== "FUTURES";
+  if (needSpot) {
+    if (!store.sniperWs || store.sniperWs.readyState === WebSocket.CLOSED || store.sniperWs.readyState === WebSocket.CLOSING) {
+      store.sniperWs = new WebSocket("wss://stream.binance.com:9443/ws");
+      store.sniperWs.onopen = () => {
+        if (typeof window.syncSniperSubscriptions === "function") {
+          window.syncSniperSubscriptions();
+        }
+      };
+      store.sniperWs.onmessage = (e) => {
+        const data = JSON.parse(e.data);
+        if (data.e === "aggTrade" || data.e === "24hrMiniTicker") {
+          if (typeof window.renderRealtimeRow === "function") {
+            const tickerKey = data.s || "";
+            window.renderRealtimeRow(tickerKey, data, false);
+          }
+        }
+      };
+      store.sniperWs.onclose = () => {
+        setTimeout(initBinanceSniperSocket, 1000);
+      };
+    }
+  } else {
+    if (store.sniperWs) {
+      try { store.sniperWs.close(); } catch (e) { }
+      store.sniperWs = null;
+    }
   }
-
-  const wsUrl =
-    store.currentMarket === "FUTURES"
-      ? "wss://fstream.binance.com/market/ws"
-      : "wss://stream.binance.com:9443/ws";
-
-  store.sniperWs = new WebSocket(wsUrl);
-  store.sniperWs.onopen = () => {
-    if (typeof window.syncSniperSubscriptions === "function") {
-      window.syncSniperSubscriptions();
-    }
-  };
-
-  store.sniperWs.onmessage = (e) => {
-    const data = JSON.parse(e.data);
-    if (data.e === "aggTrade" || data.e === "24hrTicker") {
-      if (typeof window.renderRealtimeRow === "function") {
-        const tickerKey = data.s || "";
-        const row = store.tickerRowMap.get(tickerKey + "_FUTURES") || store.tickerRowMap.get(tickerKey);
-        const isFutures = row ? (row.Binance_Futures === "O" || (row.Listed_Exchanges || []).includes("BINANCE_FUTURES")) : (store.currentMarket === "FUTURES");
-        window.renderRealtimeRow(tickerKey, data, isFutures);
-      }
-    }
-  };
-
-  store.sniperWs.onclose = () => {
-    setTimeout(initBinanceSniperSocket, 1000);
-  };
 }
 
 window.initBinanceSniperSocket = initBinanceSniperSocket;

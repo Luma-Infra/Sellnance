@@ -2614,6 +2614,9 @@
   "NXPCUSDT": {
     "binance_listing": "2025-05-12"
   },
+  "O": {
+    "binance_listing": "2026-06-24"
+  },
   "OBOL": {
     "binance_listing": "2025-05-07"
   },
@@ -2939,7 +2942,9 @@
     "binance_listing": "2025-06-04"
   },
   "PUMP": {
-    "binance_listing": "2025-06-13"
+    "binance_listing": "2025-06-13",
+    "upbit_listing": "2025-12-17",
+    "bithumb_listing": "2025-09-11"
   },
   "PUMPBTC": {
     "binance_listing": "2025-06-13",
@@ -3564,7 +3569,9 @@
     "binance_listing": "2019-09-25"
   },
   "SXT": {
-    "binance_listing": "2025-05-02"
+    "binance_listing": "2025-05-02",
+    "bithumb_listing": "2025-05-13",
+    "bybit_listing": "2026-04-12"
   },
   "SXTUSDT": {
     "binance_listing": "2025-04-28"
@@ -3834,6 +3841,9 @@
   "USARUSDT": {
     "binance_listing": "2026-05-22"
   },
+  "USD1": {
+    "binance_listing": "2025-05-22"
+  },
   "USDC": {
     "binance_listing": "2023-03-12"
   },
@@ -3910,7 +3920,8 @@
     "binance_listing": "2025-09-30"
   },
   "VIC": {
-    "binance_listing": "2025-03-12"
+    "binance_listing": "2025-02-20",
+    "bybit_listing": "2024-01-10"
   },
   "VICUSDT": {
     "binance_listing": "2023-11-20"

@@ -1,5 +1,6 @@
 // table_api.js
 import { store } from "./_store.js";
+import { getPureBase } from "./chart_utils.js";
 
 // 1. 데이터 로드 함수
 export async function loadTableData(force = false, silent = false) {
@@ -31,12 +32,25 @@ export async function loadTableData(force = false, silent = false) {
     }
 
     store.tickerRowMap.clear();
+    store.uidToKrwRowMap = new Map();
+    store.pureBaseToRowsMap = new Map();
     store.currentTableData.forEach((row) => {
       row.DisplayTicker = (row.DisplayTicker || row.Symbol)
         .toString()
         .toUpperCase();
 
+      const pureBase = getPureBase(row.Symbol || row.Ticker);
+      if (pureBase) {
+        if (!store.pureBaseToRowsMap.has(pureBase)) {
+          store.pureBaseToRowsMap.set(pureBase, []);
+        }
+        store.pureBaseToRowsMap.get(pureBase).push(row);
+      }
+
       const uid = row.UID ? String(row.UID) : null;
+      if (uid && row.Ticker && row.Ticker.endsWith("KRW")) {
+        store.uidToKrwRowMap.set(uid, row);
+      }
       const tKey = row.Ticker ? row.Ticker.toUpperCase() : null;
       const dKey = row.DisplayTicker ? row.DisplayTicker.toUpperCase() : null;
 
@@ -227,6 +241,22 @@ export async function loadTableDataSilent() {
           // 🚀 [오류 방어] Symbol 단일 매핑 금지
 
           needReRender = true;
+        }
+      });
+
+      // Rebuild store.uidToKrwRowMap and store.pureBaseToRowsMap
+      store.uidToKrwRowMap = new Map();
+      store.pureBaseToRowsMap = new Map();
+      store.currentTableData.forEach((row) => {
+        if (row.UID && row.Ticker && row.Ticker.endsWith("KRW")) {
+          store.uidToKrwRowMap.set(String(row.UID), row);
+        }
+        const pureBase = getPureBase(row.Symbol || row.Ticker);
+        if (pureBase) {
+          if (!store.pureBaseToRowsMap.has(pureBase)) {
+            store.pureBaseToRowsMap.set(pureBase, []);
+          }
+          store.pureBaseToRowsMap.get(pureBase).push(row);
         }
       });
 

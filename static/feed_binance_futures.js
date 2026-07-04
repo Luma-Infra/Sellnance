@@ -63,3 +63,39 @@ export function startBinanceFuturesFeed() {
     setTimeout(startBinanceFuturesFeed, 3000);
   };
 }
+
+// 🎯 테이블용 바이낸스 선물 스나이퍼 소켓 초기화
+export function initBinanceFuturesSniperSocket() {
+  const currentMarket = store.currentMarket || "ALL";
+
+  const needFutures = currentMarket === "ALL" || currentMarket === "FUTURES";
+  if (needFutures) {
+    if (!store.sniperWsFutures || store.sniperWsFutures.readyState === WebSocket.CLOSED || store.sniperWsFutures.readyState === WebSocket.CLOSING) {
+      store.sniperWsFutures = new WebSocket("wss://fstream.binance.com/market/ws");
+      store.sniperWsFutures.onopen = () => {
+        if (typeof window.syncSniperSubscriptions === "function") {
+          window.syncSniperSubscriptions();
+        }
+      };
+      store.sniperWsFutures.onmessage = (e) => {
+        const data = JSON.parse(e.data);
+        if (data.e === "aggTrade" || data.e === "24hrMiniTicker") {
+          if (typeof window.renderRealtimeRow === "function") {
+            const tickerKey = data.s || "";
+            window.renderRealtimeRow(tickerKey, data, true);
+          }
+        }
+      };
+      store.sniperWsFutures.onclose = () => {
+        setTimeout(initBinanceFuturesSniperSocket, 1000);
+      };
+    }
+  } else {
+    if (store.sniperWsFutures) {
+      try { store.sniperWsFutures.close(); } catch (e) { }
+      store.sniperWsFutures = null;
+    }
+  }
+}
+
+window.initBinanceFuturesSniperSocket = initBinanceFuturesSniperSocket;

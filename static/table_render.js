@@ -346,7 +346,7 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
         ? row.Change_24h_Binance
         : row.Change_24h_Bybit) ?? n24h;
   } else if (currentMarket === "ALL" || currentMarket === "KIMCHI" || currentMarket === "NEW") {
-    // 🚀 [추가] ALL 모드에서 가격 우선순위 단일 매칭 독점 바인딩 (바낸 선물 -> 바낸 현물 -> 업비트 -> 빗썸)
+    /* [테이블 렌더러가 가격 우선순위를 독단적으로 재계산하여 가격을 꼬던 기존 코드들을 싹 다 주석 처리]
     const hasFutures = row.Binance_Futures === "O" || row.Listed_Exchanges?.includes("BINANCE_FUTURES");
     const hasSpot = row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE");
 
@@ -373,8 +373,10 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
     } else {
       nPrice = row.Ticker?.endsWith("KRW") ? (rate > 0 ? (row.Price_KRW || 0) / rate : (row.Price_KRW || 0)) : (row.Price_Raw || 0);
     }
+    */
 
-    // 🚀 [추가] ALL 모드에서 24h 변동률 우선순위 단일 매칭 독점 바인딩 (Change_24h_Raw 직접 락킹)
+    // 🚀 [구원] 렌더러는 가격 연산에 직접 개입하지 않고, 오직 stream.js가 확정해놓은 단일 진실 대표값만 그대로 매핑해 그립니다!
+    nPrice = row.Price_Raw ?? 0;
     n24h = row.Change_24h_Raw ?? 0;
   }
   const isKrw = store.currencyMode === "KRW" || currentMarket === "UPBIT" || currentMarket === "BITHUMB" || row.Ticker?.endsWith("KRW");
@@ -415,63 +417,67 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
   const vmcColorClass = "text-theme-text";
 
   // 🚀 가격, 등락률 렌더링
-  const priceCell = rowEl.querySelector(".col-price");
+  const priceCell = rowEl._priceCell || (rowEl._priceCell = rowEl.querySelector(".col-price"));
   if (priceCell) {
     priceCell.classList.remove("price-placeholder");
 
     // 구조가 없으면 최초 1회만 innerHTML 생성
-    let container = priceCell.querySelector(".price-container");
+    let container = priceCell._container;
     if (!container) {
-      priceCell.innerHTML = `
-        <div class="price-container flex flex-col leading-tight min-w-0 gap-0.5">
-          <div id="price-${tId}" data-raw-price="0" class="font-medium text-[14px] text-theme-text price-cell tracking-tighter truncate block flex items-center">
-            <span id="price-val-binance-${tId}" class="hidden items-center">
-              <span class="price-num">-</span>
-              <div class="relative inline-flex items-center justify-center w-[12px] h-[12px] rounded-[2px] overflow-hidden bg-white/2 ml-1 align-middle flex-shrink-0">
-                <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/270.png" alt="binance" class="w-full h-full object-contain rounded-[2px]" />
-                <div class="price-futures-badge absolute bottom-[0.5px] right-[0.5px] bg-[#f0b90b] text-black text-[8px] font-black px-[0.5px] rounded-[1px] leading-none z-10 scale-[0.6] origin-bottom-right hidden">F</div>
-              </div>
-            </span>
-            <span id="price-val-bybit-${tId}" class="hidden items-center">
-              <span class="price-num">-</span>
-              <div class="relative inline-flex items-center justify-center w-[12px] h-[12px] rounded-[2px] overflow-hidden bg-white/2 ml-1 align-middle flex-shrink-0">
-                <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/521.png" alt="bybit" class="w-full h-full object-contain rounded-[2px]" />
-                <div class="price-futures-badge absolute bottom-[0.5px] right-[0.5px] bg-[#f0b90b] text-black text-[8px] font-black px-[0.5px] rounded-[1px] leading-none z-10 scale-[0.6] origin-bottom-right hidden">F</div>
-              </div>
-            </span>
-            <span id="price-val-upbit-${tId}" class="hidden items-center">
-              <span class="price-num">-</span>
-              <div class="relative inline-flex items-center justify-center w-[12px] h-[12px] rounded-[2px] overflow-hidden bg-white/2 ml-1 align-middle flex-shrink-0">
-                <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/351.png" alt="upbit" class="w-full h-full object-contain rounded-[2px]" />
-              </div>
-            </span>
-            <span id="price-val-bithumb-${tId}" class="hidden items-center">
-              <span class="price-num">-</span>
-              <div class="relative inline-flex items-center justify-center w-[12px] h-[12px] rounded-[2px] overflow-hidden bg-white/2 ml-1 align-middle flex-shrink-0">
-                <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/200.png" alt="bithumb" class="w-full h-full object-contain rounded-[2px]" />
-              </div>
-            </span>
-          </div>
-          <div class="flex items-center justify-between gap-1 text-[10px] font-medium text-left mt-0.5 w-full min-w-0">
-            <span id="change-${tId}" class="whitespace-nowrap flex-shrink-0">-</span>
-            <span id="today-${tId}" class="whitespace-nowrap flex-shrink-0">-</span>
-          </div>
-        </div>
-      `;
       container = priceCell.querySelector(".price-container");
+      if (!container) {
+        priceCell.innerHTML = `
+          <div class="price-container flex flex-col leading-tight min-w-0 gap-0.5">
+            <div id="price-${tId}" data-raw-price="0" class="font-medium text-[14px] text-theme-text price-cell tracking-tighter truncate block flex items-center">
+              <span id="price-val-binance-${tId}" class="hidden items-center">
+                <span class="price-num">-</span>
+                <div class="relative inline-flex items-center justify-center w-[12px] h-[12px] rounded-[2px] overflow-hidden bg-white/2 ml-1 align-middle flex-shrink-0">
+                  <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/270.png" alt="binance" class="w-full h-full object-contain rounded-[2px]" />
+                  <div class="price-futures-badge absolute bottom-[0.5px] right-[0.5px] bg-[#f0b90b] text-black text-[8px] font-black px-[0.5px] rounded-[1px] leading-none z-10 scale-[0.6] origin-bottom-right hidden">F</div>
+                </div>
+              </span>
+              <span id="price-val-bybit-${tId}" class="hidden items-center">
+                <span class="price-num">-</span>
+                <div class="relative inline-flex items-center justify-center w-[12px] h-[12px] rounded-[2px] overflow-hidden bg-white/2 ml-1 align-middle flex-shrink-0">
+                  <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/521.png" alt="bybit" class="w-full h-full object-contain rounded-[2px]" />
+                  <div class="price-futures-badge absolute bottom-[0.5px] right-[0.5px] bg-[#f0b90b] text-black text-[8px] font-black px-[0.5px] rounded-[1px] leading-none z-10 scale-[0.6] origin-bottom-right hidden">F</div>
+                </div>
+              </span>
+              <span id="price-val-upbit-${tId}" class="hidden items-center">
+                <span class="price-num">-</span>
+                <div class="relative inline-flex items-center justify-center w-[12px] h-[12px] rounded-[2px] overflow-hidden bg-white/2 ml-1 align-middle flex-shrink-0">
+                  <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/351.png" alt="upbit" class="w-full h-full object-contain rounded-[2px]" />
+                </div>
+              </span>
+              <span id="price-val-bithumb-${tId}" class="hidden items-center">
+                <span class="price-num">-</span>
+                <div class="relative inline-flex items-center justify-center w-[12px] h-[12px] rounded-[2px] overflow-hidden bg-white/2 ml-1 align-middle flex-shrink-0">
+                  <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/200.png" alt="bithumb" class="w-full h-full object-contain rounded-[2px]" />
+                </div>
+              </span>
+            </div>
+            <div class="flex items-center justify-between gap-1 text-[10px] font-medium text-left mt-0.5 w-full min-w-0">
+              <span id="change-${tId}" class="whitespace-nowrap flex-shrink-0">-</span>
+              <span id="today-${tId}" class="whitespace-nowrap flex-shrink-0">-</span>
+            </div>
+          </div>
+        `;
+        container = priceCell.querySelector(".price-container");
+      }
+      priceCell._container = container;
     }
 
     // Direct textContent 및 클래스 갱신 (리플로우 방지)
     const chgText = `${n24h > 0 ? "+" : ""}${Number(n24h).toFixed(2)}%`;
     const todayText = `${nDay > 0 ? "+" : ""}${Number(nDay).toFixed(2)}%`;
 
-    const changeEl = container.querySelector(`#change-${tId}`);
+    const changeEl = container._changeEl || (container._changeEl = container.querySelector(`#change-${tId}`));
     if (changeEl) {
       changeEl.textContent = chgText;
       changeEl.className = `${color24h} ${chgText.length > 7 ? "text-[9px]" : "text-[10px]"} whitespace-nowrap flex-shrink-0`;
     }
 
-    const todayEl = container.querySelector(`#today-${tId}`);
+    const todayEl = container._todayEl || (container._todayEl = container.querySelector(`#today-${tId}`));
     if (todayEl) {
       todayEl.textContent = todayText;
       todayEl.className = `${colorDay} ${todayText.length > 7 ? "text-[9px]" : "text-[10px]"} whitespace-nowrap flex-shrink-0`;
@@ -479,25 +485,29 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
   }
 
   // 🚀 바이낸스 볼륨/시총 렌더링
-  const volBCell = rowEl.querySelector(".col-vol-b");
+  const volBCell = rowEl._volBCell || (rowEl._volBCell = rowEl.querySelector(".col-vol-b"));
   if (volBCell) {
     volBCell.classList.remove("vol-b-placeholder");
 
-    let container = volBCell.querySelector(".vol-b-container");
+    let container = volBCell._container;
     if (!container) {
-      volBCell.innerHTML = `
-        <div class="vol-b-container flex flex-col h-full justify-center leading-tight min-w-0 gap-0.5">
-          <span id="vol-binance-${tId}" class="text-[#f0b90b] text-[11px] font-tempTestDss font-bold truncate"></span>
-          <span id="mcap-${tId}" class="text-[10px] font-bold opacity-60 text-left mt-0.5 truncate"></span>
-        </div>
-      `;
       container = volBCell.querySelector(".vol-b-container");
+      if (!container) {
+        volBCell.innerHTML = `
+          <div class="vol-b-container flex flex-col h-full justify-center leading-tight min-w-0 gap-0.5">
+            <span id="vol-binance-${tId}" class="text-[#f0b90b] text-[11px] font-tempTestDss font-bold truncate"></span>
+            <span id="mcap-${tId}" class="text-[10px] font-bold opacity-60 text-left mt-0.5 truncate"></span>
+          </div>
+        `;
+        container = volBCell.querySelector(".vol-b-container");
+      }
+      volBCell._container = container;
     }
 
     const volBText = (row.Volume_Formatted && row.Volume_Formatted !== "-" && row.Volume_Formatted !== "0") ? row.Volume_Formatted : "-";
     const mcapText = row.MarketCap_Formatted || "-";
 
-    const volBEl = container.querySelector(`#vol-binance-${tId}`);
+    const volBEl = container._volBEl || (container._volBEl = container.querySelector(`#vol-binance-${tId}`));
     if (volBEl && volBEl.textContent !== volBText) {
       volBEl.textContent = volBText;
       const fs = CONFIG.FONT_SCALE;
@@ -509,7 +519,7 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
       }
     }
 
-    const mcapEl = container.querySelector(`#mcap-${tId}`);
+    const mcapEl = container._mcapEl || (container._mcapEl = container.querySelector(`#mcap-${tId}`));
     if (mcapEl) {
       mcapEl.textContent = mcapText;
       const fs = CONFIG.FONT_SCALE;
@@ -523,24 +533,28 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
   }
 
   // 🚀 업비트 볼륨/VMC 렌더링
-  const volUCell = rowEl.querySelector(".col-vol-u");
+  const volUCell = rowEl._volUCell || (rowEl._volUCell = rowEl.querySelector(".col-vol-u"));
   if (volUCell) {
     volUCell.classList.remove("vol-u-placeholder");
 
-    let container = volUCell.querySelector(".vol-u-container");
+    let container = volUCell._container;
     if (!container) {
-      volUCell.innerHTML = `
-        <div class="vol-u-container flex flex-col h-full justify-center items-end leading-tight min-w-0 gap-0.5 text-right w-full">
-          <span id="vol-upbit-${tId}" class="text-[#093687] text-[11px] font-tempTestDss font-bold truncate w-full text-right"></span>
-          <span id="vmc-${tId}" class="text-[10px] font-bold opacity-60 mt-0.5 truncate w-full text-right ${vmcColorClass}"></span>
-        </div>
-      `;
       container = volUCell.querySelector(".vol-u-container");
+      if (!container) {
+        volUCell.innerHTML = `
+          <div class="vol-u-container flex flex-col h-full justify-center items-end leading-tight min-w-0 gap-0.5 text-right w-full">
+            <span id="vol-upbit-${tId}" class="text-[#093687] text-[11px] font-tempTestDss font-bold truncate w-full text-right"></span>
+            <span id="vmc-${tId}" class="text-[10px] font-bold opacity-60 mt-0.5 truncate w-full text-right ${vmcColorClass}"></span>
+          </div>
+        `;
+        container = volUCell.querySelector(".vol-u-container");
+      }
+      volUCell._container = container;
     }
 
     const volUText = (row.Upbit_Vol_Formatted && row.Upbit_Vol_Formatted !== "-" && row.Upbit_Vol_Formatted !== "0") ? row.Upbit_Vol_Formatted : "-";
 
-    const volUEl = container.querySelector(`#vol-upbit-${tId}`);
+    const volUEl = container._volUEl || (container._volUEl = container.querySelector(`#vol-upbit-${tId}`));
     if (volUEl && volUEl.textContent !== volUText) {
       volUEl.textContent = volUText;
       const fs = CONFIG.FONT_SCALE;
@@ -552,7 +566,7 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
       }
     }
 
-    const vmcEl = container.querySelector(`#vmc-${tId}`);
+    const vmcEl = container._vmcEl || (container._vmcEl = container.querySelector(`#vmc-${tId}`));
     if (vmcEl && vmcEl.textContent !== vmcFormatted) {
       vmcEl.textContent = vmcFormatted;
       const fs = CONFIG.FONT_SCALE;
@@ -566,26 +580,30 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
   }
 
   // 🚀 김프/펀딩비 렌더링
-  const kimchiCell = rowEl.querySelector(".col-kimch");
+  const kimchiCell = rowEl._kimchiCell || (rowEl._kimchiCell = rowEl.querySelector(".col-kimch"));
   if (kimchiCell) {
     kimchiCell.classList.remove("kimchi-placeholder");
 
-    let container = kimchiCell.querySelector(".kimchi-container");
+    let container = kimchiCell._container;
     if (!container) {
-      kimchiCell.innerHTML = `
-        <div class="kimchi-container flex flex-col h-full justify-center leading-tight items-start min-w-0">
-          <div class="flex items-center justify-start gap-1 min-w-0 max-w-full">
-            <span class="kimchi-pct text-[12px] font-medium truncate">-</span>
-          </div>
-          <div class="flex items-center justify-start gap-2 text-[10px] font-medium mt-0.5 min-w-0 max-w-full">
-             <span class="funding-val text-theme-accent opacity-70 truncate">-</span>
-          </div>
-        </div>
-      `;
       container = kimchiCell.querySelector(".kimchi-container");
+      if (!container) {
+        kimchiCell.innerHTML = `
+          <div class="kimchi-container flex flex-col h-full justify-center leading-tight items-start min-w-0">
+            <div class="flex items-center justify-start gap-1 min-w-0 max-w-full">
+              <span class="kimchi-pct text-[12px] font-medium truncate">-</span>
+            </div>
+            <div class="flex items-center justify-start gap-2 text-[10px] font-medium mt-0.5 min-w-0 max-w-full">
+               <span class="funding-val text-theme-accent opacity-70 truncate">-</span>
+            </div>
+          </div>
+        `;
+        container = kimchiCell.querySelector(".kimchi-container");
+      }
+      kimchiCell._container = container;
     }
 
-    const kimchiPctEl = container.querySelector(".kimchi-pct");
+    const kimchiPctEl = container._kimchiPctEl || (container._kimchiPctEl = container.querySelector(".kimchi-pct"));
     if (kimchiPctEl) {
       if (!row.Kimchi_Label || row.Kimchi_Label === "-" || !row.Kimchi_Formatted) {
         kimchiPctEl.textContent = "-";
@@ -596,7 +614,7 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
       }
     }
 
-    const fundingEl = container.querySelector(".funding-val");
+    const fundingEl = container._fundingEl || (container._fundingEl = container.querySelector(".funding-val"));
     if (fundingEl) {
       fundingEl.textContent = row.Funding_Formatted || "-";
     }
@@ -1319,13 +1337,11 @@ export function applyPriceFlash(element, newPrice, oldPrice) {
 }
 
 window.updateRowPriceDisplay = (target, row) => {
-  let parentEl;
+  const rowEl = target instanceof HTMLElement ? target : store.rowDomMap?.get(row.Ticker);
+  if (!rowEl) return;
+
   const tId = row.Ticker || row.Symbol;
-  if (target instanceof HTMLElement) {
-    parentEl = target.querySelector(`#price-${tId}`);
-  } else {
-    parentEl = document.getElementById(`price-${tId}`);
-  }
+  const parentEl = rowEl._priceEl || (rowEl._priceEl = rowEl.querySelector(`#price-${tId}`));
   if (!parentEl) return;
 
   const rate = store.marketDataMap?.krw_usd_rate || 0;
@@ -1422,11 +1438,10 @@ window.updateRowPriceDisplay = (target, row) => {
   };
 
   exchanges.forEach((ex) => {
-    let span;
-    if (target instanceof HTMLElement) {
-      span = target.querySelector(`#price-val-${ex}-${tId}`);
-    } else {
-      span = document.getElementById(`price-val-${ex}-${tId}`);
+    let span = parentEl[`_priceVal_${ex}`];
+    if (!span) {
+      span = parentEl.querySelector(`#price-val-${ex}-${tId}`);
+      parentEl[`_priceVal_${ex}`] = span;
     }
     if (!span) return;
 
@@ -1434,7 +1449,7 @@ window.updateRowPriceDisplay = (target, row) => {
       const isKrw = isKrwMode || ["upbit", "bithumb"].includes(ex);
       const formattedPrice = window.formatSmartPrice(displayPrice, p, isKrw) + (isKrw ? " 원" : "");
 
-      const numEl = span.querySelector(".price-num");
+      const numEl = span._numEl || (span._numEl = span.querySelector(".price-num"));
       // 🚀 [성능 극대화] innerText는 CSS 레이아웃을 계산하므로 렌더링 폭탄입니다. 단순 textContent로 교체하여 브라우저 부담을 90% 이상 줄입니다.
       // 🚀 또한 값이 실제로 다를 때만 DOM을 건드리도록 방어코드 추가 (DOM Mutation 렉 차단)
       if (numEl && numEl.textContent !== formattedPrice) {

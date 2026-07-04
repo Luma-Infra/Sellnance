@@ -4,7 +4,7 @@ import { store, CONFIG } from "./_store.js";
 import { fetchHistory } from "./chart_data.js";
 import { getPureBase } from "./chart_utils.js";
 
-export function selectSymbol(s, forceMarket = null, targetUid = null) {
+export function selectSymbol(s, forceMarket = null, targetUid = null, isRowClick = false) {
   if (!s) return;
   const allSourceData = store.currentTableData || store.originalTableData || [];
 
@@ -43,6 +43,14 @@ export function selectSymbol(s, forceMarket = null, targetUid = null) {
   }
 
   const uniqueTicker = rowInfo ? rowInfo.Ticker : s;
+
+  // 🚀 [신규 가드] 이미 선택된 코인을 클릭했거나, 이미 선택된 활성 거래소 뱃지를 클릭한 경우 조기 리턴하여 불필요한 차트 초기화 및 리로드 차단
+  if (isRowClick && store.currentAsset === uniqueTicker) {
+    return;
+  }
+  if (forceMarket !== null && store.currentSelectedSymbol === uniqueTicker && store.currentChartMarket === forceMarket) {
+    return;
+  }
 
   // 🚀 [INP 최적화 Phase 1] 클릭 즉시 최소한의 상태만 변경하고 즉각 시각적 피드백 제공 (Next Paint 0~16ms 달성!)
   store.isFetchingChart = false;

@@ -88,7 +88,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         store.currentSelectedSymbol = ticker;
         if (typeof window.selectSymbol === "function") {
-          window.selectSymbol(ticker, null, uid);
+          window.selectSymbol(ticker, null, uid, true);
         }
         applySelectedHighlight();
 
