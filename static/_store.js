@@ -61,6 +61,7 @@ export const store = {
   previewSeries: null,
   volumeSeries: null,
   savedZoomWidth: null, // 🚀 [UX 개선] 사용자가 스크롤/줌을 통해 설정한 캔들 개수(가로폭) 저장용
+  savedRightMargin: null, // 🚀 [UX 개선] 사용자가 드래그해서 맞춘 마지막 캔들 우측 여백 칸 수 저장용
   savedPriceScaleWidth: null, // 🚀 [UX 개선] 우측 가격 축의 실시간 너비 저장용 (멀티 뷰포트 정밀 동기화용)
   kimchiSeries: null,
   chartVol: null,

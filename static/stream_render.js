@@ -85,6 +85,7 @@ export function renderRealtimeUpdate(normalizedTime, currentCandle) {
                 : null;
 
             if (!lastVolItem || normalizedTime >= lastVolItem.time) {
+                // console.log("VOLUME_UPDATE_DATA:", volObj);
                 store.volumeSeries.update(volObj);
                 if (store.volumeData && store.volumeData.length > 0) {
                     if (normalizedTime > lastVolItem.time) {

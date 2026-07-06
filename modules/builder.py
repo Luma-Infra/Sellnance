@@ -80,16 +80,21 @@ def assemble_final_dashboard(
     any_update = False
     processed_uids = set()
 
-    # 역방향 족보 생성 (실제 티커명 및 매핑명 모두 대응)
+    # 역방향 족보 생성 (실제 티커명 및 매핑명 모두 대응, 2단계 등록으로 충돌 방지)
     REVERSE_LOOKUP = {}
     duplicated_bases = set()
+    # 1단계: 가상 키 먼저 등록 (우선순위 낮음)
+    for k, v in DUPLICATED_LIST.items():
+        if len(v) >= 4:
+            ex = v[3].upper()
+            REVERSE_LOOKUP[f"{k.split('(')[0].upper()}_{ex}"] = k
+            duplicated_bases.add(v[2].upper())
+            duplicated_bases.add(k.split("(")[0].upper())
+    # 2단계: 실제 거래소 심볼 키 등록 (우선순위 높음, 덮어쓰기)
     for k, v in DUPLICATED_LIST.items():
         if len(v) >= 4:
             ex = v[3].upper()
             REVERSE_LOOKUP[f"{v[2].upper()}_{ex}"] = k
-            REVERSE_LOOKUP[f"{k.split('(')[0].upper()}_{ex}"] = k
-            duplicated_bases.add(v[2].upper())
-            duplicated_bases.add(k.split("(")[0].upper())
 
     # 🚀 법정 환율 (USD/KRW) 실시간 수집 (tvDatafeed 단일 연동)
     krw_usd_rate = float(mapping.get("DEFAULT_KRW_USD_RATE", 0.0))

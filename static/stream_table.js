@@ -447,13 +447,13 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
           // 🚀 수정 후 (타입 에러 방어용 초정밀 문자열 룩업)
           const krwRow = store.uidToKrwRowMap ? store.uidToKrwRowMap.get(String(r.UID)) : null;
           if (hasUpbit) {
-            priceKor = r.Upbit_Price || (krwRow ? krwRow.Upbit_Price || krwRow.Price_KRW : 0) || r.Price_KRW || 0;
+            priceKor = (krwRow ? krwRow.Upbit_Price || krwRow.Price_KRW : 0) || r.Upbit_Price || r.Price_KRW || 0;
           } else if (hasBithumb) {
-            priceKor = r.Bithumb_Price || (krwRow ? krwRow.Bithumb_Price || krwRow.Price_KRW : 0) || r.Price_KRW || 0;
+            priceKor = (krwRow ? krwRow.Bithumb_Price || krwRow.Price_KRW : 0) || r.Bithumb_Price || r.Price_KRW || 0;
           }
         }
 
-        const domMult = getMultiplier(r.Upbit_Symbol || r.Symbol || r.Ticker);
+        const domMult = getMultiplier(r.Upbit_Symbol || r.Bithumb_Symbol || r.Symbol || r.Ticker);
         const ovsMult = getMultiplier(r.Exact_Futures || r.Exact_Spot || r.Symbol || r.Ticker);
         const unitKorPrice = priceKor / domMult;
         const unitGlbPrice = (r.Price_Raw || 0) / ovsMult;

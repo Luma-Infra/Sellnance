@@ -26,9 +26,12 @@ export function selectSymbol(s, forceMarket = null, targetUid = null, isRowClick
     rowInfo = allSourceData.find((c) => c.UID === targetUid);
   }
   if (!rowInfo) {
+    // 2-1. 1차 패스: 정확히 일치(Exact Match)하는 대상을 우선 검색
+    rowInfo = allSourceData.find((c) => c.UID === s || c.Ticker === s || c.DisplayTicker === s || c.Symbol === s);
+  }
+  if (!rowInfo) {
+    // 2-2. 2차 패스: 접미사(KRW, USDT 등)를 제거하고 유연하게 검색
     rowInfo = allSourceData.find((c) => {
-      if (c.UID === s || c.Ticker === s || c.DisplayTicker === s || c.Symbol === s) return true;
-
       const t = (c.Ticker || "").toUpperCase();
       const cleanT = t.endsWith("KRW") ? t.slice(0, -3) : (t.endsWith("USDT") ? t.slice(0, -4) : t);
 
@@ -108,9 +111,9 @@ export function selectSymbol(s, forceMarket = null, targetUid = null, isRowClick
 
   // 1. 검색창 닫기 및 입력값 동기화 (가벼운 DOM 조작 즉시 실행)
   const symInput = document.getElementById("symbol-input");
-  if (symInput) {
-    symInput.value = rowInfo ? rowInfo.Symbol : s;
-  }
+  // if (symInput) {
+  //   symInput.value = rowInfo ? rowInfo.Symbol : s;
+  // }
   const searchRes = document.getElementById("search-results");
   if (searchRes) searchRes.style.display = "none";
 

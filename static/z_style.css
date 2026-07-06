@@ -7,6 +7,7 @@
   --color-theme-panel: var(--panel);
   --color-theme-border: var(--border);
   --color-theme-text: var(--text);
+  --color-theme-grid: var(--grid);
   --color-theme-up: var(--up);
   --color-theme-down: var(--down);
   --color-theme-accent: var(--accent);
@@ -122,6 +123,7 @@ body.theme-binance {
   --bg: #131722;
   --panel: #1e222d;
   --border: #2a2e39;
+  --grid: rgba(42, 46, 57, 0.4);
   --text: #d2d2d2;
   --up: #26a69a;
   --down: #ef5350;
@@ -133,9 +135,10 @@ body.theme-binance {
 
 body.theme-upbit {
   --bg: #ffffff;
-  --panel: #f4f5f8;
-  --border: #d5d5d5;
-  --text: #333;
+  --panel: #f8fafc;
+  --border: #e2e8f0;
+  --grid: #f1f5f9;
+  --text: #0f172a;
   --up: #c84a31;
   --down: #1261c4;
   --accent: #1261c4;
@@ -149,6 +152,7 @@ body {
   --color-theme-panel: var(--panel);
   --color-theme-border: var(--border);
   --color-theme-text: var(--text);
+  --color-theme-grid: var(--grid);
   --color-theme-up: var(--up);
   --color-theme-down: var(--down);
   --color-theme-accent: var(--accent);
@@ -348,10 +352,9 @@ body.theme-upbit:not(.resizing-active) #right-panel {
 .flash-up {
   color: color-mix(in srgb, var(--up), transparent 20%) !important;
   /* text-shadow: 0 0 12px color-mix(in srgb, var(--up), transparent 80%) !important; */
-  background: radial-gradient(
-      /* circle, */
+  /* background: radial-gradient(
       var(--flash-up) 0%,
-      transparent 40%) !important;
+      transparent 40%) !important; */
   /* box-shadow: inset 2px 0 0 0 var(--up) !important; */
   transition: none !important;
 }
@@ -359,10 +362,9 @@ body.theme-upbit:not(.resizing-active) #right-panel {
 .flash-down {
   color: color-mix(in srgb, var(--down), transparent 20%) !important;
   /* text-shadow: 0 0 12px color-mix(in srgb, var(--down), transparent 80%) !important; */
-  background: radial-gradient(
-      /* circle, */
+  /* background: radial-gradient(
       var(--flash-down) 0%,
-      transparent 40%) !important;
+      transparent 40%) !important; */
   /* box-shadow: inset 2px 0 0 0 var(--down) !important; */
   transition: none !important;
 }
@@ -376,6 +378,16 @@ body.theme-upbit:not(.resizing-active) #right-panel {
     box-shadow 0.4s ease;
   padding-left: 8px;
   /* 좌측 보더 공간 확보 */
+}
+
+/* 🚀 GPU 레이어 상시 박제 및 텍스트 렌더링 최적화로 플래시 작동 시 글자 흔들림(Subpixel Shift) 영구 박멸 */
+.price-cell,
+.price-cell span {
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* 🚨 고급 HTS 스타일 커스텀 스크롤바 */
@@ -1248,4 +1260,111 @@ button[data-name="hide-all"].draw-tool-btn--active button {
 /* 🚀 볼륨 차트가 로드되었을 때 (차트 내부 Lightweight-Charts 테이블 생성 시) 안내 메시지 숨김 */
 #pane-vol:has(.tv-lightweight-charts) .kimchi-vol-fallback {
   display: none !important;
+}
+
+/* ==========================================================================
+   🚀 라이트 모드 (업비트 테마) 프리미엄 디테일 오버라이드 (회색빛 제거 및 통일성 강화)
+   ========================================================================== */
+
+/* 1. 슬라이딩 탭 버튼 디자인 `#tab-btn-sim` 외 */
+body.theme-upbit #tab-sliding-bg {
+  background-color: #ffffff !important;
+  /* border: 1px solid #e2e8f0 !important; */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.08) !important;
+}
+
+body.theme-upbit .chart-tabs-btn {
+  color: #64748b !important;
+  opacity: 0.8;
+}
+
+body.theme-upbit .chart-tabs-btn.active {
+  color: #0f172a !important;
+  opacity: 1 !important;
+  font-weight: 700 !important;
+}
+
+body.theme-upbit #chart-tab-container {
+  background-color: #f1f5f9 !important;
+  /* border-color: #e2e8f0 !important; */
+}
+
+/* 2. 검색 바 및 상단 영역 */
+body.theme-upbit #search-bar-inner {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+}
+
+body.theme-upbit #search-input-wrapper {
+  background-color: transparent !important;
+}
+
+body.theme-upbit #left-top-zone {
+  background-color: #ffffff !important;
+  /* border-bottom: 1px solid #e2e8f0 !important; */
+}
+
+body.theme-upbit #control-panel-parent {
+  background-color: transparent !important;
+  border-bottom-color: #e2e8f0 !important;
+}
+
+/* 3. 타임프레임 바 (bg-black/5 오버라이드) */
+body.theme-upbit #chart-header>div {
+  background-color: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+body.theme-upbit .tf-btn {
+  border-color: transparent !important;
+  background-color: transparent !important;
+  color: #64748b !important;
+}
+
+body.theme-upbit .tf-btn:hover {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+body.theme-upbit .tf-btn.active {
+  border-color: #1261c4 !important;
+  background-color: #ffffff !important;
+  color: #1261c4 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* 4. 차트 헤더 및 정보 행 */
+body.theme-upbit #chart-header-main {
+  background-color: #ffffff !important;
+}
+
+body.theme-upbit #head-info-row,
+body.theme-upbit #head-controls-row {
+  border-top-color: #e2e8f0 !important;
+}
+
+body.theme-upbit #chart-top-zone {
+  background-color: #ffffff !important;
+  /* border-bottom-color: #e2e8f0 !important; */
+}
+
+body.theme-upbit #chart-tab-wrapper {
+  background-color: transparent !important;
+  /* border-bottom-color: #e2e8f0 !important; */
+}
+
+/* 5. 차트 컨테이너 및 래퍼 */
+body.theme-upbit #chart-wrapper {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -1px rgba(0, 0, 0, 0.02) !important;
+}
+
+body.theme-upbit #pane-vol {
+  border-top-color: #e2e8f0 !important;
+}
+
+body.theme-upbit #right-panel {
+  background-color: #ffffff !important;
 }

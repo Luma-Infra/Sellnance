@@ -74,6 +74,23 @@ export function updateRealtimeKimchi(liveData, symbol, chartTime) {
     glbExchange = row?.Listed_Exchanges?.some(ex => ex.includes("BINANCE")) ? "binance_spot" : "bybit_spot";
   }
 
+  // 🚀 [침범 차단] 수신된 스트림의 마켓 형식이 활성 파트너 거래소의 유형과 일치하지 않으면 즉시 폐기!
+  const lowerKor = String(korExchange).toLowerCase();
+  const lowerGlb = String(glbExchange).toLowerCase();
+  if (isStreamKorea) {
+    const targetType = lowerKor === "upbit" ? "UPBIT" : lowerKor === "bithumb" ? "BITHUMB" : null;
+    if (targetType && liveData.marketType !== targetType) return;
+  } else {
+    const mapping = {
+      "binance_futures": "FUTURES",
+      "binance_spot": "SPOT",
+      "bybit_futures": "BYBIT_FUTURES",
+      "bybit_spot": "BYBIT"
+    };
+    const targetType = mapping[lowerGlb];
+    if (targetType && liveData.marketType !== targetType) return;
+  }
+
   if (isStreamKorea) {
     const mainMulti = getMultiplier(symbol);
     unitKorPrice = liveData.close / mainMulti;
@@ -117,6 +134,7 @@ export function updateRealtimeKimchi(liveData, symbol, chartTime) {
             ? window.getKimchiColor(kimchiPct)
             : "#57a4fc",
       };
+      store.realtimeKimchi = kimchiObj;
       try {
         const lastKimchiItem = store.kimchiData && store.kimchiData.length > 0
           ? store.kimchiData[store.kimchiData.length - 1]

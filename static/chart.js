@@ -144,7 +144,7 @@ export function initChart() {
   // 🚀 CSS에 정의된 다크/라이트 모드 테마 변수 가져오기
   const style = getComputedStyle(document.body);
   const textColor = style.getPropertyValue("--text").trim() || "#d1d4dc";
-  const gridColor = style.getPropertyValue("--border").trim() || "#2a2a22";
+  const gridColor = style.getPropertyValue("--grid").trim() || style.getPropertyValue("--border").trim() || "#2a2a22";
   const upColor = style.getPropertyValue("--up").trim() || "#26a69a";
   const downColor = style.getPropertyValue("--down").trim() || "#ef5350";
 
@@ -278,6 +278,14 @@ export function initChart() {
     const width = range.to - range.from;
     if (width > 0 && width < 1000) {
       store.savedZoomWidth = width;
+    }
+
+    // 🚀 [UX 개선] 최신 캔들 부근(우측 끝)을 바라보고 있을 때만 우측 여백 크기를 저장합니다.
+    if (store.mainData && store.mainData.length > 0) {
+      const len = store.mainData.length;
+      if (range.to >= len - 15) {
+        store.savedRightMargin = Math.round(range.to - len);
+      }
     }
 
     if (isCheckingLoadMore) return;
@@ -945,7 +953,7 @@ export function updateChartTheme() {
 
   const style = getComputedStyle(document.body);
   const textColor = style.getPropertyValue("--text").trim() || "#d1d4dc";
-  const gridColor = style.getPropertyValue("--border").trim() || "#2a2a22";
+  const gridColor = style.getPropertyValue("--grid").trim() || style.getPropertyValue("--border").trim() || "#2a2a22";
   const upColor = style.getPropertyValue("--up").trim() || "#26a69a";
   const downColor = style.getPropertyValue("--down").trim() || "#ef5350";
 

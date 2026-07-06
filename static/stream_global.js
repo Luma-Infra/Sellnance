@@ -328,15 +328,25 @@ export function startRealtimeCandle(
 
   if (needUpbit) {
     const upbitCode = `KRW-${symbol}`.toUpperCase();
-    if (!store.upbitChartWs || store.upbitChartWs.readyState !== WebSocket.OPEN) {
-      if (store.upbitChartWs) store.upbitChartWs.close();
+    const isConnectingOrOpen = store.upbitChartWs && (store.upbitChartWs.readyState === WebSocket.CONNECTING || store.upbitChartWs.readyState === WebSocket.OPEN);
+
+    if (!isConnectingOrOpen) {
+      if (store.upbitChartWs) {
+        try { store.upbitChartWs.close(); } catch (e) { }
+      }
       store.upbitChartWs = new WebSocket("wss://api.upbit.com/websocket/v1");
+      store.currentUpbitStream = upbitCode;
       store.upbitChartWs.onopen = () => {
-        store.upbitChartWs.send(JSON.stringify([{ ticket: "sellnance_chart_" + getWsId() }, { type: "ticker", codes: [upbitCode] }]));
-        store.currentUpbitStream = upbitCode;
+        const activeCode = store.currentUpbitStream || upbitCode;
+        store.upbitChartWs.send(JSON.stringify([{ ticket: "sellnance_chart_" + getWsId() }, { type: "ticker", codes: [activeCode] }]));
       };
     } else if (store.currentUpbitStream !== upbitCode) {
-      try { store.upbitChartWs.send(JSON.stringify([{ ticket: "sellnance_chart_" + getWsId() }, { type: "ticker", codes: [upbitCode] }])); store.currentUpbitStream = upbitCode; } catch (e) { }
+      if (store.upbitChartWs.readyState === WebSocket.OPEN) {
+        try {
+          store.upbitChartWs.send(JSON.stringify([{ ticket: "sellnance_chart_" + getWsId() }, { type: "ticker", codes: [upbitCode] }]));
+        } catch (e) { }
+      }
+      store.currentUpbitStream = upbitCode;
     }
     store.upbitChartWs.onmessage = getUpbitMessageHandler(symbol, broadcastCandleUpdate);
   }

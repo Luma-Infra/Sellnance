@@ -32,44 +32,134 @@ def build_binance_row(
         HARDCODE_VERIFY_SKIP_LIST,
     ) = config_manager.get_mapping_parts(mapping)
 
+    # 0. 주식 토큰 여부 조기 판별
+    u_type = str(b_info.get("underlying_type", "")) if isinstance(b_info, dict) else ""
+    c_type = str(b_info.get("contract_type", "")) if isinstance(b_info, dict) else ""
+    is_stock = ("EQUITY" in u_type) or (c_type == "TRADIFI_PERPETUAL")
+
+    raw_symbol = ticker.replace("USDT", "")
+    base = utils.get_pure_base_asset(ticker).upper()
+
+    # 🚀 [추가] 현물 토큰화 주식 식별 (예: MSTRB) - 상응하는 선물 계약이 주식인 경우
+    if not is_stock and base.endswith("B") and len(base) > 2:
+        cand_futures = f"{base[:-1]}USDT"
+        if cand_futures in binance_data:
+            fut_info = binance_data[cand_futures]
+            fut_u_type = (
+                str(fut_info.get("underlying_type", ""))
+                if isinstance(fut_info, dict)
+                else ""
+            )
+            fut_c_type = (
+                str(fut_info.get("contract_type", ""))
+                if isinstance(fut_info, dict)
+                else ""
+            )
+            if ("EQUITY" in fut_u_type) or (fut_c_type == "TRADIFI_PERPETUAL"):
+                is_stock = True
+
+    # 🚀 [주식 현선물 병합] 선물 MSTR을 현물 MSTRB 기준으로 병합 처리
+    if is_stock:
+        # 선물 기호가 MSTR인 경우 MSTRB로 매핑 전환
+        if not base.endswith("B"):
+            spot_cand = f"{base}BUSDT"
+            if spot_cand in binance_data:
+                base = f"{base}B"
+                raw_symbol = f"{raw_symbol}B"
+
     is_updated = False
 
     # 1. 이름표 및 기본 정보
-    raw_symbol = ticker.replace("USDT", "")
-    base = utils.get_pure_base_asset(ticker).upper()
-    raw_key = str(REVERSE_LOOKUP.get(f"{raw_symbol.upper()}_BINANCE", base) or base)
+    suffix = "BINANCE_STOCK" if is_stock else "BINANCE"
+    raw_key = str(REVERSE_LOOKUP.get(f"{raw_symbol.upper()}_{suffix}", base) or base)
     display_name = re.sub(
-        r"_(binance|upbit|bithumb)$", "", raw_key, flags=re.IGNORECASE
+        r"_(binance|upbit|bithumb|bybit|binance_stock)$",
+        "",
+        raw_key,
+        flags=re.IGNORECASE,
     )
+    if is_stock and (raw_key == base or raw_key == raw_symbol):
+        display_name = f"{raw_symbol}(STOCK)"
 
-    # 🚀 [추가] 괄호 안의 이름 추출 (예: EDGE(edgeX) -> edgeX)
+    # 🚀 [추가] 괄호 안의 이름 추출 (예: EDGE(edgeX) -> edgeX, 단 STOCK/DERIVATIVES 등 무의미한 분류명 제외)
     explicit_name = ""
     name_match = re.search(r"\((.*?)\)", display_name)
     if name_match:
-        explicit_name = name_match.group(1)
+        cand = name_match.group(1)
+        if cand.upper() not in ["STOCK", "DERIVATIVES"]:
+            explicit_name = cand
 
     # 2. 족보에서 체인 정보 먼저 확정 (구조적 순서 선점)
     ticker_info = TICKER_DATA.get(display_name)
+    if (
+        isinstance(ticker_info, list)
+        and len(ticker_info) >= 5
+        and ticker_info[4] == "STOCK"
+    ):
+        is_stock = True
+
     existing_uid = (
         ticker_info[0] if isinstance(ticker_info, list) and len(ticker_info) > 0 else ""
     )
     hardcoded_id = str(SYMBOL_TO_ID_MAP.get(base, ""))
 
-    # 🚀 [지문 확정] 1순위: 족보 / 2순위: 하드코딩(base) / 3순위: 하드코딩(display) / 4순위: CMC결과
+    # 🚀 [지문 확정] 1순위: 족보 / 2순위: 하드코딩(base) / 3순위: CMC 결과 / 4순위: 주식 가상 ID
     final_ucid = (
         existing_uid or hardcoded_id or str(SYMBOL_TO_ID_MAP.get(display_name, ""))
     )
 
     lookup_id = asset_to_lookup_key.get(
+        f"{raw_symbol.upper()}_{suffix}"
+    ) or asset_to_lookup_key.get(f"{base.upper()}_{suffix}")
+
+    # 🚀 f"{raw_symbol}_BINANCE" / f"{base}_BINANCE" 등으로 조회할 수 있도록 코인 기준 키 백업 시도
+    coin_lookup_id = asset_to_lookup_key.get(
         f"{raw_symbol.upper()}_BINANCE"
     ) or asset_to_lookup_key.get(f"{base.upper()}_BINANCE")
-    info = market_data_map.get(str(final_ucid)) or market_data_map.get(lookup_id)
+
+    # 🚀 주식/코인 분기 우선 조회
+    resolved_info = None
+    if is_stock:
+        resolved_info = market_data_map.get(
+            f"{raw_symbol.upper()}_STOCK"
+        ) or market_data_map.get(f"{base.upper()}_STOCK")
+    else:
+        resolved_info = market_data_map.get(
+            f"{raw_symbol.upper()}_COIN"
+        ) or market_data_map.get(f"{base.upper()}_COIN")
+
+    info = (
+        market_data_map.get(str(final_ucid))
+        or resolved_info
+        or market_data_map.get(lookup_id)
+        or market_data_map.get(coin_lookup_id)
+        or market_data_map.get(raw_symbol.upper())
+        or market_data_map.get(base.upper())
+    )
+
+    # 🚀 [추가] 주식 자산인데 현재 resolved된 info가 코인 정보(이름에 derivatives/stock 없음)인 경우, 강제로 주식 정보로 대체
+    if (
+        is_stock
+        and info
+        and "derivatives" not in info.get("name", "").lower()
+        and "stock" not in info.get("name", "").lower()
+    ):
+        stock_info = market_data_map.get(
+            f"{raw_symbol.upper()}_STOCK"
+        ) or market_data_map.get(f"{base.upper()}_STOCK")
+        if stock_info:
+            info = stock_info
+            final_ucid = stock_info.get("ucid", "")
 
     # CMC에서 새로운 ucid를 찾았다면 최종 업데이트
     if (not final_ucid or not final_ucid.isdigit()) and info:
         new_ucid = info.get("ucid", "")
         if new_ucid and new_ucid.isdigit():
             final_ucid = new_ucid
+
+    # 주식이고 여전히 올바른 숫자 UID가 없다면 최종 수단으로 가상 UID 부여
+    if is_stock and (not final_ucid or not final_ucid.isdigit()):
+        final_ucid = f"STOCK_{raw_symbol.upper()}"
 
     if not final_ucid:
         final_ucid = base
@@ -104,23 +194,40 @@ def build_binance_row(
         else (
             ticker_info_list[2]
             if len(ticker_info_list) >= 3 and ticker_info_list[2]
-            else (info.get("name", base) if info else base)
+            else (
+                f"{raw_symbol} (Derivatives)"
+                if is_stock
+                else (info.get("name", base) if info else base)
+            )
         )
     )
 
     # 5. 족보 업데이트 (세탁기)
-    if not ticker_info or (
-        isinstance(ticker_info, list)
-        and (len(ticker_info) < 4 or not ticker_info[0] or ticker_info[0] != final_ucid)
+    asset_type = "STOCK" if is_stock else "COIN"
+    # 🚀 [추가] final_ucid가 임시 가상 ID("STOCK_...")인 경우, 족보(mapping.json)에 직접 기입하지 않음 (임시 비교용으로만 유지)
+    if not final_ucid.startswith("STOCK_") and (
+        not ticker_info
+        or (
+            isinstance(ticker_info, list)
+            and (
+                len(ticker_info) < 5
+                or not ticker_info[0]
+                or ticker_info[0] != final_ucid
+                or ticker_info[4] != asset_type
+            )
+        )
     ):
         TICKER_DATA[display_name] = [
             final_ucid,  # 🚀 믿음의 최종 UID
             ch_sym,
             coin_name,  # 🚀 괄호에서 추출한 이름 우선 반영
             base,
+            asset_type,  # 🚀 5번째 인자에 stock/coin 구분 삽입
         ]
         is_updated = True
-        print(f"✅ [족보 세탁] {display_name} UID 복구 완료: {final_ucid}")
+        print(
+            f"✅ [족보 세탁] {display_name} UID 및 타입 복구 완료: {final_ucid} ({asset_type})"
+        )
 
     # 시총 계산
     price = b_info["price"]
@@ -143,7 +250,77 @@ def build_binance_row(
 
     for b_tick, b_inf in binance_data.items():
         b_base = utils.get_pure_base_asset(b_tick.replace("USDT", "")).upper()
+
+        # 🚀 [추가] 주식 자산인 경우 현선물 병합을 위해 b_base 기호도 동일하게 MSTRB 등으로 규격화
+        if is_stock:
+            # underlying_type 또는 contract_type으로 주식 여부 검사
+            b_u_type = (
+                str(b_inf.get("underlying_type", "")) if isinstance(b_inf, dict) else ""
+            )
+            b_c_type = (
+                str(b_inf.get("contract_type", "")) if isinstance(b_inf, dict) else ""
+            )
+            b_is_stock = ("EQUITY" in b_u_type) or (b_c_type == "TRADIFI_PERPETUAL")
+
+            # spot tokenized stock detection (e.g. MSTRB)
+            if not b_is_stock and b_base.endswith("B") and len(b_base) > 2:
+                b_cand_futures = f"{b_base[:-1]}USDT"
+                if b_cand_futures in binance_data:
+                    b_fut_info = binance_data[b_cand_futures]
+                    b_fut_u_type = (
+                        str(b_fut_info.get("underlying_type", ""))
+                        if isinstance(b_fut_info, dict)
+                        else ""
+                    )
+                    b_fut_c_type = (
+                        str(b_fut_info.get("contract_type", ""))
+                        if isinstance(b_fut_info, dict)
+                        else ""
+                    )
+                    if ("EQUITY" in b_fut_u_type) or (
+                        b_fut_c_type == "TRADIFI_PERPETUAL"
+                    ):
+                        b_is_stock = True
+
+            if b_is_stock:
+                if not b_base.endswith("B"):
+                    b_spot_cand = f"{b_base}BUSDT"
+                    if b_spot_cand in binance_data:
+                        b_base = f"{b_base}B"
+
         if b_base == base:
+            # 🚀 [추가] 주식 여부가 일치하는 자산만 가격/볼륨에 통합하여 동명이인(CAT 코인 vs CAT 주식) 오염 방지!
+            b_u_type = (
+                str(b_inf.get("underlying_type", "")) if isinstance(b_inf, dict) else ""
+            )
+            b_c_type = (
+                str(b_inf.get("contract_type", "")) if isinstance(b_inf, dict) else ""
+            )
+            b_is_stock = ("EQUITY" in b_u_type) or (b_c_type == "TRADIFI_PERPETUAL")
+
+            # spot tokenized stock detection (e.g. MSTRB)
+            if not b_is_stock and b_base.endswith("B") and len(b_base) > 2:
+                b_cand_futures = f"{b_base[:-1]}USDT"
+                if b_cand_futures in binance_data:
+                    b_fut_info = binance_data[b_cand_futures]
+                    b_fut_u_type = (
+                        str(b_fut_info.get("underlying_type", ""))
+                        if isinstance(b_fut_info, dict)
+                        else ""
+                    )
+                    b_fut_c_type = (
+                        str(b_fut_info.get("contract_type", ""))
+                        if isinstance(b_fut_info, dict)
+                        else ""
+                    )
+                    if ("EQUITY" in b_fut_u_type) or (
+                        b_fut_c_type == "TRADIFI_PERPETUAL"
+                    ):
+                        b_is_stock = True
+
+            if b_is_stock != is_stock:
+                continue
+
             if b_inf.get("is_spot"):
                 listed_on.add("BINANCE")
                 binance_spot_price = b_inf.get("spot_price") or b_inf.get("price", 0.0)
@@ -210,16 +387,20 @@ def build_binance_row(
         up_open_krw = upbit_data[target_up_base].get("utc0_open", 0.0)
         listed_on.add("UPBIT")
 
-    # 🚀 [지문 완화 1] Bybit Fallback (바낸 티커 base 또는 업비트 티커 target_up_base 둘 중 하나라도 바이비트에 있다면 무조건 쌀먹 도킹!)
-    by_spot_p = bybit_data.get(raw_symbol, {}).get("spot_price", 0.0) or bybit_data.get(
-        base, {}
-    ).get("spot_price", 0.0)
-    by_futures_p = bybit_data.get(raw_symbol, {}).get(
-        "futures_price", 0.0
-    ) or bybit_data.get(base, {}).get("futures_price", 0.0)
-    by_vol_24h = bybit_data.get(raw_symbol, {}).get(
-        "volume_24h", 0.0
-    ) or bybit_data.get(base, {}).get("volume_24h", 0.0)
+    # 🚀 [지문 완화 1] Bybit Fallback (단, 주식인 경우 바이비트 매칭 제외하여 코인 가격 침투 방지!)
+    by_spot_p = 0.0
+    by_futures_p = 0.0
+    by_vol_24h = 0.0
+    if not is_stock:
+        by_spot_p = bybit_data.get(raw_symbol, {}).get(
+            "spot_price", 0.0
+        ) or bybit_data.get(base, {}).get("spot_price", 0.0)
+        by_futures_p = bybit_data.get(raw_symbol, {}).get(
+            "futures_price", 0.0
+        ) or bybit_data.get(base, {}).get("futures_price", 0.0)
+        by_vol_24h = bybit_data.get(raw_symbol, {}).get(
+            "volume_24h", 0.0
+        ) or bybit_data.get(base, {}).get("volume_24h", 0.0)
 
     if (
         (by_spot_p == 0 and by_futures_p == 0)
@@ -379,10 +560,6 @@ def build_binance_row(
     )
 
     # 7. 데이터 조립
-    u_type = str(b_info.get("underlying_type", "")) if isinstance(b_info, dict) else ""
-    c_type = str(b_info.get("contract_type", "")) if isinstance(b_info, dict) else ""
-    is_stock = ("EQUITY" in u_type) or (c_type == "TRADIFI_PERPETUAL")
-
     row = {
         # ==========================================
         # 🟢 [COMMON / 공통 파트 지표]
@@ -398,6 +575,7 @@ def build_binance_row(
         "precision": precision,
         # 공통 거래소 상장 여부 정보
         "Upbit": "O" if target_up_base else "X",
+        "Upbit_Symbol": target_up_base,
         "Binance": "O" if binance_spot_price > 0 else "X",
         "Binance_Futures": "O" if binance_futures_price > 0 else "X",
         "Bithumb_Symbol": bithumb_symbol,

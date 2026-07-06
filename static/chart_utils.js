@@ -44,9 +44,10 @@ function resetChartScale() {
     if (range && store.mainData && store.mainData.length) {
       const len = store.mainData.length;
       const width = range.to - range.from;
+      const margin = store.savedRightMargin !== undefined && store.savedRightMargin !== null ? store.savedRightMargin : 10;
       timeScale.setVisibleLogicalRange({
-        from: len - width + 10,
-        to: len + 10,
+        from: len - width + margin,
+        to: len + margin,
       });
     } else {
       timeScale.scrollToRealtime();
@@ -71,9 +72,10 @@ function resetChartScale() {
       if (rangeVol && store.mainData && store.mainData.length) {
         const len = store.mainData.length;
         const width = rangeVol.to - rangeVol.from;
+        const margin = store.savedRightMargin !== undefined && store.savedRightMargin !== null ? store.savedRightMargin : 10;
         timeScaleVol.setVisibleLogicalRange({
-          from: len - width + 10,
-          to: len + 10,
+          from: len - width + margin,
+          to: len + margin,
         });
       } else {
         timeScaleVol.scrollToRealtime();
@@ -308,58 +310,62 @@ function updateLegend(d, v, k) {
   // 🚀 김프 전광판 포맷팅 및 다이내믹 색상 적용
   const kimchiContainer = document.getElementById("ohlc-kimchi-container");
   if (store.paneConfig.kimchi) {
+    // 🚀 [분리 락킹] 마우스가 과거의 역사적인 봉을 호버 중일 때만 해당 과거 시점(k)의 김프를 보여주고,
+    // 마우스가 우측 여백(최신 시점)에 있거나 벗어난 실시간 상태일 때는 항상 최신 실시간 김프를 보여줍니다!
+    const isLatest = store.mainData && store.mainData.length > 0 && d && d.time === store.mainData[store.mainData.length - 1].time;
+    const targetKim = (store.isCrosshairActive && !isLatest)
+      ? k
+      : (store.realtimeKimchi || k || (store.kimchiData && store.kimchiData.length > 0 ? store.kimchiData[store.kimchiData.length - 1] : null));
+
     let kimValue = "-";
     let kimColorStyle = "";
-    if (k && k.value !== undefined) {
-      kimValue = (k.value > 0 ? "+" : "") + k.value.toFixed(2) + "%";
-      kimColorStyle = k.color || "#57a4fc";
+    if (targetKim && targetKim.value !== undefined) {
+      kimValue = (targetKim.value > 0 ? "+" : "") + targetKim.value.toFixed(2) + "%";
+      kimColorStyle = targetKim.color || "#57a4fc";
     }
     if (kimchiContainer) kimchiContainer.classList.remove("hidden");
 
-    // 🚀 [분리 락킹] 실시간 소켓 업데이트 시에는 stream_korea.js가 직접 리버스 갱신하고,
-    // 여기서는 마우스 호버(Crosshair) 또는 초기 로딩 시점에만 범례를 덮어씁니다!
-    if (store.isCrosshairActive || !d) {
-      const kimchiEl = document.getElementById("ohlc-kimchi");
-      if (kimchiEl) {
-        kimchiEl.innerText = kimValue;
-        kimchiEl.style.color = kimColorStyle;
-      }
+    // 항상 안전하게 김프 범례를 갱신합니다.
+    const kimchiEl = document.getElementById("ohlc-kimchi");
+    if (kimchiEl) {
+      kimchiEl.innerText = kimValue;
+      kimchiEl.style.color = kimColorStyle;
+    }
 
-      // 🚀 범례 및 김프 업데이트 추적기 (callerId)
-      const ohlcCallerEl = document.getElementById("ohlc-caller-id");
-      const kimchiCallerEl = document.getElementById("ohlc-kimchi-caller");
+    // 🚀 범례 및 김프 업데이트 추적기 (callerId)
+    const ohlcCallerEl = document.getElementById("ohlc-caller-id");
+    const kimchiCallerEl = document.getElementById("ohlc-kimchi-caller");
 
-      let callerId = "UNKNOWN";
-      if (store.traceRowCaller) {
-        const stack = new Error().stack || "";
-        if (store.isCrosshairActive === true) {
-          callerId = "2 (Chart)"; // 🚀 마우스 크로스헤어 이동 시는 무조건 Chart
-        } else if (stack.includes("stream") || stack.includes("updateStatus")) {
-          callerId = "1 (Stream)";
-        } else if (stack.includes("chart_utils.js") || stack.includes("chart.js") || stack.includes("chart_data.js")) {
-          callerId = "2 (Chart)";
-        } else if (
-          stack.includes("ui_control") ||
-          stack.includes("table_filter") ||
-          stack.includes("main")
-        ) {
-          callerId = "3 (UI/Filter)";
-        }
-      } else if (store.isCrosshairActive === true) {
+    let callerId = "UNKNOWN";
+    if (store.traceRowCaller) {
+      const stack = new Error().stack || "";
+      if (store.isCrosshairActive === true) {
+        callerId = "2 (Chart)"; // 🚀 마우스 크로스헤어 이동 시는 무조건 Chart
+      } else if (stack.includes("stream") || stack.includes("updateStatus")) {
+        callerId = "1 (Stream)";
+      } else if (stack.includes("chart_utils.js") || stack.includes("chart.js") || stack.includes("chart_data.js")) {
         callerId = "2 (Chart)";
+      } else if (
+        stack.includes("ui_control") ||
+        stack.includes("table_filter") ||
+        stack.includes("main")
+      ) {
+        callerId = "3 (UI/Filter)";
       }
+    } else if (store.isCrosshairActive === true) {
+      callerId = "2 (Chart)";
+    }
 
-      if (ohlcCallerEl) ohlcCallerEl.innerText = `[${callerId}]`;
-      if (kimchiCallerEl) kimchiCallerEl.innerText = ` [${callerId}]`;
+    if (ohlcCallerEl) ohlcCallerEl.innerText = `[${callerId}]`;
+    if (kimchiCallerEl) kimchiCallerEl.innerText = ` [${callerId}]`;
 
-      // 🚀 [디버그 동적 전파] 무조건 첫번째 행(index 0)에 있는 디버그 영역에도 함께 기록해줍니다.
-      const firstRowDebug = document.querySelector('#coin-list-body > div[data-index="0"] .first-row-debug-area');
-      if (firstRowDebug) {
-        const ohlcDebug = firstRowDebug.querySelector(".debug-ohlc-caller");
-        const kimchiDebug = firstRowDebug.querySelector(".debug-kimchi-caller");
-        if (ohlcDebug) ohlcDebug.innerText = `OHLC: ${callerId}`;
-        if (kimchiDebug) kimchiDebug.innerText = `KIMP: ${callerId}`;
-      }
+    // 🚀 [디버그 동적 전파] 무조건 첫번째 행(index 0)에 있는 디버그 영역에도 함께 기록해줍니다.
+    const firstRowDebug = document.querySelector('#coin-list-body > div[data-index="0"] .first-row-debug-area');
+    if (firstRowDebug) {
+      const ohlcDebug = firstRowDebug.querySelector(".debug-ohlc-caller");
+      const kimchiDebug = firstRowDebug.querySelector(".debug-kimchi-caller");
+      if (ohlcDebug) ohlcDebug.innerText = `OHLC: ${callerId}`;
+      if (kimchiDebug) kimchiDebug.innerText = `KIMP: ${callerId}`;
     }
   } else {
     if (kimchiContainer) kimchiContainer.classList.add("hidden");
@@ -450,6 +456,7 @@ function updateStatus(d, p) {
 }
 
 function autoFit(isTabRestore = false) {
+  const margin = store.savedRightMargin !== undefined && store.savedRightMargin !== null ? store.savedRightMargin : 10;
   if (isTabRestore && store.isUserZoomed) {
     // 🚀 [UX 개선] 탭 복귀/전환 시 기존 줌 상태(가로폭)는 유지하면서, 최신 봉(가장 우측) 위치로 화면을 강제 정렬하고 가격 스케일을 맞춥니다.
     try {
@@ -460,8 +467,8 @@ function autoFit(isTabRestore = false) {
           const len = store.mainData.length;
           const width = range.to - range.from;
           timeScale.setVisibleLogicalRange({
-            from: len - width + 10,
-            to: len + 10,
+            from: len - width + margin,
+            to: len + margin,
           });
         } else {
           timeScale.scrollToRealtime();
@@ -475,8 +482,8 @@ function autoFit(isTabRestore = false) {
           const len = store.mainData.length;
           const width = rangeVol.to - rangeVol.from;
           timeScaleVol.setVisibleLogicalRange({
-            from: len - width + 10,
-            to: len + 10,
+            from: len - width + margin,
+            to: len + margin,
           });
         } else {
           timeScaleVol.scrollToRealtime();
@@ -494,8 +501,8 @@ function autoFit(isTabRestore = false) {
     // 🚀 [UX 개선] 저장된 가로폭(줌) 정보가 있다면 해당 값을 적용하고, 없으면 기본값인 100을 사용합니다.
     const zoomWidth = store.savedZoomWidth || 100;
     const logicalRange = {
-      from: len < zoomWidth ? -Math.max(5, zoomWidth - len) : len - zoomWidth,
-      to: len + 10,
+      from: len < zoomWidth ? -Math.max(5, zoomWidth - len) : len - zoomWidth + margin,
+      to: len + margin,
     };
 
     store.chart.timeScale().setVisibleLogicalRange(logicalRange);
@@ -927,6 +934,7 @@ export const sanitizeChartData = (dataArr, hasValueField = false) => {
       // 이미 들어간 중복 데이터가 있으면 지우고 최신 틱 데이터로 교체하기 위해 필터링
       const idx = sanitized.findIndex((item) => String(item.time) === timeKey);
       if (idx !== -1) sanitized.splice(idx, 1);
+      seen.delete(timeKey);
     }
     if (seen.has(timeKey)) continue;
 

@@ -937,7 +937,7 @@ document.addEventListener("keydown", (e) => {
 
     if (nextCoin) {
       store.currentSelectedSymbol = nextCoin.Ticker;
-      selectSymbol(nextCoin.Ticker);
+      selectSymbol(nextCoin.Ticker, null, nextCoin.UID);
 
       // 🚀 가상 스크롤로 포커싱 코인이 화면 밖으로 탈출할 때 자동 스크롤 동기화
       setTimeout(() => {

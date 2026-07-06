@@ -263,13 +263,18 @@ def fetch_exchange_market_data(mapping):
 
     binance_pure = {utils.get_pure_base_asset(a) for a in binance_base_assets}
 
-    # 3. 족보 생성 및 업비트 전용 자산 필터링
+    # 3. 족보 생성 및 업비트 전용 자산 필터링 (2단계 등록으로 충돌 방지)
     REVERSE_LOOKUP = {}
+    # 1단계: 가상 키 먼저 등록 (우선순위 낮음)
+    for k, v in DUPLICATED_LIST.items():
+        if len(v) >= 4:
+            ex = v[3].upper()
+            REVERSE_LOOKUP[f"{k.split('(')[0].upper()}_{ex}"] = k
+    # 2단계: 실제 거래소 심볼 키 등록 (우선순위 높음, 덮어쓰기)
     for k, v in DUPLICATED_LIST.items():
         if len(v) >= 4:
             ex = v[3].upper()
             REVERSE_LOOKUP[f"{v[2].upper()}_{ex}"] = k
-            REVERSE_LOOKUP[f"{k.split('(')[0].upper()}_{ex}"] = k
 
     upbit_only_assets = set()
     for k in upbit_krw_set:

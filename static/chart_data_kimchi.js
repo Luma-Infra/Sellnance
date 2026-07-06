@@ -37,11 +37,7 @@ export function calculateKimchiData(mainData, subRaw, params) {
       
       // 🚀 [해결] 타임프레임 블록 크기(intervalSec) 단위로 타임스탬프를 수학적 내림(floor)하여 
       // 해외/국내 거래소 간의 미세한 초 단위 시차 및 슬라이스 경계 오프셋을 완벽하게 일치시킵니다.
-      // 특히 2시간봉(2h)은 글로벌 기준 홀수 시간 마감이므로 1시간 오프셋 시프트를 반영합니다.
-      const is2h = tf === "2h";
-      const alignedSubTime = is2h
-        ? Math.floor((subTime - 3600) / intervalSec) * intervalSec + 3600
-        : Math.floor(subTime / intervalSec) * intervalSec;
+      const alignedSubTime = Math.floor(subTime / intervalSec) * intervalSec;
       subMap.set(alignedSubTime, subClose);
     });
 

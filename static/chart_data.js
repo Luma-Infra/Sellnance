@@ -14,7 +14,7 @@ import { findRowInfo, determineListingDate } from "./chart_history_helper.js";
 import { updateExchangeBadges } from "./ui_control.js";
 import {
   formatListingDateWithExchange,
-  updateRowInnerHTML,
+  updateRowDynamicHTML,
 } from "./table_render.js";
 
 export async function fetchCandlesSmart(
@@ -128,7 +128,8 @@ export async function fetchCandlesSmart(
         const bInt = bMap[interval] || interval;
         directUrl = `https://api.bybit.com/v5/market/kline?category=${category}&symbol=${symbol}&interval=${bInt}&limit=1000`; // 바이빗 최대 한도: 1000개
       } else if (exchange === "bithumb") {
-        const bSym = symbol.replace("KRW-", "") + "_KRW";
+        const cleanSymbol = symbol.replace("KRW-", "").replace("_KRW", "").replace("KRW", "");
+        const bSym = cleanSymbol + "_KRW";
         directUrl = `https://api.bithumb.com/public/candlestick/${bSym}/${interval}`;
       }
 
@@ -653,13 +654,6 @@ export async function fetchHistory(
       });
     } else {
       let startIdx = 0;
-      if (store.currentTF === "2h" && rawMain.length > 0) {
-        // 첫 번째 캔들의 시간(UTC)을 구해서 짝수 시간이면 1개를 건너뛰어(startIdx=1) 홀수시 정각부터 2개씩 묶이도록 시프트합니다.
-        const firstHour = new Date(rawMain[0].time * 1000).getUTCHours();
-        if (firstHour % 2 === 0) {
-          startIdx = 1;
-        }
-      }
       for (let i = startIdx; i < rawMain.length; i += mainStep) {
         const chunk = rawMain.slice(i, i + mainStep);
         if (chunk.length > 0) {
@@ -734,56 +728,64 @@ export async function fetchHistory(
 
       const lastCandle = store.mainData[store.mainData.length - 1];
       if (lastCandle && rowInfo) {
+        /* [주석 처리] 웹소켓이 돌고 있는 상태에서 과거 캔들 데이터 종가로 테이블 값을 덮어쓰는 것 차단
+        const isRealtimeRecent = Date.now() - (rowInfo._LastRealtimeUpdate || 0) < 10000;
+
         if (!isTfChange) {
           const rate = store.marketDataMap?.krw_usd_rate || 0;
-          if (isUpbit) {
-            rowInfo.Upbit_Price = lastCandle.close;
-            rowInfo.Price_KRW = lastCandle.close;
-            // rowInfo.Price_Raw = rate > 0 ? lastCandle.close / rate : lastCandle.close;
-          } else if (isBithumb) {
-            rowInfo.Bithumb_Price = lastCandle.close;
-            const exList = (rowInfo.Listed_Exchanges || []).map((e) => e.toUpperCase());
-            const hasUpbit = rowInfo.Upbit === "O" || exList.includes("UPBIT") || !!rowInfo.Upbit_Symbol;
-            if (!hasUpbit) {
+          if (!isRealtimeRecent) {
+            if (isUpbit) {
+              rowInfo.Upbit_Price = lastCandle.close;
               rowInfo.Price_KRW = lastCandle.close;
+              // rowInfo.Price_Raw = rate > 0 ? lastCandle.close / rate : lastCandle.close;
+            } else if (isBithumb) {
+              rowInfo.Bithumb_Price = lastCandle.close;
+              const exList = (rowInfo.Listed_Exchanges || []).map((e) => e.toUpperCase());
+              const hasUpbit = rowInfo.Upbit === "O" || exList.includes("UPBIT") || !!rowInfo.Upbit_Symbol;
+              if (!hasUpbit) {
+                rowInfo.Price_KRW = lastCandle.close;
+              }
+              // rowInfo.Price_Raw = rate > 0 ? lastCandle.close / rate : lastCandle.close;
+            } else if (isFutures) {
+              rowInfo.Binance_Price_Futures = lastCandle.close;
+              rowInfo.Binance_Price = lastCandle.close;
+              // rowInfo.Price_Raw = lastCandle.close;
+            } else if (isSpot) {
+              rowInfo.Binance_Price_Spot = lastCandle.close;
+              rowInfo.Binance_Price = lastCandle.close;
+              // rowInfo.Price_Raw = lastCandle.close;
+            } else if (isBybitFutures) {
+              rowInfo.Bybit_Price_Futures = lastCandle.close;
+              rowInfo.Bybit_Price = lastCandle.close;
+              // rowInfo.Price_Raw = lastCandle.close;
+            } else if (isBybit) {
+              rowInfo.Bybit_Price_Spot = lastCandle.close;
+              rowInfo.Bybit_Price = lastCandle.close;
+              // rowInfo.Price_Raw = lastCandle.close;
             }
-            // rowInfo.Price_Raw = rate > 0 ? lastCandle.close / rate : lastCandle.close;
-          } else if (isFutures) {
-            rowInfo.Binance_Price_Futures = lastCandle.close;
-            rowInfo.Binance_Price = lastCandle.close;
-            // rowInfo.Price_Raw = lastCandle.close;
-          } else if (isSpot) {
-            rowInfo.Binance_Price_Spot = lastCandle.close;
-            rowInfo.Binance_Price = lastCandle.close;
-            // rowInfo.Price_Raw = lastCandle.close;
-          } else if (isBybitFutures) {
-            rowInfo.Bybit_Price_Futures = lastCandle.close;
-            rowInfo.Bybit_Price = lastCandle.close;
-            // rowInfo.Price_Raw = lastCandle.close;
-          } else if (isBybit) {
-            rowInfo.Bybit_Price_Spot = lastCandle.close;
-            rowInfo.Bybit_Price = lastCandle.close;
-            // rowInfo.Price_Raw = lastCandle.close;
-          }
 
-          // 🚀 [추가] 차트 가격 갱신 완료 후, ALL 모드 지향성 공식에 맞추어 대표 가격(Price_Raw) 락킹 자동 동기화
-          if (typeof window.syncRowPrioritizedMetrics === "function") {
-            window.syncRowPrioritizedMetrics(rowInfo);
+            // 🚀 [추가] 차트 가격 갱신 완료 후, ALL 모드 지향성 공식에 맞추어 대표 가격(Price_Raw) 락킹 자동 동기화
+            if (typeof window.syncRowPrioritizedMetrics === "function") {
+              window.syncRowPrioritizedMetrics(rowInfo);
+            }
           }
         }
+        */
 
         if (typeof window.updateHeaderDisplay === "function") {
           window.updateHeaderDisplay(
             rowInfo,
-            isTfChange ? undefined : lastCandle.close,
+            undefined, // 실시간 업데이트가 우선이므로 과거 봉 가격을 헤더로 넘기지 않음
             p,
           );
         }
 
+        /* [주석 처리] 과거 데이터 로딩이 완료되었다고 해서 좌측 행 DOM을 새로 갱신할 필요 없음 (소켓이 전담)
         const rowEl = store.rowDomMap && store.rowDomMap.get(rowInfo.Ticker);
-        if (rowEl && typeof updateRowInnerHTML === "function") {
-          updateRowInnerHTML(rowEl, rowInfo);
+        if (rowEl && typeof updateRowDynamicHTML === "function") {
+          updateRowDynamicHTML(rowEl, rowInfo);
         }
+        */
       }
 
       store.candleSeries.applyOptions({
@@ -855,6 +857,7 @@ export async function fetchHistory(
       }
 
       store.kimchiData = [];
+      store.realtimeKimchi = null;
     }
 
     if (loadingModal) loadingModal.classList.add("hidden");
@@ -1086,23 +1089,46 @@ export async function loadMoreHistory() {
     // 업비트의 경우 조립(mainStep)이 필요하면 진행
     if (params.isUpbit && params.mainStep > 1) {
       fetchedMain.sort((a, b) => a.time - b.time);
-      let groupedMain = [];
-      for (let i = 0; i < fetchedMain.length; i += params.mainStep) {
-        const chunk = fetchedMain.slice(i, i + params.mainStep);
-        if (chunk.length > 0) {
-          const time = chunk[0].time;
-          const open = chunk[0].open;
-          const close = chunk[chunk.length - 1].close;
-          const high = Math.max(...chunk.map((c) => c.high));
-          const low = Math.min(...chunk.map((c) => c.low));
-          const totalVol = chunk.reduce(
-            (sum, c) => sum + (Number(c.volume) || 0),
-            0,
-          );
-          groupedMain.push({ time, open, high, low, close, volume: totalVol });
+      
+      const getGroupTime = (t, tf) => {
+        const d = new Date(t * 1000);
+        if (tf === "15m") return Math.floor(t / 900) * 900;
+        if (tf === "2h") return Math.floor(t / 7200) * 7200;
+        if (tf === "3d") {
+          const dayTs = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) / 1000;
+          return Math.floor(dayTs / 259200) * 259200;
         }
-      }
-      fetchedMain = groupedMain;
+        if (tf === "1d") return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) / 1000;
+        if (tf === "1w") {
+          const day = d.getUTCDay();
+          const diff = d.getUTCDate() - day + (day === 0 ? -6 : 1);
+          return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), diff, 0, 0, 0) / 1000;
+        }
+        if (tf === "1M") return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1, 0, 0, 0) / 1000;
+        return t;
+      };
+
+      const groups = {};
+      fetchedMain.forEach((d) => {
+        const gt = getGroupTime(d.time, params.tf);
+        if (!groups[gt]) groups[gt] = [];
+        groups[gt].push(d);
+      });
+
+      fetchedMain = Object.keys(groups)
+        .sort((a, b) => Number(a) - Number(b))
+        .map((gtStr) => {
+          const gt = Number(gtStr);
+          const chunk = groups[gt].sort((a, b) => a.time - b.time);
+          return {
+            time: gt,
+            open: chunk[0].open,
+            close: chunk[chunk.length - 1].close,
+            high: Math.max(...chunk.map((c) => c.high)),
+            low: Math.min(...chunk.map((c) => c.low)),
+            volume: chunk.reduce((sum, c) => sum + (Number(c.volume) || 0), 0),
+          };
+        });
     }
 
     // 중복 제거 병합

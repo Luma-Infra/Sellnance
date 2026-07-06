@@ -240,13 +240,18 @@ def _fetch_and_process_data(silent_mode=False):
     keys_to_delete = []
     dup_names = set(MAPPING_DATA.get("DUPLICATED_LIST", {}).keys())
     dup_names_clean = {
-        re.sub(r"_(binance|upbit|bithumb)$", "", k, flags=re.IGNORECASE)
+        re.sub(r"_(binance|upbit|bithumb|bybit|binance_stock)$", "", k, flags=re.IGNORECASE)
         for k in dup_names
     }
 
+    if "TICKER_DATA" not in MAPPING_DATA:
+        MAPPING_DATA["TICKER_DATA"] = {}
+
     for saved_name in list(MAPPING_DATA["TICKER_DATA"].keys()):
+        # 🚀 [추가] (STOCK) 접미사가 붙은 주식 자산의 경우, 접미사 제거한 base 심볼로 실시간 수집 리스트(live_bases)와 매칭 체크
+        clean_name = re.sub(r"\(STOCK\)$", "", saved_name, flags=re.IGNORECASE)
         if (
-            saved_name not in live_bases
+            clean_name not in live_bases
             and saved_name not in SPECIAL_SYMBOL_MAP
             and saved_name not in SYMBOL_TO_ID_MAP
             and saved_name not in dup_names_clean

@@ -89,6 +89,13 @@ export function createRowElement(row) {
 }
 
 export function updateRowStaticHTML(rowEl, row) {
+  // 🚀 [버그 수정] innerHTML 재작성으로 인해 기존 하위 DOM들이 파괴되므로 캐시 무효화
+  rowEl._priceCell = null;
+  rowEl._volBCell = null;
+  rowEl._volUCell = null;
+  rowEl._kimchiCell = null;
+  rowEl._priceEl = null;
+
   const pureSymbol = row.Symbol;
   const tId = row.Ticker; // 🚀 DOM ID용 완벽한 고유키
   rowEl.dataset.sym = tId; // 🚀 화면 추적용
@@ -785,7 +792,8 @@ export function renderTable(isRealtime = false) {
   }
 
   // 1. 최초 1회 전체 껍데기 풀(Pool) 생성 (DOM 파괴/생성 원천 차단, 가상화 스크롤 바 확보)
-  if (!store.tablePoolInitialized || tbody.children.length !== totalCount) {
+  const allSource = store.originalTableData || store.currentTableData || [];
+  if (!store.tablePoolInitialized || tbody.children.length !== allSource.length) {
     tbody.innerHTML = "";
     store.rowDomMap = new Map();
     store.visibleSymbols.clear();
@@ -884,7 +892,7 @@ export function renderTable(isRealtime = false) {
     );
 
     const fragment = document.createDocumentFragment();
-    for (let i = 0; i < totalCount; i++) {
+    for (let i = 0; i < allSource.length; i++) {
       const rowEl = document.createElement("div");
       rowEl.classList.add("coin-row");
       if (i < 30) {
@@ -896,7 +904,7 @@ export function renderTable(isRealtime = false) {
       rowEl.style.transform = `translateY(${(i === 0 || !store.traceRowCaller) ? i * 52 : 221 + (i - 1) * 52}px)`;
       rowEl.style.contain = "content";
 
-      const rowData = filteredData[i];
+      const rowData = allSource[i];
       if (rowData) {
         rowEl.dataset.sym = rowData.Ticker;
         store.rowDomMap.set(rowData.Ticker, rowEl);
@@ -924,15 +932,8 @@ export function renderTable(isRealtime = false) {
       store.tableObserver.observe(rowEl);
       fragment.appendChild(rowEl);
     }
-    tbody.style.height = `${store.traceRowCaller ? 221 + (totalCount - 1) * 52 : totalCount * 52}px`;
     tbody.appendChild(fragment);
     store.tablePoolInitialized = true;
-    updateBoundaryClass(tbody);
-    applySelectedHighlight();
-    if (typeof window.refreshSniperTarget === "function") {
-      setTimeout(() => window.refreshSniperTarget(), 10);
-    }
-    return;
   }
 
   // 2. 이미 풀이 생성되어 있다면? (물리적 DOM 추가/삭제 없이 각 코인의 고유 상자 위치를 translateY로 재배치!)
@@ -947,11 +948,17 @@ export function renderTable(isRealtime = false) {
   }
   tbody.style.height = `${store.traceRowCaller ? 221 + (totalCount - 1) * 52 : totalCount * 52}px`;
 
+  // 🚀 [최적화] 먼저 전체 코인 행들을 숨김 처리 (display = none !important)
+  for (const child of tbody.children) {
+    child.style.setProperty("display", "none", "important");
+  }
+
   for (let i = 0; i < totalCount; i++) {
     const rowData = filteredData[i];
     if (rowData) {
       const rowEl = store.rowDomMap.get(rowData.Ticker);
       if (rowEl) {
+        rowEl.style.removeProperty("display");
         const oldIndex = parseInt(rowEl.dataset.index);
         // 🚀 실시간 정렬 시 30위 이하(31등~) 코인은 불필요한 연속 렌더링 방지를 위해 위치를 고정시키되,
         // 현재 위치(oldIndex)가 실제 정렬 순위(i)와 달라질 때만 딱 1번 올바른 목적지(31위든 300위든)에 공백/겹침 없이 정밀 배치하고 고정시킵니다.
@@ -1313,27 +1320,33 @@ export function applyPriceFlash(element, newPrice, oldPrice) {
   if (!element || newPrice === oldPrice) return;
   if (!store.useFlip) return;
 
+  const flashClass = newPrice > oldPrice ? "flash-up" : "flash-down";
+
   // ✅ [비동기 누수 원천 차단] 기존에 돌고 있던 플래시 타이머 저격 해제
   if (element._flashTimerId) {
     clearTimeout(element._flashTimerId);
+    element._flashTimerId = null;
   }
-  const flashClass = newPrice > oldPrice ? "flash-up" : "flash-down";
+
+  // 🚀 [UX 개선] 이미 동일한 방향의 플래시 클래스가 존재하면, 흰색으로 깜빡이지 않고
+  // 해당 색상 상태를 부드럽게 유지하면서 타이머만 500ms 리셋(연장)합니다.
+  if (element.classList.contains(flashClass)) {
+    element._flashTimerId = setTimeout(() => {
+      element.classList.remove(flashClass);
+      element._flashTimerId = null;
+    }, 500);
+    return;
+  }
+
+  // 🚀 [동기식 색상 전환] 방향 전환 시(초록<->빨강) 1프레임 딜레이(흰색 깜빡임) 없이 
+  // 즉시 클래스를 교체하여 중간 흰색 노출 없이 다이렉트로 매끄럽게 변환합니다.
   element.classList.remove("flash-up", "flash-down");
+  element.classList.add(flashClass);
 
-  // 🚀 [기존 로직 100% 보존 + 렉 제로]
-  // 기존 동기식 offsetWidth(렉 주범) 대신 비동기식 requestAnimationFrame을 사용하여
-  // 브라우저 렌더링 큐를 막지 않고 CSS 애니메이션을 부드럽게 리스타트 시킵니다.
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      element.classList.add(flashClass);
-
-      // ✅ 요소 자체 프로퍼티에 타이머 ID 락 보관
-      element._flashTimerId = setTimeout(() => {
-        element.classList.remove(flashClass);
-        element._flashTimerId = null;
-      }, 500);
-    });
-  });
+  element._flashTimerId = setTimeout(() => {
+    element.classList.remove(flashClass);
+    element._flashTimerId = null;
+  }, 500);
 }
 
 window.updateRowPriceDisplay = (target, row) => {

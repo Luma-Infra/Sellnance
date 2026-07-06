@@ -131,16 +131,23 @@ def build_upbit_row(
 
     # 🚀 [신규 상장 캐치 & 족보 세탁기]
     if not ticker_info or (
-        isinstance(ticker_info, list) and (len(ticker_info) < 4 or not ticker_info[0] or ticker_info[0] != final_ucid)
+        isinstance(ticker_info, list)
+        and (
+            len(ticker_info) < 5
+            or not ticker_info[0]
+            or ticker_info[0] != final_ucid
+            or ticker_info[4] != "COIN"
+        )
     ):
         TICKER_DATA[display_name] = [
             final_ucid,
             ch_sym,
             coin_name,  # 🚀 괄호에서 추출한 이름 우선 반영
             base,
+            "COIN",  # 🚀 업비트는 무조건 COIN 고정
         ]
         is_updated = True
-        print(f"✅ [족보 세탁] {display_name} UID 복구 완료: {final_ucid}")
+        print(f"✅ [족보 세탁] {display_name} UID 및 타입 복구 완료: {final_ucid} (COIN)")
 
     # 가격 및 정밀도
     p = current_p
@@ -279,8 +286,9 @@ def build_upbit_row(
     by_vol_24h = by_raw.get("volume_24h", 0.0)
 
     vol_24h = binance_vol + up_vol_24h + by_vol_24h
-    mcap = info.get("market_cap", 0) if info else 0
-    vmc_raw = (vol_24h / mcap * 100) if mcap > 0 else 0.0
+    mcap_val = info.get("market_cap") if info else None
+    mcap = mcap_val if mcap_val is not None else 0
+    vmc_raw = (vol_24h / mcap * 100) if (mcap is not None and mcap > 0) else 0.0
 
     # 🚀 [추가] 업비트 전용 코인 김프 라벨 (바이비트 등 Fallback 비교군이 있을 때만)
     by_spot_p = by_raw.get("spot_price", 0.0)

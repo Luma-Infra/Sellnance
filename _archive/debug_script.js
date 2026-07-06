@@ -3,11 +3,11 @@
   const traceMap = new Map();
 
   const getTop5 = () => {
-    // 1. 화면 필터링/정렬과 100% 일치하도록 현재 렌더링된 DOM 요소 순서 그대로 추출
-    const rowEls = document.querySelectorAll('.coin-row');
+    // 1. 가상화 스크롤 및 필터링 환경에서 실제로 화면 활성 상태인 행(.realtime-live-row)만 추출
+    const rowEls = document.querySelectorAll('.coin-row.realtime-live-row');
     const visibleTickers = [];
     rowEls.forEach(el => {
-      let t = el.getAttribute('data-ticker') || (el.id && el.id.startsWith('row-') ? el.id.replace('row-', '') : null);
+      let t = el.getAttribute('data-ticker') || el.dataset.sym || (el.id && el.id.startsWith('row-') ? el.id.replace('row-', '') : null);
       if (t) visibleTickers.push(t);
     });
 
@@ -127,12 +127,15 @@
       const spikeWarning = state.IsSpike ? `<div style="margin-top:4px; color:#ef4444; font-weight:bold; background:rgba(239,68,68,0.2); padding:4px; border-radius:4px; text-align:center;">🚨 비정상 스파이크 감지! (1초내 5% 튐)</div>` : '';
       const retroWarning = state.IsRetrograde ? `<div style="margin-top:4px; color:#f59e0b; font-weight:bold; background:rgba(245,158,11,0.2); padding:4px; border-radius:4px; text-align:center;">⚠️ 낡은 캐시(3초 레이더) 역행 덮어쓰기 감지!</div>` : '';
 
-      const logLine = `[${ticker}]
+      const logLine = `[${ticker}] (${state.Type || ''})
 - 가격: ${state.Price} (${state.PriceFormula}) ${state.IsSpike ? '🚨 비정상 유입!' : ''} ${state.IsRetrograde ? '⚠️ 과거 캐시 역행!' : ''}
 - 24h: ${state.Chg24h}
 - 오늘: ${state.ChgToday}
+- 김프: ${row.Kimchi_Formatted || '-'} (Raw: ${row.Kimchi_Raw != null ? row.Kimchi_Raw.toFixed(4) + '%' : '-'})
+- [김프 재료] 국내: ${row.Upbit_Price || row.Bithumb_Price || '-'} | 해외: ${row.Price_Raw || '-'} | 환율: ${store.marketDataMap?.krw_usd_rate || '-'}
 - [교차 시가] 백엔드: ${beOpenPrice} | 프론트: ${feOpenPrice}
 - [추적 필드] Exact_Spot: ${row.Exact_Spot} | Exact_Futures: ${row.Exact_Futures} | Symbol: ${row.Symbol} | Inflow_Path: ${row.Inflow_Path}
+- [갱신원 필드] Price: "${row._lastPriceRawCaller || '대입없음'}" | ChangeToday: "${row._lastTodayRawCaller || '대입없음'}" | Kimchi: "${row._lastKimchiRawCaller || '대입없음'}" ${row._lastKimchiRawCaller ? `(급변: ${row._lastKimchiRawValBefore.toFixed(2)}% ➔ ${row._lastKimchiRawValAfter.toFixed(2)}%)` : ''}
 - 경로: ${state.Source}\n`;
       textToCopy += logLine;
 
@@ -146,6 +149,8 @@
             <div>💵 현재 가격: <span style="color:${state.IsSpike ? '#ef4444' : state.IsRetrograde ? '#f59e0b' : '#22d3ee'}; font-weight:bold;">${state.Price || '-'}</span> <span style="color:#888; font-size:9px;">(${state.PriceFormula || ''})</span></div>
             <div>📈 전일 24h: <span style="color:#0ecb81;">${state.Chg24h || '-'}</span></div>
             <div>📅 금일 변동: <span style="color:#ff6b6b; font-weight:bold;">${state.ChgToday || '-'}</span></div>
+            <div>🥬 실시간 김프: <span style="color:#10b981; font-weight:bold;">${row.Kimchi_Formatted || '-'}</span> <span style="color:#888; font-size:9px;">(Raw: ${row.Kimchi_Raw != null ? row.Kimchi_Raw.toFixed(4) + '%' : '-'})</span></div>
+            <div style="font-size:9px; color:#aaa; margin-bottom:4px;">ㄴ ⚖️ 재료 - 국내가: ${((row.Upbit_Price || row.Bithumb_Price || 0)).toLocaleString()}원 | 해외가: $${(row.Price_Raw || 0).toLocaleString()} | 환율: ${store.marketDataMap?.krw_usd_rate || '0'}원</div>
             
             ${spikeWarning}
             ${retroWarning}
@@ -162,7 +167,9 @@
                 • Symbol: <span style="color:#f43f5e;">"${row.Symbol || '없음'}"</span><br/>
                 • Inflow_Path: <span style="color:#34d399;">"${row.Inflow_Path || '없음'}"</span><br/>
                 • Price_Raw 갱신원: <span style="color:#eab308; font-weight:bold;">"${row._lastPriceRawCaller || '대입없음'}"</span><br/>
-                • Change_Today_Raw 갱신원: <span style="color:#eab308; font-weight:bold;">"${row._lastTodayRawCaller || '대입없음'}"</span>
+                • Change_Today_Raw 갱신원: <span style="color:#eab308; font-weight:bold;">"${row._lastTodayRawCaller || '대입없음'}"</span><br/>
+                • Kimchi_Raw 갱신원: <span style="color:#eab308; font-weight:bold;">"${row._lastKimchiRawCaller || '대입없음'}"</span>
+                ${row._lastKimchiRawCaller ? `<br/>&nbsp;&nbsp;<span style="color:#f43f5e;">ㄴ 급변: ${row._lastKimchiRawValBefore.toFixed(2)}% ➔ ${row._lastKimchiRawValAfter.toFixed(2)}%</span>` : ''}
               </div>
             </div>
             <div style="font-size:9px; color:#999; margin-top:4px;">📍 최종 업데이트 경로: ${state.Source || '-'}</div>
@@ -237,6 +244,7 @@
         row._interceptorInstalled = true;
         let _priceRawVal = row.Price_Raw;
         let _todayRawVal = row.Change_Today_Raw;
+        let _kimchiRawVal = row.Kimchi_Raw;
 
         Object.defineProperty(row, 'Price_Raw', {
           get() { return _priceRawVal; },
@@ -251,8 +259,10 @@
             else caller = stack.split('\n')[2]?.trim() || 'unknown';
 
             if (newVal !== _priceRawVal) {
-              console.warn(`[PROPERTY INTERCEPT] 🚨 ${row.Ticker}.Price_Raw 오염 감지: ${_priceRawVal} ➔ ${newVal} | 호출자: ${caller}`);
-              row._lastPriceRawCaller = caller;
+              if (getTop5().has(row.Ticker)) {
+                console.warn(`[PROPERTY INTERCEPT] 🚨 ${row.Ticker}.Price_Raw 오염 감지: ${_priceRawVal} ➔ ${newVal} | 호출자: ${caller}`);
+                row._lastPriceRawCaller = caller;
+              }
             }
             _priceRawVal = newVal;
           },
@@ -273,10 +283,42 @@
             else caller = stack.split('\n')[2]?.trim() || 'unknown';
 
             if (newVal !== _todayRawVal) {
-              console.warn(`[PROPERTY INTERCEPT] 🚨 ${row.Ticker}.Change_Today_Raw 오염 감지: ${_todayRawVal} ➔ ${newVal} | 호출자: ${caller}`);
-              row._lastTodayRawCaller = caller;
+              if (getTop5().has(row.Ticker)) {
+                console.warn(`[PROPERTY INTERCEPT] 🚨 ${row.Ticker}.Change_Today_Raw 오염 감지: ${_todayRawVal} ➔ ${newVal} | 호출자: ${caller}`);
+                row._lastTodayRawCaller = caller;
+              }
             }
             _todayRawVal = newVal;
+          },
+          configurable: true,
+          enumerable: true
+        });
+
+        Object.defineProperty(row, 'Kimchi_Raw', {
+          get() { return _kimchiRawVal; },
+          set(newVal) {
+            const stack = new Error().stack || '';
+            let caller = 'unknown';
+            if (stack.includes('stream.js')) caller = 'stream.js';
+            else if (stack.includes('stream_table.js')) caller = 'stream_table.js';
+            else if (stack.includes('feed_binance_spot.js')) caller = 'feed_binance_spot.js';
+            else if (stack.includes('feed_upbit.js')) caller = 'feed_upbit.js';
+            else if (stack.includes('table_api.js')) caller = 'table_api.js';
+            else if (stack.includes('stream_korea.js')) caller = 'stream_korea.js';
+            else caller = stack.split('\n')[2]?.trim() || 'unknown';
+
+            if (_kimchiRawVal !== undefined && newVal !== null && _kimchiRawVal !== null) {
+              const diff = Math.abs(newVal - _kimchiRawVal);
+              if (diff >= 1.0) {
+                if (getTop5().has(row.Ticker)) {
+                  console.warn(`[KIMP INTERCEPT] 🚨 ${row.Ticker}.Kimchi_Raw 1%p 이상 급변/오염 감지: ${_kimchiRawVal.toFixed(2)}% ➔ ${newVal.toFixed(2)}% | 호출자: ${caller}`);
+                  row._lastKimchiRawCaller = caller;
+                  row._lastKimchiRawValBefore = _kimchiRawVal;
+                  row._lastKimchiRawValAfter = newVal;
+                }
+              }
+            }
+            _kimchiRawVal = newVal;
           },
           configurable: true,
           enumerable: true
@@ -377,6 +419,14 @@
   const activePollInterval = setInterval(() => {
     const targets = getTop5();
     let hasUpdates = false;
+
+    // 1. 화면에서 사라진(hidden이 된) 티커는 디버그 이력에서 강제 청소
+    for (let ticker of traceMap.keys()) {
+      if (!targets.has(ticker)) {
+        traceMap.delete(ticker);
+        hasUpdates = true;
+      }
+    }
 
     for (let ticker of targets) {
       const row = store?.tickerRowMap?.get(ticker);

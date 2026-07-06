@@ -753,16 +753,36 @@ export function searchSymbols(v) {
     clearTimeout(searchTimeout);
   }
 
+  const loadingBar = document.getElementById("search-loading-bar");
+
+  // 🚀 타이핑 감지 시 즉각 로딩바 전진 (300ms 디바운스 기간 동안 100% 충전)
+  if (v && loadingBar) {
+    loadingBar.style.transition = "none";
+    loadingBar.style.width = "0%";
+    void loadingBar.offsetWidth; // 강제 리플로우로 브라우저 애니메이션 프레임 동기화
+    loadingBar.style.transition = "width 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94)";
+    loadingBar.style.width = "100%";
+  }
+
   const runSearch = () => {
     import("./table_render.js").then(({ renderTable }) => {
       renderTable();
+      // 🚀 검색 렌더링 완료 시 로딩바 초기화
+      if (loadingBar) {
+        loadingBar.style.transition = "width 150ms ease";
+        loadingBar.style.width = "0%";
+      }
     });
   };
 
   if (!v) {
+    if (loadingBar) {
+      loadingBar.style.transition = "none";
+      loadingBar.style.width = "0%";
+    }
     runSearch();
   } else {
-    searchTimeout = setTimeout(runSearch, 100);
+    searchTimeout = setTimeout(runSearch, 300);
   }
 }
 

@@ -458,6 +458,9 @@
                 class="ml-2 text-theme-text opacity-40 hover:opacity-100 transition-opacity h-full flex items-center justify-center cursor-pointer">
                 ✕
               </button>
+              <!-- 🚀 실시간 검색 타이핑 진행 상태 로딩바 -->
+              <div id="search-loading-bar"
+                class="absolute bottom-0 left-0 h-[2px] bg-theme-accent w-0 transition-all pointer-events-none"></div>
             </div>
           </div>
 
@@ -814,8 +817,8 @@
               </div>
             </div>
 
-            <div id="head-info-row"
-              class="flex items-center gap-6 justify-start flex-wrap w-full border-t border-theme-border/30 pt-0.5 px-3 pb-1">
+            <div id="head-info-row" class="flex items-center gap-6 justify-start flex-wrap w-full pt-0.5 px-3 pb-1">
+              <!-- border-t border-theme-border/30 -->
               <!-- 🚀 1. 실시간 가격 전광판 (USD & KRW 동시 표기) -->
               <div class="flex flex-col text-xs text-left min-w-0">
                 <span class="opacity-50 text-[10px] uppercase font-medium tracking-wider">Price
@@ -861,8 +864,8 @@
               </div>
             </div>
             <!-- 3층: 컨트롤 패널 (리니어/로그, 카운트다운, 스케일 리셋, 호가창) -->
-            <div id="head-controls-row"
-              class="flex items-end justify-between w-full border-t border-theme-border/30 pt-2 mt-2 px-3 pb-2">
+            <div id="head-controls-row" class="flex items-end justify-between w-full pt-2 mt-2 px-3 pb-2">
+              <!-- border-t border-theme-border/30  -->
               <!-- 🚀 헤더 접기/펼치기 토글 버튼 (좌측 정렬) -->
               <button id="toggle-header-top-btn"
                 class="px-2 py-1 text-[10px] md:text-[11px] font-medium text-theme-text opacity-70 hover:opacity-100 border border-theme-border/50 rounded bg-theme-panel/50 transition-all whitespace-nowrap mr-1 cursor-pointer"
@@ -898,12 +901,11 @@
                 </button>
 
                 <!-- 🚀 로그/리니어 스케일 토글 버튼 (주석 처리됨, 차트 내 A/L 스위치로 대체)
-            <button id="toggle-log-scale-btn"
-              class="px-2.5 py-1 text-[10px] md:text-[11px] font-medium text-theme-text opacity-70 hover:opacity-100 border border-theme-border/50 rounded bg-theme-panel/50 transition-all whitespace-nowrap mr-1 cursor-pointer"
-              onclick="if (window.toggleLogScale) window.toggleLogScale();">
-              Linear 축
-            </button>
-            -->
+                <button id="toggle-log-scale-btn"
+                  class="px-2.5 py-1 text-[10px] md:text-[11px] font-medium text-theme-text opacity-70 hover:opacity-100 border border-theme-border/50 rounded bg-theme-panel/50 transition-all whitespace-nowrap mr-1 cursor-pointer"
+                  onclick="if (window.toggleLogScale) window.toggleLogScale();">
+                  Linear 축
+                </button>-->
 
                 <!-- 🚀 카운트다운 토글 버튼 -->
                 <button id="toggle-countdown-btn"
@@ -936,7 +938,7 @@
         </div>
 
         <header id="chart-header" class="flex flex-col w-full shrink-0 bg-theme-bg">
-          <div class="flex items-center bg-black/5 px-5 py-2  relative">
+          <div class="flex items-center bg-black/5 px-5 h-9  relative">
             <div id="tf-container"
               class="flex items-center gap-1.5 w-full overflow-x-auto whitespace-nowrap scrollbar-hide"></div>
             <button onclick="toggleTfSettings()"
@@ -988,13 +990,13 @@
                       A
                     </button>
                   </div>
-                  <div class="scale-mode-btn-wrap">
+                  <!-- <div class="scale-mode-btn-wrap">
                     <button id="main-scale-l-btn"
                       class="w-5 h-5 flex items-center justify-center text-[9px] font-medium rounded cursor-pointer transition-colors bg-theme-border/20 text-theme-text hover:bg-theme-border/40 border border-theme-border/30"
                       title="로그 스케일">
                       L
                     </button>
-                  </div>
+                  </div> -->
                 </div>
               </div>
 
@@ -1022,13 +1024,13 @@
                       A
                     </button>
                   </div>
-                  <div class="scale-mode-btn-wrap">
+                  <!-- <div class="scale-mode-btn-wrap">
                     <button id="vol-scale-l-btn"
                       class="w-5 h-5 flex items-center justify-center text-[9px] font-medium rounded cursor-pointer transition-colors bg-theme-border/20 text-theme-text hover:bg-theme-border/40 border border-theme-border/30"
                       title="지표 로그 스케일">
                       L
                     </button>
-                  </div>
+                  </div> -->
                 </div>
               </div>
 
@@ -1533,9 +1535,10 @@
       </div>
     </div>
 
-    <!-- 🚀 성능 디버그 도구 UI (우측 하단 플로팅 패널) -->
+    <!-- [성능 디버그 도구 UI 전체 주석 처리]
+    [🚀 성능 디버그 도구 UI (우측 하단 플로팅 패널)]
     <div id="perf-debug-panel"
-      class="fixed bottom-4 right-4 z-[9999] bg-theme-panel/95 backdrop-blur-md border border-theme-border shadow-2xl rounded-2xl p-4 flex flex-col gap-3 w-[270px]">
+      class="hidden fixed bottom-4 right-4 z-[9999] bg-theme-panel/95 backdrop-blur-md border border-theme-border shadow-2xl rounded-2xl p-4 flex flex-col gap-3 w-[270px]">
       <div class="flex items-center justify-between border-b border-theme-border/30 pb-2">
         <div class="flex items-center gap-1.5 min-w-0">
           <span class="text-xs font-bold text-theme-text flex items-center gap-1 shrink-0">⚡ 렉 디버거</span>
@@ -1550,7 +1553,7 @@
         </button>
       </div>
       <div class="flex flex-col gap-2.5">
-        <!-- 1. [부모] 우측 패널 DOM 차단 -->
+        [1. [부모] 우측 패널 DOM 차단]
         <div class="flex flex-col gap-2 bg-white/2 p-2.5 rounded-xl border border-theme-border/20">
           <div class="flex items-center justify-between">
             <div class="flex flex-col gap-0.5">
@@ -1566,7 +1569,7 @@
             </label>
           </div>
 
-          <!-- [자식] 우측 종속 요소들 -->
+          [자식 우측 종속 요소들]
           <div class="pl-3 border-l-2 border-theme-border/30 flex flex-col gap-2.5">
             <div class="flex items-center justify-between opacity-80" id="child-chart-container">
               <div class="flex flex-col gap-0.5">
@@ -1640,7 +1643,7 @@
           </div>
         </div>
 
-        <!-- 2. [부모] 좌측 테이블 DOM 차단 -->
+        [2. [부모] 좌측 테이블 DOM 차단]
         <div class="flex flex-col gap-2 bg-white/2 p-2.5 rounded-xl border border-theme-border/20">
           <div class="flex items-center justify-between">
             <div class="flex flex-col gap-0.5">
@@ -1656,7 +1659,7 @@
             </label>
           </div>
 
-          <!-- [자식] 좌측 종속 요소들 -->
+          [자식 좌측 종속 요소들]
           <div class="pl-3 border-l-2 border-theme-border/30 flex flex-col gap-2.5">
             <div class="flex items-center justify-between opacity-80" id="child-sort-container">
               <div class="flex flex-col gap-0.5">
@@ -1702,7 +1705,7 @@
           </div>
         </div>
 
-        <!-- 3. [부모] 실시간 김프 연산 차단 -->
+        [3. [부모] 실시간 김프 연산 차단]
         <div class="flex flex-col gap-2 bg-white/2 p-2.5 rounded-xl border border-theme-border/20">
           <div class="flex items-center justify-between">
             <div class="flex flex-col gap-0.5">
@@ -1718,7 +1721,7 @@
             </label>
           </div>
 
-          <!-- [자식] 김프 종속 요소들 -->
+          [자식 김프 종속 요소들]
           <div class="pl-3 border-l-2 border-theme-border/30 flex flex-col gap-2.5">
             <div class="flex items-center justify-between opacity-80" id="child-radardatabatch-container">
               <div class="flex flex-col gap-0.5">
@@ -1750,7 +1753,7 @@
           </div>
         </div>
 
-        <!-- 4. aggTrade 실시간 주기 조절 -->
+        [4. aggTrade 실시간 주기 조절]
         <div class="flex flex-col gap-2 bg-white/2 p-2.5 rounded-xl border border-theme-border/20">
           <div class="flex flex-col gap-1">
             <span class="text-[11px] font-bold text-theme-text">aggTrade 실시간 주기 조절</span>
@@ -1776,7 +1779,7 @@
           </div>
         </div>
 
-        <!-- 🚀 [신규] 실시간 빠꾸(Bypass) 카운트 전광판 & 병목 1순위 리포트 -->
+        🚀 [신규] 실시간 빠꾸(Bypass) 카운트 전광판 & 병목 1순위 리포트
         <div class="flex flex-col gap-2 bg-[#ff0055]/5 p-2.5 rounded-xl border border-[#ff0055]/20">
           <div class="flex items-center justify-between">
             <span class="text-[10px] font-bold text-[#ff0055] uppercase font-mono">Bypass Statistics</span>
@@ -1791,15 +1794,18 @@
           <div
             class="grid grid-cols-2 gap-x-2 gap-y-1 font-mono text-[8px] text-theme-text/80 border-t border-[#ff0055]/10 pt-1.5">
             <div class="flex justify-between"><span>LeftDom:</span><span id="bypass-cnt-leftDom"
-                class="font-bold">0</span></div>
+                class="font-bold">0</span>
+            </div>
             <div class="flex justify-between"><span>TabScroll:</span><span id="bypass-cnt-tabScroll"
                 class="font-bold">0</span></div>
             <div class="flex justify-between"><span>TableUp:</span><span id="bypass-cnt-tableUpdate"
                 class="font-bold">0</span></div>
             <div class="flex justify-between"><span>Kimchi:</span><span id="bypass-cnt-kimchi"
-                class="font-bold">0</span></div>
+                class="font-bold">0</span>
+            </div>
             <div class="flex justify-between"><span>Radar:</span><span id="bypass-cnt-radarBatch"
-                class="font-bold">0</span></div>
+                class="font-bold">0</span>
+            </div>
             <div class="flex justify-between"><span>M-Event:</span><span id="bypass-cnt-mouseEvent"
                 class="font-bold">0</span></div>
             <div class="flex justify-between"><span>DynHtml:</span><span id="bypass-cnt-dynamicHtml"
@@ -1818,6 +1824,7 @@
         </div>
       </div>
     </div>
+    -->
   </div>
 </body>
 
