@@ -3,6 +3,9 @@ import { store, tfSec, measureDOM } from "./_store.js";
 import { fetchHistory } from "./chart_data.js";
 import { getUnixSeconds, formatCrosshairPrice } from "./chart_utils.js";
 
+// === DEBUG_PERF_TOGGLE ===
+const ENABLE_PERF_LOG = false; // Set to false to disable all performance logging instantly
+
 // 🚀 [메인 & 거래량 차트 양방향 100% 대칭 60fps 네이티브 캔버스 십자선 플러그인]
 class CanvasCrosshairPrimitive {
   constructor() {
@@ -495,6 +498,7 @@ export function initChart() {
   // 🎯 십자선 크로스헤어 완벽 동기화 엔진 (레이스 컨디션 원천 차단 무적 알고리즘)
   const syncCrosshair = (sourceChart, targetCharts) => {
     sourceChart.subscribeCrosshairMove((param) => {
+      const perfStart = performance.now();
       try {
         // 🚀 [마우스 이벤트 차단 토글 방어막]
         if (store.blockChartMouseEvent) {
@@ -665,60 +669,7 @@ export function initChart() {
             }
           }
 
-          targetCharts.forEach((targetObj) => {
-            const { chart: tChart, series: tSeries } = targetObj;
-            if (tChart && tSeries) {
-              // 🚀 1. 먼저 원격 십자선 이동 API를 호출하여 라이브러리 내부 상태 및 하단 타임스탬프 라벨 위치를 확정 짓는다!
-              if (
-                normalizedTime !== undefined &&
-                normalizedTime !== null &&
-                !String(normalizedTime).includes("NaN")
-              ) {
-                try {
-                  // 🚀 [초강력 단일화: 타겟 차트의 네이티브 크로스헤어 완전 초기화]
-                  // 타겟 차트에서 트뷰 API(setCrosshairPosition)를 억지로 호출하면 가로선이나 라벨이 강제로 부활하는 오버라이드 현상이 발생합니다.
-                  // 이를 원천 차단하기 위해, 비활성 타겟 차트의 네이티브 크로스헤어를 완벽하게 꺼버립니다.
-                  // (세로선 동기화는 바로 아래의 캔버스 플러그인이 완벽하게 그려주므로 시간축 스냅 등 마그네틱 기능은 100% 유지됩니다!)
-                  tChart.clearCrosshairPosition();
-                } catch (e) { }
-              }
-
-              // 🚀 targetTime을 문자열(YYYY-MM-DD HH:mm)로 변환하여 플러그인에 전달할 준비!
-              let timeStr = null;
-              if (targetTime !== undefined && targetTime !== null) {
-                const isDay = !(store.currentTF || "1h").match(/[hm]/);
-                if (isDay && typeof targetTime === "string") {
-                  timeStr = targetTime;
-                } else {
-                  const dt = new Date(
-                    (typeof targetTime === "string"
-                      ? getUnixSeconds(targetTime)
-                      : targetTime) * 1000,
-                  );
-                  if (!isNaN(dt.getTime())) {
-                    const yyyy = dt.getUTCFullYear();
-                    const mm = String(dt.getUTCMonth() + 1).padStart(2, "0");
-                    const dd = String(dt.getUTCDate()).padStart(2, "0");
-                    if (isDay) {
-                      timeStr = `${yyyy}-${mm}-${dd}`;
-                    } else {
-                      const HH = String(dt.getHours()).padStart(2, "0");
-                      const MM = String(dt.getMinutes()).padStart(2, "0");
-                      timeStr = `${yyyy}-${mm}-${dd} ${HH}:${MM}`;
-                    }
-                  }
-                }
-              }
-
-              // 🚀 2. [핵심] 타겟 차트(tChart) 캔버스 플러그인 점선 및 하단 시간 라벨 최종 렌더링!
-              // timeStr을 던져주면, 방금 만든 CanvasCrosshairTimeAxisView가 X축에 라벨을 예쁘게 그려냅니다.
-              if (tChart === store.chartVol && store._volCrosshair) {
-                store._volCrosshair.setX(magnetX, timeStr);
-              } else if (tChart === store.chart && store._mainCrosshair) {
-                store._mainCrosshair.setX(magnetX, timeStr);
-              }
-            }
-          });
+          renderTargetCharts(targetCharts, normalizedTime, targetTime, magnetX);
 
           // 🚀 5. 레전드 업데이트 등 기존 로직 유지
           if (
@@ -749,9 +700,7 @@ export function initChart() {
           if (sourceChart === store.chart) {
             d = param.seriesData.get(store.candleSeries);
             // 🚀 [완벽 폴백 보강] 라이브러리 내부 캔들 구조체(d)에는 volume 필드가 없으므로, 원본 메인 장부(store.mainData)에서 찾아 volume을 주입합니다!
-            const mainCandle = store.mainData?.find(
-              (item) => getUnixSeconds(item.time) === pTime,
-            );
+            const mainCandle = store.mainDataMap.get(pTime);
             if (d && mainCandle && mainCandle.volume !== undefined) {
               d.volume = mainCandle.volume;
             } else if (!d && mainCandle) {
@@ -759,19 +708,10 @@ export function initChart() {
               d = { ...mainCandle };
             }
           } else {
-            d =
-              store.mainData?.find(
-                (item) => getUnixSeconds(item.time) === pTime,
-              ) || null;
+            d = store.mainDataMap.get(pTime) || null;
           }
-          const v =
-            store.volumeData?.find(
-              (item) => getUnixSeconds(item.time) === pTime,
-            ) || null;
-          const k =
-            store.kimchiData?.find(
-              (item) => getUnixSeconds(item.time) === pTime,
-            ) || null;
+          const v = store.volumeDataMap.get(pTime) || null;
+          const k = store.kimchiDataMap.get(pTime) || null;
           if (d && typeof window.updateLegend === "function") {
             window.updateLegend(d, v, k);
           } else {
@@ -828,8 +768,62 @@ export function initChart() {
           }
         }
       } catch (err) { }
+      const totalPerf = performance.now() - perfStart;
+      if (ENABLE_PERF_LOG && totalPerf > 1.5) {
+        console.warn(`[Perf] syncCrosshair took ${totalPerf.toFixed(2)}ms`);
+      }
     });
   };
+
+  // Helper function to render target charts and keep the subscribe handler flat
+  function renderTargetCharts(targetCharts, normalizedTime, targetTime, magnetX) {
+    targetCharts.forEach((targetObj) => {
+      const { chart: tChart, series: tSeries } = targetObj;
+      if (tChart && tSeries) {
+        if (
+          normalizedTime !== undefined &&
+          normalizedTime !== null &&
+          !String(normalizedTime).includes("NaN")
+        ) {
+          try {
+            tChart.clearCrosshairPosition();
+          } catch (e) { }
+        }
+
+        let timeStr = null;
+        if (targetTime !== undefined && targetTime !== null) {
+          const isDay = !(store.currentTF || "1h").match(/[hm]/);
+          if (isDay && typeof targetTime === "string") {
+            timeStr = targetTime;
+          } else {
+            const dt = new Date(
+              (typeof targetTime === "string"
+                ? getUnixSeconds(targetTime)
+                : targetTime) * 1000,
+            );
+            if (!isNaN(dt.getTime())) {
+              const yyyy = dt.getUTCFullYear();
+              const mm = String(dt.getUTCMonth() + 1).padStart(2, "0");
+              const dd = String(dt.getUTCDate()).padStart(2, "0");
+              if (isDay) {
+                timeStr = `${yyyy}-${mm}-${dd}`;
+              } else {
+                const HH = String(dt.getHours()).padStart(2, "0");
+                const MM = String(dt.getMinutes()).padStart(2, "0");
+                timeStr = `${yyyy}-${mm}-${dd} ${HH}:${MM}`;
+              }
+            }
+          }
+        }
+
+        if (tChart === store.chartVol && store._volCrosshair) {
+          store._volCrosshair.setX(magnetX, timeStr);
+        } else if (tChart === store.chart && store._mainCrosshair) {
+          store._mainCrosshair.setX(magnetX, timeStr);
+        }
+      }
+    });
+  }
 
   syncCrosshair(store.chart, [
     { chart: store.chartVol, series: store.volumeSeries },

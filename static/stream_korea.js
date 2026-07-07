@@ -2,6 +2,13 @@
 import { store, tfSec } from "./_store.js";
 import { getMultiplier, getPureBase, getUnixSeconds } from "./chart_utils.js";
 
+// === DEBUG_PERF_TOGGLE ===
+const ENABLE_PERF_LOG = false; // Set to false to disable all performance logging instantly
+
+// 🚀 DOM element caching to avoid constant lookup and style calculation overhead
+let cachedKimchiEl = null;
+let cachedKimchiCallerEl = null;
+
 // 🚀 거래소별 실시간 버퍼 가격 및 기상 상황 추출기 (침범 방지 락킹)
 function getPriceForExchange(exchange, row, pureSymbol) {
   if (!exchange) return null;
@@ -41,6 +48,7 @@ function getPriceForExchange(exchange, row, pureSymbol) {
 
 // 🚀 실시간 김프 1초컷 업데이트 엔진 (모든 마켓 공통 적용)
 export function updateRealtimeKimchi(liveData, symbol, chartTime) {
+  const perfStart = performance.now();
   if (store.blockKimchi) return;
   if (!store.kimchiSeries || !store.paneConfig.kimchi) return;
 
@@ -57,8 +65,10 @@ export function updateRealtimeKimchi(liveData, symbol, chartTime) {
   const rate = store.marketDataMap?.krw_usd_rate || 0;
   if (rate === 0) return;
 
+  const tFindStart = performance.now();
   const pureSymbol = getPureBase(symbol);
-  const row = store.currentTableData.find((c) => c.Symbol === pureSymbol);
+  const row = store.tickerRowMap.get(pureSymbol) || store.currentTableData.find((c) => c.Symbol === pureSymbol);
+  const tFind = performance.now() - tFindStart;
 
   let unitKorPrice = null;
   let unitGlbPrice = null;
@@ -122,6 +132,9 @@ export function updateRealtimeKimchi(liveData, symbol, chartTime) {
     return false;
   })();
 
+  let tUpdate = 0;
+  let tDom = 0;
+
   if (isTimeValid) {
     const kimchiPct = (unitKorPrice / (unitGlbPrice * rate) - 1) * 100;
 
@@ -141,17 +154,32 @@ export function updateRealtimeKimchi(liveData, symbol, chartTime) {
           : null;
 
         if (!lastKimchiItem || chartTime >= lastKimchiItem.time) {
+          const tUpdateStart = performance.now();
           store.kimchiSeries.update(kimchiObj);
+          tUpdate = performance.now() - tUpdateStart;
 
+          const tDomStart = performance.now();
           // 🚀 김프 범례 텍스트 직접 실시간 갱신 (리버스 갱신 대응)
-          const kimchiEl = document.getElementById("ohlc-kimchi");
-          if (kimchiEl && !store.isCrosshairActive) {
-            kimchiEl.innerText = (kimchiPct > 0 ? "+" : "") + kimchiPct.toFixed(2) + "%";
-            kimchiEl.style.color = typeof window.getKimchiColor === "function" ? window.getKimchiColor(kimchiPct) : "#57a4fc";
+          if (!cachedKimchiEl) {
+            cachedKimchiEl = document.getElementById("ohlc-kimchi");
+          }
+          if (cachedKimchiEl && !store.isCrosshairActive) {
+            const newText = (kimchiPct > 0 ? "+" : "") + kimchiPct.toFixed(2) + "%";
+            const newColor = typeof window.getKimchiColor === "function" ? window.getKimchiColor(kimchiPct) : "#57a4fc";
+
+            // 값이 변경되었을 때만 textContent와 style.color 갱신하여 reflow 방지
+            if (cachedKimchiEl.textContent !== newText) {
+              cachedKimchiEl.textContent = newText;
+            }
+            if (cachedKimchiEl.style.color !== newColor) {
+              cachedKimchiEl.style.color = newColor;
+            }
           }
 
           // 🚀 김프 전용 미니 뱃지 실시간 갱신 (상단 메인 뱃지와 완전히 별개로 독립 트래킹)
-          const kimchiCallerEl = document.getElementById("ohlc-kimchi-caller");
+          if (!cachedKimchiCallerEl) {
+            cachedKimchiCallerEl = document.getElementById("ohlc-kimchi-caller");
+          }
           let callerId = "UNKNOWN";
           if (store.traceRowCaller) {
             const stack = new Error().stack || "";
@@ -163,19 +191,25 @@ export function updateRealtimeKimchi(liveData, symbol, chartTime) {
               callerId = "3 (UI/Filter)";
             }
           }
-          if (kimchiCallerEl && !store.isCrosshairActive) {
+          if (cachedKimchiCallerEl && !store.isCrosshairActive) {
             const korLabel = korExchange.toUpperCase();
             const glbLabel = glbExchange.toUpperCase();
             const debugText = ` [${callerId}] ${korLabel}(${(unitKorPrice || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}) / [${glbLabel}(${(unitGlbPrice || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}) * 환율(${rate})]`;
-            kimchiCallerEl.innerText = debugText;
+
+            if (cachedKimchiCallerEl.textContent !== debugText) {
+              cachedKimchiCallerEl.textContent = debugText;
+            }
           }
 
-          // 🚀 [디버그 동적 전파] 무조건 첫번째 행(index 0)에 있는 디버그 영역에도 함께 기록해줍니다.
-          const firstRowDebug = document.querySelector('#coin-list-body > div[data-index="0"] .first-row-debug-area');
-          if (firstRowDebug) {
-            const kimchiDebug = firstRowDebug.querySelector(".debug-kimchi-caller");
-            if (kimchiDebug) kimchiDebug.innerText = `KIMP: ${callerId}`;
+          // 🚀 [디버그 동적 전파] traceRowCaller가 켜져 있을 때만 실행하여 평소 탐색 비용을 0ms로 만듭니다.
+          if (store.traceRowCaller) {
+            const firstRowDebug = document.querySelector('#coin-list-body > div[data-index="0"] .first-row-debug-area');
+            if (firstRowDebug) {
+              const kimchiDebug = firstRowDebug.querySelector(".debug-kimchi-caller");
+              if (kimchiDebug) kimchiDebug.innerText = `KIMP: ${callerId}`;
+            }
           }
+          tDom = performance.now() - tDomStart;
 
           if (store.kimchiData && store.kimchiData.length > 0) {
             if (chartTime > lastKimchiItem.time) {
@@ -202,8 +236,52 @@ export function updateRealtimeKimchi(liveData, symbol, chartTime) {
     }
   }
 
+  let tSync = 0;
   if (typeof window.syncPriceScaleWidths === "function") {
+    const tSyncStart = performance.now();
     window.syncPriceScaleWidths();
+    tSync = performance.now() - tSyncStart;
+  }
+
+  const totalPerf = performance.now() - perfStart;
+  if (ENABLE_PERF_LOG && totalPerf > 1.0) {
+    console.warn(`[Perf] updateRealtimeKimchi took ${totalPerf.toFixed(2)}ms (RowFind: ${tFind.toFixed(2)}ms, ChartUpdate: ${tUpdate.toFixed(2)}ms, DomUpdate: ${tDom.toFixed(2)}ms, WidthSync: ${tSync.toFixed(2)}ms)`);
+  }
+}
+
+let lastKimchiUpdateTime = 0;
+let kimchiUpdatePending = false;
+let latestKimchiLiveData = null;
+let latestKimchiSymbol = null;
+let latestKimchiChartTime = null;
+
+export function updateRealtimeKimchiThrottled(liveData, symbol, chartTime) {
+  latestKimchiLiveData = liveData;
+  latestKimchiSymbol = symbol;
+  latestKimchiChartTime = chartTime;
+
+  if (kimchiUpdatePending) return;
+
+  const now = performance.now();
+  const timeElapsed = now - lastKimchiUpdateTime;
+  const throttleInterval = 120; // 120ms 쓰로틀링
+
+  if (timeElapsed >= throttleInterval) {
+    kimchiUpdatePending = true;
+    requestAnimationFrame(() => {
+      updateRealtimeKimchi(latestKimchiLiveData, latestKimchiSymbol, latestKimchiChartTime);
+      lastKimchiUpdateTime = performance.now();
+      kimchiUpdatePending = false;
+    });
+  } else {
+    kimchiUpdatePending = true;
+    setTimeout(() => {
+      requestAnimationFrame(() => {
+        updateRealtimeKimchi(latestKimchiLiveData, latestKimchiSymbol, latestKimchiChartTime);
+        lastKimchiUpdateTime = performance.now();
+        kimchiUpdatePending = false;
+      });
+    }, throttleInterval - timeElapsed);
   }
 }
 
@@ -235,7 +313,7 @@ export function getUpbitMessageHandler(symbol, broadcastCandleUpdate) {
 
       if (store.mainData && store.mainData.length > 0) {
         const lastCandle = store.mainData[store.mainData.length - 1];
-        updateRealtimeKimchi({ close: newPrice, marketType: "UPBIT" }, symbol, lastCandle.time);
+        updateRealtimeKimchiThrottled({ close: newPrice, marketType: "UPBIT" }, symbol, lastCandle.time);
       }
       return;
     }
@@ -284,6 +362,7 @@ export function getUpbitMessageHandler(symbol, broadcastCandleUpdate) {
         volume: tradeQty,
       };
       store.mainData.push(activeCandle);
+      store.mainDataMap.set(getUnixSeconds(activeCandle.time), activeCandle);
       chartUpdateNeeded = true;
     }
 
@@ -323,7 +402,7 @@ export function getBithumbMessageHandler(symbol, broadcastCandleUpdate) {
 
       if (store.mainData && store.mainData.length > 0) {
         const lastCandle = store.mainData[store.mainData.length - 1];
-        updateRealtimeKimchi({ close: newPrice, marketType: "BITHUMB" }, symbol, lastCandle.time);
+        updateRealtimeKimchiThrottled({ close: newPrice, marketType: "BITHUMB" }, symbol, lastCandle.time);
       }
       return;
     }
@@ -367,6 +446,7 @@ export function getBithumbMessageHandler(symbol, broadcastCandleUpdate) {
           volume: tradeQty,
         };
         store.mainData.push(activeCandle);
+        store.mainDataMap.set(getUnixSeconds(activeCandle.time), activeCandle);
         chartUpdateNeeded = true;
       }
     });

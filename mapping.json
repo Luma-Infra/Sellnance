@@ -1,874 +1,5451 @@
 {
-  "CHAIN_LOGO_MAP": {
-    "ETH": "https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png",
-    "BNB": "https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png",
-    "SOL": "https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png",
-    "SUI": "https://s2.coinmarketcap.com/static/img/coins/64x64/20947.png"
-  },
-  "DEFAULT_KRW_USD_RATE": 1530.15,
-  "__MEMO__1": "BTC ETH 파생형 너무 많아서 고정 + 중국어 포함 모든 언어 티커 대응",
-  "__MEMO__2": "----------------------------------------------------------",
-  "EXCLUSION_LIST": ["BTCDOM", "WBTC", "ALL", "COIN", "EUR"],
-  "HARDCODE_VERIFY_SKIP_LIST": ["币安人生", "我踏马来了", "龙虾"],
-  "NOTE_MAP": {
-    "币安人生": "bianrensheng",
-    "我踏马来了": "wotamalaile",
-    "龙虾": "LONGXIA(lobster)"
-  },
-  "PAST_GAP_RECOVERY_MAP": {
-    "AIA": "BINANCE"
-  },
-  "SPECIAL_SYMBOL_MAP": {},
-  "MANUAL_SUPPLY_MAP": {},
-  "SYMBOL_TO_ID_MAP": {
-    "BTC": "1",
-    "USDT": "825",
-    "ETH": "1027",
-    "FCT2": "4953",
-    "FXS": "6953",
-    "DODOX": "7224",
-    "RAYSOL": "8526",
-    "BABYDOGE": "10407",
-    "RONIN": "14101",
-    "QUICK": "19966",
-    "LUNA2": "20314",
-    "VELODROME": "20435",
-    "WBETH": "24760",
-    "RATS": "28452",
-    "GAME2": "31246",
-    "MOVE": "32452",
-    "USDS": "33039",
-    "ACT": "33566",
-    "AVAAI": "34116",
-    "BROCCOLI714": "35749",
-    "BROCCOLIF3B": "35753",
-    "PUMPBTC": "36166",
-    "LIGHT": "38506",
-    "4": "38557",
-    "币安人生": "38590",
-    "SPORTFUN": "38647",
-    "我踏马来了": "39322",
-    "龙虾": "39671",
-    "SAMSUNG": "39503",
-    "HYUNDAI": "39573",
-    "SKHYNIX": "39500"
-  },
-  "_COMMENT_DUPLICATED_LIST": {
-    "💡 [매칭 룰] 바이낸스 또는 업비트": "",
-    "둘 중 하나라도 타 거래소(빗썸/바이비트) 티커명과 일치하거나,": "",
-    "여기에 명시된 UID가 일치하면 시세 및 뱃지가 자동으로 도킹됩니다!": ""
-  },
-  "DUPLICATED_LIST": {
-    "AMP(Amp)_binance": ["6945", "", "AMP", "binance"],
-    "AMP(Amp)_upbit": ["6945", "", "AMP2", "upbit"],
-    "BTT(BitTorrent)_upbit": ["16086", "TRX", "BTT", "upbit"],
-    "BTTC(BitTorrent)_binance": ["16086", "TRX", "BTTC", "binance"],
-    "BEAM(Beam)_upbit": ["28298", "ETH", "BEAM", "upbit"],
-    "BEAMX(Beam)_binance": ["28298", "ETH", "BEAMX", "binance"],
-    "BOB(BTC)_binance": ["38970", "", "BOB", "binance"],
-    "BOB(BTC)_bithumb ": ["38970", "", "BOB", "bithumb"],
-    "BOB(BNB)_binance": ["34422", "", "1000000BOB", "binance"],
-    "MET(Meteora)_binance": ["38353", "SOL", "MET", "binance"],
-    "MET(Meteora)_upbit": ["38353", "SOL", "MET2", "upbit"],
-    "RAYSOL(Raydium)_binance": ["8526", "SOL", "RAYSOL", "binance"],
-    "RAY(Raydium)_upbit": ["8526", "SOL", "RAY", "upbit"],
-    "EDGE(edgeX)_binance": ["39720", "", "EDGE", "binance"],
-    "EDGE(edgeX)_bybit": ["39720", "", "EDGE", "bybit"],
-    "EDGE(edgeX)_bithumb": ["39720", "", "EDGEX", "bithumb"],
-    "EDGE(Definitive)_upbit": ["36288", "", "EDGE", "upbit"],
-    "EDGE(Definitive)_bithumb": ["36288", "", "EDGE", "bithumb"],
-    "META(Facebook)_binance_stock": ["39513", "", "META", "binance_stock"],
-    "META(Metadium)_upbit": ["3418", "", "META", "upbit"],
-    "META(Metadium)_bithumb": ["3418", "", "META", "bithumb"],
-    "UP(Superform)_upbit": ["39552", "", "UP2", "upbit"],
-    "UP(Superform)_bithumb": ["39552", "", "UP", "bithumb"],
-    "PROS(Pharos)_binance": ["39682", "", "PHAROS", "binance"],
-    "PROS(Pharos)_upbit": ["39682", "", "PROS", "upbit"],
-    "AI(Sleepless)_binance": ["28846", "", "AI", "binance"],
-    "AI(Gensyn)_binance": ["39883", "", "AIGENSYN", "binance"],
-    "AI(Gensyn)_upbit": ["39883", "", "AI", "upbit"],
-    "AI(Gensyn)_bithumb": ["39883", "", "AI", "bithumb"],
-    "Data(Story)_binance": ["35626", "", "DATAIP", "binance"],
-    "Data(Story)_upbit": ["35626", "", "DATA", "upbit"],
-    "Data(Story)_bithumb": ["35626", "", "DATA", "bithumb"],
-    "CAT(Simon)_binance": ["32724", "", "1000CAT", "binance"],
-    "CAT(Simon)_bithumb": ["32724", "", "CAT", "bithumb"],
-    "CAT(Caterpillar)_binance_stock": ["40683", "", "CAT", "binance_stock"]
-  },
-  "TICKER_DATA": {
-    "0G": ["38337", null, "0G", "0G", "COIN"],
-    "1INCH": ["8104", null, "1inch", "1INCH", "COIN"],
-    "2Z": ["38515", null, "DoubleZero", "2Z", "COIN"],
-    "4": ["38557", null, "4", "4", "COIN"],
-    "A": ["36462", null, "Vaulta", "A", "COIN"],
-    "AAOI(STOCK)": ["40067", null, "AAOI (Derivatives)", "AAOI", "STOCK"],
-    "AAPL(STOCK)": ["39624", null, "AAPL (Derivatives)", "AAPL", "STOCK"],
-    "AAVE": ["7278", null, "Aave", "AAVE", "COIN"],
-    "ACE": ["28674", null, "Fusionist", "ACE", "COIN"],
-    "ACH": ["6958", null, "Alchemy Pay", "ACH", "COIN"],
-    "ACM": ["8538", null, "AC Milan Fan Token", "ACM", "COIN"],
-    "ACT": ["33566", null, "Act I : The AI Prophecy", "ACT", "COIN"],
-    "ACU": ["36492", null, "Acurast", "ACU", "COIN"],
-    "ACX": ["22620", null, "Across Protocol", "ACX", "COIN"],
-    "ADA": ["2010", null, "Cardano", "ADA", "COIN"],
-    "ADBE(STOCK)": ["40115", null, "ADBE (Derivatives)", "ADBE", "STOCK"],
-    "ADX": ["1768", null, "heyAura", "ADX", "COIN"],
-    "AERGO": ["3637", null, "Aergo", "AERGO", "COIN"],
-    "AERO": ["29270", null, "Aerodrome Finance", "AERO", "COIN"],
-    "AEUR": ["28596", null, "Anchored Coins AEUR", "AEUR", "COIN"],
-    "AEVO": ["29676", null, "Aevo", "AEVO", "COIN"],
-    "AGLD": ["11568", null, "Adventure Gold", "AGLD", "COIN"],
-    "AGT": ["36195", null, "Alaya Governance Token", "AGT", "COIN"],
-    "AHT": ["6641", "AHT", "AhaToken", "AHT", "COIN"],
-    "AI(Gensyn)": ["39883", null, "Gensyn", "AIGENSYN", "COIN"],
-    "AI(Sleepless)": ["39883", null, "Sleepless", "AI", "COIN"],
-    "AIA": ["38430", null, "DeAgentAI", "AIA", "COIN"],
-    "AIN": ["36770", null, "Infinity Ground", "AIN", "COIN"],
-    "AIO": ["37562", null, "OLAXBT", "AIO", "COIN"],
-    "AIOT": ["36319", null, "OKZOO", "AIOT", "COIN"],
-    "AIXBT": ["34103", null, "aixbt", "AIXBT", "COIN"],
-    "AKE": ["38127", null, "AKEDO", "AKE", "COIN"],
-    "AKT": ["7431", null, "Akash Network", "AKT", "COIN"],
-    "ALAB(STOCK)": ["40517", null, "ALAB (Derivatives)", "ALAB", "STOCK"],
-    "ALCH": ["34880", null, "Alchemist AI", "ALCH", "COIN"],
-    "ALCX": ["8613", null, "Alchemix", "ALCX", "COIN"],
-    "ALGO": ["4030", null, "Algorand", "ALGO", "COIN"],
-    "ALICE": ["8766", null, "MyNeighborAlice", "ALICE", "COIN"],
-    "ALLO": ["38908", null, "Allora", "ALLO", "COIN"],
-    "ALPINE": ["18112", null, "Alpine F1 Team Fan Token", "ALPINE", "COIN"],
-    "ALT": ["29073", null, "Altlayer", "ALT", "COIN"],
-    "AMAT(STOCK)": ["40087", null, "AMAT (Derivatives)", "AMAT", "STOCK"],
-    "AMDB(STOCK)": ["40538", null, "AMDB (Derivatives)", "AMDB", "STOCK"],
-    "AMP(Amp)": ["6945", null, "Amp", "AMP", "COIN"],
-    "AMZN(STOCK)": ["39619", null, "AMZN (Derivatives)", "AMZN", "STOCK"],
-    "ANIME": ["35319", null, "Animecoin", "ANIME", "COIN"],
-    "ANKR": ["3783", null, "Ankr", "ANKR", "COIN"],
-    "ANTHROPIC(STOCK)": [
-      "37693",
-      null,
-      "ANTHROPIC (Derivatives)",
-      "ANTHROPIC",
-      "STOCK"
+    "CHAIN_LOGO_MAP": {
+        "ETH": "https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png",
+        "BNB": "https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png",
+        "SOL": "https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png",
+        "SUI": "https://s2.coinmarketcap.com/static/img/coins/64x64/20947.png"
+    },
+    "DEFAULT_KRW_USD_RATE": 1512.88,
+    "__MEMO__1": "BTC ETH 파생형 너무 많아서 고정 + 중국어 포함 모든 언어 티커 대응",
+    "__MEMO__2": "----------------------------------------------------------",
+    "EXCLUSION_LIST": [
+        "BTCDOM",
+        "WBTC",
+        "ALL",
+        "COIN",
+        "EUR"
     ],
-    "APE": ["18876", null, "ApeCoin", "APE", "COIN"],
-    "API3": ["7737", null, "API3", "API3", "COIN"],
-    "APR": ["38569", null, "aPriori", "APR", "COIN"],
-    "APT": ["21794", null, "Aptos", "APT", "COIN"],
-    "AQT": ["7460", "ETH", "Alpha Quark Token", "AQT", "COIN"],
-    "AR": ["5632", null, "Arweave", "AR", "COIN"],
-    "ARB": ["11841", null, "Arbitrum", "ARB", "COIN"],
-    "ARC": ["34926", null, "AI Rig Complex", "ARC", "COIN"],
-    "ARDR": ["1320", null, "Ardor", "ARDR", "COIN"],
-    "ARIA": ["38102", null, "AriaAI", "ARIA", "COIN"],
-    "ARK": ["1586", null, "Ark", "ARK", "COIN"],
-    "ARKM": ["27565", null, "Arkham", "ARKM", "COIN"],
-    "ARM(STOCK)": ["39994", null, "ARM (Derivatives)", "ARM", "STOCK"],
-    "ARPA": ["4039", null, "ARPA", "ARPA", "COIN"],
-    "ARX": ["39970", null, "Arcium", "ARX", "COIN"],
-    "ASML(STOCK)": ["39677", null, "ASML (Derivatives)", "ASML", "STOCK"],
-    "ASR": ["5229", null, "AS Roma Fan Token", "ASR", "COIN"],
-    "ASTER": ["36341", null, "Aster", "ASTER", "COIN"],
-    "ASTR": ["12885", null, "Astar", "ASTR", "COIN"],
-    "ASTS(STOCK)": ["40108", null, "ASTS (Derivatives)", "ASTS", "STOCK"],
-    "AT": ["38757", null, "APRO", "AT", "COIN"],
-    "ATH": ["30083", null, "Aethir", "ATH", "COIN"],
-    "ATM": ["5227", null, "Atletico De Madrid Fan Token", "ATM", "COIN"],
-    "ATOM": ["3794", null, "Cosmos", "ATOM", "COIN"],
-    "AUCTION": ["8602", null, "Bounce Token", "AUCTION", "COIN"],
-    "AUDIO": ["7455", null, "Audius", "AUDIO", "COIN"],
-    "AVA": ["34116", null, "AVA", "AVA", "COIN"],
-    "AVAAI": ["34116", null, "AVA", "AVAAI", "COIN"],
-    "AVAX": ["5805", null, "Avalanche", "AVAX", "COIN"],
-    "AVGO(STOCK)": ["39871", null, "AVGO (Derivatives)", "AVGO", "STOCK"],
-    "AVNT": ["38299", null, "Avantis", "AVNT", "COIN"],
-    "AWE": ["4006", null, "AWE", "AWE", "COIN"],
-    "AXL": ["17799", null, "Axelar", "AXL", "COIN"],
-    "AXS": ["6783", null, "Axie Infinity", "AXS", "COIN"],
-    "AXTI(STOCK)": ["40204", null, "AXTI (Derivatives)", "AXTI", "STOCK"],
-    "AZTEC": ["39521", null, "Aztec", "AZTEC", "COIN"],
-    "B": ["36532", null, "BUILDon", "B", "COIN"],
-    "B2": ["36352", null, "BSquared Network", "B2", "COIN"],
-    "B3": ["35690", "-", "B3 (Base)", "B3", "COIN"],
-    "BABA(STOCK)": ["39486", null, "BABA (Derivatives)", "BABA", "STOCK"],
-    "BABY": ["32198", null, "Babylon", "BABY", "COIN"],
-    "BABYDOGE": ["10407", null, "Baby Doge Coin", "BABYDOGE", "COIN"],
-    "BAN": ["33881", null, "Comedian", "BAN", "COIN"],
-    "BANANA": ["28066", null, "Banana Gun", "BANANA", "COIN"],
-    "BANANAS31": ["34118", null, "Banana For Scale", "BANANAS31", "COIN"],
-    "BAND": ["4679", null, "Band", "BAND", "COIN"],
-    "BANK": ["36296", null, "Lorenzo Protocol", "BANK", "COIN"],
-    "BAR": ["5225", null, "FC Barcelona Fan Token", "BAR", "COIN"],
-    "BARD": ["38408", null, "Lombard", "BARD", "COIN"],
-    "BAS": ["37387", null, "BNB Attestation Service", "BAS", "COIN"],
-    "BASED": ["39812", null, "Based", "BASED", "COIN"],
-    "BAT": ["1697", null, "Basic Attention Token", "BAT", "COIN"],
-    "BB": ["30746", null, "BounceBit", "BB", "COIN"],
-    "BCH": ["1831", null, "Bitcoin Cash", "BCH", "COIN"],
-    "BE(STOCK)": ["40064", null, "BE (Derivatives)", "BE", "STOCK"],
-    "BEAM(Beam)": ["28298", "ETH", "Beam", "BEAM", "COIN"],
-    "BEAMX(Beam)": ["28298", null, "Beam", "BEAMX", "COIN"],
-    "BEAT": ["38837", null, "Audiera", "BEAT", "COIN"],
-    "BEL": ["6928", null, "Bella Protocol", "BEL", "COIN"],
-    "BERA": ["24647", null, "Berachain", "BERA", "COIN"],
-    "BFUSD": ["37760", null, "BFUSD", "BFUSD", "COIN"],
-    "BICO": ["9543", null, "Biconomy", "BICO", "COIN"],
-    "BIGTIME": ["28230", null, "Big Time", "BIGTIME", "COIN"],
-    "BILL": ["39545", null, "Billions Network", "BILL", "COIN"],
-    "BIO": ["34812", null, "Bio Protocol", "BIO", "COIN"],
-    "BIRB": ["19765", null, "Moonbirds", "BIRB", "COIN"],
-    "BLAST": ["28480", "BLAST", "Blast", "BLAST", "COIN"],
-    "BLEND": ["39666", "ETH", "Fluent", "BLEND", "COIN"],
-    "BLESS": ["38466", null, "Bless", "BLESS", "COIN"],
-    "BLUAI": ["38717", null, "Bluwhale", "BLUAI", "COIN"],
-    "BLUR": ["23121", null, "Blur", "BLUR", "COIN"],
-    "BMNR(STOCK)": ["39670", null, "BMNR (Derivatives)", "BMNR", "STOCK"],
-    "BMT": ["35214", null, "Bubblemaps", "BMT", "COIN"],
-    "BNB": ["1839", null, "BNB", "BNB", "COIN"],
-    "BNSOL": ["32882", null, "Binance Staked SOL", "BNSOL", "COIN"],
-    "BNT": ["1727", null, "Bancor", "BNT", "COIN"],
-    "BOB(BNB)": ["38970", null, "BNB", "BOB", "COIN"],
-    "BOME": ["29870", null, "BOOK OF MEME", "BOME", "COIN"],
-    "BONK": ["23095", null, "Bonk", "BONK", "COIN"],
-    "BORA": ["3801", "KAIA", "BORA", "BORA", "COIN"],
-    "BOUNTY": ["2866", "ARB", "Chainbounty", "BOUNTY", "COIN"],
-    "BR": ["36063", null, "Bedrock", "BR", "COIN"],
-    "BRETT": ["29743", null, "Brett (Based)", "BRETT", "COIN"],
-    "BREV": ["39159", null, "Brevis", "BREV", "COIN"],
-    "BRKB(STOCK)": ["40016", null, "BRKB (Derivatives)", "BRKB", "STOCK"],
-    "BROCCOLI714": ["35749", null, "CZ's Dog", "BROCCOLI714", "COIN"],
-    "BROCCOLIF3B": [
-      "35753",
-      null,
-      "Broccoli (firstbroccoli.com)",
-      "BROCCOLIF3B",
-      "COIN"
+    "HARDCODE_VERIFY_SKIP_LIST": [
+        "币安人生",
+        "我踏马来了",
+        "龙虾"
     ],
-    "BSB": ["38889", null, "Block Street", "BSB", "COIN"],
-    "BSP(STOCK)": ["40677", null, "BSP (Derivatives)", "BSP", "STOCK"],
-    "BSV": ["3602", null, "Bitcoin SV", "BSV", "COIN"],
-    "BTC": ["1", null, "Bitcoin", "BTC", "COIN"],
-    "BTR": ["36277", null, "Bitlayer", "BTR", "COIN"],
-    "BTT(BitTorrent)": ["16086", "ETH", "BitTorrent", "BTT", "COIN"],
-    "BTTC(BitTorrent)": ["16086", null, "BitTorrent", "BTTC", "COIN"],
-    "BTW": ["39158", null, "Bitway", "BTW", "COIN"],
-    "BULLA": ["36769", null, "Bulla", "BULLA", "COIN"],
-    "BX(STOCK)": ["39947", null, "BX (Derivatives)", "BX", "STOCK"],
-    "BZ(STOCK)": ["39804", null, "BZ (Derivatives)", "BZ", "STOCK"],
-    "C": ["37340", null, "Chainbase", "C", "COIN"],
-    "C98": ["10903", null, "Coin98", "C98", "COIN"],
-    "CAKE": ["7186", null, "PancakeSwap", "CAKE", "COIN"],
-    "CAP": ["40531", null, "Cap", "CAP", "COIN"],
-    "CARV": ["33372", null, "CARV", "CARV", "COIN"],
-    "CAT(Caterpillar)": ["40683", null, "Caterpillar", "CAT", "STOCK"],
-    "CAT(Simon)": ["32724", null, "Simon", "CAT", "COIN"],
-    "CATI": ["32966", null, "Catizen", "CATI", "COIN"],
-    "CBK": ["8107", "ETH", "Cobak Token", "CBK", "COIN"],
-    "CBRS(STOCK)": ["39931", null, "CBRS (Derivatives)", "CBRS", "STOCK"],
-    "CC": ["37263", null, "Canton", "CC", "COIN"],
-    "CELO": ["5567", null, "Celo", "CELO", "COIN"],
-    "CELR": ["3814", null, "Celer Network", "CELR", "COIN"],
-    "CETUS": ["25114", null, "Cetus Protocol", "CETUS", "COIN"],
-    "CFG": ["6748", null, "Centrifuge", "CFG", "COIN"],
-    "CFX": ["7334", null, "Conflux", "CFX", "COIN"],
-    "CGPT": ["23756", null, "ChainGPT", "CGPT", "COIN"],
-    "CHEEMS": ["33280", null, "Cheems (cheems.pet)", "CHEEMS", "COIN"],
-    "CHILLGUY": ["34125", null, "Just a chill guy", "CHILLGUY", "COIN"],
-    "CHIP": ["39870", null, "USD.AI", "CHIP", "COIN"],
-    "CHR": ["3978", null, "Chromia", "CHR", "COIN"],
-    "CHZ": ["4066", null, "Chiliz", "CHZ", "COIN"],
-    "CIEN(STOCK)": ["40227", null, "CIEN (Derivatives)", "CIEN", "STOCK"],
-    "CITY": ["10049", null, "Manchester City Fan Token", "CITY", "COIN"],
-    "CKB": ["4948", null, "Nervos Network", "CKB", "COIN"],
-    "CL(STOCK)": ["39487", null, "CL (Derivatives)", "CL", "STOCK"],
-    "CLANKER": ["34285", null, "tokenbot", "CLANKER", "COIN"],
-    "CLO": ["38634", null, "Yei Finance", "CLO", "COIN"],
-    "COAI": ["38489", null, "ChainOpera AI", "COAI", "COIN"],
-    "COHR(STOCK)": ["39995", null, "COHR (Derivatives)", "COHR", "STOCK"],
-    "COLLECT": ["39170", null, "Collect on Fanable", "COLLECT", "COIN"],
-    "COMP": ["5692", null, "Compound", "COMP", "COIN"],
-    "COOKIE": ["31838", null, "Cookie DAO", "COOKIE", "COIN"],
-    "COPPER(STOCK)": ["36847", null, "COPPER (Derivatives)", "COPPER", "STOCK"],
-    "COST(STOCK)": ["39505", null, "COST (Derivatives)", "COST", "STOCK"],
-    "COTI": ["3992", null, "COTI", "COTI", "COIN"],
-    "COW": ["19269", null, "CoW Protocol", "COW", "COIN"],
-    "CPOOL": ["12573", "ETH", "Clearpool", "CPOOL", "COIN"],
-    "CRCLB(STOCK)": ["40213", null, "CRCLB (Derivatives)", "CRCLB", "STOCK"],
-    "CRDO(STOCK)": ["40203", null, "CRDO (Derivatives)", "CRDO", "STOCK"],
-    "CRM(STOCK)": ["40116", null, "CRM (Derivatives)", "CRM", "STOCK"],
-    "CRO": ["3635", "CRO", "Cronos", "CRO", "COIN"],
-    "CROSS": ["37166", null, "CROSS", "CROSS", "COIN"],
-    "CRV": ["6538", null, "Curve DAO Token", "CRV", "COIN"],
-    "CRWD(STOCK)": ["40065", null, "CRWD (Derivatives)", "CRWD", "STOCK"],
-    "CRWV(STOCK)": ["39497", null, "CRWV (Derivatives)", "CRWV", "STOCK"],
-    "CSCO(STOCK)": ["39631", null, "CSCO (Derivatives)", "CSCO", "STOCK"],
-    "CTC": ["5198", "CTC", "Creditcoin", "CTC", "COIN"],
-    "CTK": ["4807", null, "Shentu", "CTK", "COIN"],
-    "CTR": ["39916", null, "Citrea", "CTR", "COIN"],
-    "CTSI": ["5444", null, "Cartesi", "CTSI", "COIN"],
-    "CVC": ["1816", null, "Civic", "CVC", "COIN"],
-    "CVX": ["9903", null, "Convex Finance", "CVX", "COIN"],
-    "CYBER": ["24781", null, "Cyber", "CYBER", "COIN"],
-    "CYS": ["39071", null, "Cysic", "CYS", "COIN"],
-    "DASH": ["131", null, "Dash", "DASH", "COIN"],
-    "DCR": ["1168", null, "Decred", "DCR", "COIN"],
-    "DEEP": ["33391", null, "DeepBook Protocol", "DEEP", "COIN"],
-    "DELL(STOCK)": ["40088", null, "DELL (Derivatives)", "DELL", "STOCK"],
-    "DEXE": ["7326", null, "DeXe", "DEXE", "COIN"],
-    "DGB": ["109", null, "DigiByte", "DGB", "COIN"],
-    "DIA": ["6138", null, "DIA", "DIA", "COIN"],
-    "DIS(STOCK)": ["39998", null, "DIS (Derivatives)", "DIS", "STOCK"],
-    "DKA": ["5908", "ETH", "dKargo", "DKA", "COIN"],
-    "DKNG(STOCK)": ["40222", null, "DKNG (Derivatives)", "DKNG", "STOCK"],
-    "DODO": ["7224", null, "DODO", "DODO", "COIN"],
-    "DODOX": ["7224", null, "DODO", "DODOX", "COIN"],
-    "DOGE": ["74", null, "Dogecoin", "DOGE", "COIN"],
-    "DOGS": ["32698", null, "DOGS", "DOGS", "COIN"],
-    "DOLO": ["35929", null, "Dolomite", "DOLO", "COIN"],
-    "DOOD": ["35747", null, "Doodles", "DOOD", "COIN"],
-    "DOT": ["6636", null, "Polkadot", "DOT", "COIN"],
-    "DRAM(STOCK)": ["39945", null, "DRAM (Derivatives)", "DRAM", "STOCK"],
-    "DRIFT": ["31278", null, "Drift", "DRIFT", "COIN"],
-    "DUSK": ["4092", null, "Dusk", "DUSK", "COIN"],
-    "DYDX": ["28324", null, "dYdX", "DYDX", "COIN"],
-    "DYM": ["28932", null, "Dymension", "DYM", "COIN"],
-    "Data(Story)": ["35626", null, "Story", "DATAIP", "COIN"],
-    "EBAY(STOCK)": ["39953", null, "EBAY (Derivatives)", "EBAY", "STOCK"],
-    "EDEN": ["38513", null, "OpenEden", "EDEN", "COIN"],
-    "EDGE(edgeX)": ["36288", null, "edgeX", "EDGE", "COIN"],
-    "EDU": ["24613", null, "Open Campus", "EDU", "COIN"],
-    "EGLD": ["6892", null, "MultiversX", "EGLD", "COIN"],
-    "EIGEN": ["30494", null, "EigenCloud", "EIGEN", "COIN"],
-    "ELF": ["2299", "ELF", "aelf", "ELF", "COIN"],
-    "ELSA": ["39387", null, "HeyElsa", "ELSA", "COIN"],
-    "ENA": ["30171", null, "Ethena", "ENA", "COIN"],
-    "ENJ": ["2130", null, "Enjin Coin", "ENJ", "COIN"],
-    "ENS": ["13855", null, "Ethereum Name Service", "ENS", "COIN"],
-    "ENSO": ["38668", null, "Enso", "ENSO", "COIN"],
-    "EPIC": ["8615", null, "Epic Chain", "EPIC", "COIN"],
-    "ERA": ["37374", null, "Caldera", "ERA", "COIN"],
-    "ESP": ["39548", null, "Espresso", "ESP", "COIN"],
-    "ESPORTS": ["37414", null, "Yooldo", "ESPORTS", "COIN"],
-    "ETC": ["1321", null, "Ethereum Classic", "ETC", "COIN"],
-    "ETH": ["1027", null, "Ethereum", "ETH", "COIN"],
-    "ETHFI": ["29814", null, "ether.fi", "ETHFI", "COIN"],
-    "ETHW": ["21296", null, "EthereumPoW", "ETHW", "COIN"],
-    "EUL": ["14280", null, "Euler", "EUL", "COIN"],
-    "EURI": ["32644", null, "Eurite", "EURI", "COIN"],
-    "EVAA": ["38376", null, "EVAA Protocol", "EVAA", "COIN"],
-    "EWJ(STOCK)": ["39685", null, "EWJ (Derivatives)", "EWJ", "STOCK"],
-    "EWT(STOCK)": ["40042", null, "EWT (Derivatives)", "EWT", "STOCK"],
-    "EWYB(STOCK)": ["40539", null, "EWYB (Derivatives)", "EWYB", "STOCK"],
-    "EWZ(STOCK)": ["39949", null, "EWZ (Derivatives)", "EWZ", "STOCK"],
-    "F": ["34297", null, "SynFutures", "F", "COIN"],
-    "FARTCOIN": ["33597", null, "Fartcoin", "FARTCOIN", "COIN"],
-    "FCT2": ["4953", "ETH", "FirmaChain", "FCT2", "COIN"],
-    "FDUSD": ["26081", null, "First Digital USD", "FDUSD", "COIN"],
-    "FET": [
-      "3773",
-      null,
-      "Artificial Superintelligence Alliance",
-      "FET",
-      "COIN"
-    ],
-    "FF": ["38482", null, "Falcon Finance", "FF", "COIN"],
-    "FHE": ["36153", null, "Mind Network", "FHE", "COIN"],
-    "FIDA": ["7978", null, "Bonfida", "FIDA", "COIN"],
-    "FIGHT": ["38963", null, "FIGHT", "FIGHT", "COIN"],
-    "FIL": ["2280", null, "Filecoin", "FIL", "COIN"],
-    "FLEX(STOCK)": ["40681", null, "FLEX (Derivatives)", "FLEX", "STOCK"],
-    "FLNC(STOCK)": ["40007", null, "FLNC (Derivatives)", "FLNC", "STOCK"],
-    "FLOCK": ["34987", null, "FLock.io", "FLOCK", "COIN"],
-    "FLOKI": ["10804", null, "FLOKI", "FLOKI", "COIN"],
-    "FLOW": ["4558", null, "Flow", "FLOW", "COIN"],
-    "FLUID": ["10508", null, "Fluid", "FLUID", "COIN"],
-    "FLUX": ["3029", null, "Flux", "FLUX", "COIN"],
-    "FOGO": ["38356", null, "Fogo", "FOGO", "COIN"],
-    "FOLKS": ["38864", null, "Folks Finance", "FOLKS", "COIN"],
-    "FORM": ["23635", null, "Four", "FORM", "COIN"],
-    "FRAX": ["6952", null, "Legacy Frax Dollar", "FRAX", "COIN"],
-    "FTT": ["4195", null, "FTX Token", "FTT", "COIN"],
-    "G": ["32120", null, "Gravity", "G", "COIN"],
-    "GALA": ["7080", null, "Gala", "GALA", "COIN"],
-    "GAME2": ["31246", "ETH", "GameBuild", "GAME2", "COIN"],
-    "GAS": ["1785", null, "Gas", "GAS", "COIN"],
-    "GENIUS": ["39841", null, "Genius Terminal", "GENIUS", "COIN"],
-    "GIGGLE": ["38470", null, "Giggle Fund", "GIGGLE", "COIN"],
-    "GLM": ["1455", null, "Golem", "GLM", "COIN"],
-    "GLMR": ["6836", null, "Moonbeam", "GLMR", "COIN"],
-    "GLW(STOCK)": ["40010", null, "GLW (Derivatives)", "GLW", "STOCK"],
-    "GME(STOCK)": ["39928", null, "GME (Derivatives)", "GME", "STOCK"],
-    "GMT": ["18069", null, "GMT", "GMT", "COIN"],
-    "GMX": ["11857", null, "GMX", "GMX", "COIN"],
-    "GNO": ["1659", null, "Gnosis", "GNO", "COIN"],
-    "GNS": ["13663", null, "Gains Network", "GNS", "COIN"],
-    "GOAT": ["33440", null, "Goatseus Maximus", "GOAT", "COIN"],
-    "GOOGL(STOCK)": ["39470", null, "GOOGL (Derivatives)", "GOOGL", "STOCK"],
-    "GPS": ["35268", null, "GoPlus Security", "GPS", "COIN"],
-    "GRAM": ["11419", null, "Gram (prev. Toncoin)", "GRAM", "COIN"],
-    "GRASS": ["32956", null, "Grass", "GRASS", "COIN"],
-    "GRIFFAIN": ["34792", null, "GRIFFAIN", "GRIFFAIN", "COIN"],
-    "GRT": ["6719", null, "The Graph", "GRT", "COIN"],
-    "GTC": ["10052", null, "Gitcoin", "GTC", "COIN"],
-    "GUA": ["38984", null, "SUPERFORTUNE", "GUA", "COIN"],
-    "GUN": ["36156", null, "GUNZ", "GUN", "COIN"],
-    "GWEI": ["39379", null, "ETHGas", "GWEI", "COIN"],
-    "H": ["36922", null, "Humanity", "H", "COIN"],
-    "HAEDAL": ["36369", null, "Haedal Protocol", "HAEDAL", "COIN"],
-    "HANA": ["38468", null, "Hana Network", "HANA", "COIN"],
-    "HBAR": ["4642", null, "Hedera", "HBAR", "COIN"],
-    "HD(STOCK)": ["39996", null, "HD (Derivatives)", "HD", "STOCK"],
-    "HEI": ["35724", null, "Heima", "HEI", "COIN"],
-    "HEMI": ["38159", null, "Hemi", "HEMI", "COIN"],
-    "HFT": ["22461", null, "Hashflow", "HFT", "COIN"],
-    "HIMS(STOCK)": ["40113", null, "HIMS (Derivatives)", "HIMS", "STOCK"],
-    "HIVE": ["5370", null, "Hive", "HIVE", "COIN"],
-    "HMSTR": ["32195", null, "Hamster Kombat", "HMSTR", "COIN"],
-    "HOLO": ["38309", null, "Holoworld AI", "HOLO", "COIN"],
-    "HOME": ["36133", null, "Defi App", "HOME", "COIN"],
-    "HOOD(STOCK)": ["39478", null, "HOOD (Derivatives)", "HOOD", "STOCK"],
-    "HOT": ["2682", null, "Holo", "HOT", "COIN"],
-    "HP": ["36556", "HP", "Hippo Protocol", "HP", "COIN"],
-    "HPE(STOCK)": ["40112", null, "HPE (Derivatives)", "HPE", "STOCK"],
-    "HUMA": ["36576", null, "Huma Finance", "HUMA", "COIN"],
-    "HUNT": ["5380", "ETH", "Hunt Town", "HUNT", "COIN"],
-    "HYPE": ["32196", null, "Hyperliquid", "HYPE", "COIN"],
-    "HYPER": ["36281", null, "Hyperlane", "HYPER", "COIN"],
-    "HYUNDAI(STOCK)": [
-      "39573",
-      null,
-      "HYUNDAI (Derivatives)",
-      "HYUNDAI",
-      "STOCK"
-    ],
-    "IBM(STOCK)": ["39634", null, "IBM (Derivatives)", "IBM", "STOCK"],
-    "ICNT": ["37070", null, "Impossible Cloud Network", "ICNT", "COIN"],
-    "ICP": ["8916", null, "Internet Computer", "ICP", "COIN"],
-    "ICX": ["2099", null, "ICON", "ICX", "COIN"],
-    "ID": ["21846", null, "SPACE ID", "ID", "COIN"],
-    "IDOL": ["36775", null, "MEET48", "IDOL", "COIN"],
-    "ILV": ["8719", null, "Illuvium", "ILV", "COIN"],
-    "IMX": ["10603", null, "Immutable", "IMX", "COIN"],
-    "IN": ["37609", null, "INFINIT", "IN", "COIN"],
-    "INIT": ["33120", null, "Initia", "INIT", "COIN"],
-    "INJ": ["7226", null, "Injective", "INJ", "COIN"],
-    "INTCB(STOCK)": ["40540", null, "INTCB (Derivatives)", "INTCB", "STOCK"],
-    "INX": ["39461", null, "Infinex", "INX", "COIN"],
-    "IO": ["29835", null, "io.net", "IO", "COIN"],
-    "IOST": ["2405", null, "IOST", "IOST", "COIN"],
-    "IOTA": ["1720", null, "IOTA", "IOTA", "COIN"],
-    "IOTX": ["2777", null, "IoTeX", "IOTX", "COIN"],
-    "IP": ["36200", "-", "TRUMP IP", "IP", "COIN"],
-    "IQ": ["2930", null, "IQ", "IQ", "COIN"],
-    "IREN(STOCK)": ["40117", null, "IREN (Derivatives)", "IREN", "STOCK"],
-    "IRYS": ["38978", null, "Irys", "IRYS", "COIN"],
-    "IWM(STOCK)": ["39493", null, "IWM (Derivatives)", "IWM", "STOCK"],
-    "JASMY": ["8425", null, "JasmyCoin", "JASMY", "COIN"],
-    "JCT": ["38909", null, "Janction", "JCT", "COIN"],
-    "JELLYJELLY": ["35537", null, "Jelly-My-Jelly", "JELLYJELLY", "COIN"],
-    "JOE": ["11396", null, "JOE", "JOE", "COIN"],
-    "JPM(STOCK)": ["40013", null, "JPM (Derivatives)", "JPM", "STOCK"],
-    "JST": ["5488", null, "JUST", "JST", "COIN"],
-    "JTO": ["28541", null, "Jito", "JTO", "COIN"],
-    "JUP": ["29210", null, "Jupiter", "JUP", "COIN"],
-    "JUV": ["5224", null, "Juventus Fan Token", "JUV", "COIN"],
-    "KAIA": ["32880", null, "Kaia", "KAIA", "COIN"],
-    "KAITO": ["35763", null, "KAITO", "KAITO", "COIN"],
-    "KAS": ["20396", null, "Kaspa", "KAS", "COIN"],
-    "KAT": ["38769", null, "Katana", "KAT", "COIN"],
-    "KAVA": ["4846", null, "Kava", "KAVA", "COIN"],
-    "KERNEL": ["36180", null, "KernelDAO", "KERNEL", "COIN"],
-    "KGEN": ["38554", null, "KGeN", "KGEN", "COIN"],
-    "KGST": ["39162", null, "KGST", "KGST", "COIN"],
-    "KITE": ["38828", null, "Kite", "KITE", "COIN"],
-    "KLAC(STOCK)": ["40548", null, "KLAC (Derivatives)", "KLAC", "STOCK"],
-    "KMNO": ["30986", null, "Kamino", "KMNO", "COIN"],
-    "KNC": ["9444", null, "Kyber Network Crystal v2", "KNC", "COIN"],
-    "KOMA": ["33405", null, "Koma Inu", "KOMA", "COIN"],
-    "KORU(STOCK)": ["40551", null, "KORU (Derivatives)", "KORU", "STOCK"],
-    "KSM": ["5034", null, "Kusama", "KSM", "COIN"],
-    "KSTR(STOCK)": ["40678", null, "KSTR (Derivatives)", "KSTR", "STOCK"],
-    "LA": ["36510", null, "Lagrange", "LA", "COIN"],
-    "LAB": ["33223", null, "LAB", "LAB", "COIN"],
-    "LAYER": ["35429", null, "Solayer", "LAYER", "COIN"],
-    "LAZIO": ["12687", null, "S.S. Lazio Fan Token", "LAZIO", "COIN"],
-    "LDO": ["8000", null, "Lido DAO", "LDO", "COIN"],
-    "LIGHT": ["38506", null, "Bitlight", "LIGHT", "COIN"],
-    "LINEA": ["27657", null, "Linea", "LINEA", "COIN"],
-    "LINK": ["1975", null, "Chainlink", "LINK", "COIN"],
-    "LISTA": ["21533", null, "Lista DAO", "LISTA", "COIN"],
-    "LIT": ["39125", null, "Lighter", "LIT", "COIN"],
-    "LITEB(STOCK)": ["40591", null, "LITEB (Derivatives)", "LITEB", "STOCK"],
-    "LLY(STOCK)": ["39509", null, "LLY (Derivatives)", "LLY", "STOCK"],
-    "LPT": ["3640", null, "Livepeer", "LPT", "COIN"],
-    "LQTY": ["7429", null, "Liquity", "LQTY", "COIN"],
-    "LRCX(STOCK)": ["40547", null, "LRCX (Derivatives)", "LRCX", "STOCK"],
-    "LSK": ["1214", null, "Lisk", "LSK", "COIN"],
-    "LTC": ["2", null, "Litecoin", "LTC", "COIN"],
-    "LUMIA": ["33439", null, "Lumia", "LUMIA", "COIN"],
-    "LUNA": ["20314", null, "Terra", "LUNA", "COIN"],
-    "LUNA2": ["20314", null, "Terra", "LUNA2", "COIN"],
-    "LUNC": ["4172", null, "Terra Classic", "LUNC", "COIN"],
-    "LYN": ["38561", null, "Everlyn AI", "LYN", "COIN"],
-    "M": ["35491", null, "MemeCore", "M", "COIN"],
-    "MAGIC": ["14783", null, "Treasure", "MAGIC", "COIN"],
-    "MAGMA": ["39121", null, "Magma Finance", "MAGMA", "COIN"],
-    "MANA": ["1966", null, "Decentraland", "MANA", "COIN"],
-    "MANTA": ["13631", null, "Manta Network", "MANTA", "COIN"],
-    "MANTRA": ["39611", null, "MANTRA", "MANTRA", "COIN"],
-    "MASK": ["8536", null, "Mask Network", "MASK", "COIN"],
-    "MAV": ["18037", null, "Maverick Protocol", "MAV", "COIN"],
-    "MAVIA": ["28829", null, "Heroes of Mavia", "MAVIA", "COIN"],
-    "MBL": ["4038", null, "MovieBloc", "MBL", "COIN"],
-    "ME": ["32197", null, "Magic Eden", "ME", "COIN"],
-    "MED": ["2303", "MED", "MediBloc", "MED", "COIN"],
-    "MEGA": ["38770", null, "MegaETH", "MEGA", "COIN"],
-    "MELANIA": ["35347", null, "Official Melania Meme", "MELANIA", "COIN"],
-    "MEME": ["28301", null, "Memecoin", "MEME", "COIN"],
-    "MERL": ["30712", null, "Merlin Chain", "MERL", "COIN"],
-    "MET(Meteora)": ["38353", null, "Meteora", "MET", "COIN"],
-    "META(Metadium)": ["3418", "META", "Metadium", "META", "COIN"],
-    "METAB(STOCK)": ["40592", null, "METAB (Derivatives)", "METAB", "STOCK"],
-    "METIS": ["9640", null, "Metis", "METIS", "COIN"],
-    "MEW": ["30126", null, "cat in a dogs world", "MEW", "COIN"],
-    "MINA": ["8646", null, "Mina", "MINA", "COIN"],
-    "MIRA": ["38495", null, "Mira", "MIRA", "COIN"],
-    "MITO": ["38204", null, "Mitosis", "MITO", "COIN"],
-    "MLK": ["5266", "ARB", "MiL.k", "MLK", "COIN"],
-    "MMT": ["38231", null, "Momentum", "MMT", "COIN"],
-    "MNT": ["27075", "ETH", "Mantle", "MNT", "COIN"],
-    "MOC": ["2915", "ETH", "Moss Coin", "MOC", "COIN"],
-    "MOCA": ["31526", null, "Moca Network", "MOCA", "COIN"],
-    "MOG": ["27659", null, "Mog Coin", "MOG", "COIN"],
-    "MON": ["30495", null, "Monad", "MON", "COIN"],
-    "MOODENG": ["33093", null, "Moo Deng (moodengsol.com)", "MOODENG", "COIN"],
-    "MORPHO": ["34104", null, "Morpho", "MORPHO", "COIN"],
-    "MOVE": ["32452", null, "Movement", "MOVE", "COIN"],
-    "MOVR": ["9285", null, "Moonriver", "MOVR", "COIN"],
-    "MRVL(STOCK)": ["39946", null, "MRVL (Derivatives)", "MRVL", "STOCK"],
-    "MSFTB(STOCK)": ["40589", null, "MSFTB (Derivatives)", "MSFTB", "STOCK"],
-    "MSTRB(STOCK)": ["40536", null, "MSTRB (Derivatives)", "MSTRB", "STOCK"],
-    "MTL": ["1788", null, "Metal DAO", "MTL", "COIN"],
-    "MUB(STOCK)": ["40212", null, "MUB (Derivatives)", "MUB", "STOCK"],
-    "MUBARAK": ["36041", null, "Mubarak", "MUBARAK", "COIN"],
-    "MVL": ["2982", "ETH", "MVL", "MVL", "COIN"],
-    "MVLL(STOCK)": ["40559", null, "MVLL (Derivatives)", "MVLL", "STOCK"],
-    "MYX": ["36410", null, "MYX Finance", "MYX", "COIN"],
-    "NAORIS": ["35114", null, "Naoris Protocol", "NAORIS", "COIN"],
-    "NATGAS(STOCK)": ["39464", null, "NATGAS (Derivatives)", "NATGAS", "STOCK"],
-    "NBIS(STOCK)": ["40021", null, "NBIS (Derivatives)", "NBIS", "STOCK"],
-    "NEAR": ["6535", null, "NEAR Protocol", "NEAR", "COIN"],
-    "NEIRO": ["32521", null, "Neiro", "NEIRO", "COIN"],
-    "NEO": ["1376", null, "Neo", "NEO", "COIN"],
-    "NEWT": ["36861", null, "Newton Protocol", "NEWT", "COIN"],
-    "NEXO": ["2694", null, "Nexo", "NEXO", "COIN"],
-    "NFLX(STOCK)": ["39479", null, "NFLX (Derivatives)", "NFLX", "STOCK"],
-    "NFP": ["28778", null, "NFPrompt", "NFP", "COIN"],
-    "NIGHT": ["39064", null, "Midnight", "NIGHT", "COIN"],
-    "NIL": ["35702", null, "Nillion", "NIL", "COIN"],
-    "NMR": ["1732", null, "Numeraire", "NMR", "COIN"],
-    "NOK(STOCK)": ["40072", null, "NOK (Derivatives)", "NOK", "STOCK"],
-    "NOM": ["38464", null, "Nomina", "NOM", "COIN"],
-    "NOT": ["28850", null, "Notcoin", "NOT", "COIN"],
-    "NOW(STOCK)": ["40111", null, "NOW (Derivatives)", "NOW", "STOCK"],
-    "NVDAB(STOCK)": ["40215", null, "NVDAB (Derivatives)", "NVDAB", "STOCK"],
-    "NVO(STOCK)": ["40104", null, "NVO (Derivatives)", "NVO", "STOCK"],
-    "NXPC": ["36044", null, "NEXPACE", "NXPC", "COIN"],
-    "O": ["40092", null, "o1.exchange", "O", "COIN"],
-    "OG": ["5309", null, "OG Fan Token", "OG", "COIN"],
-    "OGN": ["5117", null, "Origin Protocol", "OGN", "COIN"],
-    "ON": ["38750", null, "Orochi Network", "ON", "COIN"],
-    "ONDO": ["21159", null, "Ondo", "ONDO", "COIN"],
-    "ONDS(STOCK)": ["40118", null, "ONDS (Derivatives)", "ONDS", "STOCK"],
-    "ONE": ["3945", null, "Harmony", "ONE", "COIN"],
-    "ONG": ["3217", null, "Ontology Gas", "ONG", "COIN"],
-    "ONT": ["2566", null, "Ontology", "ONT", "COIN"],
-    "OP": ["11840", null, "Optimism", "OP", "COIN"],
-    "OPEN": ["37456", null, "OpenLedger", "OPEN", "COIN"],
-    "OPENAI(STOCK)": ["37671", null, "OPENAI (Derivatives)", "OPENAI", "STOCK"],
-    "OPG": ["39800", null, "OpenGradient", "OPG", "COIN"],
-    "OPN": ["39564", null, "Opinion", "OPN", "COIN"],
-    "ORBS": ["3835", "ETH", "Orbs", "ORBS", "COIN"],
-    "ORCA": ["11165", null, "Orca", "ORCA", "COIN"],
-    "ORCL(STOCK)": ["39482", null, "ORCL (Derivatives)", "ORCL", "STOCK"],
-    "ORDER": ["32809", null, "Orderly", "ORDER", "COIN"],
-    "ORDI": ["25028", null, "ORDI", "ORDI", "COIN"],
-    "OSMO": ["12220", null, "Osmosis", "OSMO", "COIN"],
-    "PARTI": ["36102", null, "Particle Network", "PARTI", "COIN"],
-    "PAXG": ["4705", null, "PAX Gold", "PAXG", "COIN"],
-    "PAYP(STOCK)": ["39725", null, "PAYP (Derivatives)", "PAYP", "STOCK"],
-    "PENDLE": ["9481", null, "Pendle", "PENDLE", "COIN"],
-    "PENGU": ["34466", null, "Pudgy Penguins", "PENGU", "COIN"],
-    "PEOPLE": ["14806", null, "ConstitutionDAO", "PEOPLE", "COIN"],
-    "PEPE": ["24478", null, "Pepe", "PEPE", "COIN"],
-    "PHA": ["6841", null, "Phala Network", "PHA", "COIN"],
-    "PIEVERSE": ["38849", null, "Pieverse", "PIEVERSE", "COIN"],
-    "PIPPIN": ["35053", null, "pippin", "PIPPIN", "COIN"],
-    "PIVX": ["1169", null, "PIVX", "PIVX", "COIN"],
-    "PIXEL": ["29335", null, "Pixels", "PIXEL", "COIN"],
-    "PLAY": ["37534", null, "PlaysOut", "PLAY", "COIN"],
-    "PLTRB(STOCK)": ["40590", null, "PLTRB (Derivatives)", "PLTRB", "STOCK"],
-    "PLUME": ["35364", null, "Plume", "PLUME", "COIN"],
-    "PNUT": ["33788", null, "Peanut the Squirrel", "PNUT", "COIN"],
-    "POKT": ["11823", "ETH", "Pocket Network", "POKT", "COIN"],
-    "POL": ["28321", null, "Polygon (prev. MATIC)", "POL", "COIN"],
-    "POLYX": ["20362", null, "Polymesh", "POLYX", "COIN"],
-    "POND": ["7497", null, "Marlin", "POND", "COIN"],
-    "POPCAT": ["28782", null, "Popcat (SOL)", "POPCAT", "COIN"],
-    "PORTAL": ["29555", null, "Portal", "PORTAL", "COIN"],
-    "PORTO": ["14052", null, "FC Porto Fan Token", "PORTO", "COIN"],
-    "POWER": ["39042", null, "Power Protocol", "POWER", "COIN"],
-    "POWR": ["2132", null, "Powerledger", "POWR", "COIN"],
-    "PRL": ["39797", null, "Perle", "PRL", "COIN"],
-    "PROM": ["4120", null, "Prom", "PROM", "COIN"],
-    "PROMPT": ["36223", null, "Wayfinder", "PROMPT", "COIN"],
-    "PROS(Pharos)": ["39682", null, "Pharos", "PHAROS", "COIN"],
-    "PROVE": ["37593", null, "Succinct", "PROVE", "COIN"],
-    "PSG": ["5226", null, "Paris Saint-Germain Fan Token", "PSG", "COIN"],
-    "PTB": ["37372", null, "Portal To Bitcoin", "PTB", "COIN"],
-    "PUMP": ["36166", null, "PumpBTC (Governance token)", "PUMP", "COIN"],
-    "PUMPBTC": ["36166", null, "PumpBTC (Governance token)", "PUMPBTC", "COIN"],
-    "PUNDIX": ["9040", null, "Pundi X (New)", "PUNDIX", "COIN"],
-    "PYR": ["9308", null, "Vulcan Forged (PYR)", "PYR", "COIN"],
-    "PYTH": ["28177", null, "Pyth Network", "PYTH", "COIN"],
-    "Q": ["38236", null, "Quack AI", "Q", "COIN"],
-    "QCOM(STOCK)": ["39932", null, "QCOM (Derivatives)", "QCOM", "STOCK"],
-    "QI": ["9288", null, "BENQI", "QI", "COIN"],
-    "QKC": ["2840", null, "QuarkChain", "QKC", "COIN"],
-    "QNT": ["3155", null, "Quant", "QNT", "COIN"],
-    "QNTX(STOCK)": ["40094", null, "QNTX (Derivatives)", "QNTX", "STOCK"],
-    "QQQB(STOCK)": ["40593", null, "QQQB (Derivatives)", "QQQB", "STOCK"],
-    "QTUM": ["1684", null, "Qtum", "QTUM", "COIN"],
-    "QUICK": ["19966", null, "Quickswap [New]", "QUICK", "COIN"],
-    "RAD": ["6843", null, "Radworks", "RAD", "COIN"],
-    "RARE": ["11294", null, "SuperRare", "RARE", "COIN"],
-    "RATS": ["28452", null, "rats (Ordinals)", "RATS", "COIN"],
-    "RAVE": ["38967", null, "RaveDAO", "RAVE", "COIN"],
-    "RAY": ["8526", null, "Raydium", "RAY", "COIN"],
-    "RAY(Raydium)": ["8526", "BNB", "Raydium", "RAY", "COIN"],
-    "RAYSOL(Raydium)": ["8526", null, "Raydium", "RAYSOL", "COIN"],
-    "RE": ["40224", null, "Re", "RE", "COIN"],
-    "RECALL": ["38669", null, "Recall", "RECALL", "COIN"],
-    "RED": ["21707", null, "RedStone", "RED", "COIN"],
-    "RENDER": ["5690", null, "Render", "RENDER", "COIN"],
-    "REQ": ["2071", null, "Request", "REQ", "COIN"],
-    "RESOLV": ["36713", null, "Resolv", "RESOLV", "COIN"],
-    "REZ": ["30843", null, "Renzo", "REZ", "COIN"],
-    "RIF": ["34089", null, "Rifampicin", "RIF", "COIN"],
-    "RIVER": ["38417", null, "River", "RIVER", "COIN"],
-    "RIVN(STOCK)": ["39499", null, "RIVN (Derivatives)", "RIVN", "STOCK"],
-    "RKLB(STOCK)": ["39948", null, "RKLB (Derivatives)", "RKLB", "STOCK"],
-    "RLC": ["1637", null, "iExec RLC", "RLC", "COIN"],
-    "RLUSD": ["34387", null, "Ripple USD", "RLUSD", "COIN"],
-    "ROBO": ["39595", null, "Fabric Protocol", "ROBO", "COIN"],
-    "RONIN": ["14101", null, "Ronin", "RONIN", "COIN"],
-    "ROSE": ["7653", null, "Oasis", "ROSE", "COIN"],
-    "RPL": ["2943", null, "Rocket Pool", "RPL", "COIN"],
-    "RSR": ["3964", null, "Reserve Rights", "RSR", "COIN"],
-    "RUNE": ["4157", null, "THORChain", "RUNE", "COIN"],
-    "RVN": ["2577", null, "Ravencoin", "RVN", "COIN"],
-    "S": ["32684", null, "Sonic", "S", "COIN"],
-    "SAFE": ["21585", null, "Safe", "SAFE", "COIN"],
-    "SAGA": ["30372", null, "Saga", "SAGA", "COIN"],
-    "SAHARA": ["36671", null, "Sahara AI", "SAHARA", "COIN"],
-    "SAMSUNG(STOCK)": [
-      "39503",
-      null,
-      "SAMSUNG (Derivatives)",
-      "SAMSUNG",
-      "STOCK"
-    ],
-    "SAND": ["6210", null, "The Sandbox", "SAND", "COIN"],
-    "SANTOS": ["15248", null, "Santos FC Fan Token", "SANTOS", "COIN"],
-    "SAPIEN": ["38117", null, "Sapien", "SAPIEN", "COIN"],
-    "SATS": ["28194", null, "SATS (Ordinals)", "SATS", "COIN"],
-    "SC": ["1042", null, "Siacoin", "SC", "COIN"],
-    "SCR": ["26998", null, "Scroll", "SCR", "COIN"],
-    "SCRT": ["5604", null, "Secret", "SCRT", "COIN"],
-    "SEI": ["23149", null, "Sei", "SEI", "COIN"],
-    "SENT": ["38868", null, "Sentient", "SENT", "COIN"],
-    "SFP": ["8119", null, "SafePal", "SFP", "COIN"],
-    "SHELL": ["35710", null, "MyShell", "SHELL", "COIN"],
-    "SHIB": ["5994", null, "Shiba Inu", "SHIB", "COIN"],
-    "SIGN": ["35600", null, "Sign", "SIGN", "COIN"],
-    "SIREN": ["35766", null, "siren", "SIREN", "COIN"],
-    "SKHYNIX(STOCK)": [
-      "39500",
-      null,
-      "SKHYNIX (Derivatives)",
-      "SKHYNIX",
-      "STOCK"
-    ],
-    "SKL": ["5691", null, "SKALE", "SKL", "COIN"],
-    "SKR": ["39377", null, "Seeker", "SKR", "COIN"],
-    "SKY": ["33038", null, "Sky", "SKY", "COIN"],
-    "SKYAI": ["36300", null, "SKYAI", "SKYAI", "COIN"],
-    "SLP": ["5824", null, "Smooth Love Potion", "SLP", "COIN"],
-    "SLX": ["40047", null, "Solstice", "SLX", "COIN"],
-    "SMCI(STOCK)": ["40549", null, "SMCI (Derivatives)", "SMCI", "STOCK"],
-    "SNDKB(STOCK)": ["40216", null, "SNDKB (Derivatives)", "SNDKB", "STOCK"],
-    "SNT": ["1759", "ETH", "Status", "SNT", "COIN"],
-    "SNX": ["2586", null, "Synthetix", "SNX", "COIN"],
-    "SOL": ["5426", null, "Solana", "SOL", "COIN"],
-    "SOLV": ["12165", null, "Solv Protocol", "SOLV", "COIN"],
-    "SOMI": ["37637", null, "Somnia", "SOMI", "COIN"],
-    "SONIC": ["35051", null, "Sonic SVM", "SONIC", "COIN"],
-    "SONY(STOCK)": ["40552", null, "SONY (Derivatives)", "SONY", "STOCK"],
-    "SOON": ["36542", null, "SOON", "SOON", "COIN"],
-    "SOPH": ["32087", null, "Sophon", "SOPH", "COIN"],
-    "SOXL(STOCK)": ["39964", null, "SOXL (Derivatives)", "SOXL", "STOCK"],
-    "SPACE": ["38136", null, "Spacecoin", "SPACE", "COIN"],
-    "SPCXB(STOCK)": ["40217", null, "SPCXB (Derivatives)", "SPCXB", "STOCK"],
-    "SPELL": ["11289", null, "Spell Token", "SPELL", "COIN"],
-    "SPK": ["36569", null, "Spark", "SPK", "COIN"],
-    "SPORTFUN": ["38647", null, "Sport.Fun", "SPORTFUN", "COIN"],
-    "SPX": ["28081", null, "SPX6900", "SPX", "COIN"],
-    "SPY(STOCK)": ["39732", null, "SPY (Derivatives)", "SPY", "STOCK"],
-    "SQD": ["12894", null, "Subsquid", "SQD", "COIN"],
-    "SQQQ(STOCK)": ["40561", null, "SQQQ (Derivatives)", "SQQQ", "STOCK"],
-    "SSV": ["12999", null, "ssv.network", "SSV", "COIN"],
-    "STABLE": ["38892", null, "Stable", "STABLE", "COIN"],
-    "STAR": ["37743", null, "Starpower", "STAR", "COIN"],
-    "STBL": ["38359", null, "STBL", "STBL", "COIN"],
-    "STEEM": ["1230", null, "Steem", "STEEM", "COIN"],
-    "STG": ["18934", null, "Stargate Finance", "STG", "COIN"],
-    "STO": ["32194", null, "StakeStone", "STO", "COIN"],
-    "STORJ": ["1772", null, "Storj", "STORJ", "COIN"],
-    "STRAX": ["30168", null, "Xertra", "STRAX", "COIN"],
-    "STRC(STOCK)": ["40557", null, "STRC (Derivatives)", "STRC", "STOCK"],
-    "STRK": ["22691", null, "Starknet", "STRK", "COIN"],
-    "STX": ["4847", null, "Stacks", "STX", "COIN"],
-    "SUI": ["20947", null, "Sui", "SUI", "COIN"],
-    "SUN": ["10529", null, "Sun [New]", "SUN", "COIN"],
-    "SUPER": ["8290", null, "SuperVerse", "SUPER", "COIN"],
-    "SUSHI": ["6758", null, "SushiSwap", "SUSHI", "COIN"],
-    "SWARMS": ["34993", null, "Swarms", "SWARMS", "COIN"],
-    "SXT": ["36405", null, "Space and Time", "SXT", "COIN"],
-    "SYN": ["12147", null, "Synapse", "SYN", "COIN"],
-    "SYRUP": ["33824", null, "Maple Finance", "SYRUP", "COIN"],
-    "T": ["17751", null, "Threshold", "T", "COIN"],
-    "TA": ["37430", null, "Trusta.AI", "TA", "COIN"],
-    "TAC": ["37338", null, "TAC Protocol", "TAC", "COIN"],
-    "TAG": ["34958", null, "Tagger", "TAG", "COIN"],
-    "TAIKO": ["31525", null, "Taiko", "TAIKO", "COIN"],
-    "TAKE": ["38175", null, "OVERTAKE", "TAKE", "COIN"],
-    "TAO": ["22974", null, "Bittensor", "TAO", "COIN"],
-    "TER(STOCK)": ["40680", null, "TER (Derivatives)", "TER", "STOCK"],
-    "TFUEL": ["3822", null, "Theta Fuel", "TFUEL", "COIN"],
-    "THE": ["23335", null, "THENA", "THE", "COIN"],
-    "THETA": ["2416", null, "Theta Network", "THETA", "COIN"],
-    "TIA": ["22861", null, "Celestia", "TIA", "COIN"],
-    "TKO": ["9020", null, "Toko Token", "TKO", "COIN"],
-    "TLM": ["9119", null, "Alien Worlds", "TLM", "COIN"],
-    "TNSR": ["30449", null, "Tensor", "TNSR", "COIN"],
-    "TOKAMAK": ["6731", "ETH", "Tokamak Network", "TOKAMAK", "COIN"],
-    "TOSHI": ["27750", null, "Toshi", "TOSHI", "COIN"],
-    "TOWNS": ["37571", null, "Towns", "TOWNS", "COIN"],
-    "TQQQ(STOCK)": ["40560", null, "TQQQ (Derivatives)", "TQQQ", "STOCK"],
-    "TRAC": ["2467", "ETH", "OriginTrail", "TRAC", "COIN"],
-    "TRADOOR": ["36737", null, "Tradoor", "TRADOOR", "COIN"],
-    "TRB": ["4944", null, "Tellor", "TRB", "COIN"],
-    "TREE": ["37495", null, "Treehouse", "TREE", "COIN"],
-    "TRIA": ["39382", null, "Tria", "TRIA", "COIN"],
-    "TRUMP": ["35336", null, "OFFICIAL TRUMP", "TRUMP", "COIN"],
-    "TRUST": ["38863", null, "Intuition", "TRUST", "COIN"],
-    "TRUTH": ["38178", null, "Swarm Network", "TRUTH", "COIN"],
-    "TRX": ["1958", null, "TRON", "TRX", "COIN"],
-    "TSLAB(STOCK)": ["40214", null, "TSLAB (Derivatives)", "TSLAB", "STOCK"],
-    "TSM(STOCK)": ["39490", null, "TSM (Derivatives)", "TSM", "STOCK"],
-    "TST": ["35647", null, "Test", "TST", "COIN"],
-    "TT": ["3930", "TT", "ThunderCore", "TT", "COIN"],
-    "TTWO(STOCK)": ["40679", null, "TTWO (Derivatives)", "TTWO", "STOCK"],
-    "TURBO": ["24911", null, "Turbo", "TURBO", "COIN"],
-    "TURTLE": ["38671", null, "Turtle", "TURTLE", "COIN"],
-    "TUSD": ["2563", null, "TrueUSD", "TUSD", "COIN"],
-    "TUT": ["35892", null, "Tutorial", "TUT", "COIN"],
-    "TWT": ["5964", null, "Trust Wallet Token", "TWT", "COIN"],
-    "TXN(STOCK)": ["40682", null, "TXN (Derivatives)", "TXN", "STOCK"],
-    "U": ["39120", null, "United Stables", "U", "COIN"],
-    "UAI": ["38841", null, "UnifAI Network", "UAI", "COIN"],
-    "UB": ["38339", null, "Unibase", "UB", "COIN"],
-    "UBER(STOCK)": ["39997", null, "UBER (Derivatives)", "UBER", "STOCK"],
-    "UMA": ["5617", null, "UMA", "UMA", "COIN"],
-    "UNI": ["7083", null, "Uniswap", "UNI", "COIN"],
-    "UP(Superform)": ["39552", "ETH", "Superform", "UP2", "COIN"],
-    "URNM(STOCK)": ["39516", null, "URNM (Derivatives)", "URNM", "STOCK"],
-    "US": ["38869", null, "Talus", "US", "COIN"],
-    "USAR(STOCK)": ["39514", null, "USAR (Derivatives)", "USAR", "STOCK"],
-    "USD1": ["36148", null, "World Liberty Financial USD", "USD1", "COIN"],
-    "USDC": ["3408", null, "USDC", "USDC", "COIN"],
-    "USDE": ["29470", null, "Ethena USDe", "USDE", "COIN"],
-    "USDP": ["3330", null, "Pax Dollar", "USDP", "COIN"],
-    "USDS": ["33039", null, "USDS", "USDS", "COIN"],
-    "USDT": ["825", "ETH", "Tether USDt", "USDT", "COIN"],
-    "USELESS": ["36828", null, "Useless Coin", "USELESS", "COIN"],
-    "USTC": ["7129", null, "TerraClassicUSD", "USTC", "COIN"],
-    "USUAL": ["33979", null, "Usual", "USUAL", "COIN"],
-    "UVXY(STOCK)": ["40229", null, "UVXY (Derivatives)", "UVXY", "STOCK"],
-    "V(STOCK)": ["40014", null, "V (Derivatives)", "V", "STOCK"],
-    "VANA": ["34619", null, "Vana", "VANA", "COIN"],
-    "VANRY": ["8037", null, "Vanar Chain", "VANRY", "COIN"],
-    "VELODROME": ["20435", null, "Velodrome Finance", "VELODROME", "COIN"],
-    "VELVET": ["37298", null, "Velvet", "VELVET", "COIN"],
-    "VET": ["3077", null, "VeChain", "VET", "COIN"],
-    "VIC": ["2570", null, "Viction", "VIC", "COIN"],
-    "VIRTUAL": ["29420", null, "Virtuals Protocol", "VIRTUAL", "COIN"],
-    "VTHO": ["3012", null, "VeThor Token", "VTHO", "COIN"],
-    "VVV": ["35509", null, "Venice Token", "VVV", "COIN"],
-    "W": ["29587", null, "Wormhole", "W", "COIN"],
-    "WAL": ["36119", null, "Walrus", "WAL", "COIN"],
-    "WAVES": ["1274", "WAVES", "Waves", "WAVES", "COIN"],
-    "WAXP": ["2300", null, "WAX", "WAXP", "COIN"],
-    "WBETH": ["24760", null, "Wrapped Beacon ETH", "WBETH", "COIN"],
-    "WCT": ["33152", null, "WalletConnect Token", "WCT", "COIN"],
-    "WDC(STOCK)": ["39990", null, "WDC (Derivatives)", "WDC", "STOCK"],
-    "WET": ["39049", null, "Humidifi", "WET", "COIN"],
-    "WIF": ["28752", null, "dogwifhat", "WIF", "COIN"],
-    "WIN": ["4206", null, "WINkLink", "WIN", "COIN"],
-    "WLD": ["13502", null, "Worldcoin", "WLD", "COIN"],
-    "WLFI": ["33251", null, "World Liberty Financial", "WLFI", "COIN"],
-    "WMT(STOCK)": ["40015", null, "WMT (Derivatives)", "WMT", "STOCK"],
-    "WOO": ["7501", null, "WOO", "WOO", "COIN"],
-    "XAG(STOCK)": ["39343", null, "XAG (Derivatives)", "XAG", "STOCK"],
-    "XAI": ["28933", null, "Xai", "XAI", "COIN"],
-    "XAN": ["38481", null, "Anoma", "XAN", "COIN"],
-    "XAU(STOCK)": ["39344", null, "XAU (Derivatives)", "XAU", "STOCK"],
-    "XAUT": ["5176", null, "Tether Gold", "XAUT", "COIN"],
-    "XCN": ["18679", "ETH", "Onyxcoin", "XCN", "COIN"],
-    "XEC": ["10791", null, "eCash", "XEC", "COIN"],
-    "XLE(STOCK)": ["39943", null, "XLE (Derivatives)", "XLE", "STOCK"],
-    "XLM": ["512", null, "Stellar", "XLM", "COIN"],
-    "XMR": ["328", null, "Monero", "XMR", "COIN"],
-    "XNO": ["1567", null, "Nano", "XNO", "COIN"],
-    "XNY": ["36933", null, "Codatta", "XNY", "COIN"],
-    "XPD(STOCK)": ["39481", null, "XPD (Derivatives)", "XPD", "STOCK"],
-    "XPIN": ["36238", null, "XPIN Network", "XPIN", "COIN"],
-    "XPL": ["36645", null, "Plasma", "XPL", "COIN"],
-    "XPT(STOCK)": ["39460", null, "XPT (Derivatives)", "XPT", "STOCK"],
-    "XRP": ["52", null, "XRP", "XRP", "COIN"],
-    "XTZ": ["2011", null, "Tezos", "XTZ", "COIN"],
-    "XUSD": ["32372", null, "StraitsX USD", "XUSD", "COIN"],
-    "XVG": ["693", null, "Verge", "XVG", "COIN"],
-    "XVS": ["7288", null, "Venus", "XVS", "COIN"],
-    "YB": ["38651", null, "YieldBasis", "YB", "COIN"],
-    "YFI": ["5864", null, "Yearn", "YFI", "COIN"],
-    "YGG": ["10688", null, "Yield Guild Games", "YGG", "COIN"],
-    "ZAMA": ["39332", null, "Zama", "ZAMA", "COIN"],
-    "ZBT": ["38427", null, "ZEROBASE", "ZBT", "COIN"],
-    "ZEC": ["1437", null, "Zcash", "ZEC", "COIN"],
-    "ZEN": ["1698", null, "Horizen", "ZEN", "COIN"],
-    "ZEREBRO": ["34083", null, "Zerebro", "ZEREBRO", "COIN"],
-    "ZEST": ["40008", null, "Zest Protocol", "ZEST", "COIN"],
-    "ZETA": ["21259", null, "ZetaChain", "ZETA", "COIN"],
-    "ZIL": ["2469", null, "Zilliqa", "ZIL", "COIN"],
-    "ZK": ["24091", null, "ZKsync", "ZK", "COIN"],
-    "ZKC": ["38371", null, "Boundless", "ZKC", "COIN"],
-    "ZKP": ["39035", null, "zkPass", "ZKP", "COIN"],
-    "ZM(STOCK)": ["39954", null, "ZM (Derivatives)", "ZM", "STOCK"],
-    "ZORA": ["35931", null, "ZORA", "ZORA", "COIN"],
-    "ZRO": ["26997", null, "LayerZero", "ZRO", "COIN"],
-    "ZRX": ["1896", null, "0x Protocol", "ZRX", "COIN"],
-    "币安人生": ["38590", null, "币安人生", "币安人生", "COIN"],
-    "我踏马来了": ["39322", null, "我踏马来了", "我踏马来了", "COIN"],
-    "龙虾": ["39671", null, "龙虾 (Lobster)", "龙虾", "COIN"]
-  }
+    "NOTE_MAP": {
+        "币安人生": "bianrensheng",
+        "我踏马来了": "wotamalaile",
+        "龙虾": "LONGXIA(lobster)"
+    },
+    "PAST_GAP_RECOVERY_MAP": {
+        "AIA": "BINANCE"
+    },
+    "SPECIAL_SYMBOL_MAP": {},
+    "MANUAL_SUPPLY_MAP": {},
+    "SYMBOL_TO_ID_MAP": {
+        "BTC": "1",
+        "USDT": "825",
+        "ETH": "1027",
+        "FCT2": "4953",
+        "FXS": "6953",
+        "DODOX": "7224",
+        "RAYSOL": "8526",
+        "BABYDOGE": "10407",
+        "RONIN": "14101",
+        "QUICK": "19966",
+        "LUNA2": "20314",
+        "VELODROME": "20435",
+        "WBETH": "24760",
+        "RATS": "28452",
+        "GAME2": "31246",
+        "MOVE": "32452",
+        "USDS": "33039",
+        "ACT": "33566",
+        "AVAAI": "34116",
+        "BROCCOLI714": "35749",
+        "BROCCOLIF3B": "35753",
+        "PUMPBTC": "36166",
+        "LIGHT": "38506",
+        "4": "38557",
+        "币安人生": "38590",
+        "SPORTFUN": "38647",
+        "我踏马来了": "39322",
+        "龙虾": "39671",
+        "SAMSUNG": "39503",
+        "HYUNDAI": "39573",
+        "SKHYNIX": "39500"
+    },
+    "_COMMENT_DUPLICATED_LIST": {
+        "💡 [매칭 룰] 바이낸스 또는 업비트": "",
+        "둘 중 하나라도 타 거래소(빗썸/바이비트) 티커명과 일치하거나,": "",
+        "여기에 명시된 UID가 일치하면 시세 및 뱃지가 자동으로 도킹됩니다!": ""
+    },
+    "DUPLICATED_LIST": {
+        "AMP(Amp)_binance": [
+            "6945",
+            "",
+            "AMP",
+            "binance"
+        ],
+        "AMP(Amp)_upbit": [
+            "6945",
+            "",
+            "AMP2",
+            "upbit"
+        ],
+        "BTT(BitTorrent)_upbit": [
+            "16086",
+            "TRX",
+            "BTT",
+            "upbit"
+        ],
+        "BTTC(BitTorrent)_binance": [
+            "16086",
+            "TRX",
+            "BTTC",
+            "binance"
+        ],
+        "BEAM(Beam)_upbit": [
+            "28298",
+            "ETH",
+            "BEAM",
+            "upbit"
+        ],
+        "BEAMX(Beam)_binance": [
+            "28298",
+            "ETH",
+            "BEAMX",
+            "binance"
+        ],
+        "BOB(BTC)_binance": [
+            "38970",
+            "",
+            "BOB",
+            "binance"
+        ],
+        "BOB(BTC)_bithumb ": [
+            "38970",
+            "",
+            "BOB",
+            "bithumb"
+        ],
+        "BOB(BNB)_binance": [
+            "34422",
+            "",
+            "1000000BOB",
+            "binance"
+        ],
+        "MET(Meteora)_binance": [
+            "38353",
+            "SOL",
+            "MET",
+            "binance"
+        ],
+        "MET(Meteora)_upbit": [
+            "38353",
+            "SOL",
+            "MET2",
+            "upbit"
+        ],
+        "RAYSOL(Raydium)_binance": [
+            "8526",
+            "SOL",
+            "RAYSOL",
+            "binance"
+        ],
+        "RAY(Raydium)_upbit": [
+            "8526",
+            "SOL",
+            "RAY",
+            "upbit"
+        ],
+        "EDGE(edgeX)_binance": [
+            "39720",
+            "",
+            "EDGE",
+            "binance"
+        ],
+        "EDGE(edgeX)_bybit": [
+            "39720",
+            "",
+            "EDGE",
+            "bybit"
+        ],
+        "EDGE(edgeX)_bithumb": [
+            "39720",
+            "",
+            "EDGEX",
+            "bithumb"
+        ],
+        "EDGE(Definitive)_upbit": [
+            "36288",
+            "",
+            "EDGE",
+            "upbit"
+        ],
+        "EDGE(Definitive)_bithumb": [
+            "36288",
+            "",
+            "EDGE",
+            "bithumb"
+        ],
+        "META(Facebook)_binance_stock": [
+            "39513",
+            "",
+            "META",
+            "binance_stock"
+        ],
+        "META(Metadium)_upbit": [
+            "3418",
+            "",
+            "META",
+            "upbit"
+        ],
+        "META(Metadium)_bithumb": [
+            "3418",
+            "",
+            "META",
+            "bithumb"
+        ],
+        "UP(Superform)_upbit": [
+            "39552",
+            "",
+            "UP2",
+            "upbit"
+        ],
+        "UP(Superform)_bithumb": [
+            "39552",
+            "",
+            "UP",
+            "bithumb"
+        ],
+        "PROS(Pharos)_binance": [
+            "39682",
+            "",
+            "PHAROS",
+            "binance"
+        ],
+        "PROS(Pharos)_upbit": [
+            "39682",
+            "",
+            "PROS",
+            "upbit"
+        ],
+        "AI(Sleepless)_binance": [
+            "28846",
+            "",
+            "AI",
+            "binance"
+        ],
+        "AI(Gensyn)_binance": [
+            "39883",
+            "",
+            "AIGENSYN",
+            "binance"
+        ],
+        "AI(Gensyn)_upbit": [
+            "39883",
+            "",
+            "AI",
+            "upbit"
+        ],
+        "AI(Gensyn)_bithumb": [
+            "39883",
+            "",
+            "AI",
+            "bithumb"
+        ],
+        "Data(Story)_binance": [
+            "35626",
+            "",
+            "DATAIP",
+            "binance"
+        ],
+        "Data(Story)_upbit": [
+            "35626",
+            "",
+            "DATA",
+            "upbit"
+        ],
+        "Data(Story)_bithumb": [
+            "35626",
+            "",
+            "DATA",
+            "bithumb"
+        ],
+        "CAT(Simon)_binance": [
+            "32724",
+            "",
+            "1000CAT",
+            "binance"
+        ],
+        "CAT(Simon)_bithumb": [
+            "32724",
+            "",
+            "CAT",
+            "bithumb"
+        ],
+        "CAT(Caterpillar)_binance_stock": [
+            "40683",
+            "",
+            "CAT",
+            "binance_stock"
+        ]
+    },
+    "TICKER_DATA": {
+        "0G": [
+            "38337",
+            null,
+            "0G",
+            "0G",
+            "COIN"
+        ],
+        "1INCH": [
+            "8104",
+            null,
+            "1inch",
+            "1INCH",
+            "COIN"
+        ],
+        "2Z": [
+            "38515",
+            null,
+            "DoubleZero",
+            "2Z",
+            "COIN"
+        ],
+        "4": [
+            "38557",
+            null,
+            "4",
+            "4",
+            "COIN"
+        ],
+        "A": [
+            "36462",
+            null,
+            "Vaulta",
+            "A",
+            "COIN"
+        ],
+        "AAOI(STOCK)": [
+            "40067",
+            null,
+            "AAOI (Derivatives)",
+            "AAOI",
+            "STOCK"
+        ],
+        "AAPL(STOCK)": [
+            "39624",
+            null,
+            "AAPL (Derivatives)",
+            "AAPL",
+            "STOCK"
+        ],
+        "AAVE": [
+            "7278",
+            null,
+            "Aave",
+            "AAVE",
+            "COIN"
+        ],
+        "ACE": [
+            "28674",
+            null,
+            "Fusionist",
+            "ACE",
+            "COIN"
+        ],
+        "ACH": [
+            "6958",
+            null,
+            "Alchemy Pay",
+            "ACH",
+            "COIN"
+        ],
+        "ACM": [
+            "8538",
+            null,
+            "AC Milan Fan Token",
+            "ACM",
+            "COIN"
+        ],
+        "ACT": [
+            "33566",
+            null,
+            "Act I : The AI Prophecy",
+            "ACT",
+            "COIN"
+        ],
+        "ACU": [
+            "36492",
+            null,
+            "Acurast",
+            "ACU",
+            "COIN"
+        ],
+        "ACX": [
+            "22620",
+            null,
+            "Across Protocol",
+            "ACX",
+            "COIN"
+        ],
+        "ADA": [
+            "2010",
+            null,
+            "Cardano",
+            "ADA",
+            "COIN"
+        ],
+        "ADBE(STOCK)": [
+            "40115",
+            null,
+            "ADBE (Derivatives)",
+            "ADBE",
+            "STOCK"
+        ],
+        "ADX": [
+            "1768",
+            null,
+            "heyAura",
+            "ADX",
+            "COIN"
+        ],
+        "AERGO": [
+            "3637",
+            null,
+            "Aergo",
+            "AERGO",
+            "COIN"
+        ],
+        "AERO": [
+            "29270",
+            null,
+            "Aerodrome Finance",
+            "AERO",
+            "COIN"
+        ],
+        "AEUR": [
+            "28596",
+            null,
+            "Anchored Coins AEUR",
+            "AEUR",
+            "COIN"
+        ],
+        "AEVO": [
+            "29676",
+            null,
+            "Aevo",
+            "AEVO",
+            "COIN"
+        ],
+        "AGLD": [
+            "11568",
+            null,
+            "Adventure Gold",
+            "AGLD",
+            "COIN"
+        ],
+        "AGT": [
+            "36195",
+            null,
+            "Alaya Governance Token",
+            "AGT",
+            "COIN"
+        ],
+        "AHT": [
+            "6641",
+            "AHT",
+            "AhaToken",
+            "AHT",
+            "COIN"
+        ],
+        "AI(Gensyn)": [
+            "39883",
+            null,
+            "Gensyn",
+            "AIGENSYN",
+            "COIN"
+        ],
+        "AI(Sleepless)": [
+            "39883",
+            null,
+            "Sleepless",
+            "AI",
+            "COIN"
+        ],
+        "AIA": [
+            "38430",
+            null,
+            "DeAgentAI",
+            "AIA",
+            "COIN"
+        ],
+        "AIN": [
+            "36770",
+            null,
+            "Infinity Ground",
+            "AIN",
+            "COIN"
+        ],
+        "AIO": [
+            "37562",
+            null,
+            "OLAXBT",
+            "AIO",
+            "COIN"
+        ],
+        "AIOT": [
+            "36319",
+            null,
+            "OKZOO",
+            "AIOT",
+            "COIN"
+        ],
+        "AIXBT": [
+            "34103",
+            null,
+            "aixbt",
+            "AIXBT",
+            "COIN"
+        ],
+        "AKE": [
+            "38127",
+            null,
+            "AKEDO",
+            "AKE",
+            "COIN"
+        ],
+        "AKT": [
+            "7431",
+            null,
+            "Akash Network",
+            "AKT",
+            "COIN"
+        ],
+        "ALAB(STOCK)": [
+            "40517",
+            null,
+            "ALAB (Derivatives)",
+            "ALAB",
+            "STOCK"
+        ],
+        "ALCH": [
+            "34880",
+            null,
+            "Alchemist AI",
+            "ALCH",
+            "COIN"
+        ],
+        "ALCX": [
+            "8613",
+            null,
+            "Alchemix",
+            "ALCX",
+            "COIN"
+        ],
+        "ALGO": [
+            "4030",
+            null,
+            "Algorand",
+            "ALGO",
+            "COIN"
+        ],
+        "ALICE": [
+            "8766",
+            null,
+            "MyNeighborAlice",
+            "ALICE",
+            "COIN"
+        ],
+        "ALLO": [
+            "38908",
+            null,
+            "Allora",
+            "ALLO",
+            "COIN"
+        ],
+        "ALPINE": [
+            "18112",
+            null,
+            "Alpine F1 Team Fan Token",
+            "ALPINE",
+            "COIN"
+        ],
+        "ALT": [
+            "29073",
+            null,
+            "Altlayer",
+            "ALT",
+            "COIN"
+        ],
+        "AMAT(STOCK)": [
+            "40087",
+            null,
+            "AMAT (Derivatives)",
+            "AMAT",
+            "STOCK"
+        ],
+        "AMDB(STOCK)": [
+            "40538",
+            null,
+            "AMDB (Derivatives)",
+            "AMDB",
+            "STOCK"
+        ],
+        "AMP(Amp)": [
+            "6945",
+            null,
+            "Amp",
+            "AMP",
+            "COIN"
+        ],
+        "AMZN(STOCK)": [
+            "39619",
+            null,
+            "AMZN (Derivatives)",
+            "AMZN",
+            "STOCK"
+        ],
+        "ANIME": [
+            "35319",
+            null,
+            "Animecoin",
+            "ANIME",
+            "COIN"
+        ],
+        "ANKR": [
+            "3783",
+            null,
+            "Ankr",
+            "ANKR",
+            "COIN"
+        ],
+        "ANTHROPIC(STOCK)": [
+            "37693",
+            null,
+            "ANTHROPIC (Derivatives)",
+            "ANTHROPIC",
+            "STOCK"
+        ],
+        "APE": [
+            "18876",
+            null,
+            "ApeCoin",
+            "APE",
+            "COIN"
+        ],
+        "API3": [
+            "7737",
+            null,
+            "API3",
+            "API3",
+            "COIN"
+        ],
+        "APR": [
+            "38569",
+            null,
+            "aPriori",
+            "APR",
+            "COIN"
+        ],
+        "APT": [
+            "21794",
+            null,
+            "Aptos",
+            "APT",
+            "COIN"
+        ],
+        "AQT": [
+            "7460",
+            "ETH",
+            "Alpha Quark Token",
+            "AQT",
+            "COIN"
+        ],
+        "AR": [
+            "5632",
+            null,
+            "Arweave",
+            "AR",
+            "COIN"
+        ],
+        "ARB": [
+            "11841",
+            null,
+            "Arbitrum",
+            "ARB",
+            "COIN"
+        ],
+        "ARC": [
+            "34926",
+            null,
+            "AI Rig Complex",
+            "ARC",
+            "COIN"
+        ],
+        "ARDR": [
+            "1320",
+            null,
+            "Ardor",
+            "ARDR",
+            "COIN"
+        ],
+        "ARIA": [
+            "38102",
+            null,
+            "AriaAI",
+            "ARIA",
+            "COIN"
+        ],
+        "ARK": [
+            "1586",
+            null,
+            "Ark",
+            "ARK",
+            "COIN"
+        ],
+        "ARKM": [
+            "27565",
+            null,
+            "Arkham",
+            "ARKM",
+            "COIN"
+        ],
+        "ARM(STOCK)": [
+            "39994",
+            null,
+            "ARM (Derivatives)",
+            "ARM",
+            "STOCK"
+        ],
+        "ARPA": [
+            "4039",
+            null,
+            "ARPA",
+            "ARPA",
+            "COIN"
+        ],
+        "ARX": [
+            "39970",
+            null,
+            "Arcium",
+            "ARX",
+            "COIN"
+        ],
+        "ASML(STOCK)": [
+            "39677",
+            null,
+            "ASML (Derivatives)",
+            "ASML",
+            "STOCK"
+        ],
+        "ASR": [
+            "5229",
+            null,
+            "AS Roma Fan Token",
+            "ASR",
+            "COIN"
+        ],
+        "ASTER": [
+            "36341",
+            null,
+            "Aster",
+            "ASTER",
+            "COIN"
+        ],
+        "ASTR": [
+            "12885",
+            null,
+            "Astar",
+            "ASTR",
+            "COIN"
+        ],
+        "ASTS(STOCK)": [
+            "40108",
+            null,
+            "ASTS (Derivatives)",
+            "ASTS",
+            "STOCK"
+        ],
+        "AT": [
+            "38757",
+            null,
+            "APRO",
+            "AT",
+            "COIN"
+        ],
+        "ATH": [
+            "30083",
+            null,
+            "Aethir",
+            "ATH",
+            "COIN"
+        ],
+        "ATM": [
+            "5227",
+            null,
+            "Atletico De Madrid Fan Token",
+            "ATM",
+            "COIN"
+        ],
+        "ATOM": [
+            "3794",
+            null,
+            "Cosmos",
+            "ATOM",
+            "COIN"
+        ],
+        "AUCTION": [
+            "8602",
+            null,
+            "Bounce Token",
+            "AUCTION",
+            "COIN"
+        ],
+        "AUDIO": [
+            "7455",
+            null,
+            "Audius",
+            "AUDIO",
+            "COIN"
+        ],
+        "AVA": [
+            "34116",
+            null,
+            "AVA",
+            "AVA",
+            "COIN"
+        ],
+        "AVAAI": [
+            "34116",
+            null,
+            "AVA",
+            "AVAAI",
+            "COIN"
+        ],
+        "AVAX": [
+            "5805",
+            null,
+            "Avalanche",
+            "AVAX",
+            "COIN"
+        ],
+        "AVGO(STOCK)": [
+            "39871",
+            null,
+            "AVGO (Derivatives)",
+            "AVGO",
+            "STOCK"
+        ],
+        "AVNT": [
+            "38299",
+            null,
+            "Avantis",
+            "AVNT",
+            "COIN"
+        ],
+        "AWE": [
+            "4006",
+            null,
+            "AWE",
+            "AWE",
+            "COIN"
+        ],
+        "AXL": [
+            "17799",
+            null,
+            "Axelar",
+            "AXL",
+            "COIN"
+        ],
+        "AXS": [
+            "6783",
+            null,
+            "Axie Infinity",
+            "AXS",
+            "COIN"
+        ],
+        "AXTI(STOCK)": [
+            "40204",
+            null,
+            "AXTI (Derivatives)",
+            "AXTI",
+            "STOCK"
+        ],
+        "AZTEC": [
+            "39521",
+            null,
+            "Aztec",
+            "AZTEC",
+            "COIN"
+        ],
+        "B": [
+            "36532",
+            null,
+            "BUILDon",
+            "B",
+            "COIN"
+        ],
+        "B2": [
+            "36352",
+            null,
+            "BSquared Network",
+            "B2",
+            "COIN"
+        ],
+        "B3": [
+            "35690",
+            "-",
+            "B3 (Base)",
+            "B3",
+            "COIN"
+        ],
+        "BABA(STOCK)": [
+            "39486",
+            null,
+            "BABA (Derivatives)",
+            "BABA",
+            "STOCK"
+        ],
+        "BABY": [
+            "32198",
+            null,
+            "Babylon",
+            "BABY",
+            "COIN"
+        ],
+        "BABYDOGE": [
+            "10407",
+            null,
+            "Baby Doge Coin",
+            "BABYDOGE",
+            "COIN"
+        ],
+        "BAN": [
+            "33881",
+            null,
+            "Comedian",
+            "BAN",
+            "COIN"
+        ],
+        "BANANA": [
+            "28066",
+            null,
+            "Banana Gun",
+            "BANANA",
+            "COIN"
+        ],
+        "BANANAS31": [
+            "34118",
+            null,
+            "Banana For Scale",
+            "BANANAS31",
+            "COIN"
+        ],
+        "BAND": [
+            "4679",
+            null,
+            "Band",
+            "BAND",
+            "COIN"
+        ],
+        "BANK": [
+            "36296",
+            null,
+            "Lorenzo Protocol",
+            "BANK",
+            "COIN"
+        ],
+        "BAR": [
+            "5225",
+            null,
+            "FC Barcelona Fan Token",
+            "BAR",
+            "COIN"
+        ],
+        "BARD": [
+            "38408",
+            null,
+            "Lombard",
+            "BARD",
+            "COIN"
+        ],
+        "BAS": [
+            "37387",
+            null,
+            "BNB Attestation Service",
+            "BAS",
+            "COIN"
+        ],
+        "BASED": [
+            "39812",
+            null,
+            "Based",
+            "BASED",
+            "COIN"
+        ],
+        "BAT": [
+            "1697",
+            null,
+            "Basic Attention Token",
+            "BAT",
+            "COIN"
+        ],
+        "BB": [
+            "30746",
+            null,
+            "BounceBit",
+            "BB",
+            "COIN"
+        ],
+        "BCH": [
+            "1831",
+            null,
+            "Bitcoin Cash",
+            "BCH",
+            "COIN"
+        ],
+        "BE(STOCK)": [
+            "40064",
+            null,
+            "BE (Derivatives)",
+            "BE",
+            "STOCK"
+        ],
+        "BEAM(Beam)": [
+            "28298",
+            "ETH",
+            "Beam",
+            "BEAM",
+            "COIN"
+        ],
+        "BEAMX(Beam)": [
+            "28298",
+            null,
+            "Beam",
+            "BEAMX",
+            "COIN"
+        ],
+        "BEAT": [
+            "38837",
+            null,
+            "Audiera",
+            "BEAT",
+            "COIN"
+        ],
+        "BEL": [
+            "6928",
+            null,
+            "Bella Protocol",
+            "BEL",
+            "COIN"
+        ],
+        "BERA": [
+            "24647",
+            null,
+            "Berachain",
+            "BERA",
+            "COIN"
+        ],
+        "BFUSD": [
+            "37760",
+            null,
+            "BFUSD",
+            "BFUSD",
+            "COIN"
+        ],
+        "BICO": [
+            "9543",
+            null,
+            "Biconomy",
+            "BICO",
+            "COIN"
+        ],
+        "BIGTIME": [
+            "28230",
+            null,
+            "Big Time",
+            "BIGTIME",
+            "COIN"
+        ],
+        "BILL": [
+            "39545",
+            null,
+            "Billions Network",
+            "BILL",
+            "COIN"
+        ],
+        "BIO": [
+            "34812",
+            null,
+            "Bio Protocol",
+            "BIO",
+            "COIN"
+        ],
+        "BIRB": [
+            "19765",
+            null,
+            "Moonbirds",
+            "BIRB",
+            "COIN"
+        ],
+        "BLAST": [
+            "28480",
+            "BLAST",
+            "Blast",
+            "BLAST",
+            "COIN"
+        ],
+        "BLEND": [
+            "39666",
+            "ETH",
+            "Fluent",
+            "BLEND",
+            "COIN"
+        ],
+        "BLESS": [
+            "38466",
+            null,
+            "Bless",
+            "BLESS",
+            "COIN"
+        ],
+        "BLUAI": [
+            "38717",
+            null,
+            "Bluwhale",
+            "BLUAI",
+            "COIN"
+        ],
+        "BLUR": [
+            "23121",
+            null,
+            "Blur",
+            "BLUR",
+            "COIN"
+        ],
+        "BMNR(STOCK)": [
+            "39670",
+            null,
+            "BMNR (Derivatives)",
+            "BMNR",
+            "STOCK"
+        ],
+        "BMT": [
+            "35214",
+            null,
+            "Bubblemaps",
+            "BMT",
+            "COIN"
+        ],
+        "BNB": [
+            "1839",
+            null,
+            "BNB",
+            "BNB",
+            "COIN"
+        ],
+        "BNSOL": [
+            "32882",
+            null,
+            "Binance Staked SOL",
+            "BNSOL",
+            "COIN"
+        ],
+        "BNT": [
+            "1727",
+            null,
+            "Bancor",
+            "BNT",
+            "COIN"
+        ],
+        "BOB(BNB)": [
+            "38970",
+            null,
+            "BNB",
+            "BOB",
+            "COIN"
+        ],
+        "BOME": [
+            "29870",
+            null,
+            "BOOK OF MEME",
+            "BOME",
+            "COIN"
+        ],
+        "BONK": [
+            "23095",
+            null,
+            "Bonk",
+            "BONK",
+            "COIN"
+        ],
+        "BORA": [
+            "3801",
+            "KAIA",
+            "BORA",
+            "BORA",
+            "COIN"
+        ],
+        "BOUNTY": [
+            "2866",
+            "ARB",
+            "Chainbounty",
+            "BOUNTY",
+            "COIN"
+        ],
+        "BR": [
+            "36063",
+            null,
+            "Bedrock",
+            "BR",
+            "COIN"
+        ],
+        "BRETT": [
+            "29743",
+            null,
+            "Brett (Based)",
+            "BRETT",
+            "COIN"
+        ],
+        "BREV": [
+            "39159",
+            null,
+            "Brevis",
+            "BREV",
+            "COIN"
+        ],
+        "BRKB(STOCK)": [
+            "40016",
+            null,
+            "BRKB (Derivatives)",
+            "BRKB",
+            "STOCK"
+        ],
+        "BROCCOLI714": [
+            "35749",
+            null,
+            "CZ's Dog",
+            "BROCCOLI714",
+            "COIN"
+        ],
+        "BROCCOLIF3B": [
+            "35753",
+            null,
+            "Broccoli (firstbroccoli.com)",
+            "BROCCOLIF3B",
+            "COIN"
+        ],
+        "BSB": [
+            "38889",
+            null,
+            "Block Street",
+            "BSB",
+            "COIN"
+        ],
+        "BSP(STOCK)": [
+            "40677",
+            null,
+            "BSP (Derivatives)",
+            "BSP",
+            "STOCK"
+        ],
+        "BSV": [
+            "3602",
+            null,
+            "Bitcoin SV",
+            "BSV",
+            "COIN"
+        ],
+        "BTC": [
+            "1",
+            null,
+            "Bitcoin",
+            "BTC",
+            "COIN"
+        ],
+        "BTR": [
+            "36277",
+            null,
+            "Bitlayer",
+            "BTR",
+            "COIN"
+        ],
+        "BTT(BitTorrent)": [
+            "16086",
+            "ETH",
+            "BitTorrent",
+            "BTT",
+            "COIN"
+        ],
+        "BTTC(BitTorrent)": [
+            "16086",
+            null,
+            "BitTorrent",
+            "BTTC",
+            "COIN"
+        ],
+        "BTW": [
+            "39158",
+            null,
+            "Bitway",
+            "BTW",
+            "COIN"
+        ],
+        "BULLA": [
+            "36769",
+            null,
+            "Bulla",
+            "BULLA",
+            "COIN"
+        ],
+        "BX(STOCK)": [
+            "39947",
+            null,
+            "BX (Derivatives)",
+            "BX",
+            "STOCK"
+        ],
+        "BZ(STOCK)": [
+            "39804",
+            null,
+            "BZ (Derivatives)",
+            "BZ",
+            "STOCK"
+        ],
+        "C": [
+            "37340",
+            null,
+            "Chainbase",
+            "C",
+            "COIN"
+        ],
+        "C98": [
+            "10903",
+            null,
+            "Coin98",
+            "C98",
+            "COIN"
+        ],
+        "CAKE": [
+            "7186",
+            null,
+            "PancakeSwap",
+            "CAKE",
+            "COIN"
+        ],
+        "CAP": [
+            "40531",
+            null,
+            "Cap",
+            "CAP",
+            "COIN"
+        ],
+        "CARV": [
+            "33372",
+            null,
+            "CARV",
+            "CARV",
+            "COIN"
+        ],
+        "CAT(Caterpillar)": [
+            "40683",
+            null,
+            "Caterpillar",
+            "CAT",
+            "STOCK"
+        ],
+        "CAT(Simon)": [
+            "32724",
+            null,
+            "Simon",
+            "CAT",
+            "COIN"
+        ],
+        "CATI": [
+            "32966",
+            null,
+            "Catizen",
+            "CATI",
+            "COIN"
+        ],
+        "CBK": [
+            "8107",
+            "ETH",
+            "Cobak Token",
+            "CBK",
+            "COIN"
+        ],
+        "CBRS(STOCK)": [
+            "39931",
+            null,
+            "CBRS (Derivatives)",
+            "CBRS",
+            "STOCK"
+        ],
+        "CC": [
+            "37263",
+            null,
+            "Canton",
+            "CC",
+            "COIN"
+        ],
+        "CELO": [
+            "5567",
+            null,
+            "Celo",
+            "CELO",
+            "COIN"
+        ],
+        "CELR": [
+            "3814",
+            null,
+            "Celer Network",
+            "CELR",
+            "COIN"
+        ],
+        "CETUS": [
+            "25114",
+            null,
+            "Cetus Protocol",
+            "CETUS",
+            "COIN"
+        ],
+        "CFG": [
+            "6748",
+            null,
+            "Centrifuge",
+            "CFG",
+            "COIN"
+        ],
+        "CFX": [
+            "7334",
+            null,
+            "Conflux",
+            "CFX",
+            "COIN"
+        ],
+        "CGPT": [
+            "23756",
+            null,
+            "ChainGPT",
+            "CGPT",
+            "COIN"
+        ],
+        "CHEEMS": [
+            "33280",
+            null,
+            "Cheems (cheems.pet)",
+            "CHEEMS",
+            "COIN"
+        ],
+        "CHILLGUY": [
+            "34125",
+            null,
+            "Just a chill guy",
+            "CHILLGUY",
+            "COIN"
+        ],
+        "CHIP": [
+            "39870",
+            null,
+            "USD.AI",
+            "CHIP",
+            "COIN"
+        ],
+        "CHR": [
+            "3978",
+            null,
+            "Chromia",
+            "CHR",
+            "COIN"
+        ],
+        "CHZ": [
+            "4066",
+            null,
+            "Chiliz",
+            "CHZ",
+            "COIN"
+        ],
+        "CIEN(STOCK)": [
+            "40227",
+            null,
+            "CIEN (Derivatives)",
+            "CIEN",
+            "STOCK"
+        ],
+        "CITY": [
+            "10049",
+            null,
+            "Manchester City Fan Token",
+            "CITY",
+            "COIN"
+        ],
+        "CKB": [
+            "4948",
+            null,
+            "Nervos Network",
+            "CKB",
+            "COIN"
+        ],
+        "CL(STOCK)": [
+            "39487",
+            null,
+            "CL (Derivatives)",
+            "CL",
+            "STOCK"
+        ],
+        "CLANKER": [
+            "34285",
+            null,
+            "tokenbot",
+            "CLANKER",
+            "COIN"
+        ],
+        "CLO": [
+            "38634",
+            null,
+            "Yei Finance",
+            "CLO",
+            "COIN"
+        ],
+        "COAI": [
+            "38489",
+            null,
+            "ChainOpera AI",
+            "COAI",
+            "COIN"
+        ],
+        "COHR(STOCK)": [
+            "39995",
+            null,
+            "COHR (Derivatives)",
+            "COHR",
+            "STOCK"
+        ],
+        "COLLECT": [
+            "39170",
+            null,
+            "Collect on Fanable",
+            "COLLECT",
+            "COIN"
+        ],
+        "COMP": [
+            "5692",
+            null,
+            "Compound",
+            "COMP",
+            "COIN"
+        ],
+        "COOKIE": [
+            "31838",
+            null,
+            "Cookie DAO",
+            "COOKIE",
+            "COIN"
+        ],
+        "COPPER(STOCK)": [
+            "36847",
+            null,
+            "COPPER (Derivatives)",
+            "COPPER",
+            "STOCK"
+        ],
+        "COST(STOCK)": [
+            "39505",
+            null,
+            "COST (Derivatives)",
+            "COST",
+            "STOCK"
+        ],
+        "COTI": [
+            "3992",
+            null,
+            "COTI",
+            "COTI",
+            "COIN"
+        ],
+        "COW": [
+            "19269",
+            null,
+            "CoW Protocol",
+            "COW",
+            "COIN"
+        ],
+        "CPOOL": [
+            "12573",
+            "ETH",
+            "Clearpool",
+            "CPOOL",
+            "COIN"
+        ],
+        "CRCLB(STOCK)": [
+            "40213",
+            null,
+            "CRCLB (Derivatives)",
+            "CRCLB",
+            "STOCK"
+        ],
+        "CRDO(STOCK)": [
+            "40203",
+            null,
+            "CRDO (Derivatives)",
+            "CRDO",
+            "STOCK"
+        ],
+        "CRM(STOCK)": [
+            "40116",
+            null,
+            "CRM (Derivatives)",
+            "CRM",
+            "STOCK"
+        ],
+        "CRO": [
+            "3635",
+            "CRO",
+            "Cronos",
+            "CRO",
+            "COIN"
+        ],
+        "CROSS": [
+            "37166",
+            null,
+            "CROSS",
+            "CROSS",
+            "COIN"
+        ],
+        "CRV": [
+            "6538",
+            null,
+            "Curve DAO Token",
+            "CRV",
+            "COIN"
+        ],
+        "CRWD(STOCK)": [
+            "40065",
+            null,
+            "CRWD (Derivatives)",
+            "CRWD",
+            "STOCK"
+        ],
+        "CRWV(STOCK)": [
+            "39497",
+            null,
+            "CRWV (Derivatives)",
+            "CRWV",
+            "STOCK"
+        ],
+        "CSCO(STOCK)": [
+            "39631",
+            null,
+            "CSCO (Derivatives)",
+            "CSCO",
+            "STOCK"
+        ],
+        "CTC": [
+            "5198",
+            "CTC",
+            "Creditcoin",
+            "CTC",
+            "COIN"
+        ],
+        "CTK": [
+            "4807",
+            null,
+            "Shentu",
+            "CTK",
+            "COIN"
+        ],
+        "CTR": [
+            "39916",
+            null,
+            "Citrea",
+            "CTR",
+            "COIN"
+        ],
+        "CTSI": [
+            "5444",
+            null,
+            "Cartesi",
+            "CTSI",
+            "COIN"
+        ],
+        "CVC": [
+            "1816",
+            null,
+            "Civic",
+            "CVC",
+            "COIN"
+        ],
+        "CVX": [
+            "9903",
+            null,
+            "Convex Finance",
+            "CVX",
+            "COIN"
+        ],
+        "CYBER": [
+            "24781",
+            null,
+            "Cyber",
+            "CYBER",
+            "COIN"
+        ],
+        "CYS": [
+            "39071",
+            null,
+            "Cysic",
+            "CYS",
+            "COIN"
+        ],
+        "DASH": [
+            "131",
+            null,
+            "Dash",
+            "DASH",
+            "COIN"
+        ],
+        "DCR": [
+            "1168",
+            null,
+            "Decred",
+            "DCR",
+            "COIN"
+        ],
+        "DEEP": [
+            "33391",
+            null,
+            "DeepBook Protocol",
+            "DEEP",
+            "COIN"
+        ],
+        "DELL(STOCK)": [
+            "40088",
+            null,
+            "DELL (Derivatives)",
+            "DELL",
+            "STOCK"
+        ],
+        "DEXE": [
+            "7326",
+            null,
+            "DeXe",
+            "DEXE",
+            "COIN"
+        ],
+        "DGB": [
+            "109",
+            null,
+            "DigiByte",
+            "DGB",
+            "COIN"
+        ],
+        "DIA": [
+            "6138",
+            null,
+            "DIA",
+            "DIA",
+            "COIN"
+        ],
+        "DIS(STOCK)": [
+            "39998",
+            null,
+            "DIS (Derivatives)",
+            "DIS",
+            "STOCK"
+        ],
+        "DKA": [
+            "5908",
+            "ETH",
+            "dKargo",
+            "DKA",
+            "COIN"
+        ],
+        "DKNG(STOCK)": [
+            "40222",
+            null,
+            "DKNG (Derivatives)",
+            "DKNG",
+            "STOCK"
+        ],
+        "DODO": [
+            "7224",
+            null,
+            "DODO",
+            "DODO",
+            "COIN"
+        ],
+        "DODOX": [
+            "7224",
+            null,
+            "DODO",
+            "DODOX",
+            "COIN"
+        ],
+        "DOGE": [
+            "74",
+            null,
+            "Dogecoin",
+            "DOGE",
+            "COIN"
+        ],
+        "DOGS": [
+            "32698",
+            null,
+            "DOGS",
+            "DOGS",
+            "COIN"
+        ],
+        "DOLO": [
+            "35929",
+            null,
+            "Dolomite",
+            "DOLO",
+            "COIN"
+        ],
+        "DOOD": [
+            "35747",
+            null,
+            "Doodles",
+            "DOOD",
+            "COIN"
+        ],
+        "DOT": [
+            "6636",
+            null,
+            "Polkadot",
+            "DOT",
+            "COIN"
+        ],
+        "DRAM(STOCK)": [
+            "39945",
+            null,
+            "DRAM (Derivatives)",
+            "DRAM",
+            "STOCK"
+        ],
+        "DRIFT": [
+            "31278",
+            null,
+            "Drift",
+            "DRIFT",
+            "COIN"
+        ],
+        "DUSK": [
+            "4092",
+            null,
+            "Dusk",
+            "DUSK",
+            "COIN"
+        ],
+        "DYDX": [
+            "28324",
+            null,
+            "dYdX",
+            "DYDX",
+            "COIN"
+        ],
+        "DYM": [
+            "28932",
+            null,
+            "Dymension",
+            "DYM",
+            "COIN"
+        ],
+        "Data(Story)": [
+            "35626",
+            null,
+            "Story",
+            "DATAIP",
+            "COIN"
+        ],
+        "EBAY(STOCK)": [
+            "39953",
+            null,
+            "EBAY (Derivatives)",
+            "EBAY",
+            "STOCK"
+        ],
+        "EDEN": [
+            "38513",
+            null,
+            "OpenEden",
+            "EDEN",
+            "COIN"
+        ],
+        "EDGE(edgeX)": [
+            "36288",
+            null,
+            "edgeX",
+            "EDGE",
+            "COIN"
+        ],
+        "EDU": [
+            "24613",
+            null,
+            "Open Campus",
+            "EDU",
+            "COIN"
+        ],
+        "EGLD": [
+            "6892",
+            null,
+            "MultiversX",
+            "EGLD",
+            "COIN"
+        ],
+        "EIGEN": [
+            "30494",
+            null,
+            "EigenCloud",
+            "EIGEN",
+            "COIN"
+        ],
+        "ELF": [
+            "2299",
+            "ELF",
+            "aelf",
+            "ELF",
+            "COIN"
+        ],
+        "ELSA": [
+            "39387",
+            null,
+            "HeyElsa",
+            "ELSA",
+            "COIN"
+        ],
+        "ENA": [
+            "30171",
+            null,
+            "Ethena",
+            "ENA",
+            "COIN"
+        ],
+        "ENJ": [
+            "2130",
+            null,
+            "Enjin Coin",
+            "ENJ",
+            "COIN"
+        ],
+        "ENS": [
+            "13855",
+            null,
+            "Ethereum Name Service",
+            "ENS",
+            "COIN"
+        ],
+        "ENSO": [
+            "38668",
+            null,
+            "Enso",
+            "ENSO",
+            "COIN"
+        ],
+        "EPIC": [
+            "8615",
+            null,
+            "Epic Chain",
+            "EPIC",
+            "COIN"
+        ],
+        "ERA": [
+            "37374",
+            null,
+            "Caldera",
+            "ERA",
+            "COIN"
+        ],
+        "ESP": [
+            "39548",
+            null,
+            "Espresso",
+            "ESP",
+            "COIN"
+        ],
+        "ESPORTS": [
+            "37414",
+            null,
+            "Yooldo",
+            "ESPORTS",
+            "COIN"
+        ],
+        "ETC": [
+            "1321",
+            null,
+            "Ethereum Classic",
+            "ETC",
+            "COIN"
+        ],
+        "ETH": [
+            "1027",
+            null,
+            "Ethereum",
+            "ETH",
+            "COIN"
+        ],
+        "ETHFI": [
+            "29814",
+            null,
+            "ether.fi",
+            "ETHFI",
+            "COIN"
+        ],
+        "ETHW": [
+            "21296",
+            null,
+            "EthereumPoW",
+            "ETHW",
+            "COIN"
+        ],
+        "EUL": [
+            "14280",
+            null,
+            "Euler",
+            "EUL",
+            "COIN"
+        ],
+        "EURI": [
+            "32644",
+            null,
+            "Eurite",
+            "EURI",
+            "COIN"
+        ],
+        "EVAA": [
+            "38376",
+            null,
+            "EVAA Protocol",
+            "EVAA",
+            "COIN"
+        ],
+        "EWJ(STOCK)": [
+            "39685",
+            null,
+            "EWJ (Derivatives)",
+            "EWJ",
+            "STOCK"
+        ],
+        "EWT(STOCK)": [
+            "40042",
+            null,
+            "EWT (Derivatives)",
+            "EWT",
+            "STOCK"
+        ],
+        "EWYB(STOCK)": [
+            "40539",
+            null,
+            "EWYB (Derivatives)",
+            "EWYB",
+            "STOCK"
+        ],
+        "EWZ(STOCK)": [
+            "39949",
+            null,
+            "EWZ (Derivatives)",
+            "EWZ",
+            "STOCK"
+        ],
+        "F": [
+            "34297",
+            null,
+            "SynFutures",
+            "F",
+            "COIN"
+        ],
+        "FARTCOIN": [
+            "33597",
+            null,
+            "Fartcoin",
+            "FARTCOIN",
+            "COIN"
+        ],
+        "FCT2": [
+            "4953",
+            "ETH",
+            "FirmaChain",
+            "FCT2",
+            "COIN"
+        ],
+        "FDUSD": [
+            "26081",
+            null,
+            "First Digital USD",
+            "FDUSD",
+            "COIN"
+        ],
+        "FET": [
+            "3773",
+            null,
+            "Artificial Superintelligence Alliance",
+            "FET",
+            "COIN"
+        ],
+        "FF": [
+            "38482",
+            null,
+            "Falcon Finance",
+            "FF",
+            "COIN"
+        ],
+        "FHE": [
+            "36153",
+            null,
+            "Mind Network",
+            "FHE",
+            "COIN"
+        ],
+        "FIDA": [
+            "7978",
+            null,
+            "Bonfida",
+            "FIDA",
+            "COIN"
+        ],
+        "FIGHT": [
+            "38963",
+            null,
+            "FIGHT",
+            "FIGHT",
+            "COIN"
+        ],
+        "FIL": [
+            "2280",
+            null,
+            "Filecoin",
+            "FIL",
+            "COIN"
+        ],
+        "FLEX(STOCK)": [
+            "40681",
+            null,
+            "FLEX (Derivatives)",
+            "FLEX",
+            "STOCK"
+        ],
+        "FLNC(STOCK)": [
+            "40007",
+            null,
+            "FLNC (Derivatives)",
+            "FLNC",
+            "STOCK"
+        ],
+        "FLOCK": [
+            "34987",
+            null,
+            "FLock.io",
+            "FLOCK",
+            "COIN"
+        ],
+        "FLOKI": [
+            "10804",
+            null,
+            "FLOKI",
+            "FLOKI",
+            "COIN"
+        ],
+        "FLOW": [
+            "4558",
+            null,
+            "Flow",
+            "FLOW",
+            "COIN"
+        ],
+        "FLUID": [
+            "10508",
+            null,
+            "Fluid",
+            "FLUID",
+            "COIN"
+        ],
+        "FLUX": [
+            "3029",
+            null,
+            "Flux",
+            "FLUX",
+            "COIN"
+        ],
+        "FOGO": [
+            "38356",
+            null,
+            "Fogo",
+            "FOGO",
+            "COIN"
+        ],
+        "FOLKS": [
+            "38864",
+            null,
+            "Folks Finance",
+            "FOLKS",
+            "COIN"
+        ],
+        "FORM": [
+            "23635",
+            null,
+            "Four",
+            "FORM",
+            "COIN"
+        ],
+        "FRAX": [
+            "6952",
+            null,
+            "Legacy Frax Dollar",
+            "FRAX",
+            "COIN"
+        ],
+        "FTT": [
+            "4195",
+            null,
+            "FTX Token",
+            "FTT",
+            "COIN"
+        ],
+        "G": [
+            "32120",
+            null,
+            "Gravity",
+            "G",
+            "COIN"
+        ],
+        "GALA": [
+            "7080",
+            null,
+            "Gala",
+            "GALA",
+            "COIN"
+        ],
+        "GAME2": [
+            "31246",
+            "ETH",
+            "GameBuild",
+            "GAME2",
+            "COIN"
+        ],
+        "GAS": [
+            "1785",
+            null,
+            "Gas",
+            "GAS",
+            "COIN"
+        ],
+        "GENIUS": [
+            "39841",
+            null,
+            "Genius Terminal",
+            "GENIUS",
+            "COIN"
+        ],
+        "GIGGLE": [
+            "38470",
+            null,
+            "Giggle Fund",
+            "GIGGLE",
+            "COIN"
+        ],
+        "GLM": [
+            "1455",
+            null,
+            "Golem",
+            "GLM",
+            "COIN"
+        ],
+        "GLMR": [
+            "6836",
+            null,
+            "Moonbeam",
+            "GLMR",
+            "COIN"
+        ],
+        "GLW(STOCK)": [
+            "40010",
+            null,
+            "GLW (Derivatives)",
+            "GLW",
+            "STOCK"
+        ],
+        "GME(STOCK)": [
+            "39928",
+            null,
+            "GME (Derivatives)",
+            "GME",
+            "STOCK"
+        ],
+        "GMT": [
+            "18069",
+            null,
+            "GMT",
+            "GMT",
+            "COIN"
+        ],
+        "GMX": [
+            "11857",
+            null,
+            "GMX",
+            "GMX",
+            "COIN"
+        ],
+        "GNO": [
+            "1659",
+            null,
+            "Gnosis",
+            "GNO",
+            "COIN"
+        ],
+        "GNS": [
+            "13663",
+            null,
+            "Gains Network",
+            "GNS",
+            "COIN"
+        ],
+        "GOAT": [
+            "33440",
+            null,
+            "Goatseus Maximus",
+            "GOAT",
+            "COIN"
+        ],
+        "GOOGL(STOCK)": [
+            "39470",
+            null,
+            "GOOGL (Derivatives)",
+            "GOOGL",
+            "STOCK"
+        ],
+        "GPS": [
+            "35268",
+            null,
+            "GoPlus Security",
+            "GPS",
+            "COIN"
+        ],
+        "GRAM": [
+            "11419",
+            null,
+            "Gram (prev. Toncoin)",
+            "GRAM",
+            "COIN"
+        ],
+        "GRASS": [
+            "32956",
+            null,
+            "Grass",
+            "GRASS",
+            "COIN"
+        ],
+        "GRIFFAIN": [
+            "34792",
+            null,
+            "GRIFFAIN",
+            "GRIFFAIN",
+            "COIN"
+        ],
+        "GRT": [
+            "6719",
+            null,
+            "The Graph",
+            "GRT",
+            "COIN"
+        ],
+        "GTC": [
+            "10052",
+            null,
+            "Gitcoin",
+            "GTC",
+            "COIN"
+        ],
+        "GUA": [
+            "38984",
+            null,
+            "SUPERFORTUNE",
+            "GUA",
+            "COIN"
+        ],
+        "GUN": [
+            "36156",
+            null,
+            "GUNZ",
+            "GUN",
+            "COIN"
+        ],
+        "GWEI": [
+            "39379",
+            null,
+            "ETHGas",
+            "GWEI",
+            "COIN"
+        ],
+        "H": [
+            "36922",
+            null,
+            "Humanity",
+            "H",
+            "COIN"
+        ],
+        "HAEDAL": [
+            "36369",
+            null,
+            "Haedal Protocol",
+            "HAEDAL",
+            "COIN"
+        ],
+        "HANA": [
+            "38468",
+            null,
+            "Hana Network",
+            "HANA",
+            "COIN"
+        ],
+        "HBAR": [
+            "4642",
+            null,
+            "Hedera",
+            "HBAR",
+            "COIN"
+        ],
+        "HD(STOCK)": [
+            "39996",
+            null,
+            "HD (Derivatives)",
+            "HD",
+            "STOCK"
+        ],
+        "HEI": [
+            "35724",
+            null,
+            "Heima",
+            "HEI",
+            "COIN"
+        ],
+        "HEMI": [
+            "38159",
+            null,
+            "Hemi",
+            "HEMI",
+            "COIN"
+        ],
+        "HFT": [
+            "22461",
+            null,
+            "Hashflow",
+            "HFT",
+            "COIN"
+        ],
+        "HIMS(STOCK)": [
+            "40113",
+            null,
+            "HIMS (Derivatives)",
+            "HIMS",
+            "STOCK"
+        ],
+        "HIVE": [
+            "5370",
+            null,
+            "Hive",
+            "HIVE",
+            "COIN"
+        ],
+        "HMSTR": [
+            "32195",
+            null,
+            "Hamster Kombat",
+            "HMSTR",
+            "COIN"
+        ],
+        "HOLO": [
+            "38309",
+            null,
+            "Holoworld AI",
+            "HOLO",
+            "COIN"
+        ],
+        "HOME": [
+            "36133",
+            null,
+            "Defi App",
+            "HOME",
+            "COIN"
+        ],
+        "HOOD(STOCK)": [
+            "39478",
+            null,
+            "HOOD (Derivatives)",
+            "HOOD",
+            "STOCK"
+        ],
+        "HOT": [
+            "2682",
+            null,
+            "Holo",
+            "HOT",
+            "COIN"
+        ],
+        "HP": [
+            "36556",
+            "HP",
+            "Hippo Protocol",
+            "HP",
+            "COIN"
+        ],
+        "HPE(STOCK)": [
+            "40112",
+            null,
+            "HPE (Derivatives)",
+            "HPE",
+            "STOCK"
+        ],
+        "HUMA": [
+            "36576",
+            null,
+            "Huma Finance",
+            "HUMA",
+            "COIN"
+        ],
+        "HUNT": [
+            "5380",
+            "ETH",
+            "Hunt Town",
+            "HUNT",
+            "COIN"
+        ],
+        "HYPE": [
+            "32196",
+            null,
+            "Hyperliquid",
+            "HYPE",
+            "COIN"
+        ],
+        "HYPER": [
+            "36281",
+            null,
+            "Hyperlane",
+            "HYPER",
+            "COIN"
+        ],
+        "HYUNDAI(STOCK)": [
+            "39573",
+            null,
+            "HYUNDAI (Derivatives)",
+            "HYUNDAI",
+            "STOCK"
+        ],
+        "IBM(STOCK)": [
+            "39634",
+            null,
+            "IBM (Derivatives)",
+            "IBM",
+            "STOCK"
+        ],
+        "ICNT": [
+            "37070",
+            null,
+            "Impossible Cloud Network",
+            "ICNT",
+            "COIN"
+        ],
+        "ICP": [
+            "8916",
+            null,
+            "Internet Computer",
+            "ICP",
+            "COIN"
+        ],
+        "ICX": [
+            "2099",
+            null,
+            "ICON",
+            "ICX",
+            "COIN"
+        ],
+        "ID": [
+            "21846",
+            null,
+            "SPACE ID",
+            "ID",
+            "COIN"
+        ],
+        "IDOL": [
+            "36775",
+            null,
+            "MEET48",
+            "IDOL",
+            "COIN"
+        ],
+        "ILV": [
+            "8719",
+            null,
+            "Illuvium",
+            "ILV",
+            "COIN"
+        ],
+        "IMX": [
+            "10603",
+            null,
+            "Immutable",
+            "IMX",
+            "COIN"
+        ],
+        "IN": [
+            "37609",
+            null,
+            "INFINIT",
+            "IN",
+            "COIN"
+        ],
+        "INIT": [
+            "33120",
+            null,
+            "Initia",
+            "INIT",
+            "COIN"
+        ],
+        "INJ": [
+            "7226",
+            null,
+            "Injective",
+            "INJ",
+            "COIN"
+        ],
+        "INTCB(STOCK)": [
+            "40540",
+            null,
+            "INTCB (Derivatives)",
+            "INTCB",
+            "STOCK"
+        ],
+        "INX": [
+            "39461",
+            null,
+            "Infinex",
+            "INX",
+            "COIN"
+        ],
+        "IO": [
+            "29835",
+            null,
+            "io.net",
+            "IO",
+            "COIN"
+        ],
+        "IOST": [
+            "2405",
+            null,
+            "IOST",
+            "IOST",
+            "COIN"
+        ],
+        "IOTA": [
+            "1720",
+            null,
+            "IOTA",
+            "IOTA",
+            "COIN"
+        ],
+        "IOTX": [
+            "2777",
+            null,
+            "IoTeX",
+            "IOTX",
+            "COIN"
+        ],
+        "IP": [
+            "36200",
+            "-",
+            "TRUMP IP",
+            "IP",
+            "COIN"
+        ],
+        "IQ": [
+            "2930",
+            null,
+            "IQ",
+            "IQ",
+            "COIN"
+        ],
+        "IREN(STOCK)": [
+            "40117",
+            null,
+            "IREN (Derivatives)",
+            "IREN",
+            "STOCK"
+        ],
+        "IRYS": [
+            "38978",
+            null,
+            "Irys",
+            "IRYS",
+            "COIN"
+        ],
+        "IWM(STOCK)": [
+            "39493",
+            null,
+            "IWM (Derivatives)",
+            "IWM",
+            "STOCK"
+        ],
+        "JASMY": [
+            "8425",
+            null,
+            "JasmyCoin",
+            "JASMY",
+            "COIN"
+        ],
+        "JCT": [
+            "38909",
+            null,
+            "Janction",
+            "JCT",
+            "COIN"
+        ],
+        "JELLYJELLY": [
+            "35537",
+            null,
+            "Jelly-My-Jelly",
+            "JELLYJELLY",
+            "COIN"
+        ],
+        "JOE": [
+            "11396",
+            null,
+            "JOE",
+            "JOE",
+            "COIN"
+        ],
+        "JPM(STOCK)": [
+            "40013",
+            null,
+            "JPM (Derivatives)",
+            "JPM",
+            "STOCK"
+        ],
+        "JST": [
+            "5488",
+            null,
+            "JUST",
+            "JST",
+            "COIN"
+        ],
+        "JTO": [
+            "28541",
+            null,
+            "Jito",
+            "JTO",
+            "COIN"
+        ],
+        "JUP": [
+            "29210",
+            null,
+            "Jupiter",
+            "JUP",
+            "COIN"
+        ],
+        "JUV": [
+            "5224",
+            null,
+            "Juventus Fan Token",
+            "JUV",
+            "COIN"
+        ],
+        "KAIA": [
+            "32880",
+            null,
+            "Kaia",
+            "KAIA",
+            "COIN"
+        ],
+        "KAITO": [
+            "35763",
+            null,
+            "KAITO",
+            "KAITO",
+            "COIN"
+        ],
+        "KAS": [
+            "20396",
+            null,
+            "Kaspa",
+            "KAS",
+            "COIN"
+        ],
+        "KAT": [
+            "38769",
+            null,
+            "Katana",
+            "KAT",
+            "COIN"
+        ],
+        "KAVA": [
+            "4846",
+            null,
+            "Kava",
+            "KAVA",
+            "COIN"
+        ],
+        "KERNEL": [
+            "36180",
+            null,
+            "KernelDAO",
+            "KERNEL",
+            "COIN"
+        ],
+        "KGEN": [
+            "38554",
+            null,
+            "KGeN",
+            "KGEN",
+            "COIN"
+        ],
+        "KGST": [
+            "39162",
+            null,
+            "KGST",
+            "KGST",
+            "COIN"
+        ],
+        "KITE": [
+            "38828",
+            null,
+            "Kite",
+            "KITE",
+            "COIN"
+        ],
+        "KLAC(STOCK)": [
+            "40548",
+            null,
+            "KLAC (Derivatives)",
+            "KLAC",
+            "STOCK"
+        ],
+        "KMNO": [
+            "30986",
+            null,
+            "Kamino",
+            "KMNO",
+            "COIN"
+        ],
+        "KNC": [
+            "9444",
+            null,
+            "Kyber Network Crystal v2",
+            "KNC",
+            "COIN"
+        ],
+        "KOMA": [
+            "33405",
+            null,
+            "Koma Inu",
+            "KOMA",
+            "COIN"
+        ],
+        "KORU(STOCK)": [
+            "40551",
+            null,
+            "KORU (Derivatives)",
+            "KORU",
+            "STOCK"
+        ],
+        "KSM": [
+            "5034",
+            null,
+            "Kusama",
+            "KSM",
+            "COIN"
+        ],
+        "KSTR(STOCK)": [
+            "40678",
+            null,
+            "KSTR (Derivatives)",
+            "KSTR",
+            "STOCK"
+        ],
+        "LA": [
+            "36510",
+            null,
+            "Lagrange",
+            "LA",
+            "COIN"
+        ],
+        "LAB": [
+            "33223",
+            null,
+            "LAB",
+            "LAB",
+            "COIN"
+        ],
+        "LAYER": [
+            "35429",
+            null,
+            "Solayer",
+            "LAYER",
+            "COIN"
+        ],
+        "LAZIO": [
+            "12687",
+            null,
+            "S.S. Lazio Fan Token",
+            "LAZIO",
+            "COIN"
+        ],
+        "LDO": [
+            "8000",
+            null,
+            "Lido DAO",
+            "LDO",
+            "COIN"
+        ],
+        "LIGHT": [
+            "38506",
+            null,
+            "Bitlight",
+            "LIGHT",
+            "COIN"
+        ],
+        "LINEA": [
+            "27657",
+            null,
+            "Linea",
+            "LINEA",
+            "COIN"
+        ],
+        "LINK": [
+            "1975",
+            null,
+            "Chainlink",
+            "LINK",
+            "COIN"
+        ],
+        "LISTA": [
+            "21533",
+            null,
+            "Lista DAO",
+            "LISTA",
+            "COIN"
+        ],
+        "LIT": [
+            "39125",
+            null,
+            "Lighter",
+            "LIT",
+            "COIN"
+        ],
+        "LITEB(STOCK)": [
+            "40591",
+            null,
+            "LITEB (Derivatives)",
+            "LITEB",
+            "STOCK"
+        ],
+        "LLY(STOCK)": [
+            "39509",
+            null,
+            "LLY (Derivatives)",
+            "LLY",
+            "STOCK"
+        ],
+        "LPT": [
+            "3640",
+            null,
+            "Livepeer",
+            "LPT",
+            "COIN"
+        ],
+        "LQTY": [
+            "7429",
+            null,
+            "Liquity",
+            "LQTY",
+            "COIN"
+        ],
+        "LRCX(STOCK)": [
+            "40547",
+            null,
+            "LRCX (Derivatives)",
+            "LRCX",
+            "STOCK"
+        ],
+        "LSK": [
+            "1214",
+            null,
+            "Lisk",
+            "LSK",
+            "COIN"
+        ],
+        "LTC": [
+            "2",
+            null,
+            "Litecoin",
+            "LTC",
+            "COIN"
+        ],
+        "LUMIA": [
+            "33439",
+            null,
+            "Lumia",
+            "LUMIA",
+            "COIN"
+        ],
+        "LUNA": [
+            "20314",
+            null,
+            "Terra",
+            "LUNA",
+            "COIN"
+        ],
+        "LUNA2": [
+            "20314",
+            null,
+            "Terra",
+            "LUNA2",
+            "COIN"
+        ],
+        "LUNC": [
+            "4172",
+            null,
+            "Terra Classic",
+            "LUNC",
+            "COIN"
+        ],
+        "LYN": [
+            "38561",
+            null,
+            "Everlyn AI",
+            "LYN",
+            "COIN"
+        ],
+        "M": [
+            "35491",
+            null,
+            "MemeCore",
+            "M",
+            "COIN"
+        ],
+        "MAGIC": [
+            "14783",
+            null,
+            "Treasure",
+            "MAGIC",
+            "COIN"
+        ],
+        "MAGMA": [
+            "39121",
+            null,
+            "Magma Finance",
+            "MAGMA",
+            "COIN"
+        ],
+        "MANA": [
+            "1966",
+            null,
+            "Decentraland",
+            "MANA",
+            "COIN"
+        ],
+        "MANTA": [
+            "13631",
+            null,
+            "Manta Network",
+            "MANTA",
+            "COIN"
+        ],
+        "MANTRA": [
+            "39611",
+            null,
+            "MANTRA",
+            "MANTRA",
+            "COIN"
+        ],
+        "MASK": [
+            "8536",
+            null,
+            "Mask Network",
+            "MASK",
+            "COIN"
+        ],
+        "MAV": [
+            "18037",
+            null,
+            "Maverick Protocol",
+            "MAV",
+            "COIN"
+        ],
+        "MAVIA": [
+            "28829",
+            null,
+            "Heroes of Mavia",
+            "MAVIA",
+            "COIN"
+        ],
+        "MBL": [
+            "4038",
+            null,
+            "MovieBloc",
+            "MBL",
+            "COIN"
+        ],
+        "ME": [
+            "32197",
+            null,
+            "Magic Eden",
+            "ME",
+            "COIN"
+        ],
+        "MED": [
+            "2303",
+            "MED",
+            "MediBloc",
+            "MED",
+            "COIN"
+        ],
+        "MEGA": [
+            "38770",
+            null,
+            "MegaETH",
+            "MEGA",
+            "COIN"
+        ],
+        "MELANIA": [
+            "35347",
+            null,
+            "Official Melania Meme",
+            "MELANIA",
+            "COIN"
+        ],
+        "MEME": [
+            "28301",
+            null,
+            "Memecoin",
+            "MEME",
+            "COIN"
+        ],
+        "MERL": [
+            "30712",
+            null,
+            "Merlin Chain",
+            "MERL",
+            "COIN"
+        ],
+        "MET(Meteora)": [
+            "38353",
+            null,
+            "Meteora",
+            "MET",
+            "COIN"
+        ],
+        "META(Metadium)": [
+            "3418",
+            "META",
+            "Metadium",
+            "META",
+            "COIN"
+        ],
+        "METAB(STOCK)": [
+            "40592",
+            null,
+            "METAB (Derivatives)",
+            "METAB",
+            "STOCK"
+        ],
+        "METIS": [
+            "9640",
+            null,
+            "Metis",
+            "METIS",
+            "COIN"
+        ],
+        "MEW": [
+            "30126",
+            null,
+            "cat in a dogs world",
+            "MEW",
+            "COIN"
+        ],
+        "MINA": [
+            "8646",
+            null,
+            "Mina",
+            "MINA",
+            "COIN"
+        ],
+        "MIRA": [
+            "38495",
+            null,
+            "Mira",
+            "MIRA",
+            "COIN"
+        ],
+        "MITO": [
+            "38204",
+            null,
+            "Mitosis",
+            "MITO",
+            "COIN"
+        ],
+        "MLK": [
+            "5266",
+            "ARB",
+            "MiL.k",
+            "MLK",
+            "COIN"
+        ],
+        "MMT": [
+            "38231",
+            null,
+            "Momentum",
+            "MMT",
+            "COIN"
+        ],
+        "MNT": [
+            "27075",
+            "ETH",
+            "Mantle",
+            "MNT",
+            "COIN"
+        ],
+        "MOC": [
+            "2915",
+            "ETH",
+            "Moss Coin",
+            "MOC",
+            "COIN"
+        ],
+        "MOCA": [
+            "31526",
+            null,
+            "Moca Network",
+            "MOCA",
+            "COIN"
+        ],
+        "MOG": [
+            "27659",
+            null,
+            "Mog Coin",
+            "MOG",
+            "COIN"
+        ],
+        "MON": [
+            "30495",
+            null,
+            "Monad",
+            "MON",
+            "COIN"
+        ],
+        "MOODENG": [
+            "33093",
+            null,
+            "Moo Deng (moodengsol.com)",
+            "MOODENG",
+            "COIN"
+        ],
+        "MORPHO": [
+            "34104",
+            null,
+            "Morpho",
+            "MORPHO",
+            "COIN"
+        ],
+        "MOVE": [
+            "32452",
+            null,
+            "Movement",
+            "MOVE",
+            "COIN"
+        ],
+        "MOVR": [
+            "9285",
+            null,
+            "Moonriver",
+            "MOVR",
+            "COIN"
+        ],
+        "MRVL(STOCK)": [
+            "39946",
+            null,
+            "MRVL (Derivatives)",
+            "MRVL",
+            "STOCK"
+        ],
+        "MSFTB(STOCK)": [
+            "40589",
+            null,
+            "MSFTB (Derivatives)",
+            "MSFTB",
+            "STOCK"
+        ],
+        "MSTRB(STOCK)": [
+            "40536",
+            null,
+            "MSTRB (Derivatives)",
+            "MSTRB",
+            "STOCK"
+        ],
+        "MTL": [
+            "1788",
+            null,
+            "Metal DAO",
+            "MTL",
+            "COIN"
+        ],
+        "MUB(STOCK)": [
+            "40212",
+            null,
+            "MUB (Derivatives)",
+            "MUB",
+            "STOCK"
+        ],
+        "MUBARAK": [
+            "36041",
+            null,
+            "Mubarak",
+            "MUBARAK",
+            "COIN"
+        ],
+        "MVL": [
+            "2982",
+            "ETH",
+            "MVL",
+            "MVL",
+            "COIN"
+        ],
+        "MVLL(STOCK)": [
+            "40559",
+            null,
+            "MVLL (Derivatives)",
+            "MVLL",
+            "STOCK"
+        ],
+        "MYX": [
+            "36410",
+            null,
+            "MYX Finance",
+            "MYX",
+            "COIN"
+        ],
+        "NAORIS": [
+            "35114",
+            null,
+            "Naoris Protocol",
+            "NAORIS",
+            "COIN"
+        ],
+        "NATGAS(STOCK)": [
+            "39464",
+            null,
+            "NATGAS (Derivatives)",
+            "NATGAS",
+            "STOCK"
+        ],
+        "NBIS(STOCK)": [
+            "40021",
+            null,
+            "NBIS (Derivatives)",
+            "NBIS",
+            "STOCK"
+        ],
+        "NEAR": [
+            "6535",
+            null,
+            "NEAR Protocol",
+            "NEAR",
+            "COIN"
+        ],
+        "NEIRO": [
+            "32521",
+            null,
+            "Neiro",
+            "NEIRO",
+            "COIN"
+        ],
+        "NEO": [
+            "1376",
+            null,
+            "Neo",
+            "NEO",
+            "COIN"
+        ],
+        "NEWT": [
+            "36861",
+            null,
+            "Newton Protocol",
+            "NEWT",
+            "COIN"
+        ],
+        "NEXO": [
+            "2694",
+            null,
+            "Nexo",
+            "NEXO",
+            "COIN"
+        ],
+        "NFLX(STOCK)": [
+            "39479",
+            null,
+            "NFLX (Derivatives)",
+            "NFLX",
+            "STOCK"
+        ],
+        "NFP": [
+            "28778",
+            null,
+            "NFPrompt",
+            "NFP",
+            "COIN"
+        ],
+        "NIGHT": [
+            "39064",
+            null,
+            "Midnight",
+            "NIGHT",
+            "COIN"
+        ],
+        "NIL": [
+            "35702",
+            null,
+            "Nillion",
+            "NIL",
+            "COIN"
+        ],
+        "NMR": [
+            "1732",
+            null,
+            "Numeraire",
+            "NMR",
+            "COIN"
+        ],
+        "NOK(STOCK)": [
+            "40072",
+            null,
+            "NOK (Derivatives)",
+            "NOK",
+            "STOCK"
+        ],
+        "NOM": [
+            "38464",
+            null,
+            "Nomina",
+            "NOM",
+            "COIN"
+        ],
+        "NOT": [
+            "28850",
+            null,
+            "Notcoin",
+            "NOT",
+            "COIN"
+        ],
+        "NOW(STOCK)": [
+            "40111",
+            null,
+            "NOW (Derivatives)",
+            "NOW",
+            "STOCK"
+        ],
+        "NVDAB(STOCK)": [
+            "40215",
+            null,
+            "NVDAB (Derivatives)",
+            "NVDAB",
+            "STOCK"
+        ],
+        "NVO(STOCK)": [
+            "40104",
+            null,
+            "NVO (Derivatives)",
+            "NVO",
+            "STOCK"
+        ],
+        "NXPC": [
+            "36044",
+            null,
+            "NEXPACE",
+            "NXPC",
+            "COIN"
+        ],
+        "O": [
+            "40092",
+            null,
+            "o1.exchange",
+            "O",
+            "COIN"
+        ],
+        "OG": [
+            "5309",
+            null,
+            "OG Fan Token",
+            "OG",
+            "COIN"
+        ],
+        "OGN": [
+            "5117",
+            null,
+            "Origin Protocol",
+            "OGN",
+            "COIN"
+        ],
+        "ON": [
+            "38750",
+            null,
+            "Orochi Network",
+            "ON",
+            "COIN"
+        ],
+        "ONDO": [
+            "21159",
+            null,
+            "Ondo",
+            "ONDO",
+            "COIN"
+        ],
+        "ONDS(STOCK)": [
+            "40118",
+            null,
+            "ONDS (Derivatives)",
+            "ONDS",
+            "STOCK"
+        ],
+        "ONE": [
+            "3945",
+            null,
+            "Harmony",
+            "ONE",
+            "COIN"
+        ],
+        "ONG": [
+            "3217",
+            null,
+            "Ontology Gas",
+            "ONG",
+            "COIN"
+        ],
+        "ONT": [
+            "2566",
+            null,
+            "Ontology",
+            "ONT",
+            "COIN"
+        ],
+        "OP": [
+            "11840",
+            null,
+            "Optimism",
+            "OP",
+            "COIN"
+        ],
+        "OPEN": [
+            "37456",
+            null,
+            "OpenLedger",
+            "OPEN",
+            "COIN"
+        ],
+        "OPENAI(STOCK)": [
+            "37671",
+            null,
+            "OPENAI (Derivatives)",
+            "OPENAI",
+            "STOCK"
+        ],
+        "OPG": [
+            "39800",
+            null,
+            "OpenGradient",
+            "OPG",
+            "COIN"
+        ],
+        "OPN": [
+            "39564",
+            null,
+            "Opinion",
+            "OPN",
+            "COIN"
+        ],
+        "ORBS": [
+            "3835",
+            "ETH",
+            "Orbs",
+            "ORBS",
+            "COIN"
+        ],
+        "ORCA": [
+            "11165",
+            null,
+            "Orca",
+            "ORCA",
+            "COIN"
+        ],
+        "ORCL(STOCK)": [
+            "39482",
+            null,
+            "ORCL (Derivatives)",
+            "ORCL",
+            "STOCK"
+        ],
+        "ORDER": [
+            "32809",
+            null,
+            "Orderly",
+            "ORDER",
+            "COIN"
+        ],
+        "ORDI": [
+            "25028",
+            null,
+            "ORDI",
+            "ORDI",
+            "COIN"
+        ],
+        "OSMO": [
+            "12220",
+            null,
+            "Osmosis",
+            "OSMO",
+            "COIN"
+        ],
+        "PARTI": [
+            "36102",
+            null,
+            "Particle Network",
+            "PARTI",
+            "COIN"
+        ],
+        "PAXG": [
+            "4705",
+            null,
+            "PAX Gold",
+            "PAXG",
+            "COIN"
+        ],
+        "PAYP(STOCK)": [
+            "39725",
+            null,
+            "PAYP (Derivatives)",
+            "PAYP",
+            "STOCK"
+        ],
+        "PENDLE": [
+            "9481",
+            null,
+            "Pendle",
+            "PENDLE",
+            "COIN"
+        ],
+        "PENGU": [
+            "34466",
+            null,
+            "Pudgy Penguins",
+            "PENGU",
+            "COIN"
+        ],
+        "PEOPLE": [
+            "14806",
+            null,
+            "ConstitutionDAO",
+            "PEOPLE",
+            "COIN"
+        ],
+        "PEPE": [
+            "24478",
+            null,
+            "Pepe",
+            "PEPE",
+            "COIN"
+        ],
+        "PHA": [
+            "6841",
+            null,
+            "Phala Network",
+            "PHA",
+            "COIN"
+        ],
+        "PIEVERSE": [
+            "38849",
+            null,
+            "Pieverse",
+            "PIEVERSE",
+            "COIN"
+        ],
+        "PIPPIN": [
+            "35053",
+            null,
+            "pippin",
+            "PIPPIN",
+            "COIN"
+        ],
+        "PIVX": [
+            "1169",
+            null,
+            "PIVX",
+            "PIVX",
+            "COIN"
+        ],
+        "PIXEL": [
+            "29335",
+            null,
+            "Pixels",
+            "PIXEL",
+            "COIN"
+        ],
+        "PLAY": [
+            "37534",
+            null,
+            "PlaysOut",
+            "PLAY",
+            "COIN"
+        ],
+        "PLTRB(STOCK)": [
+            "40590",
+            null,
+            "PLTRB (Derivatives)",
+            "PLTRB",
+            "STOCK"
+        ],
+        "PLUME": [
+            "35364",
+            null,
+            "Plume",
+            "PLUME",
+            "COIN"
+        ],
+        "PNUT": [
+            "33788",
+            null,
+            "Peanut the Squirrel",
+            "PNUT",
+            "COIN"
+        ],
+        "POKT": [
+            "11823",
+            "ETH",
+            "Pocket Network",
+            "POKT",
+            "COIN"
+        ],
+        "POL": [
+            "28321",
+            null,
+            "Polygon (prev. MATIC)",
+            "POL",
+            "COIN"
+        ],
+        "POLYX": [
+            "20362",
+            null,
+            "Polymesh",
+            "POLYX",
+            "COIN"
+        ],
+        "POND": [
+            "7497",
+            null,
+            "Marlin",
+            "POND",
+            "COIN"
+        ],
+        "POPCAT": [
+            "28782",
+            null,
+            "Popcat (SOL)",
+            "POPCAT",
+            "COIN"
+        ],
+        "PORTAL": [
+            "29555",
+            null,
+            "Portal",
+            "PORTAL",
+            "COIN"
+        ],
+        "PORTO": [
+            "14052",
+            null,
+            "FC Porto Fan Token",
+            "PORTO",
+            "COIN"
+        ],
+        "POWER": [
+            "39042",
+            null,
+            "Power Protocol",
+            "POWER",
+            "COIN"
+        ],
+        "POWR": [
+            "2132",
+            null,
+            "Powerledger",
+            "POWR",
+            "COIN"
+        ],
+        "PRL": [
+            "39797",
+            null,
+            "Perle",
+            "PRL",
+            "COIN"
+        ],
+        "PROM": [
+            "4120",
+            null,
+            "Prom",
+            "PROM",
+            "COIN"
+        ],
+        "PROMPT": [
+            "36223",
+            null,
+            "Wayfinder",
+            "PROMPT",
+            "COIN"
+        ],
+        "PROS(Pharos)": [
+            "39682",
+            null,
+            "Pharos",
+            "PHAROS",
+            "COIN"
+        ],
+        "PROVE": [
+            "37593",
+            null,
+            "Succinct",
+            "PROVE",
+            "COIN"
+        ],
+        "PSG": [
+            "5226",
+            null,
+            "Paris Saint-Germain Fan Token",
+            "PSG",
+            "COIN"
+        ],
+        "PTB": [
+            "37372",
+            null,
+            "Portal To Bitcoin",
+            "PTB",
+            "COIN"
+        ],
+        "PUMP": [
+            "36166",
+            null,
+            "PumpBTC (Governance token)",
+            "PUMP",
+            "COIN"
+        ],
+        "PUMPBTC": [
+            "36166",
+            null,
+            "PumpBTC (Governance token)",
+            "PUMPBTC",
+            "COIN"
+        ],
+        "PUNDIX": [
+            "9040",
+            null,
+            "Pundi X (New)",
+            "PUNDIX",
+            "COIN"
+        ],
+        "PYR": [
+            "9308",
+            null,
+            "Vulcan Forged (PYR)",
+            "PYR",
+            "COIN"
+        ],
+        "PYTH": [
+            "28177",
+            null,
+            "Pyth Network",
+            "PYTH",
+            "COIN"
+        ],
+        "Q": [
+            "38236",
+            null,
+            "Quack AI",
+            "Q",
+            "COIN"
+        ],
+        "QCOM(STOCK)": [
+            "39932",
+            null,
+            "QCOM (Derivatives)",
+            "QCOM",
+            "STOCK"
+        ],
+        "QI": [
+            "9288",
+            null,
+            "BENQI",
+            "QI",
+            "COIN"
+        ],
+        "QKC": [
+            "2840",
+            null,
+            "QuarkChain",
+            "QKC",
+            "COIN"
+        ],
+        "QNT": [
+            "3155",
+            null,
+            "Quant",
+            "QNT",
+            "COIN"
+        ],
+        "QNTX(STOCK)": [
+            "40094",
+            null,
+            "QNTX (Derivatives)",
+            "QNTX",
+            "STOCK"
+        ],
+        "QQQB(STOCK)": [
+            "40593",
+            null,
+            "QQQB (Derivatives)",
+            "QQQB",
+            "STOCK"
+        ],
+        "QTUM": [
+            "1684",
+            null,
+            "Qtum",
+            "QTUM",
+            "COIN"
+        ],
+        "QUICK": [
+            "19966",
+            null,
+            "Quickswap [New]",
+            "QUICK",
+            "COIN"
+        ],
+        "RAD": [
+            "6843",
+            null,
+            "Radworks",
+            "RAD",
+            "COIN"
+        ],
+        "RARE": [
+            "11294",
+            null,
+            "SuperRare",
+            "RARE",
+            "COIN"
+        ],
+        "RATS": [
+            "28452",
+            null,
+            "rats (Ordinals)",
+            "RATS",
+            "COIN"
+        ],
+        "RAVE": [
+            "38967",
+            null,
+            "RaveDAO",
+            "RAVE",
+            "COIN"
+        ],
+        "RAY": [
+            "8526",
+            null,
+            "Raydium",
+            "RAY",
+            "COIN"
+        ],
+        "RAY(Raydium)": [
+            "8526",
+            "BNB",
+            "Raydium",
+            "RAY",
+            "COIN"
+        ],
+        "RAYSOL(Raydium)": [
+            "8526",
+            null,
+            "Raydium",
+            "RAYSOL",
+            "COIN"
+        ],
+        "RE": [
+            "40224",
+            null,
+            "Re",
+            "RE",
+            "COIN"
+        ],
+        "RECALL": [
+            "38669",
+            null,
+            "Recall",
+            "RECALL",
+            "COIN"
+        ],
+        "RED": [
+            "21707",
+            null,
+            "RedStone",
+            "RED",
+            "COIN"
+        ],
+        "RENDER": [
+            "5690",
+            null,
+            "Render",
+            "RENDER",
+            "COIN"
+        ],
+        "REQ": [
+            "2071",
+            null,
+            "Request",
+            "REQ",
+            "COIN"
+        ],
+        "RESOLV": [
+            "36713",
+            null,
+            "Resolv",
+            "RESOLV",
+            "COIN"
+        ],
+        "REZ": [
+            "30843",
+            null,
+            "Renzo",
+            "REZ",
+            "COIN"
+        ],
+        "RIF": [
+            "3701",
+            null,
+            "Rootstock Infrastructure Framework",
+            "RIF",
+            "COIN"
+        ],
+        "RIVER": [
+            "38417",
+            null,
+            "River",
+            "RIVER",
+            "COIN"
+        ],
+        "RIVN(STOCK)": [
+            "39499",
+            null,
+            "RIVN (Derivatives)",
+            "RIVN",
+            "STOCK"
+        ],
+        "RKLB(STOCK)": [
+            "39948",
+            null,
+            "RKLB (Derivatives)",
+            "RKLB",
+            "STOCK"
+        ],
+        "RLC": [
+            "1637",
+            null,
+            "iExec RLC",
+            "RLC",
+            "COIN"
+        ],
+        "RLUSD": [
+            "34387",
+            null,
+            "Ripple USD",
+            "RLUSD",
+            "COIN"
+        ],
+        "ROBO": [
+            "39595",
+            null,
+            "Fabric Protocol",
+            "ROBO",
+            "COIN"
+        ],
+        "RONIN": [
+            "14101",
+            null,
+            "Ronin",
+            "RONIN",
+            "COIN"
+        ],
+        "ROSE": [
+            "7653",
+            null,
+            "Oasis",
+            "ROSE",
+            "COIN"
+        ],
+        "RPL": [
+            "2943",
+            null,
+            "Rocket Pool",
+            "RPL",
+            "COIN"
+        ],
+        "RSR": [
+            "3964",
+            null,
+            "Reserve Rights",
+            "RSR",
+            "COIN"
+        ],
+        "RUNE": [
+            "4157",
+            null,
+            "THORChain",
+            "RUNE",
+            "COIN"
+        ],
+        "RVN": [
+            "2577",
+            null,
+            "Ravencoin",
+            "RVN",
+            "COIN"
+        ],
+        "S": [
+            "32684",
+            null,
+            "Sonic",
+            "S",
+            "COIN"
+        ],
+        "SAFE": [
+            "21585",
+            null,
+            "Safe",
+            "SAFE",
+            "COIN"
+        ],
+        "SAGA": [
+            "30372",
+            null,
+            "Saga",
+            "SAGA",
+            "COIN"
+        ],
+        "SAHARA": [
+            "36671",
+            null,
+            "Sahara AI",
+            "SAHARA",
+            "COIN"
+        ],
+        "SAMSUNG(STOCK)": [
+            "39503",
+            null,
+            "SAMSUNG (Derivatives)",
+            "SAMSUNG",
+            "STOCK"
+        ],
+        "SAND": [
+            "6210",
+            null,
+            "The Sandbox",
+            "SAND",
+            "COIN"
+        ],
+        "SANTOS": [
+            "15248",
+            null,
+            "Santos FC Fan Token",
+            "SANTOS",
+            "COIN"
+        ],
+        "SAPIEN": [
+            "38117",
+            null,
+            "Sapien",
+            "SAPIEN",
+            "COIN"
+        ],
+        "SATS": [
+            "28194",
+            null,
+            "SATS (Ordinals)",
+            "SATS",
+            "COIN"
+        ],
+        "SC": [
+            "1042",
+            null,
+            "Siacoin",
+            "SC",
+            "COIN"
+        ],
+        "SCR": [
+            "26998",
+            null,
+            "Scroll",
+            "SCR",
+            "COIN"
+        ],
+        "SCRT": [
+            "5604",
+            null,
+            "Secret",
+            "SCRT",
+            "COIN"
+        ],
+        "SEI": [
+            "23149",
+            null,
+            "Sei",
+            "SEI",
+            "COIN"
+        ],
+        "SENT": [
+            "38868",
+            null,
+            "Sentient",
+            "SENT",
+            "COIN"
+        ],
+        "SFP": [
+            "8119",
+            null,
+            "SafePal",
+            "SFP",
+            "COIN"
+        ],
+        "SHELL": [
+            "35710",
+            null,
+            "MyShell",
+            "SHELL",
+            "COIN"
+        ],
+        "SHIB": [
+            "5994",
+            null,
+            "Shiba Inu",
+            "SHIB",
+            "COIN"
+        ],
+        "SIGN": [
+            "35600",
+            null,
+            "Sign",
+            "SIGN",
+            "COIN"
+        ],
+        "SIREN": [
+            "35766",
+            null,
+            "siren",
+            "SIREN",
+            "COIN"
+        ],
+        "SKHYNIX(STOCK)": [
+            "39500",
+            null,
+            "SKHYNIX (Derivatives)",
+            "SKHYNIX",
+            "STOCK"
+        ],
+        "SKL": [
+            "5691",
+            null,
+            "SKALE",
+            "SKL",
+            "COIN"
+        ],
+        "SKR": [
+            "39377",
+            null,
+            "Seeker",
+            "SKR",
+            "COIN"
+        ],
+        "SKY": [
+            "33038",
+            null,
+            "Sky",
+            "SKY",
+            "COIN"
+        ],
+        "SKYAI": [
+            "36300",
+            null,
+            "SKYAI",
+            "SKYAI",
+            "COIN"
+        ],
+        "SLP": [
+            "5824",
+            null,
+            "Smooth Love Potion",
+            "SLP",
+            "COIN"
+        ],
+        "SLX": [
+            "40047",
+            null,
+            "Solstice",
+            "SLX",
+            "COIN"
+        ],
+        "SMCI(STOCK)": [
+            "40549",
+            null,
+            "SMCI (Derivatives)",
+            "SMCI",
+            "STOCK"
+        ],
+        "SNDKB(STOCK)": [
+            "40216",
+            null,
+            "SNDKB (Derivatives)",
+            "SNDKB",
+            "STOCK"
+        ],
+        "SNT": [
+            "1759",
+            "ETH",
+            "Status",
+            "SNT",
+            "COIN"
+        ],
+        "SNX": [
+            "2586",
+            null,
+            "Synthetix",
+            "SNX",
+            "COIN"
+        ],
+        "SOL": [
+            "5426",
+            null,
+            "Solana",
+            "SOL",
+            "COIN"
+        ],
+        "SOLV": [
+            "12165",
+            null,
+            "Solv Protocol",
+            "SOLV",
+            "COIN"
+        ],
+        "SOMI": [
+            "37637",
+            null,
+            "Somnia",
+            "SOMI",
+            "COIN"
+        ],
+        "SONIC": [
+            "35051",
+            null,
+            "Sonic SVM",
+            "SONIC",
+            "COIN"
+        ],
+        "SONY(STOCK)": [
+            "40552",
+            null,
+            "SONY (Derivatives)",
+            "SONY",
+            "STOCK"
+        ],
+        "SOON": [
+            "36542",
+            null,
+            "SOON",
+            "SOON",
+            "COIN"
+        ],
+        "SOPH": [
+            "32087",
+            null,
+            "Sophon",
+            "SOPH",
+            "COIN"
+        ],
+        "SOXL(STOCK)": [
+            "39964",
+            null,
+            "SOXL (Derivatives)",
+            "SOXL",
+            "STOCK"
+        ],
+        "SPACE": [
+            "38136",
+            null,
+            "Spacecoin",
+            "SPACE",
+            "COIN"
+        ],
+        "SPCXB(STOCK)": [
+            "40217",
+            null,
+            "SPCXB (Derivatives)",
+            "SPCXB",
+            "STOCK"
+        ],
+        "SPELL": [
+            "11289",
+            null,
+            "Spell Token",
+            "SPELL",
+            "COIN"
+        ],
+        "SPK": [
+            "36569",
+            null,
+            "Spark",
+            "SPK",
+            "COIN"
+        ],
+        "SPORTFUN": [
+            "38647",
+            null,
+            "Sport.Fun",
+            "SPORTFUN",
+            "COIN"
+        ],
+        "SPX": [
+            "28081",
+            null,
+            "SPX6900",
+            "SPX",
+            "COIN"
+        ],
+        "SPY(STOCK)": [
+            "39732",
+            null,
+            "SPY (Derivatives)",
+            "SPY",
+            "STOCK"
+        ],
+        "SQD": [
+            "12894",
+            null,
+            "Subsquid",
+            "SQD",
+            "COIN"
+        ],
+        "SQQQ(STOCK)": [
+            "40561",
+            null,
+            "SQQQ (Derivatives)",
+            "SQQQ",
+            "STOCK"
+        ],
+        "SSV": [
+            "12999",
+            null,
+            "ssv.network",
+            "SSV",
+            "COIN"
+        ],
+        "STABLE": [
+            "38892",
+            null,
+            "Stable",
+            "STABLE",
+            "COIN"
+        ],
+        "STAR": [
+            "37743",
+            null,
+            "Starpower",
+            "STAR",
+            "COIN"
+        ],
+        "STBL": [
+            "38359",
+            null,
+            "STBL",
+            "STBL",
+            "COIN"
+        ],
+        "STEEM": [
+            "1230",
+            null,
+            "Steem",
+            "STEEM",
+            "COIN"
+        ],
+        "STG": [
+            "18934",
+            null,
+            "Stargate Finance",
+            "STG",
+            "COIN"
+        ],
+        "STO": [
+            "32194",
+            null,
+            "StakeStone",
+            "STO",
+            "COIN"
+        ],
+        "STORJ": [
+            "1772",
+            null,
+            "Storj",
+            "STORJ",
+            "COIN"
+        ],
+        "STRAX": [
+            "30168",
+            null,
+            "Xertra",
+            "STRAX",
+            "COIN"
+        ],
+        "STRC(STOCK)": [
+            "40557",
+            null,
+            "STRC (Derivatives)",
+            "STRC",
+            "STOCK"
+        ],
+        "STRK": [
+            "22691",
+            null,
+            "Starknet",
+            "STRK",
+            "COIN"
+        ],
+        "STX": [
+            "4847",
+            null,
+            "Stacks",
+            "STX",
+            "COIN"
+        ],
+        "SUI": [
+            "20947",
+            null,
+            "Sui",
+            "SUI",
+            "COIN"
+        ],
+        "SUN": [
+            "10529",
+            null,
+            "Sun [New]",
+            "SUN",
+            "COIN"
+        ],
+        "SUPER": [
+            "8290",
+            null,
+            "SuperVerse",
+            "SUPER",
+            "COIN"
+        ],
+        "SUSHI": [
+            "6758",
+            null,
+            "SushiSwap",
+            "SUSHI",
+            "COIN"
+        ],
+        "SWARMS": [
+            "34993",
+            null,
+            "Swarms",
+            "SWARMS",
+            "COIN"
+        ],
+        "SXT": [
+            "36405",
+            null,
+            "Space and Time",
+            "SXT",
+            "COIN"
+        ],
+        "SYN": [
+            "12147",
+            null,
+            "Synapse",
+            "SYN",
+            "COIN"
+        ],
+        "SYRUP": [
+            "33824",
+            null,
+            "Maple Finance",
+            "SYRUP",
+            "COIN"
+        ],
+        "T": [
+            "17751",
+            null,
+            "Threshold",
+            "T",
+            "COIN"
+        ],
+        "TA": [
+            "37430",
+            null,
+            "Trusta.AI",
+            "TA",
+            "COIN"
+        ],
+        "TAC": [
+            "37338",
+            null,
+            "TAC Protocol",
+            "TAC",
+            "COIN"
+        ],
+        "TAG": [
+            "34958",
+            null,
+            "Tagger",
+            "TAG",
+            "COIN"
+        ],
+        "TAIKO": [
+            "31525",
+            null,
+            "Taiko",
+            "TAIKO",
+            "COIN"
+        ],
+        "TAKE": [
+            "38175",
+            null,
+            "OVERTAKE",
+            "TAKE",
+            "COIN"
+        ],
+        "TAO": [
+            "22974",
+            null,
+            "Bittensor",
+            "TAO",
+            "COIN"
+        ],
+        "TER(STOCK)": [
+            "40680",
+            null,
+            "TER (Derivatives)",
+            "TER",
+            "STOCK"
+        ],
+        "TFUEL": [
+            "3822",
+            null,
+            "Theta Fuel",
+            "TFUEL",
+            "COIN"
+        ],
+        "THE": [
+            "23335",
+            null,
+            "THENA",
+            "THE",
+            "COIN"
+        ],
+        "THETA": [
+            "2416",
+            null,
+            "Theta Network",
+            "THETA",
+            "COIN"
+        ],
+        "TIA": [
+            "22861",
+            null,
+            "Celestia",
+            "TIA",
+            "COIN"
+        ],
+        "TKO": [
+            "9020",
+            null,
+            "Toko Token",
+            "TKO",
+            "COIN"
+        ],
+        "TLM": [
+            "9119",
+            null,
+            "Alien Worlds",
+            "TLM",
+            "COIN"
+        ],
+        "TNSR": [
+            "30449",
+            null,
+            "Tensor",
+            "TNSR",
+            "COIN"
+        ],
+        "TOKAMAK": [
+            "6731",
+            "ETH",
+            "Tokamak Network",
+            "TOKAMAK",
+            "COIN"
+        ],
+        "TOSHI": [
+            "27750",
+            null,
+            "Toshi",
+            "TOSHI",
+            "COIN"
+        ],
+        "TOWNS": [
+            "37571",
+            null,
+            "Towns",
+            "TOWNS",
+            "COIN"
+        ],
+        "TQQQ(STOCK)": [
+            "40560",
+            null,
+            "TQQQ (Derivatives)",
+            "TQQQ",
+            "STOCK"
+        ],
+        "TRAC": [
+            "2467",
+            "ETH",
+            "OriginTrail",
+            "TRAC",
+            "COIN"
+        ],
+        "TRADOOR": [
+            "36737",
+            null,
+            "Tradoor",
+            "TRADOOR",
+            "COIN"
+        ],
+        "TRB": [
+            "4944",
+            null,
+            "Tellor",
+            "TRB",
+            "COIN"
+        ],
+        "TREE": [
+            "37495",
+            null,
+            "Treehouse",
+            "TREE",
+            "COIN"
+        ],
+        "TRIA": [
+            "39382",
+            null,
+            "Tria",
+            "TRIA",
+            "COIN"
+        ],
+        "TRUMP": [
+            "35336",
+            null,
+            "OFFICIAL TRUMP",
+            "TRUMP",
+            "COIN"
+        ],
+        "TRUST": [
+            "38863",
+            null,
+            "Intuition",
+            "TRUST",
+            "COIN"
+        ],
+        "TRUTH": [
+            "38178",
+            null,
+            "Swarm Network",
+            "TRUTH",
+            "COIN"
+        ],
+        "TRX": [
+            "1958",
+            null,
+            "TRON",
+            "TRX",
+            "COIN"
+        ],
+        "TSLAB(STOCK)": [
+            "40214",
+            null,
+            "TSLAB (Derivatives)",
+            "TSLAB",
+            "STOCK"
+        ],
+        "TSM(STOCK)": [
+            "39490",
+            null,
+            "TSM (Derivatives)",
+            "TSM",
+            "STOCK"
+        ],
+        "TST": [
+            "35647",
+            null,
+            "Test",
+            "TST",
+            "COIN"
+        ],
+        "TT": [
+            "3930",
+            "TT",
+            "ThunderCore",
+            "TT",
+            "COIN"
+        ],
+        "TTWO(STOCK)": [
+            "40679",
+            null,
+            "TTWO (Derivatives)",
+            "TTWO",
+            "STOCK"
+        ],
+        "TURBO": [
+            "24911",
+            null,
+            "Turbo",
+            "TURBO",
+            "COIN"
+        ],
+        "TURTLE": [
+            "38671",
+            null,
+            "Turtle",
+            "TURTLE",
+            "COIN"
+        ],
+        "TUSD": [
+            "2563",
+            null,
+            "TrueUSD",
+            "TUSD",
+            "COIN"
+        ],
+        "TUT": [
+            "35892",
+            null,
+            "Tutorial",
+            "TUT",
+            "COIN"
+        ],
+        "TWT": [
+            "5964",
+            null,
+            "Trust Wallet Token",
+            "TWT",
+            "COIN"
+        ],
+        "TXN(STOCK)": [
+            "40682",
+            null,
+            "TXN (Derivatives)",
+            "TXN",
+            "STOCK"
+        ],
+        "U": [
+            "39120",
+            null,
+            "United Stables",
+            "U",
+            "COIN"
+        ],
+        "UAI": [
+            "38841",
+            null,
+            "UnifAI Network",
+            "UAI",
+            "COIN"
+        ],
+        "UB": [
+            "38339",
+            null,
+            "Unibase",
+            "UB",
+            "COIN"
+        ],
+        "UBER(STOCK)": [
+            "39997",
+            null,
+            "UBER (Derivatives)",
+            "UBER",
+            "STOCK"
+        ],
+        "UMA": [
+            "5617",
+            null,
+            "UMA",
+            "UMA",
+            "COIN"
+        ],
+        "UNI": [
+            "7083",
+            null,
+            "Uniswap",
+            "UNI",
+            "COIN"
+        ],
+        "UP(Superform)": [
+            "39552",
+            "ETH",
+            "Superform",
+            "UP2",
+            "COIN"
+        ],
+        "URNM(STOCK)": [
+            "39516",
+            null,
+            "URNM (Derivatives)",
+            "URNM",
+            "STOCK"
+        ],
+        "US": [
+            "38869",
+            null,
+            "Talus",
+            "US",
+            "COIN"
+        ],
+        "USAR(STOCK)": [
+            "39514",
+            null,
+            "USAR (Derivatives)",
+            "USAR",
+            "STOCK"
+        ],
+        "USD1": [
+            "36148",
+            null,
+            "World Liberty Financial USD",
+            "USD1",
+            "COIN"
+        ],
+        "USDC": [
+            "3408",
+            null,
+            "USDC",
+            "USDC",
+            "COIN"
+        ],
+        "USDE": [
+            "29470",
+            null,
+            "Ethena USDe",
+            "USDE",
+            "COIN"
+        ],
+        "USDP": [
+            "3330",
+            null,
+            "Pax Dollar",
+            "USDP",
+            "COIN"
+        ],
+        "USDS": [
+            "33039",
+            null,
+            "USDS",
+            "USDS",
+            "COIN"
+        ],
+        "USDT": [
+            "825",
+            "ETH",
+            "Tether USDt",
+            "USDT",
+            "COIN"
+        ],
+        "USELESS": [
+            "36828",
+            null,
+            "Useless Coin",
+            "USELESS",
+            "COIN"
+        ],
+        "USTC": [
+            "7129",
+            null,
+            "TerraClassicUSD",
+            "USTC",
+            "COIN"
+        ],
+        "USUAL": [
+            "33979",
+            null,
+            "Usual",
+            "USUAL",
+            "COIN"
+        ],
+        "UVXY(STOCK)": [
+            "40229",
+            null,
+            "UVXY (Derivatives)",
+            "UVXY",
+            "STOCK"
+        ],
+        "V(STOCK)": [
+            "40014",
+            null,
+            "V (Derivatives)",
+            "V",
+            "STOCK"
+        ],
+        "VANA": [
+            "34619",
+            null,
+            "Vana",
+            "VANA",
+            "COIN"
+        ],
+        "VANRY": [
+            "8037",
+            null,
+            "Vanar Chain",
+            "VANRY",
+            "COIN"
+        ],
+        "VELODROME": [
+            "20435",
+            null,
+            "Velodrome Finance",
+            "VELODROME",
+            "COIN"
+        ],
+        "VELVET": [
+            "37298",
+            null,
+            "Velvet",
+            "VELVET",
+            "COIN"
+        ],
+        "VET": [
+            "3077",
+            null,
+            "VeChain",
+            "VET",
+            "COIN"
+        ],
+        "VIC": [
+            "2570",
+            null,
+            "Viction",
+            "VIC",
+            "COIN"
+        ],
+        "VIRTUAL": [
+            "29420",
+            null,
+            "Virtuals Protocol",
+            "VIRTUAL",
+            "COIN"
+        ],
+        "VTHO": [
+            "3012",
+            null,
+            "VeThor Token",
+            "VTHO",
+            "COIN"
+        ],
+        "VVV": [
+            "35509",
+            null,
+            "Venice Token",
+            "VVV",
+            "COIN"
+        ],
+        "W": [
+            "29587",
+            null,
+            "Wormhole",
+            "W",
+            "COIN"
+        ],
+        "WAL": [
+            "36119",
+            null,
+            "Walrus",
+            "WAL",
+            "COIN"
+        ],
+        "WAVES": [
+            "1274",
+            "WAVES",
+            "Waves",
+            "WAVES",
+            "COIN"
+        ],
+        "WAXP": [
+            "2300",
+            null,
+            "WAX",
+            "WAXP",
+            "COIN"
+        ],
+        "WBETH": [
+            "24760",
+            null,
+            "Wrapped Beacon ETH",
+            "WBETH",
+            "COIN"
+        ],
+        "WCT": [
+            "33152",
+            null,
+            "WalletConnect Token",
+            "WCT",
+            "COIN"
+        ],
+        "WDC(STOCK)": [
+            "39990",
+            null,
+            "WDC (Derivatives)",
+            "WDC",
+            "STOCK"
+        ],
+        "WET": [
+            "39049",
+            null,
+            "Humidifi",
+            "WET",
+            "COIN"
+        ],
+        "WIF": [
+            "28752",
+            null,
+            "dogwifhat",
+            "WIF",
+            "COIN"
+        ],
+        "WIN": [
+            "4206",
+            null,
+            "WINkLink",
+            "WIN",
+            "COIN"
+        ],
+        "WLD": [
+            "13502",
+            null,
+            "Worldcoin",
+            "WLD",
+            "COIN"
+        ],
+        "WLFI": [
+            "33251",
+            null,
+            "World Liberty Financial",
+            "WLFI",
+            "COIN"
+        ],
+        "WMT(STOCK)": [
+            "40015",
+            null,
+            "WMT (Derivatives)",
+            "WMT",
+            "STOCK"
+        ],
+        "WOO": [
+            "7501",
+            null,
+            "WOO",
+            "WOO",
+            "COIN"
+        ],
+        "XAG(STOCK)": [
+            "39343",
+            null,
+            "XAG (Derivatives)",
+            "XAG",
+            "STOCK"
+        ],
+        "XAI": [
+            "28933",
+            null,
+            "Xai",
+            "XAI",
+            "COIN"
+        ],
+        "XAN": [
+            "38481",
+            null,
+            "Anoma",
+            "XAN",
+            "COIN"
+        ],
+        "XAU(STOCK)": [
+            "39344",
+            null,
+            "XAU (Derivatives)",
+            "XAU",
+            "STOCK"
+        ],
+        "XAUT": [
+            "5176",
+            null,
+            "Tether Gold",
+            "XAUT",
+            "COIN"
+        ],
+        "XCN": [
+            "18679",
+            "ETH",
+            "Onyxcoin",
+            "XCN",
+            "COIN"
+        ],
+        "XEC": [
+            "10791",
+            null,
+            "eCash",
+            "XEC",
+            "COIN"
+        ],
+        "XLE(STOCK)": [
+            "39943",
+            null,
+            "XLE (Derivatives)",
+            "XLE",
+            "STOCK"
+        ],
+        "XLM": [
+            "512",
+            null,
+            "Stellar",
+            "XLM",
+            "COIN"
+        ],
+        "XMR": [
+            "328",
+            null,
+            "Monero",
+            "XMR",
+            "COIN"
+        ],
+        "XNO": [
+            "1567",
+            null,
+            "Nano",
+            "XNO",
+            "COIN"
+        ],
+        "XNY": [
+            "36933",
+            null,
+            "Codatta",
+            "XNY",
+            "COIN"
+        ],
+        "XPD(STOCK)": [
+            "39481",
+            null,
+            "XPD (Derivatives)",
+            "XPD",
+            "STOCK"
+        ],
+        "XPIN": [
+            "36238",
+            null,
+            "XPIN Network",
+            "XPIN",
+            "COIN"
+        ],
+        "XPL": [
+            "36645",
+            null,
+            "Plasma",
+            "XPL",
+            "COIN"
+        ],
+        "XPT(STOCK)": [
+            "39460",
+            null,
+            "XPT (Derivatives)",
+            "XPT",
+            "STOCK"
+        ],
+        "XRP": [
+            "52",
+            null,
+            "XRP",
+            "XRP",
+            "COIN"
+        ],
+        "XTZ": [
+            "2011",
+            null,
+            "Tezos",
+            "XTZ",
+            "COIN"
+        ],
+        "XUSD": [
+            "32372",
+            null,
+            "StraitsX USD",
+            "XUSD",
+            "COIN"
+        ],
+        "XVG": [
+            "693",
+            null,
+            "Verge",
+            "XVG",
+            "COIN"
+        ],
+        "XVS": [
+            "7288",
+            null,
+            "Venus",
+            "XVS",
+            "COIN"
+        ],
+        "YB": [
+            "38651",
+            null,
+            "YieldBasis",
+            "YB",
+            "COIN"
+        ],
+        "YFI": [
+            "5864",
+            null,
+            "Yearn",
+            "YFI",
+            "COIN"
+        ],
+        "YGG": [
+            "10688",
+            null,
+            "Yield Guild Games",
+            "YGG",
+            "COIN"
+        ],
+        "ZAMA": [
+            "39332",
+            null,
+            "Zama",
+            "ZAMA",
+            "COIN"
+        ],
+        "ZBT": [
+            "38427",
+            null,
+            "ZEROBASE",
+            "ZBT",
+            "COIN"
+        ],
+        "ZEC": [
+            "1437",
+            null,
+            "Zcash",
+            "ZEC",
+            "COIN"
+        ],
+        "ZEN": [
+            "1698",
+            null,
+            "Horizen",
+            "ZEN",
+            "COIN"
+        ],
+        "ZEREBRO": [
+            "34083",
+            null,
+            "Zerebro",
+            "ZEREBRO",
+            "COIN"
+        ],
+        "ZEST": [
+            "40008",
+            null,
+            "Zest Protocol",
+            "ZEST",
+            "COIN"
+        ],
+        "ZETA": [
+            "21259",
+            null,
+            "ZetaChain",
+            "ZETA",
+            "COIN"
+        ],
+        "ZIL": [
+            "2469",
+            null,
+            "Zilliqa",
+            "ZIL",
+            "COIN"
+        ],
+        "ZK": [
+            "24091",
+            null,
+            "ZKsync",
+            "ZK",
+            "COIN"
+        ],
+        "ZKC": [
+            "38371",
+            null,
+            "Boundless",
+            "ZKC",
+            "COIN"
+        ],
+        "ZKP": [
+            "39035",
+            null,
+            "zkPass",
+            "ZKP",
+            "COIN"
+        ],
+        "ZM(STOCK)": [
+            "39954",
+            null,
+            "ZM (Derivatives)",
+            "ZM",
+            "STOCK"
+        ],
+        "ZORA": [
+            "35931",
+            null,
+            "ZORA",
+            "ZORA",
+            "COIN"
+        ],
+        "ZRO": [
+            "26997",
+            null,
+            "LayerZero",
+            "ZRO",
+            "COIN"
+        ],
+        "ZRX": [
+            "1896",
+            null,
+            "0x Protocol",
+            "ZRX",
+            "COIN"
+        ],
+        "币安人生": [
+            "38590",
+            null,
+            "币安人生",
+            "币安人生",
+            "COIN"
+        ],
+        "我踏马来了": [
+            "39322",
+            null,
+            "我踏马来了",
+            "我踏马来了",
+            "COIN"
+        ],
+        "龙虾": [
+            "39671",
+            null,
+            "龙虾 (Lobster)",
+            "龙虾",
+            "COIN"
+        ]
+    }
 }

@@ -10,37 +10,37 @@ export function calculateKimchiData(mainData, subRaw, params) {
 
   let newKimchiData = [];
   if (Array.isArray(subRaw) && subRaw.length > 0) {
-    // Map sub raw data by timestamp for O(1) exact matching and safety
-    const subMap = new Map();
     const intervalSec = tfSec[tf] || 60;
-    subRaw.forEach(item => {
-      let subTime;
-      let subClose;
 
+    // 🚀 서브 거래소 파싱 도우미 함수 정의
+    const getSubTime = (item) => {
       if (subExchange === "upbit") {
-        subTime = Math.floor(Date.parse(item.candle_date_time_utc + "Z") / 1000);
-        subClose = item.trade_price;
+        return Math.floor(Date.parse(item.candle_date_time_utc + "Z") / 1000);
       } else if (subExchange === "bithumb") {
-        // 🚀 [해결] 빗썸 시간 보정은 chart_data.js 한 곳에서만 전담하도록 통일 (이중 차감 방지)
         if (Array.isArray(item)) {
-          subTime = Math.floor(Number(item[0]) / 1000); // 이미 UTC 보정이 끝난 timestamp초
-          subClose = Number(item[2]); // [time, open, close, high, low, vol] 구조의 close
+          return Math.floor(Number(item[0]) / 1000);
         } else {
-          // 혹시 모를 생 API 데이터 대응용 폴백 (보정이 안된 상태로 넘어왔을 경우에만 차감)
-          subTime = Math.floor(Number(item[0]) / 1000) - 32400; 
-          subClose = Number(item[2]);
+          return Math.floor(Number(item[0]) / 1000) - 32400;
         }
       } else {
-        subTime = Math.floor(Number(item[0]) / 1000);
-        subClose = Number(item[4]);
+        return Math.floor(Number(item[0]) / 1000);
       }
-      
-      // 🚀 [해결] 타임프레임 블록 크기(intervalSec) 단위로 타임스탬프를 수학적 내림(floor)하여 
-      // 해외/국내 거래소 간의 미세한 초 단위 시차 및 슬라이스 경계 오프셋을 완벽하게 일치시킵니다.
-      const alignedSubTime = Math.floor(subTime / intervalSec) * intervalSec;
-      subMap.set(alignedSubTime, subClose);
-    });
+    };
 
+    const getSubClose = (item) => {
+      if (subExchange === "upbit") {
+        return item.trade_price;
+      } else if (subExchange === "bithumb") {
+        return Number(item[2]);
+      } else {
+        return Number(item[4]);
+      }
+    };
+
+    // 🚀 서브 데이터를 타임스탬프 기준 시간 오름차순으로 완벽 정렬
+    const sortedSub = [...subRaw].sort((a, b) => getSubTime(a) - getSubTime(b));
+
+    let subIndex = 0;
     let rateIndex = 0;
     let lastKnownSubClose = null;
     let lastKnownSubTime = 0;
@@ -62,16 +62,29 @@ export function calculateKimchiData(mainData, subRaw, params) {
         rateIndex++;
       }
 
-      // 🚀 메인 캔들 타임스탬프 역시 동일한 내림(floor) 공식을 적용하여 subMap에서 O(1) 매칭시킵니다.
-      const alignedCandleTime = Math.floor(candleTimeSec / intervalSec) * intervalSec;
-      const matchedSubClose = subMap.get(alignedCandleTime);
-      if (matchedSubClose !== undefined && matchedSubClose !== null) {
-        lastKnownSubClose = matchedSubClose;
+      // 🚀 [최인접 시간 매칭 알고리즘]
+      // 메인 차트와 서브 차트가 모두 오름차순 정렬된 상태이므로,
+      // 순방향 포인터를 돌며 현재 메인 캔들 시각에 가장 오차가 적은 서브 캔들을 탐색합니다.
+      while (
+        subIndex < sortedSub.length - 1 &&
+        Math.abs(getSubTime(sortedSub[subIndex + 1]) - candleTimeSec) <
+        Math.abs(getSubTime(sortedSub[subIndex]) - candleTimeSec)
+      ) {
+        subIndex++;
+      }
+
+      const bestSub = sortedSub[subIndex];
+      const bestSubTime = getSubTime(bestSub);
+
+      // 두 캔들의 실제 시차가 타임프레임의 1.5배 이내인 경우만 유효 매칭으로 간주
+      if (Math.abs(bestSubTime - candleTimeSec) <= intervalSec * 1.5) {
+        lastKnownSubClose = getSubClose(bestSub);
         lastKnownSubTime = candleTimeSec;
       } else {
         const tolerance = intervalSec * 3;
+        // 시차가 너무 벌어졌다면(3배 이상) 이전 매칭된 가격 캐시를 완전히 초기화하여 무분별한 역방향 누적 차단
         if (lastKnownSubTime && (candleTimeSec - lastKnownSubTime > tolerance)) {
-          lastKnownSubClose = null; // Clear stale fallback
+          lastKnownSubClose = null;
         }
       }
 

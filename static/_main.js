@@ -865,21 +865,23 @@ document.addEventListener("keydown", (e) => {
   // 💡 1. 좌우 방향키: 타임프레임(TF) 퀵 스위칭
   if (left || right) {
     e.preventDefault();
-    const tfArray = [
-      "1m",
-      "3m",
-      "5m",
-      "15m",
-      "30m",
-      "1h",
-      "2h",
-      "4h",
-      "12h",
-      "1d",
-      "3d",
-      "1w",
-      "1M",
-    ];
+    const tfArray = (store.visibleTfs && store.visibleTfs.length > 0)
+      ? store.visibleTfs
+      : [
+          "1m",
+          "3m",
+          "5m",
+          "15m",
+          "30m",
+          "1h",
+          "2h",
+          "4h",
+          "12h",
+          "1d",
+          "3d",
+          "1w",
+          "1M",
+        ];
     let idx = tfArray.indexOf(store.currentTF);
     if (left && idx > 0 && typeof window.setTF === "function")
       window.setTF(tfArray[idx - 1]);

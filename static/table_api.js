@@ -13,8 +13,13 @@ export async function loadTableData(force = false, silent = false) {
   // updateTimeSpan.innerText = "업데이트 중...";
 
   try {
+    const headers = {};
+    const localCmcKey = localStorage.getItem("CMC_API_KEY") || "";
+    if (localCmcKey) {
+      headers["X-CMC-API-KEY"] = localCmcKey;
+    }
     // Xconsole.log("1. 파이썬 서버에 테이블 데이터 요청 시작!"); // ⭐️ 추가
-    const res = await fetch(`/api/market-data?force=${force}`);
+    const res = await fetch(`/api/market-data?force=${force}`, { headers });
     // Xconsole.log("2. 파이썬 서버가 응답 완료!"); // ⭐️ 추가
     const result = await res.json();
     // updateTimeSpan.innerText = `마지막 업데이트: ${result.last_updated}`;
@@ -118,7 +123,12 @@ export async function loadTableData(force = false, silent = false) {
 // 🚀 [HTS급 사일런트 백그라운드 동기화 엔진] 1분마다 로딩 모달 없이 메모리에서 조용히 파이썬 서버 데이터를 낚아채와 테이블 전체 장부(펀딩비, 시총 등)를 갱신합니다!
 export async function loadTableDataSilent() {
   try {
-    const res = await fetch("/api/market-data-silent");
+    const headers = {};
+    const localCmcKey = localStorage.getItem("CMC_API_KEY") || "";
+    if (localCmcKey) {
+      headers["X-CMC-API-KEY"] = localCmcKey;
+    }
+    const res = await fetch("/api/market-data-silent", { headers });
     if (!res.ok) return;
     const result = await res.json();
 

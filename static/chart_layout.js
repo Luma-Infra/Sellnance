@@ -9,6 +9,17 @@ export function togglePane(paneName) {
 
 let isDraggingResizer = null;
 
+export function toggleVolFallback(visible) {
+  const fallback = document.querySelector(".kimchi-vol-fallback");
+  if (fallback) {
+    if (visible) {
+      fallback.classList.remove("hidden");
+    } else {
+      fallback.classList.add("hidden");
+    }
+  }
+}
+
 export function applyChartLayout() {
   if (store.blockChartResize) return;
   if (!store.chart || !store.candleSeries) return;
@@ -66,17 +77,44 @@ export function applyChartLayout() {
   if (store.chartVol) store.chartVol.timeScale().applyOptions({ visible: v || k });
 
   // 🚀 [리사이즈 비동기 스케줄링] DOM 너비/높이 강제 측정 비용(Reflow) 및 캔버스 중복 resize 방지
+  // [성능 최적화] 실제 너비/높이 값이 1px이라도 달라졌을 때만 resize를 호출하여 불필요한 DOM Reflow 렉 차단
   if (store.chart && paneMain) {
     requestAnimationFrame(() => {
       if (store.chart && paneMain) {
-        store.chart.resize(paneMain.clientWidth, paneMain.clientHeight);
+        const w = paneMain.clientWidth;
+        const h = paneMain.clientHeight;
+        if (w > 0 && h > 0 && (store.mainWidthCache !== w || store.mainHeightCache !== h)) {
+          store.mainWidthCache = w;
+          store.mainHeightCache = h;
+          store.chart.resize(w, h);
+        }
       }
     });
   }
   if (store.chartVol && paneVol) {
     requestAnimationFrame(() => {
       if (store.chartVol && paneVol) {
-        store.chartVol.resize(paneVol.clientWidth, paneVol.clientHeight);
+        const w = paneVol.clientWidth;
+        const h = paneVol.clientHeight;
+        
+        // 🚀 [높이 0px 방어] 컨테이너가 켜지는 과정에서 일시적으로 clientHeight가 0일 경우, 50ms 대기 후 재리사이즈 예약
+        if (h === 0 && (v || k)) {
+          setTimeout(() => {
+            if (store.chartVol && paneVol) {
+              const rw = paneVol.clientWidth;
+              const rh = paneVol.clientHeight;
+              if (rw > 0 && rh > 0) {
+                store.volWidthCache = rw;
+                store.volHeightCache = rh;
+                store.chartVol.resize(rw, rh);
+              }
+            }
+          }, 50);
+        } else if (w > 0 && h > 0 && (store.volWidthCache !== w || store.volHeightCache !== h)) {
+          store.volWidthCache = w;
+          store.volHeightCache = h;
+          store.chartVol.resize(w, h);
+        }
       }
     });
   }
@@ -92,7 +130,7 @@ export function applyChartLayout() {
       kimchiSwitcher.style.display = "none";
     }
   }
-};
+}
 
 
 // 🚀 2. 드래그 엔진 초기화
@@ -132,6 +170,7 @@ export function initResizers() {
 window.togglePane = togglePane;
 window.applyChartLayout = applyChartLayout;
 window.initResizers = initResizers;
+window.toggleVolFallback = toggleVolFallback;
 
 // 뷰 모드 전환 시 차트만 콕 집어 resize (table/quickview 사이드 이펙트 없음)
 window.addEventListener("viewModeChanged", () => {

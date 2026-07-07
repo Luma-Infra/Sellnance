@@ -1,5 +1,6 @@
 // stream_render.js
 import { store } from "./_store.js";
+import { getUnixSeconds, rebuildVolumeDataMap } from "./chart_utils.js";
 
 /**
  * 정제된 틱 데이터를 받아 메인 캔들과 거래량 시리즈에 안전하게 실시간 업데이트를 주입
@@ -93,6 +94,7 @@ export function renderRealtimeUpdate(normalizedTime, currentCandle) {
                     } else if (normalizedTime === lastVolItem.time) {
                         store.volumeData[store.volumeData.length - 1] = volObj;
                     }
+                    store.volumeDataMap.set(getUnixSeconds(volObj.time), volObj);
                 }
             }
         } catch (e) {
@@ -125,6 +127,7 @@ function restoreVolumeDataSterilized() {
 
             // 🔥 [필수 추가] 메모리 원본 소독: 전역 스토어 배열 자체를 깨끗한 놈으로 갈아끼웁니다.
             store.volumeData = sterileVolumeData;
+            rebuildVolumeDataMap();
 
             store.volumeSeries.setData([]);
             if (typeof window.sanitizeChartData === "function") {

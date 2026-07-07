@@ -226,6 +226,11 @@ def track_user_session(request: Request):
 @app.get("/api/market-data")
 def get_market_data(request: Request, force: bool = False):
     """프론트엔드의 표(Table)를 그리기 위한 데이터를 JSON으로 반환합니다."""
+    # 🚀 [CMC API 키 Stateless 동기화] 클라이언트 헤더에 전달된 키가 있으면 메모리에 반영
+    cmc_key = request.headers.get("X-CMC-API-KEY")
+    if cmc_key:
+        config.set_cmc_api_key(cmc_key)
+
     user_count = track_user_session(request)
     data, last_updated = api_manager.get_cached_data(force_reload=force)
     

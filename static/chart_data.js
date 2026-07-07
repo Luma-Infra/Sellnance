@@ -7,6 +7,9 @@ import {
   getUnixSeconds,
   ensureSafeUnixSeconds,
   sanitizeChartData,
+  rebuildMainDataMap,
+  rebuildVolumeDataMap,
+  rebuildKimchiDataMap,
 } from "./chart_utils.js";
 
 import { formatSmartPrice, formatCrosshairPrice } from "./chart_utils.js";
@@ -684,6 +687,8 @@ export async function fetchHistory(
       newVolumeData.map((d) => mapTime(d)),
       true,
     );
+    rebuildMainDataMap();
+    rebuildVolumeDataMap();
 
     store.lastFetchParams = {
       symbol: symbol,
@@ -814,6 +819,9 @@ export async function fetchHistory(
           store.volumeData.length > 0
         ) {
           store.volumeSeries.setData(sanitizeChartData(store.volumeData, true));
+          if (typeof window.toggleVolFallback === "function") {
+            window.toggleVolFallback(false);
+          }
         } else if (store.volumeSeries) {
           store.volumeSeries.setData([]);
         }
@@ -1231,6 +1239,7 @@ export async function loadMoreHistory() {
         newKimchiData.map((d) => mapTime(d, params.tf)),
         true,
       );
+      rebuildKimchiDataMap();
     }
 
     store.mainData = sanitizeChartData(
@@ -1240,6 +1249,8 @@ export async function loadMoreHistory() {
       newVolumeData.map((d) => mapTime(d, params.tf)),
       true,
     );
+    rebuildMainDataMap();
+    rebuildVolumeDataMap();
 
     // 🚀 [핵심] 차트 캔들 추가 시 화면이 밀리는 현상을 원천 방어하기 위해 Visible Logical Range를 N만큼 밀어줌
     const timeScale = store.chart.timeScale();

@@ -4,7 +4,7 @@ import { getUnixSeconds, updateTabTitleManager, getPureBase } from "./chart_util
 import {
   getUpbitMessageHandler,
   getBithumbMessageHandler,
-  updateRealtimeKimchi,
+  updateRealtimeKimchiThrottled,
 } from "./stream_korea.js";
 import { renderRealtimeUpdate } from "./stream_render.js";
 import { getNormalizedTime, isTimeValid } from "./stream_utils.js";
@@ -105,7 +105,7 @@ export function startRealtimeCandle(
       if (typeof window.updateRealtimeCountdown === "function") {
         window.updateRealtimeCountdown(latestServerMs);
       }
-      updateRealtimeKimchi(currentCandle, latestSymbol, chartTime);
+      updateRealtimeKimchiThrottled(currentCandle, latestSymbol, chartTime);
 
       const p = store.getPrecision(store.currentSelectedSymbol || latestSymbol);
       if (typeof window.updateStatus === "function") {
@@ -144,7 +144,7 @@ export function startRealtimeCandle(
 
             if (store.mainData && store.mainData.length > 0) {
               const lastCandle = store.mainData[store.mainData.length - 1];
-              updateRealtimeKimchi({ close: newPrice, marketType: isMsgFutures ? "FUTURES" : "SPOT" }, symbol, lastCandle.time);
+              updateRealtimeKimchiThrottled({ close: newPrice, marketType: isMsgFutures ? "FUTURES" : "SPOT" }, symbol, lastCandle.time);
             }
           }
         }
@@ -186,6 +186,7 @@ export function startRealtimeCandle(
         } else {
           activeCandle = { time: currentUnix, open: newPrice, high: newPrice, low: newPrice, close: newPrice, volume: tradeQty };
           store.mainData.push(activeCandle);
+          store.mainDataMap.set(getUnixSeconds(activeCandle.time), activeCandle);
         }
         chartUpdateNeeded = true;
       },
@@ -213,6 +214,7 @@ export function startRealtimeCandle(
         } else if (kUnix > lastCandleUnix) {
           activeCandle = { time: kUnix, open: Number(k.o), high: Number(k.h), low: Number(k.l), close: Number(k.c), volume: kVol };
           store.mainData.push(activeCandle);
+          store.mainDataMap.set(getUnixSeconds(activeCandle.time), activeCandle);
         }
         chartUpdateNeeded = true;
       },
@@ -256,7 +258,7 @@ export function startRealtimeCandle(
 
             if (store.mainData && store.mainData.length > 0) {
               const lastCandle = store.mainData[store.mainData.length - 1];
-              updateRealtimeKimchi({ close: newPrice, marketType: isMsgFutures ? "BYBIT_FUTURES" : "BYBIT" }, symbol, lastCandle.time);
+              updateRealtimeKimchiThrottled({ close: newPrice, marketType: isMsgFutures ? "BYBIT_FUTURES" : "BYBIT" }, symbol, lastCandle.time);
             }
           }
         }
@@ -292,6 +294,7 @@ export function startRealtimeCandle(
       } else {
         activeCandle = { time: currentUnix, open: newPrice, high: newPrice, low: newPrice, close: newPrice, volume: tradeQty };
         store.mainData.push(activeCandle);
+        store.mainDataMap.set(getUnixSeconds(activeCandle.time), activeCandle);
         chartUpdateNeeded = true;
       }
     });

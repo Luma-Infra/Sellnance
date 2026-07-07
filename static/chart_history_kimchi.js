@@ -1,5 +1,5 @@
 import { store, tfSec } from "./_store.js";
-import { getMultiplier, sanitizeChartData } from "./chart_utils.js";
+import { getMultiplier, sanitizeChartData, rebuildKimchiDataMap } from "./chart_utils.js";
 import { fetchCandlesSmart, fetchPaginated, mapTime } from "./chart_data.js";
 import { calculateKimchiData } from "./chart_data_kimchi.js";
 
@@ -352,6 +352,7 @@ export async function lazyRenderKimchiData(params) {
         return;
 
       store.kimchiData = newKimchiData.map((d) => mapTime(d));
+      rebuildKimchiDataMap();
       if (store.kimchiSeries && store.kimchiData.length > 0) {
         const lastK = store.kimchiData[store.kimchiData.length - 1];
         if (wrapper && lastK)
@@ -364,6 +365,11 @@ export async function lazyRenderKimchiData(params) {
             if (currentRange)
               store.chart.timeScale().setVisibleLogicalRange(currentRange);
 
+            // 🚀 [해결] 데이터가 성공적으로 바인딩되었으므로 오버레이 경고 문구를 숨깁니다.
+            if (typeof window.toggleVolFallback === "function") {
+              window.toggleVolFallback(false);
+            }
+
             if (typeof applyChartLayout === "function") applyChartLayout();
             if (typeof window.syncPriceScaleWidths === "function")
               setTimeout(window.syncPriceScaleWidths, 50);
@@ -371,11 +377,22 @@ export async function lazyRenderKimchiData(params) {
             console.warn("🚨 kimchiSeries.setData 렌더링 예외 우회 완료:", setErr);
           }
         });
+      } else {
+        // 데이터가 없거나 로드되지 않은 상태이므로 경고 문구 표시
+        if (typeof window.toggleVolFallback === "function") {
+          window.toggleVolFallback(true);
+        }
       }
     } else {
       store.paneConfig.kimchi = false;
       if (wrapper)
         wrapper.style.setProperty("--kimchi-color", "transparent");
+      
+      // 🚀 데이터가 없으므로 경고 문구 표시
+      if (typeof window.toggleVolFallback === "function") {
+        window.toggleVolFallback(true);
+      }
+
       const noDataMsg = document.getElementById("kimchi-no-data");
       if (noDataMsg && !isTfChange) {
         noDataMsg.classList.remove("hidden");
@@ -396,5 +413,10 @@ export async function lazyRenderKimchiData(params) {
     let loadingMessageContainer = document.getElementById("kimchi-loading-message");
     if (loadingMessageContainer)
       loadingMessageContainer.style.display = "none";
+    
+    // 에러 발생 시 경고 문구 표시
+    if (typeof window.toggleVolFallback === "function") {
+      window.toggleVolFallback(true);
+    }
   }
 }

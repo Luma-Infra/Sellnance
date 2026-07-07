@@ -398,7 +398,7 @@ function updateStatus(d, p) {
   // 가격 업데이트
   const asset = store.currentAsset || store.currentSelectedSymbol;
   const allSource = store.currentTableData || store.originalTableData || [];
-  const row = allSource.find(
+  const row = store.tickerRowMap.get(asset) || allSource.find(
     (r) =>
       r.DisplayTicker === asset || r.Ticker === asset || r.Symbol === asset,
   );
@@ -439,7 +439,7 @@ function updateStatus(d, p) {
     if (lastIdx !== -1) {
       const matchTime = last.time;
       if (matchTime) {
-        k = store.kimchiData?.find((item) => item.time === matchTime) || null;
+        k = store.kimchiDataMap.get(getUnixSeconds(matchTime)) || null;
       }
       if (!k && store.kimchiData && store.kimchiData.length > 0) {
         k = store.kimchiData[lastIdx];
@@ -996,3 +996,36 @@ export const sanitizeChartData = (dataArr, hasValueField = false) => {
   });
 };
 window.sanitizeChartData = sanitizeChartData;
+
+export function rebuildMainDataMap() {
+  store.mainDataMap.clear();
+  if (store.mainData) {
+    store.mainData.forEach((d) => {
+      const sec = getUnixSeconds(d.time);
+      store.mainDataMap.set(sec, d);
+    });
+  }
+}
+window.rebuildMainDataMap = rebuildMainDataMap;
+
+export function rebuildVolumeDataMap() {
+  store.volumeDataMap.clear();
+  if (store.volumeData) {
+    store.volumeData.forEach((d) => {
+      const sec = getUnixSeconds(d.time);
+      store.volumeDataMap.set(sec, d);
+    });
+  }
+}
+window.rebuildVolumeDataMap = rebuildVolumeDataMap;
+
+export function rebuildKimchiDataMap() {
+  store.kimchiDataMap.clear();
+  if (store.kimchiData) {
+    store.kimchiData.forEach((d) => {
+      const sec = getUnixSeconds(d.time);
+      store.kimchiDataMap.set(sec, d);
+    });
+  }
+}
+window.rebuildKimchiDataMap = rebuildKimchiDataMap;

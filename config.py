@@ -48,8 +48,11 @@ def set_cmc_api_key(new_key):
     if not found:
         lines.append(f"CMC_API_KEY={new_key}\n")
 
-    with open(ENV_FILE, "w") as f:
-        f.writelines(lines)
+    try:
+        with open(ENV_FILE, "w") as f:
+            f.writelines(lines)
+    except Exception as e:
+        print(f"⚠️ [.env 쓰기 실패] 읽기 전용 파일 시스템일 수 있습니다: {e}")
 
     # 환경 변수도 업데이트
     os.environ["CMC_API_KEY"] = new_key

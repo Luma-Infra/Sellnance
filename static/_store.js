@@ -68,6 +68,9 @@ export const store = {
   chartKimchi: null,
   kimchiData: null,
   mainData: [],
+  mainDataMap: new Map(), // 🚀 [최적화] O(1) 탐색용 해시맵
+  volumeDataMap: new Map(), // 🚀 [최적화] O(1) 탐색용 해시맵
+  kimchiDataMap: new Map(), // 🚀 [최적화] O(1) 탐색용 해시맵
   countdownPriceLine: null,
   paneConfig: { volume: true, kimchi: true },
   chartSplits: { s1: 0.65, s2: 0.85 },

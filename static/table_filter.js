@@ -444,10 +444,14 @@ export async function openSettingsModal() {
     const res = await fetch("/api/settings");
     const data = await res.json();
     store.settings = data;
+    const currentKey = data.CMC_API_KEY || localStorage.getItem("CMC_API_KEY") || "";
+    if (!data.CMC_API_KEY && currentKey) {
+      data.CMC_API_KEY = currentKey;
+    }
     const input = document.getElementById("setting-cmc-key");
     const btn = input.nextElementSibling;
     input.type = "text";
-    input.value = maskApiKey(data.CMC_API_KEY || "");
+    input.value = maskApiKey(currentKey);
     input.dataset.masked = "true";
     if (btn) btn.innerText = "🙈";
   } catch (e) {
@@ -465,7 +469,7 @@ export async function saveSettings() {
   let newKey = input.value.trim();
 
   if (newKey.includes("*") && store.settings) {
-    newKey = store.settings.CMC_API_KEY || "";
+    newKey = store.settings.CMC_API_KEY || localStorage.getItem("CMC_API_KEY") || "";
   }
 
   try {
@@ -476,6 +480,7 @@ export async function saveSettings() {
     });
 
     if (res.ok) {
+      localStorage.setItem("CMC_API_KEY", newKey);
       alert("Settings saved successfully! Restarting data fetch...");
       closeSettingsModal();
       loadTableData(true);
@@ -489,7 +494,7 @@ export function togglePasswordVisibility(id) {
   const input = document.getElementById(id);
   const btn = input.nextElementSibling;
   if (!store.settings) return;
-  const raw = store.settings.CMC_API_KEY || "";
+  const raw = store.settings.CMC_API_KEY || localStorage.getItem("CMC_API_KEY") || "";
 
   if (input.dataset.masked === "true") {
     input.value = raw;
