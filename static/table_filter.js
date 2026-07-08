@@ -393,6 +393,9 @@ export function toggleSmallCap() {
 
   const btn = document.getElementById("btn-small-cap");
   if (btn) {
+    const isSimple = store.tableViewMode === "simple";
+    const btnText = isSimple ? "🚫 Mcap < 1M" : "🚫 Hiding Mcap < 1M";
+
     if (store.hideSmallCap) {
       btn.classList.remove(
         "text-theme-text",
@@ -406,7 +409,7 @@ export function toggleSmallCap() {
         "shadow-md",
         "opacity-100",
       );
-      btn.innerText = "🚫 Hiding Mcap < 1M";
+      btn.innerText = btnText;
     } else {
       btn.classList.add("text-theme-text", "opacity-50", "border-theme-border");
       btn.classList.remove(
@@ -416,7 +419,7 @@ export function toggleSmallCap() {
         "shadow-md",
         "opacity-100",
       );
-      btn.innerText = "🚫 Hiding Mcap < 1M";
+      btn.innerText = btnText;
     }
   }
 
@@ -920,7 +923,7 @@ function formatFilterValue(val, isMcap) {
 }
 
 function formatKoreanMoney(usdVal) {
-  const rate = store.marketDataMap?.krw_usd_rate || 1400;
+  const rate = store.marketDataMap?.krw_usd_rate || 1;
   const krwVal = usdVal * rate;
   if (krwVal <= 0) return "0원";
   if (krwVal >= 1e12) {

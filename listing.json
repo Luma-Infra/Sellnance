@@ -237,6 +237,9 @@
   "AKTUSDT": {
     "binance_listing": "2026-05-28"
   },
+  "ALAB": {
+    "binance_listing": "2026-06-22"
+  },
   "ALCH": {
     "binance_listing": "2025-01-07"
   },
@@ -298,7 +301,7 @@
     "binance_listing": "2026-06-23"
   },
   "AMP": {
-    "binance_listing": "2026-06-18"
+    "binance_listing": "2026-06-16"
   },
   "AMPUSDT": {
     "binance_listing": "2026-05-28"
@@ -358,7 +361,7 @@
     "binance_listing": "2026-03-19"
   },
   "ARC": {
-    "binance_listing": "2025-01-17"
+    "binance_listing": "2025-01-13"
   },
   "ARCUSDT": {
     "binance_listing": "2025-01-01"
@@ -459,6 +462,9 @@
   "AUCTIONUSDT": {
     "binance_listing": "2025-01-13"
   },
+  "AUDIO": {
+    "binance_listing": "2025-02-23"
+  },
   "AUSDT": {
     "binance_listing": "2026-03-19"
   },
@@ -530,6 +536,9 @@
   },
   "BABY": {
     "binance_listing": "2025-04-05"
+  },
+  "BABYDOGE": {
+    "binance_listing": "2026-07-02"
   },
   "BABYDOGEUSDT": {
     "binance_listing": "2025-01-16"
@@ -1061,7 +1070,7 @@
     "bithumb_listing": "2026-05-25"
   },
   "CRCL": {
-    "binance_listing": "2026-04-08"
+    "binance_listing": "2026-02-09"
   },
   "CRCLB": {
     "binance_listing": "2026-06-11"
@@ -1285,7 +1294,7 @@
     "binance_listing": "2022-01-03"
   },
   "DYDX": {
-    "binance_listing": "2021-09-09"
+    "binance_listing": "2021-09-06"
   },
   "DYDXUSDT": {
     "binance_listing": "2025-01-14"
@@ -1433,7 +1442,7 @@
     "binance_listing": "2024-08-28"
   },
   "EVAA": {
-    "binance_listing": "2025-10-03"
+    "binance_listing": "2025-09-29"
   },
   "EVAAUSDT": {
     "binance_listing": "2025-10-03"
@@ -1510,6 +1519,9 @@
   },
   "FLM": {
     "binance_listing": "2019-09-25"
+  },
+  "FLNC": {
+    "binance_listing": "2026-06-16"
   },
   "FLNCUSDT": {
     "binance_listing": "2026-05-22"
@@ -1787,7 +1799,7 @@
     "binance_listing": "2025-01-17"
   },
   "HMSTR": {
-    "binance_listing": "2024-09-26"
+    "binance_listing": "2024-09-23"
   },
   "HMSTRUSDT": {
     "binance_listing": "2024-09-01"
@@ -1923,7 +1935,7 @@
     "binance_listing": "2026-02-02"
   },
   "INTCB": {
-    "binance_listing": "2026-06-23"
+    "binance_listing": "2026-06-16"
   },
   "INTCUSDT": {
     "binance_listing": "2026-02-02"
@@ -2156,7 +2168,7 @@
     "binance_listing": "2025-01-14"
   },
   "LDO": {
-    "binance_listing": "2022-09-21"
+    "binance_listing": "2022-09-01"
   },
   "LDOUSDT": {
     "binance_listing": "2026-03-19"
@@ -2767,6 +2779,9 @@
   "PAXGUSDT": {
     "binance_listing": "2025-03-27"
   },
+  "PAYP": {
+    "binance_listing": "2026-03-23"
+  },
   "PAYPUSDT": {
     "binance_listing": "2026-03-23"
   },
@@ -2846,6 +2861,9 @@
   },
   "PLAYUSDT": {
     "binance_listing": "2025-07-01"
+  },
+  "PLTR": {
+    "binance_listing": "2026-02-09"
   },
   "PLTRB": {
     "binance_listing": "2026-06-30"
@@ -2927,7 +2945,7 @@
     "binance_listing": "2026-04-01"
   },
   "PROM": {
-    "binance_listing": "2025-01-15"
+    "binance_listing": "2025-01-13"
   },
   "PROMPT": {
     "binance_listing": "2025-04-11"
@@ -3158,7 +3176,7 @@
     "binance_listing": "2026-01-22"
   },
   "ROBO": {
-    "binance_listing": "2026-02-27"
+    "binance_listing": "2026-02-23"
   },
   "ROBOUSDT": {
     "binance_listing": "2026-02-01"
@@ -3369,7 +3387,7 @@
     "binance_listing": "2026-04-07"
   },
   "SNDKB": {
-    "binance_listing": "2026-06-11"
+    "binance_listing": "2026-04-07"
   },
   "SNDKUSDT": {
     "binance_listing": "2026-05-22"
@@ -3424,6 +3442,9 @@
     "upbit_listing": "2025-11-25"
   },
   "SOXL": {
+    "binance_listing": "2026-05-15"
+  },
+  "SOXLB": {
     "binance_listing": "2026-05-15"
   },
   "SOXLUSDT": {
@@ -3747,7 +3768,7 @@
     "binance_listing": "2025-07-01"
   },
   "TRIA": {
-    "binance_listing": "2026-02-02"
+    "binance_listing": "2026-02-01"
   },
   "TRIAUSDT": {
     "binance_listing": "2026-02-01"
@@ -4118,7 +4139,7 @@
     "binance_listing": "2026-01-30"
   },
   "XPIN": {
-    "binance_listing": "2025-09-12"
+    "binance_listing": "2025-09-08"
   },
   "XPINUSDT": {
     "binance_listing": "2025-09-08"

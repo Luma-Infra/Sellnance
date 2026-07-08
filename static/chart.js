@@ -287,7 +287,7 @@ export function initChart() {
     if (store.mainData && store.mainData.length > 0) {
       const len = store.mainData.length;
       if (range.to >= len - 15) {
-        store.savedRightMargin = Math.round(range.to - len);
+        store.savedRightMargin = Math.round(range.to - (len - 1));
       }
     }
 
@@ -778,8 +778,10 @@ export function initChart() {
   // Helper function to render target charts and keep the subscribe handler flat
   function renderTargetCharts(targetCharts, normalizedTime, targetTime, magnetX) {
     targetCharts.forEach((targetObj) => {
-      const { chart: tChart, series: tSeries } = targetObj;
-      if (tChart && tSeries) {
+      try {
+        const { chart: tChart, series: tSeries } = targetObj;
+        if (!tChart || !tSeries) return;
+
         if (
           normalizedTime !== undefined &&
           normalizedTime !== null &&
@@ -821,7 +823,7 @@ export function initChart() {
         } else if (tChart === store.chart && store._mainCrosshair) {
           store._mainCrosshair.setX(magnetX, timeStr);
         }
-      }
+      } catch (e) { /* suppress lightweight-charts internal null value errors */ }
     });
   }
 

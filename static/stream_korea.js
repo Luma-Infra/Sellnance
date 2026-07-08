@@ -264,7 +264,7 @@ export function updateRealtimeKimchiThrottled(liveData, symbol, chartTime) {
 
   const now = performance.now();
   const timeElapsed = now - lastKimchiUpdateTime;
-  const throttleInterval = 120; // 120ms 쓰로틀링
+  const throttleInterval = 455; // 455ms 쓰로틀링
 
   if (timeElapsed >= throttleInterval) {
     kimchiUpdatePending = true;

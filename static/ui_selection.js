@@ -9,7 +9,8 @@ export function selectSymbol(s, forceMarket = null, targetUid = null, isRowClick
   const allSourceData = store.currentTableData || store.originalTableData || [];
 
   // 1. suffix 및 순수 심볼 파싱
-  let parsedSymbol = String(s).toUpperCase();
+  const originalSym = String(s);
+  let parsedSymbol = originalSym.toUpperCase();
   let parsedMarket = null;
 
   if (parsedSymbol.endsWith("KRW")) {
@@ -229,7 +230,7 @@ export function selectSymbol(s, forceMarket = null, targetUid = null, isRowClick
 
       // 코인 상세 이름 비동기 패치
       try {
-        const querySym = rowInfo ? rowInfo.DisplayTicker : uniqueTicker;
+        const querySym = rowInfo ? rowInfo.DisplayTicker : originalSym;
         fetch(`/api/coin-info/${querySym}`)
           .then((res) => res.json())
           .then((infoData) => {
@@ -328,6 +329,28 @@ export function selectSymbol(s, forceMarket = null, targetUid = null, isRowClick
       // 🚀 [추가] 코인 선택 시 실시간 정렬 엔진 강제 점화 및 즉시 적용
       if (typeof window.applyRealtimeSort === "function") {
         window.applyRealtimeSort();
+      }
+
+      // 🚀 모바일 환경(1200px 미만)일 경우 차트 패널 열기 + 네비탭 차트 활성화
+      if (typeof window.showMobileChart === "function") {
+        window.showMobileChart();
+      }
+      if (typeof window.switchMobileTab === "function" && window.innerWidth < 1200) {
+        // 네비탭 차트 활성 상태만 동기화 (차트는 이미 showMobileChart로 열림)
+        const tabList = document.getElementById("mobile-tab-list");
+        const tabChart = document.getElementById("mobile-tab-chart");
+        const tabSettings = document.getElementById("mobile-tab-settings");
+        [tabList, tabChart, tabSettings].forEach((btn) => {
+          if (!btn) return;
+          btn.className = btn.className
+            .replace(/text-theme-accent/g, "").replace(/border-t-2/g, "").replace(/border-b-2/g, "")
+            .replace(/border-theme-accent/g, "").replace(/opacity-100/g, "").replace(/opacity-50/g, "");
+          btn.classList.add("text-theme-text", "opacity-50");
+        });
+        if (tabChart) {
+          tabChart.classList.remove("text-theme-text", "opacity-50");
+          tabChart.classList.add("text-theme-accent", "border-t-2", "border-theme-accent", "opacity-100");
+        }
       }
     }, 0);
   });

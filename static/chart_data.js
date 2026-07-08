@@ -803,39 +803,48 @@ export async function fetchHistory(
       });
 
       try {
-        store.candleSeries.setData(sanitizeChartData(store.mainData));
+        // 🚀 [렌더 동기화] 캔들과 볼륨의 주입을 동일한 프레임으로 묶어 페인팅 시간 차 박멸
+        requestAnimationFrame(() => {
+          try {
+            if (store.candleSeries) {
+              store.candleSeries.setData(sanitizeChartData(store.mainData));
+            }
 
-        if (store.leftScaleSeries) {
-          const leftData = store.mainData.map((d) => {
-            const m = mapTime(d);
-            return { time: m.time, value: m.close };
-          });
-          store.leftScaleSeries.setData(sanitizeChartData(leftData, true));
-        }
+            if (store.leftScaleSeries) {
+              const leftData = store.mainData.map((d) => {
+                const m = mapTime(d);
+                return { time: m.time, value: m.close };
+              });
+              store.leftScaleSeries.setData(sanitizeChartData(leftData, true));
+            }
 
-        if (
-          store.volumeSeries &&
-          store.volumeData &&
-          store.volumeData.length > 0
-        ) {
-          store.volumeSeries.setData(sanitizeChartData(store.volumeData, true));
-          if (typeof window.toggleVolFallback === "function") {
-            window.toggleVolFallback(false);
+            if (
+              store.volumeSeries &&
+              store.volumeData &&
+              store.volumeData.length > 0
+            ) {
+              store.volumeSeries.setData(sanitizeChartData(store.volumeData, true));
+              if (typeof window.toggleVolFallback === "function") {
+                window.toggleVolFallback(false);
+              }
+            } else if (store.volumeSeries) {
+              store.volumeSeries.setData([]);
+            }
+
+            if (store.kimchiSeries) {
+              store.kimchiSeries.setData([]);
+            }
+          } catch (err) {
+            console.warn("🚨 시리즈 데이터 동기 세팅 예외 우회:", err);
           }
-        } else if (store.volumeSeries) {
-          store.volumeSeries.setData([]);
-        }
-
-        if (store.kimchiSeries) {
-          store.kimchiSeries.setData([]);
-        }
-      } catch (err) {
-        console.warn("🚨 시리즈 데이터 동기 세팅 예외 우회:", err);
+        });
+      } catch (e) {
+        console.warn("🚨 rAF 데이터 세팅 오류 방어:", e);
       }
 
       requestAnimationFrame(() => {
         if (typeof applyChartLayout === "function") applyChartLayout();
-        if (typeof autoFit === "function") autoFit(isTabRestore);
+        if (typeof autoFit === "function") autoFit(isTabRestore); // 🚀 [1차 선제 피팅] 캔들/볼륨 로드 직후 뷰포트를 선제 고정하여 과거 점프 완벽 방지
         if (typeof updateStatus === "function") updateStatus();
 
         if (typeof startRealtimeCandle === "function") {
@@ -849,8 +858,6 @@ export async function fetchHistory(
           );
         }
 
-        window.isFetchingChart = false;
-        store.isFetchingChart = false;
         if (typeof window.syncPriceScaleWidths === "function")
           window.syncPriceScaleWidths();
       });
@@ -879,7 +886,7 @@ export async function fetchHistory(
         window.syncPriceScaleWidths();
     }
 
-    // 🚀 [역할 분리] 백그라운드 김프 수집 및 Lazy 렌더링 호출
+    // 🚀 [역할 분리] 백그라운드 김프 수집 및 Lazy 렌더링 호출 → 완료 후 autoFit 보장
     import("./chart_history_kimchi.js").then((mod) => {
       mod.lazyRenderKimchiData({
         rowInfo,
@@ -896,20 +903,32 @@ export async function fetchHistory(
         snapshotTF,
         applyChartLayout
       }).then(() => {
-        if (typeof window.updateStatus === "function") {
-          window.updateStatus();
+        // 🚀 [len 유동 보장] store.kimchiData가 실제로 채워진 경우, 내부 rAF(kimchiSeries.setData)가
+        // 먼저 완료되도록 한 프레임 더 대기. 없으면 즉시 fit.
+        const doFit = () => {
+          if (typeof autoFit === "function") autoFit(isTabRestore); // 🚀 [2차 보정 피팅] 김프 데이터까지 온전히 안착한 후 최종 피팅 실행
+          if (typeof window.updateStatus === "function") window.updateStatus();
+          
+          // 🚀 [락 해제] 최종 피팅(autoFit)까지 완벽히 마친 시점에만 Fetching 락을 풀어 가로폭 오염을 원천 차단
+          window.isFetchingChart = false;
+          store.isFetchingChart = false;
+        };
+        if (store.kimchiData && store.kimchiData.length > 0) {
+          requestAnimationFrame(doFit);
+        } else {
+          doFit();
         }
       });
     });
 
   } catch (e) {
     console.error("차트 로드 실패:", e);
+    window.isFetchingChart = false;
+    store.isFetchingChart = false;
   } finally {
     if (loadingModal) loadingModal.classList.add("hidden");
     if (wrapper) wrapper.classList.remove("chart-loading");
     if (gapOverlay) gapOverlay.style.display = "none";
-    window.isFetchingChart = false;
-    store.isFetchingChart = false;
     store.isNewCoinSelected = false;
   }
 }

@@ -468,8 +468,9 @@ function restoreSavedUserSettings() {
       }
     }
 
-    // 5. 테이블 상세/간편 뷰 모드 복원
-    const savedViewMode = localStorage.getItem("sellnance_table_view_mode") || "basic";
+    // 5. 테이블 상세/간편 뷰 모드 복원 (모바일은 강제로 simple 모드 적용)
+    // const isMobile = window.innerWidth < 1200;
+    // const savedViewMode = isMobile ? "simple" : (localStorage.getItem("sellnance_table_view_mode") || "basic");
     switchViewMode(savedViewMode);
   } catch (e) {
     // Xconsole.error("Failed to restore user settings:", e);
@@ -868,20 +869,20 @@ document.addEventListener("keydown", (e) => {
     const tfArray = (store.visibleTfs && store.visibleTfs.length > 0)
       ? store.visibleTfs
       : [
-          "1m",
-          "3m",
-          "5m",
-          "15m",
-          "30m",
-          "1h",
-          "2h",
-          "4h",
-          "12h",
-          "1d",
-          "3d",
-          "1w",
-          "1M",
-        ];
+        "1m",
+        "3m",
+        "5m",
+        "15m",
+        "30m",
+        "1h",
+        "2h",
+        "4h",
+        "12h",
+        "1d",
+        "3d",
+        "1w",
+        "1M",
+      ];
     let idx = tfArray.indexOf(store.currentTF);
     if (left && idx > 0 && typeof window.setTF === "function")
       window.setTF(tfArray[idx - 1]);
@@ -982,8 +983,8 @@ window.toggleHeaderTop = function () {
       btn.innerText = "▲ 헤더 접기";
       localStorage.setItem("sellnance_header_collapsed", "false");
       if (topZone) {
-        topZone.style.height = "310px";
-        topZone.style.maxHeight = "310px";
+        topZone.style.height = "224px";
+        topZone.style.maxHeight = "224px";
       }
     } else {
       elements.forEach((el) => {

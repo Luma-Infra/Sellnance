@@ -34,37 +34,30 @@ window.ensureSafeUnixSeconds = ensureSafeUnixSeconds;
 function resetChartScale() {
   if (!store.chart || !store.candleSeries) return;
 
-  // 🚀 [UX 개선] 가격 스케일 초기화 시 넓이를 0으로 강제 리셋하지 않고 autoScale만 켜서 꿀렁거림 원천 차단
   store.chart.priceScale("right").applyOptions({ autoScale: true });
 
-  // 🚀 [UX 개선] 줌(가로폭)은 유지한 채 뷰포트를 최신 봉 위치(가장 우측)로 스크롤하여 바로잡음
+  const margin = 10; // 🚀 [수동 오토핏 버튼] 우측 마진 고정값 10으로 강제 세팅
+
   try {
     const timeScale = store.chart.timeScale();
     const range = timeScale.getVisibleLogicalRange();
     if (range && store.mainData && store.mainData.length) {
       const len = store.mainData.length;
       const width = range.to - range.from;
-      const margin = store.savedRightMargin !== undefined && store.savedRightMargin !== null ? store.savedRightMargin : 10;
       timeScale.setVisibleLogicalRange({
-        from: len - width + margin,
-        to: len + margin,
+        from: len - 1 - width + margin,
+        to: len - 1 + margin,
       });
     } else {
       timeScale.scrollToRealtime();
     }
   } catch (e) {
-    try {
-      store.chart.timeScale().scrollToRealtime();
-    } catch (err) { }
+    try { store.chart.timeScale().scrollToRealtime(); } catch (err) { }
   }
 
   if (store.chartVol) {
-    store.chartVol
-      .priceScale("right")
-      .applyOptions({ minimumWidth: 0, autoScale: true });
-    store.chartVol
-      .priceScale("left")
-      .applyOptions({ minimumWidth: 0, autoScale: true });
+    store.chartVol.priceScale("right").applyOptions({ minimumWidth: 0, autoScale: true });
+    store.chartVol.priceScale("left").applyOptions({ minimumWidth: 0, autoScale: true });
 
     try {
       const timeScaleVol = store.chartVol.timeScale();
@@ -72,22 +65,18 @@ function resetChartScale() {
       if (rangeVol && store.mainData && store.mainData.length) {
         const len = store.mainData.length;
         const width = rangeVol.to - rangeVol.from;
-        const margin = store.savedRightMargin !== undefined && store.savedRightMargin !== null ? store.savedRightMargin : 10;
         timeScaleVol.setVisibleLogicalRange({
-          from: len - width + margin,
-          to: len + margin,
+          from: len - 1 - width + margin,
+          to: len - 1 + margin,
         });
       } else {
         timeScaleVol.scrollToRealtime();
       }
     } catch (e) {
-      try {
-        store.chartVol.timeScale().scrollToRealtime();
-      } catch (err) { }
+      try { store.chartVol.timeScale().scrollToRealtime(); } catch (err) { }
     }
   }
 
-  // 🚀 [추가] 오토 리셋 실행 후 즉각적인 Y축 가로폭 동기화 강제 적용
   setTimeout(() => {
     if (typeof window.syncPriceScaleWidths === "function") {
       window.syncPriceScaleWidths(true);
@@ -456,7 +445,9 @@ function updateStatus(d, p) {
 }
 
 function autoFit(isTabRestore = false) {
-  const margin = store.savedRightMargin !== undefined && store.savedRightMargin !== null ? store.savedRightMargin : 10;
+  // 🚀 [비동기/동기 로딩] 사용자가 맞춰둔 커스텀 여백(savedRightMargin)을 우선 준수, 없으면 10
+  const margin = store.savedRightMargin ?? 10;
+  const defaultZoom = (typeof CONFIG !== "undefined" && CONFIG.CHART_CONFIG?.VISIBLE_COUNT) ?? 100;
   if (isTabRestore && store.isUserZoomed) {
     // 🚀 [UX 개선] 탭 복귀/전환 시 기존 줌 상태(가로폭)는 유지하면서, 최신 봉(가장 우측) 위치로 화면을 강제 정렬하고 가격 스케일을 맞춥니다.
     try {
@@ -467,8 +458,8 @@ function autoFit(isTabRestore = false) {
           const len = store.mainData.length;
           const width = range.to - range.from;
           timeScale.setVisibleLogicalRange({
-            from: len - width + margin,
-            to: len + margin,
+            from: len - 1 - width + margin,
+            to: len - 1 + margin,
           });
         } else {
           timeScale.scrollToRealtime();
@@ -482,8 +473,8 @@ function autoFit(isTabRestore = false) {
           const len = store.mainData.length;
           const width = rangeVol.to - rangeVol.from;
           timeScaleVol.setVisibleLogicalRange({
-            from: len - width + margin,
-            to: len + margin,
+            from: len - 1 - width + margin,
+            to: len - 1 + margin,
           });
         } else {
           timeScaleVol.scrollToRealtime();
@@ -498,11 +489,11 @@ function autoFit(isTabRestore = false) {
   }
   if (store.chart && store.mainData.length) {
     const len = store.mainData.length;
-    // 🚀 [UX 개선] 저장된 가로폭(줌) 정보가 있다면 해당 값을 적용하고, 없으면 기본값인 100을 사용합니다.
-    const zoomWidth = store.savedZoomWidth || 100;
+    // 🚀 [UX 개선] 저장된 가로폭(줌) 정보가 있다면 해당 값을 적용하고, 없으면 CONFIG.CHART_CONFIG.VISIBLE_COUNT를 사용합니다.
+    const zoomWidth = store.savedZoomWidth || defaultZoom;
     const logicalRange = {
-      from: len < zoomWidth ? -Math.max(5, zoomWidth - len) : len - zoomWidth + margin,
-      to: len + margin,
+      from: len - 1 - zoomWidth + margin,
+      to: len - 1 + margin,
     };
 
     store.chart.timeScale().setVisibleLogicalRange(logicalRange);

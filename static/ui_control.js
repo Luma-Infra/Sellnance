@@ -8,6 +8,7 @@ import { selectSymbol, updateExchangeBadges } from "./ui_selection.js";
 export { selectSymbol, updateExchangeBadges };
 
 let isThemeToggling = false; // 🚀 라이트/다크 모드 연타 방어 플래그
+let _closeMobileChartTimer = null; // 🚀 closeMobileChart 타이머 ID (충돌 방지용)
 
 function toggleTheme() {
   if (isThemeToggling) return;
@@ -110,7 +111,7 @@ export function switchViewMode(mode) {
   const tabFav2 = document.getElementById("tab-fav2");
   const btnSmallCap = document.getElementById("btn-small-cap");
 
-  if (tabAll) tabAll.textContent = isSimple ? "ALL" : "ALL LIST";
+  // if (tabAll) tabAll.textContent = isSimple ? "ALL" : "ALL LIST";
 
   if (typeof window.updateFavoritesCount === "function") {
     window.updateFavoritesCount();
@@ -194,6 +195,12 @@ function switchMobileView(view) {
 function showMobileChart() {
   if (window.innerWidth >= CONFIG.SCREEN_WIDTH) return;
 
+  // 🚀 이전 close 타이머가 실행 중이면 취소해서 race condition 방지
+  if (_closeMobileChartTimer) {
+    clearTimeout(_closeMobileChartTimer);
+    _closeMobileChartTimer = null;
+  }
+
   const overlay = document.getElementById("mobile-chart-overlay");
   const panel = document.getElementById("mobile-chart-panel");
   const content = document.getElementById("mobile-chart-content");
@@ -211,17 +218,17 @@ function showMobileChart() {
     content.appendChild(rightPanel);
   }
 
-  // 3. 오버레이 직접 표시 (.active CSS 룰 불필요)
+  // 3. 오버레이 직접 표시 (.active CSS 룰 불필요) — bottom:48px 유지해서 네비바 위까지만 표시
   overlay.style.cssText =
-    "display:flex;align-items:flex-end;justify-content:flex-end;opacity:1;pointer-events:auto;";
+    "display:flex;align-items:flex-end;justify-content:flex-end;opacity:1;pointer-events:auto;bottom:48px;";
   overlay.classList.remove("hidden");
 
-  // 4. 패널 초기 위치 설정 후 rAF로 트랜지션 안정적으로 트리거 (Tailwind 클래스 사용)
+  // 4. 패널 초기 위치 설정 — 먼저 translate-y-full 제거 후 rAF로 트랜지션 트리거
   panel.style.transform = ""; // 인라인 transform 제거
   panel.style.transition = ""; // 인라인 transition 제거
+  panel.classList.remove("translate-y-full"); // 즉시 제거 (이전 closeMobileChart 잔여 클래스 방지)
 
   requestAnimationFrame(() => {
-    panel.classList.remove("translate-y-full");
     panel.classList.add("translate-y-0");
   });
 
@@ -240,7 +247,7 @@ function closeMobileChart() {
   const overlay = document.getElementById("mobile-chart-overlay");
   const panel = document.getElementById("mobile-chart-panel");
   const rightPanel = document.getElementById("right-panel");
-  const mainContainer = document.getElementById("main-dashboard-content");
+  const mainContainer = document.getElementById("panel-split-container");
 
   if (!overlay || !panel || !rightPanel || !mainContainer) return;
 
@@ -249,7 +256,8 @@ function closeMobileChart() {
   panel.classList.add("translate-y-full");
 
   // 2. 트랜지션 완료 후 정리
-  setTimeout(() => {
+  _closeMobileChartTimer = setTimeout(() => {
+    _closeMobileChartTimer = null;
     // 오버레이 숨김 (인라인 스타일 초기화)
     overlay.style.cssText = "";
     overlay.classList.add("hidden");
@@ -257,14 +265,106 @@ function closeMobileChart() {
     // right-panel 인라인 스타일 완전 초기화
     rightPanel.style.cssText = "";
     rightPanel.classList.remove("flex");
-    rightPanel.classList.add("hidden", "md:flex");
+    rightPanel.classList.add("hidden", "min-[1200px]:flex");
 
-    // 원래 데스크톱 레이아웃으로 복구
+    // 원래 panel-split-container 안으로 복구
     if (!mainContainer.contains(rightPanel)) {
       mainContainer.appendChild(rightPanel);
     }
   }, 320);
 }
+
+
+// 🚀 모바일 하단 네비 탭 전환 컨트롤러
+function switchMobileTab(tab) {
+  if (window.innerWidth >= CONFIG.SCREEN_WIDTH) return;
+
+  const tabList = document.getElementById("mobile-tab-list");
+  const tabChart = document.getElementById("mobile-tab-chart");
+  const tabSettings = document.getElementById("mobile-tab-settings");
+  const leftPanel = document.getElementById("left-panel");
+  const settingsModal = document.getElementById("settings-modal");
+
+  const activeClass = "text-theme-accent border-t-2 border-theme-accent opacity-100";
+  const inactiveClass = "text-theme-text opacity-50";
+
+  // 모든 탭 비활성화
+  [tabList, tabChart, tabSettings].forEach((btn) => {
+    if (!btn) return;
+    btn.className = btn.className
+      .replace(/text-theme-accent/g, "")
+      .replace(/border-t-2/g, "")
+      .replace(/border-b-2/g, "")
+      .replace(/border-theme-accent/g, "")
+      .replace(/opacity-100/g, "")
+      .replace(/opacity-50/g, "");
+    inactiveClass.split(" ").forEach((c) => btn.classList.add(c));
+  });
+
+  if (tab === "list") {
+    // 리스트 탭 활성화
+    if (tabList) {
+      inactiveClass.split(" ").forEach((c) => tabList.classList.remove(c));
+      activeClass.split(" ").forEach((c) => tabList.classList.add(c));
+    }
+    // 차트 오버레이 닫기
+    closeMobileChart();
+    // 설정 모달 닫기
+    if (settingsModal) settingsModal.classList.add("hidden");
+    // 리스트 보이기
+    if (leftPanel) leftPanel.style.display = "";
+
+  } else if (tab === "chart") {
+    // 차트 탭 활성화
+    if (tabChart) {
+      inactiveClass.split(" ").forEach((c) => tabChart.classList.remove(c));
+      activeClass.split(" ").forEach((c) => tabChart.classList.add(c));
+    }
+    // 설정 모달 닫기
+    if (settingsModal) settingsModal.classList.add("hidden");
+
+    // 🚀 모바일: 시뮬/퀵뷰를 fetchHistory 재호출 없이 직접 숨기기
+    const simControls = document.getElementById("sim-controls");
+    if (simControls) simControls.style.display = "none";
+    const qvContainer = document.getElementById("quickview-container");
+    if (qvContainer) {
+      qvContainer.classList.add("hidden");
+      qvContainer.style.display = "none";
+    }
+    if (typeof window.destroyQuickView === "function") window.destroyQuickView();
+
+    // 차트 오버레이 열기
+    if (store.currentSelectedSymbol) {
+      // 이미 차트가 로드된 경우: selectSymbol 재호출 없이 오버레이만 열기
+      if (typeof window.showMobileChart === "function") {
+        window.showMobileChart();
+      }
+    } else {
+      // 최초 진입 시: 첫 번째 코인 선택 (selectSymbol 내부에서 showMobileChart 호출됨)
+      const firstRow = document.querySelector("#coin-list-body .coin-row");
+      if (firstRow && typeof window.selectSymbol === "function") {
+        window.selectSymbol(firstRow.dataset.sym);
+      }
+    }
+
+  } else if (tab === "settings") {
+    // 설정 탭 활성화
+    if (tabSettings) {
+      inactiveClass.split(" ").forEach((c) => tabSettings.classList.remove(c));
+      activeClass.split(" ").forEach((c) => tabSettings.classList.add(c));
+    }
+    // 차트 오버레이 닫기
+    closeMobileChart();
+    // 설정 모달 열기
+    if (typeof window.openSettingsModal === "function") {
+      window.openSettingsModal();
+    }
+  }
+
+  store._currentMobileTab = tab;
+}
+
+window.switchMobileTab = switchMobileTab;
 
 // ⭐️ 1. 탭 전환 기능 (차트 ↔ 시뮬레이터) ⭐️
 function switchChartTab(mode) {
@@ -468,7 +568,7 @@ function closeOnboardingModal() {
 
 function toggleRightDomBlock(checked) {
   store.blockRightDom = checked;
-  console.log(`⚡ [DEBUG] 우측 패널 DOM 차단 모드: ${checked ? "ON" : "OFF"}`);
+  // Xconsole.log(`⚡ [DEBUG] 우측 패널 DOM 차단 모드: ${checked ? "ON" : "OFF"}`);
 
   // 🚀 부모 차단 시 자식 체크박스들 강제 제어 (disabled 및 opacity 비주얼 싱크)
   const childChart = document.getElementById("block-chart-dom-toggle");
@@ -520,7 +620,7 @@ function toggleRightDomBlock(checked) {
 
 export function toggleChartMouseEventBlock(checked) {
   store.blockChartMouseEvent = checked;
-  console.log(`⚡ [DEBUG] 차트 마우스 이벤트 차단 모드: ${checked ? "ON" : "OFF"}`);
+  // Xconsole.log(`⚡ [DEBUG] 차트 마우스 이벤트 차단 모드: ${checked ? "ON" : "OFF"}`);
   if (checked) {
     if (store._mainCrosshair) store._mainCrosshair.setX(null);
     if (store._volCrosshair) store._volCrosshair.setX(null);
@@ -533,7 +633,7 @@ export function toggleChartMouseEventBlock(checked) {
 
 function toggleLeftDomBlock(checked) {
   store.blockLeftDom = checked;
-  console.log(`⚡ [DEBUG] 좌측 테이블 DOM 차단 모드: ${checked ? "ON" : "OFF"}`);
+  // Xconsole.log(`⚡ [DEBUG] 좌측 테이블 DOM 차단 모드: ${checked ? "ON" : "OFF"}`);
 
   // 🚀 부모 차단 시 자식 체크박스들 강제 제어
   const childSort = document.getElementById("block-sort-toggle");
@@ -573,17 +673,17 @@ function toggleLeftDomBlock(checked) {
 
 export function toggleTableUpdateBlock(checked) {
   store.blockTableUpdate = checked;
-  console.log(`⚡ [DEBUG] 좌측 테이블 실시간 셀/시세 갱신 차단 모드: ${checked ? "ON" : "OFF"}`);
+  // Xconsole.log(`⚡ [DEBUG] 좌측 테이블 실시간 셀/시세 갱신 차단 모드: ${checked ? "ON" : "OFF"}`);
 }
 
 function toggleChartDomBlock(checked) {
   store.blockChartDom = checked;
-  console.log(`⚡ [DEBUG] 차트 실시간 갱신 차단 모드: ${checked ? "ON" : "OFF"}`);
+  // Xconsole.log(`⚡ [DEBUG] 차트 실시간 갱신 차단 모드: ${checked ? "ON" : "OFF"}`);
 }
 
 function toggleOrderbookBlock(checked) {
   store.blockOrderbook = checked;
-  console.log(`⚡ [DEBUG] 호가창 실시간 갱신 차단 모드: ${checked ? "ON" : "OFF"}`);
+  // Xconsole.log(`⚡ [DEBUG] 호가창 실시간 갱신 차단 모드: ${checked ? "ON" : "OFF"}`);
   if (checked && typeof window.stopOrderbookStream === "function") {
     window.stopOrderbookStream();
   } else if (!checked && typeof window.startOrderbookStream === "function") {
@@ -593,11 +693,11 @@ function toggleOrderbookBlock(checked) {
 
 function toggleSortBlock(checked) {
   store.blockSort = checked;
-  console.log(`⚡ [DEBUG] 테이블 실시간 정렬 차단 모드: ${checked ? "ON" : "OFF"}`);
+  // Xconsole.log(`⚡ [DEBUG] 테이블 실시간 정렬 차단 모드: ${checked ? "ON" : "OFF"}`);
 }
 
 function toggleKimchiBlock(checked) {
-  store.blockKimchi = checked;
+  // Xstore.blockKimchi = checked;
   console.log(`⚡ [DEBUG] 김프 실시간 연산 차단 모드: ${checked ? "ON" : "OFF"}`);
 
   const childRadar = document.getElementById("block-radardatabatch-toggle");
@@ -620,32 +720,32 @@ function toggleKimchiBlock(checked) {
 
 function toggleLegendBlock(checked) {
   store.blockLegend = checked;
-  console.log(`⚡ [DEBUG] OHLC 레전드 갱신 차단 모드: ${checked ? "ON" : "OFF"}`);
+  // Xconsole.log(`⚡ [DEBUG] OHLC 레전드 갱신 차단 모드: ${checked ? "ON" : "OFF"}`);
 }
 
 function toggleResizeBlock(checked) {
   store.blockChartResize = checked;
-  console.log(`⚡ [DEBUG] 차트 리사이즈 차단 모드: ${checked ? "ON" : "OFF"}`);
+  // Xconsole.log(`⚡ [DEBUG] 차트 리사이즈 차단 모드: ${checked ? "ON" : "OFF"}`);
 }
 
 function toggleTabScrollBlock(checked) {
   store.blockTableTabScroll = checked;
-  console.log(`⚡ [DEBUG] 테이블 스크롤/탭 갱신 차단 모드: ${checked ? "ON" : "OFF"}`);
+  // Xconsole.log(`⚡ [DEBUG] 테이블 스크롤/탭 갱신 차단 모드: ${checked ? "ON" : "OFF"}`);
 }
 
 function toggleRadarBatchBlock(checked) {
   store.blockRadarBatch = checked;
-  console.log(`⚡ [DEBUG] 레이더 배치 갱신 차단 모드: ${checked ? "ON" : "OFF"}`);
+  // Xconsole.log(`⚡ [DEBUG] 레이더 배치 갱신 차단 모드: ${checked ? "ON" : "OFF"}`);
 }
 
 function toggleDynamicHtmlBlock(checked) {
   store.blockRowDynamicHTML = checked;
-  console.log(`⚡ [DEBUG] 김프 전파 동적 HTML 갱신 차단 모드: ${checked ? "ON" : "OFF"}`);
+  // Xconsole.log(`⚡ [DEBUG] 김프 전파 동적 HTML 갱신 차단 모드: ${checked ? "ON" : "OFF"}`);
 }
 
 function setAggTradeInterval(ms) {
   store.aggTradeInterval = ms;
-  console.log(`⚡ [DEBUG] aggTrade 주기 변경: ${ms === 0 ? "Raw" : ms + "ms"}`);
+  // Xconsole.log(`⚡ [DEBUG] aggTrade 주기 변경: ${ms === 0 ? "Raw" : ms + "ms"}`);
 
   const intervals = [0, 100, 500, 1500];
   intervals.forEach((val) => {
@@ -687,12 +787,12 @@ window.toggleDynamicHtmlBlock = toggleDynamicHtmlBlock;
 window.toggleChartMouseEventBlock = toggleChartMouseEventBlock;
 window.toggleTableUpdateBlock = toggleTableUpdateBlock;
 
-window.copyPerformanceStats = function() {
+window.copyPerformanceStats = function () {
   if (!store.bypassCounters) return;
   const elapsedText = document.getElementById("perf-run-time-display")?.innerText || "(알수없음 경과)";
   const total = Object.values(store.bypassCounters).reduce((a, b) => a + b, 0);
   const riskText = document.getElementById("perf-top-risk-analysis")?.innerText || "NONE";
-  
+
   const textToCopy = `⚡ Sellnance 렉 디버거 성능 리포트
 경과 시간: ${elapsedText}
 총 Bypass 건수: ${total}
@@ -710,7 +810,7 @@ window.copyPerformanceStats = function() {
 
 🚨 최대 렉 위협 요소: ${riskText}
   `;
-  
+
   navigator.clipboard.writeText(textToCopy.trim())
     .then(() => {
       const btn = document.getElementById("copy-perf-stats-btn");
@@ -1141,16 +1241,28 @@ setTimeout(() => {
 
 // 🚀 [추가] 브라우저 창 크기나 패널 간 너비 충돌로 인한 렉 현상 방지용 제어 함수
 export function checkLayoutOverlap() {
-  // 모바일에서는 오버레이로 차트를 띄우므로 레이아웃 충돌 계산이 필요 없습니다. (오히려 렉과 버그 유발)
-  if (window.innerWidth < 768) return;
-
   const leftPanel = document.getElementById("left-panel");
   const rightPanel = document.getElementById("right-panel");
   if (!leftPanel || !rightPanel) return;
 
+  // 🚀 1200px 미만인 경우 (모바일/태블릿)
+  if (window.innerWidth < 1200) {
+    const overlay = document.getElementById("mobile-chart-overlay");
+    const isOverlayOpen = overlay && overlay.style.opacity === "1";
+    if (!isOverlayOpen) {
+      rightPanel.style.display = "none";
+    }
+    return;
+  }
+
   // 모바일 오버레이가 열려있을 때도 간섭 금지
   const overlay = document.getElementById("mobile-chart-overlay");
   if (overlay && overlay.style.opacity === "1") return;
+
+  // 1200px 이상 데스크톱일 경우, 'none'이었던 inline display 초기화
+  if (rightPanel.style.display === "none") {
+    rightPanel.style.display = "";
+  }
 
   const containerWidth = document.body.clientWidth;
   const leftWidth = leftPanel.offsetWidth;
@@ -1169,14 +1281,59 @@ export function checkLayoutOverlap() {
 
 window.checkLayoutOverlap = checkLayoutOverlap;
 
+export function adjustNoticeFontSizes() {
+  const isMobile = window.innerWidth < 1200;
+  const slider = document.getElementById("notice-slider");
+  if (!slider) return;
+
+  const items = slider.querySelectorAll("div");
+  items.forEach((div) => {
+    if (!isMobile) {
+      div.style.fontSize = "";
+      return;
+    }
+
+    const text = div.innerText || "";
+    const len = text.length;
+
+    // 수학적 로그 방식 적용: 문장이 길어질수록 폰트 크기를 부드럽고 자연스럽게 한계점까지 축소
+    const threshold = 30; // 기준 글자수
+    const baseRem = 0.72; // 기본 rem 크기
+    const minRem = 0.45;  // 최소 rem 크기
+    const logMult = 0.45; // 로그 배율
+
+    let sizeRem = baseRem;
+    if (len > threshold) {
+      sizeRem = Math.max(
+        minRem,
+        baseRem - Math.log10(len / threshold) * logMult
+      );
+    }
+
+    // 뷰포트 크기 변화에 대한 미세 스케일 보정 추가 (1200px 기준 비율)
+    const scaleFactor = Math.min(1, window.innerWidth / 1200);
+    const finalRem = sizeRem * scaleFactor;
+
+    div.style.setProperty("font-size", `${finalRem.toFixed(3)}rem`, "important");
+  });
+}
+
+window.adjustNoticeFontSizes = adjustNoticeFontSizes;
+
 // 🚀 창 크기 변경 시 렉 방지: 150ms 디바운스 적용
 let _overlapDebounceTimer = null;
 window.addEventListener("resize", () => {
   if (_overlapDebounceTimer) clearTimeout(_overlapDebounceTimer);
-  _overlapDebounceTimer = setTimeout(checkLayoutOverlap, 150);
+  _overlapDebounceTimer = setTimeout(() => {
+    checkLayoutOverlap();
+    adjustNoticeFontSizes();
+  }, 150);
 });
 document.addEventListener("DOMContentLoaded", () => {
-  setTimeout(checkLayoutOverlap, 200);
+  setTimeout(() => {
+    checkLayoutOverlap();
+    adjustNoticeFontSizes();
+  }, 200);
 
   // 🚀 모바일 환경: 가격 축 터치 시 A/L 버튼 표시, 차트 터치 시 숨김 (트뷰 앱 방식)
   const paneMain = document.getElementById("pane-main");

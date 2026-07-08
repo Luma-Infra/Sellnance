@@ -118,14 +118,13 @@ def build_upbit_row(
         else ""
     )
 
-    # 🚀 [수정] 괄호 안의 이름이 있으면 최우선으로 사용, 없으면 CMC 이름 사용
+    # 🚀 [수정] 괄호 안의 이름이 있으면 최우선으로 사용, 그다음 족보(mapping.json) 이름, 마지막이 CMC 이름 사용
     coin_name = (
         explicit_name
         if explicit_name
         else (
-            info.get("name", base)
-            if info
-            else (ticker_info[2] if ticker_info and len(ticker_info) >= 3 else base)
+            ticker_info[2] if ticker_info and len(ticker_info) >= 3 and ticker_info[2]
+            else (info.get("name", base) if info else base)
         )
     )
 

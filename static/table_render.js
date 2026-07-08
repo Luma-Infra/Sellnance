@@ -1460,7 +1460,8 @@ window.updateRowPriceDisplay = (target, row) => {
 
     if (ex === activeExchange) {
       const isKrw = isKrwMode || ["upbit", "bithumb"].includes(ex);
-      const formattedPrice = window.formatSmartPrice(displayPrice, p, isKrw) + (isKrw ? " 원" : "");
+      const formattedPrice = window.formatSmartPrice(displayPrice, p, isKrw) + (isKrw ? "" : "");
+      // 원화 가격 원 pss
 
       const numEl = span._numEl || (span._numEl = span.querySelector(".price-num"));
       // 🚀 [성능 극대화] innerText는 CSS 레이아웃을 계산하므로 렌더링 폭탄입니다. 단순 textContent로 교체하여 브라우저 부담을 90% 이상 줄입니다.

@@ -5,7 +5,7 @@
         "SOL": "https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png",
         "SUI": "https://s2.coinmarketcap.com/static/img/coins/64x64/20947.png"
     },
-    "DEFAULT_KRW_USD_RATE": 1512.88,
+    "DEFAULT_KRW_USD_RATE": 1508.28,
     "__MEMO__1": "BTC ETH 파생형 너무 많아서 고정 + 중국어 포함 모든 언어 티커 대응",
     "__MEMO__2": "----------------------------------------------------------",
     "EXCLUSION_LIST": [
@@ -1373,6 +1373,13 @@
             "CBRS",
             "STOCK"
         ],
+        "CBRSB(STOCK)": [
+            "40791",
+            null,
+            "CBRSB (Derivatives)",
+            "CBRSB",
+            "STOCK"
+        ],
         "CC": [
             "37263",
             null,
@@ -1511,6 +1518,13 @@
             null,
             "COHR (Derivatives)",
             "COHR",
+            "STOCK"
+        ],
+        "COINB(STOCK)": [
+            "40789",
+            null,
+            "COINB (Derivatives)",
+            "COINB",
             "STOCK"
         ],
         "COLLECT": [
@@ -1814,6 +1828,13 @@
             "DRAM",
             "STOCK"
         ],
+        "DRAMB(STOCK)": [
+            "40798",
+            null,
+            "DRAMB (Derivatives)",
+            "DRAMB",
+            "STOCK"
+        ],
         "DRIFT": [
             "31278",
             null,
@@ -1863,8 +1884,15 @@
             "EDEN",
             "COIN"
         ],
-        "EDGE(edgeX)": [
+        "EDGE(Definitive)": [
             "36288",
+            "-",
+            "Definitive",
+            "EDGE",
+            "COIN"
+        ],
+        "EDGE(edgeX)": [
+            "39720",
             null,
             "edgeX",
             "EDGE",
@@ -2255,6 +2283,13 @@
             "GLW",
             "STOCK"
         ],
+        "GLWB(STOCK)": [
+            "40795",
+            null,
+            "GLWB (Derivatives)",
+            "GLWB",
+            "STOCK"
+        ],
         "GME(STOCK)": [
             "39928",
             null,
@@ -2302,6 +2337,13 @@
             null,
             "GOOGL (Derivatives)",
             "GOOGL",
+            "STOCK"
+        ],
+        "GOOGLB(STOCK)": [
+            "40793",
+            null,
+            "GOOGLB (Derivatives)",
+            "GOOGLB",
             "STOCK"
         ],
         "GPS": [
@@ -3333,6 +3375,13 @@
             "NBIS",
             "STOCK"
         ],
+        "NBISB(STOCK)": [
+            "40797",
+            null,
+            "NBISB (Derivatives)",
+            "NBISB",
+            "STOCK"
+        ],
         "NEAR": [
             "6535",
             null,
@@ -3865,6 +3914,13 @@
             "QCOM",
             "STOCK"
         ],
+        "QCOMB(STOCK)": [
+            "40792",
+            null,
+            "QCOMB (Derivatives)",
+            "QCOMB",
+            "STOCK"
+        ],
         "QI": [
             "9288",
             null,
@@ -4369,6 +4425,13 @@
             "SOXL",
             "STOCK"
         ],
+        "SOXLB(STOCK)": [
+            "40794",
+            null,
+            "SOXLB (Derivatives)",
+            "SOXLB",
+            "STOCK"
+        ],
         "SPACE": [
             "38136",
             null,
@@ -4416,6 +4479,13 @@
             null,
             "SPY (Derivatives)",
             "SPY",
+            "STOCK"
+        ],
+        "SPYB(STOCK)": [
+            "40790",
+            null,
+            "SPYB (Derivatives)",
+            "SPYB",
             "STOCK"
         ],
         "SQD": [
@@ -5102,6 +5172,13 @@
             null,
             "WDC (Derivatives)",
             "WDC",
+            "STOCK"
+        ],
+        "WDCB(STOCK)": [
+            "40796",
+            null,
+            "WDCB (Derivatives)",
+            "WDCB",
             "STOCK"
         ],
         "WET": [

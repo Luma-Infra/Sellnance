@@ -57,9 +57,9 @@
     //   },
     // };
   </script>
-  <script type="module" crossorigin src="/assets/main-BtSObBNT.js"></script>
-  <link rel="modulepreload" crossorigin href="/assets/table_render-G7P5rryD.js">
-  <link rel="stylesheet" crossorigin href="/assets/main-CDKzzhGm.css">
+  <script type="module" crossorigin src="/assets/main-DSBAAG8v.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/table_render-D4A6zgb-.js">
+  <link rel="stylesheet" crossorigin href="/assets/main-_dvaY6My.css">
 </head>
 
 <!-- 스타트뷰(cmc api 로그인), 모바일 하단 네비바, 멀티 차트 퀵 탐색(4~8개) 메모 / 추가 완료 -->
@@ -321,7 +321,7 @@
 
       <!-- 📢 중앙 롤링 공지사항 바 -->
       <div
-        class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[28px] w-[280px] sm:w-[720px] overflow-hidden rounded bg-theme-border/10 border border-theme-border/30 shadow-inner pointer-events-none">
+        class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[28px] w-[280px] sm:w-[800px] overflow-hidden rounded bg-theme-border/10 border border-theme-border/30 shadow-inner pointer-events-none">
         <style>
           @keyframes noticeRoll {
 
@@ -404,7 +404,7 @@
             class="text-xs text-theme-text group-hover:text-white transition-transform group-hover:rotate-180 duration-500 leading-none flex items-center justify-center h-full">⇄</span>
         </button>
 
-        <button onclick="
+        <!-- <button onclick="
           const panel = document.getElementById('perf-debug-panel');
           if (panel) {
             if (panel.style.display === 'none') {
@@ -418,7 +418,7 @@
         " class="w-7 h-7 flex items-center justify-center rounded-md bg-theme-border/20 border border-theme-border/30 text-theme-text opacity-70 hover:opacity-100 hover:text-theme-accent hover:bg-theme-border/30 transition-all shadow-sm"
           title="성능 디버거 켜기/끄기">
           <span class="text-xs leading-none">⚡</span>
-        </button>
+        </button> -->
 
         <button onclick="openSettingsModal()"
           class="w-7 h-7 flex items-center justify-center rounded-md bg-theme-border/20 border border-theme-border/30 text-theme-text opacity-50 hover:opacity-100 hover:text-theme-accent hover:bg-theme-border/30 transition-all shadow-sm"
@@ -442,14 +442,14 @@
     </header>
 
     <!-- 🚀 내부 패널 분할 컨테이너 -->
-    <div id="panel-split-container" class="flex flex-col md:flex-row flex-1 overflow-hidden w-full relative">
+    <div id="panel-split-container" class="flex flex-col min-[1200px]:flex-row flex-1 overflow-hidden w-full relative">
       <div
-        class="flex flex-col w-full flex-1 md:flex-none md:h-full md:w-[768px] lg:w-[560px] border-r border-theme-border bg-theme-bg transition-all duration-300 shrink-0 overflow-hidden pb-[70px] md:pb-0"
+        class="flex flex-col w-full flex-1 max-[1199px]:w-full min-[1200px]:flex-none min-[1200px]:h-full min-[1200px]:w-[560px] border-r border-theme-border bg-theme-bg transition-all duration-300 shrink-0 overflow-hidden pb-[70px] min-[1200px]:pb-0"
         id="left-panel">
         <!-- [연결 상태 일시 주석 처리] -->
 
         <!-- 🚀 탭/검색창과 제어 패널을 통틀어 감싸는 좌측 최상단 공통 부모 요소 -->
-        <div id="left-top-zone" class="flex flex-col w-full shrink-0" style="height: 224px; max-height: 224px;">
+        <div id="left-top-zone" class="flex flex-col w-full shrink-0 border-b border-theme-border h-auto max-[1199px]:!h-auto min-[1200px]:h-[224px] min-[1200px]:max-h-[224px]">
           <!-- 🚀 검색창을 최상단으로 이동 (즉각 필터링) -->
           <div id="search-input-wrapper"
             class="flex w-[calc(100%-16px)] shrink-0 bg-theme-panel/10 p-2 items-center mt-1 mx-2">
@@ -529,7 +529,7 @@
             <div id="category-tab-container" class="flex items-center gap-1 overflow-x-auto scrollbar-hide px-1 mt-1">
               <button onclick="switchTab('ALL')" id="tab-all"
                 class="tab-btn px-4 py-1.5 text-[10px] font-medium rounded-full transition-all bg-theme-accent text-white border border-theme-accent shadow-md whitespace-nowrap">
-                ALL LIST
+                ALL
               </button>
               <button onclick="switchTab('FAV')" id="tab-fav"
                 class="tab-btn px-4 py-1.5 text-[10px] font-medium rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap">
@@ -749,14 +749,12 @@
       </div>
 
       <div
-        class="hidden md:flex flex-1 flex-col min-w-[450px] overflow-hidden bg-theme-bg relative transition-all duration-300"
+        class="hidden min-[1200px]:flex flex-1 flex-col min-w-[450px] overflow-hidden bg-theme-bg relative transition-all duration-300"
         id="right-panel">
-        <!-- 🚀 탭 컨테이너와 헤더 메인을 통틀어 감싸는 우측 최상단 공통 부모 요소 -->
-        <div id="chart-top-zone" class="flex flex-col w-full shrink-0 border-b border-theme-border"
-          style="height: 224px; max-height: 224px;">
+        <div id="chart-top-zone" class="flex flex-col w-full shrink-0 border-b border-theme-border h-auto max-[1199px]:!h-auto min-[1200px]:h-[224px] min-[1200px]:max-h-[224px]">
           <!-- 🚀 2단: 차트 탭 컨테이너 -->
           <div id="chart-tab-wrapper"
-            class="flex w-full shrink-0 bg-theme-panel/10 border-b border-theme-border p-2 items-center mt-1">
+            class="max-[1199px]:hidden flex w-full shrink-0 bg-theme-panel/10 border-b border-theme-border p-2 items-center mt-1">
             <div id="chart-tab-container"
               class="relative flex flex-1 h-[36px] bg-theme-panel border border-theme-border rounded-md items-stretch z-0 overflow-hidden gap-1.5 p-0.5 shadow-inner">
               <div id="tab-sliding-bg"
@@ -1267,13 +1265,15 @@
       </div>
       <!-- 🚀 #right-panel 닫기 -->
     </div>
+
+
     <!-- 🚀 #main-dashboard-content 닫기 -->
 
     <!-- ⚙️ 전문가용 설정 모달 (모바일 바텀시트) -->
     <div id="settings-modal"
-      class="fixed inset-0 z-[300] hidden flex items-start md:items-center justify-center bg-theme-bg md:bg-black/60 md:backdrop-blur-sm">
+      class="fixed inset-0 z-[300] hidden flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <form onsubmit="event.preventDefault()"
-        class="bg-theme-panel md:border border-theme-border p-6 rounded-none md:rounded-2xl shadow-none md:shadow-2xl w-full h-full md:h-auto md:w-[400px] max-h-full md:max-h-[80vh] flex flex-col gap-5">
+        class="bg-theme-panel border border-theme-border p-6 rounded-2xl shadow-2xl w-[calc(100%-32px)] max-w-[400px] max-h-[85dvh] flex flex-col gap-5 overflow-y-auto">
         <div class="flex justify-between items-center border-b border-theme-border pb-3">
           <h3 class="text-lg font-medium text-theme-accent uppercase tracking-tighter">
             Settings
@@ -1830,6 +1830,41 @@
       </div>
     </div>
     -->
+
+    <!-- 🚀 모바일 차트 전체화면 오버레이 -->
+    <div id="mobile-chart-overlay" class="hidden fixed inset-x-0 top-0 z-[100] pointer-events-none"
+      style="opacity:0; bottom: 48px;">
+      <div id="mobile-chart-panel"
+        class="absolute inset-0 flex flex-col bg-theme-bg translate-y-full pointer-events-auto"><!-- transition-transform duration-300 ease-out 제거 -->
+        <!-- right-panel이 JS에 의해 여기로 이동됩니다 -->
+        <div id="mobile-chart-content" class="flex-1 flex flex-col min-h-0 overflow-hidden"></div>
+        <!-- 닫기 버튼 -->
+        <button onclick="window.switchMobileTab('list')"
+          class="absolute top-2 right-2 z-[110] w-8 h-8 flex items-center justify-center rounded-full bg-theme-panel/80 border border-theme-border/50 text-theme-text opacity-70 hover:opacity-100 transition-all text-sm">
+          ✕
+        </button>
+      </div>
+    </div>
+
+    <!-- 🚀 모바일 전용 하단 네비게이션 탭 바 -->
+    <div id="mobile-nav-bar"
+      class="flex min-[1200px]:hidden w-full h-[48px] shrink-0 bg-theme-panel border-t border-theme-border/30 items-stretch justify-around z-[50] absolute bottom-0 left-0 right-0">
+      <button id="mobile-tab-list" onclick="window.switchMobileTab('list')"
+        class="flex-1 flex flex-col items-center justify-center gap-0.5 text-theme-accent border-t-2 border-theme-accent transition-all cursor-pointer">
+        <span class="text-sm leading-none">📋</span>
+        <span class="text-[8px] font-bold">리스트</span>
+      </button>
+      <button id="mobile-tab-chart" onclick="window.switchMobileTab('chart')"
+        class="flex-1 flex flex-col items-center justify-center gap-0.5 text-theme-text opacity-50 transition-all cursor-pointer">
+        <span class="text-sm leading-none">📈</span>
+        <span class="text-[8px] font-bold">차트</span>
+      </button>
+      <!-- <button id="mobile-tab-settings" onclick="window.switchMobileTab('settings')"
+        class="flex-1 flex flex-col items-center justify-center gap-0.5 text-theme-text opacity-50 transition-all cursor-pointer">
+        <span class="text-sm leading-none">⚙️</span>
+        <span class="text-[8px] font-bold">설정</span>
+      </button> -->
+    </div>
   </div>
 </body>
 
