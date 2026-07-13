@@ -31,6 +31,11 @@ export function sortTable(colKey) {
     store.currentSortCol = colKey;
     store.sortState = "desc";
   }
+  // 🚀 [UX 복원] 마지막 정렬 기준 로컬 저장
+  try {
+    localStorage.setItem("sellnance_last_sort_col", store.currentSortCol);
+    localStorage.setItem("sellnance_last_sort_state", store.sortState);
+  } catch (e) {}
 
   // 모든 화살표 초기화 후 현재 선택된 헤더 옆에만 방향 표식 표시 (▲: asc, ▼: desc)
   document.querySelectorAll(".sort-arrow").forEach((el) => (el.innerText = ""));

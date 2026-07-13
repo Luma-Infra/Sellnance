@@ -3,10 +3,57 @@
 
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <!-- 📱 모바일 확대 차단 및 터치 개선 -->
+  <style>
+    body {
+      touch-action: manipulation;
+    }
+
+    @media (max-width: 1199px) {
+
+      input[type="text"],
+      input[type="password"],
+      input[type="number"],
+      input[type="search"],
+      textarea {
+        font-size: 16px !important;
+      }
+    }
+  </style>
+  <script>
+    // iOS Safari 대응 (제스처 시작 차단)
+    document.addEventListener('gesturestart', function (e) {
+      e.preventDefault();
+    });
+
+    // Android (삼성 인터넷, 크롬 등) 대응 (두 손가락 멀티터치 줌 차단)
+    document.addEventListener('touchstart', function (e) {
+      if (e.touches.length > 1) {
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    document.addEventListener('touchmove', function (e) {
+      if (e.touches.length > 1) {
+        e.preventDefault();
+      }
+    }, { passive: false });
+  </script>
   <meta charset="UTF-8" />
   <title>Sellnance</title>
-  <link rel="icon" type="image/svg+xml" href="/assets/_gemini-svg-dark-BiwpABsv.svg" id="favicon-link" />
-  <!-- <img src="../static/_gemini-svg-light.svg" alt="logo" id="main-logo-img" class="hidden" /> -->
+  <link rel="icon" type="image/svg+xml" href="/assets/luma-deer-svg-dark-BiwpABsv.svg" id="favicon-link" />
+  <!-- 📱 PWA & Mobile Web App Meta Tags -->
+  <link rel="manifest" href="/static/manifest.json" />
+  <meta name="theme-color" content="#131313" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Sellnance" />
+  <link rel="apple-touch-icon" href="/static/luma-deer-svg-dark.svg" />
+
+  <!-- 📱 Alpine.js (선언적 반응형 UI 용도) -->
+  <script src="/static/alpine.min.js" defer></script>
+  <!-- <img src="../static/luma-deer-svg-light.svg" alt="logo" id="main-logo-img" class="hidden" /> -->
   <!-- <img src="../static/gemini-svg.svg" alt="logo" /> -->
   <!-- <script src="https://unpkg.com/lightweight-charts@5.2.0/dist/lightweight-charts.standalone.production.js"></script> -->
   <script>
@@ -57,9 +104,8 @@
     //   },
     // };
   </script>
-  <script type="module" crossorigin src="/assets/main-DSBAAG8v.js"></script>
-  <link rel="modulepreload" crossorigin href="/assets/table_render-D4A6zgb-.js">
-  <link rel="stylesheet" crossorigin href="/assets/main-_dvaY6My.css">
+  <script type="module" crossorigin src="/assets/main-COVP6SqE.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/main-BLrVte5G.css">
 </head>
 
 <!-- 스타트뷰(cmc api 로그인), 모바일 하단 네비바, 멀티 차트 퀵 탐색(4~8개) 메모 / 추가 완료 -->
@@ -76,8 +122,8 @@
       id="onboarding-modal-content">
       <div class="p-4 md:p-4 flex-1 overflow-y-auto">
         <h2 class="text-2xl font-bold text-theme-text mb-2 flex items-center gap-1.5">
-          <img src="/assets/_gemini-svg-light-Dco_iv9X.svg" class="w-6 h-6 inline-block" alt="deer light" />
-          <img src="/assets/_gemini-svg-dark-BiwpABsv.svg" class="w-6 h-6 inline-block" alt="deer dark" />
+          <img src="/assets/luma-deer-svg-light-Dco_iv9X.svg" class="w-6 h-6 inline-block" alt="deer light" />
+          <img src="/assets/luma-deer-svg-dark-BiwpABsv.svg" class="w-6 h-6 inline-block" alt="deer dark" />
           <span>Sellnance에 오신 것을 환영합니다!</span>
         </h2>
         <p class="text-theme-text opacity-80 text-sm mb-6 leading-snug">
@@ -284,6 +330,7 @@
   <div id="loading-modal"
     class="fixed z-[200] inset-0 w-screen h-screen bg-[#131313]/85 backdrop-blur-[5px] flex flex-col justify-center items-center text-white transition-opacity duration-10"
     style="
+        display: none;
         font-family:
           -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto,
           Helvetica, Arial, sans-serif;
@@ -299,7 +346,8 @@
   </div>
 
   <!-- hidden -->
-  <div id="main-dashboard-content"
+  <div id="main-dashboard-content" x-data="{ currentMobileTab: 'list' }"
+    @mobile-tab-changed.window="currentMobileTab = $event.detail"
     class="flex flex-col h-[100dvh] md:h-[98dvh] max-h-[100dvh] md:max-h-[880px] w-full max-w-[1440px] bg-theme-bg relative shadow-none md:shadow-2xl overflow-hidden shrink-0 mx-auto md:mb-[2dvh] rounded-none md:rounded-md">
     <!-- 🚀 글로벌 통합 탑 헤더 (모든 패널 위에 위치) -->
     <header
@@ -313,7 +361,7 @@
           class="flex flex-col justify-center items-start gap-0.5 px-2 py-0.5 bg-theme-border/10 border border-theme-border/20 rounded text-[9px] font-bold text-theme-text/80 select-none leading-none">
           <div class="flex items-center gap-1">
             <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span id="status-timer">--:-- 후 갱신</span>
+            <span id="status-timer">--:--:-- 이후 시가총액 갱신</span>
           </div>
           <span id="status-users" class="pl-2.5 opacity-60">1 Active</span>
         </div>
@@ -449,7 +497,8 @@
         <!-- [연결 상태 일시 주석 처리] -->
 
         <!-- 🚀 탭/검색창과 제어 패널을 통틀어 감싸는 좌측 최상단 공통 부모 요소 -->
-        <div id="left-top-zone" class="flex flex-col w-full shrink-0 border-b border-theme-border h-auto max-[1199px]:!h-auto min-[1200px]:h-[224px] min-[1200px]:max-h-[224px]">
+        <div id="left-top-zone"
+          class="flex flex-col w-full shrink-0 border-b border-theme-border h-auto max-[1199px]:!h-auto min-[1200px]:h-[224px] min-[1200px]:max-h-[224px]">
           <!-- 🚀 검색창을 최상단으로 이동 (즉각 필터링) -->
           <div id="search-input-wrapper"
             class="flex w-[calc(100%-16px)] shrink-0 bg-theme-panel/10 p-2 items-center mt-1 mx-2">
@@ -751,7 +800,8 @@
       <div
         class="hidden min-[1200px]:flex flex-1 flex-col min-w-[450px] overflow-hidden bg-theme-bg relative transition-all duration-300"
         id="right-panel">
-        <div id="chart-top-zone" class="flex flex-col w-full shrink-0 border-b border-theme-border h-auto max-[1199px]:!h-auto min-[1200px]:h-[224px] min-[1200px]:max-h-[224px]">
+        <div id="chart-top-zone"
+          class="flex flex-col w-full shrink-0 border-b border-theme-border h-auto max-[1199px]:!h-auto min-[1200px]:h-[224px] min-[1200px]:max-h-[224px]">
           <!-- 🚀 2단: 차트 탭 컨테이너 -->
           <div id="chart-tab-wrapper"
             class="max-[1199px]:hidden flex w-full shrink-0 bg-theme-panel/10 border-b border-theme-border p-2 items-center mt-1">
@@ -1270,8 +1320,8 @@
     <!-- 🚀 #main-dashboard-content 닫기 -->
 
     <!-- ⚙️ 전문가용 설정 모달 (모바일 바텀시트) -->
-    <div id="settings-modal"
-      class="fixed inset-0 z-[300] hidden flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div id="settings-modal" style="display: none;"
+      class="fixed inset-0 z-[300] items-center justify-center bg-black/60 backdrop-blur-sm">
       <form onsubmit="event.preventDefault()"
         class="bg-theme-panel border border-theme-border p-6 rounded-2xl shadow-2xl w-[calc(100%-32px)] max-w-[400px] max-h-[85dvh] flex flex-col gap-5 overflow-y-auto">
         <div class="flex justify-between items-center border-b border-theme-border pb-3">
@@ -1835,7 +1885,8 @@
     <div id="mobile-chart-overlay" class="hidden fixed inset-x-0 top-0 z-[100] pointer-events-none"
       style="opacity:0; bottom: 48px;">
       <div id="mobile-chart-panel"
-        class="absolute inset-0 flex flex-col bg-theme-bg translate-y-full pointer-events-auto"><!-- transition-transform duration-300 ease-out 제거 -->
+        class="absolute inset-0 flex flex-col bg-theme-bg translate-y-full pointer-events-auto">
+        <!-- transition-transform duration-300 ease-out 제거 -->
         <!-- right-panel이 JS에 의해 여기로 이동됩니다 -->
         <div id="mobile-chart-content" class="flex-1 flex flex-col min-h-0 overflow-hidden"></div>
         <!-- 닫기 버튼 -->
@@ -1848,22 +1899,32 @@
 
     <!-- 🚀 모바일 전용 하단 네비게이션 탭 바 -->
     <div id="mobile-nav-bar"
-      class="flex min-[1200px]:hidden w-full h-[48px] shrink-0 bg-theme-panel border-t border-theme-border/30 items-stretch justify-around z-[50] absolute bottom-0 left-0 right-0">
+      class="hidden max-[1199px]:flex w-full h-[56px] shrink-0 bg-theme-panel border-t border-theme-border/30 items-stretch justify-around z-[800] absolute bottom-0 left-0 right-0 pb-safe shadow-[0_-4px_16px_rgba(0,0,0,0.15)]">
       <button id="mobile-tab-list" onclick="window.switchMobileTab('list')"
-        class="flex-1 flex flex-col items-center justify-center gap-0.5 text-theme-accent border-t-2 border-theme-accent transition-all cursor-pointer">
-        <span class="text-sm leading-none">📋</span>
-        <span class="text-[8px] font-bold">리스트</span>
+        :class="currentMobileTab === 'list' ? 'text-theme-accent border-t-2 border-theme-accent opacity-100' : 'text-theme-text opacity-40'"
+        class="flex-1 flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <line x1="8" y1="6" x2="21" y2="6"></line>
+          <line x1="8" y1="12" x2="21" y2="12"></line>
+          <line x1="8" y1="18" x2="21" y2="18"></line>
+          <line x1="3" y1="6" x2="3.01" y2="6"></line>
+          <line x1="3" y1="12" x2="3.01" y2="12"></line>
+          <line x1="3" y1="18" x2="3.01" y2="18"></line>
+        </svg>
+        <span class="text-[10px] font-bold tracking-tight">리스트</span>
       </button>
       <button id="mobile-tab-chart" onclick="window.switchMobileTab('chart')"
-        class="flex-1 flex flex-col items-center justify-center gap-0.5 text-theme-text opacity-50 transition-all cursor-pointer">
-        <span class="text-sm leading-none">📈</span>
-        <span class="text-[8px] font-bold">차트</span>
+        :class="currentMobileTab === 'chart' ? 'text-theme-accent border-t-2 border-theme-accent opacity-100' : 'text-theme-text opacity-40'"
+        class="flex-1 flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="20" x2="18" y2="10"></line>
+          <line x1="12" y1="20" x2="12" y2="4"></line>
+          <line x1="6" y1="20" x2="6" y2="14"></line>
+        </svg>
+        <span class="text-[10px] font-bold tracking-tight">차트</span>
       </button>
-      <!-- <button id="mobile-tab-settings" onclick="window.switchMobileTab('settings')"
-        class="flex-1 flex flex-col items-center justify-center gap-0.5 text-theme-text opacity-50 transition-all cursor-pointer">
-        <span class="text-sm leading-none">⚙️</span>
-        <span class="text-[8px] font-bold">설정</span>
-      </button> -->
     </div>
   </div>
 </body>

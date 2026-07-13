@@ -422,9 +422,9 @@ function restoreSavedUserSettings() {
       const btn = document.getElementById("theme-toggle-btn");
       if (btn) btn.innerHTML = "🌙";
       const faviconLink = document.getElementById("favicon-link");
-      if (faviconLink) faviconLink.href = "../static/_gemini-svg-light.svg";
+      if (faviconLink) faviconLink.href = "../static/luma-deer-svg-light.svg";
       const mainLogoImg = document.getElementById("main-logo-img");
-      if (mainLogoImg) mainLogoImg.src = "../static/_gemini-svg-light.svg";
+      if (mainLogoImg) mainLogoImg.src = "../static/luma-deer-svg-light.svg";
     }
 
     // 2. 사이드바 폴딩 상태 복원
@@ -520,27 +520,44 @@ document.addEventListener("DOMContentLoaded", async () => {
         const users = store.activeUsers || 1;
         usersEl.innerText = `${users} Active`;
 
-        // 2. 15분 주기 쿨타임 동기화
+        // 2. 이원화 쿨타임 동기화 (유저 키: 15분, 사장님 키: 24시간)
         if (!store.lastUpdatedRaw) {
-          timerEl.innerText = "--:-- 이후 시가총액 등 갱신";
+          timerEl.innerText = "--:--:-- 이후 시가총액 갱신";
           return;
         }
 
         const now = Math.floor(Date.now() / 1000);
-        // 서버의 마지막 갱신 시간 기준 15분(900초) 더함
-        const nextUpdate = Math.floor(store.lastUpdatedRaw) + 900;
+        const hasKey = localStorage.getItem("CMC_API_KEY") && localStorage.getItem("CMC_API_KEY").trim() !== "";
+        const interval = hasKey ? 900 : 86400; // 유저 15분, 사장님 24시간
+        const nextUpdate = Math.floor(store.lastUpdatedRaw) + interval;
         let diff = Math.floor(nextUpdate - now);
 
         if (diff < 0) {
-          // 시간이 오버되면 수집 중 상태로 표시
-          timerEl.innerText = "수집 완료 대기 중...";
+          timerEl.innerText = hasKey ? "수집 완료 대기 중..." : "일일 수집 대기 중...";
           return;
         }
 
-        const m = Math.floor(diff / 60);
-        const s = diff % 60;
-        const formattedTime = `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-        timerEl.innerText = `${formattedTime} 이후 시가총액 등 갱신`;
+        if (hasKey) {
+          // 15분 카운트다운 (MM:SS)
+          const m = Math.floor(diff / 60);
+          const s = diff % 60;
+          const formattedTime = `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+          timerEl.innerText = `${formattedTime} 이후 시가총액 갱신`;
+          timerEl.title = "";
+          timerEl.style.cursor = "default";
+        } else {
+          // 24시간 카운트다운 (HH:MM:SS) + 경고(이모지) 및 도움말 툴팁 추가
+          const h = Math.floor(diff / 3600);
+          const m = Math.floor((diff % 3600) / 60);
+          const s = diff % 60;
+          const formattedTime = `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+          timerEl.innerText = `⚠️ ${formattedTime} (일일캐시)`;
+          timerEl.title = "📢 [일일 캐시 모드 안내]\n" +
+            "개인 CMC API 키를 입력하지 않았어요\n" +
+            "하루에 한 번 수집하는 일일 캐시 모드로 동작 중입니다.\n" +
+            "더 잦은 실시간 시총 갱신을 원하시면 설정을 통해 개인 키를 등록해 주세요.";
+          timerEl.style.cursor = "help";
+        }
       };
 
       // 🚀 [신규] 1초마다 성능 디버거 통계 수치 갱신 및 렉 위험 요인 동적 분석
@@ -666,6 +683,24 @@ document.addEventListener("DOMContentLoaded", async () => {
       const hashTicker = window.location.hash.substring(1);
       if (typeof window.selectSymbol === "function") {
         window.selectSymbol(hashTicker);
+      }
+    } else {
+      // 🚀 [UX 복원] 해시가 없는 경우 마지막 선택 코인 및 타임프레임 자동 복원
+      try {
+        const lastSymbol = localStorage.getItem("sellnance_last_symbol");
+        const lastTF = localStorage.getItem("sellnance_last_tf");
+
+        // 타임프레임 먼저 복원 (selectSymbol이 fetchHistory를 호출하기 전에 TF를 세팅해야 정확한 봉 데이터 요청)
+        if (lastTF && typeof window.executeSetTF === "function") {
+          store.currentTF = lastTF; // store만 바꾸고 fetchHistory는 아직 미실행
+        }
+
+        // 코인 복원 (차트 + 우측 패널 전체를 마지막 상태로 자동 복원)
+        if (lastSymbol && typeof window.selectSymbol === "function") {
+          window.selectSymbol(lastSymbol);
+        }
+      } catch (e) {
+        // 로컬 캐시 복원 실패 시 조용히 무시 (폴백: 기본 화면 유지)
       }
     }
 
@@ -1059,3 +1094,13 @@ function scheduleDailyReset() {
 
 // 타이머 최초 가동
 scheduleDailyReset();
+
+// 📱 PWA Service Worker 등록
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("/static/sw.js")
+      .then((reg) => console.log("✅ PWA SW registered:", reg.scope))
+      .catch((err) => console.warn("PWA SW registration failed:", err));
+  });
+}

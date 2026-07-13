@@ -67,33 +67,32 @@ export function syncRowPrioritizedMetrics(row) {
       pToday = row.Change_Today_Binance ?? row.Change_Today_Raw;
       pOpen = row.spot_utc0_open_Raw ?? row.utc0_open_Raw;
       pInflow = "BINANCE_SPOT";
+    } else if (row.Bybit_Price_Futures && row.Listed_Exchanges?.includes("BYBIT_FUTURES")) {
+      pPrice = row.Bybit_Price_Futures;
+      p24h = row.Change_24h_Raw;
+      pToday = row.Change_Today_Futures ?? row.Change_Today_Raw;
+      pOpen = row.futures_utc0_open_Raw ?? row.utc0_open_Raw;
+      pInflow = "BYBIT_FUTURES";
+    } else if (row.Bybit_Price_Spot && (row.Listed_Exchanges?.includes("BYBIT_SPOT") || row.Listed_Exchanges?.includes("BYBIT"))) {
+      pPrice = row.Bybit_Price_Spot;
+      p24h = row.Change_24h_Bybit ?? row.Change_24h_Raw;
+      pToday = row.Change_Today_Bybit ?? row.Change_Today_Raw;
+      pOpen = row.spot_utc0_open_Raw ?? row.utc0_open_Raw;
+      pInflow = "BYBIT_SPOT";
     } else if (row.Upbit_Price && (row.Upbit === "O" || row.Listed_Exchanges?.includes("UPBIT"))) {
-      pPrice = rate > 0 ? row.Upbit_Price / rate : row.Upbit_Price;
-      p24h = row.Change_24h_Upbit ?? row.Change_24h_Raw;
-      pToday = row.Change_Today_Upbit ?? row.Change_Today_Raw;
-      pOpen = row.utc0_open_KRW ? (rate > 0 ? parseFloat(row.utc0_open_KRW) / rate : parseFloat(row.utc0_open_KRW)) : row.utc0_open_Raw;
+      const hasOvs = row.Binance === "O" || row.Binance_Futures === "O" || row.Bybit === "O" || row.Bybit_Futures === "O" || (row.Listed_Exchanges && row.Listed_Exchanges.some(e => e.includes("BINANCE") || e.includes("BYBIT")));
+      pPrice = (hasOvs && row.Price_Raw) ? row.Price_Raw : (rate > 0 ? row.Upbit_Price / rate : row.Upbit_Price);
+      p24h = (hasOvs && row.Change_24h_Raw) ? row.Change_24h_Raw : (row.Change_24h_Upbit ?? row.Change_24h_Raw);
+      pToday = (hasOvs && row.Change_Today_Raw) ? row.Change_Today_Raw : (row.Change_Today_Upbit ?? row.Change_Today_Raw);
+      pOpen = (hasOvs && row.utc0_open_Raw) ? row.utc0_open_Raw : (row.utc0_open_KRW ? (rate > 0 ? parseFloat(row.utc0_open_KRW) / rate : parseFloat(row.utc0_open_KRW)) : row.utc0_open_Raw);
       pInflow = "UPBIT";
-    } else {
-      // 빗썸 단독 코인이나 바이비트 단독 코인의 HTS 갱신 보장을 위한 하위 폴백 처리
-      if (row.Bithumb_Price && (row.Bithumb === "O" || row.Listed_Exchanges?.includes("BITHUMB"))) {
-        pPrice = rate > 0 ? row.Bithumb_Price / rate : row.Bithumb_Price;
-        p24h = row.Change_24h_Bithumb ?? row.Change_24h_Raw;
-        pToday = row.Change_Today_Bithumb ?? row.Change_Today_Raw;
-        pOpen = row.utc0_open_KRW ? (rate > 0 ? parseFloat(row.utc0_open_KRW) / rate : parseFloat(row.utc0_open_KRW)) : row.utc0_open_Raw;
-        pInflow = "BITHUMB";
-      } else if (row.Bybit_Price_Futures) {
-        pPrice = row.Bybit_Price_Futures;
-        p24h = row.Change_24h_Raw;
-        pToday = row.Change_Today_Futures ?? row.Change_Today_Raw;
-        pOpen = row.futures_utc0_open_Raw ?? row.utc0_open_Raw;
-        pInflow = "BYBIT_FUTURES";
-      } else if (row.Bybit_Price_Spot) {
-        pPrice = row.Bybit_Price_Spot;
-        p24h = row.Change_24h_Bybit ?? row.Change_24h_Raw;
-        pToday = row.Change_Today_Bybit ?? row.Change_Today_Raw;
-        pOpen = row.spot_utc0_open_Raw ?? row.utc0_open_Raw;
-        pInflow = "BYBIT_SPOT";
-      }
+    } else if (row.Bithumb_Price && (row.Bithumb === "O" || row.Listed_Exchanges?.includes("BITHUMB"))) {
+      const hasOvs = row.Binance === "O" || row.Binance_Futures === "O" || row.Bybit === "O" || row.Bybit_Futures === "O" || (row.Listed_Exchanges && row.Listed_Exchanges.some(e => e.includes("BINANCE") || e.includes("BYBIT")));
+      pPrice = (hasOvs && row.Price_Raw) ? row.Price_Raw : (rate > 0 ? row.Bithumb_Price / rate : row.Bithumb_Price);
+      p24h = (hasOvs && row.Change_24h_Raw) ? row.Change_24h_Raw : (row.Change_24h_Bithumb ?? row.Change_24h_Raw);
+      pToday = (hasOvs && row.Change_Today_Raw) ? row.Change_Today_Raw : (row.Change_Today_Bithumb ?? row.Change_Today_Raw);
+      pOpen = (hasOvs && row.utc0_open_Raw) ? row.utc0_open_Raw : (row.utc0_open_KRW ? (rate > 0 ? parseFloat(row.utc0_open_KRW) / rate : parseFloat(row.utc0_open_KRW)) : row.utc0_open_Raw);
+      pInflow = "BITHUMB";
     }
   }
   // pOpen = row.utc0_open_Raw;

@@ -441,7 +441,7 @@ export function maskApiKey(key) {
 export async function openSettingsModal() {
   const modal = document.getElementById("settings-modal");
   if (!modal) return;
-  modal.classList.remove("hidden");
+  modal.style.display = "flex";
 
   try {
     const res = await fetch("/api/settings");
@@ -464,7 +464,9 @@ export async function openSettingsModal() {
 
 export function closeSettingsModal() {
   const modal = document.getElementById("settings-modal");
-  if (modal) modal.classList.add("hidden");
+  if (modal) {
+    modal.style.display = "none";
+  }
 }
 
 export async function saveSettings() {
@@ -593,13 +595,11 @@ export function updateExchFilterUI() {
   const buttonsHtml = list
     .map((ex) => {
       const state = store.exchFilterStates[ex.id] || 0;
-      let badgeText = ex.label || "";
 
       // 상태에 따른 외형 제어 (유명 3사 외 구분 없는 버튼 상태 처리 포함)
       let borderStyle = "border-theme-border/30";
       let filterStyle = "filter: grayscale(1); opacity: 0.45;";
       let bgStyle = "background: transparent;";
-      let badgeBg = "bg-theme-accent";
 
       if (state === 1) {
         borderStyle = "border-theme-accent";
@@ -607,16 +607,27 @@ export function updateExchFilterUI() {
           "background: color-mix(in srgb, var(--accent) 12%, transparent);";
         filterStyle = "filter: none; opacity: 1;";
       } else if (state === -1) {
-        badgeText = "🚫" + (ex.label || "");
         borderStyle = "border-theme-down";
         filterStyle = "filter: grayscale(0.5) contrast(0.8); opacity: 0.85;";
         bgStyle = "background: rgba(239, 83, 80, 0.1);";
-        badgeBg = "bg-theme-down";
       }
 
-      // B-SPOT, B-FUT, B-STOCK의 경우 비활성화(state === 0) 상태에서도 라벨이 표시되어 구분 가능해야 함
-      if (state === 0 && ex.label) {
-        badgeBg = "bg-theme-border/40 text-theme-text opacity-60";
+      // 🚀 상태 배지 (우측 상단) - 깔끔한 아이콘/기호 기반
+      let stateBadge = "";
+      if (state === 1) {
+        stateBadge = `<div class="absolute -top-1 -right-1 bg-green-500 text-white text-[8px] w-3 h-3 flex items-center justify-center rounded-full leading-none font-bold scale-[0.85] shadow-sm">✓</div>`;
+      } else if (state === -1) {
+        stateBadge = `<div class="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] w-3 h-3 flex items-center justify-center rounded-full leading-none font-bold scale-[0.85] shadow-sm">✕</div>`;
+      }
+
+      // 🚀 구분용 타입 배지 (우측 하단)
+      let typeBadge = "";
+      if (ex.id === "BINANCE") {
+        typeBadge = `<div class="absolute -bottom-1 -right-1 bg-gray-500/80 text-white text-[7px] px-0.5 rounded-sm leading-none font-bold scale-[0.8]">S</div>`;
+      } else if (ex.id === "BINANCE_FUTURES") {
+        typeBadge = `<div class="absolute -bottom-1 -right-1 bg-yellow-500/90 text-black text-[7px] px-0.5 rounded-sm leading-none font-bold scale-[0.8]">⚡</div>`;
+      } else if (ex.id === "BINANCE_STOCK") {
+        typeBadge = `<div class="absolute -bottom-1 -right-1 bg-blue-500/85 text-white text-[7px] px-0.5 rounded-sm leading-none font-bold scale-[0.8]">📈</div>`;
       }
 
       const imgUrl = `https://s2.coinmarketcap.com/static/img/exchanges/64x64/${ex.cmcId}.png`;
@@ -630,10 +641,8 @@ export function updateExchFilterUI() {
               class="relative flex items-center justify-center p-1.5 border rounded-xl transition-all duration-300 w-9 h-9 hover:scale-105 active:scale-95 ${borderStyle}"
               style="${bgStyle} ${filterStyle}" title="${ex.name || ex.id} (클릭: 순환 토글 / 우클릭: 제외 토글)">
         <img src="${imgUrl}" alt="${ex.name || ex.id}" class="w-full h-full object-contain rounded" style="${imgStyle}" />
-        ${badgeText
-          ? `<div class="absolute -top-1 -right-1 ${badgeBg} text-white text-[8px] px-0.5 rounded-sm leading-none font-bold scale-[0.8]">${badgeText}</div>`
-          : ""
-        }
+        ${stateBadge}
+        ${typeBadge}
       </button>
     `;
     })

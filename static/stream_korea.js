@@ -49,6 +49,10 @@ function getPriceForExchange(exchange, row, pureSymbol) {
 // 🚀 실시간 김프 1초컷 업데이트 엔진 (모든 마켓 공통 적용)
 export function updateRealtimeKimchi(liveData, symbol, chartTime) {
   const perfStart = performance.now();
+  // 🚀 [함수 호출 간격 추적] 이 함수가 마지막으로 불린 시각과 지금의 gap을 측정 → late arrival 판단용
+  const nowCallMs = Date.now();
+  const callGapMs = store._lastKimchiCallMs ? (nowCallMs - store._lastKimchiCallMs) : 0;
+  store._lastKimchiCallMs = nowCallMs;
   if (store.blockKimchi) return;
   if (!store.kimchiSeries || !store.paneConfig.kimchi) return;
 
@@ -214,6 +218,36 @@ export function updateRealtimeKimchi(liveData, symbol, chartTime) {
           if (store.kimchiData && store.kimchiData.length > 0) {
             if (chartTime > lastKimchiItem.time) {
               store.kimchiData.push(kimchiObj);
+              // 🚀 [Fix 1] 메모리 누수 방지: 최대 렌더링 한도 초과 시 앞부분 슬라이싱으로 배열 비대화 차단
+              const _maxKimchi = store.currentRenderLimit || 1000;
+              if (store.kimchiData.length > _maxKimchi) {
+                store.kimchiData = store.kimchiData.slice(-_maxKimchi);
+              }
+
+              // 🚀 [Late Arrival Autofit] 새 바인데 이 함수의 직전 호출 이후 gap이 임계치 초과 시에만
+              // custom len + right margin 보존 방식으로 chartVol timeScale 재조정
+              // 판단 기준: 직전 함수 호출 시각 → 현재 호출 시각의 gap (쓰로틀 주기 455ms 기준, 훨씬 오래 안 불렸으면 늦음)
+              try {
+                const LATE_MS = 1000; // ← 이 값만 바꾸면 됨 (0.5s=500, 1s=1000, 1.5s=1500)
+                const isLateArrival = callGapMs > LATE_MS;
+                const debounceOk = !store._lastKimchiAutofit || (nowCallMs - store._lastKimchiAutofit > 2000);
+
+                if (isLateArrival && debounceOk && store.chartVol) {
+                  store._lastKimchiAutofit = nowCallMs;
+                  const rightMarginBars = store._kimchiAutofitRightMargin ?? 5;
+                  const visibleBars = store.currentRenderLimit || 200;
+                  const totalLen = store.kimchiData.length;
+                  requestAnimationFrame(() => {
+                    try {
+                      store.chartVol.timeScale().setVisibleLogicalRange({
+                        from: Math.max(0, totalLen - visibleBars),
+                        to: totalLen - 1 + rightMarginBars,
+                      });
+                    } catch (_e) { /* 무시 */ }
+                  });
+                }
+              } catch (_autofitErr) { /* 무시 */ }
+
             } else if (chartTime === lastKimchiItem.time) {
               store.kimchiData[store.kimchiData.length - 1] = kimchiObj;
             }
@@ -227,10 +261,12 @@ export function updateRealtimeKimchi(liveData, symbol, chartTime) {
             ...item,
             value: (item.value === null || item.value === undefined || isNaN(item.value)) ? 0 : Number(item.value)
           }));
-
-          store.kimchiSeries.setData(
-            sanitizeChartData(sterileKimchiData, true),
-          );
+          // 🚀 [Fix 2] 복구 경로 최적화: 최신 N개만 슬라이싱 전달 (proxy 내 sanitizeChartData가 이미 내장됨)
+          const _maxKimchi2 = store.currentRenderLimit || 1000;
+          const _slicedKimchi = sterileKimchiData.length > _maxKimchi2
+            ? sterileKimchiData.slice(-_maxKimchi2)
+            : sterileKimchiData;
+          store.kimchiSeries.setData(_slicedKimchi);
         }
       }
     }

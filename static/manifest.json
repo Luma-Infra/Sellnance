@@ -1,0 +1,22 @@
+{
+  "name": "Sellnance",
+  "short_name": "Sellnance",
+  "description": "Real-time Crypto Chart Terminal",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#131313",
+  "theme_color": "#131313",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/static/luma-deer-svg-dark.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/static/luma-deer-svg-light.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

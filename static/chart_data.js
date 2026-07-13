@@ -502,7 +502,7 @@ export async function fetchHistory(
           "15m": "5m",
           "30m": "30m",
           "1h": "1h",
-          "2h": "1h", // 🚀 2시간봉은 1시간씩 어긋나므로 1h 2개 조립 유지
+          // "2h": "1h", // 🚀 2시간봉은 1시간씩 어긋나므로 1h 2개 조립 유지
           "4h": "4h", // 🚀 4시간봉은 마감 경계가 일치하므로 원본 4h API 사용!
           "12h": "12h", // 🚀 12시간봉은 마감 경계가 일치하므로 원본 12h API 사용!
           "1d": "24h",
@@ -908,7 +908,7 @@ export async function fetchHistory(
         const doFit = () => {
           if (typeof autoFit === "function") autoFit(isTabRestore); // 🚀 [2차 보정 피팅] 김프 데이터까지 온전히 안착한 후 최종 피팅 실행
           if (typeof window.updateStatus === "function") window.updateStatus();
-          
+
           // 🚀 [락 해제] 최종 피팅(autoFit)까지 완벽히 마친 시점에만 Fetching 락을 풀어 가로폭 오염을 원천 차단
           window.isFetchingChart = false;
           store.isFetchingChart = false;
@@ -1116,7 +1116,7 @@ export async function loadMoreHistory() {
     // 업비트의 경우 조립(mainStep)이 필요하면 진행
     if (params.isUpbit && params.mainStep > 1) {
       fetchedMain.sort((a, b) => a.time - b.time);
-      
+
       const getGroupTime = (t, tf) => {
         const d = new Date(t * 1000);
         if (tf === "15m") return Math.floor(t / 900) * 900;

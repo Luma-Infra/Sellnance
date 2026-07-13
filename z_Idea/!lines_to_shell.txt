@@ -1,6 +1,8 @@
 Get-ChildItem -Recurse -File | Where-Object {
     (($_.FullName -like "*\modules\*") -and ($_.Extension -eq ".py" -or $_.Extension -eq ".go")) -or 
-    (($_.FullName -like "*\static\*") -and ($_.Extension -eq ".js"))
+    (($_.FullName -like "*\static\*") -and ($_.Extension -eq ".js" -or $_.Extension -eq ".css")) -or 
+    (($_.FullName -like "*\templates\*") -and ($_.Extension -eq ".html")) -or 
+    (($_.DirectoryName -eq $pwd.Path) -and ($_.Extension -in ".py", ".js", ".json", ".go", ".txt"))
 } | ForEach-Object {
     $content = Get-Content $_.FullName
     $cleanLines = $content | Where-Object {
@@ -13,8 +15,16 @@ Get-ChildItem -Recurse -File | Where-Object {
         -not $trimmed.EndsWith("*/") -and
         -not ($trimmed.StartsWith('"""') -or $trimmed.StartsWith("'''"))
     }
+    
+    # 순수 글자 수 계산 (모든 유효 라인의 공백을 제거한 글자 수 합산)
+    $charCount = 0
+    foreach ($line in $cleanLines) {
+        $charCount += $line.Replace(" ", "").Replace("`t", "").Length
+    }
+
     [PSCustomObject]@{
-        "File Path" = $_.FullName.Replace((Get-Location).Path + "\", "")
-        "Line Count" = $cleanLines.Count
+        "File Path"   = $_.FullName.Replace((Get-Location).Path + "\", "")
+        "Line Count"  = $cleanLines.Count
+        "Char Count"  = $charCount
     }
 } | Format-Table -AutoSize | Out-File -FilePath "@lines_for_ai.txt" -Encoding utf8

@@ -552,10 +552,6 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
     }
   }
 
-  if (typeof window.syncRowPrioritizedMetrics === "function") {
-    window.syncRowPrioritizedMetrics(row);
-  }
-
   const isVisible =
     store.visibleSymbols.has(row.Ticker) ||
     store.visibleSymbols.has(row.Ticker.toUpperCase()) ||

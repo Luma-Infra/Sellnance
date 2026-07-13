@@ -62,6 +62,8 @@ export function selectSymbol(s, forceMarket = null, targetUid = null, isRowClick
   store.isUserZoomed = false;
   store.currentAsset = uniqueTicker;
   store.currentSelectedSymbol = uniqueTicker;
+  // 🚀 [UX 복원] 마지막 선택 코인 로컬 저장
+  try { localStorage.setItem("sellnance_last_symbol", uniqueTicker); } catch(e) {}
 
   // 🚀 선택된 코인은 화면 가시 영역(30위 바깥)과 상관없이 무조건 실시간 시세 구독에 강제 등록
   if (store.visibleSymbols) {
@@ -336,21 +338,8 @@ export function selectSymbol(s, forceMarket = null, targetUid = null, isRowClick
         window.showMobileChart();
       }
       if (typeof window.switchMobileTab === "function" && window.innerWidth < 1200) {
-        // 네비탭 차트 활성 상태만 동기화 (차트는 이미 showMobileChart로 열림)
-        const tabList = document.getElementById("mobile-tab-list");
-        const tabChart = document.getElementById("mobile-tab-chart");
-        const tabSettings = document.getElementById("mobile-tab-settings");
-        [tabList, tabChart, tabSettings].forEach((btn) => {
-          if (!btn) return;
-          btn.className = btn.className
-            .replace(/text-theme-accent/g, "").replace(/border-t-2/g, "").replace(/border-b-2/g, "")
-            .replace(/border-theme-accent/g, "").replace(/opacity-100/g, "").replace(/opacity-50/g, "");
-          btn.classList.add("text-theme-text", "opacity-50");
-        });
-        if (tabChart) {
-          tabChart.classList.remove("text-theme-text", "opacity-50");
-          tabChart.classList.add("text-theme-accent", "border-t-2", "border-theme-accent", "opacity-100");
-        }
+        // Alpine.js에 탭 변경 이벤트 전파하여 버튼 하이라이트 상태를 선언적으로 처리
+        window.dispatchEvent(new CustomEvent("mobile-tab-changed", { detail: "chart" }));
       }
     }, 0);
   });
@@ -371,50 +360,38 @@ export function updateExchangeBadges(s, targetUid = null) {
     const list = [
       {
         id: "B-FUT",
-        label: "B-FUT",
-        bg: "bg-[#f0b90b]",
-        text: "text-black",
+        cmcId: 270,
         market: "FUTURES",
         condition: rowInfo.Listed_Exchanges?.includes("BINANCE_FUTURES"),
       },
       {
         id: "B-SPOT",
-        label: "B-SPOT",
-        bg: "bg-[#444]",
-        text: "text-white",
+        cmcId: 270,
         market: "SPOT",
         condition: rowInfo.Listed_Exchanges?.includes("BINANCE"),
       },
       {
         id: "BYBIT-FUT",
-        label: "BYBIT-FUT",
-        bg: "bg-[#f5a800]",
-        text: "text-black",
+        cmcId: 521,
         market: "BYBIT_FUTURES",
         condition: rowInfo.Listed_Exchanges?.includes("BYBIT_FUTURES"),
       },
       {
         id: "BYBIT-SPOT",
-        label: "BYBIT-SPOT",
-        bg: "bg-[#444]",
-        text: "text-white",
+        cmcId: 521,
         market: "BYBIT",
         condition: rowInfo.Listed_Exchanges?.includes("BYBIT"),
       },
       {
         id: "UPBIT",
-        label: "UPBIT",
-        bg: "bg-[#093687]",
-        text: "text-white",
+        cmcId: 351,
         market: "UPBIT",
         condition:
           rowInfo.Listed_Exchanges?.includes("UPBIT") || rowInfo.Upbit === "O",
       },
       {
         id: "BITHUMB",
-        label: "BITHUMB",
-        bg: "bg-[#ff8b00]",
-        text: "text-white",
+        cmcId: 200,
         market: "BITHUMB",
         condition: rowInfo.Listed_Exchanges?.includes("BITHUMB"),
       },
@@ -426,8 +403,25 @@ export function updateExchangeBadges(s, targetUid = null) {
         const isActive = store.currentChartMarket === item.market;
         const ringClass = isActive
           ? "ring-2 ring-white scale-105 shadow-lg brightness-110"
-          : "opacity-60 hover:opacity-100 hover:scale-105";
-        badges += `<button onclick="selectSymbol('${rowInfo.Ticker}', '${item.market}', '${rowInfo.UID}')" class="${item.bg} ${item.text} ${ringClass} text-[11px] font-bold px-2.5 py-1 rounded transition-all duration-200 cursor-pointer select-none active:scale-95 ml-1.5 first:ml-0">${item.label}</button>`;
+          : "opacity-50 hover:opacity-100 hover:scale-105";
+
+        const imgUrl = `https://s2.coinmarketcap.com/static/img/exchanges/64x64/${item.cmcId}.png`;
+
+        // 🚀 구분용 타입 배지 (우측 하단) - SPOT / FUTURE 텍스트 적용
+        let typeBadge = "";
+        if (item.id === "B-SPOT" || item.id === "BYBIT-SPOT") {
+          typeBadge = `<div class="absolute -bottom-1 -right-1.5 bg-zinc-800 text-white text-[8px] px-1 py-0.5 rounded-sm leading-none font-bold shadow-md border border-white/20 whitespace-nowrap">SPOT</div>`;
+        } else if (item.id === "B-FUT" || item.id === "BYBIT-FUT") {
+          typeBadge = `<div class="absolute -bottom-1 -right-1.5 bg-[#f0b90b] text-black text-[8px] px-1 py-0.5 rounded-sm leading-none font-bold shadow-md whitespace-nowrap">FUTURE</div>`;
+        }
+
+        badges += `
+          <button onclick="selectSymbol('${rowInfo.Ticker}', '${item.market}', '${rowInfo.UID}')" 
+                  class="relative flex items-center justify-center p-1 border border-theme-border/30 rounded-xl transition-all duration-200 w-8 h-8 cursor-pointer select-none active:scale-95 ml-1.5 first:ml-0 ${ringClass}">
+            <img src="${imgUrl}" alt="${item.id}" class="w-full h-full object-contain rounded" />
+            ${typeBadge}
+          </button>
+        `;
       }
     });
   }

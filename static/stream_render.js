@@ -103,9 +103,9 @@ export function renderRealtimeUpdate(normalizedTime, currentCandle) {
         }
     }
 
-    if (typeof window.syncPriceScaleWidths === "function") {
-        window.syncPriceScaleWidths();
-    }
+    // 🚀 [Fix 3] syncPriceScaleWidths는 broadcastCandleUpdate(stream_global.js)에서
+    // renderRealtimeUpdate 반환 후 명시적으로 호출되므로 여기서 중복 호출 제거.
+    // 김프 있을 때 이중 rAF 예약 → 이중 sync 발생하던 문제 해소.
 }
 
 // 볼륨 업데이트 실패 시 원본 배열 내부 오염물질(null/NaN)을 제거하고 차트 초기화 복구

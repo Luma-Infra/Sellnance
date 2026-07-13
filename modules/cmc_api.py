@@ -167,7 +167,7 @@ def build_cmc_lookup_lists(binance_data, upbit_krw_set, MAPPING_DATA):
 
 
 # CMC 단일 묶음 호출기.
-def fetch_cmc_market_data(binance_data, upbit_krw_set, MAPPING_DATA):
+def fetch_cmc_market_data(binance_data, upbit_krw_set, MAPPING_DATA, api_key=None):
     # 2. 조회 명단 작성 (UID파 vs 티커파)
     # 🚀 upbit_only_assets 파라미터를 버리고 전체 upbit_krw_set 받기
     id_lookup, sym_lookup, asset_to_lookup_key = build_cmc_lookup_lists(
@@ -175,16 +175,16 @@ def fetch_cmc_market_data(binance_data, upbit_krw_set, MAPPING_DATA):
     )
 
     # 3. CMC API 실행
-    market_data_map = execute_cmc_requests(id_lookup, sym_lookup)
+    market_data_map = execute_cmc_requests(id_lookup, sym_lookup, api_key=api_key)
     return market_data_map, asset_to_lookup_key
 
 
 # ThreadPool 돌려서 CMC 데이터 긁어오고 market_data_map 만드는 로직.
-def execute_cmc_requests(id_lookup, sym_lookup):
+def execute_cmc_requests(id_lookup, sym_lookup, api_key=None):
     import config
 
     url = "https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest"
-    headers = {"Accepts": "application/json", "X-CMC_PRO_API_KEY": config.CMC_API_KEY}
+    headers = {"Accepts": "application/json", "X-CMC_PRO_API_KEY": api_key or config.CMC_API_KEY}
     quote_tasks = []
 
     # ID 묶음 생성

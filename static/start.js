@@ -55,7 +55,7 @@ function getStartScreenHTML() {
     </style>
 
     <div
-      id="start-screen"
+      id="start-screen" style="display: none;"
       class="fixed items-center justify-center inset-0 z-[1000] flex transition-opacity duration-500 pt-16"
     >
       <!-- 🚀 기존 Canvas/DOM 방식 대신 WebGL 컨테이너 배치 -->
@@ -114,7 +114,7 @@ function getStartScreenHTML() {
             <p
               class="text-[10px] text-theme-accent/70 text-left font-medium italic"
             >
-              ** 키가 없어도 Skip을 누르면 서버 캐시 데이터로 대시보드 진입이
+              ** 키가 없어도 Skip을 누르면 서버 일일캐시 데이터로 대시보드 진입이
               가능합니다.
             </p>
           </div>
@@ -127,7 +127,7 @@ function getStartScreenHTML() {
             onclick="saveAndStart()"
             class="w-full py-3.5 bg-theme-accent/60 text-white/50 font-medium rounded-xl shadow-lg transition-all tracking-widest uppercase cursor-not-allowed pointer-events-none"
           >
-            ?1 불러오는 중.. 📡
+            불러오는 중.. 📡
           </button>
           <button
             id="btn-skip-start"
@@ -135,7 +135,7 @@ function getStartScreenHTML() {
             onclick="skipAndStart()"
             class="w-full py-3 bg-transparent text-theme-text/50 border border-theme-border/50 font-medium rounded-xl transition-all tracking-wide opacity-50 cursor-not-allowed pointer-events-none"
           >
-            ?2 불러오는 중.. 📡
+            불러오는 중.. 📡
           </button>
         </div>
       </div>
@@ -386,12 +386,8 @@ async function initPixiBackground() {
 }
 
 async function initStartScreen() {
-  // 🚀 Start Screen HTML을 body에 동적으로 추가
+  // 🚀 Start Screen HTML을 body에 동적으로 추가 (기본 style="display: none;" 상태로 삽입)
   document.body.insertAdjacentHTML("beforeend", getStartScreenHTML());
-
-  // 🚀 [추가:성능최적화] DOM 애니메이션 로직 삭제 및 PixiJS WebGL 엔진 구동
-  // 즉시 실행으로 렉 유발 요인 제거
-  await initPixiBackground();
 
   const input = document.getElementById("cmc-api-input");
   const btnStart = document.getElementById("btn-start-engine");
@@ -404,12 +400,10 @@ async function initStartScreen() {
     const res = await fetch("/api/get-env-key");
     const data = await res.json();
 
-    if (data.key && data.key.trim() !== "") {
-      rawCmcKey = data.key;
-      // Xconsole.log("✅ env 키 로드 성공!");
+    if (data.exists) {
+      // Xconsole.log("✅ env 키 존재 확인!");
 
-      // 🚀 env 키가 존재하면 즉시 로컬 스토리지에 저장하고 시작 화면을 스킵합니다.
-      localStorage.setItem("CMC_API_KEY", rawCmcKey);
+      // 🚀 env 키가 존재하면 로컬 스토리지를 오염시키지 않고 시작 화면을 바로 스킵합니다.
       hideStartScreen();
       return;
     } else {
@@ -438,7 +432,7 @@ async function initStartScreen() {
 
     if (btnSkip) {
       btnSkip.disabled = false;
-      btnSkip.innerText = "Skip (Use Cached Data)";
+      btnSkip.innerText = "Skip (Use Daily Cache)";
       // 비주얼 선명도 증가
       btnSkip.className =
         "w-full py-3 bg-transparent text-theme-text border border-theme-border font-medium rounded-xl hover:bg-white/5 hover:border-white/30 active:scale-[0.98] transition-all tracking-wide opacity-60 hover:opacity-100 cursor-pointer pointer-events-auto";
@@ -449,6 +443,15 @@ async function initStartScreen() {
   if (rawCmcKey && input) {
     input.value = maskApiKey(rawCmcKey);
   }
+
+  // 🚀 [선택한 해결방안 적용]: 자동 스킵되지 않고 화면을 실제로 노출해야 하는 상태
+  // 이 단계에 도달했다는 것은 서버 env에 키가 없음을 뜻하므로 화면을 노출하고 PixiJS 엔진을 기동합니다.
+  const startScreen = document.getElementById("start-screen");
+  if (startScreen) {
+    startScreen.style.display = "flex";
+  }
+  await initPixiBackground();
+
 
   // 🚀 수정된 부분: beforeinput 이벤트 핸들러
   input.addEventListener("beforeinput", (e) => {
@@ -529,14 +532,14 @@ function saveAndStart() {
   });
 }
 
-// 🚀 Skip (쌀먹 모드 유지)
+// 🚀 Skip (일일캐시 모드 진입)
 function skipAndStart() {
-  // Xconsole.log("⏭️ [스킵] 캐시 데이터로 진입합니다.");
+  // Xconsole.log("⏭️ [스킵] 일일캐시 데이터로 진입합니다.");
 
   // 🚀 [INP 최적화 1] 클릭 즉시 시각적 피드백 제공
   const buttons = document.querySelectorAll("#start-screen button");
   if (buttons.length > 1 && buttons[1]) {
-    buttons[1].innerText = "SKIPPING... ⏭️";
+    buttons[1].innerText = "ENTERING CACHE MODE... ⏭️";
     buttons[1].style.pointerEvents = "none";
   }
 

@@ -1,62 +1,79 @@
 ﻿
-File Path                                          Line Count
----------                                          ----------
-modules\adapter.py                                         90
-modules\api_manager.py                                    260
-modules\app.py                                            432
-modules\builder.py                                        235
-modules\builder_binance.py                                551
-modules\builder_upbit.py                                  324
-modules\cache.go                                           71
-modules\cmc_api.py                                        184
-modules\config_manager.py                                  46
-modules\exchange_api.py                                   678
-modules\fetcher.go                                         42
-modules\get_market.py                                      10
-modules\main.go                                           167
-modules\trace_hooking.py                                   62
-modules\utils.py                                          110
-static\api.js                                               0
-static\app_loader.js                                       67
-static\chart.js                                           915
-static\chart_api.js                                        17
-static\chart_data.js                                     1108
-static\chart_data_kimchi.js                                95
-static\chart_debug_monitor.js                             331
-static\chart_draw.js                                      827
-static\chart_history_helper.js                            126
-static\chart_history_kimchi.js                            392
-static\chart_layout.js                                    138
-static\chart_measure.js                                   344
-static\chart_utils.js                                     847
-static\feed_binance_futures.js                             84
-static\feed_binance_spot.js                                83
-static\feed_bithumb.js                                     61
-static\feed_bybit_futures.js                               57
-static\feed_bybit_spot.js                                  56
-static\feed_upbit.js                                      112
-static\lightweight-charts.standalone.production.js          1
-static\lwc_error_tracker.js                               209
-static\orderbook.js                                       376
-static\pixi.min.js                                        911
-static\quickview.js                                      1030
-static\sim_engine.js                                       93
-static\start.js                                           409
-static\stream.js                                          392
-static\stream_global.js                                   335
-static\stream_korea.js                                    379
-static\stream_render.js                                   113
-static\stream_table.js                                    565
-static\stream_utils.js                                     33
-static\sweetalert2@11.js                                    2
-static\table.js                                           142
-static\table_api.js                                       238
-static\table_filter.js                                   1048
-static\table_render.js                                   1401
-static\table_sort.js                                      124
-static\ui_control.js                                     1125
-static\ui_selection.js                                    347
-static\_main.js                                           811
-static\_store.js                                          281
+File Path                                          Line Count Char Count
+---------                                          ---------- ----------
+@context_for_ai.txt                                      9485     844682
+@lines_for_ai.txt                                           0          0
+config.py                                                  47       1163
+listing.json                                             4314      61903
+mapping.json                                             5598      41302
+package-lock.json                                        2021      51315
+package.json                                               32        717
+postcss.config.js                                           6         71
+railpack.json                                               3         21
+requirements.txt                                            9        128
+run.py                                                     37        823
+tailwind.config.js                                         19        253
+vite.config.js                                             20        397
+modules\adapter.py                                         90       2372
+modules\api_manager.py                                    260       6684
+modules\app.py                                            432      13505
+modules\builder.py                                        235       5575
+modules\builder_binance.py                                551      14897
+modules\builder_upbit.py                                  323       9374
+modules\cache.go                                           71       1760
+modules\cmc_api.py                                        184       4949
+modules\config_manager.py                                  46       1461
+modules\exchange_api.py                                   678      16713
+modules\fetcher.go                                         42       1047
+modules\get_market.py                                      10        480
+modules\main.go                                           167       4109
+modules\trace_hooking.py                                   62       2072
+modules\utils.py                                          110       3020
+static\api.js                                               0          0
+static\app_loader.js                                       67       2351
+static\chart.js                                           916      24908
+static\chart_api.js                                        17        338
+static\chart_data.js                                     1121      27628
+static\chart_data_kimchi.js                                95       2557
+static\chart_debug_monitor.js                             331      10936
+static\chart_draw.js                                      827      19466
+static\chart_history_helper.js                            126       4052
+static\chart_history_kimchi.js                            391      10185
+static\chart_layout.js                                    138       3670
+static\chart_measure.js                                   344       9159
+static\chart_utils.js                                     839      22934
+static\feed_binance_futures.js                             84       2569
+static\feed_binance_spot.js                                83       2247
+static\feed_bithumb.js                                     61       1781
+static\feed_bybit_futures.js                               57       1808
+static\feed_bybit_spot.js                                  56       1649
+static\feed_upbit.js                                      112       3426
+static\lightweight-charts.standalone.production.js          1     192340
+static\lwc_error_tracker.js                               209       4291
+static\orderbook.js                                       376      10639
+static\pixi.min.js                                        911     416351
+static\pretendard.css                                       7        162
+static\quickview.js                                      1030      29234
+static\sim_engine.js                                       93       2971
+static\start.js                                           409      10994
+static\stream.js                                          392      13243
+static\stream_global.js                                   335      14223
+static\stream_korea.js                                    407      14502
+static\stream_render.js                                   110       3119
+static\stream_table.js                                    565      17607
+static\stream_utils.js                                     33       1005
+static\sweetalert2@11.js                                    2      77345
+static\table.js                                           142       3733
+static\table_api.js                                       238       7333
+static\table_filter.js                                   1050      31633
+static\table_render.js                                   1401      46834
+static\table_sort.js                                      124       3329
+static\ui_control.js                                     1225      40542
+static\ui_selection.js                                    366      10765
+static\z_style.css                                       1022      20651
+static\z_style.min.css                                      1      90823
+static\_main.js                                           810      23518
+static\_store.js                                          282       8092
+templates\index.html                                     1740      82325
 
 

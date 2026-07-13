@@ -3,8 +3,10 @@
   const traceMap = new Map();
 
   const getTop5 = () => {
-    // 1. 가상화 스크롤 및 필터링 환경에서 실제로 화면 활성 상태인 행(.realtime-live-row)만 추출
-    const rowEls = document.querySelectorAll('.coin-row.realtime-live-row');
+    // 1. 가상화 스크롤 및 필터링 환경에서 실제로 화면 활성 상태인 행(.realtime-live-row)만 추출하여 Y축 좌표 순으로 정렬
+    const rowEls = Array.from(document.querySelectorAll('.coin-row.realtime-live-row'))
+      .sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
+
     const visibleTickers = [];
     rowEls.forEach(el => {
       let t = el.getAttribute('data-ticker') || el.dataset.sym || (el.id && el.id.startsWith('row-') ? el.id.replace('row-', '') : null);
@@ -127,6 +129,26 @@
       const spikeWarning = state.IsSpike ? `<div style="margin-top:4px; color:#ef4444; font-weight:bold; background:rgba(239,68,68,0.2); padding:4px; border-radius:4px; text-align:center;">🚨 비정상 스파이크 감지! (1초내 5% 튐)</div>` : '';
       const retroWarning = state.IsRetrograde ? `<div style="margin-top:4px; color:#f59e0b; font-weight:bold; background:rgba(245,158,11,0.2); padding:4px; border-radius:4px; text-align:center;">⚠️ 낡은 캐시(3초 레이더) 역행 덮어쓰기 감지!</div>` : '';
 
+      // 5초간 대입 정체 또는 다중 동시 대입 추적 (이력 영구 보존)
+      const lastPriceSet = row._lastPriceRawSetTime;
+      const injectedTime = row._injectedTime || Date.now();
+      const priceStallTime = lastPriceSet ? (Date.now() - lastPriceSet) : (Date.now() - injectedTime);
+
+      if (priceStallTime > 5000) {
+        row._hadStallWarning = true;
+        row._maxStallTime = Math.max(row._maxStallTime || 0, priceStallTime);
+      }
+
+      const isCurrentlyStalled = priceStallTime > 5000;
+      const stallWarning = row._hadStallWarning
+        ? `<div style="margin-top:4px; color:#f43f5e; font-weight:bold; background:rgba(244,63,94,0.15); padding:4px; border-radius:4px; text-align:center; font-size:10px;">🚨 [대입 정체 이력] 5초간 대입 없음 발생함! ${isCurrentlyStalled ? `(현재 진행 중: ${(priceStallTime / 1000).toFixed(1)}초)` : `(현재 복구됨 / 최대: ${(row._maxStallTime / 1000).toFixed(1)}초)`}</div>`
+        : '';
+      const concurrentWarning = row._hadConcurrentWarning
+        ? `<div style="margin-top:4px; color:#a855f7; font-weight:bold; background:rgba(168,85,247,0.15); padding:4px; border-radius:4px; text-align:center; font-size:10px;">⚠️ [동시 대입 이력] 1초내 다중 파일 대입 감지됨! [${Array.from(row._allSimultaneousSetters || []).join(', ')}]</div>`
+        : '';
+
+      const mutationLogs = (row._mutationHistory || []).map(m => `  • [${m.time}] ${m.prop}: ${typeof m.from === 'number' ? m.from.toFixed(4) : m.from} ➔ ${typeof m.to === 'number' ? m.to.toFixed(4) : m.to} (${m.caller})`).join('\n');
+      
       const logLine = `[${ticker}] (${state.Type || ''})
 - 가격: ${state.Price} (${state.PriceFormula}) ${state.IsSpike ? '🚨 비정상 유입!' : ''} ${state.IsRetrograde ? '⚠️ 과거 캐시 역행!' : ''}
 - 24h: ${state.Chg24h}
@@ -134,10 +156,25 @@
 - 김프: ${row.Kimchi_Formatted || '-'} (Raw: ${row.Kimchi_Raw != null ? row.Kimchi_Raw.toFixed(4) + '%' : '-'})
 - [김프 재료] 국내: ${row.Upbit_Price || row.Bithumb_Price || '-'} | 해외: ${row.Price_Raw || '-'} | 환율: ${store.marketDataMap?.krw_usd_rate || '-'}
 - [교차 시가] 백엔드: ${beOpenPrice} | 프론트: ${feOpenPrice}
+- [대입 정체] ${row._hadStallWarning ? `🚨 대입 정체 이력 있음! ${isCurrentlyStalled ? `(진행 중: ${(priceStallTime / 1000).toFixed(1)}s)` : `(복구됨 / 최대: ${(row._maxStallTime / 1000).toFixed(1)}s)`}` : '정상'}
+- [동시 대입] ${row._hadConcurrentWarning ? `⚠️ 다중 파일 대입 이력 있음! [${Array.from(row._allSimultaneousSetters || []).join(', ')}]` : '정상'}
 - [추적 필드] Exact_Spot: ${row.Exact_Spot} | Exact_Futures: ${row.Exact_Futures} | Symbol: ${row.Symbol} | Inflow_Path: ${row.Inflow_Path}
 - [갱신원 필드] Price: "${row._lastPriceRawCaller || '대입없음'}" | ChangeToday: "${row._lastTodayRawCaller || '대입없음'}" | Kimchi: "${row._lastKimchiRawCaller || '대입없음'}" ${row._lastKimchiRawCaller ? `(급변: ${row._lastKimchiRawValBefore.toFixed(2)}% ➔ ${row._lastKimchiRawValAfter.toFixed(2)}%)` : ''}
+- [변동 상세 이력]:\n${mutationLogs || '  (변동 내역 없음)'}
 - 경로: ${state.Source}\n`;
       textToCopy += logLine;
+
+      let mutationHtml = '';
+      if (row._mutationHistory && row._mutationHistory.length > 0) {
+        mutationHtml = `
+          <div style="margin-top:6px; padding-top:4px; border-top:1px dashed rgba(255,255,255,0.08); font-size:10px;">
+            <strong style="color:#34d399;">📝 실시간 세부 변동 로그 (최근 20개):</strong>
+            <div style="padding:4px; max-height:80px; overflow-y:auto; color:#ccc; background:rgba(0,0,0,0.2); border-radius:4px; line-height:1.4; margin-top:2px; font-size:9px;">
+              ${row._mutationHistory.slice().reverse().map(m => `• [${m.time}] <span style="color:#38bdf8;">${m.prop}</span>: <span style="color:#a6e22e;">${typeof m.from === 'number' ? m.from.toFixed(4) : m.from}</span> ➔ <span style="color:#22d3ee; font-weight:bold;">${typeof m.to === 'number' ? m.to.toFixed(4) : m.to}</span> <span style="color:#eab308; font-size:8px;">(${m.caller})</span>`).join('<br/>')}
+            </div>
+          </div>
+        `;
+      }
 
       html += `
         <div style="background:rgba(255,255,255,0.03); border:${state.IsSpike ? '2px solid #ef4444' : state.IsRetrograde ? '2px solid #f59e0b' : '1px solid rgba(255,255,255,0.08)'}; padding:8px; border-radius:8px; margin-bottom:4px;">
@@ -154,6 +191,8 @@
             
             ${spikeWarning}
             ${retroWarning}
+            ${stallWarning}
+            ${concurrentWarning}
 
             <div style="margin-top:6px; padding-top:4px; border-top:1px dashed rgba(255,255,255,0.08); font-size:10px;">
               <div>🖥️ <span style="color:#a6e22e;">백엔드 시가 (json)</span>: <span style="color:#fff; font-weight:bold;">${f(beOpenPrice)}</span> | 📱 <span style="color:#ae81ff;">프론트 시가 (store)</span>: <span style="color:#fff; font-weight:bold;">${f(feOpenPrice)}</span></div>
@@ -172,6 +211,9 @@
                 ${row._lastKimchiRawCaller ? `<br/>&nbsp;&nbsp;<span style="color:#f43f5e;">ㄴ 급변: ${row._lastKimchiRawValBefore.toFixed(2)}% ➔ ${row._lastKimchiRawValAfter.toFixed(2)}%</span>` : ''}
               </div>
             </div>
+
+            ${mutationHtml}
+
             <div style="font-size:9px; color:#999; margin-top:4px;">📍 최종 업데이트 경로: ${state.Source || '-'}</div>
           </div>
         </div>
@@ -213,13 +255,13 @@
       // 🚀 1초(1000ms) 내에 이전 가격 대비 5% 초과 차이가 나면 비정상(범인)으로 간주
       if (diffRatio > 0.05 && timeDiff <= 1000) {
         isSpike = true;
-        console.warn(`🚨 [스파이크] ${ticker} 1초 내에 튀는 값 유입! (시간차:${timeDiff}ms | 전:${oldPrice} -> 후:${newPrice} | 차이:${(diffRatio * 100).toFixed(2)}%)`);
+        // console.warn(`🚨 [스파이크] ${ticker} 1초 내에 튀는 값 유입! (시간차:${timeDiff}ms | 전:${oldPrice} -> 후:${newPrice} | 차이:${(diffRatio * 100).toFixed(2)}%)`);
       }
 
       // 🚀 실시간 소켓이 3초 레이더 값으로 덮어씌워지는지 (과거 데이터 유입 역행) 체크
       if (oldSrc === '🔌 실시간소켓' && src === '⏱ 3초레이더') {
         isRetrograde = true;
-        console.warn(`⚠️ [역행 오염] ${ticker} 최신 실시간 데이터가 낡은 3초 레이더 데이터로 덮어씌워짐! (전:${oldPrice} -> 후:${newPrice})`);
+        // console.warn(`⚠️ [역행 오염] ${ticker} 최신 실시간 데이터가 낡은 3초 레이더 데이터로 덮어씌워짐! (전:${oldPrice} -> 후:${newPrice})`);
       }
 
       if (isSpike || isRetrograde) {
@@ -236,15 +278,91 @@
     return { isSpike, isRetrograde, oldPrice, newTime: now };
   };
 
+  const updateRowElementDebugMsg = (rowEl, row) => {
+    if (!rowEl || !row || !getTop5().has(row.Ticker)) return;
+    const assetCol = rowEl.querySelector('.col-asset .flex-col');
+    if (assetCol) {
+      let debugRowMsg = assetCol.querySelector('.debug-row-msg');
+      if (!debugRowMsg) {
+        debugRowMsg = document.createElement('span');
+        debugRowMsg.className = 'debug-row-msg text-[7.5px] font-semibold leading-none mt-0.5 truncate';
+        debugRowMsg.style.display = 'block';
+        debugRowMsg.style.maxWidth = '120px';
+        assetCol.appendChild(debugRowMsg);
+      }
+
+      const lastPriceSet = row._lastPriceRawSetTime;
+      const injectedTime = row._injectedTime || Date.now();
+      const priceStallTime = lastPriceSet ? (Date.now() - lastPriceSet) : (Date.now() - injectedTime);
+      const isStalled = priceStallTime > 5000;
+
+      // 1. 프론트 - 백엔드 시가 대조
+      const baseSym = row.Symbol || row.Ticker.replace("USDT", "").replace("KRW", "");
+      const isFut = row.Ticker.endsWith("USDT") && (store?.currentMarket === "FUTURES" || row.Ticker.includes("_FUTURES"));
+      const cacheKey = isFut ? `${baseSym}_FUTURES` : baseSym;
+      const bePrice = backendOpenPrices[cacheKey];
+      const fePrice = row.utc0_open_Raw;
+      
+      let openPriceDiff = false;
+      if (bePrice && fePrice && parseFloat(bePrice) > 0 && parseFloat(fePrice) > 0) {
+        if (Math.abs(parseFloat(bePrice) - parseFloat(fePrice)) > 0.00001) {
+          openPriceDiff = true;
+          row._hadOpenPriceDiff = true;
+        } else {
+          row._hadOpenPriceDiff = false;
+        }
+      }
+
+      let msg = '';
+      let color = '#aaa';
+
+      if (isStalled) {
+        msg = `🚨정체:${(priceStallTime/1000).toFixed(0)}s`;
+        color = '#f43f5e';
+      } else if (row._simultaneousSetters) {
+        msg = `⚠️동시:${row._simultaneousSetters.slice(0, 2).join(',')}`;
+        color = '#a855f7';
+      } else if (row._hadOpenPriceDiff) {
+        msg = `🚨시가차 BE:${bePrice} FE:${fePrice}`;
+        color = '#ff6b6b';
+      } else if (row._mutationHistory && row._mutationHistory.length > 0) {
+        const lastM = row._mutationHistory[row._mutationHistory.length - 1];
+        msg = `✍️${lastM.prop}:${lastM.caller.replace('.js', '')}`;
+        color = '#34d399';
+      } else {
+        msg = `🔌대기 중...`;
+        color = '#888';
+      }
+
+      debugRowMsg.textContent = msg;
+      debugRowMsg.style.color = color;
+    }
+  };
+
   const _dynOrig = window.updateRowDynamicHTML;
   window.updateRowDynamicHTML = function (rowEl, row, lw) {
     if (row && getTop5().has(row.Ticker)) {
-      // 🚀 [초강력 감지] Price_Raw 와 Change_Today_Raw 프로퍼티에 Setter 인터셉터 주입하여 실시간 덮어쓰기 오염원 색출
       if (!row._interceptorInstalled) {
         row._interceptorInstalled = true;
+        row._injectedTime = Date.now();
+        row._lastPriceRawSetTime = Date.now();
+        row._mutationHistory = [];
         let _priceRawVal = row.Price_Raw;
         let _todayRawVal = row.Change_Today_Raw;
         let _kimchiRawVal = row.Kimchi_Raw;
+
+        const recordMutation = (prop, oldVal, newVal, caller) => {
+          row._mutationHistory.push({
+            time: new Date().toLocaleTimeString(),
+            prop: prop,
+            from: oldVal,
+            to: newVal,
+            caller: caller
+          });
+          if (row._mutationHistory.length > 20) {
+            row._mutationHistory.shift();
+          }
+        };
 
         Object.defineProperty(row, 'Price_Raw', {
           get() { return _priceRawVal; },
@@ -258,9 +376,26 @@
             else if (stack.includes('table_api.js')) caller = 'table_api.js';
             else caller = stack.split('\n')[2]?.trim() || 'unknown';
 
+            const now = Date.now();
+            row._lastPriceRawSetTime = now;
+            row._priceRawHistory = row._priceRawHistory || [];
+            row._priceRawHistory.push({ caller, time: now });
+            row._priceRawHistory = row._priceRawHistory.filter(h => now - h.time <= 1000);
+
+            const uniqueCallers = new Set(row._priceRawHistory.map(h => h.caller));
+            if (uniqueCallers.size > 1) {
+              row._hadConcurrentWarning = true;
+              row._allSimultaneousSetters = row._allSimultaneousSetters || new Set();
+              uniqueCallers.forEach(c => row._allSimultaneousSetters.add(c));
+              row._simultaneousSetters = Array.from(uniqueCallers);
+            } else {
+              row._simultaneousSetters = null;
+            }
+
             if (newVal !== _priceRawVal) {
+              recordMutation('Price_Raw', _priceRawVal, newVal, caller);
               if (getTop5().has(row.Ticker)) {
-                console.warn(`[PROPERTY INTERCEPT] 🚨 ${row.Ticker}.Price_Raw 오염 감지: ${_priceRawVal} ➔ ${newVal} | 호출자: ${caller}`);
+                // console.warn(`[PROPERTY INTERCEPT] 🚨 ${row.Ticker}.Price_Raw 오염 감지: ${_priceRawVal} ➔ ${newVal} | 호출자: ${caller}`);
                 row._lastPriceRawCaller = caller;
               }
             }
@@ -269,7 +404,7 @@
           configurable: true,
           enumerable: true
         });
-
+ 
         Object.defineProperty(row, 'Change_Today_Raw', {
           get() { return _todayRawVal; },
           set(newVal) {
@@ -281,10 +416,11 @@
             else if (stack.includes('feed_upbit.js')) caller = 'feed_upbit.js';
             else if (stack.includes('table_api.js')) caller = 'table_api.js';
             else caller = stack.split('\n')[2]?.trim() || 'unknown';
-
+ 
             if (newVal !== _todayRawVal) {
+              recordMutation('Change_Today_Raw', _todayRawVal, newVal, caller);
               if (getTop5().has(row.Ticker)) {
-                console.warn(`[PROPERTY INTERCEPT] 🚨 ${row.Ticker}.Change_Today_Raw 오염 감지: ${_todayRawVal} ➔ ${newVal} | 호출자: ${caller}`);
+                // console.warn(`[PROPERTY INTERCEPT] 🚨 ${row.Ticker}.Change_Today_Raw 오염 감지: ${_todayRawVal} ➔ ${newVal} | 호출자: ${caller}`);
                 row._lastTodayRawCaller = caller;
               }
             }
@@ -293,7 +429,7 @@
           configurable: true,
           enumerable: true
         });
-
+ 
         Object.defineProperty(row, 'Kimchi_Raw', {
           get() { return _kimchiRawVal; },
           set(newVal) {
@@ -306,15 +442,18 @@
             else if (stack.includes('table_api.js')) caller = 'table_api.js';
             else if (stack.includes('stream_korea.js')) caller = 'stream_korea.js';
             else caller = stack.split('\n')[2]?.trim() || 'unknown';
-
-            if (_kimchiRawVal !== undefined && newVal !== null && _kimchiRawVal !== null) {
-              const diff = Math.abs(newVal - _kimchiRawVal);
-              if (diff >= 1.0) {
-                if (getTop5().has(row.Ticker)) {
-                  console.warn(`[KIMP INTERCEPT] 🚨 ${row.Ticker}.Kimchi_Raw 1%p 이상 급변/오염 감지: ${_kimchiRawVal.toFixed(2)}% ➔ ${newVal.toFixed(2)}% | 호출자: ${caller}`);
-                  row._lastKimchiRawCaller = caller;
-                  row._lastKimchiRawValBefore = _kimchiRawVal;
-                  row._lastKimchiRawValAfter = newVal;
+ 
+            if (newVal !== _kimchiRawVal) {
+              recordMutation('Kimchi_Raw', _kimchiRawVal, newVal, caller);
+              if (_kimchiRawVal !== undefined && newVal !== null && _kimchiRawVal !== null) {
+                const diff = Math.abs(newVal - _kimchiRawVal);
+                if (diff >= 1.0) {
+                  if (getTop5().has(row.Ticker)) {
+                    // console.warn(`[KIMP INTERCEPT] 🚨 ${row.Ticker}.Kimchi_Raw 1%p 이상 급변/오염 감지: ${_kimchiRawVal.toFixed(2)}% ➔ ${newVal.toFixed(2)}% | 호출자: ${caller}`);
+                    row._lastKimchiRawCaller = caller;
+                    row._lastKimchiRawValBefore = _kimchiRawVal;
+                    row._lastKimchiRawValAfter = newVal;
+                  }
                 }
               }
             }
@@ -364,15 +503,19 @@
       });
       updateUIBoard();
     }
-    return _dynOrig?.apply(this, arguments);
+    const res = _dynOrig?.apply(this, arguments);
+    if (row && rowEl) {
+      updateRowElementDebugMsg(rowEl, row);
+    }
+    return res;
   };
-
+ 
   const _priceOrig = window.updateRowPriceDisplay;
   window.updateRowPriceDisplay = function (rowEl, row) {
     if (row && getTop5().has(row.Ticker)) {
       const src = getSource(new Error().stack);
       const prevState = traceMap.get(row.Ticker) || {};
-
+ 
       const market = store.currentMarket || "ALL";
       let priceVal = row.Price_Raw ?? 0;
       let priceSrc = `Raw:${f(row.Price_Raw)}`;
@@ -389,12 +532,12 @@
         priceVal = row.Bybit_Price_Futures ?? priceVal;
         priceSrc = `Bybit_Fut:${f(row.Bybit_Price_Futures)}`;
       }
-
+ 
       const anomalyInfo = detectAnomaly(row.Ticker, priceVal, rowEl, src);
-
+ 
       let chg24 = row.Change_24h_Raw ?? 0;
       let chgToday = row.Change_Today_Raw ?? 0;
-
+ 
       traceMap.set(row.Ticker, {
         Type: 'PRC (가격만)',
         Price: f(priceVal),
@@ -409,7 +552,11 @@
       });
       updateUIBoard();
     }
-    return _priceOrig?.apply(this, arguments);
+    const res = _priceOrig?.apply(this, arguments);
+    if (row && rowEl) {
+      updateRowElementDebugMsg(rowEl, row);
+    }
+    return res;
   };
 
   updateUIBoard();
@@ -451,6 +598,11 @@
         IsRetrograde: prevState.IsRetrograde || false
       });
       hasUpdates = true;
+
+      const rowEl = store.rowDomMap?.get(ticker);
+      if (rowEl) {
+        updateRowElementDebugMsg(rowEl, row);
+      }
     }
 
     if (hasUpdates) {
@@ -465,30 +617,30 @@
       dumpEl.innerHTML = `
         <b>[STORE RAW OBJECT DUMP]</b><br/>
         PIVX: ${pivxRaw ? JSON.stringify({
-          Price_Raw: pivxRaw.Price_Raw,
-          Price_KRW: pivxRaw.Price_KRW,
-          Upbit_Price: pivxRaw.Upbit_Price,
-          Binance_Price_Spot: pivxRaw.Binance_Price_Spot,
-          Change_Today_Raw: pivxRaw.Change_Today_Raw,
-          Change_Today_Binance: pivxRaw.Change_Today_Binance,
-          Change_Today_Upbit: pivxRaw.Change_Today_Upbit,
-          Exact_Spot: pivxRaw.Exact_Spot,
-          Exact_Futures: pivxRaw.Exact_Futures,
-          UID: pivxRaw.UID
-        }) : 'NOT FOUND'}<br/>
+        Price_Raw: pivxRaw.Price_Raw,
+        Price_KRW: pivxRaw.Price_KRW,
+        Upbit_Price: pivxRaw.Upbit_Price,
+        Binance_Price_Spot: pivxRaw.Binance_Price_Spot,
+        Change_Today_Raw: pivxRaw.Change_Today_Raw,
+        Change_Today_Binance: pivxRaw.Change_Today_Binance,
+        Change_Today_Upbit: pivxRaw.Change_Today_Upbit,
+        Exact_Spot: pivxRaw.Exact_Spot,
+        Exact_Futures: pivxRaw.Exact_Futures,
+        UID: pivxRaw.UID
+      }) : 'NOT FOUND'}<br/>
         NOM: ${nomRaw ? JSON.stringify({
-          Price_Raw: nomRaw.Price_Raw,
-          Price_KRW: nomRaw.Price_KRW,
-          Upbit_Price: nomRaw.Upbit_Price,
-          Binance_Price_Spot: nomRaw.Binance_Price_Spot,
-          Binance_Price_Futures: nomRaw.Binance_Price_Futures,
-          Change_Today_Raw: nomRaw.Change_Today_Raw,
-          Change_Today_Binance: nomRaw.Change_Today_Binance,
-          Change_Today_Futures: nomRaw.Change_Today_Futures,
-          Exact_Spot: nomRaw.Exact_Spot,
-          Exact_Futures: nomRaw.Exact_Futures,
-          UID: nomRaw.UID
-        }) : 'NOT FOUND'}
+        Price_Raw: nomRaw.Price_Raw,
+        Price_KRW: nomRaw.Price_KRW,
+        Upbit_Price: nomRaw.Upbit_Price,
+        Binance_Price_Spot: nomRaw.Binance_Price_Spot,
+        Binance_Price_Futures: nomRaw.Binance_Price_Futures,
+        Change_Today_Raw: nomRaw.Change_Today_Raw,
+        Change_Today_Binance: nomRaw.Change_Today_Binance,
+        Change_Today_Futures: nomRaw.Change_Today_Futures,
+        Exact_Spot: nomRaw.Exact_Spot,
+        Exact_Futures: nomRaw.Exact_Futures,
+        UID: nomRaw.UID
+      }) : 'NOT FOUND'}
       `;
     }
   }, 1000);

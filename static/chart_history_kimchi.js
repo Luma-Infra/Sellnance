@@ -213,7 +213,7 @@ export async function lazyRenderKimchiData(params) {
           "15m": "5m",
           "30m": "30m",
           "1h": "1h",
-          "2h": "1h", // 🚀 1시간봉을 가져와서 UTC 2시간 단위로 조립
+          // "2h": "1h", // 🚀 1시간봉을 가져와서 UTC 2시간 단위로 조립
           "4h": "4h", // 🚀 4시간봉은 마감 경계가 일치하므로 원본 4h API 직접 사용!
           "12h": "12h", // 🚀 12시간봉은 마감 경계가 일치하므로 원본 12h API 직접 사용!
           "1d": "24h", // 🚀 일봉은 24h를 그대로 가져오고 타임스탬프만 UTC 0시로 정렬!
@@ -387,7 +387,7 @@ export async function lazyRenderKimchiData(params) {
       store.paneConfig.kimchi = false;
       if (wrapper)
         wrapper.style.setProperty("--kimchi-color", "transparent");
-      
+
       // 🚀 데이터가 없으므로 경고 문구 표시
       if (typeof window.toggleVolFallback === "function") {
         window.toggleVolFallback(true);
@@ -413,7 +413,7 @@ export async function lazyRenderKimchiData(params) {
     let loadingMessageContainer = document.getElementById("kimchi-loading-message");
     if (loadingMessageContainer)
       loadingMessageContainer.style.display = "none";
-    
+
     // 에러 발생 시 경고 문구 표시
     if (typeof window.toggleVolFallback === "function") {
       window.toggleVolFallback(true);

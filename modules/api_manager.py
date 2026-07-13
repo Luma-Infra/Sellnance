@@ -7,6 +7,8 @@ import pytz
 import sys
 import os
 import re
+import json
+import hashlib
 
 # ✅ 수정 (옆방 부하들 호출하는 정석)
 from modules import builder, cmc_api, exchange_api, config_manager, utils
@@ -20,7 +22,48 @@ GLOBAL_CMC_CACHE = {
     "lookup": {},
     "timestamp": datetime.min,
 }  # 🚀 CMC 크레딧 방어용 독립 캐시
-CACHE_TIMEOUT_SECONDS = 3600  # 1시간
+
+OWNER_CACHE_FILE = os.path.join(os.path.dirname(__file__), "../static/cmc_owner_cache.json")
+OWNER_CACHE_TIMEOUT = 86400  # 24시간
+USER_CACHE_TIMEOUT = 900    # 15분
+
+USER_CMC_CACHES = {}
+user_cache_lock = threading.Lock()
+
+
+def _load_owner_cache_from_file():
+    global GLOBAL_CMC_CACHE
+    try:
+        if os.path.exists(OWNER_CACHE_FILE):
+            with open(OWNER_CACHE_FILE, "r", encoding="utf-8") as f:
+                saved = json.load(f)
+                GLOBAL_CMC_CACHE["map"] = saved.get("map", {})
+                GLOBAL_CMC_CACHE["lookup"] = saved.get("lookup", {})
+                ts_str = saved.get("timestamp", "")
+                if ts_str:
+                    GLOBAL_CMC_CACHE["timestamp"] = datetime.fromisoformat(ts_str)
+                print(f"💾 [CMC CACHE] 파일에서 {len(GLOBAL_CMC_CACHE['map'])}개 캐시 데이터 로드 완료")
+    except Exception as e:
+        print(f"🚨 [CMC CACHE LOAD ERROR] {e}")
+
+
+def _save_owner_cache_to_file():
+    try:
+        os.makedirs(os.path.dirname(OWNER_CACHE_FILE), exist_ok=True)
+        with open(OWNER_CACHE_FILE, "w", encoding="utf-8") as f:
+            json.dump({
+                "map": GLOBAL_CMC_CACHE["map"],
+                "lookup": GLOBAL_CMC_CACHE["lookup"],
+                "timestamp": GLOBAL_CMC_CACHE["timestamp"].isoformat() if GLOBAL_CMC_CACHE["timestamp"] != datetime.min else ""
+            }, f, indent=2, ensure_ascii=False)
+        print("💾 [CMC CACHE] 파일 캐시 저장 완료")
+    except Exception as e:
+        print(f"🚨 [CMC CACHE SAVE ERROR] {e}")
+
+
+# 모듈 로드 시점에 파일 캐시 불러오기
+_load_owner_cache_from_file()
+
 
 
 # 🚀 [추가] 9시 정밀 캡처 스케줄러
@@ -138,7 +181,7 @@ def suppress_output():
 # ==========================================
 # 👑 최종 함수 BOSS
 # ==========================================
-def _fetch_and_process_data(silent_mode=False):
+def _fetch_and_process_data(silent_mode=False, api_key=None):
     global GLOBAL_CMC_CACHE
     # 🚀 1. 족보 로드 (항상 최신본으로 시작!)
     MAPPING_DATA = config_manager.load_mapping_data()
@@ -170,30 +213,66 @@ def _fetch_and_process_data(silent_mode=False):
 
     # 2. 정보 수집 (CMC 크레딧 철벽 방어!)
     now_kst = datetime.now(KST)
-    cmc_expired = False
-    if GLOBAL_CMC_CACHE["timestamp"] != datetime.min:
-        cmc_expired = (
-            now_kst - GLOBAL_CMC_CACHE["timestamp"].astimezone(KST)
-        ).total_seconds() > CACHE_TIMEOUT_SECONDS
-    else:
-        cmc_expired = True
+    is_user_key = api_key is not None and api_key.strip() != ""
 
-    if silent_mode and not cmc_expired and GLOBAL_CMC_CACHE.get("map"):
-        market_data_map = GLOBAL_CMC_CACHE["map"]
-        asset_to_lookup_key = GLOBAL_CMC_CACHE["lookup"]
-        print("🛡️ [2/3 CMC 캐시 재활용] API 크레딧 소모 0! 기존 시가총액 장부 유지")
+    if is_user_key:
+        # 유저 개별 키 처리 (15분 주기 메모리 캐시)
+        key_hash = hashlib.sha256(api_key.strip().encode()).hexdigest()
+        with user_cache_lock:
+            user_cache = USER_CMC_CACHES.setdefault(key_hash, {
+                "map": {},
+                "lookup": {},
+                "timestamp": datetime.min
+            })
+        
+        cmc_expired = False
+        if user_cache["timestamp"] != datetime.min:
+            cmc_expired = (now_kst - user_cache["timestamp"].astimezone(KST)).total_seconds() > USER_CACHE_TIMEOUT
+        else:
+            cmc_expired = True
+
+        if not cmc_expired and user_cache.get("map"):
+            market_data_map = user_cache["map"]
+            asset_to_lookup_key = user_cache["lookup"]
+            print("🛡️ [2/3 CMC 유저 캐시 재활용] API 크레딧 소모 0! 기존 시가총액 장부 유지")
+        else:
+            market_data_map, asset_to_lookup_key = cmc_api.fetch_cmc_market_data(
+                binance_data, upbit_only_assets, MAPPING_DATA, api_key=api_key
+            )
+            with user_cache_lock:
+                USER_CMC_CACHES[key_hash] = {
+                    "map": market_data_map,
+                    "lookup": asset_to_lookup_key,
+                    "timestamp": now_kst
+                }
+            print(f"📊 [2/3 CMC 유저 키 호출 완료] 장부 매칭 성공:{len(market_data_map)}개")
     else:
-        market_data_map, asset_to_lookup_key = cmc_api.fetch_cmc_market_data(
-            binance_data, upbit_only_assets, MAPPING_DATA
-        )
-        GLOBAL_CMC_CACHE = {
-            "map": market_data_map,
-            "lookup": asset_to_lookup_key,
-            "timestamp": now_kst,
-        }
-        print(
-            f"📊 [2/3 CMC 매칭 완료 (API 호출)] 장부 매칭 성공:{len(market_data_map)}개"
-        )
+        # 사장님 키 처리 (24시간 파일 캐시)
+        cmc_expired = False
+        if GLOBAL_CMC_CACHE["timestamp"] != datetime.min:
+            cmc_expired = (
+                now_kst - GLOBAL_CMC_CACHE["timestamp"].astimezone(KST)
+            ).total_seconds() > OWNER_CACHE_TIMEOUT
+        else:
+            cmc_expired = True
+
+        if not cmc_expired and GLOBAL_CMC_CACHE.get("map"):
+            market_data_map = GLOBAL_CMC_CACHE["map"]
+            asset_to_lookup_key = GLOBAL_CMC_CACHE["lookup"]
+            print("🛡️ [2/3 CMC 사장님 캐시 재활용] API 크레딧 소모 0! 기존 시가총액 장부 유지")
+        else:
+            market_data_map, asset_to_lookup_key = cmc_api.fetch_cmc_market_data(
+                binance_data, upbit_only_assets, MAPPING_DATA, api_key=None
+            )
+            GLOBAL_CMC_CACHE = {
+                "map": market_data_map,
+                "lookup": asset_to_lookup_key,
+                "timestamp": now_kst,
+            }
+            _save_owner_cache_to_file()
+            print(
+                f"📊 [2/3 CMC 사장님 키 호출 완료 (API 호출)] 장부 매칭 성공:{len(market_data_map)}개"
+            )
 
     # 3. 조립 및 계산
     global_listings = exchange_api.fetch_global_listings()
@@ -281,13 +360,24 @@ def _fetch_and_process_data(silent_mode=False):
 data_lock = threading.Lock()
 
 
-def get_cached_data(force_reload=False, silent_mode=False):
+def get_cached_data(force_reload=False, silent_mode=False, user_api_key=None):
     global GLOBAL_CACHE
     _ensure_initialized()
-    with data_lock:
-        kst = pytz.timezone("Asia/Seoul")
-        now_kst = datetime.now(kst)
+    
+    kst = pytz.timezone("Asia/Seoul")
+    now_kst = datetime.now(kst)
 
+    # 🚀 유저 개별 API 키가 주입된 경우: 글로벌 캐시(사장님 전용)를 오염시키지 않고 실시간 시세 조립 후 반환
+    if user_api_key and user_api_key.strip() != "":
+        key_hash = hashlib.sha256(user_api_key.strip().encode()).hexdigest()
+        raw_data = _fetch_and_process_data(silent_mode=False, api_key=user_api_key)
+        with user_cache_lock:
+            user_cache = USER_CMC_CACHES.get(key_hash, {})
+            user_ts = user_cache.get("timestamp", datetime.min)
+        ts_str = user_ts.astimezone(kst).strftime("%Y-%m-%d %H:%M:%S") if user_ts != datetime.min else now_kst.strftime("%Y-%m-%d %H:%M:%S")
+        return raw_data, ts_str
+
+    with data_lock:
         needs_reset = False
         if GLOBAL_CACHE["timestamp"] != datetime.min:
             last_update_kst = GLOBAL_CACHE["timestamp"].astimezone(kst)
@@ -301,14 +391,14 @@ def get_cached_data(force_reload=False, silent_mode=False):
         if GLOBAL_CACHE["timestamp"] != datetime.min:
             is_expired = (
                 now_kst - GLOBAL_CACHE["timestamp"].astimezone(kst)
-            ).total_seconds() > CACHE_TIMEOUT_SECONDS
+            ).total_seconds() > OWNER_CACHE_TIMEOUT
         else:
             is_expired = True
 
-        # 🚀 [쌀먹 핵심] silent_mode일 때는 1시간 만료와 무관하게 무조건 펀비/시세만 새로 긁어와 캐시 갱신!
+        # 🚀 [쌀먹 핵심] silent_mode일 때는 만료와 무관하게 무조건 펀비/시세만 새로 긁어와 캐시 갱신!
         if force_reload or needs_reset or is_expired or silent_mode:
             try:
-                raw_data = _fetch_and_process_data(silent_mode=silent_mode)
+                raw_data = _fetch_and_process_data(silent_mode=silent_mode, api_key=None)
 
                 if raw_data:
                     GLOBAL_CACHE.update(

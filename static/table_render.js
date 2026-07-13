@@ -322,7 +322,9 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
   if (typeof window !== "undefined" && !window.updateRowDynamicHTML) {
     window.updateRowDynamicHTML = updateRowDynamicHTML;
   }
-  // if (typeof window.syncRowPrioritizedMetrics === "function") {
+  if (row.Ticker === store.currentSelectedSymbol) {
+    lightweight = false;
+  }
   //   window.syncRowPrioritizedMetrics(row);
   // }
   const tId = row.Ticker;
@@ -764,6 +766,14 @@ export function renderTable(isRealtime = false) {
   if (store.blockTableTabScroll && !isRealtime) return;
   const tbody = document.getElementById("coin-list-body");
   if (!tbody) return;
+
+  // 🚀 [추가] 정렬/필터링/탭전환 등 테이블 레이아웃 변화 시 1회성 우선순위 동기화 실행
+  if (!isRealtime && typeof window.syncRowPrioritizedMetrics === "function") {
+    const allSource = store.originalTableData || store.currentTableData || [];
+    allSource.forEach((row) => {
+      window.syncRowPrioritizedMetrics(row);
+    });
+  }
 
   tbody.dataset.sortCol = store.currentSortCol || "";
 
@@ -1644,7 +1654,11 @@ if (typeof window !== "undefined") {
           const popHeight = (cellHeight * 2) + (cellGap * 1) + (popPadding * 2) + (14 * scale);
 
           popoverEl.style.top = `${rect.top + rect.height / 2 - popHeight / 2}px`;
-          popoverEl.style.left = `${rect.right + 12}px`; // 🚀 우측 배치
+          if (rect.right + 12 + popWidth > window.innerWidth) {
+            popoverEl.style.left = `${Math.max(4, rect.left - popWidth - 12)}px`; // 🚀 좌측 배치 (화면 이탈 방지 Math.max)
+          } else {
+            popoverEl.style.left = `${rect.right + 12}px`; // 🚀 우측 배치
+          }
 
           try {
             popoverEl.showPopover();

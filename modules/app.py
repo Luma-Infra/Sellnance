@@ -24,6 +24,9 @@ import re
 
 import config  # 🚀 설정 모듈 임포트
 
+# 🚀 [전역 print 오버라이드] 모든 콘솔 출력에 KST 타임스탬프 접두사 추가
+import builtins; builtins.print = (lambda orig: lambda *a, **kw: orig(f"[{datetime.now(pytz.timezone('Asia/Seoul')).strftime('%Y-%m-%d %H:%M:%S')}]", *a, **kw))(builtins.print)
+
 from . import trace_hooking
 from . import api_manager
 from . import config_manager
@@ -195,10 +198,9 @@ load_dotenv()
 
 @app.get("/api/get-env-key")
 def get_env_cmc_key():
-    """서버 환경변수에 설정된 CMC_API_KEY를 안전하게 전달합니다."""
-    # 서버 os.environ에서 가져오고, 없으면 빈 문자열
+    """서버 환경변수에 설정된 CMC_API_KEY의 존재 여부만 반환합니다 (보안 유출 방지)."""
     env_key = os.environ.get("CMC_API_KEY", "")
-    return {"key": env_key}
+    return {"exists": env_key != ""}
 
 
 # 👥 초경량 접속자 세션 트래커 (서버 메모리 상에 상주)
@@ -228,14 +230,19 @@ def get_market_data(request: Request, force: bool = False):
     """프론트엔드의 표(Table)를 그리기 위한 데이터를 JSON으로 반환합니다."""
     # 🚀 [CMC API 키 Stateless 동기화] 클라이언트 헤더에 전달된 키가 있으면 메모리에 반영
     cmc_key = request.headers.get("X-CMC-API-KEY")
-    if cmc_key:
-        config.set_cmc_api_key(cmc_key)
 
     user_count = track_user_session(request)
-    data, last_updated = api_manager.get_cached_data(force_reload=force)
+    data, last_updated = api_manager.get_cached_data(force_reload=force, user_api_key=cmc_key)
     
     # 쿨타임 타이머용 raw 타임스탬프 획득
-    cache_timestamp = api_manager.GLOBAL_CACHE.get("timestamp", datetime.min)
+    if cmc_key and cmc_key.strip() != "":
+        import hashlib
+        key_hash = hashlib.sha256(cmc_key.strip().encode()).hexdigest()
+        user_cache = api_manager.USER_CMC_CACHES.get(key_hash, {})
+        cache_timestamp = user_cache.get("timestamp", datetime.min)
+    else:
+        cache_timestamp = api_manager.GLOBAL_CACHE.get("timestamp", datetime.min)
+
     # 🚀 [FIX] datetime.min일 때 mktime 오버플로우 방지 가드
     if cache_timestamp == datetime.min:
         raw_ts = 0.0
@@ -259,11 +266,21 @@ def get_market_data_silent(request: Request):
     """🚀 [캐시 즉시 반환] 유저 요청 시 수집 없이 GLOBAL_CACHE만 뿌림.
     수집은 서버 자체 15분 백그라운드 스케줄러가 전담 (유저 500명 와도 수집 0번).
     """
+    cmc_key = request.headers.get("X-CMC-API-KEY")
     user_count = track_user_session(request)
-    data = api_manager.GLOBAL_CACHE.get("data", [])
-    last_updated = api_manager.GLOBAL_CACHE.get("last_updated_str", "")
     
-    cache_timestamp = api_manager.GLOBAL_CACHE.get("timestamp", datetime.min)
+    if cmc_key and cmc_key.strip() != "":
+        # 유저 키가 있는 경우 유저 개별 캐싱 데이터를 15분 쿨타임에 맞춰 반환
+        data, last_updated = api_manager.get_cached_data(force_reload=False, silent_mode=True, user_api_key=cmc_key)
+        import hashlib
+        key_hash = hashlib.sha256(cmc_key.strip().encode()).hexdigest()
+        user_cache = api_manager.USER_CMC_CACHES.get(key_hash, {})
+        cache_timestamp = user_cache.get("timestamp", datetime.min)
+    else:
+        data = api_manager.GLOBAL_CACHE.get("data", [])
+        last_updated = api_manager.GLOBAL_CACHE.get("last_updated_str", "")
+        cache_timestamp = api_manager.GLOBAL_CACHE.get("timestamp", datetime.min)
+    
     # 🚀 [FIX] datetime.min일 때 mktime 오버플로우 방지 가드
     if cache_timestamp == datetime.min:
         raw_ts = 0.0

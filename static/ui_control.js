@@ -5,6 +5,7 @@ import { initChart, updateChartTheme } from "./chart.js";
 import { fetchHistory } from "./chart_data.js";
 import { getPureBase } from "./chart_utils.js";
 import { selectSymbol, updateExchangeBadges } from "./ui_selection.js";
+import { renderTable } from "./table_render.js";
 export { selectSymbol, updateExchangeBadges };
 
 let isThemeToggling = false; // 🚀 라이트/다크 모드 연타 방어 플래그
@@ -29,15 +30,15 @@ function toggleTheme() {
     body.classList.add("theme-upbit");
     store.currentTheme = "upbit";
     if (btn) btn.innerHTML = "🌙";
-    if (faviconLink) faviconLink.href = staticPath + "_gemini-svg-light.svg";
-    if (mainLogoImg) mainLogoImg.src = staticPath + "_gemini-svg-light.svg";
+    if (faviconLink) faviconLink.href = staticPath + "luma-deer-svg-light.svg";
+    if (mainLogoImg) mainLogoImg.src = staticPath + "luma-deer-svg-light.svg";
   } else {
     body.classList.remove("theme-upbit");
     body.classList.add("theme-binance");
     store.currentTheme = "binance";
     if (btn) btn.innerHTML = "☀️";
-    if (faviconLink) faviconLink.href = staticPath + "_gemini-svg-dark.svg";
-    if (mainLogoImg) mainLogoImg.src = staticPath + "_gemini-svg-dark.svg";
+    if (faviconLink) faviconLink.href = staticPath + "luma-deer-svg-dark.svg";
+    if (mainLogoImg) mainLogoImg.src = staticPath + "luma-deer-svg-dark.svg";
   }
 
   // 🚀 테마 설정을 로컬에 영구 저장
@@ -279,49 +280,27 @@ function closeMobileChart() {
 function switchMobileTab(tab) {
   if (window.innerWidth >= CONFIG.SCREEN_WIDTH) return;
 
-  const tabList = document.getElementById("mobile-tab-list");
-  const tabChart = document.getElementById("mobile-tab-chart");
-  const tabSettings = document.getElementById("mobile-tab-settings");
   const leftPanel = document.getElementById("left-panel");
   const settingsModal = document.getElementById("settings-modal");
 
-  const activeClass = "text-theme-accent border-t-2 border-theme-accent opacity-100";
-  const inactiveClass = "text-theme-text opacity-50";
-
-  // 모든 탭 비활성화
-  [tabList, tabChart, tabSettings].forEach((btn) => {
-    if (!btn) return;
-    btn.className = btn.className
-      .replace(/text-theme-accent/g, "")
-      .replace(/border-t-2/g, "")
-      .replace(/border-b-2/g, "")
-      .replace(/border-theme-accent/g, "")
-      .replace(/opacity-100/g, "")
-      .replace(/opacity-50/g, "");
-    inactiveClass.split(" ").forEach((c) => btn.classList.add(c));
-  });
+  // Alpine.js에 탭 변경 이벤트 전파하여 버튼 하이라이트/비활성화 상태를 선언적으로 처리
+  window.dispatchEvent(new CustomEvent("mobile-tab-changed", { detail: tab }));
 
   if (tab === "list") {
-    // 리스트 탭 활성화
-    if (tabList) {
-      inactiveClass.split(" ").forEach((c) => tabList.classList.remove(c));
-      activeClass.split(" ").forEach((c) => tabList.classList.add(c));
-    }
     // 차트 오버레이 닫기
     closeMobileChart();
     // 설정 모달 닫기
-    if (settingsModal) settingsModal.classList.add("hidden");
+    if (settingsModal) {
+      settingsModal.style.display = "none";
+    }
     // 리스트 보이기
     if (leftPanel) leftPanel.style.display = "";
 
   } else if (tab === "chart") {
-    // 차트 탭 활성화
-    if (tabChart) {
-      inactiveClass.split(" ").forEach((c) => tabChart.classList.remove(c));
-      activeClass.split(" ").forEach((c) => tabChart.classList.add(c));
-    }
     // 설정 모달 닫기
-    if (settingsModal) settingsModal.classList.add("hidden");
+    if (settingsModal) {
+      settingsModal.style.display = "none";
+    }
 
     // 🚀 모바일: 시뮬/퀵뷰를 fetchHistory 재호출 없이 직접 숨기기
     const simControls = document.getElementById("sim-controls");
@@ -348,11 +327,6 @@ function switchMobileTab(tab) {
     }
 
   } else if (tab === "settings") {
-    // 설정 탭 활성화
-    if (tabSettings) {
-      inactiveClass.split(" ").forEach((c) => tabSettings.classList.remove(c));
-      activeClass.split(" ").forEach((c) => tabSettings.classList.add(c));
-    }
     // 차트 오버레이 닫기
     closeMobileChart();
     // 설정 모달 열기
@@ -865,14 +839,12 @@ export function searchSymbols(v) {
   }
 
   const runSearch = () => {
-    import("./table_render.js").then(({ renderTable }) => {
-      renderTable();
-      // 🚀 검색 렌더링 완료 시 로딩바 초기화
-      if (loadingBar) {
-        loadingBar.style.transition = "width 150ms ease";
-        loadingBar.style.width = "0%";
-      }
-    });
+    renderTable();
+    // 🚀 검색 렌더링 완료 시 로딩바 초기화
+    if (loadingBar) {
+      loadingBar.style.transition = "width 150ms ease";
+      loadingBar.style.width = "0%";
+    }
   };
 
   if (!v) {
@@ -919,6 +891,8 @@ export function setTF(tf) {
 
 export function executeSetTF(tf) {
   store.currentTF = tf;
+  // 🚀 [UX 복원] 마지막 타임프레임 로컈 저장
+  try { localStorage.setItem("sellnance_last_tf", tf); } catch(e) {}
   document.querySelectorAll(".tf-btn").forEach((b) => {
     const onClickAttr = b.getAttribute("onclick") || "";
     const isMatch = onClickAttr.includes(`'${tf}'`);
@@ -1367,7 +1341,7 @@ const timeframes = [
   { label: "15분", value: "15m" },
   { label: "30분", value: "30m" },
   { label: "1시간", value: "1h" },
-  { label: "2시간", value: "2h" },
+  // { label: "2시간", value: "2h" },
   { label: "4시간", value: "4h" },
   { label: "12시간", value: "12h" },
   { label: "1D", value: "1d" },

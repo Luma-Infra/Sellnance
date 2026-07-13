@@ -2,15 +2,146 @@
 import { store } from "./_store.js";
 import { getPureBase } from "./chart_utils.js";
 
-// 1. 데이터 로드 함수
+// 1. 데이터 파싱 및 가상 맵/테이블 구성 헬퍼 함수
+export function processTableData(result) {
+  if (!result || !result.data) return;
+
+  store.originalTableData = JSON.parse(JSON.stringify(result.data)); // 🛡️ 철벽 방어 원본
+  store.currentTableData = JSON.parse(JSON.stringify(result.data)); // 🏃 실시간 작업용
+
+  // 🚀 [신규] 상태 데이터 동기화
+  if (result.active_users !== undefined) {
+    store.activeUsers = result.active_users;
+    if (typeof window.updateStatusBadge === "function") window.updateStatusBadge();
+  }
+  if (result.last_updated_raw !== undefined) {
+    store.lastUpdatedRaw = result.last_updated_raw;
+  }
+
+  store.tickerRowMap.clear();
+  store.uidToKrwRowMap = new Map();
+  store.pureBaseToRowsMap = new Map();
+  store.currentTableData.forEach((row) => {
+    row.DisplayTicker = (row.DisplayTicker || row.Symbol)
+      .toString()
+      .toUpperCase();
+
+    const pureBase = getPureBase(row.Symbol || row.Ticker);
+    if (pureBase) {
+      if (!store.pureBaseToRowsMap.has(pureBase)) {
+        store.pureBaseToRowsMap.set(pureBase, []);
+      }
+      store.pureBaseToRowsMap.get(pureBase).push(row);
+    }
+
+    const uid = row.UID ? String(row.UID) : null;
+    if (uid && row.Ticker && row.Ticker.endsWith("KRW")) {
+      store.uidToKrwRowMap.set(uid, row);
+    }
+    const tKey = row.Ticker ? row.Ticker.toUpperCase() : null;
+    const dKey = row.DisplayTicker ? row.DisplayTicker.toUpperCase() : null;
+
+    // 1. UID 0순위 매핑
+    if (uid) {
+      store.tickerRowMap.set(uid, row);
+    }
+
+    // 2. Ticker 및 DisplayTicker 매핑 (단, 동명이인 코인은 UID가 일치하는 녀석이 맵을 소유하게 제어)
+    if (tKey) {
+      const exist = store.tickerRowMap.get(tKey);
+      if (!exist) {
+        store.tickerRowMap.set(tKey, row);
+      } else if (exist.UID !== row.UID) {
+        const isMajor = row.Upbit === "O" || row.Bithumb === "O" || row.Binance === "O" || row.Binance_Futures === "O";
+        const existIsMajor = exist.Upbit === "O" || exist.Bithumb === "O" || exist.Binance === "O" || exist.Binance_Futures === "O";
+        if (isMajor && !existIsMajor) {
+          store.tickerRowMap.set(tKey, row);
+        }
+      }
+    }
+
+    if (dKey) {
+      const exist = store.tickerRowMap.get(dKey);
+      if (!exist) {
+        store.tickerRowMap.set(dKey, row);
+      } else if (exist.UID !== row.UID) {
+        const isMajor = row.Upbit === "O" || row.Bithumb === "O" || row.Binance === "O" || row.Binance_Futures === "O";
+        const existIsMajor = exist.Upbit === "O" || exist.Bithumb === "O" || exist.Binance === "O" || exist.Binance_Futures === "O";
+        if (isMajor && !existIsMajor) {
+          store.tickerRowMap.set(dKey, row);
+        }
+      }
+    }
+  });
+
+  // 🚀 [추가] 최초 데이터 로드 시점에 모든 코인에 대해 대표 지표(Price_Raw, Change_Today_Raw 등) 우선순위 조율 강제 실행
+  if (typeof window.syncRowPrioritizedMetrics === "function") {
+    store.currentTableData.forEach((row) => {
+      window.syncRowPrioritizedMetrics(row);
+    });
+  }
+
+  if (store.currentSortCol && store.sortState !== "") {
+    if (typeof window.applyRealtimeSort === "function")
+      window.applyRealtimeSort();
+  } else {
+    if (typeof window.renderTable === "function") window.renderTable();
+  }
+}
+
+// 2. 데이터 로드 함수
 export async function loadTableData(force = false, silent = false) {
   const modal = document.getElementById("loading-modal");
   const updateTimeSpan = document.getElementById("update-time");
 
-  if (!silent && modal) {
+  // 🚀 [1단계] 로컬 캐시 즉시 복원 및 선제 화면 출력 (0초 컷 최적화)
+  const cachedDataStr = localStorage.getItem("sellnance_market_data_cache");
+  let hasCache = false;
+  if (cachedDataStr) {
+    try {
+      const cachedResult = JSON.parse(cachedDataStr);
+      if (cachedResult && cachedResult.data && cachedResult.data.length > 0) {
+        // 🚀 [상위 30개 즉시 렌더] 마지막 정렬 기준으로 캐시 데이터를 빠르게 정렬 후 상위 30개만 선제 노출
+        const lastSortCol = localStorage.getItem("sellnance_last_sort_col") || "Volume";
+        const lastSortState = localStorage.getItem("sellnance_last_sort_state") || "desc";
+
+        const sortKeyMap = {
+          MarketCap: "MarketCap_Raw", Price: "Price_Raw",
+          Change_24h: "Change_24h_Raw", Change_Today: "Change_Today_Raw",
+          Volume: "Volume_Raw", VolumeUpbit: "Upbit_Vol",
+          Ticker: "DisplayTicker", Kimchi: "Kimchi_Raw",
+          Gap: "Basis_Raw", Funding: "Funding_Raw", VMC: "VMC_Raw",
+        };
+        const key = sortKeyMap[lastSortCol] || lastSortCol;
+        const isAsc = lastSortState === "asc";
+        const isTextCol = lastSortCol === "Ticker" || lastSortCol === "Listing_Date";
+
+        const top30 = [...cachedResult.data]
+          .sort((a, b) => {
+            const va = isTextCol ? (a[key] || "") : (Number(a[key]) || -Infinity);
+            const vb = isTextCol ? (b[key] || "") : (Number(b[key]) || -Infinity);
+            if (isTextCol) return isAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+            return isAsc ? va - vb : vb - va;
+          })
+          .slice(0, 30);
+
+        // store 정렬 상태 복원 (화살표 표시 등 UI 싱크)
+        store.currentSortCol = lastSortCol;
+        store.sortState = lastSortState;
+
+        processTableData({ ...cachedResult, data: top30 });
+        hasCache = true;
+      }
+    } catch (e) {
+      console.warn("로컬 스토리지 캐시 파싱 에러:", e);
+    }
+  }
+
+
+  // 캐시가 존재할 때는 로딩 모달 창으로 유저의 시야를 블로킹하지 않고 뒤편에서 즉각 리스트 노출
+  if (!silent && modal && !hasCache) {
     modal.classList.remove("hidden");
   }
-  // updateTimeSpan.innerText = "업데이트 중...";
 
   try {
     const headers = {};
@@ -18,100 +149,26 @@ export async function loadTableData(force = false, silent = false) {
     if (localCmcKey) {
       headers["X-CMC-API-KEY"] = localCmcKey;
     }
+    
     // Xconsole.log("1. 파이썬 서버에 테이블 데이터 요청 시작!"); // ⭐️ 추가
     const res = await fetch(`/api/market-data?force=${force}`, { headers });
     // Xconsole.log("2. 파이썬 서버가 응답 완료!"); // ⭐️ 추가
     const result = await res.json();
     // updateTimeSpan.innerText = `마지막 업데이트: ${result.last_updated}`;
-
-    store.originalTableData = JSON.parse(JSON.stringify(result.data)); // 🛡️ 철벽 방어 원본
-    store.currentTableData = JSON.parse(JSON.stringify(result.data)); // 🏃 실시간 작업용
-
-    // 🚀 [신규] 상태 데이터 동기화
-    if (result.active_users !== undefined) {
-      store.activeUsers = result.active_users;
-      if (typeof window.updateStatusBadge === "function") window.updateStatusBadge();
-    }
-    if (result.last_updated_raw !== undefined) {
-      store.lastUpdatedRaw = result.last_updated_raw;
+    
+    // 로컬 스토리지에 데이터 캐시
+    try {
+      localStorage.setItem("sellnance_market_data_cache", JSON.stringify(result));
+    } catch (e) {
+      console.warn("로컬 캐시 쓰기 실패:", e);
     }
 
-    store.tickerRowMap.clear();
-    store.uidToKrwRowMap = new Map();
-    store.pureBaseToRowsMap = new Map();
-    store.currentTableData.forEach((row) => {
-      row.DisplayTicker = (row.DisplayTicker || row.Symbol)
-        .toString()
-        .toUpperCase();
-
-      const pureBase = getPureBase(row.Symbol || row.Ticker);
-      if (pureBase) {
-        if (!store.pureBaseToRowsMap.has(pureBase)) {
-          store.pureBaseToRowsMap.set(pureBase, []);
-        }
-        store.pureBaseToRowsMap.get(pureBase).push(row);
-      }
-
-      const uid = row.UID ? String(row.UID) : null;
-      if (uid && row.Ticker && row.Ticker.endsWith("KRW")) {
-        store.uidToKrwRowMap.set(uid, row);
-      }
-      const tKey = row.Ticker ? row.Ticker.toUpperCase() : null;
-      const dKey = row.DisplayTicker ? row.DisplayTicker.toUpperCase() : null;
-
-      // 1. UID 0순위 매핑
-      if (uid) {
-        store.tickerRowMap.set(uid, row);
-      }
-
-      // 2. Ticker 및 DisplayTicker 매핑 (단, 동명이인 코인은 UID가 일치하는 녀석이 맵을 소유하게 제어)
-      if (tKey) {
-        const exist = store.tickerRowMap.get(tKey);
-        if (!exist) {
-          store.tickerRowMap.set(tKey, row);
-        } else if (exist.UID !== row.UID) {
-          // 이미 존재하는 녀석과 UID가 다르면, 업비트/빗썸/바이낸스 상장 메이저 코인에 우선권 부여 (똥코인 격리)
-          const isMajor = row.Upbit === "O" || row.Bithumb === "O" || row.Binance === "O" || row.Binance_Futures === "O";
-          const existIsMajor = exist.Upbit === "O" || exist.Bithumb === "O" || exist.Binance === "O" || exist.Binance_Futures === "O";
-          // 새 코인이 메이저고 기존 코인이 똥코인이면 탈환
-          if (isMajor && !existIsMajor) {
-            store.tickerRowMap.set(tKey, row);
-          }
-        }
-      }
-
-      if (dKey) {
-        const exist = store.tickerRowMap.get(dKey);
-        if (!exist) {
-          store.tickerRowMap.set(dKey, row);
-        } else if (exist.UID !== row.UID) {
-          const isMajor = row.Upbit === "O" || row.Bithumb === "O" || row.Binance === "O" || row.Binance_Futures === "O";
-          const existIsMajor = exist.Upbit === "O" || exist.Bithumb === "O" || exist.Binance === "O" || exist.Binance_Futures === "O";
-          if (isMajor && !existIsMajor) {
-            store.tickerRowMap.set(dKey, row);
-          }
-        }
-      }
-    });
-
-    // 🚀 [추가] 최초 데이터 로드 시점에 모든 코인에 대해 대표 지표(Price_Raw, Change_Today_Raw 등) 우선순위 조율 강제 실행
-    if (typeof window.syncRowPrioritizedMetrics === "function") {
-      store.currentTableData.forEach((row) => {
-        window.syncRowPrioritizedMetrics(row);
-      });
-    }
-
-    if (store.currentSortCol && store.sortState !== "") {
-      // 1. 순위 재계산 (경주마 로직 실행)
-      if (typeof window.applyRealtimeSort === "function")
-        window.applyRealtimeSort();
-    } else {
-      // 2. 정렬 상태가 아니면 그냥 평소대로 그리기
-      if (typeof window.renderTable === "function") window.renderTable();
-    }
+    processTableData(result);
   } catch (error) {
     console.error("데이터 로드 에러:", error);
-    alert("서버에서 데이터를 가져오지 못했습니다.");
+    if (!hasCache) {
+      alert("서버에서 데이터를 가져오지 못했습니다.");
+    }
     if (updateTimeSpan) updateTimeSpan.innerText = "업데이트 실패";
   } finally {
     if (modal) {
