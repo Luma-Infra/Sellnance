@@ -902,18 +902,18 @@ export const sanitizeChartData = (dataArr, hasValueField = false) => {
         } else {
           const num = Number(t);
           if (!isNaN(num) && num > 0) {
-            finalTime = num;
+            finalTime = Math.floor(num);
           }
         }
       }
     } else if (typeof t === "number") {
       if (!isNaN(t) && t > 0) {
-        finalTime = t;
+        finalTime = Math.floor(t);
       }
     } else if (typeof t === "object" && t !== null && t.year !== undefined) {
       const parsed = Date.UTC(t.year, t.month - 1, t.day) / 1000;
       if (!isNaN(parsed)) {
-        finalTime = parsed;
+        finalTime = Math.floor(parsed);
       }
     }
 
@@ -927,9 +927,8 @@ export const sanitizeChartData = (dataArr, hasValueField = false) => {
       if (idx !== -1) sanitized.splice(idx, 1);
       seen.delete(timeKey);
     }
-    if (seen.has(timeKey)) continue;
 
-    if (hasValueField) {
+    if (hasValueField || d.value !== undefined) {
       const isInvalidValue =
         d.value === undefined || d.value === null || isNaN(Number(d.value));
       const safeValue = isInvalidValue ? 0 : Number(d.value);

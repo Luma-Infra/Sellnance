@@ -385,6 +385,17 @@ export async function lazyRenderKimchiData(params) {
       }
     } else {
       store.paneConfig.kimchi = false;
+      if (store.kimchiSeries) {
+        try {
+          store.kimchiSeries.setData([]);
+        } catch (e) {}
+      }
+      store.kimchiData = [];
+      if (store.kimchiDataMap) {
+        store.kimchiDataMap.clear();
+      }
+      store.realtimeKimchi = null;
+
       if (wrapper)
         wrapper.style.setProperty("--kimchi-color", "transparent");
 

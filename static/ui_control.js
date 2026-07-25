@@ -1353,7 +1353,13 @@ const timeframes = [
 function getVisibleTfs() {
   try {
     const saved = localStorage.getItem("sellnance_tf_settings");
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        // timeframes에 존재하지 않는 폐기된 타임프레임(2h 등)을 자동 제외
+        return parsed.filter((val) => timeframes.some((tf) => tf.value === val));
+      }
+    }
   } catch (e) { }
   return timeframes.map((t) => t.value);
 }

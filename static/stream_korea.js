@@ -71,7 +71,16 @@ export function updateRealtimeKimchi(liveData, symbol, chartTime) {
 
   const tFindStart = performance.now();
   const pureSymbol = getPureBase(symbol);
-  const row = store.tickerRowMap.get(pureSymbol) || store.currentTableData.find((c) => c.Symbol === pureSymbol);
+  if (!store._symbolToRowCache) {
+    store._symbolToRowCache = new Map();
+  }
+  let row = store.tickerRowMap.get(pureSymbol) || store._symbolToRowCache.get(pureSymbol);
+  if (!row) {
+    row = store.currentTableData.find((c) => c.Symbol === pureSymbol);
+    if (row) {
+      store._symbolToRowCache.set(pureSymbol, row);
+    }
+  }
   const tFind = performance.now() - tFindStart;
 
   let unitKorPrice = null;
@@ -158,9 +167,16 @@ export function updateRealtimeKimchi(liveData, symbol, chartTime) {
           : null;
 
         if (!lastKimchiItem || chartTime >= lastKimchiItem.time) {
-          const tUpdateStart = performance.now();
-          store.kimchiSeries.update(kimchiObj);
-          tUpdate = performance.now() - tUpdateStart;
+          const isTimeNew = !lastKimchiItem || chartTime > lastKimchiItem.time;
+          const now = performance.now();
+          const lastSeriesUpdate = store._lastKimchiSeriesUpdate || 0;
+
+          if (isTimeNew || (now - lastSeriesUpdate > 500)) {
+            const tUpdateStart = performance.now();
+            store.kimchiSeries.update(kimchiObj);
+            tUpdate = performance.now() - tUpdateStart;
+            store._lastKimchiSeriesUpdate = now;
+          }
 
           const tDomStart = performance.now();
           // 🚀 김프 범례 텍스트 직접 실시간 갱신 (리버스 갱신 대응)

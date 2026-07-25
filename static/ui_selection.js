@@ -407,12 +407,12 @@ export function updateExchangeBadges(s, targetUid = null) {
 
         const imgUrl = `https://s2.coinmarketcap.com/static/img/exchanges/64x64/${item.cmcId}.png`;
 
-        // 🚀 구분용 타입 배지 (우측 하단) - SPOT / FUTURE 텍스트 적용
+        // 🚀 구분용 타입 배지 (우측 하단) - SPOT / FUTURE 텍스트 적용 (가시성 개선)
         let typeBadge = "";
         if (item.id === "B-SPOT" || item.id === "BYBIT-SPOT") {
-          typeBadge = `<div class="absolute -bottom-1 -right-1.5 bg-zinc-800 text-white text-[8px] px-1 py-0.5 rounded-sm leading-none font-bold shadow-md border border-white/20 whitespace-nowrap">SPOT</div>`;
+          typeBadge = `<div class="absolute -bottom-1.5 -right-2 bg-zinc-900 text-white text-[9px] px-1.5 py-0.5 rounded border border-white/30 leading-none font-black shadow-md whitespace-nowrap select-none">SPOT</div>`;
         } else if (item.id === "B-FUT" || item.id === "BYBIT-FUT") {
-          typeBadge = `<div class="absolute -bottom-1 -right-1.5 bg-[#f0b90b] text-black text-[8px] px-1 py-0.5 rounded-sm leading-none font-bold shadow-md whitespace-nowrap">FUTURE</div>`;
+          typeBadge = `<div class="absolute -bottom-1.5 -right-2 bg-[#f0b90b] text-black text-[9px] px-1.5 py-0.5 rounded leading-none font-black shadow-md whitespace-nowrap select-none">FUTURE</div>`;
         }
 
         badges += `

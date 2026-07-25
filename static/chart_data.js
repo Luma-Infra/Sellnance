@@ -270,6 +270,10 @@ export function mapTime(d, tf) {
 }
 
 export function clearChartData(isTfChange = false) {
+  // 🚀 [여백 초기화 방지] 차트/타임프레임 전환 시 줌 조작 플래그를 꺼서 임시 0여백 상태가 저장되는 현상을 방지
+  store.isUserZoomed = false;
+  store._symbolToRowCache = null;
+
   // 🚀 코인 변경 및 타임프레임 변경 시: 기존 캔들과 김프 데이터를 모두 유지하여 눈의 피로(깜빡임)를 완벽히 제거합니다.
   // (새로운 데이터를 받아오는 순간 한 방에 덮어씌움으로써 자연스럽고 부드럽게 전환)
   if (!isTfChange && store.countdownPriceLine && store.candleSeries) {
@@ -834,6 +838,11 @@ export async function fetchHistory(
             if (store.kimchiSeries) {
               store.kimchiSeries.setData([]);
             }
+            store.kimchiData = [];
+            if (store.kimchiDataMap) {
+              store.kimchiDataMap.clear();
+            }
+            store.realtimeKimchi = null;
           } catch (err) {
             console.warn("🚨 시리즈 데이터 동기 세팅 예외 우회:", err);
           }

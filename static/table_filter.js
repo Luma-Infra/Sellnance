@@ -620,14 +620,14 @@ export function updateExchFilterUI() {
         stateBadge = `<div class="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] w-3 h-3 flex items-center justify-center rounded-full leading-none font-bold scale-[0.85] shadow-sm">✕</div>`;
       }
 
-      // 🚀 구분용 타입 배지 (우측 하단)
+      // 🚀 구분용 타입 배지 (우측 하단) (가시성 개선)
       let typeBadge = "";
       if (ex.id === "BINANCE") {
-        typeBadge = `<div class="absolute -bottom-1 -right-1 bg-gray-500/80 text-white text-[7px] px-0.5 rounded-sm leading-none font-bold scale-[0.8]">S</div>`;
+        typeBadge = `<div class="absolute -bottom-1 -right-1 bg-gray-600 text-white text-[8px] px-0.5 rounded leading-none font-black shadow-sm">S</div>`;
       } else if (ex.id === "BINANCE_FUTURES") {
-        typeBadge = `<div class="absolute -bottom-1 -right-1 bg-yellow-500/90 text-black text-[7px] px-0.5 rounded-sm leading-none font-bold scale-[0.8]">⚡</div>`;
+        typeBadge = `<div class="absolute -bottom-1 -right-1 bg-[#f0b90b] text-black text-[8px] px-0.5 rounded leading-none font-black shadow-sm">F</div>`;
       } else if (ex.id === "BINANCE_STOCK") {
-        typeBadge = `<div class="absolute -bottom-1 -right-1 bg-blue-500/85 text-white text-[7px] px-0.5 rounded-sm leading-none font-bold scale-[0.8]">📈</div>`;
+        typeBadge = `<div class="absolute -bottom-1 -right-1 bg-blue-600 text-white text-[8px] px-0.5 rounded leading-none font-black shadow-sm">ST</div>`;
       }
 
       const imgUrl = `https://s2.coinmarketcap.com/static/img/exchanges/64x64/${ex.cmcId}.png`;

@@ -271,7 +271,7 @@
   "ALLO": {
     "binance_listing": "2025-11-10",
     "bithumb_listing": "2025-12-09",
-    "bybit_listing": "2026-05-21"
+    "bybit_listing": "2025-11-14"
   },
   "ALLOUSDT": {
     "binance_listing": "2025-11-10",
@@ -338,7 +338,7 @@
     "binance_listing": "2026-03-19"
   },
   "APR": {
-    "binance_listing": "2025-10-23"
+    "binance_listing": "2025-10-20"
   },
   "APRUSDT": {
     "binance_listing": "2025-10-01"
