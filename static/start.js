@@ -562,6 +562,11 @@ function hideStartScreen() {
     pixiApp = null;
   }
 
+  // 🚀 [핵심] 사용자가 Start / Skip 버튼을 누른 바로 이 시점에 비로소 대시보드 데이터 및 실시간 엔진을 점화합니다!
+  if (typeof window.initDashboardEngine === "function") {
+    window.initDashboardEngine();
+  }
+
   const screen = document.getElementById("start-screen");
   if (screen) {
     // 🚀 빨려 들어가는 듯한 스피디한 퇴장 이펙트 (blur는 무거우므로 부드럽게만 적용)

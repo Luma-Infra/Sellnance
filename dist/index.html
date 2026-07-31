@@ -2,11 +2,12 @@
 <html lang="ko">
 
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" /> -->
   <!-- 📱 모바일 확대 차단 및 터치 개선 -->
   <style>
     body {
-      touch-action: manipulation;
+      /* touch-action: manipulation; */
     }
 
     @media (max-width: 1199px) {
@@ -104,8 +105,8 @@
     //   },
     // };
   </script>
-  <script type="module" crossorigin src="/assets/main-D51ysGVa.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/main-BU6s4UYt.css">
+  <script type="module" crossorigin src="/assets/main-C8NII1v9.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/main-Wg5dApKW.css">
 </head>
 
 <!-- 스타트뷰(cmc api 로그인), 모바일 하단 네비바, 멀티 차트 퀵 탐색(4~8개) 메모 / 추가 완료 -->
@@ -348,7 +349,7 @@
   <!-- hidden -->
   <div id="main-dashboard-content" x-data="{ currentMobileTab: 'list' }"
     @mobile-tab-changed.window="currentMobileTab = $event.detail"
-    class="flex flex-col h-[100dvh] md:h-[98dvh] max-h-[100dvh] md:max-h-[880px] w-full max-w-[1440px] bg-theme-bg relative shadow-none md:shadow-2xl overflow-hidden shrink-0 mx-auto md:mb-[2dvh] rounded-none md:rounded-md">
+    class="flex flex-col h-[100dvh] md:h-[98dvh] max-h-[100dvh] md:max-h-[880px] w-full max-w-[1440px] bg-theme-bg relative shadow-none md:shadow-2xl overflow-hidden shrink-0 mx-auto md:mb-[2dvh] rounded-none md:rounded-md max-[1199px]:pb-[56px]">
     <!-- 🚀 글로벌 통합 탑 헤더 (모든 패널 위에 위치) -->
     <header
       class="relative flex w-full shrink-0 h-11 bg-theme-panel border-b border-theme-border/50 px-4 items-center justify-between z-10 shadow-sm">
@@ -1884,7 +1885,7 @@
 
     <!-- 🚀 모바일 차트 전체화면 오버레이 -->
     <div id="mobile-chart-overlay" class="hidden fixed inset-x-0 top-0 z-[100] pointer-events-none"
-      style="opacity:0; bottom: 48px;">
+      style="opacity:0; bottom: calc(56px + env(safe-area-inset-bottom, 0px));">
       <div id="mobile-chart-panel"
         class="absolute inset-0 flex flex-col bg-theme-bg translate-y-full pointer-events-auto">
         <!-- transition-transform duration-300 ease-out 제거 -->
@@ -1900,7 +1901,7 @@
 
     <!-- 🚀 모바일 전용 하단 네비게이션 탭 바 -->
     <div id="mobile-nav-bar"
-      class="hidden max-[1199px]:flex w-full h-[56px] shrink-0 bg-theme-panel border-t border-theme-border/30 items-stretch justify-around z-[800] absolute bottom-0 left-0 right-0 pb-safe shadow-[0_-4px_16px_rgba(0,0,0,0.15)]">
+      class="hidden max-[1199px]:flex w-full h-[56px] shrink-0 bg-theme-panel border-t border-theme-border/30 items-stretch justify-around z-[800] fixed bottom-0 left-0 right-0 pb-safe shadow-[0_-4px_16px_rgba(0,0,0,0.15)]">
       <button id="mobile-tab-list" onclick="window.switchMobileTab('list')"
         :class="currentMobileTab === 'list' ? 'text-theme-accent border-t-2 border-theme-accent opacity-100' : 'text-theme-text opacity-40'"
         class="flex-1 flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer">

@@ -219,9 +219,9 @@ function showMobileChart() {
     content.appendChild(rightPanel);
   }
 
-  // 3. 오버레이 직접 표시 (.active CSS 룰 불필요) — bottom:48px 유지해서 네비바 위까지만 표시
+  // 3. 오버레이 직접 표시 (.active CSS 룰 불필요) — bottom: calc(56px + env(safe-area-inset-bottom, 0px)) 유지해서 네비바 위까지만 표시
   overlay.style.cssText =
-    "display:flex;align-items:flex-end;justify-content:flex-end;opacity:1;pointer-events:auto;bottom:48px;";
+    "display:flex;align-items:flex-end;justify-content:flex-end;opacity:1;pointer-events:auto;bottom:calc(56px + env(safe-area-inset-bottom, 0px));";
   overlay.classList.remove("hidden");
 
   // 4. 패널 초기 위치 설정 — 먼저 translate-y-full 제거 후 rAF로 트랜지션 트리거

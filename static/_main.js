@@ -477,8 +477,12 @@ function restoreSavedUserSettings() {
   }
 }
 
-document.addEventListener("DOMContentLoaded", async () => {
-  // Xconsole.log("🏁 대시보드 엔진 가동 시작...");
+let _isDashboardEngineStarted = false;
+// Xconsole.log("🏁 대시보드 엔진 가동 시작...");
+window.initDashboardEngine = async function () {
+  if (_isDashboardEngineStarted) return;
+  _isDashboardEngineStarted = true;
+
   restoreSavedUserSettings();
   if (typeof initOrderbookDOM === "function") initOrderbookDOM();
 
@@ -509,214 +513,225 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (typeof window.initChart === "function") window.initChart();
       else if (typeof initChart === "function") initChart();
       initSniperSocket();
-
-      // 🚀 [신규] 브라우저 로컬 타이머 루프 구동 (서버 부하 0%)
-      window.updateStatusBadge = () => {
-        const timerEl = document.getElementById("status-timer");
-        const usersEl = document.getElementById("status-users");
-        if (!timerEl || !usersEl) return;
-
-        // 1. 접속자 수 동기화
-        const users = store.activeUsers || 1;
-        usersEl.innerText = `${users} Active`;
-
-        // 2. 이원화 쿨타임 동기화 (유저 키: 15분, 사장님 키: 24시간)
-        if (!store.lastUpdatedRaw) {
-          timerEl.innerText = "--:--:-- 이후 시가총액 갱신";
-          return;
-        }
-
-        const now = Math.floor(Date.now() / 1000);
-        const hasKey = localStorage.getItem("CMC_API_KEY") && localStorage.getItem("CMC_API_KEY").trim() !== "";
-        const interval = hasKey ? 900 : 86400; // 유저 15분, 사장님 24시간
-        const nextUpdate = Math.floor(store.lastUpdatedRaw) + interval;
-        let diff = Math.floor(nextUpdate - now);
-
-        if (diff < 0) {
-          timerEl.innerText = hasKey ? "수집 완료 대기 중..." : "일일 수집 대기 중...";
-          return;
-        }
-
-        if (hasKey) {
-          // 15분 카운트다운 (MM:SS)
-          const m = Math.floor(diff / 60);
-          const s = diff % 60;
-          const formattedTime = `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-          timerEl.innerText = `${formattedTime} 이후 시가총액 갱신`;
-          timerEl.title = "";
-          timerEl.style.cursor = "default";
-        } else {
-          // 24시간 카운트다운 (HH:MM:SS) + 경고(이모지) 및 도움말 툴팁 추가
-          const h = Math.floor(diff / 3600);
-          const m = Math.floor((diff % 3600) / 60);
-          const s = diff % 60;
-          const formattedTime = `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-          timerEl.innerText = `⚠️ ${formattedTime} (일일캐시)`;
-          timerEl.title = "📢 [일일 캐시 모드 안내]\n" +
-            "개인 CMC API 키를 입력하지 않았어요\n" +
-            "하루에 한 번 수집하는 일일 캐시 모드로 동작 중입니다.\n" +
-            "더 잦은 실시간 시총 갱신을 원하시면 설정을 통해 개인 키를 등록해 주세요.";
-          timerEl.style.cursor = "help";
-        }
-      };
-
-      // 🚀 [신규] 1초마다 성능 디버거 통계 수치 갱신 및 렉 위험 요인 동적 분석
-      window.updatePerformanceDebugger = () => {
-        if (!store.bypassCounters) return;
-        const total = Object.values(store.bypassCounters).reduce((a, b) => a + b, 0);
-
-        const totalEl = document.getElementById("perf-total-bypass");
-        if (totalEl) totalEl.innerText = `Total: ${total}`;
-
-        // 각 개별 항목 갱신
-        const keys = ["leftDom", "tabScroll", "tableUpdate", "kimchi", "radarBatch", "mouseEvent", "dynamicHtml", "throttleBypass", "throttlePass"];
-        keys.forEach(k => {
-          const el = document.getElementById(`bypass-cnt-${k}`);
-          if (el) el.textContent = store.bypassCounters[k] || 0;
-        });
-
-        // 🚨 어떤 녀석이 가장 큰 위험요소(가장 많은 빠꾸 횟수를 유도하는 병목 지점)인지 1위 도출
-        const riskEl = document.getElementById("perf-top-risk-analysis");
-        if (riskEl) {
-          let maxVal = -1;
-          let maxKey = "NONE";
-          Object.entries(store.bypassCounters).forEach(([k, v]) => {
-            if (v > maxVal) {
-              maxVal = v;
-              maxKey = k;
-            }
-          });
-
-          if (maxVal === 0) {
-            riskEl.innerText = "안정 (소켓 수급 정체 혹은 렉 유발 없음)";
-            riskEl.className = "text-[8.5px] font-semibold text-emerald-400 opacity-90 leading-tight bg-white/2 p-1 rounded font-sans";
-          } else {
-            const labelMap = {
-              leftDom: "좌측 테이블 DOM 최적화 차단",
-              chartDom: "우측 차트 렌더러 지연 차단",
-              orderbook: "실시간 호가창 렌더링 락",
-              legend: "상단 가격 레전드 문자열 덮어쓰기",
-              resize: "차트 리사이즈 오버헤드",
-              mouseEvent: "차트 십자선 마우스 이벤트 지연",
-              sort: "테이블 실시간 순위 재배치 루프",
-              tabScroll: "테이블 전체 리렌더링 리플로우",
-              tableUpdate: "개별 행 셀 텍스트 갱신 과부하",
-              kimchi: "3초 주기 김프 연산 전파 루프",
-              radarBatch: "3초 레이더 일괄 갱신 차단",
-              dynamicHtml: "김프 전파 HTML 동적 렌더링 과부하",
-            };
-            riskEl.innerText = `⚠️ ${labelMap[maxKey] || maxKey} (${maxVal}회 Bypass)`;
-            riskEl.className = "text-[8.5px] font-semibold text-rose-400 opacity-90 leading-tight bg-white/2 p-1 rounded font-sans";
-          }
-        }
-      };
-
-      let perfIntervalId = null;
-      let perfDebugStartTime = null;
-
-      window.startPerformanceDebugger = () => {
-        if (perfIntervalId) clearInterval(perfIntervalId);
-        perfDebugStartTime = Date.now();
-        // 디버그 활성 시 카운터들을 깨끗하게 초기화하여 이전 누적치 왜곡 방지
-        if (store.bypassCounters) {
-          Object.keys(store.bypassCounters).forEach(k => {
-            store.bypassCounters[k] = 0;
-          });
-        }
-
-        // 시간 표시기 초기화
-        const timeEl = document.getElementById("perf-run-time-display");
-        if (timeEl) timeEl.innerText = "(0s 경과)";
-
-        window.updatePerformanceDebugger();
-        perfIntervalId = setInterval(() => {
-          // 경과 시간 렌더링
-          if (perfDebugStartTime) {
-            const elapsed = Math.floor((Date.now() - perfDebugStartTime) / 1000);
-            const timeDisplay = document.getElementById("perf-run-time-display");
-            if (timeDisplay) timeDisplay.innerText = `(${elapsed}s 경과)`;
-          }
-          window.updatePerformanceDebugger();
-        }, 1000);
-      };
-
-      window.stopPerformanceDebugger = () => {
-        if (perfIntervalId) {
-          clearInterval(perfIntervalId);
-          perfIntervalId = null;
-        }
-      };
-
-      // 기본적으로 시작 (초기 패널 표시 상태에 맞춰 기동)
-      window.startPerformanceDebugger();
-
-      // 1초마다 브라우저에서 직접 카운트다운 연산 수행
-      setInterval(window.updateStatusBadge, 1000);
-
-      // Xconsole.log("✅ 2. 테이블 실시간 시세 및 차트/스나이퍼 소켓 점화 완료!");
-    } else {
-      // 🚀 [수정] 성급하게 에러 던지지 말고 재시도 유도
-      // Xconsole.warn("⚠️ 장부가 아직 비어있습니다. 수집 완료를 기다리는 중...");
-      const loadingText = document.querySelector("#loading-modal h2");
-      if (loadingText)
-        loadingText.innerText = "데이터 수집 완료 대기 중 (5초 후 재시도)...";
-
-      setTimeout(() => {
-        // Xconsole.log("🔄 데이터 수집 완료 재확인 시도...");
-        location.reload();
-      }, 5000);
-      return;
     }
+  } catch (err) {
+    console.error("Dashboard engine init error:", err);
+  }
+};
 
-    // 4️⃣ [UI 이벤트] 슬라이더 및 버튼 반응 설정
-    setupSliderEvents();
-    setupButtonEvents();
-    setupSearchNavigation();
+document.addEventListener("DOMContentLoaded", async () => {
+  restoreSavedUserSettings();
+});
 
-    // 🚀 [추가] 초기 필터 UI 상태 동기화 (3단 토글 슬라이더 위치 등)
-    if (typeof switchFilter === "function") {
-      switchFilter(store.filterMode);
-    }
+// 🚀 [신규] 브라우저 로컬 타이머 루프 구동 (서버 부하 0%)
+window.updateStatusBadge = () => {
+  const timerEl = document.getElementById("status-timer");
+  const usersEl = document.getElementById("status-users");
+  if (!timerEl || !usersEl) return;
 
-    // 🚀 [신규] 초기 로드 완료 시 주소창 해시 기반 자동 렌더링 (쌀먹 최적화)
-    if (window.location.hash && window.location.hash.length > 1) {
-      const hashTicker = window.location.hash.substring(1);
-      if (typeof window.selectSymbol === "function") {
-        window.selectSymbol(hashTicker);
-      }
-    } else {
-      // 🚀 [UX 복원] 해시가 없는 경우 마지막 선택 코인 및 타임프레임 자동 복원
-      try {
-        const lastSymbol = localStorage.getItem("sellnance_last_symbol");
-        const lastTF = localStorage.getItem("sellnance_last_tf");
+  // 1. 접속자 수 동기화
+  const users = store.activeUsers || 1;
+  usersEl.innerText = `${users} Active`;
 
-        // 타임프레임 먼저 복원 (selectSymbol이 fetchHistory를 호출하기 전에 TF를 세팅해야 정확한 봉 데이터 요청)
-        if (lastTF && typeof window.executeSetTF === "function") {
-          store.currentTF = lastTF; // store만 바꾸고 fetchHistory는 아직 미실행
-        }
+  // 2. 이원화 쿨타임 동기화 (유저 키: 15분, 사장님 키: 24시간)
+  if (!store.lastUpdatedRaw) {
+    timerEl.innerText = "--:--:-- 이후 시가총액 갱신";
+    return;
+  }
 
-        // 코인 복원 (차트 + 우측 패널 전체를 마지막 상태로 자동 복원)
-        if (lastSymbol && typeof window.selectSymbol === "function") {
-          window.selectSymbol(lastSymbol);
-        }
-      } catch (e) {
-        // 로컬 캐시 복원 실패 시 조용히 무시 (폴백: 기본 화면 유지)
-      }
-    }
+  const now = Math.floor(Date.now() / 1000);
+  const hasKey = localStorage.getItem("CMC_API_KEY") && localStorage.getItem("CMC_API_KEY").trim() !== "";
+  const interval = hasKey ? 900 : 86400; // 유저 15분, 사장님 24시간
+  const nextUpdate = Math.floor(store.lastUpdatedRaw) + interval;
+  let diff = Math.floor(nextUpdate - now);
 
-    // 🚀 브라우저 뒤로가기/앞으로가기 대응 (해시 변경 감지)
-    window.addEventListener("hashchange", () => {
-      if (window.location.hash && window.location.hash.length > 1) {
-        const hashTicker = window.location.hash.substring(1);
-        if (typeof window.selectSymbol === "function") {
-          window.selectSymbol(hashTicker);
-        }
+  if (diff < 0) {
+    timerEl.innerText = hasKey ? "수집 완료 대기 중..." : "일일 수집 대기 중...";
+    return;
+  }
+
+  if (hasKey) {
+    // 15분 카운트다운 (MM:SS)
+    const m = Math.floor(diff / 60);
+    const s = diff % 60;
+    const formattedTime = `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+    timerEl.innerText = `${formattedTime} 이후 시가총액 갱신`;
+    timerEl.title = "";
+    timerEl.style.cursor = "default";
+  } else {
+    // 24시간 카운트다운 (HH:MM:SS) + 경고(이모지) 및 도움말 툴팁 추가
+    const h = Math.floor(diff / 3600);
+    const m = Math.floor((diff % 3600) / 60);
+    const s = diff % 60;
+    const formattedTime = `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+    timerEl.innerText = `⚠️ ${formattedTime} (일일캐시)`;
+    timerEl.title = "📢 [일일 캐시 모드 안내]\n" +
+      "개인 CMC API 키를 입력하지 않았어요\n" +
+      "하루에 한 번 수집하는 일일 캐시 모드로 동작 중입니다.\n" +
+      "더 잦은 실시간 시총 갱신을 원하시면 설정을 통해 개인 키를 등록해 주세요.";
+    timerEl.style.cursor = "help";
+  }
+};
+
+// 🚀 [신규] 1초마다 성능 디버거 통계 수치 갱신 및 렉 위험 요인 동적 분석
+window.updatePerformanceDebugger = () => {
+  if (!store.bypassCounters) return;
+  const total = Object.values(store.bypassCounters).reduce((a, b) => a + b, 0);
+
+  const totalEl = document.getElementById("perf-total-bypass");
+  if (totalEl) totalEl.innerText = `Total: ${total}`;
+
+  // 각 개별 항목 갱신
+  const keys = ["leftDom", "tabScroll", "tableUpdate", "kimchi", "radarBatch", "mouseEvent", "dynamicHtml", "throttleBypass", "throttlePass"];
+  keys.forEach(k => {
+    const el = document.getElementById(`bypass-cnt-${k}`);
+    if (el) el.textContent = store.bypassCounters[k] || 0;
+  });
+
+  // 🚨 어떤 녀석이 가장 큰 위험요소(가장 많은 빠꾸 횟수를 유도하는 병목 지점)인지 1위 도출
+  const riskEl = document.getElementById("perf-top-risk-analysis");
+  if (riskEl) {
+    let maxVal = -1;
+    let maxKey = "NONE";
+    Object.entries(store.bypassCounters).forEach(([k, v]) => {
+      if (v > maxVal) {
+        maxVal = v;
+        maxKey = k;
       }
     });
-  } catch (err) {
-    // Xconsole.error("🚨 시동 실패:", err);
-    // 보험: 2초 뒤 자동 새로고침 시도
-    // setTimeout(() => location.reload(), 2000);
+
+    if (maxVal === 0) {
+      riskEl.innerText = "안정 (소켓 수급 정체 혹은 렉 유발 없음)";
+      riskEl.className = "text-[8.5px] font-semibold text-emerald-400 opacity-90 leading-tight bg-white/2 p-1 rounded font-sans";
+    } else {
+      const labelMap = {
+        leftDom: "좌측 테이블 DOM 최적화 차단",
+        chartDom: "우측 차트 렌더러 지연 차단",
+        orderbook: "실시간 호가창 렌더링 락",
+        legend: "상단 가격 레전드 문자열 덮어쓰기",
+        resize: "차트 리사이즈 오버헤드",
+        mouseEvent: "차트 십자선 마우스 이벤트 지연",
+        sort: "테이블 실시간 순위 재배치 루프",
+        tabScroll: "테이블 전체 리렌더링 리플로우",
+        tableUpdate: "개별 행 셀 텍스트 갱신 과부하",
+        kimchi: "3초 주기 김프 연산 전파 루프",
+        radarBatch: "3초 레이더 일괄 갱신 차단",
+        dynamicHtml: "김프 전파 HTML 동적 렌더링 과부하",
+      };
+      riskEl.innerText = `⚠️ ${labelMap[maxKey] || maxKey} (${maxVal}회 Bypass)`;
+      riskEl.className = "text-[8.5px] font-semibold text-rose-400 opacity-90 leading-tight bg-white/2 p-1 rounded font-sans";
+    }
+  }
+};
+
+let perfIntervalId = null;
+let perfDebugStartTime = null;
+
+window.startPerformanceDebugger = () => {
+  if (perfIntervalId) clearInterval(perfIntervalId);
+  perfDebugStartTime = Date.now();
+  // 디버그 활성 시 카운터들을 깨끗하게 초기화하여 이전 누적치 왜곡 방지
+  if (store.bypassCounters) {
+    Object.keys(store.bypassCounters).forEach(k => {
+      store.bypassCounters[k] = 0;
+    });
+  }
+
+  // 시간 표시기 초기화
+  const timeEl = document.getElementById("perf-run-time-display");
+  if (timeEl) timeEl.innerText = "(0s 경과)";
+
+  window.updatePerformanceDebugger();
+  perfIntervalId = setInterval(() => {
+    // 경과 시간 렌더링
+    if (perfDebugStartTime) {
+      const elapsed = Math.floor((Date.now() - perfDebugStartTime) / 1000);
+      const timeDisplay = document.getElementById("perf-run-time-display");
+      if (timeDisplay) timeDisplay.innerText = `(${elapsed}s 경과)`;
+    }
+    window.updatePerformanceDebugger();
+  }, 1000);
+};
+
+window.stopPerformanceDebugger = () => {
+  if (perfIntervalId) {
+    clearInterval(perfIntervalId);
+    perfIntervalId = null;
+  }
+};
+
+// 기본적으로 시작 (초기 패널 표시 상태에 맞춰 기동)
+window.startPerformanceDebugger();
+
+// 1초마다 브라우저에서 직접 카운트다운 연산 수행
+setInterval(window.updateStatusBadge, 1000);
+
+// Xconsole.log("✅ 2. 테이블 실시간 시세 및 차트/스나이퍼 소켓 점화 완료!");
+//     } else {
+//   // 🚀 [수정] 성급하게 에러 던지지 말고 재시도 유도
+//   // Xconsole.warn("⚠️ 장부가 아직 비어있습니다. 수집 완료를 기다리는 중...");
+//   const loadingText = document.querySelector("#loading-modal h2");
+//   if (loadingText)
+//     loadingText.innerText = "데이터 수집 완료 대기 중 (5초 후 재시도)...";
+
+//   setTimeout(() => {
+//     // Xconsole.log("🔄 데이터 수집 완료 재확인 시도...");
+//     location.reload();
+//   }, 5000);
+//   return;
+// }
+
+// 4️⃣ [UI 이벤트] 슬라이더 및 버튼 반응 설정
+setupSliderEvents();
+setupButtonEvents();
+setupSearchNavigation();
+
+// 🚀 [추가] 초기 필터 UI 상태 동기화 (3단 토글 슬라이더 위치 등)
+if (typeof switchFilter === "function") {
+  switchFilter(store.filterMode);
+}
+
+// 🚀 [신규] 초기 로드 완료 시 주소창 해시 기반 자동 렌더링 (쌀먹 최적화)
+if (window.location.hash && window.location.hash.length > 1) {
+  const hashTicker = window.location.hash.substring(1);
+  if (typeof window.selectSymbol === "function") {
+    window.selectSymbol(hashTicker);
+  }
+} else {
+  // 🚀 [UX 복원] 해시가 없는 경우 마지막 선택 코인 및 타임프레임 자동 복원
+  try {
+    const lastSymbol = localStorage.getItem("sellnance_last_symbol");
+    const lastTF = localStorage.getItem("sellnance_last_tf");
+
+    // 타임프레임 먼저 복원 (selectSymbol이 fetchHistory를 호출하기 전에 TF를 세팅해야 정확한 봉 데이터 요청)
+    if (lastTF && typeof window.executeSetTF === "function") {
+      store.currentTF = lastTF; // store만 바꾸고 fetchHistory는 아직 미실행
+    }
+
+    // 코인 복원 (차트 + 우측 패널 전체를 마지막 상태로 자동 복원)
+    if (lastSymbol && typeof window.selectSymbol === "function") {
+      window.selectSymbol(lastSymbol);
+    }
+  } catch (e) {
+    // 로컬 캐시 복원 실패 시 조용히 무시 (폴백: 기본 화면 유지)
+  }
+}
+
+// 🚀 브라우저 뒤로가기/앞으로가기 대응 (해시 변경 감지)
+window.addEventListener("hashchange", () => {
+  if (window.location.hash && window.location.hash.length > 1) {
+    const hashTicker = window.location.hash.substring(1);
+    if (typeof window.selectSymbol === "function") {
+      window.selectSymbol(hashTicker);
+      //     }
+      //   }
+      // });
+      //   } catch (err) {
+      //   // Xconsole.error("🚨 시동 실패:", err);
+      //   // 보험: 2초 뒤 자동 새로고침 시도
+      //   // setTimeout(() => location.reload(), 2000);
+      // }
+    }
   }
 });
 
