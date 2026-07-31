@@ -5,7 +5,7 @@
         "SOL": "https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png",
         "SUI": "https://s2.coinmarketcap.com/static/img/coins/64x64/20947.png"
     },
-    "DEFAULT_KRW_USD_RATE": 1438.63,
+    "DEFAULT_KRW_USD_RATE": 1442.07,
     "__MEMO__1": "BTC ETH 파생형 너무 많아서 고정 + 중국어 포함 모든 언어 티커 대응",
     "__MEMO__2": "----------------------------------------------------------",
     "EXCLUSION_LIST": [
@@ -80,6 +80,18 @@
             "",
             "AMP2",
             "upbit"
+        ],
+        "BOB(Build on Bitcoin)_bithumb": [
+            "38970",
+            "",
+            "BOB",
+            "bithumb"
+        ],
+        "BOB(Build On BNB)_binance": [
+            "34422",
+            "",
+            "1000000BOB",
+            "binance"
         ],
         "BTT(BitTorrent)_upbit": [
             "16086",
@@ -207,12 +219,6 @@
             "PROS",
             "upbit"
         ],
-        "AI(Sleepless)_binance": [
-            "28846",
-            "",
-            "AI",
-            "binance"
-        ],
         "AI(Gensyn)_binance": [
             "39883",
             "",
@@ -230,6 +236,12 @@
             "",
             "AI",
             "bithumb"
+        ],
+        "AI(Sleepless)_binance": [
+            "28846",
+            "",
+            "AI",
+            "binance"
         ],
         "Data(Story)_binance": [
             "35626",
@@ -1207,10 +1219,10 @@
             "BNT",
             "COIN"
         ],
-        "BOB": [
-            "38970",
+        "BOB(Build On BNB)": [
+            "8526",
             null,
-            "BOB (Build on Bitcoin)",
+            "Build On BNB",
             "BOB",
             "COIN"
         ],

@@ -1,5 +1,6 @@
 // sim_engine.js 🎮 시뮬레이터 수학 & 로직
 import { store, tfSec } from "./_store.js";
+import { mapTime } from "./chart_data.js";
 
 function changeDir(d) {
   const bodyInput = document.getElementById("input-body");
@@ -87,13 +88,15 @@ function getNext() {
         : last.time;
   const nextTime = lastTime + (tfSec[store.currentTF] || 86400);
 
-  return {
+  const rawCandle = {
     time: nextTime,
     open: o,
     high: highLimit + o * t,
     low: lowLimit - o * bt,
     close: c,
   };
+
+  return mapTime(rawCandle, store.currentTF);
 }
 
 window.changeDir = changeDir;
