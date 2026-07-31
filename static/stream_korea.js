@@ -288,13 +288,8 @@ export function updateRealtimeKimchi(liveData, symbol, chartTime) {
     }
   }
 
-  let tSync = 0;
-  if (typeof window.syncPriceScaleWidths === "function") {
-    const tSyncStart = performance.now();
-    window.syncPriceScaleWidths();
-    tSync = performance.now() - tSyncStart;
-  }
-
+  // 🚀 [성능 최적화] 실시간 틱 수신 시마다 무분별한 레이아웃 재배치(syncPriceScaleWidths)를 불러일으키던 병목 원천 제거
+  // (축 너비는 윈도우 리사이즈 및 탭 전환 시에만 동기화되도록 분리)
   const totalPerf = performance.now() - perfStart;
   if (ENABLE_PERF_LOG && totalPerf > 1.0) {
     console.warn(`[Perf] updateRealtimeKimchi took ${totalPerf.toFixed(2)}ms (RowFind: ${tFind.toFixed(2)}ms, ChartUpdate: ${tUpdate.toFixed(2)}ms, DomUpdate: ${tDom.toFixed(2)}ms, WidthSync: ${tSync.toFixed(2)}ms)`);

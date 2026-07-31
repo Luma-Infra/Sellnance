@@ -181,6 +181,23 @@ function updateLegend(d, v, k) {
   const leg = document.getElementById("ohlc-legend");
   if (!leg) return;
 
+  const isOhlcEnabled = localStorage.getItem("sellnance_ohlc_hidden") !== "true";
+  if (!isOhlcEnabled) {
+    leg.style.display = "none";
+    return;
+  }
+
+  const isMobile = window.innerWidth < 1200;
+  if (isMobile) {
+    if (store.isCrosshairActive) {
+      leg.style.display = "flex";
+    } else {
+      leg.style.display = "none";
+    }
+  } else {
+    leg.style.display = "flex";
+  }
+
   const placeholder = document.getElementById("ohlc-placeholder");
   const valuesContainer = document.getElementById("ohlc-values");
 

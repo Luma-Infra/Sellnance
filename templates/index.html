@@ -1089,7 +1089,7 @@
               </div>
 
               <div id="ohlc-legend"
-                class="absolute top-2.5 left-[10px] z-[50] font-tempTestDss text-[11px] flex flex-col items-start gap-0.5 px-2 pt-1.5 pb-2 text-theme-text backdrop-blur-sm border border-theme-border/50 rounded pointer-events-none shadow-sm"
+                class="absolute top-1.5 md:top-2.5 left-[10px] z-[50] font-tempTestDss text-[9px] md:text-[11px] flex flex-row md:flex-col items-center md:items-start flex-wrap gap-x-2 md:gap-x-0 gap-y-0.5 px-2 py-1 md:pt-1.5 md:pb-2 text-theme-text backdrop-blur-sm border border-theme-border/50 rounded pointer-events-none shadow-sm max-w-[calc(100%-20px)] md:max-w-none"
                 style="
                     background-color: color-mix(
                       in srgb,
@@ -1097,51 +1097,52 @@
                       transparent
                     );
                     contain: layout paint;
-                    min-width: 140px;
-                    width: max-content;
                     height: auto;
                   ">
-                <span id="ohlc-placeholder" class="opacity-50 text-[10px] whitespace-nowrap">Hover on chart...</span>
-                <div id="ohlc-values" class="hidden flex flex-col items-start gap-0.5 w-full">
+                <span id="ohlc-placeholder" class="opacity-50 text-[9px] md:text-[10px] whitespace-nowrap">Hover on
+                  chart...</span>
+                <div id="ohlc-values"
+                  class="hidden flex flex-row md:flex-col items-center md:items-start flex-wrap gap-x-2 md:gap-x-0 gap-y-0.5 w-full">
                   <div
-                    class="flex items-center justify-between w-full border-b border-theme-border/20 pb-0.5 mb-0.5 gap-2">
-                    <span class="text-[9px] uppercase font-bold tracking-wider opacity-50">OHLC Info</span>
-                    <!-- <span id="ohlc-caller-id" class="text-[8px] text-[#ff0055] font-bold"></span> -->
-                  </div>
-                  <div class="flex items-center justify-between w-full whitespace-nowrap gap-3">
-                    <span class="opacity-60 text-[10px]">open</span>
+                    class="flex items-center justify-start md:justify-between w-auto md:w-full whitespace-nowrap gap-1 md:gap-3">
+                    <span class="opacity-60 text-[9px] md:text-[10px]">open</span>
                     <span id="ohlc-open" class="font-medium text-right">-</span>
                   </div>
-                  <div class="flex items-center justify-between w-full whitespace-nowrap gap-3">
-                    <span class="opacity-60 text-[10px]">high</span>
+                  <div
+                    class="flex items-center justify-start md:justify-between w-auto md:w-full whitespace-nowrap gap-1 md:gap-3">
+                    <span class="opacity-60 text-[9px] md:text-[10px]">high</span>
                     <span id="ohlc-high" class="font-medium text-right">-</span>
                   </div>
-                  <div class="flex items-center justify-between w-full whitespace-nowrap gap-3">
-                    <span class="opacity-60 text-[10px]">low</span>
+                  <div
+                    class="flex items-center justify-start md:justify-between w-auto md:w-full whitespace-nowrap gap-1 md:gap-3">
+                    <span class="opacity-60 text-[9px] md:text-[10px]">low</span>
                     <span id="ohlc-low" class="font-medium text-right">-</span>
                   </div>
-                  <div class="flex items-center justify-between w-full whitespace-nowrap gap-3">
-                    <span class="opacity-60 text-[10px]">close</span>
+                  <div
+                    class="flex items-center justify-start md:justify-between w-auto md:w-full whitespace-nowrap gap-1 md:gap-3">
+                    <span class="opacity-60 text-[9px] md:text-[10px]">close</span>
                     <span id="ohlc-close" class="font-medium text-right">-</span>
                   </div>
-                  <div id="ohlc-vol-container" class="flex items-center justify-between w-full whitespace-nowrap gap-3">
-                    <span class="opacity-60 text-[10px]">vol</span>
+                  <div id="ohlc-vol-container"
+                    class="flex items-center justify-start md:justify-between w-auto md:w-full whitespace-nowrap gap-1 md:gap-3">
+                    <span class="opacity-60 text-[9px] md:text-[10px]">vol</span>
                     <span id="ohlc-volume" class="font-medium text-right">-</span>
                   </div>
-                  <div class="w-full border-t border-theme-border/30 my-0.5"></div>
-                  <div class="flex items-center justify-between w-full whitespace-nowrap gap-3">
-                    <span class="opacity-60 text-[10px]">chg</span>
+                  <div class="hidden md:block w-full border-t border-theme-border/30 my-0.5"></div>
+                  <div
+                    class="flex items-center justify-start md:justify-between w-auto md:w-full whitespace-nowrap gap-1 md:gap-3">
+                    <span class="opacity-60 text-[9px] md:text-[10px]">chg</span>
                     <span id="ohlc-change"
-                      class="px-1 py-0.5 font-medium rounded text-[10px] block leading-normal text-right">-</span>
+                      class="px-1 py-0.5 font-medium rounded text-[9px] md:text-[10px] block leading-normal text-right">-</span>
                   </div>
-                  <div class="flex items-center justify-between w-full gap-3">
-                    <span class="opacity-60 text-[10px]">range</span>
+                  <div
+                    class="flex items-center justify-start md:justify-between w-auto md:w-full whitespace-nowrap gap-1 md:gap-3">
+                    <span class="opacity-60 text-[9px] md:text-[10px]">range</span>
                     <span id="ohlc-range" class="font-medium block text-right">-</span>
                   </div>
-                  <div id="ohlc-kimchi-container" class="flex items-center justify-between w-full gap-3">
-                    <span class="opacity-60 text-[10px]">kimp
-                      <!-- <span id="ohlc-kimchi-caller" class="text-[8px] text-[#ff0055] font-bold ml-0.5"></span> -->
-                    </span>
+                  <div id="ohlc-kimchi-container"
+                    class="flex items-center justify-start md:justify-between w-auto md:w-full whitespace-nowrap gap-1 md:gap-3">
+                    <span class="opacity-60 text-[9px] md:text-[10px]">kimp</span>
                     <span id="ohlc-kimchi" class="font-medium text-right">-</span>
                   </div>
                 </div>

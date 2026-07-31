@@ -52,7 +52,12 @@ export async function fetchCandlesSmart(
         if (u === "d" || u === "w" || u === "M" || interval === "days" || interval === "weeks" || interval === "months") {
           fetchInterval = u === "w" || interval === "weeks" ? "weeks" : u === "M" || interval === "months" ? "months" : "days";
         } else {
-          const minMap = { "1m": "minutes/1", "3m": "minutes/3", "5m": "minutes/5", "15m": "minutes/15", "30m": "minutes/30", "1h": "minutes/60", "2h": "minutes/120", "4h": "minutes/240" };
+          const minMap = {
+            "1m": "minutes/1", "3m": "minutes/3", "5m": "minutes/5",
+            "15m": "minutes/15", "30m": "minutes/30", "1h": "minutes/60",
+            //  "2h": "minutes/120", 
+            "4h": "minutes/240"
+          };
           fetchInterval = minMap[interval] || "minutes/1";
         }
       }
@@ -65,7 +70,7 @@ export async function fetchCandlesSmart(
         if (Array.isArray(data)) return data;
       }
     } catch (err) {
-      console.warn(`⚠️ [UPBIT TO DIRECT FAIL] ${symbol} - ${toVal}, falling back:`, err);
+      // console.warn(`⚠️ [UPBIT TO DIRECT FAIL] ${symbol} - ${toVal}, falling back:`, err);
     }
   }
 
@@ -102,7 +107,7 @@ export async function fetchCandlesSmart(
               "15m": "minutes/15",
               "30m": "minutes/30",
               "1h": "minutes/60",
-              "2h": "minutes/120",
+              // "2h": "minutes/120",
               "4h": "minutes/240",
             };
             fetchInterval = minMap[interval] || "minutes/1";
@@ -164,10 +169,10 @@ export async function fetchCandlesSmart(
         }
       }
     } catch (err) {
-      console.warn(
-        `⚠️ [DIRECT FETCH FAILED] ${exchange} - ${symbol} - ${interval}, falling back:`,
-        err,
-      );
+      // console.warn(
+      //   `⚠️ [DIRECT FETCH FAILED] ${exchange} - ${symbol} - ${interval}, falling back:`,
+      //   err,
+      // );
     }
 
     // SPCXB fallback logic in frontend if standard spot symbol fails
@@ -535,7 +540,7 @@ export async function fetchHistory(
           const getGroupTime = (t, tf) => {
             const d = new Date(t * 1000);
             if (tf === "15m") return Math.floor(t / 900) * 900;
-            if (tf === "2h") return Math.floor(t / 7200) * 7200;
+            // if (tf === "2h") return Math.floor(t / 7200) * 7200;
             if (tf === "3d") {
               const dayTs = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) / 1000;
               return Math.floor(dayTs / 259200) * 259200;
@@ -1129,7 +1134,7 @@ export async function loadMoreHistory() {
       const getGroupTime = (t, tf) => {
         const d = new Date(t * 1000);
         if (tf === "15m") return Math.floor(t / 900) * 900;
-        if (tf === "2h") return Math.floor(t / 7200) * 7200;
+        // if (tf === "2h") return Math.floor(t / 7200) * 7200;
         if (tf === "3d") {
           const dayTs = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) / 1000;
           return Math.floor(dayTs / 259200) * 259200;

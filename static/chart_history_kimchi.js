@@ -243,7 +243,7 @@ export async function lazyRenderKimchiData(params) {
           const getGroupTime = (t, tf) => {
             const d = new Date(t * 1000);
             if (tf === "15m") return Math.floor(t / 900) * 900;
-            if (tf === "2h") return Math.floor(t / 7200) * 7200;
+            // if (tf === "2h") return Math.floor(t / 7200) * 7200;
             if (tf === "3d") {
               const dayTs = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) / 1000;
               return Math.floor(dayTs / 259200) * 259200;
@@ -258,7 +258,10 @@ export async function lazyRenderKimchiData(params) {
             return t;
           };
 
-          const tfNeedsResample = ["15m", "2h", "1d", "3d", "1w", "1M"].includes(store.currentTF);
+          const tfNeedsResample = [
+            "15m",
+            //  "2h",
+            "1d", "3d", "1w", "1M"].includes(store.currentTF);
           if (tfNeedsResample) {
             const groups = {};
             rawMapped.forEach((d) => {
@@ -388,7 +391,7 @@ export async function lazyRenderKimchiData(params) {
       if (store.kimchiSeries) {
         try {
           store.kimchiSeries.setData([]);
-        } catch (e) {}
+        } catch (e) { }
       }
       store.kimchiData = [];
       if (store.kimchiDataMap) {

@@ -864,15 +864,15 @@ export function initChart() {
         maxLeft = Math.max(maxLeft, c.priceScale("left").width());
       });
 
-      // 🚀 [초고속 캐시 방어벽] 너비가 이전과 동일하면 applyOptions 호출을 원천 스킵하여 60fps 렌더링 성능 100% 보장! (force 일 때는 강제 적용)
-      if (maxRight > 0 && (force || maxRight !== currentMaxRight)) {
+      // 🚀 [초고속 캐시 방어벽] 너비가 실제 변경된 경우에만 applyOptions 호출하여 60fps 렌더링 성능 100% 보장!
+      if (maxRight > 0 && maxRight !== currentMaxRight) {
         currentMaxRight = maxRight;
         store.savedPriceScaleWidth = maxRight; // 🚀 [UX 개선] 우측 가격 축의 실시간 너비를 전역 store에 실시간 동기화 저장
         charts.forEach((c) =>
           c.priceScale("right").applyOptions({ minimumWidth: maxRight }),
         );
       }
-      if (maxLeft > 0 && (force || maxLeft !== currentMaxLeft)) {
+      if (maxLeft > 0 && maxLeft !== currentMaxLeft) {
         currentMaxLeft = maxLeft;
         charts.forEach((c) =>
           c.priceScale("left").applyOptions({ minimumWidth: maxLeft }),

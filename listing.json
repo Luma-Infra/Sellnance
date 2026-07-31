@@ -2384,7 +2384,14 @@
     "upbit_listing": "2025-12-02"
   },
   "META": {
-    "upbit_listing": "2020-12-01"
+    "upbit_listing": "2020-12-01",
+    "binance_listing": "2026-07-10"
+  },
+  "META2": {
+    "upbit_listing": "2026-07-29"
+  },
+  "METAB": {
+    "binance_listing": "2026-03-26"
   },
   "METIS": {
     "binance_listing": "2024-03-12"

@@ -5,7 +5,7 @@
         "SOL": "https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png",
         "SUI": "https://s2.coinmarketcap.com/static/img/coins/64x64/20947.png"
     },
-    "DEFAULT_KRW_USD_RATE": 1459.42,
+    "DEFAULT_KRW_USD_RATE": 1438.29,
     "__MEMO__1": "BTC ETH 파생형 너무 많아서 고정 + 중국어 포함 모든 언어 티커 대응",
     "__MEMO__2": "----------------------------------------------------------",
     "EXCLUSION_LIST": [
@@ -171,6 +171,12 @@
             "META",
             "upbit"
         ],
+        "META(MetaDAO)_upbit": [
+            "38146",
+            "",
+            "META2",
+            "upbit"
+        ],
         "META(Metadium)_bithumb": [
             "3418",
             "",
@@ -319,6 +325,13 @@
             "AAPL",
             "STOCK"
         ],
+        "AAPLB(STOCK)": [
+            "40927",
+            null,
+            "AAPLB (Derivatives)",
+            "AAPLB",
+            "STOCK"
+        ],
         "AAVE": [
             "7278",
             null,
@@ -401,13 +414,6 @@
             null,
             "Aerodrome Finance",
             "AERO",
-            "COIN"
-        ],
-        "AEUR": [
-            "28596",
-            null,
-            "Anchored Coins AEUR",
-            "AEUR",
             "COIN"
         ],
         "AEVO": [
@@ -557,6 +563,13 @@
             "AMAT",
             "STOCK"
         ],
+        "AMATB(STOCK)": [
+            "40936",
+            null,
+            "AMATB (Derivatives)",
+            "AMATB",
+            "STOCK"
+        ],
         "AMDB(STOCK)": [
             "40538",
             null,
@@ -576,6 +589,13 @@
             null,
             "AMZN (Derivatives)",
             "AMZN",
+            "STOCK"
+        ],
+        "AMZNB(STOCK)": [
+            "40929",
+            null,
+            "AMZNB (Derivatives)",
+            "AMZNB",
             "STOCK"
         ],
         "ANIME": [
@@ -1040,6 +1060,13 @@
             "BEAT",
             "COIN"
         ],
+        "BEB(STOCK)": [
+            "40933",
+            null,
+            "BEB (Derivatives)",
+            "BEB",
+            "STOCK"
+        ],
         "BEL": [
             "6928",
             null,
@@ -1095,6 +1122,13 @@
             "Moonbirds",
             "BIRB",
             "COIN"
+        ],
+        "BITO(STOCK)": [
+            "40913",
+            null,
+            "BITO (Derivatives)",
+            "BITO",
+            "STOCK"
         ],
         "BLAST": [
             "28480",
@@ -1768,6 +1802,13 @@
             "DELL",
             "STOCK"
         ],
+        "DELLB(STOCK)": [
+            "40931",
+            null,
+            "DELLB (Derivatives)",
+            "DELLB",
+            "STOCK"
+        ],
         "DEXE": [
             "7326",
             null,
@@ -2195,6 +2236,13 @@
             "FLNC",
             "STOCK"
         ],
+        "FLNCB(STOCK)": [
+            "40932",
+            null,
+            "FLNCB (Derivatives)",
+            "FLNCB",
+            "STOCK"
+        ],
         "FLOCK": [
             "34987",
             null,
@@ -2305,6 +2353,13 @@
             null,
             "Genius Terminal",
             "GENIUS",
+            "COIN"
+        ],
+        "GEOD": [
+            "20969",
+            "SOL",
+            "GEODNET",
+            "GEOD",
             "COIN"
         ],
         "GEV(STOCK)": [
@@ -2439,6 +2494,20 @@
             "The Graph",
             "GRT",
             "COIN"
+        ],
+        "GRVT": [
+            "40814",
+            null,
+            "Grvt",
+            "GRVT",
+            "COIN"
+        ],
+        "GSB(STOCK)": [
+            "40934",
+            null,
+            "GSB (Derivatives)",
+            "GSB",
+            "STOCK"
         ],
         "GTC": [
             "10052",
@@ -3252,11 +3321,25 @@
             "MET",
             "COIN"
         ],
+        "META(MetaDAO)": [
+            "38146",
+            "SOL",
+            "MetaDAO",
+            "META2",
+            "COIN"
+        ],
         "META(Metadium)": [
             "3418",
             "META",
             "Metadium",
             "META",
+            "COIN"
+        ],
+        "META2": [
+            "META2",
+            "",
+            "META2",
+            "META2",
             "COIN"
         ],
         "METAB(STOCK)": [
@@ -4029,6 +4112,13 @@
             "PUNDIX",
             "COIN"
         ],
+        "PYPLB(STOCK)": [
+            "40935",
+            null,
+            "PYPLB (Derivatives)",
+            "PYPLB",
+            "STOCK"
+        ],
         "PYR": [
             "9308",
             null,
@@ -4526,6 +4616,13 @@
             "SMCI",
             "STOCK"
         ],
+        "SMHB(STOCK)": [
+            "40928",
+            null,
+            "SMHB (Derivatives)",
+            "SMHB",
+            "STOCK"
+        ],
         "SNDKB(STOCK)": [
             "40216",
             null,
@@ -4643,6 +4740,13 @@
             null,
             "SOXS (Derivatives)",
             "SOXS",
+            "STOCK"
+        ],
+        "SOXSB(STOCK)": [
+            "40930",
+            null,
+            "SOXSB (Derivatives)",
+            "SOXSB",
             "STOCK"
         ],
         "SPACE": [
@@ -4904,6 +5008,13 @@
             "TAO",
             "COIN"
         ],
+        "TBT(STOCK)": [
+            "40912",
+            null,
+            "TBT (Derivatives)",
+            "TBT",
+            "STOCK"
+        ],
         "TENCENT(STOCK)": [
             "39961",
             null,
@@ -4959,6 +5070,13 @@
             "Alien Worlds",
             "TLM",
             "COIN"
+        ],
+        "TMF(STOCK)": [
+            "40911",
+            null,
+            "TMF (Derivatives)",
+            "TMF",
+            "STOCK"
         ],
         "TNSR": [
             "30449",
@@ -5245,6 +5363,13 @@
             null,
             "Ethena USDe",
             "USDE",
+            "COIN"
+        ],
+        "USDG": [
+            "33793",
+            "ETH",
+            "Global Dollar",
+            "USDG",
             "COIN"
         ],
         "USDP": [
