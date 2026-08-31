@@ -823,6 +823,12 @@ export function searchSymbols(v) {
 
   store.searchQuery = v || "";
 
+  if (v && v.trim().length > 0) {
+    hideRecentSearchChips();
+  } else {
+    showRecentSearchChips();
+  }
+
   if (searchTimeout) {
     clearTimeout(searchTimeout);
   }
@@ -858,6 +864,175 @@ export function searchSymbols(v) {
   }
 }
 
+// ================== 최근 검색 코인 칩 (PC 최대 10개, 모바일 최대 5개 - 검색창 클릭 시 fixed 플로팅 팝업) ==================
+let globalRecentSearchDropdown = null;
+
+function getOrCreateRecentSearchDropdown() {
+  if (!globalRecentSearchDropdown) {
+    globalRecentSearchDropdown = document.getElementById("recent-search-container");
+    if (!globalRecentSearchDropdown) {
+      globalRecentSearchDropdown = document.createElement("div");
+      globalRecentSearchDropdown.id = "recent-search-container";
+      document.body.appendChild(globalRecentSearchDropdown);
+    }
+  }
+  return globalRecentSearchDropdown;
+}
+
+export function getRecentSearches() {
+  try {
+    const raw = localStorage.getItem("sellnance_recent_searches");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (e) { }
+  return [];
+}
+
+export function addRecentSearch(ticker) {
+  if (!ticker) return;
+  const t = String(ticker).toUpperCase().trim();
+  let list = getRecentSearches();
+  list = list.filter(item => item !== t);
+  list.unshift(t);
+  if (list.length > 10) list = list.slice(0, 10);
+  try {
+    localStorage.setItem("sellnance_recent_searches", JSON.stringify(list));
+  } catch (e) { }
+}
+
+export function removeRecentSearch(ticker, event) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  let list = getRecentSearches();
+  list = list.filter(item => item !== ticker);
+  try {
+    localStorage.setItem("sellnance_recent_searches", JSON.stringify(list));
+  } catch (e) { }
+  showRecentSearchChips();
+}
+
+export function clearAllRecentSearches(event) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  try {
+    localStorage.removeItem("sellnance_recent_searches");
+  } catch (e) { }
+  hideRecentSearchChips();
+}
+
+export function showRecentSearchChips() {
+  const input = document.getElementById("symbol-input");
+  if (!input || input.value.trim().length > 0) {
+    hideRecentSearchChips();
+    return;
+  }
+
+  const list = getRecentSearches();
+  if (!list || list.length === 0) {
+    hideRecentSearchChips();
+    return;
+  }
+
+  const dropdown = getOrCreateRecentSearchDropdown();
+  const isMobile = window.innerWidth < 768;
+  const visibleList = isMobile ? list.slice(0, 5) : list.slice(0, 10);
+
+  let html = `
+    <div class="flex items-center justify-between w-full pb-1.5 border-b border-theme-border/40 mb-1">
+      <span class="text-[9px] font-bold text-theme-accent flex items-center gap-1">
+        최근 검색 코인 (${visibleList.length}개)
+      </span>
+      <button onclick="window.clearAllRecentSearches(event)"
+        class="text-[9px] text-theme-text opacity-40 hover:opacity-100 hover:text-rose-400 cursor-pointer transition-opacity">
+        전체삭제
+      </button>
+    </div>
+    <div class="flex flex-wrap items-center gap-1.5 w-full">
+  `;
+
+  visibleList.forEach(sym => {
+    html += `
+      <div onclick="if (typeof window.selectSymbol === 'function') { window.selectSymbol('${sym}'); window.hideRecentSearchChips(); }"
+        class="group/chip flex items-center gap-1 px-2.5 py-1 rounded-lg bg-theme-panel/90 hover:bg-theme-accent/20 border border-theme-border/60 hover:border-theme-accent/60 text-theme-text text-[10px] font-bold cursor-pointer transition-all shadow-sm">
+        <span>${sym}</span>
+        <button onclick="window.removeRecentSearch('${sym}', event)"
+          class="opacity-40 group-hover/chip:opacity-100 hover:text-rose-400 transition-opacity ml-1 text-[9px] leading-none"
+          title="삭제">✕</button>
+      </div>
+    `;
+  });
+
+  html += `</div>`;
+
+  dropdown.innerHTML = html;
+  dropdown.className =
+    "fixed p-2.5 bg-theme-panel/98 backdrop-blur-2xl border border-theme-border/80 rounded-xl shadow-[0_16px_40px_rgba(0,0,0,0.85)] z-[9999999] flex flex-col gap-1.5 text-left select-none transition-opacity duration-150 opacity-100";
+
+  // 🚀 정확한 좌표 계산 (검색창 input 바로 하단에 fixed 오버레이)
+  const rect = input.getBoundingClientRect();
+  dropdown.style.top = `${rect.bottom + 6}px`;
+  dropdown.style.left = `${rect.left}px`;
+  dropdown.style.width = `${Math.max(rect.width, isMobile ? 240 : 300)}px`;
+  dropdown.style.maxWidth = "calc(100vw - 20px)";
+}
+
+export function hideRecentSearchChips() {
+  const dropdown = document.getElementById("recent-search-container");
+  if (dropdown) {
+    dropdown.className = "hidden";
+    dropdown.innerHTML = "";
+  }
+}
+
+export function renderRecentSearchChips() {
+  const dropdown = document.getElementById("recent-search-container");
+  if (dropdown && !dropdown.classList.contains("hidden")) {
+    showRecentSearchChips();
+  }
+}
+
+window.getRecentSearches = getRecentSearches;
+window.addRecentSearch = addRecentSearch;
+window.removeRecentSearch = removeRecentSearch;
+window.clearAllRecentSearches = clearAllRecentSearches;
+window.showRecentSearchChips = showRecentSearchChips;
+window.hideRecentSearchChips = hideRecentSearchChips;
+window.renderRecentSearchChips = renderRecentSearchChips;
+window.addEventListener("resize", () => {
+  const dropdown = document.getElementById("recent-search-container");
+  if (dropdown && !dropdown.classList.contains("hidden")) {
+    showRecentSearchChips();
+  }
+});
+
+document.addEventListener("click", (e) => {
+  const input = document.getElementById("symbol-input");
+  const dropdown = document.getElementById("recent-search-container");
+  if (dropdown && !dropdown.classList.contains("hidden")) {
+    if (input && input.contains(e.target)) return;
+    if (dropdown.contains(e.target)) return;
+    hideRecentSearchChips();
+  }
+});
+
+document.addEventListener("scroll", () => {
+  const dropdown = document.getElementById("recent-search-container");
+  if (dropdown && !dropdown.classList.contains("hidden")) {
+    const input = document.getElementById("symbol-input");
+    if (input) {
+      const rect = input.getBoundingClientRect();
+      dropdown.style.top = `${rect.bottom + 6}px`;
+      dropdown.style.left = `${rect.left}px`;
+    }
+  }
+}, true);
+
 
 
 // executeSetTF나 코인 클릭 함수(selectSymbol) 등 마켓이 바뀌는 모든 시점에 이 '세척기'를 돌려야 합니다.
@@ -892,7 +1067,7 @@ export function setTF(tf) {
 export function executeSetTF(tf) {
   store.currentTF = tf;
   // 🚀 [UX 복원] 마지막 타임프레임 로컈 저장
-  try { localStorage.setItem("sellnance_last_tf", tf); } catch(e) {}
+  try { localStorage.setItem("sellnance_last_tf", tf); } catch (e) { }
   document.querySelectorAll(".tf-btn").forEach((b) => {
     const onClickAttr = b.getAttribute("onclick") || "";
     const isMatch = onClickAttr.includes(`'${tf}'`);
@@ -1532,4 +1707,5 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("ohlc-legend")?.classList.add("hidden");
   }
   syncCheckboxesFromStore();
+  renderRecentSearchChips();
 });

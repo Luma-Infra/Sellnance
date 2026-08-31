@@ -1,6 +1,7 @@
 {
   "0G": {
-    "binance_listing": "2025-09-01"
+    "binance_listing": "2025-09-01",
+    "upbit_listing": "2026-02-13"
   },
   "0GUSDT": {
     "binance_listing": "2025-09-17"
@@ -1846,6 +1847,9 @@
   "HOOD": {
     "binance_listing": "2026-02-02"
   },
+  "HOODB": {
+    "binance_listing": "2026-02-02"
+  },
   "HOODUSDT": {
     "binance_listing": "2026-05-10"
   },
@@ -2665,6 +2669,9 @@
   "NOTUSDT": {
     "binance_listing": "2025-01-14"
   },
+  "NOW": {
+    "binance_listing": "2026-06-03"
+  },
   "NOWUSDT": {
     "binance_listing": "2026-06-03"
   },
@@ -3131,6 +3138,9 @@
   },
   "RAYSOLUSDT": {
     "binance_listing": "2026-05-09"
+  },
+  "RDDT": {
+    "binance_listing": "2026-08-06"
   },
   "RDNT": {
     "binance_listing": "2023-04-04"
@@ -3873,6 +3883,9 @@
     "upbit_listing": "2019-05-01",
     "bithumb_listing": "2026-08-22"
   },
+  "TTWO": {
+    "binance_listing": "2026-07-01"
+  },
   "TURBO": {
     "binance_listing": "2024-05-30"
   },
@@ -4330,7 +4343,7 @@
     "upbit_listing": "2026-06-03"
   },
   "ZORA": {
-    "binance_listing": "2025-07-25",
+    "binance_listing": "2025-07-01",
     "upbit_listing": "2026-08-22"
   },
   "ZORAUSDT": {

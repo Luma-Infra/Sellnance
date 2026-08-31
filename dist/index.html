@@ -105,7 +105,7 @@
     //   },
     // };
   </script>
-  <script type="module" crossorigin src="/assets/main-BO-HgMRI.js"></script>
+  <script type="module" crossorigin src="/assets/main-DKEg2zXT.js"></script>
   <link rel="stylesheet" crossorigin href="/assets/main-BDlfaov9.css">
 </head>
 
@@ -119,12 +119,12 @@
   <div id="onboarding-modal"
     class="fixed z-[300] inset-0 bg-black/60 hidden backdrop-blur-sm flex-col justify-center items-center p-4 transition-opacity duration-300 opacity-0">
     <div
-      class="bg-theme-panel border border-theme-border/50 rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col transform scale-95 transition-transform duration-300"
+      class="bg-theme-panel border border-theme-border/50 rounded-2xl w-full max-w-2xl max-h-[75vh] md:max-h-none shadow-2xl overflow-hidden flex flex-col transform scale-95 transition-transform duration-300"
       id="onboarding-modal-content">
       <div class="p-4 md:p-4 flex-1 overflow-y-auto">
-        <h2 class="text-2xl font-bold text-theme-text mb-2 flex items-center gap-1.5">
-          <img src="/assets/luma-deer-svg-light-Dco_iv9X.svg" class="w-6 h-6 inline-block" alt="deer light" />
-          <img src="/assets/luma-deer-svg-dark-BiwpABsv.svg" class="w-6 h-6 inline-block" alt="deer dark" />
+        <h2 class="text-lg md:text-xl font-bold text-theme-text mb-2 flex items-center gap-1.5">
+          <img src="/assets/luma-deer-svg-light-Dco_iv9X.svg" class="w-5 h-5 md:w-6 md:h-6 inline-block" alt="deer light" />
+          <img src="/assets/luma-deer-svg-dark-BiwpABsv.svg" class="w-5 h-5 md:w-6 md:h-6 inline-block" alt="deer dark" />
           <span>Sellnance에 오신 것을 환영합니다!</span>
         </h2>
         <p class="text-theme-text opacity-80 text-sm mb-6 leading-snug">
@@ -502,7 +502,7 @@
     <!-- 🚀 내부 패널 분할 컨테이너 -->
     <div id="panel-split-container" class="flex flex-col min-[1200px]:flex-row flex-1 overflow-hidden w-full relative">
       <div
-        class="flex flex-col w-full flex-1 max-[1199px]:w-full min-[1200px]:flex-none min-[1200px]:h-full min-[1200px]:w-[560px] border-r border-theme-border bg-theme-bg transition-all duration-300 shrink-0 overflow-hidden pb-[70px] min-[1200px]:pb-0"
+        class="flex flex-col w-full flex-1 max-[1199px]:w-full min-[1200px]:flex-none min-[1200px]:h-full min-[1200px]:w-[560px] border-r border-theme-border bg-theme-bg transition-all duration-300 shrink-0 overflow-hidden pb-0"
         id="left-panel">
         <!-- [연결 상태 일시 주석 처리] -->
 
@@ -516,7 +516,16 @@
             <div id="search-bar-inner"
               class="relative flex flex-1 h-[36px] bg-theme-panel border border-theme-border rounded-md items-center z-0 overflow-hidden px-3 shadow-inner w-full focus-within:border-theme-accent transition-all">
               <input type="text" id="symbol-input" placeholder="Search Ticker or Name..."
+                name="sellnance_coin_search_custom"
+                autocomplete="off"
+                autocorrect="off"
+                autocapitalize="off"
+                spellcheck="false"
+                data-lpignore="true"
+                data-form-type="other"
                 oninput="searchSymbols(this.value)"
+                onfocus="if (typeof window.showRecentSearchChips === 'function') window.showRecentSearchChips()"
+                onclick="if (typeof window.showRecentSearchChips === 'function') window.showRecentSearchChips()"
                 class="bg-transparent text-theme-text w-full text-xs font-medium focus:outline-none placeholder-opacity-40 h-full" />
               <button id="search-clear-btn" onclick="clearSearch()"
                 class="ml-2 text-theme-text opacity-40 hover:opacity-100 transition-opacity h-full flex items-center justify-center cursor-pointer">
@@ -609,7 +618,7 @@
                 🚫 Hiding Mcap &lt; 1M
               </button>
               <button onclick="window.toggleCustomFilter(event)" id="btn-custom-filter"
-                class="tab-btn px-4 py-1.5 text-[10px] font-medium rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap flex items-center gap-1 cursor-pointer">
+                class="tab-btn px-4 py-1.5 text-[10px] font-medium rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap hidden md:flex items-center gap-1 cursor-pointer">
                 <span>🎛️</span>
                 <span id="btn-custom-filter-text">Custom</span>
               </button>
@@ -777,7 +786,7 @@
                     class="cursor-pointer hover:text-theme-accent flex-1 text-left truncate">NAME
                     <span id="sort-Name" class="sort-arrow text-[8px]"></span></span>
                   <span onclick="sortTable('Caution')"
-                    class="cursor-pointer hover:text-theme-accent flex-1 text-left truncate">WARN
+                    class="cursor-pointer hover:text-theme-accent flex-1 text-left truncate">RISKY
                     <span id="sort-Caution" class="sort-arrow text-[8px]"></span></span>
                 </div>
                 <div

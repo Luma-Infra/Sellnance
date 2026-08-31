@@ -92,8 +92,11 @@ export function selectSymbol(s, forceMarket = null, targetUid = null, isRowClick
   store.isUserZoomed = false;
   store.currentAsset = uniqueTicker;
   store.currentSelectedSymbol = uniqueTicker;
-  // 🚀 [UX 복원] 마지막 선택 코인 로컬 저장
+  // 🚀 [UX 복원] 마지막 선택 코인 로컬 저장 및 최근 검색어 등록
   try { localStorage.setItem("sellnance_last_symbol", uniqueTicker); } catch(e) {}
+  if (typeof window.addRecentSearch === "function") {
+    window.addRecentSearch(uniqueTicker);
+  }
 
   // 🚀 선택된 코인은 화면 가시 영역(30위 바깥)과 상관없이 무조건 실시간 시세 구독에 강제 등록
   if (store.visibleSymbols) {
