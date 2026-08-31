@@ -145,9 +145,15 @@ export async function loadTableData(force = false, silent = false) {
   }
 
 
-  // 캐시가 존재할 때는 로딩 모달 창으로 유저의 시야를 블로킹하지 않고 뒤편에서 즉각 리스트 노출
-  if (!silent && modal && !hasCache) {
-    modal.classList.remove("hidden");
+  const tableLoading = document.getElementById("table-loading-indicator");
+
+  // 🚀 서버에서 전체 코인 목록 및 최신 시세 장부를 가져와 정렬 렌더링하기 직전까지 물결 원형 로더 노출
+  if (!silent) {
+    if (tableLoading) {
+      tableLoading.classList.remove("hidden");
+    } else if (modal && !hasCache) {
+      modal.classList.remove("hidden");
+    }
   }
 
   try {
@@ -162,7 +168,7 @@ export async function loadTableData(force = false, silent = false) {
     // Xconsole.log("2. 파이썬 서버가 응답 완료!"); // ⭐️ 추가
     const result = await res.json();
     // updateTimeSpan.innerText = `마지막 업데이트: ${result.last_updated}`;
-    
+
     // 로컬 스토리지에 데이터 캐시 (비동기 백그라운드 지연으로 메인 스레드 렌더링 블로킹 방지)
     setTimeout(() => {
       try {
@@ -182,6 +188,9 @@ export async function loadTableData(force = false, silent = false) {
   } finally {
     if (modal) {
       modal.classList.add("hidden");
+    }
+    if (tableLoading) {
+      tableLoading.classList.add("hidden");
     }
   }
 }

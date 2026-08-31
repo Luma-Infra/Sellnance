@@ -57,6 +57,43 @@
   --ratio-total: calc(var(--ratio-asset) + var(--ratio-price) + var(--ratio-vol-b) + var(--ratio-vol-u) + var(--ratio-kimch) + var(--ratio-exch));
 }
 
+@keyframes indeterminateBar {
+  0% {
+    transform: translateX(-100%) scaleX(0.2);
+  }
+
+  50% {
+    transform: translateX(0%) scaleX(0.7);
+  }
+
+  100% {
+    transform: translateX(100%) scaleX(0.2);
+  }
+}
+
+.animate-indeterminate-bar {
+  width: 100%;
+  transform-origin: left center;
+  animation: indeterminateBar 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* ⚡ [광속 네온 테이퍼드 아크 로더] */
+@keyframes neonArcSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.neon-tapered-spinner {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 3px solid rgba(var(--accent-rgb, 240, 185, 11), 0.15);
+  border-top: 3px solid var(--accent);
+  border-right: 3px solid var(--accent);
+  box-shadow: 0 0 14px rgba(var(--accent-rgb, 240, 185, 11), 0.6);
+  animation: neonArcSpin 0.75s cubic-bezier(0.5, 0.1, 0.4, 0.9) infinite;
+}
+
 /* 🚀 계산된 비율을 각 컬럼 클래스에 자동 주입 (HTML과 JS에 이미 연결되어 있어 즉시 100% 동기화 작동!) */
 .col-asset {
   width: calc((var(--ratio-asset) / var(--ratio-total)) * 100%);

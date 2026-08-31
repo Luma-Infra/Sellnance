@@ -809,7 +809,15 @@
                 <!-- <div class="p-2 col-listing overflow-hidden"></div> -->
               </div>
             </div>
-            <div id="coin-list-body" class="flex flex-col flex-1 overflow-y-auto min-h-0 w-full"></div>
+            <div class="relative flex flex-col flex-1 min-h-0 w-full overflow-hidden">
+              <div id="coin-list-body" class="flex flex-col h-full overflow-y-auto min-h-0 w-full"></div>
+
+              <!-- 🚀 테이블 목록 영역 정중앙 [광속 네온 아크] 로더 (순수 네온 스피너) -->
+              <div id="table-loading-indicator"
+                class="hidden absolute inset-0 z-50 flex items-center justify-center pointer-events-none select-none transition-opacity duration-300">
+                <div class="neon-tapered-spinner pointer-events-none"></div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1957,7 +1965,6 @@
           <line x1="6" y1="20" x2="6" y2="14"></line>
         </svg>
         <span class="text-[10px] font-bold tracking-tight">차트</span>
-      </button>
     </div>
   </div>
 </body>
