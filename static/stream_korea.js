@@ -1,6 +1,7 @@
 // stream_korea.js
 import { store, tfSec } from "./_store.js";
-import { getMultiplier, getPureBase, getUnixSeconds } from "./chart_utils.js";
+import { getMultiplier, getPureBase, getUnixSeconds, getNextBarTime } from "./chart_utils.js";
+import { getNormalizedTime } from "./stream_utils.js";
 
 // === DEBUG_PERF_TOGGLE ===
 const ENABLE_PERF_LOG = false; // Set to false to disable all performance logging instantly
@@ -384,9 +385,7 @@ export function getUpbitMessageHandler(symbol, broadcastCandleUpdate) {
     const tradeQty = parseFloat(res.trade_volume) || 0;
     if (isNaN(newPrice)) return;
 
-    const secondsPerBar = tfSec[store.currentTF] || 60;
-    const lastCandleUnix = getUnixSeconds(lastCandle.time);
-    const nextBarTime = lastCandleUnix + secondsPerBar;
+    const nextBarTime = getNextBarTime(lastCandle.time, store.currentTF);
     const currentUnix = Math.floor(res.timestamp / 1000);
 
     let activeCandle = lastCandle;
@@ -400,8 +399,9 @@ export function getUpbitMessageHandler(symbol, broadcastCandleUpdate) {
       activeCandle = lastCandle;
       chartUpdateNeeded = true;
     } else {
+      const normTime = getNormalizedTime({ time: nextBarTime });
       activeCandle = {
-        time: currentUnix,
+        time: normTime,
         open: newPrice,
         high: newPrice,
         low: newPrice,
@@ -468,9 +468,7 @@ export function getBithumbMessageHandler(symbol, broadcastCandleUpdate) {
     let activeCandle = lastCandle;
     let chartUpdateNeeded = false;
 
-    const secondsPerBar = tfSec[store.currentTF] || 60;
-    const lastCandleUnix = getUnixSeconds(lastCandle.time);
-    const nextBarTime = lastCandleUnix + secondsPerBar;
+    const nextBarTime = getNextBarTime(lastCandle.time, store.currentTF);
 
     res.content.list.forEach((trade) => {
       const newPrice = parseFloat(trade.contPrice);
@@ -489,8 +487,9 @@ export function getBithumbMessageHandler(symbol, broadcastCandleUpdate) {
         activeCandle = lastCandle;
         chartUpdateNeeded = true;
       } else {
+        const normTime = getNormalizedTime({ time: nextBarTime });
         activeCandle = {
-          time: currentUnix,
+          time: normTime,
           open: newPrice,
           high: newPrice,
           low: newPrice,

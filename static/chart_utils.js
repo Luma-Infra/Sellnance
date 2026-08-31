@@ -18,6 +18,30 @@ export const getUnixSeconds = (t) => {
 };
 window.getUnixSeconds = getUnixSeconds;
 
+export const getNextBarTime = (lastCandleTime, tf) => {
+  const lastCandleUnix = getUnixSeconds(lastCandleTime);
+  if (tf === "1M") {
+    const dt = new Date(lastCandleUnix * 1000);
+    return Math.floor(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth() + 1, 1) / 1000);
+  }
+  if (tf === "1w") {
+    const dt = new Date(lastCandleUnix * 1000);
+    const day = dt.getUTCDay();
+    const diff = day === 0 ? 1 : 8 - day;
+    return Math.floor(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate() + diff) / 1000);
+  }
+  if (tf === "1d") {
+    const dt = new Date(lastCandleUnix * 1000);
+    return Math.floor(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate() + 1) / 1000);
+  }
+  if (tf === "3d") {
+    return lastCandleUnix + (3 * 86400);
+  }
+  const sec = tfSec[tf] || 60;
+  return lastCandleUnix + sec;
+};
+window.getNextBarTime = getNextBarTime;
+
 export const ensureSafeUnixSeconds = (t) => {
   try {
     if (t === null || t === undefined) return 0;

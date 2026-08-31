@@ -1,6 +1,6 @@
 // stream_global.js
 import { store, tfSec } from "./_store.js";
-import { getUnixSeconds, updateTabTitleManager, getPureBase } from "./chart_utils.js";
+import { getUnixSeconds, getNextBarTime, updateTabTitleManager, getPureBase } from "./chart_utils.js";
 import {
   getUpbitMessageHandler,
   getBithumbMessageHandler,
@@ -209,9 +209,7 @@ export function startRealtimeCandle(
         const tradeQty = parseFloat(res.q) || 0;
         if (isNaN(newPrice)) return;
 
-        const secondsPerBar = tfSec[store.currentTF] || 60;
-        const lastCandleUnix = getUnixSeconds(lastCandle.time);
-        const nextBarTime = lastCandleUnix + secondsPerBar;
+        const nextBarTime = getNextBarTime(lastCandle.time, store.currentTF);
         const currentUnix = Math.floor(res.E / 1000);
 
         if (currentUnix < nextBarTime) {
@@ -221,7 +219,8 @@ export function startRealtimeCandle(
           lastCandle.volume = (lastCandle.volume || 0) + tradeQty;
           activeCandle = lastCandle;
         } else {
-          activeCandle = { time: currentUnix, open: newPrice, high: newPrice, low: newPrice, close: newPrice, volume: tradeQty };
+          const normTime = getNormalizedTime({ time: nextBarTime });
+          activeCandle = { time: normTime, open: newPrice, high: newPrice, low: newPrice, close: newPrice, volume: tradeQty };
           store.mainData.push(activeCandle);
           store.mainDataMap.set(getUnixSeconds(activeCandle.time), activeCandle);
         }
@@ -249,7 +248,8 @@ export function startRealtimeCandle(
           lastCandle.volume = kVol;
           activeCandle = lastCandle;
         } else if (kUnix > lastCandleUnix) {
-          activeCandle = { time: kUnix, open: Number(k.o), high: Number(k.h), low: Number(k.l), close: Number(k.c), volume: kVol };
+          const normTime = getNormalizedTime({ time: kUnix });
+          activeCandle = { time: normTime, open: Number(k.o), high: Number(k.h), low: Number(k.l), close: Number(k.c), volume: kVol };
           store.mainData.push(activeCandle);
           store.mainDataMap.set(getUnixSeconds(activeCandle.time), activeCandle);
         }
@@ -310,9 +310,7 @@ export function startRealtimeCandle(
 
     let activeCandle = lastCandle;
     let chartUpdateNeeded = false;
-    const secondsPerBar = tfSec[store.currentTF] || 60;
-    const lastCandleUnix = getUnixSeconds(lastCandle.time);
-    const nextBarTime = lastCandleUnix + secondsPerBar;
+    const nextBarTime = getNextBarTime(lastCandle.time, store.currentTF);
 
     res.data.forEach((trade) => {
       const newPrice = parseFloat(trade.p);
@@ -329,7 +327,8 @@ export function startRealtimeCandle(
         activeCandle = lastCandle;
         chartUpdateNeeded = true;
       } else {
-        activeCandle = { time: currentUnix, open: newPrice, high: newPrice, low: newPrice, close: newPrice, volume: tradeQty };
+        const normTime = getNormalizedTime({ time: nextBarTime });
+        activeCandle = { time: normTime, open: newPrice, high: newPrice, low: newPrice, close: newPrice, volume: tradeQty };
         store.mainData.push(activeCandle);
         store.mainDataMap.set(getUnixSeconds(activeCandle.time), activeCandle);
         chartUpdateNeeded = true;
