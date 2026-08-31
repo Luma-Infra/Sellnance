@@ -284,10 +284,10 @@ def build_upbit_row(
     )
     by_vol_24h = by_raw.get("volume_24h", 0.0)
 
-    vol_24h = binance_vol + up_vol_24h + by_vol_24h
+    total_vol = binance_vol + up_vol_24h + by_vol_24h
     mcap_val = info.get("market_cap") if info else None
     mcap = mcap_val if mcap_val is not None else 0
-    vmc_raw = (vol_24h / mcap * 100) if (mcap is not None and mcap > 0) else 0.0
+    vmc_raw = (total_vol / mcap * 100) if (mcap is not None and mcap > 0) else 0.0
 
     # 🚀 [추가] 업비트 전용 코인 김프 라벨 (바이비트 등 Fallback 비교군이 있을 때만)
     by_spot_p = by_raw.get("spot_price", 0.0)
@@ -321,6 +321,7 @@ def build_upbit_row(
         bithumb_symbol = bithumb_aliases[0]
 
     final_open_krw = up_open_krw if up_open_krw > 0 else (bithumb_open if bithumb_open > 0 else 0.0)
+    has_binance_listing = (binance_spot_price > 0 or binance_futures_price > 0 or binance_vol > 0)
 
     row = {
         # ==========================================
@@ -351,7 +352,7 @@ def build_upbit_row(
 
         "Change_24h": utils.format_change(up_change_24h),
         "Change_Today": utils.format_change(change_today),
-        "Volume_Formatted": utils.format_volume_string(vol_24h),
+        "Volume_Formatted": utils.format_volume_string(binance_vol) if (has_binance_listing and binance_vol > 0) else "-",
         "Kimchi_Formatted": "-",
         "Kimchi_Label": kimchi_label,
         "MarketCap_Formatted": utils.format_market_cap_string(mcap),
@@ -361,7 +362,7 @@ def build_upbit_row(
         "Price_Raw": current_p,
         "Change_24h_Raw": up_change_24h,
         "Change_Today_Raw": change_today,
-        "Volume_Raw": vol_24h,
+        "Volume_Raw": binance_vol if has_binance_listing else 0.0,
         "MarketCap_Raw": mcap,
         "VMC_Raw": vmc_raw,
         "Kimchi_Raw": None,

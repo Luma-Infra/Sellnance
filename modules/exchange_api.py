@@ -34,25 +34,51 @@ def save_utc0_cache():
 # 초기 로드
 load_utc0_cache()
 
+# 🚨 [거래소별 유의/상폐/모니터링 경고 저장소]
+EXCHANGE_WARNINGS = {"UPBIT": {}, "BITHUMB": {}, "BINANCE": {}}
+
 
 def get_korean_exchange_markets():
+    global EXCHANGE_WARNINGS
     upbit_krw_set, bithumb_krw_set = set(), set()
     try:
-        res = requests.get("https://api.upbit.com/v1/market/all?isDetails=false").json()
-        for m in res:
-            if m["market"].startswith("KRW-"):
-                upbit_krw_set.add(m["market"].replace("KRW-", ""))
-    except Exception as e:
-        print(f"🚨 [디버그] 업비트 마켓 목록 에러: {e}")  # 👈 pass 대신 추가!
-    try:
         res = requests.get(
-            "https://api.bithumb.com/v1/market/all?isDetails=false"
+            "https://api.upbit.com/v1/market/all?isDetails=true", timeout=5
         ).json()
         for m in res:
-            if m["market"].startswith("KRW-"):
-                bithumb_krw_set.add(m["market"].replace("KRW-", ""))
+            market = m.get("market", "")
+            sym = market.split("-")[-1]
+            if market.startswith("KRW-"):
+                upbit_krw_set.add(sym)
+
+            # 🚀 업비트 유의종목(CAUTION) 및 시장경보(warning: true) 감지
+            is_warn = m.get("market_warning") == "CAUTION" or (
+                isinstance(m.get("market_event"), dict)
+                and m.get("market_event", {}).get("warning") is True
+            )
+            if is_warn:
+                EXCHANGE_WARNINGS["UPBIT"][sym] = "투자유의 종목 지정"
     except Exception as e:
-        print(f"🚨 [디버그] 빗썸 마켓 목록 에러: {e}")  # 👈 pass 대신 추가!
+        print(f"🚨 [디버그] 업비트 마켓 목록 에러: {e}")
+    try:
+        res = requests.get(
+            "https://api.bithumb.com/v1/market/all?isDetails=true", timeout=5
+        ).json()
+        for m in res:
+            market = m.get("market", "")
+            sym = market.split("-")[-1]
+            if market.startswith("KRW-"):
+                bithumb_krw_set.add(sym)
+
+            # 🚀 빗썸 유의종목(CAUTION) 감지
+            is_warn = m.get("market_warning") == "CAUTION" or (
+                isinstance(m.get("market_event"), dict)
+                and m.get("market_event", {}).get("warning") is True
+            )
+            if is_warn:
+                EXCHANGE_WARNINGS["BITHUMB"][sym] = "거래유의 종목 지정"
+    except Exception as e:
+        print(f"🚨 [디버그] 빗썸 마켓 목록 에러: {e}")
     return upbit_krw_set, bithumb_krw_set
 
 
@@ -543,7 +569,45 @@ def fetch_binance_futures_spot(bybit_data=None):
                     )
             info_f["symbols"] = info_f_symbols
 
-        # 2. 마켓 필터링 (데이터가 있을 때만 진행)
+        # 2. 마켓 필터링 및 경고/상폐/모니터링 태그 수집
+        global EXCHANGE_WARNINGS
+        binance_spot_warn = {}
+        binance_fut_warn = {}
+
+        for s in info_s.get("symbols", []):
+            if s.get("quoteAsset") == "USDT":
+                base_sym = s.get("baseAsset", "").upper()
+                tags = s.get("tags") or []
+                status = s.get("status", "")
+                if "Monitoring" in tags:
+                    binance_spot_warn[base_sym] = "거래 주의(모니터링)"
+                elif status in ["BREAK", "HALT", "PENDING_TRADING"]:
+                    binance_spot_warn[base_sym] = "거래 정지(현물)"
+
+        for s in info_f.get("symbols", []):
+            if s.get("quoteAsset") == "USDT" and s.get("status") in [
+                "BREAK",
+                "HALT",
+                "PENDING_TRADING",
+                "SETTLING",
+                "DELIVERING",
+            ]:
+                base_sym = s.get("baseAsset", "").upper()
+                binance_fut_warn[base_sym] = "거래 정지(선물)"
+
+        all_bin_bases = set(binance_spot_warn.keys()) | set(binance_fut_warn.keys())
+        for b in all_bin_bases:
+            s_msg = binance_spot_warn.get(b)
+            f_msg = binance_fut_warn.get(b)
+            if s_msg == "거래 정지(현물)" and f_msg == "거래 정지(선물)":
+                EXCHANGE_WARNINGS["BINANCE"][b] = "거래 정지(현물/선물)"
+            elif s_msg and f_msg:
+                EXCHANGE_WARNINGS["BINANCE"][b] = f"{s_msg} / {f_msg}"
+            elif s_msg:
+                EXCHANGE_WARNINGS["BINANCE"][b] = s_msg
+            elif f_msg:
+                EXCHANGE_WARNINGS["BINANCE"][b] = f_msg
+
         active_f = {
             s["symbol"]
             for s in info_f.get("symbols", [])

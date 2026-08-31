@@ -22,6 +22,14 @@ import io
 import os
 import re
 
+# Windows 환경 콘솔 이모지 인코딩 보호
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 import config  # 🚀 설정 모듈 임포트
 
 # 🚀 [전역 print 오버라이드] 모든 콘솔 출력에 KST 타임스탬프 접두사 추가
@@ -792,4 +800,12 @@ async def progress_stream():
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
-# 기존 @app.on_event("startup") 방식은 최신 FastAPI 표준인 lifespan으로 대체되었습니다.
+# 🚀 [SPA HTML5 History 라우트] /BTC, /SKRUSDT 등 깔끔한 URL 직접 접근 지원
+@app.get("/{symbol_path}")
+async def dynamic_symbol_route(request: Request, symbol_path: str):
+    # 정적 디렉토리 및 예약어 제외
+    reserved = ["api", "static", "assets", "favicon.ico", "robots.txt", "sw.js", "manifest.json", "openapi.json", "docs", "redoc"]
+    if symbol_path.lower() in reserved:
+        return {"error": "Not Found"}
+    return templates.TemplateResponse(request=request, name="index.html")
+

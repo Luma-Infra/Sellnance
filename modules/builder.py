@@ -315,9 +315,30 @@ def assemble_final_dashboard(
     #                     if updated:
     #                         any_update = True
 
-    # 3. 청소기 가동
-    # if clean_stale_tickers(binance_data, upbit_krw_set, mapping):
-    #     any_update = True
+    # 🚨 [거래소별 유의/상폐/모니터링 경고 라벨 통합 바인딩]
+    from modules.exchange_api import EXCHANGE_WARNINGS
+
+    for row in final_results.values():
+        base_sym = (row.get("Symbol") or row.get("DisplayTicker") or "").upper()
+        pure_base = utils.get_pure_base_asset(base_sym).upper()
+        up_sym = (row.get("Upbit_Symbol") or pure_base).upper()
+        bit_sym = (row.get("Bithumb_Symbol") or pure_base).upper()
+
+        warnings = {}
+        up_warn = EXCHANGE_WARNINGS.get("UPBIT", {}).get(up_sym)
+        if up_warn:
+            warnings["UPBIT"] = up_warn
+
+        bit_warn = EXCHANGE_WARNINGS.get("BITHUMB", {}).get(bit_sym)
+        if bit_warn:
+            warnings["BITHUMB"] = bit_warn
+
+        bin_warn = EXCHANGE_WARNINGS.get("BINANCE", {}).get(pure_base) or EXCHANGE_WARNINGS.get("BINANCE", {}).get(base_sym)
+        if bin_warn:
+            warnings["BINANCE"] = bin_warn
+
+        if warnings:
+            row["Warnings"] = warnings
 
     # AS-IS: return final_results, any_update
     # TO-BE: 👇 딕셔너리의 값들만 리스트로 뽑아서 리턴!

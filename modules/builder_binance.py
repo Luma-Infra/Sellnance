@@ -243,6 +243,7 @@ def build_binance_row(
     binance_futures_change_24h = 0.0
     binance_spot_change_today = 0.0
     binance_futures_change_today = 0.0
+    binance_futures_funding = 0.0
     exact_spot_ticker = ""
     exact_futures_ticker = ""
     spot_utc0 = 0.0
@@ -342,6 +343,7 @@ def build_binance_row(
                     "futures_change_24h"
                 ) or b_inf.get("change_24h", 0.0)
                 exact_futures_ticker = b_tick.replace("USDT", "")
+                binance_futures_funding = b_inf.get("funding_rate", 0.0)
                 futures_utc0 = (
                     b_inf.get("futures_utc0_open") or b_inf.get("utc0_open") or 0.0
                 )
@@ -361,13 +363,17 @@ def build_binance_row(
         and v[3].upper() == "UPBIT"
     ]
 
-    # 🚀 [수정] Upbit에 동일한 base 심볼이 있더라도, DUPLICATED_LIST 상의 UID가 서로 다르면 동명이인(META 등)으로 간주하여 분리
+    # 🚀 [수정] Upbit에 동일한 base 심볼이 있더라도, DUPLICATED_LIST 상의 UID가 서로 다르면 동명이인(META, BOB 등)으로 간주하여 분리
     upbit_direct_match = False
     if base in upbit_krw_set:
         upbit_direct_match = True
         alias_up_key = REVERSE_LOOKUP.get(f"{base}_UPBIT")
         if alias_up_key in DUPLICATED_LIST:
             if DUPLICATED_LIST[alias_up_key][0] != final_ucid:
+                upbit_direct_match = False
+        elif base in upbit_data:
+            up_uid = str(upbit_data[base].get("uid", ""))
+            if up_uid and final_ucid and up_uid.isdigit() and final_ucid.isdigit() and up_uid != final_ucid:
                 upbit_direct_match = False
 
     target_up_base = (
@@ -467,6 +473,11 @@ def build_binance_row(
         if b_info.get("utc0_open")
         else 0.0
     )
+    ticker_mult = utils.get_multiplier(ticker)
+    if ticker_mult > 1 and utc0_open > 0 and price > 0:
+        if utc0_open > price * 10:
+            utc0_open = utils.js_round(utc0_open / ticker_mult, 8)
+
     change_today = (
         utils.js_round(((price - utc0_open) / utc0_open * 100), 2)
         if utc0_open > 0
@@ -547,7 +558,7 @@ def build_binance_row(
 
     # 🚀 VMC 계산 시 화면에 표기되는 바이낸스 단일 거래대금(binance_vol)을 기준으로 계산하여 100% 완벽 일치!
     vmc_raw = (binance_vol / mcap * 100) if (mcap is not None and mcap > 0) else 0.0
-    funding_rate = b_info.get("funding_rate", 0.0)
+    funding_rate = binance_futures_funding or b_info.get("funding_rate", 0.0)
     # 선물 거래소가 없거나 펀비가 0이면 - 처리
     funding_f = (
         f"{funding_rate*100:.4f}%"
