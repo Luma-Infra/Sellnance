@@ -37,21 +37,26 @@ export function applyChartLayout() {
     store.chartVol.priceScale("right").applyOptions({ visible: v });
   }
 
-  // 🚀 [정렬 수정] 김프 데이터가 없더라도 좌측 스케일을 유지하여 상하 차트의 레이아웃 어긋남을 방지합니다.
+  // 🚀 [반응형 좌측 여백] 768px 미만(모바일)이면 좌측 스케일을 완전히 접어(0px) 캔버스 100% 확장, 768px 이상(PC/태블릿)이면 60px 수직 정렬 자동 복원
+  const isSmallMobile = typeof window !== "undefined" && window.innerWidth < 768;
+
   if (store.kimchiSeries) {
     store.kimchiSeries.applyOptions({ visible: !!k });
-    // 항상 visible: true를 유지하되, k가 없을 때는 라벨만 숨기는 방식 등으로 정렬 유지
-    store.chartVol.priceScale("left").applyOptions({
-      visible: true,
-      minimumWidth: 60,
-      borderColor: "transparent" // 🚀 김프 활성화 시에도 좌측 검은 실선이 생기지 않도록 상시 투명 유지
-    });
+    if (store.chartVol) {
+      store.chartVol.priceScale("left").applyOptions({
+        visible: !isSmallMobile,
+        minimumWidth: isSmallMobile ? 0 : 60,
+        borderColor: "transparent" // 🚀 김프 활성화 시에도 좌측 검은 실선이 생기지 않도록 상시 투명 유지
+      });
+    }
 
     // 메인 차트도 동일한 너비로 맞춰서 완벽한 수직 정렬 구현
-    store.chart.priceScale("left").applyOptions({
-      visible: true,
-      minimumWidth: 60,
-    });
+    if (store.chart) {
+      store.chart.priceScale("left").applyOptions({
+        visible: !isSmallMobile,
+        minimumWidth: isSmallMobile ? 0 : 60,
+      });
+    }
   }
 
   // 2. 패널 표시/숨김 및 플렉스 비율
@@ -175,4 +180,13 @@ window.toggleVolFallback = toggleVolFallback;
 // 뷰 모드 전환 시 차트만 콕 집어 resize (table/quickview 사이드 이펙트 없음)
 window.addEventListener("viewModeChanged", () => {
   applyChartLayout();
+});
+
+// 🚀 창 크기 변경 시 768px 모바일 경계에서 좌측 여백(0px <-> 60px) 자동 스위칭
+let chartResizeDebounce = null;
+window.addEventListener("resize", () => {
+  if (chartResizeDebounce) clearTimeout(chartResizeDebounce);
+  chartResizeDebounce = setTimeout(() => {
+    applyChartLayout();
+  }, 100);
 });

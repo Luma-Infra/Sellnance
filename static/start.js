@@ -137,24 +137,23 @@ function getStartScreenHTML() {
         stroke-dasharray: 100.2 100.2;
         stroke-dashoffset: 100.2;
         stroke-linecap: round;
-        filter: drop-shadow(0 0 3px rgba(0, 209, 255, 0.45));
-        animation: startBorderProgress ${START_3D_CONFIG.cycleIntervalMs}ms cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        filter: drop-shadow(0 0 4px rgba(0, 209, 255, 0.5));
       }
       @keyframes startBorderProgress {
         0% {
           stroke-dashoffset: 100.2;
-          opacity: 0.1;
+          opacity: 0.15;
         }
-        5% {
-          opacity: 0.7;
+        4% {
+          opacity: 0.8;
         }
-        95% {
+        96% {
           stroke-dashoffset: 0;
-          opacity: 0.7;
+          opacity: 0.8;
         }
         100% {
           stroke-dashoffset: 0;
-          opacity: 0.7;
+          opacity: 0.15;
         }
       }
 
@@ -693,8 +692,9 @@ async function initStartQuickViewPreview() {
   // 4️⃣ 바이낸스 실시간 멀티 웹소켓 가동
   startStartPreviewWebSocket(startQvCurrentTF);
 
-  // 5️⃣ cycleIntervalMs 주기 4-State 크로스페이드 루프 가동
+  // 5️⃣ cycleIntervalMs 주기 4-State 크로스페이드 루프 및 프로그레스 바 정밀 동기화 가동
   if (startQvTimer) clearInterval(startQvTimer);
+  resetAndStartProgressBar();
   startQvTimer = setInterval(() => {
     toggleStartQuickViewLayout();
   }, START_3D_CONFIG.cycleIntervalMs);
@@ -890,6 +890,16 @@ async function switchStartPreviewTF(tf) {
   startStartPreviewWebSocket(tf);
 }
 
+// ⏱️ 3D 투영 프로그레스 바 0% 리셋 및 정밀 타이머 동기화 엔진
+function resetAndStartProgressBar() {
+  const progressRects = document.querySelectorAll(".start-qv-progress-rect");
+  progressRects.forEach((rect) => {
+    rect.style.animation = "none";
+    void rect.offsetWidth; // Force DOM reflow to cancel previous animation immediately
+    rect.style.animation = `startBorderProgress ${START_3D_CONFIG.cycleIntervalMs}ms linear 1 forwards`;
+  });
+}
+
 // 🚀 [왜곡 없는 크로스페이드 & 자연스러운 모핑 모으기/뿌리기 전환 엔진] 4가지 경우의 수 순환
 function toggleStartQuickViewLayout() {
   const spreadView = document.getElementById("start-qv-spread-view");
@@ -946,13 +956,8 @@ function toggleStartQuickViewLayout() {
     overlapView.style.pointerEvents = "auto";
   }
 
-  // ⏱️ 3D 투영 일치 프로그레스 바 애니메이션 재시작
-  const progressRects = document.querySelectorAll(".start-qv-progress-rect");
-  progressRects.forEach((rect) => {
-    rect.style.animation = "none";
-    void rect.offsetWidth; // Trigger reflow
-    rect.style.animation = `startBorderProgress ${START_3D_CONFIG.cycleIntervalMs}ms cubic-bezier(0.4, 0, 0.2, 1) infinite`;
-  });
+  // ⏱️ 3D 투영 일치 프로그레스 바 애니메이션 0%부터 정밀 재시작
+  resetAndStartProgressBar();
 
   // 🌑 3D 각도별 광원 반사 오프셋 & 스케일 실시간 동기화 (시선 방향의 정반대 축으로 완벽 투영)
   const floorShadow = document.querySelector(".start-qv-floor-shadow");
@@ -1374,13 +1379,12 @@ export async function showStartScreen() {
     overlapView.style.pointerEvents = "none";
   }
 
-  // 4. 3D 프로그레스 바 0%부터 재생 시작
-  const progressRects = document.querySelectorAll(".start-qv-progress-rect");
-  progressRects.forEach((rect) => {
-    rect.style.animation = "none";
-    void rect.offsetWidth; // Trigger reflow
-    rect.style.animation = `startBorderProgress ${START_3D_CONFIG.cycleIntervalMs}ms cubic-bezier(0.4, 0, 0.2, 1) infinite`;
-  });
+  // 4. 타이머 및 3D 프로그레스 바 0%부터 정밀 재생 시작
+  if (startQvTimer) clearInterval(startQvTimer);
+  resetAndStartProgressBar();
+  startQvTimer = setInterval(() => {
+    toggleStartQuickViewLayout();
+  }, START_3D_CONFIG.cycleIntervalMs);
 
   screen.style.display = "flex";
   screen.style.pointerEvents = "auto";

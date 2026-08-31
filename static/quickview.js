@@ -449,20 +449,13 @@ async function initSingleQuickViewChart(container, asset, idx) {
       else if (uTF === "15m") upbitInterval = "minutes/15";
       else if (uTF === "1h") upbitInterval = "minutes/60";
 
-      const isLocal =
-        typeof window !== "undefined" &&
-        (window.location.hostname === "localhost" ||
-          window.location.hostname === "127.0.0.1");
-
       let raw = null;
-      if (isLocal) {
-        try {
-          const res = await fetch(
-            `https://api.upbit.com/v1/candles/${upbitInterval}?market=KRW-${symbol}&count=100`,
-          );
-          if (res.ok) raw = await res.json();
-        } catch (e) {}
-      }
+      try {
+        const res = await fetch(
+          `https://api.upbit.com/v1/candles/${upbitInterval}?market=KRW-${symbol}&count=100`,
+        );
+        if (res.ok) raw = await res.json();
+      } catch (e) {}
 
       if (!raw) {
         try {

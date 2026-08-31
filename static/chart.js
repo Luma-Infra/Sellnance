@@ -246,7 +246,8 @@ export async function initChart() {
     },
     leftPriceScale: {
       autoScale: true,
-      visible: true, // 🚀 시간축 동기화를 위해 보이지 않는 축 유지
+      visible: typeof window !== "undefined" && window.innerWidth >= 768,
+      minimumWidth: typeof window !== "undefined" && window.innerWidth < 768 ? 0 : 60,
       borderColor: "transparent",
       // entireTextOnly: true,
     },
@@ -275,7 +276,8 @@ export async function initChart() {
     },
     leftPriceScale: {
       autoScale: true,
-      visible: true,
+      visible: typeof window !== "undefined" && window.innerWidth >= 768,
+      minimumWidth: typeof window !== "undefined" && window.innerWidth < 768 ? 0 : 60,
       borderColor: "transparent", // 🚀 [좌측 테두리 박멸] 메인 차트와 동일하게 좌측 테두리 선 투명화
       scaleMargins: { top: 0.1, bottom: 0.1 },
     },
