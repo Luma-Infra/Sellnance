@@ -43,10 +43,10 @@ const START_3D_CONFIG = {
 // 💡 캔들 색상(candleMode): "unique" (코인별 고유 네온색), "default" (클래식 녹색 양봉 / 적색 음봉)
 // ===================================================================================
 const START_SHOWCASE_STATES = [
-  { layout: "spread", tf: "4h", candleMode: "unique" }, // 1단계: 4개 분할 + 15분봉 + 고유 네온색
-  { layout: "overlap", tf: "1d", candleMode: "unique" }, // 2단계: 모으기   + 1시간봉 + 고유 네온색
-  { layout: "spread", tf: "4h", candleMode: "default" }, // 3단계: 4개 분할 + 1시간봉 + 클래식 양/음봉
-  { layout: "overlap", tf: "1d", candleMode: "default" }, // 4단계: 모으기   + 15분봉 + 클래식 양/음봉
+  { layout: "spread", tf: "4h", candleMode: "unique" }, // 1단계: 4개 분할 + 4시간봉 + 고유 네온색
+  { layout: "overlap", tf: "1d", candleMode: "unique" }, // 2단계: 모으기   + 1일봉 + 고유 네온색
+  { layout: "spread", tf: "4h", candleMode: "default" }, // 3단계: 4개 분할 + 4시간봉 + 클래식 양/음봉
+  { layout: "overlap", tf: "1d", candleMode: "default" }, // 4단계: 모으기   + 1일봉 + 클래식 양/음봉
 ];
 
 // 🧭 8방위 축별 오일러 각(Pitch/Yaw/Roll) 틸트 맵 (회전이 아닌 동서남북 3D 시선 방향)
@@ -349,20 +349,20 @@ function getStartScreenHTML() {
         <div class="w-full md:w-[42%] max-w-md flex flex-col justify-center">
           <div class="start-main-card p-7 md:p-8 w-full flex flex-col gap-5 text-center">
             <div>
-              <div class="inline-flex items-center gap-2 mb-2 px-3 py-1 rounded-full bg-theme-accent/10 border border-theme-accent/30 text-theme-accent text-[11px] font-bold uppercase tracking-wider">
-                <!-- <span class="w-2 h-2 rounded-full bg-theme-accent animate-pulse"></span> -->
-                <span>Live Terminal Engine</span>
-              </div>
+              <!-- <div class="inline-flex items-center gap-2 mb-2 px-3 py-1 rounded-full bg-theme-accent/10 border border-theme-accent/30 text-theme-accent text-[11px] font-bold uppercase tracking-wider">
+                <span class="w-2 h-2 rounded-full bg-theme-accent animate-pulse"></span> 
+                <span>Live Terminal Engine</span> 
+              </div> -->
               <h1 class="text-3xl md:text-4xl font-extrabold text-white uppercase tracking-widest mb-1.5">
                 SELLNANCE
               </h1>
               <p class="text-theme-text opacity-75 text-xs md:text-sm font-medium tracking-wide">
-                Enter CMC API Key to initialize dashboard.
+                Enter CMC API Key to initialize dashboard
               </p>
 
-              <div class="mt-3.5 py-2.5 px-3 bg-black/40 rounded-xl border border-theme-border/40 text-left">
-                <div class="flex items-center justify-between">
-                  <p class="text-[11px] text-theme-text opacity-70">
+              <div class="mt-3.5 px-3.5 py-2.5 bg-black/40 rounded-xl border border-theme-border/40 flex flex-col items-center justify-center gap-1.5 text-center">
+                <div class="flex items-center justify-center gap-2">
+                  <p class="text-[11px] text-theme-text opacity-75 font-medium">
                     API 키가 없으신가요?
                   </p>
                   <a
@@ -373,8 +373,8 @@ function getStartScreenHTML() {
                     무료 키 발급 ↗
                   </a>
                 </div>
-                <p class="text-[10px] text-theme-text opacity-40 mt-1.5 border-t border-theme-border/20 pt-1.5 leading-normal">
-                  💡 무료 기본 한도: 월 20,000 크레딧 (분당 최대 50회)
+                <p class="text-[10px] text-theme-text opacity-50 border-t border-theme-border/30 pt-1.5 leading-tight text-center w-full">
+                  💡 기본 2만 크레딧 제공! (1회 약 3크레딧 소모 / 하루 200회 조회도 넉넉해요)
                 </p>
               </div>
             </div>
@@ -409,7 +409,7 @@ function getStartScreenHTML() {
                   * Key is securely stored in your local browser.
                 </p>
                 <p class="text-[10px] text-theme-accent/80 text-left font-medium">
-                  ** 키 없이도 Skip 버튼으로 일일 캐시 모드 즉시 진입 가능
+                  ** 키 없이도 서버에서 제공되는 일일 캐시 모드로 이용 가능해요
                 </p>
               </div>
             </div>
@@ -428,10 +428,9 @@ function getStartScreenHTML() {
 
                 <label
                   class="h-[48px] px-3.5 bg-black/40 hover:bg-white/10 border border-theme-border/50 hover:border-theme-accent/50 rounded-xl flex items-center gap-2 cursor-pointer select-none transition-all group"
-                  title="다음부터 스타트 화면 건너뛰기 (자동 시작)"
                 >
                   <input type="checkbox" id="chk-auto-skip" class="accent-theme-accent w-3.5 h-3.5 rounded cursor-pointer" />
-                  <span class="text-[11px] text-theme-text/80 group-hover:text-white whitespace-nowrap font-medium transition-colors">자동 시작</span>
+                  <span class="text-[11px] text-theme-text/80 group-hover:text-white whitespace-nowrap font-medium transition-colors">Skip</span>
                 </label>
               </div>
 
@@ -788,7 +787,18 @@ let startQvLastUpdateTimes = {};
 // 🌐 실시간 웹소켓 가동 (🚀 시작 화면 최적화: 1초 쓰로틀링 적용)
 function startStartPreviewWebSocket(tf) {
   if (startQvWs) {
-    try { startQvWs.close(); } catch (e) { }
+    const oldWs = startQvWs;
+    oldWs.onmessage = null;
+    oldWs.onclose = null;
+    oldWs.onerror = null;
+    if (oldWs.readyState === WebSocket.CONNECTING) {
+      oldWs.onopen = () => {
+        try { oldWs.close(); } catch (e) { }
+      };
+    } else {
+      try { oldWs.close(); } catch (e) { }
+    }
+    startQvWs = null;
   }
   startQvLastUpdateTimes = {};
   try {
@@ -829,22 +839,23 @@ function startStartPreviewWebSocket(tf) {
         }
       } catch (err) { }
     };
-  } catch (wsErr) { }
+  } catch (err) { }
 }
 
-// 🎨 캔들 색상 테마 동적 전환 (자산별 고유 네온색 ↔ 기본 양봉/음봉 색상)
-function applyStartCandleTheme(mode) {
-  startQvCandleMode = mode;
+// ⏱️ 캔들 색상 동적 전환 (네온 고유색 vs 클래식 양음봉)
+function applyStartCandleTheme(candleMode) {
   START_ASSETS.forEach((asset, idx) => {
-    const isUnique = mode === "unique";
+    let upSpread = asset.color;
+    let downSpread = asset.color;
+    let upOverlap = asset.rgba;
+    let downOverlap = asset.rgba;
 
-    // 1. Spread 뷰 (단독 카드): 선명한 색상
-    const upSpread = isUnique ? asset.color : "#26a69a";
-    const downSpread = isUnique ? asset.color : "#ef5350";
-
-    // 2. Overlap 뷰 (모으기): 4개 캔들이 겹칠 때 서로 가리지 않는 반투명(Translucent) 색상 복구
-    const upOverlap = isUnique ? asset.rgba : "rgba(38, 166, 154, 0.6)";
-    const downOverlap = isUnique ? asset.rgba : "rgba(239, 83, 80, 0.6)";
+    if (candleMode === "default") {
+      upSpread = "#0ecb81";
+      downSpread = "#f6465d";
+      upOverlap = "rgba(14, 203, 129, 0.65)";
+      downOverlap = "rgba(246, 70, 93, 0.65)";
+    }
 
     if (startQvSpreadSeries[idx]) {
       startQvSpreadSeries[idx].applyOptions({
@@ -1067,14 +1078,14 @@ async function initStartScreen() {
 
     if (btnStart) {
       btnStart.disabled = false;
-      btnStart.innerText = "Start DASHBOARD";
+      btnStart.innerText = "Start Dashboard";
       btnStart.className =
         "flex-1 py-3.5 bg-theme-accent text-white font-semibold rounded-xl shadow-sm hover:shadow-[0_0_15px_rgba(0,209,255,0.3)] hover:brightness-105 active:scale-[0.98] transition-all tracking-widest uppercase cursor-pointer pointer-events-auto border border-theme-accent/40";
     }
 
     if (btnSkip) {
       btnSkip.disabled = false;
-      btnSkip.innerText = "Skip (서버 캐시 모드, 느린 갱신)";
+      btnSkip.innerText = "바로 이동 (서버 캐시 모드, 느린 갱신)";
       btnSkip.className =
         "w-full py-3 bg-transparent text-theme-text border border-theme-border font-medium rounded-xl hover:bg-white/5 hover:border-white/30 active:scale-[0.98] transition-all tracking-wide opacity-60 hover:opacity-100 cursor-pointer pointer-events-auto";
     }
@@ -1300,16 +1311,22 @@ function hideStartScreen() {
   }
 }
 
-export function showStartScreen() {
+export async function showStartScreen() {
   const screen = document.getElementById("start-screen");
-  const buttons = document.querySelectorAll("#start-screen button");
-  if (buttons.length > 0 && buttons[0]) {
-    buttons[0].innerText = "Start DASHBOARD";
-    buttons[0].style.pointerEvents = "auto";
+  if (!screen) {
+    await initStartScreen();
+    return;
   }
-  if (buttons.length > 1 && buttons[1]) {
-    buttons[1].innerText = "Skip (서버 캐시 모드, 느린 갱신)";
-    buttons[1].style.pointerEvents = "auto";
+
+  const btnStart = document.getElementById("btn-start-engine");
+  const btnSkip = document.getElementById("btn-skip-start");
+  if (btnStart) {
+    btnStart.innerText = "Start Dashboard";
+    btnStart.style.pointerEvents = "auto";
+  }
+  if (btnSkip) {
+    btnSkip.innerText = "바로 이동 (서버 캐시 모드, 느린 갱신)";
+    btnSkip.style.pointerEvents = "auto";
   }
 
   // 🚀 [쇼케이스 0초 및 1단계 완전 리셋]
@@ -1317,13 +1334,22 @@ export function showStartScreen() {
   startCompassStep = 0;
   startQvCurrentTF = START_SHOWCASE_STATES[0].tf;
 
-  // 1. 기존 타이머 제거
+  // 1. 기존 타이머 및 소켓 안전 정리
   if (startQvTimer) {
     clearInterval(startQvTimer);
     startQvTimer = null;
   }
+  if (startQvWs) {
+    try { startQvWs.close(); } catch (e) { }
+    startQvWs = null;
+  }
 
-  // 2. 1단계 상태(Spread 4분할, 4시간봉, 고유 네온 컬러) 즉시 복원 적용
+  // 2. 차트 인스턴스가 소각된 상태라면 재초기화
+  if (!startQvSpreadCharts || startQvSpreadCharts.length === 0) {
+    await initStartQuickViewPreview();
+  }
+
+  // 3. 1단계 상태(Spread 4분할, 4시간봉, 고유 네온 컬러) 즉시 복원 적용
   const currentShowcase = START_SHOWCASE_STATES[0];
   applyStartCandleTheme(currentShowcase.candleMode);
 
@@ -1348,7 +1374,7 @@ export function showStartScreen() {
     overlapView.style.pointerEvents = "none";
   }
 
-  // 3. 3D 프로그레스 바 0%부터 재생 시작
+  // 4. 3D 프로그레스 바 0%부터 재생 시작
   const progressRects = document.querySelectorAll(".start-qv-progress-rect");
   progressRects.forEach((rect) => {
     rect.style.animation = "none";
@@ -1356,28 +1382,18 @@ export function showStartScreen() {
     rect.style.animation = `startBorderProgress ${START_3D_CONFIG.cycleIntervalMs}ms cubic-bezier(0.4, 0, 0.2, 1) infinite`;
   });
 
-  // 4. 쇼케이스 순환 타이머 0초부터 재가동
-  startQvTimer = setInterval(() => {
-    toggleStartQuickViewLayout();
-  }, START_3D_CONFIG.cycleIntervalMs);
+  screen.style.display = "flex";
+  screen.style.pointerEvents = "auto";
+  requestAnimationFrame(() => {
+    screen.style.transform = "scale(1) translateZ(0px)";
+    screen.style.opacity = "1";
+    resizeStartQuickViewCharts();
+  });
 
-  if (screen) {
-    screen.style.display = "flex";
-    screen.style.pointerEvents = "auto";
-    requestAnimationFrame(() => {
-      screen.style.transform = "scale(1) translateZ(0px)";
-      screen.style.opacity = "1";
-      resizeStartQuickViewCharts();
-    });
-    // 타임프레임 및 웹소켓 갱신
-    switchStartPreviewTF(START_SHOWCASE_STATES[0].tf);
-    if (window.history && window.history.pushState) {
-      if (window.location.pathname !== "/" || window.location.hash) {
-        window.history.pushState(null, null, "/");
-      }
+  if (window.history && window.history.pushState) {
+    if (window.location.pathname !== "/" || window.location.hash) {
+      window.history.pushState(null, null, "/");
     }
-  } else {
-    initStartScreen();
   }
 }
 
