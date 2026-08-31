@@ -443,17 +443,36 @@ async function initSingleQuickViewChart(container, asset, idx) {
     asset.resolvedSymbol = symbol;
 
     if (exchange === "upbit") {
-      // ✅ 업비트: 브라우저 직접 (CORS 허용)
       const uTF = qvState.timeframe;
       let upbitInterval = "days";
       if (uTF === "1m") upbitInterval = "minutes/1";
       else if (uTF === "15m") upbitInterval = "minutes/15";
       else if (uTF === "1h") upbitInterval = "minutes/60";
 
-      const res = await fetch(
-        `https://api.upbit.com/v1/candles/${upbitInterval}?market=KRW-${symbol}&count=100`,
-      );
-      const raw = await res.json();
+      const isLocal =
+        typeof window !== "undefined" &&
+        (window.location.hostname === "localhost" ||
+          window.location.hostname === "127.0.0.1");
+
+      let raw = null;
+      if (isLocal) {
+        try {
+          const res = await fetch(
+            `https://api.upbit.com/v1/candles/${upbitInterval}?market=KRW-${symbol}&count=100`,
+          );
+          if (res.ok) raw = await res.json();
+        } catch (e) {}
+      }
+
+      if (!raw) {
+        try {
+          const res = await fetch(
+            `/api/candles?exchange=upbit&symbol=KRW-${symbol}&interval=${upbitInterval}&limit=100`,
+          );
+          if (res.ok) raw = await res.json();
+        } catch (e) {}
+      }
+
       if (Array.isArray(raw)) {
         candles = raw
           .map((d) => ({

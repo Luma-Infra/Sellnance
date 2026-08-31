@@ -43,8 +43,13 @@ export async function fetchCandlesSmart(
       interval === "weeks" ||
       interval === "months");
 
-  // 업비트는 toVal 있어도 브라우저 직접 fetch 지원 (to 파라미터 네이티브 지원)
-  if (!isGapRecovery && exchange === "upbit" && toVal && !startVal) {
+  const isLocal =
+    typeof window !== "undefined" &&
+    (window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1");
+
+  // 업비트는 toVal 있어도 브라우저 직접 fetch 지원 (로컬 쌀먹 환경)
+  if (isLocal && !isGapRecovery && exchange === "upbit" && toVal && !startVal) {
     try {
       let fetchInterval = interval;
       if (!interval.startsWith("minutes/")) {
@@ -82,38 +87,40 @@ export async function fetchCandlesSmart(
       } else if (exchange === "binance_futures") {
         directUrl = `https://fapi.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
       } else if (exchange === "upbit") {
-        let fetchInterval = interval;
-        if (!interval.startsWith("minutes/")) {
-          const u = interval.replace(/[0-9]/g, "");
-          if (
-            u === "d" ||
-            u === "w" ||
-            u === "M" ||
-            interval === "days" ||
-            interval === "weeks" ||
-            interval === "months"
-          ) {
-            fetchInterval =
-              u === "w" || interval === "weeks"
-                ? "weeks"
-                : u === "M" || interval === "months"
-                  ? "months"
-                  : "days";
-          } else {
-            const minMap = {
-              "1m": "minutes/1",
-              "3m": "minutes/3",
-              "5m": "minutes/5",
-              "15m": "minutes/15",
-              "30m": "minutes/30",
-              "1h": "minutes/60",
-              // "2h": "minutes/120",
-              "4h": "minutes/240",
-            };
-            fetchInterval = minMap[interval] || "minutes/1";
+        if (isLocal) {
+          let fetchInterval = interval;
+          if (!interval.startsWith("minutes/")) {
+            const u = interval.replace(/[0-9]/g, "");
+            if (
+              u === "d" ||
+              u === "w" ||
+              u === "M" ||
+              interval === "days" ||
+              interval === "weeks" ||
+              interval === "months"
+            ) {
+              fetchInterval =
+                u === "w" || interval === "weeks"
+                  ? "weeks"
+                  : u === "M" || interval === "months"
+                    ? "months"
+                    : "days";
+            } else {
+              const minMap = {
+                "1m": "minutes/1",
+                "3m": "minutes/3",
+                "5m": "minutes/5",
+                "15m": "minutes/15",
+                "30m": "minutes/30",
+                "1h": "minutes/60",
+                // "2h": "minutes/120",
+                "4h": "minutes/240",
+              };
+              fetchInterval = minMap[interval] || "minutes/1";
+            }
           }
+          directUrl = `https://api.upbit.com/v1/candles/${fetchInterval}?market=${symbol}&count=200`; // 업비트 최대 한도: 200개
         }
-        directUrl = `https://api.upbit.com/v1/candles/${fetchInterval}?market=${symbol}&count=200`; // 업비트 최대 한도: 200개
       } else if (exchange === "bybit_spot" || exchange === "bybit_futures") {
         const category = exchange === "bybit_spot" ? "spot" : "linear";
         const bMap = {
