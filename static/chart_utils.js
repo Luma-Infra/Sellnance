@@ -745,29 +745,33 @@ export function updateRealtimeCountdown(serverMs) {
     return;
   }
 
-  let displayTime = "Wait...";
-  if (serverMs && serverMs > 0) {
-    if (!store.localTimeAtUpdate) {
-      store.localTimeAtUpdate = performance.now();
-    }
+  let displayTime = "00:00";
+  if (!serverMs || serverMs <= 0) {
+    serverMs = Date.now();
+    store.lastServerMs = serverMs;
+    store.localTimeAtUpdate = performance.now();
+  }
 
-    const interpolatedMs =
-      store.lastServerMs + (performance.now() - store.localTimeAtUpdate);
+  if (!store.localTimeAtUpdate) {
+    store.localTimeAtUpdate = performance.now();
+  }
 
-    const secondsPerBar = tfSec[store.currentTF] || 60;
-    const lastCandleTime = store.mainData[store.mainData.length - 1].time;
-    const nextBarTimeMs = (lastCandleTime + secondsPerBar) * 1000;
+  const interpolatedMs =
+    store.lastServerMs + (performance.now() - store.localTimeAtUpdate);
 
-    if (interpolatedMs >= nextBarTimeMs) {
-      displayTime = "00:00";
-    } else {
-      if (typeof window.calculateTimeRemaining === "function") {
-        displayTime = window.calculateTimeRemaining(
-          store.currentTF,
-          interpolatedMs,
-        );
-      }
-    }
+  const secondsPerBar = tfSec[store.currentTF] || 60;
+  const rawCandleTime = store.mainData[store.mainData.length - 1].time;
+  const lastCandleUnix =
+    typeof rawCandleTime === "number"
+      ? rawCandleTime
+      : Math.floor(new Date(rawCandleTime).getTime() / 1000);
+  const nextBarTimeMs = (lastCandleUnix + secondsPerBar) * 1000;
+
+  if (typeof window.calculateTimeRemaining === "function") {
+    displayTime = window.calculateTimeRemaining(
+      store.currentTF,
+      interpolatedMs,
+    );
   }
 
   // 🚀 [시뮬레이터 강제 off] 시뮬레이터 탭 활성화 시 카운트다운 시간 표시를 강제로 off

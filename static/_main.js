@@ -473,8 +473,8 @@ window.initDashboardEngine = async function () {
 
   try {
     // 1️⃣ [차트 선제 점화] 차트 캔버스를 즉시 생성하여 테이블 다운로드 대기 없이 화면 구성
-    if (typeof window.initChart === "function") window.initChart();
-    else if (typeof initChart === "function") initChart();
+    if (typeof window.initChart === "function") await window.initChart();
+    else if (typeof initChart === "function") await initChart();
 
     // 2️⃣ [병렬 데이터 로드] 마켓 구성 정보 + 테이블 장부를 동시에 1번에 병렬 로드 (Network Waterfall 0초 컷)
     await Promise.all([
@@ -689,19 +689,17 @@ window.getInitialRouteSymbol = () => {
   return null;
 };
 
+try {
+  const lastTF = localStorage.getItem("sellnance_last_tf");
+  if (lastTF && ["1m", "3m", "5m", "15m", "30m", "1h", "4h", "12h", "1d", "3d", "1w", "1M"].includes(lastTF)) {
+    store.currentTF = lastTF;
+  }
+} catch (e) {}
+
 const initialRouteSym = window.getInitialRouteSymbol();
 if (initialRouteSym) {
   if (typeof window.selectSymbol === "function") {
     window.selectSymbol(initialRouteSym);
-  }
-} else {
-  // 🚀 [깔끔한 루트 / 주소 유지] 경로/해시가 없는 경우 타임프레임만 복원하고 URL과 안내창 유지
-  try {
-    const lastTF = localStorage.getItem("sellnance_last_tf");
-    if (lastTF && typeof window.executeSetTF === "function") {
-      store.currentTF = lastTF;
-    }
-  } catch (e) {
   }
 }
 

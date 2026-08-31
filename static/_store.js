@@ -1,3 +1,11 @@
+let initialTF = "1d";
+try {
+  const savedTF = localStorage.getItem("sellnance_last_tf");
+  if (savedTF && ["1m", "3m", "5m", "15m", "30m", "1h", "4h", "12h", "1d", "3d", "1w", "1M"].includes(savedTF)) {
+    initialTF = savedTF;
+  }
+} catch (e) {}
+
 export const store = {
   marketDataMap: { upbit: [], spot: [], futures: [], krw_usd_rate: 0.0 },
   allSymbols: [],
@@ -39,7 +47,7 @@ export const store = {
   settings: {
     CMC_API_KEY: "",
   },
-  currentTF: "1d",
+  currentTF: initialTF,
   visibleTfs: [
     "1m",
     "3m",
@@ -154,8 +162,8 @@ export const store = {
   isSidebarOpen: true,
   countdownTimerId: null,
   countdownOverlay: null,
-  localTimeAtUpdate: 0,
-  lastServerMs: 0,
+  localTimeAtUpdate: typeof performance !== "undefined" ? performance.now() : 0,
+  lastServerMs: Date.now(),
   displayTime: "Wait...",
   currentSortCol: "Volume",
   sortState: "desc",

@@ -416,6 +416,11 @@ export function getUpbitMessageHandler(symbol, broadcastCandleUpdate) {
     if (chartUpdateNeeded) {
       if (store.isFetchingChart || window.isFetchingChart || store.isLoadingMoreHistory || store.isRestoringTab) return;
 
+      if (res.timestamp) {
+        store.lastServerMs = res.timestamp;
+        store.localTimeAtUpdate = performance.now();
+      }
+
       const currentExpected =
         `KRW-${(store.currentSelectedSymbol || "").replace("USDT", "").replace("KRW-", "").replace("KRW", "")}`.toUpperCase();
       if (expectedCode === currentExpected) {
