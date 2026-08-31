@@ -248,6 +248,15 @@ export const CONFIG = {
   MOBILE_HEIGHT: 600,
   UI_UPDATE_INTERVAL: 1000,
   RENDER_CHUNK: 50,
+
+  // ⚙️ [차트 전용 실시간 성능/쓰로틀 제어 콘솔 - 수동 조절 가능]
+  CHART_PERF: {
+    REALTIME_THROTTLE_MS: 50,       // 🚀 캔들/볼륨 실시간 차트 렌더링 쓰로틀 (기본 50ms)
+    STATUS_DOM_THROTTLE_MS: 100,    // 🚀 OHLC 레전드 및 헤더 상태창 DOM 갱신 쓰로틀 (기본 100ms)
+    TITLE_UPDATE_THROTTLE_MS: 1000, // 🚀 브라우저 탭 타이틀 실시간 시세 갱신 쓰로틀 (기본 1000ms)
+    COUNTDOWN_THROTTLE_MS: 250,     // 🚀 카운트다운 타이머 DOM 갱신 쓰로틀 (기본 250ms)
+  },
+
   CHART_CONFIG: { GHOST_COUNT: 500, VISIBLE_COUNT: 200, RIGHT_PADDING: 10 },
   FONT_SCALE: {
     PRICE_THRESHOLD: 8,

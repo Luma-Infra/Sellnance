@@ -166,37 +166,13 @@ export async function fetchCandlesSmart(
             // Xconsole.log(`⚡ [DIRECT FETCH SUCCESS] ${exchange} - ${symbol}`);
             return data;
           }
+        } else if (res.status === 404 || res.status === 400) {
+          // 🚀 거래소 API에서 404/400 (심볼/마켓 없음) 반환 시 백엔드 프록시로 재요청하는 낭비/지연 원천 차단
+          return [];
         }
       }
     } catch (err) {
-      // console.warn(
-      //   `⚠️ [DIRECT FETCH FAILED] ${exchange} - ${symbol} - ${interval}, falling back:`,
-      //   err,
-      // );
-    }
-
-    // SPCXB fallback logic in frontend if standard spot symbol fails
-    if (exchange === "binance_spot" && symbol.endsWith("USDT")) {
-      const baseAsset = symbol.replace("USDT", "");
-      if (!baseAsset.endsWith("B")) {
-        const fallbackSymbol = `${baseAsset}BUSDT`;
-        try {
-          const directUrl = `https://api.binance.com/api/v3/klines?symbol=${fallbackSymbol}&interval=${interval}&limit=${limit}`;
-          const res = await fetch(directUrl);
-          if (res.ok) {
-            const data = await res.json();
-            if (Array.isArray(data) && data.length > 0) {
-              // Xconsole.log(`⚡ [DIRECT FALLBACK SUCCESS] ${exchange} - ${fallbackSymbol} (${data.length} candles)`,);
-              return data;
-            }
-          }
-        } catch (err) {
-          console.warn(
-            `⚠️ [DIRECT FALLBACK FAILED] ${exchange} - ${fallbackSymbol}:`,
-            err,
-          );
-        }
-      }
+      // 직접 호출 실패 시 조용히 아래 서버 프록시(/api/candles)로 위임
     }
   }
 
@@ -279,6 +255,11 @@ export function clearChartData(isTfChange = false) {
   store.isUserZoomed = false;
   store._symbolToRowCache = null;
 
+  // 🚀 [우측 가격축 여백 리셋] 코인 변경 시 이전 코인의 넓은 minimumWidth 잔상을 0으로 초기화하여 축소 허용
+  if (!isTfChange && typeof window.resetPriceScaleWidthSync === "function") {
+    window.resetPriceScaleWidthSync();
+  }
+
   // 🚀 코인 변경 및 타임프레임 변경 시: 기존 캔들과 김프 데이터를 모두 유지하여 눈의 피로(깜빡임)를 완벽히 제거합니다.
   // (새로운 데이터를 받아오는 순간 한 방에 덮어씌움으로써 자연스럽고 부드럽게 전환)
   if (!isTfChange && store.countdownPriceLine && store.candleSeries) {
@@ -325,17 +306,60 @@ export async function fetchHistory(
   window.isFetchingChart = true;
   clearChartData(isTfChange);
 
-  const displayName = symbol || store.currentAsset;
+  let displayName = symbol || store.currentAsset;
   if (!displayName) {
     store.isFetchingChart = false;
     window.isFetchingChart = false;
     return;
   }
+
+  // 🚀 트레이딩뷰 라우팅 스타일 (EXCHANGE:SYMBOL_MARKET 또는 EXCHANGE:SYMBOL) 즉시 분해 및 정규화
+  if (displayName.includes(":")) {
+    const parts = displayName.split(":");
+    const exPart = parts[0].trim().toUpperCase();
+    let symPart = parts[1].trim();
+
+    if (symPart.endsWith("_FUTURES")) {
+      symPart = symPart.replace(/_FUTURES$/i, "");
+      store.currentChartMarket = exPart === "BYBIT" ? "BYBIT_FUTURES" : "FUTURES";
+    } else if (symPart.endsWith("_SPOT")) {
+      symPart = symPart.replace(/_SPOT$/i, "");
+      store.currentChartMarket = exPart === "BYBIT" ? "BYBIT" : "SPOT";
+    } else if (exPart === "UPBIT") {
+      store.currentChartMarket = "UPBIT";
+    } else if (exPart === "BITHUMB") {
+      store.currentChartMarket = "BITHUMB";
+    } else if (exPart === "BINANCE") {
+      store.currentChartMarket = "FUTURES";
+    } else if (exPart === "BYBIT") {
+      store.currentChartMarket = "BYBIT_FUTURES";
+    }
+    displayName = symPart;
+  }
+
+  if (displayName.endsWith("_FUTURES")) {
+    displayName = displayName.replace(/_FUTURES$/i, "");
+    if (!store.currentChartMarket || store.currentChartMarket === "ALL") store.currentChartMarket = "FUTURES";
+  } else if (displayName.endsWith("_SPOT")) {
+    displayName = displayName.replace(/_SPOT$/i, "");
+    if (!store.currentChartMarket || store.currentChartMarket === "ALL") store.currentChartMarket = "SPOT";
+  } else if (displayName.endsWith("_UPBIT")) {
+    displayName = displayName.replace(/_UPBIT$/i, "");
+    store.currentChartMarket = "UPBIT";
+  } else if (displayName.endsWith("_BITHUMB")) {
+    displayName = displayName.replace(/_BITHUMB$/i, "");
+    store.currentChartMarket = "BITHUMB";
+  }
+
   const rawSymbol = displayName.split("(")[0].trim().toUpperCase();
   store.currentAsset = displayName;
 
-  const isFutures = store.currentChartMarket === "FUTURES";
-  const isSpot = store.currentChartMarket === "SPOT";
+  if (store.currentChartMarket === "ALL" || !store.currentChartMarket) store.currentChartMarket = "FUTURES";
+  if (store.currentChartMarket === "BINANCE") store.currentChartMarket = "FUTURES";
+  if (store.currentChartMarket === "BINANCE_FUTURES") store.currentChartMarket = "FUTURES";
+
+  const isFutures = store.currentChartMarket === "FUTURES" || store.currentChartMarket === "BINANCE_FUTURES";
+  const isSpot = store.currentChartMarket === "SPOT" || store.currentChartMarket === "BINANCE";
   const isUpbit = store.currentChartMarket === "UPBIT";
   const isBithumb = store.currentChartMarket === "BITHUMB";
   const isBybit =
@@ -475,7 +499,7 @@ export async function fetchHistory(
         if (rawMain.length === 0 && isBybitFutures) {
           const rawFallback = await fetchCandlesSmart(
             "bybit_spot",
-            ticker,
+            `${exactSpot || pureBase}USDT`,
             store.currentTF,
             500,
           );
@@ -621,15 +645,83 @@ export async function fetchHistory(
     }
 
     if (!rawMain || rawMain.length === 0) {
-      if (
-        isBybit &&
-        (rowInfo?.Listed_Exchanges?.includes("UPBIT") || rowInfo?.Upbit === "O")
-      ) {
-        console.warn(`⚠️ 바이빗 데이터 없음 (${exactBybit}), 업비트 폴백 시도`);
-        store.currentChartMarket = "UPBIT";
-        fetchHistory(displayName, isTfChange, isTabRestore);
-        return;
+      // 🚀 [1순위 해외 거래소 폴백] 바이빗 데이터 부재 시: 바이낸스 선물 -> 바이낸스 현물 -> 국내 거래소 순으로 지능적 폴백
+      if (isBybit) {
+        if (rowInfo?.Listed_Exchanges?.includes("BINANCE_FUTURES") || rowInfo?.Binance_Futures === "O") {
+          console.warn(`⚠️ 바이빗 데이터 없음 (${exactBybit}), 바이낸스 선물 폴백 시도`);
+          store.currentChartMarket = "FUTURES";
+          updateExchangeBadges(displayName, rowInfo?.UID);
+          store.lastFetchTime = 0;
+          fetchHistory(displayName, isTfChange, isTabRestore);
+          return;
+        }
+        if (rowInfo?.Listed_Exchanges?.includes("BINANCE") || rowInfo?.Binance === "O") {
+          console.warn(`⚠️ 바이빗 데이터 없음 (${exactBybit}), 바이낸스 현물 폴백 시도`);
+          store.currentChartMarket = "SPOT";
+          updateExchangeBadges(displayName, rowInfo?.UID);
+          store.lastFetchTime = 0;
+          fetchHistory(displayName, isTfChange, isTabRestore);
+          return;
+        }
+        if (rowInfo?.Listed_Exchanges?.includes("UPBIT") || rowInfo?.Upbit === "O") {
+          console.warn(`⚠️ 바이빗 데이터 없음 (${exactBybit}), 업비트 폴백 시도`);
+          store.currentChartMarket = "UPBIT";
+          updateExchangeBadges(displayName, rowInfo?.UID);
+          store.lastFetchTime = 0;
+          fetchHistory(displayName, isTfChange, isTabRestore);
+          return;
+        }
+        if (rowInfo?.Listed_Exchanges?.includes("BITHUMB")) {
+          console.warn(`⚠️ 바이빗 데이터 없음 (${exactBybit}), 빗썸 폴백 시도`);
+          store.currentChartMarket = "BITHUMB";
+          updateExchangeBadges(displayName, rowInfo?.UID);
+          store.lastFetchTime = 0;
+          fetchHistory(displayName, isTfChange, isTabRestore);
+          return;
+        }
       }
+
+      // 🚀 [선물 전용 코인 폴백] 바이낸스 현물 데이터 부재 시 (1000SATS, SKR 등 선물 전용 코인): 바이낸스 선물로 자동 전환
+      if (isSpot) {
+        const canFallbackFutures = !rowInfo || rowInfo?.Listed_Exchanges?.includes("BINANCE_FUTURES") || rowInfo?.Binance_Futures === "O";
+        if (canFallbackFutures) {
+          console.warn(`⚠️ 바이낸스 현물 데이터 없음 (${exactSpot}), 바이낸스 선물 폴백 시도`);
+          store.currentChartMarket = "FUTURES";
+          updateExchangeBadges(displayName, rowInfo?.UID);
+          store.lastFetchTime = 0;
+          fetchHistory(displayName, isTfChange, isTabRestore);
+          return;
+        }
+      }
+
+      // 🚀 [국내/현물 전용 코인 폴백] 바이낸스 선물 데이터 부재 시: 업비트 -> 빗썸 -> 현물 순으로 자동 전환
+      if (isFutures) {
+        if (rowInfo?.Listed_Exchanges?.includes("UPBIT") || rowInfo?.Upbit === "O") {
+          console.warn(`⚠️ 바이낸스 선물 데이터 없음 (${displayName}), 업비트 폴백 시도`);
+          store.currentChartMarket = "UPBIT";
+          updateExchangeBadges(displayName, rowInfo?.UID);
+          store.lastFetchTime = 0;
+          fetchHistory(displayName, isTfChange, isTabRestore);
+          return;
+        }
+        if (rowInfo?.Listed_Exchanges?.includes("BITHUMB")) {
+          console.warn(`⚠️ 바이낸스 선물 데이터 없음 (${displayName}), 빗썸 폴백 시도`);
+          store.currentChartMarket = "BITHUMB";
+          updateExchangeBadges(displayName, rowInfo?.UID);
+          store.lastFetchTime = 0;
+          fetchHistory(displayName, isTfChange, isTabRestore);
+          return;
+        }
+        if (rowInfo?.Listed_Exchanges?.includes("BINANCE") || rowInfo?.Binance === "O") {
+          console.warn(`⚠️ 바이낸스 선물 데이터 없음 (${displayName}), 바이낸스 현물 폴백 시도`);
+          store.currentChartMarket = "SPOT";
+          updateExchangeBadges(displayName, rowInfo?.UID);
+          store.lastFetchTime = 0;
+          fetchHistory(displayName, isTfChange, isTabRestore);
+          return;
+        }
+      }
+
       console.warn(
         `⚠️ [No Data] ${displayName} / ${store.currentChartMarket} - 차트 데이터 없음`,
       );
@@ -922,6 +1014,8 @@ export async function fetchHistory(
         const doFit = () => {
           if (typeof autoFit === "function") autoFit(isTabRestore); // 🚀 [2차 보정 피팅] 김프 데이터까지 온전히 안착한 후 최종 피팅 실행
           if (typeof window.updateStatus === "function") window.updateStatus();
+          if (typeof updateExchangeBadges === "function") updateExchangeBadges(displayName, rowInfo?.UID);
+          if (typeof window.syncPriceScaleWidths === "function") window.syncPriceScaleWidths(true);
 
           // 🚀 [락 해제] 최종 피팅(autoFit)까지 완벽히 마친 시점에만 Fetching 락을 풀어 가로폭 오염을 원천 차단
           window.isFetchingChart = false;

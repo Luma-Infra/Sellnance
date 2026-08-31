@@ -5,15 +5,45 @@ import { fetchHistory } from "./chart_data.js";
 import { getPureBase } from "./chart_utils.js";
 
 export function selectSymbol(s, forceMarket = null, targetUid = null, isRowClick = false) {
-  if (!s) return;
   const allSourceData = store.currentTableData || store.originalTableData || [];
-
-  // 1. suffix 및 순수 심볼 파싱
-  const originalSym = String(s);
+  // 1. suffix 및 트레이딩뷰 스타일(EXCHANGE:SYMBOL_MARKET) 파싱
+  const originalSym = String(s).trim();
   let parsedSymbol = originalSym.toUpperCase();
   let parsedMarket = null;
 
-  if (parsedSymbol.endsWith("KRW")) {
+  if (parsedSymbol.includes(":")) {
+    const parts = parsedSymbol.split(":");
+    const exPart = parts[0].trim().toUpperCase();
+    const symMarketPart = parts[1].trim().toUpperCase();
+
+    if (symMarketPart.endsWith("_FUTURES")) {
+      parsedSymbol = symMarketPart.replace("_FUTURES", "");
+      parsedMarket = exPart === "BYBIT" ? "BYBIT_FUTURES" : "FUTURES";
+    } else if (symMarketPart.endsWith("_SPOT")) {
+      parsedSymbol = symMarketPart.replace("_SPOT", "");
+      parsedMarket = exPart === "BYBIT" ? "BYBIT" : "SPOT";
+    } else {
+      parsedSymbol = symMarketPart;
+      if (exPart === "UPBIT") parsedMarket = "UPBIT";
+      else if (exPart === "BITHUMB") parsedMarket = "BITHUMB";
+      else if (exPart === "BINANCE") parsedMarket = "FUTURES";
+      else if (exPart === "BYBIT") parsedMarket = "BYBIT_FUTURES";
+    }
+  } else if (parsedSymbol.includes("_")) {
+    if (parsedSymbol.endsWith("_FUTURES")) {
+      parsedSymbol = parsedSymbol.replace("_FUTURES", "");
+      parsedMarket = "FUTURES";
+    } else if (parsedSymbol.endsWith("_SPOT")) {
+      parsedSymbol = parsedSymbol.replace("_SPOT", "");
+      parsedMarket = "SPOT";
+    } else if (parsedSymbol.endsWith("_UPBIT")) {
+      parsedSymbol = parsedSymbol.replace("_UPBIT", "");
+      parsedMarket = "UPBIT";
+    } else if (parsedSymbol.endsWith("_BITHUMB")) {
+      parsedSymbol = parsedSymbol.replace("_BITHUMB", "");
+      parsedMarket = "BITHUMB";
+    }
+  } else if (parsedSymbol.endsWith("KRW")) {
     parsedSymbol = parsedSymbol.slice(0, -3);
     parsedMarket = "UPBIT";
   } else if (parsedSymbol.endsWith("USDT")) {
@@ -28,7 +58,7 @@ export function selectSymbol(s, forceMarket = null, targetUid = null, isRowClick
   }
   if (!rowInfo) {
     // 2-1. 1차 패스: 정확히 일치(Exact Match)하는 대상을 우선 검색
-    rowInfo = allSourceData.find((c) => c.UID === s || c.Ticker === s || c.DisplayTicker === s || c.Symbol === s);
+    rowInfo = allSourceData.find((c) => c.UID === parsedSymbol || c.Ticker === parsedSymbol || c.DisplayTicker === parsedSymbol || c.Symbol === parsedSymbol);
   }
   if (!rowInfo) {
     // 2-2. 2차 패스: 접미사(KRW, USDT 등)를 제거하고 유연하게 검색
@@ -46,7 +76,7 @@ export function selectSymbol(s, forceMarket = null, targetUid = null, isRowClick
     });
   }
 
-  const uniqueTicker = rowInfo ? rowInfo.Ticker : s;
+  const uniqueTicker = rowInfo ? rowInfo.Ticker : parsedSymbol;
 
   // 🚀 [신규 가드] 이미 선택된 코인을 클릭했거나, 이미 선택된 활성 거래소 뱃지를 클릭한 경우 조기 리턴하여 불필요한 차트 초기화 및 리로드 차단
   if (isRowClick && store.currentAsset === uniqueTicker) {
@@ -75,6 +105,9 @@ export function selectSymbol(s, forceMarket = null, targetUid = null, isRowClick
 
   // 🚀 주소창 해시 연동 (쌀먹 라우팅 최적화)
   let tempMarket = forceMarket || parsedMarket;
+  if (tempMarket === "BINANCE") tempMarket = "SPOT";
+  if (tempMarket === "BINANCE_FUTURES") tempMarket = "FUTURES";
+
   if (tempMarket && rowInfo && rowInfo.Listed_Exchanges) {
     const ex = rowInfo.Listed_Exchanges;
     let isValid = false;
@@ -88,13 +121,13 @@ export function selectSymbol(s, forceMarket = null, targetUid = null, isRowClick
   }
   if (!tempMarket && rowInfo && rowInfo.Listed_Exchanges) {
     const ex = rowInfo.Listed_Exchanges;
-    if (store.filterMode === "UPBIT" && ex.includes("UPBIT")) {
+    if (store.filterMode === "UPBIT" && (ex.includes("UPBIT") || rowInfo.Upbit === "O")) {
       tempMarket = "UPBIT";
     } else if (ex.includes("BINANCE_FUTURES")) {
       tempMarket = "FUTURES";
     } else if (ex.includes("BINANCE")) {
       tempMarket = "SPOT";
-    } else if (ex.includes("UPBIT")) {
+    } else if (ex.includes("UPBIT") || rowInfo.Upbit === "O") {
       tempMarket = "UPBIT";
     } else if (ex.includes("BITHUMB")) {
       tempMarket = "BITHUMB";
@@ -102,13 +135,25 @@ export function selectSymbol(s, forceMarket = null, targetUid = null, isRowClick
       tempMarket = "BYBIT";
     }
   }
+  if (!tempMarket) {
+    tempMarket = "FUTURES"; // 🚀 기본 마켓: 바이낸스 선물(FUTURES)
+  }
 
   const symbolOnly = rowInfo ? rowInfo.Symbol : parsedSymbol;
-  const targetHash = "#" + symbolOnly;
+  let targetPath = "/" + symbolOnly;
+  if (tempMarket === "FUTURES") targetPath = `/BINANCE:${symbolOnly}_FUTURES`;
+  else if (tempMarket === "SPOT") targetPath = `/BINANCE:${symbolOnly}_SPOT`;
+  else if (tempMarket === "UPBIT") targetPath = `/UPBIT:${symbolOnly}`;
+  else if (tempMarket === "BITHUMB") targetPath = `/BITHUMB:${symbolOnly}`;
+  else if (tempMarket === "BYBIT_FUTURES") targetPath = `/BYBIT:${symbolOnly}_FUTURES`;
+  else if (tempMarket === "BYBIT") targetPath = `/BYBIT:${symbolOnly}_SPOT`;
 
   if (window.history && window.history.pushState) {
-    if (window.location.hash !== targetHash) {
-      window.history.pushState(null, null, targetHash);
+    if (window.location.pathname !== targetPath && !window.location.hash) {
+      window.history.pushState(null, null, targetPath);
+    } else if (window.location.hash || window.location.pathname !== targetPath) {
+      // 🚀 기존 #해시로 진입한 경우 깔끔한 트레이딩뷰 스타일 URL로 전환
+      window.history.replaceState(null, null, targetPath);
     }
   }
 
@@ -188,7 +233,8 @@ export function selectSymbol(s, forceMarket = null, targetUid = null, isRowClick
           }
 
           const logoHtml = rowInfo.Logo || "";
-          const fullText = `${rowInfo.Symbol} (${rowInfo.Name || ""})`;
+          const pureSym = getPureBase(rowInfo.Symbol || rowInfo.DisplayTicker || rowInfo.Ticker);
+          const fullText = `${pureSym} (${rowInfo.Name || ""})`;
           const len = fullText.length;
           // 수학적 로그 방식 적용: 10글자 초과 시 길이에 반비례하여 부드럽게 폰트 크기 축소 (기본 1.125rem, 최소 0.65rem)
           let fontSizeStyle = "";
@@ -237,9 +283,10 @@ export function selectSymbol(s, forceMarket = null, targetUid = null, isRowClick
           .then((res) => res.json())
           .then((infoData) => {
             if (headAssetName && infoData.name) {
-              const displaySym =
+              const displaySym = getPureBase(
                 infoData.symbol ||
-                (rowInfo ? rowInfo.Symbol : querySym.split("(")[0]);
+                (rowInfo ? rowInfo.Symbol : querySym.split("(")[0])
+              );
               const favorites = JSON.parse(
                 localStorage.getItem("sellnance_favs") || "[]",
               );

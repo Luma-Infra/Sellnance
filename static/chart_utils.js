@@ -87,10 +87,25 @@ function resetChartScale() {
 // ✅ 포맷팅 by precision (원화 가격과 달러 가격 분리 규칙 적용)
 export function formatSmartPrice(price, p, isKrw = false) {
   try {
-    if (price === 0) return "0";
+    if (price === 0) {
+      const d = p !== undefined && p !== null ? Math.max(0, parseInt(p, 16)) : 2;
+      return (0).toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d });
+    }
     if (!price || isNaN(price)) return "";
 
-    const numPrice = parseFloat(price);
+    let numPrice = parseFloat(price);
+    if (isNaN(numPrice)) return "";
+
+    // 🚀 [부동소수점 오차(IEEE 754 epsilon) 0 보정]
+    // 0.2 - 0.2 연산 등으로 발생하는 2.7755e-17 같은 부동소수점 쓰레기값을 순수 0으로 정규화!
+    if (Math.abs(numPrice) < 1e-12) {
+      numPrice = 0;
+      const d = p !== undefined && p !== null ? Math.max(0, parseInt(p, 16)) : 2;
+      return (0).toLocaleString(undefined, {
+        minimumFractionDigits: d,
+        maximumFractionDigits: d,
+      });
+    }
 
     // 1️⃣ 원화(KRW) 가격 규칙: 실제 원화 가격 또는 추정된 원화 가격
     if (isKrw) {
@@ -119,7 +134,7 @@ export function formatSmartPrice(price, p, isKrw = false) {
         });
       } else {
         const exp = Math.abs(parseInt(parts[1], 10));
-        const decimals = exp + 2; // e-N 일 때 유효숫자 3개를 위해 N+2 소수 자릿수가 필요함
+        const decimals = Math.min(10, exp + 2); // e-N 일 때 유효숫자 3개를 위해 N+2 소수 자릿수가 필요함
         return numPrice.toLocaleString(undefined, {
           minimumFractionDigits: decimals,
           maximumFractionDigits: decimals,
@@ -127,8 +142,24 @@ export function formatSmartPrice(price, p, isKrw = false) {
       }
     }
 
-    // 2️⃣ 달러(USD) 가격 규칙: 무조건 내려주는 precision에만 의존
-    const decimals = p !== undefined && p !== null ? Math.max(0, parseInt(p, 10)) : 2;
+    // 2️⃣ 달러(USD) 가격 규칙: 소수점 이하 유효숫자 4자리 보장 (0.00000001080 등 극소수 코인 0/잘림 방어)
+    let decimals = p !== undefined && p !== null ? Math.max(0, parseInt(p, 10)) : 2;
+    if (numPrice > 0 && numPrice < 0.01) {
+      const formattedStr = numPrice.toPrecision(4);
+      const parts = formattedStr.split("e");
+      if (parts.length === 1) {
+        const dotIndex = formattedStr.indexOf(".");
+        if (dotIndex !== -1) {
+          const sub = formattedStr.substring(dotIndex + 1);
+          const firstActive = sub.search(/[1-9]/);
+          const minDecimals = firstActive !== -1 ? firstActive + 4 : 4;
+          decimals = Math.max(decimals, Math.min(10, minDecimals));
+        }
+      } else {
+        const exp = Math.abs(parseInt(parts[1], 10));
+        decimals = Math.max(decimals, Math.min(10, exp + 3));
+      }
+    }
     return numPrice.toLocaleString(undefined, {
       minimumFractionDigits: decimals,
       maximumFractionDigits: decimals,
@@ -241,7 +272,7 @@ function updateLegend(d, v, k) {
     return formatSmartPrice(val, precision);
   };
 
-  // 🚀 값 및 클래스 업데이트
+  // 🚀 값 및 클래스 업데이트 (innerText 대신 textContent 사용 + 변경 시에만 DOM 접근하여 Reflow 0 달성)
   const openEl = document.getElementById("ohlc-open");
   const highEl = document.getElementById("ohlc-high");
   const lowEl = document.getElementById("ohlc-low");
@@ -251,29 +282,34 @@ function updateLegend(d, v, k) {
 
   const priceCls = `font-medium ${cls}`;
   if (openEl) {
-    openEl.innerText = safeFormat(d.open, p);
-    openEl.className = priceCls;
+    const val = safeFormat(d.open, p);
+    if (openEl.textContent !== val) openEl.textContent = val;
+    if (openEl.className !== priceCls) openEl.className = priceCls;
   }
   if (highEl) {
-    highEl.innerText = safeFormat(d.high, p);
-    highEl.className = priceCls;
+    const val = safeFormat(d.high, p);
+    if (highEl.textContent !== val) highEl.textContent = val;
+    if (highEl.className !== priceCls) highEl.className = priceCls;
   }
   if (lowEl) {
-    lowEl.innerText = safeFormat(d.low, p);
-    lowEl.className = priceCls;
+    const val = safeFormat(d.low, p);
+    if (lowEl.textContent !== val) lowEl.textContent = val;
+    if (lowEl.className !== priceCls) lowEl.className = priceCls;
   }
   if (closeEl) {
-    closeEl.innerText = safeFormat(d.close, p);
-    closeEl.className = priceCls;
+    const val = safeFormat(d.close, p);
+    if (closeEl.textContent !== val) closeEl.textContent = val;
+    if (closeEl.className !== priceCls) closeEl.className = priceCls;
   }
   if (rangeEl) {
-    // innerHTML 대신 innerText 사용 (클래스 유지) , 절대값 표기 제외하고 퍼센트만 표기
-    rangeEl.innerText = `${rangePercent}%`;
+    const val = `${rangePercent}%`;
+    if (rangeEl.textContent !== val) rangeEl.textContent = val;
   }
   if (chgEl) {
-    // 절대값 표기 제외하고 퍼센트만 표기
-    chgEl.innerHTML = `<span>${sign}${chgPercent}%</span>`;
-    chgEl.className = `font-medium block leading-normal ${cls}`;
+    const val = `${sign}${chgPercent}%`;
+    if (chgEl.textContent !== val) chgEl.textContent = val;
+    const chgCls = `font-medium block leading-normal ${cls}`;
+    if (chgEl.className !== chgCls) chgEl.className = chgCls;
   }
 
   // 🚀 볼륨 전광판 포맷팅 및 색상 적용
@@ -455,8 +491,8 @@ function updateStatus(d, p) {
     updateLegend(last, v, k);
   }
 
-  // 🚀 실시간 시세 변동 시 우측 현재가 등락폭 레이블 갱신 강제 트리거
-  if (store._drawingPrimitive) {
+  // 🚀 실시간 시세 변동 시 우측 현재가 등락폭 레이블 갱신
+  if (store._drawingPrimitive && !store.isCrosshairActive) {
     store._drawingPrimitive.updateAll();
   }
 }

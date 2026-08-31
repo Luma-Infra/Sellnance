@@ -356,10 +356,14 @@ store.radarIntervalId = setInterval(() => {
             }
           }
 
-          const domMult = getMultiplier(r.Upbit_Symbol || (r.Bithumb_Symbol ? r.Bithumb_Symbol : null));
-          const ovsMult = getMultiplier(r.Exact_Futures || r.Exact_Spot || r.Symbol);
+          const domMult = getMultiplier(r.Upbit_Symbol || (r.Bithumb_Symbol ? r.Bithumb_Symbol : null) || r.Ticker || r.Symbol);
+          const ovsMult = getMultiplier(r.Exact_Futures || r.Exact_Spot || r.Ticker || r.Symbol);
           const unitKorPrice = priceKor / domMult;
-          const unitGlbPrice = (r.Price_Raw || 0) / ovsMult;
+          let priceGlb = r.Price_Raw || 0;
+          if ((!priceGlb || r.Ticker?.endsWith("KRW")) && (r.Binance_Price_Futures || r.Binance_Price_Spot || r.Binance_Price)) {
+            priceGlb = r.Binance_Price_Futures || r.Binance_Price_Spot || r.Binance_Price || 0;
+          }
+          const unitGlbPrice = priceGlb / ovsMult;
 
           if (unitKorPrice > 0 && unitGlbPrice > 0) {
             const kimchiPct = (unitKorPrice / (unitGlbPrice * rate) - 1) * 100;
@@ -382,9 +386,9 @@ store.radarIntervalId = setInterval(() => {
             r.Kimchi_Formatted === "0.00%";
 
           if (isFakeZero) {
-            r.Kimchi_Raw = null;
-            r.Kimchi_Label = "-";
-            r.Kimchi_Formatted = "-";
+          r.Kimchi_Raw = null;
+          r.Kimchi_Label = "-";
+          r.Kimchi_Formatted = "-";
 
             // 🚀 [렉 차단] visible 코인에만 DOM 큐 예약 (3초 주기는 setInterval이 보장)
             const _isVisR2 = store.visibleSymbols?.has(r.Ticker) ||

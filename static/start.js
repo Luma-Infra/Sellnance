@@ -1,25 +1,105 @@
 // start.js
-// 🚀 스타트뷰 엔진: 실시간 마스킹 + env 연동 + 유효성 검사
-// 🚀 스타트뷰 엔진: 무한 확장 마스킹 버전
-// 🚀 스타트뷰 엔진: 완전 가변형 마스킹 (글자수 무제한)
-// 🚀 [UI업그레이드 V2] Zero-Delay, 버그 수정, Organic & Speedy Magician Dynamic Network
-// 🚀 [성능 최적화] Pixi.js (WebGL) 도입 - DOM 렌더링을 GPU 가속 스크립트로 대체하여 렉 제거
-// 🚀 [회전 수정] 라디안 단위 혼선 해결 및 자연스러운 회전 적용
+// 🚀 스타트뷰 엔진: 실시간 키 마스킹 + env 연동 + 유효성 검사
+// 🚀 4대장 코인(BTC, ETH, XRP, SOL) 실시간 퀵뷰 프리뷰 쇼케이스 엔진
 
-// (필수) HTML head에 아래 라이브러리 스크립트가 포함되어 있어야 합니다.
-// <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.3.2/pixi.min.js"></script>
+// ===================================================================================
+// 🧭 [3D 퀵뷰 프리뷰 8방위 시선 각도 & 황금비율(Golden Ratio) 설정소]
+// 💡 [공식 기술 용어 레퍼런스]
+//   1. 아이소메트릭 틸트 / 쿼터뷰 (Isometric Tilt / Quarter View): 사선(NE/NW/SW/SE) 투영 기법
+//   2. 3D 패럴랙스 틸트 & 오비탈 뷰 (Parallax Tilt / Orbital Camera): 방위각(Azimuth)에 따른 시선 이동
+//   3. 오일러 각 3축 제어 (Euler Angles): rx(Pitch:상하), ry(Yaw:좌우), rz(Roll:기울임)
+// ===================================================================================
+// 8방위 프리셋: NE(북동), NW(북서), SW(남서), SE(남동), N(북), S(남), E(동), W(서), CENTER(정면)
+
+const START_3D_CONFIG = {
+  // ⏱️ [전환 타이머 설정] 쇼케이스 순환 주기 (밀리초 단위, 기본 4000ms = 4초)
+  cycleIntervalMs: 3000,
+
+  // 📐 [황금비 직사각형 규격 설정 (Golden Ratio: 1.618 : 1)]
+  goldenRatio: "1.618 / 1", // 덱 전체 및 4개 개별 카드의 가로:세로 황금비율
+  deckWidth: "100%",        // 좌측 영역 내 덱 가로폭
+  deckMaxWidth: "800px",    // 최대 가로폭 (세로 높이는 황금비로 100% 자동 계산됨)
+
+  // 🧭 화면 전환 시 순환할 방위 목록
+  compassCycle: ["NW", "NE"], // 10시(북서) ➡️ 2시(북동)
+
+  tiltAngle: [5, 5, -5, -5], // 📐 단계별 틸트 각도 (시계 방향으로 균일하게 매끄럽게 회전)
+  scale: 1.0,          // 기본 스케일 배율
+  perspective: 1200,   // 3D 원근 깊이 (px)
+
+  // 🌟 [3D 바닥 앰비언트 오라 / 백라이트 커스텀 설정소]
+  auraInset: "-24px",       // 덱 외곽 확장 폭 (예: -20px ~ -60px)
+  auraBorderRadius: "24px", // 오라 모서리 둥글기 (px)
+  auraBlur: "24px",         // 블러 번짐 반경 (px)
+  auraOpacity: 0.5,         // 오라 투명도 (0.0 ~ 1.0)
+  auraBackground: "radial-gradient(ellipse at center, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.18) 45%, rgba(0, 209, 255, 0.12) 70%, transparent 90%)",
+  auraBoxShadow: "0 0 45px rgba(255, 255, 255, 0.16), 0 0 75px rgba(0, 209, 255, 0.12)",
+};
+
+// ===================================================================================
+// ⏱️ [쇼케이스 순환 상태 & 단계별 시간봉(TF) 커스텀 설정소]
+// 💡 지원 시간봉(tf): "1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "12h", "1d", "1w"
+// 💡 레이아웃(layout): "spread" (4개 2x2 바둑판 분할), "overlap" (중앙 1개 통합 겹침)
+// 💡 캔들 색상(candleMode): "unique" (코인별 고유 네온색), "default" (클래식 녹색 양봉 / 적색 음봉)
+// ===================================================================================
+const START_SHOWCASE_STATES = [
+  { layout: "spread", tf: "4h", candleMode: "unique" }, // 1단계: 4개 분할 + 15분봉 + 고유 네온색
+  { layout: "overlap", tf: "1d", candleMode: "unique" }, // 2단계: 모으기   + 1시간봉 + 고유 네온색
+  { layout: "spread", tf: "4h", candleMode: "default" }, // 3단계: 4개 분할 + 1시간봉 + 클래식 양/음봉
+  { layout: "overlap", tf: "1d", candleMode: "default" }, // 4단계: 모으기   + 15분봉 + 클래식 양/음봉
+];
+
+// 🧭 8방위 축별 오일러 각(Pitch/Yaw/Roll) 틸트 맵 (회전이 아닌 동서남북 3D 시선 방향)
+const COMPASS_DIRECTIONS = {
+  NE: { rx: 1, ry: -1, rz: 1 },   // 북동 (North-East: 우상단 아이소메트릭)
+  NW: { rx: 1, ry: 1, rz: -1 },  // 북서 (North-West: 좌상단 아이소메트릭)
+  SW: { rx: -1, ry: 1, rz: 1 },   // 남서 (South-West: 좌하단 아이소메트릭)
+  SE: { rx: -1, ry: -1, rz: -1 },  // 남동 (South-East: 우하단 아이소메트릭)
+  N: { rx: 1.2, ry: 0, rz: 0 },   // 북 (North / Top Pitch)
+  S: { rx: -1.2, ry: 0, rz: 0 },   // 남 (South / Bottom Pitch)
+  E: { rx: 0, ry: -1.2, rz: 0 },   // 동 (East / Right Yaw)
+  W: { rx: 0, ry: 1.2, rz: 0 },   // 서 (West / Left Yaw)
+  CENTER: { rx: 0, ry: 0, rz: 0 },   // 정면 (Front View)
+};
+
+let startCompassStep = 0;
+
+function get3DTransform(extraScale = 1) {
+  const cycle = START_3D_CONFIG.compassCycle;
+  const currentKey = cycle[startCompassStep % cycle.length] || "NE";
+  const comp = COMPASS_DIRECTIONS[currentKey] || COMPASS_DIRECTIONS.NE;
+
+  // 💡 단일 숫자 또는 단계별 각도 배열([20, 10, 10, 20]) 완벽 대응
+  const angles = Array.isArray(START_3D_CONFIG.tiltAngle)
+    ? START_3D_CONFIG.tiltAngle
+    : [START_3D_CONFIG.tiltAngle];
+  const angle = angles[startCompassStep % angles.length] ?? 10;
+
+  const rx = (comp.rx * angle).toFixed(1);
+  const ry = (comp.ry * angle).toFixed(1);
+  const rz = (comp.rz * (angle / 4)).toFixed(1);
+  const s = (START_3D_CONFIG.scale * extraScale).toFixed(3);
+
+  return `rotateX(${rx}deg) rotateY(${ry}deg) rotateZ(${rz}deg) scale(${s})`;
+}
+
+// 🌑 [네 모서리 끝단을 100% 보장하는 3D 직사각형 동기화 그림자 엔진]
+function getShadowTransform(extraScale = 1) {
+  // 💡 억지 2D 이동 대신 실제 3D 덱과 1:1로 일치하는 3D 원근 투영을 적용하여 네 모서리가 항상 완벽하게 보장됨
+  return get3DTransform(1.03 * extraScale);
+}
 
 function getStartScreenHTML() {
   return `
     <style>
       #start-screen {
-        background: #06070a !important; 
-        font-family: 'Outfit', sans-serif;
-        perspective: 1200px;
-        overflow: hidden; /* Pixi 캔버스 넘침 방지 */
+        background: #080a0f !important; 
+        font-family: 'Pretendard Variable', Pretendard, 'Outfit', sans-serif;
+        perspective: ${START_3D_CONFIG.perspective}px;
+        overflow: hidden;
       }
       
-      /* 🚀 PixiJS WebGL 캔버스가 그려질 컨테이너 */
+      /* 🚀 [기존 코드 주석 보존] PixiJS WebGL 캔버스 스타일
       #pixi-canvas-container {
         position: absolute;
         inset: 0;
@@ -27,117 +107,346 @@ function getStartScreenHTML() {
         height: 100%;
         z-index: 0;
       }
+      */
 
-      /* 드로퍼(Dropper) 느낌의 다이내믹 등장 애니메이션 */
-      @keyframes dynamicDropIn {
-        0% { transform: translateZ(-200px) translateY(-50px) scale(0.8); opacity: 0; }
-        100% { transform: translateZ(0) translateY(0) scale(1); opacity: 1; }
+      /* 🚀 좌측 3D 쿼터뷰 프리뷰 컨테이너 (황금비 직사각형 덱) */
+      #start-qv-preview-container {
+        position: relative;
+        width: ${START_3D_CONFIG.deckWidth};
+        max-width: ${START_3D_CONFIG.deckMaxWidth};
+        aspect-ratio: ${START_3D_CONFIG.goldenRatio};
+        perspective: ${START_3D_CONFIG.perspective}px;
+        transform-style: preserve-3d;
+        pointer-events: none;
+        overflow: visible !important;
+        margin: auto;
+      }
+      
+      /* 🚀 3D 투영 완전 일치: 3차원 글래스 평면 내부에 직접 렌더링되는 테두리 프로그레스 */
+      .start-qv-inner-progress {
+        position: absolute;
+        inset: -2px;
+        width: calc(100% + 4px);
+        height: calc(100% + 4px);
+        pointer-events: none;
+        z-index: 25;
+        overflow: visible;
+        border-radius: inherit;
+      }
+      .start-qv-progress-rect {
+        stroke-dasharray: 100.2 100.2;
+        stroke-dashoffset: 100.2;
+        stroke-linecap: round;
+        filter: drop-shadow(0 0 3px rgba(0, 209, 255, 0.45));
+        animation: startBorderProgress ${START_3D_CONFIG.cycleIntervalMs}ms cubic-bezier(0.4, 0, 0.2, 1) infinite;
+      }
+      @keyframes startBorderProgress {
+        0% {
+          stroke-dashoffset: 100.2;
+          opacity: 0.1;
+        }
+        5% {
+          opacity: 0.7;
+        }
+        95% {
+          stroke-dashoffset: 0;
+          opacity: 0.7;
+        }
+        100% {
+          stroke-dashoffset: 0;
+          opacity: 0.7;
+        }
       }
 
-      /* 메인 글래스 카드 */
-      .glass-card {
-        background: linear-gradient(145deg, rgba(15, 17, 26, 0.75), rgba(6, 7, 10, 0.95)) !important;
-        backdrop-filter: blur(35px) saturate(200%) !important;
-        -webkit-backdrop-filter: blur(35px) saturate(200%) !important;
-        border: 1px solid rgba(0, 209, 255, 0.2) !important;
-        box-shadow: 0 40px 120px rgba(0, 0, 0, 0.9), 
-                    0 0 50px rgba(0, 209, 255, 0.08),
-                    inset 0 1px 2px rgba(255, 255, 255, 0.15) !important;
+      #start-qv-spread-view {
+        position: absolute;
+        inset: 0;
+        aspect-ratio: ${START_3D_CONFIG.goldenRatio};
+        transform-origin: center center;
+        transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1), transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+        will-change: opacity, transform;
+        transform: ${get3DTransform(1)};
+        opacity: 1;
+        overflow: visible;
+      }
+      #start-qv-cards-grid {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: repeat(2, 1fr);
+        gap: 14px;
+        width: 100%;
+        height: 100%;
+      }
+      /* 🚀 3D 덱 네 모서리 바깥으로 선명하게 피어오르는 바닥 앰비언트 오라 */
+      .start-qv-floor-shadow {
+        position: absolute;
+        inset: ${START_3D_CONFIG.auraInset};
+        border-radius: ${START_3D_CONFIG.auraBorderRadius};
+        background: ${START_3D_CONFIG.auraBackground};
+        box-shadow: ${START_3D_CONFIG.auraBoxShadow};
+        filter: blur(${START_3D_CONFIG.auraBlur});
+        opacity: ${START_3D_CONFIG.auraOpacity};
+        pointer-events: none;
+        z-index: 0;
+        transform-origin: center center;
+        transition: transform 0.85s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.85s ease;
+        transform: ${getShadowTransform(1)};
+      }
+
+      #start-qv-overlap-view {
+        position: absolute;
+        inset: 0;
+        border-radius: 20px;
+        aspect-ratio: ${START_3D_CONFIG.goldenRatio};
+        background: rgba(18, 21, 28, 0.75);
+        border: 1px solid rgba(0, 209, 255, 0.22);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        transform-origin: center center;
+        transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1), transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+        will-change: opacity, transform;
+        transform: ${get3DTransform(0.96)};
+        opacity: 0;
+        box-shadow: 0 20px 48px -8px rgba(0, 0, 0, 0.8),
+                    0 8px 16px -4px rgba(0, 0, 0, 0.6),
+                    0 0 20px rgba(0, 209, 255, 0.05);
+      }
+      .start-qv-card {
+        position: relative;
+        aspect-ratio: ${START_3D_CONFIG.goldenRatio};
+        background: rgba(18, 21, 28, 0.65);
+        border: 1px solid rgba(0, 209, 255, 0.18);
+        border-radius: 16px;
+        overflow: hidden;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.75),
+                    0 6px 12px -3px rgba(0, 0, 0, 0.5),
+                    0 0 15px rgba(0, 209, 255, 0.04);
+        transition: transform 0.85s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.85s ease;
+        will-change: transform;
+      }
+      .start-qv-badge {
+        position: absolute;
+        top: 10px;
+        left: 14px;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        text-shadow: 0 0 10px rgba(0,0,0,0.8);
+      }
+      .start-qv-overlap-legend {
+        position: absolute;
+        top: 12px;
+        left: 16px;
+        z-index: 10;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+        font-size: 11px;
+        font-weight: 800;
+      }
+      .start-qv-canvas {
+        width: 100%;
+        flex: 1;
+        min-height: 80px;
+      }
+      #start-qv-overlap-view .start-qv-canvas {
+        opacity: 0.55;
+        transition: opacity 0.25s ease;
+      }
+      .start-qv-legend-item {
+        transition: all 0.2s ease;
+        border: 1px solid transparent;
+        border-radius: 6px;
+      }
+      .start-qv-legend-item:hover {
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      /* 드로퍼 다이내믹 등장 애니메이션 */
+      @keyframes dynamicDropIn {
+        0% { transform: translateY(20px) scale(0.96); opacity: 0; }
+        100% { transform: translateY(0) scale(1); opacity: 1; }
+      }
+
+      /* 🚀 메인 대시보드 테마 일체화 스타일 카드 */
+      .start-main-card {
+        background: rgba(18, 21, 28, 0.88) !important;
+        backdrop-filter: blur(30px) saturate(190%) !important;
+        -webkit-backdrop-filter: blur(30px) saturate(190%) !important;
+        border: 1px solid rgba(0, 209, 255, 0.22) !important;
+        box-shadow: 0 24px 64px rgba(0, 0, 0, 0.8), 
+                    0 0 40px rgba(0, 209, 255, 0.08),
+                    inset 0 1px 1px rgba(255, 255, 255, 0.08) !important;
         border-radius: 24px !important;
         animation: dynamicDropIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         transition: all 0.3s ease;
       }
-      .glass-card:focus-within {
-        border-color: rgba(0, 209, 255, 0.6) !important;
-        box-shadow: 0 40px 120px rgba(0, 0, 0, 0.9), 
-                    0 0 80px rgba(0, 209, 255, 0.25) !important;
+      .start-main-card:focus-within {
+        border-color: rgba(0, 209, 255, 0.5) !important;
+        box-shadow: 0 24px 64px rgba(0, 0, 0, 0.85), 
+                    0 0 60px rgba(0, 209, 255, 0.18) !important;
       }
     </style>
 
     <div
       id="start-screen" style="display: none;"
-      class="fixed items-center justify-center inset-0 z-[1000] flex transition-opacity duration-500 pt-16"
+      class="fixed inset-0 z-[1000] flex items-center justify-center transition-opacity duration-500 overflow-hidden p-4 md:p-8"
     >
-      <!-- 🚀 기존 Canvas/DOM 방식 대신 WebGL 컨테이너 배치 -->
-      <div id="pixi-canvas-container"></div>
-      
-      <div
-        class="relative z-10 glass-card p-8 w-[90%] max-w-md flex flex-col gap-6 text-center"
-      >
-        <div>
-          <h1
-            class="text-4xl font-medium text-theme-accent uppercase tracking-widest mb-2 drop-shadow-[0_0_20px_rgba(0,209,255,0.6)]"
-          >
-            sellance
-          </h1>
-          <p class="text-theme-text opacity-80 text-sm font-medium tracking-wide">
-            Enter CMC API Key to initialize.
-          </p>
+      <div class="w-full max-w-6xl h-full max-h-[820px] flex flex-col md:flex-row items-center justify-between gap-8 relative z-10">
+        
+        <!-- 🚀 [좌측 (58% 비중)]: 3D 아이소메트릭 쿼터뷰 4대장 차트 덱 -->
+        <div class="w-full md:w-[58%] h-[40vh] md:h-[75vh] relative flex items-center justify-center overflow-visible">
+          <div id="start-qv-preview-container" class="w-full relative overflow-visible pointer-events-none opacity-90 my-auto">
+            <!-- 🚀 3D 덱 하단 바닥 투영 앰비언트 섀도우 (800px 황금비 직사각형 덱 전용) -->
+            <div class="start-qv-floor-shadow"></div>
 
-          <div
-            class="mt-3 py-2 px-3 bg-black/40 rounded-lg border border-theme-accent/20"
-          >
-            <p class="text-[11px] text-theme-text opacity-60 leading-relaxed">
-              API 키가 없으신가요?
-            </p>
-            <div class="mt-1">
-              <a
-                href="https://coinmarketcap.com/api/"
-                target="_blank"
-                class="text-theme-accent font-medium underline hover:text-white transition-colors ml-1 text-[11px] drop-shadow-md"
-              >
-                CoinMarketCap API Dashboard
-              </a>
-              <span class="text-[11px] text-theme-text opacity-60">에서 무료 키를 발급받을 수 있습니다.</span>
+            <!-- 🚀 글로벌 그라데이션 SVG 정의 -->
+            <svg width="0" height="0" class="absolute pointer-events-none">
+              <defs>
+                <linearGradient id="startProgressGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#00d1ff" stop-opacity="0.65" />
+                  <stop offset="50%" stop-color="#0ecb81" stop-opacity="0.5" />
+                  <stop offset="100%" stop-color="#00d1ff" stop-opacity="0.65" />
+                </linearGradient>
+              </defs>
+            </svg>
+
+            <!-- 1. Spread 3D 레이어 (4개 덱 전체를 아우르는 단일 외곽 프로그레스) -->
+            <div id="start-qv-spread-view">
+              <!-- 🚀 4개 카드 전체 둘레를 감싸는 단 1개의 3D 외곽 프로그레스 바 -->
+              <svg class="start-qv-inner-progress pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
+                <rect x="0.5" y="0.5" width="99" height="99" rx="3.5" ry="3.5" fill="none" stroke="rgba(0, 209, 255, 0.08)" stroke-width="0.7" />
+                <rect class="start-qv-progress-rect" x="0.5" y="0.5" width="99" height="99" rx="3.5" ry="3.5" fill="none" stroke="url(#startProgressGlow)" stroke-width="1.2" stroke-linecap="round" pathLength="100" stroke-dasharray="100.2 100.2" stroke-dashoffset="100.2" />
+              </svg>
+              <div id="start-qv-cards-grid"></div>
             </div>
-            <p class="text-[10px] text-theme-text opacity-40 mt-1.5 border-t border-theme-accent/10 pt-1.5 leading-normal text-center">
-              💡 무료 기본 한도: 월 20,000 크레딧 (분당 최대 50회 호출 제한)
-            </p>
+
+            <!-- 2. Overlap 3D 레이어 (내부 직접 3D 투영 프로그레스) -->
+            <div id="start-qv-overlap-view">
+              <svg class="start-qv-inner-progress" viewBox="0 0 100 100" preserveAspectRatio="none">
+                <rect x="0.5" y="0.5" width="99" height="99" rx="3.5" ry="3.5" fill="none" stroke="rgba(0, 209, 255, 0.08)" stroke-width="0.7" />
+                <rect class="start-qv-progress-rect" x="0.5" y="0.5" width="99" height="99" rx="3.5" ry="3.5" fill="none" stroke="url(#startProgressGlow)" stroke-width="1.2" stroke-linecap="round" pathLength="100" />
+              </svg>
+            </div>
           </div>
         </div>
 
-        <div class="flex flex-col gap-2">
-          <input
-            type="text"
-            id="cmc-api-input"
-            placeholder="Loading..."
-            disabled
-            class="w-full bg-black/60 text-theme-text border-2 border-theme-border/50 px-4 py-3.5 rounded-xl text-center font-tempTestDss text-sm focus:outline-none focus:border-theme-accent transition-all shadow-inner opacity-50 cursor-not-allowed"
-            autocomplete="off"
-            spellcheck="false"
-          />
+        <!-- 🚀 [우측 (42% 비중)]: CMC 로그인 & 메인 대시보드 진입 패널 -->
+        <div class="w-full md:w-[42%] max-w-md flex flex-col justify-center">
+          <div class="start-main-card p-7 md:p-8 w-full flex flex-col gap-5 text-center">
+            <div>
+              <div class="inline-flex items-center gap-2 mb-2 px-3 py-1 rounded-full bg-theme-accent/10 border border-theme-accent/30 text-theme-accent text-[11px] font-bold uppercase tracking-wider">
+                <!-- <span class="w-2 h-2 rounded-full bg-theme-accent animate-pulse"></span> -->
+                <span>Live Terminal Engine</span>
+              </div>
+              <h1 class="text-3xl md:text-4xl font-extrabold text-white uppercase tracking-widest mb-1.5">
+                SELLNANCE
+              </h1>
+              <p class="text-theme-text opacity-75 text-xs md:text-sm font-medium tracking-wide">
+                Enter CMC API Key to initialize dashboard.
+              </p>
 
-          <div class="flex flex-col gap-1 mt-1 px-1">
-            <p class="text-[10px] text-theme-text opacity-40 text-left">
-              * Key is securely stored in your local browser.
-            </p>
-            <p
-              class="text-[10px] text-theme-accent/70 text-left font-medium italic"
-            >
-              ** 키가 없어도 Skip을 누르면 서버 일일캐시 데이터로 대시보드 진입이
-              가능합니다.
-            </p>
+              <div class="mt-3.5 py-2.5 px-3 bg-black/40 rounded-xl border border-theme-border/40 text-left">
+                <div class="flex items-center justify-between">
+                  <p class="text-[11px] text-theme-text opacity-70">
+                    API 키가 없으신가요?
+                  </p>
+                  <a
+                    href="https://coinmarketcap.com/api/"
+                    target="_blank"
+                    class="text-theme-accent font-bold underline hover:text-white transition-colors text-[11px]"
+                  >
+                    무료 키 발급 ↗
+                  </a>
+                </div>
+                <p class="text-[10px] text-theme-text opacity-40 mt-1.5 border-t border-theme-border/20 pt-1.5 leading-normal">
+                  💡 무료 기본 한도: 월 20,000 크레딧 (분당 최대 50회)
+                </p>
+              </div>
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <div class="relative w-full flex items-center">
+                <input
+                  type="text"
+                  id="cmc-api-input"
+                  placeholder="Loading..."
+                  disabled
+                  class="w-full bg-black/60 text-white border-2 border-theme-border/60 pl-4 pr-11 py-3.5 rounded-xl text-center font-tempTestDss text-sm focus:outline-none focus:border-theme-accent transition-all shadow-inner opacity-50 cursor-not-allowed"
+                  autocomplete="off"
+                  spellcheck="false"
+                />
+                <!-- 🚀 감각적인 X 클리어 버튼 (입력 시 부드러운 스케일+페이드인) -->
+                <button
+                  type="button"
+                  id="btn-clear-cmc-key"
+                  class="absolute right-3 w-6 h-6 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 active:scale-90 text-white/60 hover:text-theme-accent transition-all duration-200 opacity-0 pointer-events-none scale-75 border border-white/10"
+                  title="입력 내용 지우기"
+                >
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
+
+              <div class="flex flex-col gap-1 mt-0.5 px-1">
+                <p class="text-[10px] text-theme-text opacity-40 text-left">
+                  * Key is securely stored in your local browser.
+                </p>
+                <p class="text-[10px] text-theme-accent/80 text-left font-medium">
+                  ** 키 없이도 Skip 버튼으로 일일 캐시 모드 즉시 진입 가능
+                </p>
+              </div>
+            </div>
+
+            <div class="flex flex-col gap-2.5 mt-1">
+              <!-- 🚀 Start Dashboard 버튼 + 우측 자동 시작 토글 뱃지 나란히 배치 -->
+              <div class="flex items-center gap-2 w-full">
+                <button
+                  id="btn-start-engine"
+                  disabled
+                  onclick="saveAndStart()"
+                  class="flex-1 py-3.5 bg-theme-accent text-white font-bold rounded-xl shadow-sm hover:shadow-[0_0_15px_rgba(0,209,255,0.3)] hover:brightness-105 active:scale-[0.98] transition-all tracking-widest uppercase cursor-not-allowed pointer-events-none text-xs md:text-sm"
+                >
+                  불러오는 중.. 📡
+                </button>
+
+                <label
+                  class="h-[48px] px-3.5 bg-black/40 hover:bg-white/10 border border-theme-border/50 hover:border-theme-accent/50 rounded-xl flex items-center gap-2 cursor-pointer select-none transition-all group"
+                  title="다음부터 스타트 화면 건너뛰기 (자동 시작)"
+                >
+                  <input type="checkbox" id="chk-auto-skip" class="accent-theme-accent w-3.5 h-3.5 rounded cursor-pointer" />
+                  <span class="text-[11px] text-theme-text/80 group-hover:text-white whitespace-nowrap font-medium transition-colors">자동 시작</span>
+                </label>
+              </div>
+
+              <button
+                id="btn-skip-start"
+                disabled
+                onclick="skipAndStart()"
+                class="w-full py-3 bg-white/5 text-theme-text border border-theme-border/50 font-medium rounded-xl hover:bg-white/10 active:scale-[0.98] transition-all tracking-wide opacity-70 hover:opacity-100 cursor-not-allowed pointer-events-none text-xs"
+              >
+                불러오는 중.. 📡
+              </button>
+            </div>
           </div>
         </div>
 
-        <div class="flex flex-col gap-3 mt-2">
-          <button
-            id="btn-start-engine"
-            disabled
-            onclick="saveAndStart()"
-            class="w-full py-3.5 bg-theme-accent/60 text-white/50 font-medium rounded-xl shadow-lg transition-all tracking-widest uppercase cursor-not-allowed pointer-events-none"
-          >
-            불러오는 중.. 📡
-          </button>
-          <button
-            id="btn-skip-start"
-            disabled
-            onclick="skipAndStart()"
-            class="w-full py-3 bg-transparent text-theme-text/50 border border-theme-border/50 font-medium rounded-xl transition-all tracking-wide opacity-50 cursor-not-allowed pointer-events-none"
-          >
-            불러오는 중.. 📡
-          </button>
-        </div>
       </div>
     </div>
     `;
@@ -156,11 +465,13 @@ function maskApiKey(key) {
   return `${start}${dots}${end}`;
 }
 
-// 🚀 [추가:성능최적화] PixiJS를 이용한 GPU 가속 백그라운드 엔진
+/* ================================================================
+   🚀 [기존 PixiJS WebGL 배경 엔진 코드 보존]
+================================================================ */
+/*
 let pixiApp = null; // 대시보드 진입 시 메모리 및 Ticker 정지를 위한 변수
 
 async function initPixiBackground() {
-  // 🚀 PIXI 라이브러리가 로드될 때까지 안전하게 대기 (비동기 스크립트 로딩 대응)
   if (typeof PIXI === "undefined") {
     await new Promise((resolve) => {
       const checkInterval = setInterval(() => {
@@ -169,7 +480,6 @@ async function initPixiBackground() {
           resolve();
         }
       }, 20);
-      // 최대 5초간 대기 후 타임아웃
       setTimeout(() => {
         clearInterval(checkInterval);
         resolve();
@@ -185,204 +495,520 @@ async function initPixiBackground() {
   const container = document.getElementById('pixi-canvas-container');
   if (!container) return;
 
-  // 1. Pixi Application 생성 (WebGL 자동 선택, 렉 제거의 핵심)
   const app = new PIXI.Application({
-    backgroundAlpha: 0, // 배경 투명 (CSS 배경 사용)
-    resizeTo: container, // 컨테이너 크기에 맞춤
-    antialias: false, // 안티앨리어싱 비활성화 (렉 방지 극대화)
-    resolution: window.devicePixelRatio || 1, // 레티나 디스플레이 대응
+    backgroundAlpha: 0,
+    resizeTo: container,
+    antialias: false,
+    resolution: window.devicePixelRatio || 1,
     autoDensity: true
   });
-  pixiApp = app; // 외부 참조용 변수에 저장
-  container.appendChild(app.view); // 캔버스 삽입
+  pixiApp = app;
+  container.appendChild(app.view);
 
-  // 2. 코인 텍스처 (이미지) 미리 로드 (24개에서 8개로 대폭 감축)
   const coinIds = [1, 1027, 5426, 52, 2010, 5805, 74, 6636];
-
-  // 텍스처 로딩 중 화면이 끊기지 않게 비동기로 처리
   const textures = coinIds.map(id => PIXI.Texture.from(`https://s2.coinmarketcap.com/static/img/coins/64x64/${id}.png`));
-
-  // 3. 그래픽 레이어 생성 (체인 네트워크 파티클)
   const graphics = new PIXI.Graphics();
   app.stage.addChild(graphics);
 
   const particles = [];
-  // 파티클 수 대폭 감축 (고정 25개로 축소하여 연산량 및 드로잉 부하 극단적 최소화)
   const numParticles = 25;
-
   for (let i = 0; i < numParticles; i++) {
     particles.push({
       x: Math.random() * app.screen.width,
       y: Math.random() * app.screen.height,
-      vx: (Math.random() - 0.5) * 1.8, // 스피디함 유지
+      vx: (Math.random() - 0.5) * 1.8,
       vy: (Math.random() - 0.5) * 1.8,
       radius: Math.random() * 2 + 1
     });
   }
 
-  // 4. 스프라이트 레이어 생성 (코인 버블) - 일괄 처리를 위해 Container 사용
   const coinContainer = new PIXI.Container();
   app.stage.addChild(coinContainer);
-
   const coinSprites = [];
   textures.forEach((texture, index) => {
-    // 깊이감(z-index 효과)을 위한 랜덤값
     const depth = Math.random();
-
-    // Pixi Sprite 생성 (DOM 요소보다 훨씬 가벼움)
-    const sprite = new PIXI.Sprite(texture);
-
-    // 스프라이트 중심점 설정
-    sprite.anchor.set(0.5);
-
-    // 네온 글로우 효과를 위한 블렌드 모드 (성능 부하 적음)
-    sprite.blendMode = PIXI.BLEND_MODES.ADD;
-
-    // 깊이에 따른 크기, 투명도 설정 (블러 제거)
-    const baseSize = 45 + depth * 65; // 45px ~ 110px
-    sprite.width = sprite.height = baseSize;
-    sprite.alpha = 0.2 + depth * 0.6; // 0.2 ~ 0.8
-
-    // 🚀 극단적 성능 최적화를 위해 무거운 BlurFilter 제거
-
-    coinContainer.addChild(sprite);
-
-    // 애니메이션 데이터 저장
-    coinSprites.push({
-      sprite,
-      baseX: Math.random() * app.screen.width,
-      y: Math.random() * app.screen.height,
-      speed: 0.7 + depth * 2.2, // 스피디한 움직임
-      depth: depth,
-      // 깊이에 따른 마스 반응 계수 (Parallax)
-      parallaxFactor: (depth + 0.3) * 70,
-      // 유기적 움직임을 위한 사인곡선 변수
-      wobblePhase: Math.random() * Math.PI * 2,
-      wobbleSpeed: 0.01 + Math.random() * 0.02,
-      wobbleAmount: 18 + Math.random() * 35
-    });
   });
+}
+*/
 
-  // 5. 마우스 인터랙션 좌표 관리
-  let mouseX = 0;
-  let mouseY = 0;
-  let currentMouseX = 0;
-  let currentMouseY = 0;
+// ================= 4대장 퀵뷰 프리뷰 쇼케이스 엔진 =================
+const START_ASSETS = [
+  { symbol: "BTCUSDT", ticker: "BTC", icon: "https://s2.coinmarketcap.com/static/img/coins/64x64/1.png", color: "#f0b90b", rgba: "rgba(240, 185, 11, 0.65)" },
+  { symbol: "ETHUSDT", ticker: "ETH", icon: "https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png", color: "#3b82f6", rgba: "rgba(59, 130, 246, 0.65)" },
+  { symbol: "XRPUSDT", ticker: "XRP", icon: "https://s2.coinmarketcap.com/static/img/coins/64x64/52.png", color: "#26a69a", rgba: "rgba(38, 166, 154, 0.65)" },
+  { symbol: "SOLUSDT", ticker: "SOL", icon: "https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png", color: "#a855f7", rgba: "rgba(168, 85, 247, 0.65)" },
+];
 
-  // start-screen 위에서만 마우스 감지하도록 수정하여 성능 소폭 향상
-  const screenEl = document.getElementById('start-screen');
-  if (screenEl) {
-    screenEl.addEventListener("mousemove", (e) => {
-      mouseX = (e.clientX / window.innerWidth) - 0.5;
-      mouseY = (e.clientY / window.innerHeight) - 0.5;
+let startQvSpreadCharts = [];
+let startQvSpreadSeries = [];
+let startQvOverlapCharts = [];
+let startQvOverlapSeries = [];
+let startQvWs = null;
+let startQvTimer = null;
+let startQvCurrentTF = "15m";
+let startQvCandleMode = "unique";
+let startShowcaseStep = 0;
+
+async function initStartQuickViewPreview() {
+  const spreadView = document.getElementById("start-qv-spread-view");
+  const overlapView = document.getElementById("start-qv-overlap-view");
+  if (!spreadView || !overlapView) return;
+
+  startQvSpreadCharts = [];
+  startQvSpreadSeries = [];
+  startQvOverlapCharts = [];
+  startQvOverlapSeries = [];
+
+  // 🚀 LightweightCharts 라이브러리 비동기 로드 대기
+  if (typeof LightweightCharts === "undefined") {
+    await new Promise((resolve) => {
+      const checkInterval = setInterval(() => {
+        if (typeof LightweightCharts !== "undefined") {
+          clearInterval(checkInterval);
+          resolve();
+        }
+      }, 20);
+      setTimeout(() => {
+        clearInterval(checkInterval);
+        resolve();
+      }, 4000);
     });
   }
+  if (typeof LightweightCharts === "undefined") return;
 
-  // 6. 🚀 [핵심:성능최적화] GPU 가속 애니메이션 루프 (PIXI Ticker 사용)
-  // 자바스크립트 메인 스레드를 거의 먹지 않아 버벅거림이 사라짐
-  app.ticker.add((delta) => {
-    // delta 값을 이용해 프레임 보정 (속도 일정하게)
-    const dt = delta;
+  // 1️⃣ [Spread 뷰] 4개 2x2 카드 그리드 래퍼 & 단일 3D 외곽 프로그레스 바 생성
+  spreadView.innerHTML = `
+    <!-- 🚀 4개 카드 전체 둘레를 감싸는 단 1개의 3D 외곽 프로그레스 바 -->
+    <svg class="start-qv-inner-progress pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
+      <rect x="0.5" y="0.5" width="99" height="99" rx="3.5" ry="3.5" fill="none" stroke="rgba(0, 209, 255, 0.08)" stroke-width="0.7" />
+      <rect class="start-qv-progress-rect" x="0.5" y="0.5" width="99" height="99" rx="3.5" ry="3.5" fill="none" stroke="url(#startProgressGlow)" stroke-width="1.2" stroke-linecap="round" pathLength="100" stroke-dasharray="100.2 100.2" stroke-dashoffset="100.2" />
+    </svg>
+    <div id="start-qv-cards-grid"></div>
+  `;
 
-    // 마우스 보간 (부드러운 반응성 개선)
-    currentMouseX += (mouseX - currentMouseX) * 0.1 * dt;
-    currentMouseY += (mouseY - currentMouseY) * 0.1 * dt;
+  const cardsGrid = document.getElementById("start-qv-cards-grid");
+  START_ASSETS.forEach((asset, idx) => {
+    const card = document.createElement("div");
+    card.className = "start-qv-card";
+    card.id = `start-qv-spread-card-${idx}`;
+    card.innerHTML = `
+      <div class="start-qv-badge flex items-center gap-1.5">
+        <img src="${asset.icon}" class="w-3.5 h-3.5 rounded-full object-cover shadow-sm flex-shrink-0" alt="${asset.ticker}" />
+        <span class="text-xs font-bold" style="color: ${asset.color}">${asset.ticker}</span>
+        <span id="start-qv-spread-tf-${idx}" class="text-[9px] px-1 py-0.2 font-mono font-bold rounded bg-theme-accent/20 border border-theme-accent/40 text-theme-accent">15M</span>
+        <span id="start-qv-spread-price-${idx}" class="text-[10px] text-white/80 font-tempTestDss ml-1">Loading...</span>
+      </div>
+      <div class="start-qv-canvas" id="start-qv-spread-canvas-${idx}"></div>
+    `;
+    cardsGrid.appendChild(card);
 
-    // A. 체인 네트워크 업데이트 (GPU 드로잉)
-    graphics.clear(); // 매 프레임 초기화
-
-    // 계산 단순화를 위해 화면 중심 좌표 미리 계산
-    const centerX = app.screen.width / 2;
-    const centerY = app.screen.height / 2;
-
-    // 모든 파티클의 위치를 먼저 일괄 업데이트하고 점(Node)을 그립니다.
-    particles.forEach(p => {
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
-
-      // 화면 밖으로 나가면 반대편으로 워프 (Wrap)
-      if (p.x < 0) p.x = app.screen.width;
-      if (p.x > app.screen.width) p.x = 0;
-      if (p.y < 0) p.y = app.screen.height;
-      if (p.y > app.screen.height) p.y = 0;
-
-      // 노드 그리기
-      graphics.beginFill(0x00d1ff, 0.7);
-      graphics.drawCircle(p.x, p.y, p.radius);
-      graphics.endFill();
+    const canvasArea = card.querySelector(".start-qv-canvas");
+    const chart = LightweightCharts.createChart(canvasArea, {
+      layout: { background: { color: "transparent" }, textColor: "rgba(255,255,255,0.4)", fontSize: 9, fontFamily: "Outfit, sans-serif", attributionLogo: false },
+      grid: { vertLines: { color: "rgba(255,255,255,0.03)" }, horzLines: { color: "rgba(255,255,255,0.03)" } },
+      crosshair: { vertLine: { visible: false }, horzLine: { visible: false } },
+      rightPriceScale: { visible: false, borderVisible: false },
+      timeScale: { visible: false, borderVisible: false, rightOffset: 1, fixLeftEdge: false },
+      handleScroll: false, handleScale: false,
     });
 
-    // 라인 연결 최적화 (이중 루프 대신 단방향 for-loop를 사용하여 연산량/드로잉을 1/2로 감축)
-    const numPart = particles.length;
-    for (let i = 0; i < numPart; i++) {
-      const p = particles[i];
-      for (let j = i + 1; j < numPart; j++) {
-        const p2 = particles[j];
-        // 거리 계산 피타고라스 (루트 연산 생략으로 속도 향상)
-        const dx = p.x - p2.x;
-        const dy = p.y - p2.y;
-        const distSq = dx * dx + dy * dy;
-        const maxDistSq = 135 * 135;
+    const seriesOptions = { upColor: asset.color, downColor: asset.color, wickUpColor: asset.color, wickDownColor: asset.color, borderVisible: false };
+    const series = typeof chart.addCandlestickSeries === "function"
+      ? chart.addCandlestickSeries(seriesOptions)
+      : chart.addSeries(window.LightweightCharts.CandlestickSeries, seriesOptions);
 
-        if (distSq < maxDistSq) {
-          const dist = Math.sqrt(distSq); // 그릴 때만 루트 연산
-          // 거리에 따른 투명도 조절
-          graphics.lineStyle(1, 0x00d1ff, 0.2 - dist / 675);
-          graphics.moveTo(p.x, p.y);
-          graphics.lineTo(p2.x, p2.y);
-        }
+    startQvSpreadCharts.push(chart);
+    startQvSpreadSeries.push(series);
+  });
+
+  // 2️⃣ [Overlap 뷰] 중앙 통합 4대장 독립 캔들스틱 겹침(오버레이) 카드 생성 (반투명 캔들 블렌딩)
+  overlapView.innerHTML = `
+    <!-- 🚀 3D 투영 완전 일치 내장 프로그레스 테두리 -->
+    <svg class="start-qv-inner-progress pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
+      <rect x="0.5" y="0.5" width="99" height="99" rx="3.5" ry="3.5" fill="none" stroke="rgba(0, 209, 255, 0.08)" stroke-width="0.7" />
+      <rect class="start-qv-progress-rect" x="0.5" y="0.5" width="99" height="99" rx="3.5" ry="3.5" fill="none" stroke="url(#startProgressGlow)" stroke-width="1.2" stroke-linecap="round" pathLength="100" stroke-dasharray="100.2 100.2" stroke-dashoffset="100.2" />
+    </svg>
+    <div class="start-qv-overlap-legend">
+      <span class="text-[10px] uppercase tracking-wider text-theme-accent font-bold">OVERLAP</span>
+      <span id="start-qv-overlap-tf" class="text-[9px] px-1.5 py-0.2 font-mono font-bold rounded bg-theme-accent/20 border border-theme-accent/40 text-theme-accent">15M</span>
+      <div class="flex items-center gap-2 ml-2">
+        ${START_ASSETS.map(
+    (a, i) => `
+          <div class="start-qv-legend-item flex items-center gap-1 cursor-pointer px-1.5 py-0.5" data-idx="${i}">
+            <img src="${a.icon}" class="w-3 h-3 rounded-full object-cover flex-shrink-0" alt="${a.ticker}" />
+            <span style="color: ${a.color}">${a.ticker}</span>
+            <span id="start-qv-overlap-price-${i}" class="text-[10px] text-white/70 font-tempTestDss">...</span>
+          </div>`
+  ).join("")}
+      </div>
+    </div>
+    <div class="relative w-full flex-1 min-h-[80px]">
+      ${START_ASSETS.map(
+    (a, i) => `<div class="start-qv-canvas absolute inset-0 w-full h-full" id="start-qv-overlap-canvas-${i}"></div>`
+  ).join("")}
+    </div>
+  `;
+
+  const legendItems = overlapView.querySelectorAll(".start-qv-legend-item");
+  legendItems.forEach((item) => {
+    const idx = parseInt(item.getAttribute("data-idx"));
+    item.addEventListener("mouseenter", () => setStartOverlapFocus(idx));
+    item.addEventListener("mouseleave", () => setStartOverlapFocus(-1));
+  });
+
+  START_ASSETS.forEach((asset, idx) => {
+    const overlapCanvasArea = document.getElementById(`start-qv-overlap-canvas-${idx}`);
+    if (!overlapCanvasArea) return;
+
+    const chart = LightweightCharts.createChart(overlapCanvasArea, {
+      layout: { background: { color: "transparent" }, textColor: "rgba(255,255,255,0.4)", fontSize: 9, fontFamily: "Outfit, sans-serif", attributionLogo: false },
+      grid: {
+        vertLines: { color: idx === 0 ? "rgba(255,255,255,0.03)" : "transparent" },
+        horzLines: { color: idx === 0 ? "rgba(255,255,255,0.03)" : "transparent" },
+      },
+      crosshair: { vertLine: { visible: false }, horzLine: { visible: false } },
+      rightPriceScale: { visible: false, borderVisible: false },
+      timeScale: { visible: false, borderVisible: false, rightOffset: 1, fixLeftEdge: false },
+      handleScroll: false, handleScale: false,
+    });
+
+    // 🚀 반투명(Translucent) 캔들 기본 적용 (서로 가리지 않는 자연스러운 오버레이)
+    const seriesOptions = {
+      upColor: asset.rgba,
+      downColor: asset.rgba,
+      wickUpColor: asset.rgba,
+      wickDownColor: asset.rgba,
+      borderVisible: false,
+    };
+    const series = typeof chart.addCandlestickSeries === "function"
+      ? chart.addCandlestickSeries(seriesOptions)
+      : chart.addSeries(window.LightweightCharts.CandlestickSeries, seriesOptions);
+
+    startQvOverlapCharts.push(chart);
+    startQvOverlapSeries.push(series);
+  });
+
+  // 3️⃣ 바이낸스 데이터 최초 로드
+  await loadStartPreviewKlines(startQvCurrentTF);
+
+  // 4️⃣ 바이낸스 실시간 멀티 웹소켓 가동
+  startStartPreviewWebSocket(startQvCurrentTF);
+
+  // 5️⃣ cycleIntervalMs 주기 4-State 크로스페이드 루프 가동
+  if (startQvTimer) clearInterval(startQvTimer);
+  startQvTimer = setInterval(() => {
+    toggleStartQuickViewLayout();
+  }, START_3D_CONFIG.cycleIntervalMs);
+
+  // 6️⃣ 윈도우 리사이즈 시 왜곡 없는 동기화 리사이즈 바인딩
+  window.removeEventListener("resize", resizeStartQuickViewCharts);
+  window.addEventListener("resize", resizeStartQuickViewCharts);
+
+  setTimeout(() => {
+    resizeStartQuickViewCharts();
+  }, 100);
+}
+
+// 🎯 겹치기 모드 범례 호버 시 특정 코인 강조 & 나머지 반투명 디밍
+function setStartOverlapFocus(focusIdx) {
+  START_ASSETS.forEach((asset, i) => {
+    const canvas = document.getElementById(`start-qv-overlap-canvas-${i}`);
+    const legendItem = document.querySelector(`.start-qv-legend-item[data-idx="${i}"]`);
+    if (!canvas) return;
+    if (focusIdx === -1) {
+      canvas.style.opacity = "0.55";
+      if (legendItem) {
+        legendItem.style.borderColor = "transparent";
+        legendItem.style.opacity = "1";
       }
-
-      // 마우스 인터랙션 라인
-      const mouseAbsX = currentMouseX * window.innerWidth + centerX;
-      const mouseAbsY = currentMouseY * window.innerHeight + centerY;
-
-      const mdx = p.x - mouseAbsX;
-      const mdy = p.y - mouseAbsY;
-      const mDistSq = mdx * mdx + mdy * mdy;
-      const mMaxDistSq = 190 * 190;
-
-      if (mDistSq < mMaxDistSq) {
-        const mDist = Math.sqrt(mDistSq);
-        graphics.lineStyle(1.5, 0x00d1ff, 0.45 - mDist / 422);
-        graphics.moveTo(p.x, p.y);
-        graphics.lineTo(mouseAbsX, mouseAbsY);
+    } else if (i === focusIdx) {
+      canvas.style.opacity = "1";
+      if (legendItem) {
+        legendItem.style.borderColor = asset.color;
+        legendItem.style.opacity = "1";
+      }
+    } else {
+      canvas.style.opacity = "0.2";
+      if (legendItem) {
+        legendItem.style.borderColor = "transparent";
+        legendItem.style.opacity = "0.4";
       }
     }
-
-    // B. 코인 스프라이트 업데이트 (GPU 트랜스폼 관리)
-    coinSprites.forEach(coin => {
-      // 상승 이동
-      coin.y -= coin.speed * dt;
-
-      // 유기적 움직임 사인곡선 (좌우 Wobble)
-      coin.wobblePhase += coin.wobbleSpeed * dt;
-      const currentX = coin.baseX + Math.sin(coin.wobblePhase) * coin.wobbleAmount;
-
-      // 화면 위로 완전히 벗어나면 아래에서 재생성 (Warp)
-      // 확 튀지 않게 위아래 여유 공간 배치 (-150, +150)
-      if (coin.y < -150) {
-        coin.y = app.screen.height + 150;
-        coin.baseX = Math.random() * app.screen.width;
-      }
-
-      // 마우스 패럴랙스 (깊이에 따른 반응성 차별화)
-      const pX = currentMouseX * coin.parallaxFactor * 2.8;
-      const pY = currentMouseY * coin.parallaxFactor * 2.8;
-
-      // 🚀 회전 계산 수정 (라디안 단위 고려 및 자연스러운 움직임)
-      // 1. 마우스 반대 방향으로 미세하게 회전 (* -0.05) - 패럴랙스 효과 보강
-      // 2. wobble 사인 곡선에 따른 꿀렁거리는 회전 추가 (* 0.15) - 유기적 움직임 보강
-      // 3. PIXI는 라디안 단위를 사용하므로 PI를 곱해주어 범위 조정 (선택사항, 여기서는 제외)
-      const rotate = (currentMouseX * coin.parallaxFactor * -0.05) + (Math.sin(coin.wobblePhase) * 0.15);
-
-      // DOM 조작 없이 GPU가 관리하는 스프라이트 속성 직접 변경 (Zero-Reflow)
-      // 이 부분이 렉 제거의 핵심
-      coin.sprite.x = currentX + pX;
-      coin.sprite.y = coin.y + pY;
-      coin.sprite.rotation = rotate; // 라디안 단위
-    });
   });
+}
+
+// 📡 과거 봉 데이터 로드
+async function loadStartPreviewKlines(tf) {
+  const promises = START_ASSETS.map(async (asset, idx) => {
+    try {
+      const res = await fetch(
+        `https://api.binance.com/api/v3/klines?symbol=${asset.symbol}&interval=${tf}&limit=60`
+      );
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        const candles = data.map((d) => ({
+          time: Math.floor(d[0] / 1000),
+          open: parseFloat(d[1]),
+          high: parseFloat(d[2]),
+          low: parseFloat(d[3]),
+          close: parseFloat(d[4]),
+        }));
+
+        if (startQvSpreadSeries[idx]) {
+          startQvSpreadSeries[idx].setData(candles);
+          if (startQvSpreadCharts[idx]) {
+            startQvSpreadCharts[idx].timeScale().fitContent();
+            startQvSpreadCharts[idx].timeScale().applyOptions({ rightOffset: 1 });
+          }
+        }
+
+        if (startQvOverlapSeries[idx]) {
+          startQvOverlapSeries[idx].setData(candles);
+          if (startQvOverlapCharts[idx]) {
+            startQvOverlapCharts[idx].timeScale().fitContent();
+            startQvOverlapCharts[idx].timeScale().applyOptions({ rightOffset: 1 });
+          }
+        }
+
+        const lastPrice = candles[candles.length - 1]?.close;
+        if (lastPrice) {
+          const spEl = document.getElementById(`start-qv-spread-price-${idx}`);
+          const ovEl = document.getElementById(`start-qv-overlap-price-${idx}`);
+          if (spEl) spEl.innerText = `$${lastPrice.toLocaleString()}`;
+          if (ovEl) ovEl.innerText = `$${lastPrice.toLocaleString()}`;
+        }
+      }
+    } catch (e) { }
+  });
+  await Promise.all(promises);
+}
+
+let startQvLastUpdateTimes = {};
+
+// 🌐 실시간 웹소켓 가동 (🚀 시작 화면 최적화: 1초 쓰로틀링 적용)
+function startStartPreviewWebSocket(tf) {
+  if (startQvWs) {
+    try { startQvWs.close(); } catch (e) { }
+  }
+  startQvLastUpdateTimes = {};
+  try {
+    const streams = START_ASSETS.map(
+      (a) => `${a.symbol.toLowerCase()}@kline_${tf}`
+    ).join("/");
+    startQvWs = new WebSocket(`wss://stream.binance.com:9443/stream?streams=${streams}`);
+    startQvWs.onmessage = (e) => {
+      try {
+        const res = JSON.parse(e.data);
+        if (!res.data || !res.data.k) return;
+        const k = res.data.k;
+        const symbol = res.data.s;
+
+        // 🚀 [1초 쓰로틀]: 틱이 아무리 쏟아져도 코인별로 정확히 1초(1000ms)에 1회만 캔버스/시세 갱신
+        const now = Date.now();
+        if (startQvLastUpdateTimes[symbol] && now - startQvLastUpdateTimes[symbol] < 500) {
+          return;
+        }
+        startQvLastUpdateTimes[symbol] = now;
+
+        const idx = START_ASSETS.findIndex((a) => a.symbol === symbol);
+        if (idx !== -1) {
+          const candle = {
+            time: Math.floor(k.t / 1000),
+            open: parseFloat(k.o),
+            high: parseFloat(k.h),
+            low: parseFloat(k.l),
+            close: parseFloat(k.c),
+          };
+          if (startQvSpreadSeries[idx]) startQvSpreadSeries[idx].update(candle);
+          if (startQvOverlapSeries[idx]) startQvOverlapSeries[idx].update(candle);
+
+          const spEl = document.getElementById(`start-qv-spread-price-${idx}`);
+          const ovEl = document.getElementById(`start-qv-overlap-price-${idx}`);
+          if (spEl) spEl.innerText = `$${candle.close.toLocaleString()}`;
+          if (ovEl) ovEl.innerText = `$${candle.close.toLocaleString()}`;
+        }
+      } catch (err) { }
+    };
+  } catch (wsErr) { }
+}
+
+// 🎨 캔들 색상 테마 동적 전환 (자산별 고유 네온색 ↔ 기본 양봉/음봉 색상)
+function applyStartCandleTheme(mode) {
+  startQvCandleMode = mode;
+  START_ASSETS.forEach((asset, idx) => {
+    const isUnique = mode === "unique";
+
+    // 1. Spread 뷰 (단독 카드): 선명한 색상
+    const upSpread = isUnique ? asset.color : "#26a69a";
+    const downSpread = isUnique ? asset.color : "#ef5350";
+
+    // 2. Overlap 뷰 (모으기): 4개 캔들이 겹칠 때 서로 가리지 않는 반투명(Translucent) 색상 복구
+    const upOverlap = isUnique ? asset.rgba : "rgba(38, 166, 154, 0.6)";
+    const downOverlap = isUnique ? asset.rgba : "rgba(239, 83, 80, 0.6)";
+
+    if (startQvSpreadSeries[idx]) {
+      startQvSpreadSeries[idx].applyOptions({
+        upColor: upSpread,
+        downColor: downSpread,
+        wickUpColor: upSpread,
+        wickDownColor: downSpread,
+      });
+    }
+
+    if (startQvOverlapSeries[idx]) {
+      startQvOverlapSeries[idx].applyOptions({
+        upColor: upOverlap,
+        downColor: downOverlap,
+        wickUpColor: upOverlap,
+        wickDownColor: downOverlap,
+      });
+    }
+  });
+}
+
+// ⏱️ 타임프레임 동적 순환
+async function switchStartPreviewTF(tf) {
+  START_ASSETS.forEach((asset, idx) => {
+    const spTf = document.getElementById(`start-qv-spread-tf-${idx}`);
+    if (spTf) spTf.innerText = tf.toUpperCase();
+  });
+  const ovTf = document.getElementById("start-qv-overlap-tf");
+  if (ovTf) ovTf.innerText = tf.toUpperCase();
+
+  await loadStartPreviewKlines(tf);
+  startStartPreviewWebSocket(tf);
+}
+
+// 🚀 [왜곡 없는 크로스페이드 & 자연스러운 모핑 모으기/뿌리기 전환 엔진] 4가지 경우의 수 순환
+function toggleStartQuickViewLayout() {
+  const spreadView = document.getElementById("start-qv-spread-view");
+  const overlapView = document.getElementById("start-qv-overlap-view");
+  if (!spreadView || !overlapView) return;
+
+  // 1. 4가지 경우의 수 순환
+  startShowcaseStep = (startShowcaseStep + 1) % START_SHOWCASE_STATES.length;
+  const currentShowcase = START_SHOWCASE_STATES[startShowcaseStep];
+
+  // 2. 유니크 캔들 색상 적용
+  applyStartCandleTheme(currentShowcase.candleMode);
+
+  // 3. 타임프레임 전환
+  if (startQvCurrentTF !== currentShowcase.tf) {
+    startQvCurrentTF = currentShowcase.tf;
+    switchStartPreviewTF(currentShowcase.tf);
+  }
+
+  // 4. 개별 카드 물리적 모핑 (중앙으로 스르륵 모이고 퍼지는 유기적 물리 움직임)
+  const card0 = document.getElementById("start-qv-spread-card-0");
+  const card1 = document.getElementById("start-qv-spread-card-1");
+  const card2 = document.getElementById("start-qv-spread-card-2");
+  const card3 = document.getElementById("start-qv-spread-card-3");
+
+  // 🧭 화면 전환 시 동서남북 8방위 시선 틸트 한 단계 순환 (예: 북동 ➡️ 북서 ➡️ 남서 ➡️ 남동)
+  startCompassStep++;
+
+  if (currentShowcase.layout === "spread") {
+    // 🚀 모였다가 4개 모서리 제자리로 스르륵 퍼짐 (설정된 3D 각도 연동)
+    spreadView.style.opacity = "1";
+    spreadView.style.transform = get3DTransform(1);
+    spreadView.style.pointerEvents = "auto";
+    if (card0) card0.style.transform = "translate(0, 0)";
+    if (card1) card1.style.transform = "translate(0, 0)";
+    if (card2) card2.style.transform = "translate(0, 0)";
+    if (card3) card3.style.transform = "translate(0, 0)";
+
+    overlapView.style.opacity = "0";
+    overlapView.style.transform = get3DTransform(0.96);
+    overlapView.style.pointerEvents = "none";
+  } else {
+    // 🚀 4개 코너에서 중앙으로 스르륵 모임 (설정된 3D 각도 연동)
+    spreadView.style.opacity = "0";
+    spreadView.style.transform = get3DTransform(1.04);
+    spreadView.style.pointerEvents = "none";
+    if (card0) card0.style.transform = "translate(18%, 18%)";
+    if (card1) card1.style.transform = "translate(-18%, 18%)";
+    if (card2) card2.style.transform = "translate(18%, -18%)";
+    if (card3) card3.style.transform = "translate(-18%, -18%)";
+
+    overlapView.style.opacity = "1";
+    overlapView.style.transform = get3DTransform(1);
+    overlapView.style.pointerEvents = "auto";
+  }
+
+  // ⏱️ 3D 투영 일치 프로그레스 바 애니메이션 재시작
+  const progressRects = document.querySelectorAll(".start-qv-progress-rect");
+  progressRects.forEach((rect) => {
+    rect.style.animation = "none";
+    void rect.offsetWidth; // Trigger reflow
+    rect.style.animation = `startBorderProgress ${START_3D_CONFIG.cycleIntervalMs}ms cubic-bezier(0.4, 0, 0.2, 1) infinite`;
+  });
+
+  // 🌑 3D 각도별 광원 반사 오프셋 & 스케일 실시간 동기화 (시선 방향의 정반대 축으로 완벽 투영)
+  const floorShadow = document.querySelector(".start-qv-floor-shadow");
+  if (floorShadow) {
+    const scale = currentShowcase.layout === "spread" ? 1.04 : 0.96;
+    floorShadow.style.transform = getShadowTransform(scale);
+    floorShadow.style.opacity = (START_3D_CONFIG.auraOpacity * (currentShowcase.layout === "spread" ? 1.0 : 0.8)).toFixed(2);
+  }
+
+  resizeStartQuickViewCharts();
+  setTimeout(() => {
+    resizeStartQuickViewCharts();
+  }, 860);
+}
+
+function resizeStartQuickViewCharts() {
+  startQvSpreadCharts.forEach((chart, idx) => {
+    if (!chart) return;
+    const canvas = document.getElementById(`start-qv-spread-canvas-${idx}`);
+    if (canvas && canvas.clientWidth > 0 && canvas.clientHeight > 0) {
+      chart.resize(canvas.clientWidth, canvas.clientHeight);
+      chart.timeScale().fitContent();
+      chart.timeScale().applyOptions({ rightOffset: 1 });
+    }
+  });
+
+  startQvOverlapCharts.forEach((chart, idx) => {
+    if (!chart) return;
+    const canvas = document.getElementById(`start-qv-overlap-canvas-${idx}`);
+    if (canvas && canvas.clientWidth > 0 && canvas.clientHeight > 0) {
+      chart.resize(canvas.clientWidth, canvas.clientHeight);
+      chart.timeScale().fitContent();
+      chart.timeScale().applyOptions({ rightOffset: 1 });
+    }
+  });
+}
+
+function destroyStartQuickViewPreview() {
+  if (startQvTimer) {
+    clearInterval(startQvTimer);
+    startQvTimer = null;
+  }
+  if (startQvWs) {
+    try {
+      startQvWs.close();
+    } catch (e) { }
+    startQvWs = null;
+  }
+  window.removeEventListener("resize", resizeStartQuickViewCharts);
+  startQvSpreadCharts.forEach((c) => {
+    if (c) {
+      try {
+        c.remove();
+      } catch (e) { }
+    }
+  });
+  startQvOverlapCharts.forEach((c) => {
+    if (c) {
+      try {
+        c.remove();
+      } catch (e) { }
+    }
+  });
+  startQvSpreadCharts = [];
+  startQvSpreadSeries = [];
+  startQvOverlapCharts = [];
+  startQvOverlapSeries = [];
 }
 
 async function initStartScreen() {
@@ -400,9 +1026,10 @@ async function initStartScreen() {
     const res = await fetch("/api/get-env-key");
     const data = await res.json();
 
-    if (data.exists) {
-      // Xconsole.log("✅ env 키 존재 확인!");
+    const isAutoSkipEnabled = localStorage.getItem("sellnance_skip_start") === "true";
 
+    /* [기존 단일 조건 스킵 코드 보존]
+    if (data.exists) {
       // 🚀 env 키가 존재하면 로컬 스토리지를 오염시키지 않고 시작 화면을 바로 스킵합니다.
       hideStartScreen();
       return;
@@ -410,6 +1037,22 @@ async function initStartScreen() {
       // env에 없으면 로컬 스토리지 확인
       rawCmcKey = localStorage.getItem("CMC_API_KEY") || "";
       // Xconsole.log("ℹ️ env에 키가 없어 로컬 스토리지를 확인했습니다.");
+    }
+    */
+
+    // 🚀 [복합 AND 조건 적용]: (1) 유효한 키 존재 AND (2) 'sellnance_skip_start' 플래그가 true일 때만 즉시 스킵!
+    if (data.exists) {
+      rawCmcKey = localStorage.getItem("CMC_API_KEY") || ""; // env 키 또는 로컬 키 매핑
+      if (isAutoSkipEnabled) {
+        hideStartScreen();
+        return;
+      }
+    } else {
+      rawCmcKey = localStorage.getItem("CMC_API_KEY") || "";
+      if (rawCmcKey && isAutoSkipEnabled) {
+        hideStartScreen();
+        return;
+      }
     }
   } catch (e) {
     console.error("🚨 서버 통신 실패, 로컬 스토리지로 대체합니다.");
@@ -425,15 +1068,13 @@ async function initStartScreen() {
     if (btnStart) {
       btnStart.disabled = false;
       btnStart.innerText = "Start DASHBOARD";
-      // 비주얼 선명도 증가
       btnStart.className =
-        "w-full py-3.5 bg-theme-accent text-white font-medium rounded-xl shadow-[0_0_25px_rgba(0,209,255,0.5)] hover:shadow-[0_0_40px_rgba(0,209,255,0.8)] hover:brightness-125 active:scale-[0.98] transition-all tracking-widest uppercase cursor-pointer pointer-events-auto border border-theme-accent/50";
+        "flex-1 py-3.5 bg-theme-accent text-white font-semibold rounded-xl shadow-sm hover:shadow-[0_0_15px_rgba(0,209,255,0.3)] hover:brightness-105 active:scale-[0.98] transition-all tracking-widest uppercase cursor-pointer pointer-events-auto border border-theme-accent/40";
     }
 
     if (btnSkip) {
       btnSkip.disabled = false;
-      btnSkip.innerText = "Skip (Use Daily Cache)";
-      // 비주얼 선명도 증가
+      btnSkip.innerText = "Skip (서버 캐시 모드, 느린 갱신)";
       btnSkip.className =
         "w-full py-3 bg-transparent text-theme-text border border-theme-border font-medium rounded-xl hover:bg-white/5 hover:border-white/30 active:scale-[0.98] transition-all tracking-wide opacity-60 hover:opacity-100 cursor-pointer pointer-events-auto";
     }
@@ -444,13 +1085,48 @@ async function initStartScreen() {
     input.value = maskApiKey(rawCmcKey);
   }
 
+  // 🚀 X 클리어 버튼 가시성 및 이원화(실제 키 + 마스킹 텍스트) 제어 함수
+  const btnClearKey = document.getElementById("btn-clear-cmc-key");
+  function updateClearBtnVisibility() {
+    if (!btnClearKey) return;
+    const hasValue = !!(rawCmcKey || (input && input.value));
+    if (hasValue) {
+      btnClearKey.classList.remove("opacity-0", "pointer-events-none", "scale-75");
+      btnClearKey.classList.add("opacity-100", "pointer-events-auto", "scale-100");
+    } else {
+      btnClearKey.classList.remove("opacity-100", "pointer-events-auto", "scale-100");
+      btnClearKey.classList.add("opacity-0", "pointer-events-none", "scale-75");
+    }
+  }
+
+  // 초기 X 버튼 상태 업데이트
+  updateClearBtnVisibility();
+
+  // 🚀 X 클리어 버튼 클릭 이벤트: 실제 키 + 마스킹 텍스트 + 로컬스토리지 완전 이원화 동시 초기화
+  if (btnClearKey) {
+    btnClearKey.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      rawCmcKey = "";
+      if (input) {
+        input.value = "";
+        input.focus();
+      }
+      localStorage.removeItem("CMC_API_KEY");
+      updateClearBtnVisibility();
+    });
+  }
+
   // 🚀 [선택한 해결방안 적용]: 자동 스킵되지 않고 화면을 실제로 노출해야 하는 상태
   // 이 단계에 도달했다는 것은 서버 env에 키가 없음을 뜻하므로 화면을 노출하고 PixiJS 엔진을 기동합니다.
   const startScreen = document.getElementById("start-screen");
   if (startScreen) {
     startScreen.style.display = "flex";
   }
+  /* [기존 코드 주석 보존]
   await initPixiBackground();
+  */
+  await initStartQuickViewPreview();
 
 
   // 🚀 수정된 부분: beforeinput 이벤트 핸들러
@@ -472,6 +1148,7 @@ async function initStartScreen() {
     else if (e.inputType === "deleteContentBackward") {
       rawCmcKey = rawCmcKey.slice(0, -1);
     }
+    updateClearBtnVisibility();
   });
 
   // 🚀 붙여넣기(Paste) 시에도 필터링하고 싶다면 input 이벤트 수정
@@ -486,34 +1163,58 @@ async function initStartScreen() {
 
     // 화면에는 마스킹된 결과만 출력
     input.value = maskApiKey(rawCmcKey);
+    updateClearBtnVisibility();
   });
 
-  // 클릭 시 새로 입력 모드 (기존 유지)
+  // 포커스/블러 시 마스킹 상태 및 X 버튼 가시성 유지
   input.addEventListener("focus", () => {
-    if (rawCmcKey) {
-      input.value = "";
-      rawCmcKey = ""; // 9글자 버그 방지를 위해 포커스 시 깔끔하게 비우고 시작
-    }
+    updateClearBtnVisibility();
   });
 
   input.addEventListener("blur", () => {
     input.value = maskApiKey(rawCmcKey);
+    updateClearBtnVisibility();
   });
 }
 
 function saveAndStart() {
   const keyToSave = rawCmcKey.trim();
-  // 🚨 32글자 철벽 검사
+  // 🚨 32글자 유효성 검사 (확인/취소 버튼 없는 세련된 상단 토스트 알림)
   if (keyToSave.length !== 32) {
-    Swal.fire({
-      icon: "error",
-      title: "Invalid Key!",
-      text: `CMC API 키는 정확히 32글자여야 합니다. (현재: ${keyToSave.length}자)`,
-      background: "var(--panel)",
-      color: "var(--text)",
-      confirmButtonColor: "var(--accent)",
-    });
+    const input = document.getElementById("cmc-api-input");
+    if (input) {
+      input.classList.add("!border-red-500/80", "shadow-[0_0_15px_rgba(239,68,68,0.3)]");
+      setTimeout(() => {
+        input.classList.remove("!border-red-500/80", "shadow-[0_0_15px_rgba(239,68,68,0.3)]");
+      }, 2000);
+      input.focus();
+    }
+
+    if (window.Swal) {
+      Swal.fire({
+        toast: true,
+        position: "top",
+        icon: "warning",
+        title: `CMC API 키는 32자여야 합니다 (${keyToSave.length}/32자)`,
+        showConfirmButton: false,
+        timer: 2500,
+        timerProgressBar: true,
+        background: "rgba(18, 21, 28, 0.95)",
+        color: "#ffffff",
+        customClass: {
+          popup: "border border-amber-500/30 rounded-xl shadow-2xl backdrop-blur-md text-xs",
+        },
+      });
+    }
     return;
+  }
+
+  // 🚀 건너뛰기 체크박스 상태 저장
+  const chk = document.getElementById("chk-auto-skip");
+  if (chk && chk.checked) {
+    localStorage.setItem("sellnance_skip_start", "true");
+  } else {
+    localStorage.removeItem("sellnance_skip_start");
   }
 
   // 🚀 [INP 최적화 1] 클릭 즉시 시각적 피드백 제공 (Next Paint 가속)
@@ -536,6 +1237,14 @@ function saveAndStart() {
 function skipAndStart() {
   // Xconsole.log("⏭️ [스킵] 일일캐시 데이터로 진입합니다.");
 
+  // 🚀 건너뛰기 체크박스 상태 저장
+  const chk = document.getElementById("chk-auto-skip");
+  if (chk && chk.checked) {
+    localStorage.setItem("sellnance_skip_start", "true");
+  } else {
+    localStorage.removeItem("sellnance_skip_start");
+  }
+
   // 🚀 [INP 최적화 1] 클릭 즉시 시각적 피드백 제공
   const buttons = document.querySelectorAll("#start-screen button");
   if (buttons.length > 1 && buttons[1]) {
@@ -552,7 +1261,7 @@ function skipAndStart() {
 }
 
 function hideStartScreen() {
-  // 🚀 스타트 스크런 퇴장 시 Pixi Application을 완전히 파괴하여 Ticker 및 WebGL 리소스를 해제합니다 (렉 유발 해결책)
+  /* 🚀 [기존 코드 주석 보존] Pixi Application 소각
   if (pixiApp) {
     try {
       pixiApp.destroy(true, { children: true, texture: true, baseTexture: true });
@@ -561,6 +1270,10 @@ function hideStartScreen() {
     }
     pixiApp = null;
   }
+  */
+
+  // 🚀 스타트 스크린 퇴장 시 4대장 퀵뷰 프리뷰 엔진 및 소켓 자원 소각
+  destroyStartQuickViewPreview();
 
   // 🚀 [핵심] 사용자가 Start / Skip 버튼을 누른 바로 이 시점에 비로소 대시보드 데이터 및 실시간 엔진을 점화합니다!
   if (typeof window.initDashboardEngine === "function") {
@@ -587,7 +1300,93 @@ function hideStartScreen() {
   }
 }
 
-window.addEventListener("DOMContentLoaded", initStartScreen);
+export function showStartScreen() {
+  const screen = document.getElementById("start-screen");
+  const buttons = document.querySelectorAll("#start-screen button");
+  if (buttons.length > 0 && buttons[0]) {
+    buttons[0].innerText = "Start DASHBOARD";
+    buttons[0].style.pointerEvents = "auto";
+  }
+  if (buttons.length > 1 && buttons[1]) {
+    buttons[1].innerText = "Skip (서버 캐시 모드, 느린 갱신)";
+    buttons[1].style.pointerEvents = "auto";
+  }
+
+  // 🚀 [쇼케이스 0초 및 1단계 완전 리셋]
+  startShowcaseStep = 0;
+  startCompassStep = 0;
+  startQvCurrentTF = START_SHOWCASE_STATES[0].tf;
+
+  // 1. 기존 타이머 제거
+  if (startQvTimer) {
+    clearInterval(startQvTimer);
+    startQvTimer = null;
+  }
+
+  // 2. 1단계 상태(Spread 4분할, 4시간봉, 고유 네온 컬러) 즉시 복원 적용
+  const currentShowcase = START_SHOWCASE_STATES[0];
+  applyStartCandleTheme(currentShowcase.candleMode);
+
+  const spreadView = document.getElementById("start-qv-spread-view");
+  const overlapView = document.getElementById("start-qv-overlap-view");
+  const card0 = document.getElementById("start-qv-spread-card-0");
+  const card1 = document.getElementById("start-qv-spread-card-1");
+  const card2 = document.getElementById("start-qv-spread-card-2");
+  const card3 = document.getElementById("start-qv-spread-card-3");
+
+  if (spreadView && overlapView) {
+    spreadView.style.opacity = "1";
+    spreadView.style.transform = get3DTransform(1);
+    spreadView.style.pointerEvents = "auto";
+    if (card0) card0.style.transform = "translate(0, 0)";
+    if (card1) card1.style.transform = "translate(0, 0)";
+    if (card2) card2.style.transform = "translate(0, 0)";
+    if (card3) card3.style.transform = "translate(0, 0)";
+
+    overlapView.style.opacity = "0";
+    overlapView.style.transform = get3DTransform(0.96);
+    overlapView.style.pointerEvents = "none";
+  }
+
+  // 3. 3D 프로그레스 바 0%부터 재생 시작
+  const progressRects = document.querySelectorAll(".start-qv-progress-rect");
+  progressRects.forEach((rect) => {
+    rect.style.animation = "none";
+    void rect.offsetWidth; // Trigger reflow
+    rect.style.animation = `startBorderProgress ${START_3D_CONFIG.cycleIntervalMs}ms cubic-bezier(0.4, 0, 0.2, 1) infinite`;
+  });
+
+  // 4. 쇼케이스 순환 타이머 0초부터 재가동
+  startQvTimer = setInterval(() => {
+    toggleStartQuickViewLayout();
+  }, START_3D_CONFIG.cycleIntervalMs);
+
+  if (screen) {
+    screen.style.display = "flex";
+    screen.style.pointerEvents = "auto";
+    requestAnimationFrame(() => {
+      screen.style.transform = "scale(1) translateZ(0px)";
+      screen.style.opacity = "1";
+      resizeStartQuickViewCharts();
+    });
+    // 타임프레임 및 웹소켓 갱신
+    switchStartPreviewTF(START_SHOWCASE_STATES[0].tf);
+    if (window.history && window.history.pushState) {
+      if (window.location.pathname !== "/" || window.location.hash) {
+        window.history.pushState(null, null, "/");
+      }
+    }
+  } else {
+    initStartScreen();
+  }
+}
+
+if (document.readyState === "loading") {
+  window.addEventListener("DOMContentLoaded", initStartScreen);
+} else {
+  initStartScreen();
+}
 
 window.saveAndStart = saveAndStart;
 window.skipAndStart = skipAndStart;
+window.showStartScreen = showStartScreen;

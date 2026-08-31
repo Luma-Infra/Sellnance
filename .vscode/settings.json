@@ -6,5 +6,13 @@
   "terminal.integrated.env.windows": {
     "PYTHON_BASIC_REPL": "1"
   },
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/*.pyc": true
+  },
+  "search.exclude": {
+    "**/__pycache__": true,
+    "**/*.pyc": true
+  },
   "css.lint.unknownAtRules": "ignore"
 }

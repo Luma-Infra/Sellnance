@@ -1047,8 +1047,10 @@ export function setupScaleModeButtons() {
   if (mainA) {
     mainA.onclick = (e) => {
       e.stopPropagation();
-      // 🚀 resetPriceScaleWidthSync() 호출 제거: 가격축 너비가 순간적으로 0으로 쪼그라들며 화면이 꿀렁거리는 현상 원천 방지
       if (typeof resetChartScale === "function") resetChartScale();
+      if (typeof window.resetPriceScaleWidthSync === "function") {
+        window.resetPriceScaleWidthSync();
+      }
     };
   }
 
@@ -1071,14 +1073,16 @@ export function setupScaleModeButtons() {
       e.stopPropagation();
       if (store.chartVol) {
         // 거래량(우측)과 김프(좌측) 스케일을 모두 자동 스케일링으로 맞춤 리셋
-        store.chartVol.priceScale("right").applyOptions({ autoScale: true });
-        store.chartVol.priceScale("left").applyOptions({ autoScale: true });
+        store.chartVol.priceScale("right").applyOptions({ minimumWidth: 0, autoScale: true });
+        store.chartVol.priceScale("left").applyOptions({ minimumWidth: 0, autoScale: true });
       }
-      setTimeout(() => {
-        if (typeof window.syncPriceScaleWidths === "function") {
+      if (typeof window.resetPriceScaleWidthSync === "function") {
+        window.resetPriceScaleWidthSync();
+      } else if (typeof window.syncPriceScaleWidths === "function") {
+        setTimeout(() => {
           window.syncPriceScaleWidths(true);
-        }
-      }, 100);
+        }, 100);
+      }
     };
   }
 

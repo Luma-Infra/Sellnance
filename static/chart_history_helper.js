@@ -29,7 +29,11 @@ export function findRowInfo(displayName, pureBase, exchangeFlags) {
     }
   }
 
-  let cleanDisplayName = displayName.toUpperCase();
+  let cleanDisplayName = (displayName || "").toUpperCase();
+  if (cleanDisplayName.includes(":")) {
+    cleanDisplayName = cleanDisplayName.split(":")[1].trim();
+  }
+  cleanDisplayName = cleanDisplayName.replace(/_FUTURES$/i, "").replace(/_SPOT$/i, "").replace(/_UPBIT$/i, "").replace(/_BITHUMB$/i, "");
   if (cleanDisplayName.endsWith("KRW")) cleanDisplayName = cleanDisplayName.slice(0, -3);
   else if (cleanDisplayName.endsWith("USDT")) cleanDisplayName = cleanDisplayName.slice(0, -4);
 

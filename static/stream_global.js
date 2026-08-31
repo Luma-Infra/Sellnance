@@ -68,9 +68,14 @@ export function startRealtimeCandle(
   const getWsId = () => Math.floor(Date.now() + Math.random() * 1000);
 
   let realtimeUpdatePending = false;
+  let realtimeUpdateTimer = null;
   let latestActiveCandle = null;
   let latestSymbol = null;
   let latestServerMs = null;
+  let lastChartRenderTime = 0;
+  let lastTitleUpdateTime = 0;
+  let lastStatusUpdateTime = 0;
+  let lastCountdownUpdateTime = 0;
 
   // 2️⃣ 소켓 수신 데이터를 메인 루프에 분배하는 게이트웨이
   const broadcastCandleUpdate = (activeCandle, symbol, serverMs, marketType) => {
@@ -78,17 +83,39 @@ export function startRealtimeCandle(
     latestSymbol = symbol;
     latestServerMs = serverMs;
 
-    // 백그라운드 탭 타이틀 실시간 반영
+    const perfConfig = (typeof CONFIG !== "undefined" && CONFIG.CHART_PERF) || {
+      REALTIME_THROTTLE_MS: 50,
+      STATUS_DOM_THROTTLE_MS: 100,
+      TITLE_UPDATE_THROTTLE_MS: 1000,
+      COUNTDOWN_THROTTLE_MS: 250,
+    };
+
+    const now = performance.now();
+
+    // 백그라운드 탭 타이틀 실시간 반영 (쓰로틀 적용으로 0ms DOM Reflow 차단)
     if (activeCandle) {
       activeCandle.marketType = marketType; // 🚀 거래소 및 현/선물 성격 마크 주입
-      updateTabTitleManager(activeCandle.close, symbol, ["UPBIT", "BITHUMB"].includes(store.currentChartMarket));
+      if (now - lastTitleUpdateTime >= perfConfig.TITLE_UPDATE_THROTTLE_MS) {
+        lastTitleUpdateTime = now;
+        updateTabTitleManager(activeCandle.close, symbol, ["UPBIT", "BITHUMB"].includes(store.currentChartMarket));
+      }
     }
 
     if (realtimeUpdatePending) return;
+    if (now - lastChartRenderTime < perfConfig.REALTIME_THROTTLE_MS) {
+      if (!realtimeUpdateTimer) {
+        realtimeUpdateTimer = setTimeout(() => {
+          realtimeUpdateTimer = null;
+          broadcastCandleUpdate(latestActiveCandle, latestSymbol, latestServerMs, marketType);
+        }, perfConfig.REALTIME_THROTTLE_MS);
+      }
+      return;
+    }
     realtimeUpdatePending = true;
 
     requestAnimationFrame(() => {
       realtimeUpdatePending = false;
+      lastChartRenderTime = performance.now();
       if (store.isFetchingChart || window.isFetchingChart || store.isLoadingMoreHistory || store.isRestoringTab) return;
 
       const currentCandle = latestActiveCandle;
@@ -101,20 +128,30 @@ export function startRealtimeCandle(
       // 🎯 분리된 차트 렌더링 코어에 데이터 주입 위임
       renderRealtimeUpdate(chartTime, currentCandle);
 
-      // 카운트다운, 김프 조립 및 상단 대시보드 스케일 동기화 연동
-      if (typeof window.updateRealtimeCountdown === "function") {
-        window.updateRealtimeCountdown(latestServerMs);
+      const nowRaf = performance.now();
+
+      // 카운트다운 DOM 갱신 (쓰로틀 적용)
+      if (nowRaf - lastCountdownUpdateTime >= perfConfig.COUNTDOWN_THROTTLE_MS) {
+        lastCountdownUpdateTime = nowRaf;
+        if (typeof window.updateRealtimeCountdown === "function") {
+          window.updateRealtimeCountdown(latestServerMs);
+        }
       }
+
+      // 김프 조립 (자체 455ms 쓰로틀 보유)
       updateRealtimeKimchiThrottled(currentCandle, latestSymbol, chartTime);
 
-      const p = store.getPrecision(store.currentSelectedSymbol || latestSymbol);
-      if (typeof window.updateStatus === "function") {
-        window.updateStatus(currentCandle, p);
+      // OHLC 레전드 및 헤더 상태창 DOM 갱신 (쓰로틀 적용)
+      if (nowRaf - lastStatusUpdateTime >= perfConfig.STATUS_DOM_THROTTLE_MS) {
+        lastStatusUpdateTime = nowRaf;
+        const p = store.getPrecision(store.currentSelectedSymbol || latestSymbol);
+        if (typeof window.updateStatus === "function") {
+          window.updateStatus(currentCandle, p, true);
+        }
       }
 
-      if (typeof window.syncPriceScaleWidths === "function") {
-        window.syncPriceScaleWidths();
-      }
+      // 🚨 [병목 원천 제거] syncPriceScaleWidths는 매 틱마다 캔버스 너비를 강제 계산하여 극심한 렉을 유발하므로
+      // 실시간 틱 루프에서 완전히 제거함 (코인 선택, 차트 로드, 리사이즈 시에만 실행)
     });
   };
 
