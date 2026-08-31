@@ -42,7 +42,7 @@
   </script>
   <meta charset="UTF-8" />
   <title>Sellnance</title>
-  <link rel="icon" type="image/svg+xml" href="/assets/luma-deer-svg-dark-BiwpABsv.svg" id="favicon-link" />
+  <link rel="icon" type="image/svg+xml" href="/static/luma-deer-svg-dark.svg" id="favicon-link" />
   <!-- 📱 PWA & Mobile Web App Meta Tags -->
   <link rel="manifest" href="/static/manifest.json" />
   <meta name="theme-color" content="#131313" />
@@ -105,8 +105,8 @@
     //   },
     // };
   </script>
-  <script type="module" crossorigin src="/assets/main-ByzCAtBj.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/main-Wg5dApKW.css">
+  <script type="module" crossorigin src="/assets/main-BkaLPPzJ.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/main-BFUJls7j.css">
 </head>
 
 <!-- 스타트뷰(cmc api 로그인), 모바일 하단 네비바, 멀티 차트 퀵 탐색(4~8개) 메모 / 추가 완료 -->
@@ -283,11 +283,11 @@
 
           <div class="bg-theme-bg/50 border border-theme-border/30 rounded-xl p-2">
             <h3 class="text-theme-down font-bold text-sm mb-1.5">
-              ⚠️ 안내 사항 & 최적화 기법
+              ⚠️ 주요 특징
             </h3>
             <ul class="text-sm text-theme-text opacity-90 space-y-1.5 list-disc pl-4 text-[12px] leading-snug">
               <li>
-                <b>렌더링 병목 방어:</b> 실시간 호가 및 차트 마우스 연동
+                <!-- <b>렌더링 병목 방어:</b> 실시간 호가 및 차트 마우스 연동
                 레이아웃 리플로우(Reflow)와 가비지 컬렉션(GC) 부하 최소화를
                 위한 <b>이벤트 디바운스 및 스로틀링(Throttling)</b> 적용
               </li>
@@ -301,7 +301,7 @@
                 <b>부드러운 전환 & 메모리 제어:</b> 차트 탭 전환 시 메모리
                 누수 감시 및 무거운 DOM 갱신 주기 제어를 통한 쾌적한 화면 전환
                 구현
-              </li>
+              </li> -->
               <li>
                 <b>경주마 효과 제한:</b> 순위 변동 시 테이블 행이 스르륵 미끄러지며 이동하는 애니메이션(경주마 효과)은 브라우저의 과도한 리플로우 부하를 차단하기 위해 <b>상위 30위
                   한정</b>으로 제한 적용되어 작동합니다
@@ -357,14 +357,23 @@
         <h2 class="m-0 text-lg font-bold tracking-tighter text-theme-accent uppercase flex items-center h-full">
           sellance
         </h2>
-        <!-- 🚀 [신규] 서버 갱신 쿨타임 & 접속자 수 상태 알림 배지 (세션 세로 배치 구조) -->
+        <!-- 🚀 [신규] 서버 갱신 쿨타임 & 접속자 수 상태 알림 배지 (미니멀 호버 툴팁) -->
         <div id="server-status-badge"
-          class="flex flex-col justify-center items-start gap-0.5 px-2 py-0.5 bg-theme-border/10 border border-theme-border/20 rounded text-[9px] font-bold text-theme-text/80 select-none leading-none">
+          class="relative group flex flex-col justify-center items-start gap-0.5 px-2 py-0.5 bg-theme-border/10 hover:bg-theme-border/20 border border-theme-border/20 hover:border-theme-border/40 rounded text-[9px] font-bold text-theme-text/80 select-none leading-none cursor-default transition-colors">
           <div class="flex items-center gap-1">
-            <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span id="status-timer-dot"
+              class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
             <span id="status-timer">--:--:-- 이후 시가총액 갱신</span>
           </div>
-          <span id="status-users" class="pl-2.5 opacity-60">1 Active</span>
+          <span id="status-users" class="pl-2.5 opacity-60 font-mono">1 Active</span>
+
+          <!-- 💎 심플 미니멀 다크 글래스 호버 툴팁 (순수 텍스트 설명 전용) -->
+          <div id="status-cache-tooltip"
+            class="absolute top-full left-0 mt-2 z-50 w-64 p-2.5 bg-[#12151c]/95 border border-theme-border/60 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.7),0_0_20px_rgba(0,209,255,0.06)] backdrop-blur-md opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-200 transform translate-y-1 group-hover:translate-y-0 text-left">
+            <p class="text-[10px] text-white/85 leading-relaxed font-normal">
+              개인 CMC API 키 미입력 상태에요 <br /> 서버 일일 캐시 모드(24시간 주기)로 시총을 갱신할게요
+            </p>
+          </div>
         </div>
       </div>
 
@@ -762,8 +771,14 @@
               </div>
 
               <div class="flex w-full items-center bg-theme-bg/50 h-8">
-                <div class="p-2 text-[9px] opacity-70 overflow-hidden col-asset">
-                  Name
+                <div
+                  class="p-2 text-[9px] opacity-70 overflow-hidden col-asset flex items-center justify-between gap-2 text-left w-full min-w-0">
+                  <span onclick="sortTable('Name')"
+                    class="cursor-pointer hover:text-theme-accent flex-1 text-left truncate">NAME
+                    <span id="sort-Name" class="sort-arrow text-[8px]"></span></span>
+                  <span onclick="sortTable('Caution')"
+                    class="cursor-pointer hover:text-theme-accent flex-1 text-left truncate">WARN
+                    <span id="sort-Caution" class="sort-arrow text-[8px]"></span></span>
                 </div>
                 <div
                   class="p-2 text-[9px] opacity-70 overflow-hidden col-price flex items-center justify-between gap-2 text-left w-full min-w-0">
@@ -1322,10 +1337,10 @@
     <!-- 🚀 #main-dashboard-content 닫기 -->
 
     <!-- ⚙️ 전문가용 설정 모달 (모바일 바텀시트) -->
-    <div id="settings-modal" style="display: none;"
-      class="fixed inset-0 z-[300] items-center justify-center bg-black/60 backdrop-blur-sm">
-      <form onsubmit="event.preventDefault()"
-        class="bg-theme-panel border border-theme-border p-6 rounded-2xl shadow-2xl w-[calc(100%-32px)] max-w-[400px] max-h-[85dvh] flex flex-col gap-5 overflow-y-auto">
+    <div id="settings-modal" style="display: none;" onclick="if (event.target === this) closeSettingsModal()"
+      class="fixed inset-0 z-[300] items-center justify-center bg-black/60 backdrop-blur-sm cursor-pointer">
+      <form onsubmit="event.preventDefault()" onclick="event.stopPropagation()"
+        class="bg-theme-panel border border-theme-border p-6 rounded-2xl shadow-2xl w-[calc(100%-32px)] max-w-[400px] max-h-[85dvh] flex flex-col gap-5 overflow-y-auto cursor-default">
         <div class="flex justify-between items-center border-b border-theme-border pb-3">
           <h3 class="text-lg font-medium text-theme-accent uppercase tracking-tighter">
             Settings
@@ -1359,7 +1374,7 @@
           </div>
 
           <!-- ✨ 애니메이션 끄기/켜기 -->
-          <div class="flex items-center justify-between border-t border-theme-border/50 pt-4 mt-2">
+          <!-- <div class="flex items-center justify-between border-t border-theme-border/50 pt-4 mt-2">
             <div class="flex flex-col">
               <span class="text-xs font-medium text-theme-text">Disable All Animations</span>
               <span class="text-[9px] opacity-40 italic">성능을 위해 모든 애니메이션 끄기</span>
@@ -1371,7 +1386,7 @@
                 class="w-9 h-5 bg-theme-border/30 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-theme-accent">
               </span>
             </label>
-          </div>
+          </div> -->
 
           <!-- 온보딩 다시 보기 -->
           <div class="flex items-center justify-between border-t border-theme-border/50 pt-4 mt-2">
@@ -1385,6 +1400,21 @@
                 "
               class="px-3 py-1.5 bg-theme-border/20 text-theme-text text-xs font-medium rounded-lg hover:bg-theme-accent hover:text-white transition-all">
               열기
+            </button>
+          </div>
+
+          <!-- 처음 시작 화면(3D 인트로) 다시 보기 -->
+          <div class="flex items-center justify-between border-t border-theme-border/50 pt-4 mt-2">
+            <div class="flex flex-col">
+              <span class="text-xs font-medium text-theme-text">Return to Start Screen</span>
+              <span class="text-[9px] opacity-40 italic">인트로(처음 화면)로 돌아가기</span>
+            </div>
+            <button type="button" onclick="
+                  if (typeof window.showStartScreen === 'function') window.showStartScreen();
+                  closeSettingsModal();
+                "
+              class="px-3 py-1.5 bg-theme-border/20 text-theme-text text-xs font-medium rounded-lg hover:bg-theme-accent hover:text-white transition-all">
+              이동하기
             </button>
           </div>
         </div>
