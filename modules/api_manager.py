@@ -23,6 +23,9 @@ GLOBAL_CMC_CACHE = {
     "timestamp": datetime.min,
 }  # 🚀 CMC 크레딧 방어용 독립 캐시
 
+MARKET_DATA_CACHE_FILE = os.path.join(
+    os.path.dirname(__file__), "../static/market_data_cache.json"
+)
 OWNER_CACHE_FILE = os.path.join(
     os.path.dirname(__file__), "../static/cmc_owner_cache.json"
 )
@@ -31,6 +34,53 @@ USER_CACHE_TIMEOUT = 900  # 15분
 
 USER_CMC_CACHES = {}
 user_cache_lock = threading.Lock()
+
+
+def _load_market_data_cache_from_file():
+    global GLOBAL_CACHE
+    try:
+        if os.path.exists(MARKET_DATA_CACHE_FILE):
+            with open(MARKET_DATA_CACHE_FILE, "r", encoding="utf-8") as f:
+                saved = json.load(f)
+                data = saved.get("data", [])
+                ts_str = saved.get("last_updated_str", "")
+                if data:
+                    GLOBAL_CACHE["data"] = data
+                    GLOBAL_CACHE["last_updated_str"] = ts_str
+                    raw_ts = saved.get("timestamp", "")
+                    if raw_ts:
+                        try:
+                            GLOBAL_CACHE["timestamp"] = datetime.fromisoformat(raw_ts)
+                        except:
+                            GLOBAL_CACHE["timestamp"] = datetime.now(KST)
+                    print(
+                        f"⚡ [MARKET DATA CACHE] 파일에서 {len(data)}개 전체 코인 장부 즉시 로드 완료 (0초 서빙 준비 완료)"
+                    )
+    except Exception as e:
+        print(f"🚨 [MARKET DATA CACHE LOAD ERROR] {e}")
+
+
+def _save_market_data_cache_to_file():
+    try:
+        os.makedirs(os.path.dirname(MARKET_DATA_CACHE_FILE), exist_ok=True)
+        with open(MARKET_DATA_CACHE_FILE, "w", encoding="utf-8") as f:
+            json.dump(
+                {
+                    "data": GLOBAL_CACHE["data"],
+                    "last_updated_str": GLOBAL_CACHE["last_updated_str"],
+                    "timestamp": (
+                        GLOBAL_CACHE["timestamp"].isoformat()
+                        if GLOBAL_CACHE["timestamp"] != datetime.min
+                        else ""
+                    ),
+                },
+                f,
+                indent=2,
+                ensure_ascii=False,
+            )
+        print("💾 [MARKET DATA CACHE] 파일 캐시 저장 완료 (market_data_cache.json)")
+    except Exception as e:
+        print(f"🚨 [MARKET DATA CACHE SAVE ERROR] {e}")
 
 
 def _load_owner_cache_from_file():
@@ -76,6 +126,7 @@ def _save_owner_cache_to_file():
 
 # 모듈 로드 시점에 파일 캐시 불러오기
 _load_owner_cache_from_file()
+_load_market_data_cache_from_file()
 
 
 # 🚀 [추가] 9시 정밀 캡처 스케줄러
@@ -387,12 +438,26 @@ def get_cached_data(force_reload=False, silent_mode=False, user_api_key=None):
     kst = pytz.timezone("Asia/Seoul")
     now_kst = datetime.now(kst)
 
-    # 🚀 유저 개별 API 키가 주입된 경우: 글로벌 캐시(서버 전용)를 오염시키지 않고 실시간 시세 조립 후 반환
+    # 🚀 유저 개별 API 키가 주입된 경우: 15분 동안 조립된 장부(assembled_data)를 메모리 캐시하여 새로고침 시 0초 즉시 반환!
     if user_api_key and user_api_key.strip() != "":
         key_hash = hashlib.sha256(user_api_key.strip().encode()).hexdigest()
+        with user_cache_lock:
+            user_cache = USER_CMC_CACHES.setdefault(
+                key_hash, {"map": {}, "lookup": {}, "timestamp": datetime.min, "assembled_data": None}
+            )
+            is_user_expired = (
+                user_cache["timestamp"] == datetime.min
+                or (now_kst - user_cache["timestamp"].astimezone(KST)).total_seconds() > USER_CACHE_TIMEOUT
+            )
+            if not force_reload and not is_user_expired and user_cache.get("assembled_data"):
+                user_ts = user_cache.get("timestamp", datetime.min)
+                ts_str = user_ts.astimezone(kst).strftime("%Y-%m-%d %H:%M:%S") if user_ts != datetime.min else now_kst.strftime("%Y-%m-%d %H:%M:%S")
+                return user_cache["assembled_data"], ts_str
+
         raw_data = _fetch_and_process_data(silent_mode=False, api_key=user_api_key)
         with user_cache_lock:
-            user_cache = USER_CMC_CACHES.get(key_hash, {})
+            user_cache = USER_CMC_CACHES.setdefault(key_hash, {})
+            user_cache["assembled_data"] = raw_data
             user_ts = user_cache.get("timestamp", datetime.min)
         ts_str = (
             user_ts.astimezone(kst).strftime("%Y-%m-%d %H:%M:%S")
@@ -434,6 +499,7 @@ def get_cached_data(force_reload=False, silent_mode=False, user_api_key=None):
                             "last_updated_str": now_kst.strftime("%Y-%m-%d %H:%M:%S"),
                         }
                     )
+                    _save_market_data_cache_to_file()
                     print(
                         f"✅ 데이터 캐싱 완료! (총 {len(raw_data)}개, Silent:{silent_mode})"
                     )

@@ -123,7 +123,23 @@ class CanvasCrosshairPaneRenderer {
 }
 
 // 🚀 3. 차트 생성
-export function initChart() {
+export async function initChart() {
+  if (typeof window.LightweightCharts === "undefined") {
+    await new Promise((resolve) => {
+      const checkInterval = setInterval(() => {
+        if (typeof window.LightweightCharts !== "undefined") {
+          clearInterval(checkInterval);
+          resolve();
+        }
+      }, 100);
+      setTimeout(() => {
+        clearInterval(checkInterval);
+        resolve();
+      }, 3000);
+    });
+  }
+  if (typeof window.LightweightCharts === "undefined") return;
+
   if (store.chart) {
     store.chart.remove();
     store.chartVol?.remove();
