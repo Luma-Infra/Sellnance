@@ -1,7 +1,107 @@
 // table_render.js
 import { store, CONFIG } from "./_store.js";
-import { formatSmartPrice } from "./chart_utils.js";
+import { formatSmartPrice, getMultiplier, getPureBase } from "./chart_utils.js";
 import { getFilteredData } from "./table_filter.js";
+
+// 🚨 [거래소별 유의/상폐/모니터링 경고 전역 포털 툴팁 엔진 (document.body 직속 100% 무잘림 보장)]
+const EXCH_LOGO_MAP = {
+  UPBIT: "https://s2.coinmarketcap.com/static/img/exchanges/64x64/351.png",
+  BITHUMB: "https://s2.coinmarketcap.com/static/img/exchanges/64x64/200.png",
+  BINANCE: "https://s2.coinmarketcap.com/static/img/exchanges/64x64/270.png",
+  BYBIT: "https://s2.coinmarketcap.com/static/img/exchanges/64x64/521.png",
+};
+
+let globalCautionTooltip = null;
+
+function getOrCreateGlobalCautionTooltip() {
+  if (!globalCautionTooltip) {
+    globalCautionTooltip = document.createElement("div");
+    globalCautionTooltip.id = "global-caution-tooltip";
+    globalCautionTooltip.className =
+      "fixed pointer-events-none opacity-0 transition-opacity duration-150 p-2.5 bg-[#121622]/98 backdrop-blur-2xl border border-rose-500/60 rounded-xl shadow-[0_12px_40px_rgba(0,0,0,0.9)] z-[9999999] flex flex-col gap-1.5 text-left font-sans min-w-[220px] max-w-[320px]";
+    document.body.appendChild(globalCautionTooltip);
+  }
+  return globalCautionTooltip;
+}
+
+window.showCautionTooltip = (e, warningsJsonStr) => {
+  const target = e.currentTarget || e.target;
+  const rect = target.getBoundingClientRect();
+  const tooltip = getOrCreateGlobalCautionTooltip();
+
+  try {
+    const warnings =
+      typeof warningsJsonStr === "string"
+        ? JSON.parse(decodeURIComponent(warningsJsonStr))
+        : warningsJsonStr;
+    const entries = Object.entries(warnings || {});
+    if (entries.length === 0) return;
+
+    const detailsHtml = entries
+      .map(([ex, msg]) => {
+        const logoUrl = EXCH_LOGO_MAP[ex];
+        const logoHtml = logoUrl
+          ? `<img src="${logoUrl}" alt="${ex}" class="w-3.5 h-3.5 object-contain rounded-[2px] flex-shrink-0 bg-white/10 p-[0.5px]" />`
+          : `<span class="text-[9px] font-bold text-white/70">${ex}</span>`;
+        return `
+        <div class="flex items-center gap-2 py-1 text-[11px] leading-tight border-b border-white/5 last:border-0">
+          ${logoHtml}
+          <span class="font-bold text-rose-400 font-mono tracking-tight">${ex}</span>
+          <span class="text-white/90 font-medium text-[11px]">${msg}</span>
+        </div>
+      `;
+      })
+      .join("");
+
+    tooltip.innerHTML = `
+      <div class="flex flex-col">
+        ${detailsHtml}
+      </div>
+    `;
+
+    // <div class="text-[10px] font-bold text-rose-400 flex items-center gap-1.5 pb-1 border-b border-rose-500/25 uppercase tracking-wider">
+    //   <span class="text-xs">🚨</span><span>유의 / 상폐 주의 종목</span>
+    // </div>
+
+    // 툴팁 위치 계산 (배지 우측에 정렬, 화면 벗어남 방지)
+    const top = Math.max(10, Math.min(window.innerHeight - 150, rect.top + rect.height / 2));
+    let left = rect.right + 10;
+    if (left + 280 > window.innerWidth) {
+      left = Math.max(10, rect.left - 290);
+    }
+
+    tooltip.style.top = `${top}px`;
+    tooltip.style.left = `${left}px`;
+    tooltip.style.transform = "translateY(-50%)";
+    tooltip.classList.remove("opacity-0", "pointer-events-none");
+    tooltip.classList.add("opacity-100");
+  } catch (err) { }
+};
+
+window.hideCautionTooltip = () => {
+  if (globalCautionTooltip) {
+    globalCautionTooltip.classList.remove("opacity-100");
+    globalCautionTooltip.classList.add("opacity-0", "pointer-events-none");
+  }
+};
+
+document.addEventListener("scroll", window.hideCautionTooltip, true);
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".caution-badge")) {
+    window.hideCautionTooltip();
+  }
+});
+
+export function getWarningBadgeHtml(warnings) {
+  if (!warnings || typeof warnings !== "object" || Object.keys(warnings).length === 0) return "";
+  const encoded = encodeURIComponent(JSON.stringify(warnings));
+  return `
+    <span class="caution-badge px-1 py-[0.5px] text-[8.5px] font-black text-rose-400 bg-rose-500/15 border border-rose-500/40 rounded shadow-sm hover:scale-110 hover:bg-rose-500/25 transition-all inline-flex items-center justify-center leading-none cursor-pointer select-none z-30 flex-shrink-0 ml-auto mr-1"
+          onmouseenter="window.showCautionTooltip(event, '${encoded}')"
+          onmouseleave="window.hideCautionTooltip()"
+          onclick="event.stopPropagation(); window.showCautionTooltip(event, '${encoded}')">!</span>
+  `;
+}
 
 export function getListingDate(row) {
   const pureBase = (row.Symbol || "").toUpperCase();
@@ -143,7 +243,7 @@ export function updateRowStaticHTML(rowEl, row) {
   // 🚀 정적 식별 정보 레이아웃 렌더링 (순위, 즐겨찾기 별, 로고, 코인명)
   // 동적 수치 데이터 영역은 빈 Placeholder div 구조로 생성하여 레이아웃 깨짐을 방지하고 스크롤 시 공백(하얀 칸) 노출을 방어합니다.
   rowEl.innerHTML = `
-  <div class="p-2 col-asset overflow-hidden">
+  <div class="p-2 col-asset overflow-visible">
     ${pendingAction
       ? `
       <div class="row-progress-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 2.5px; z-index: 50; pointer-events: none;">
@@ -152,7 +252,7 @@ export function updateRowStaticHTML(rowEl, row) {
     `
       : ""
     }
-    <div class="flex items-center gap-0.5 min-w-0">
+    <div class="flex items-center gap-0.5 min-w-0 w-full">
       <!-- 0. 절대 순위 번호 (CSS 카운터로 1부터 800까지 순차 자동 렌더링) -->
       <div class="w-[20px] flex-shrink-0 text-center">
         <span class="row-counter text-[10px] font-tempTestDss font-medium text-theme-text opacity-40 flex-shrink-0 px-0 leading-none"></span>
@@ -193,6 +293,8 @@ export function updateRowStaticHTML(rowEl, row) {
     })()}
         </span>
       </div>
+      <!-- 4. 유의/상폐 경고 뱃지 (셀 우측 끝에 배치) -->
+      ${getWarningBadgeHtml(row.Warnings)}
     </div>
   </div>
   <div class="p-2 col-price overflow-hidden price-placeholder text-theme-text font-medium text-[14px]">
@@ -354,37 +456,12 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
       (currentMarket === "SPOT"
         ? row.Change_24h_Binance
         : row.Change_24h_Bybit) ?? n24h;
-  } else if (currentMarket === "ALL" || currentMarket === "KIMCHI" || currentMarket === "NEW") {
-    /* [테이블 렌더러가 가격 우선순위를 독단적으로 재계산하여 가격을 꼬던 기존 코드들을 싹 다 주석 처리]
-    const hasFutures = row.Binance_Futures === "O" || row.Listed_Exchanges?.includes("BINANCE_FUTURES");
-    const hasSpot = row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE");
-
-    let binanceP = null;
-    let bybitP = null;
-
-    if (hasFutures) {
-      binanceP = row.Binance_Price_Futures ?? row.Binance_Price;
-      bybitP = row.Bybit_Price_Futures ?? row.Bybit_Price;
-    } else if (hasSpot) {
-      binanceP = row.Binance_Price_Spot ?? row.Binance_Price;
-      bybitP = row.Bybit_Price_Spot ?? row.Bybit_Price;
-    }
-
-    const upbitP = row.Upbit_Price || null;
-    const bithumbP = null;
-
-    if (binanceP !== null) {
-      nPrice = binanceP;
-    } else if (bybitP !== null) {
-      nPrice = bybitP;
-    } else if (upbitP !== null) {
-      nPrice = rate > 0 ? upbitP / rate : upbitP;
-    } else {
-      nPrice = row.Ticker?.endsWith("KRW") ? (rate > 0 ? (row.Price_KRW || 0) / rate : (row.Price_KRW || 0)) : (row.Price_Raw || 0);
-    }
+  } else {
+    /*
+    // [기존 코드 보존] ALL, KIMCHI, NEW만 한정하던 분기 (BINANCE 탭 진입 시 누락되던 이슈로 인해 전체 fallback else로 통합)
+    // } else if (currentMarket === "ALL" || currentMarket === "KIMCHI" || currentMarket === "NEW") {
     */
-
-    // 🚀 [구원] 렌더러는 가격 연산에 직접 개입하지 않고, 오직 stream.js가 확정해놓은 단일 진실 대표값만 그대로 매핑해 그립니다!
+    // 🚀 [구원] ALL, BINANCE, KIMCHI, NEW 등 기본 모드는 단일 진실 대표값 매핑
     nPrice = row.Price_Raw ?? 0;
     n24h = row.Change_24h_Raw ?? 0;
   }
@@ -411,8 +488,8 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
       (currentMarket === "SPOT"
         ? row.Change_Today_Binance
         : row.Change_Today_Bybit) ?? nDay;
-  } else if (currentMarket === "ALL" || currentMarket === "KIMCHI" || currentMarket === "NEW") {
-    // 🚀 [추가] ALL 모드에서 오늘(Today) 변동률 우선순위 단일 매칭 독점 바인딩 (Change_Today_Raw 직접 락킹)
+  } else {
+    // 🚀 ALL, BINANCE, KIMCHI, NEW 등 기본 모드
     nDay = row.Change_Today_Raw ?? 0;
   }
   const colorDay =
@@ -513,7 +590,8 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
       volBCell._container = container;
     }
 
-    const volBText = (row.Volume_Formatted && row.Volume_Formatted !== "-" && row.Volume_Formatted !== "0") ? row.Volume_Formatted : "-";
+    const hasBinance = row.Binance === "O" || row.Binance_Futures === "O" || (row.Listed_Exchanges && (row.Listed_Exchanges.includes("BINANCE") || row.Listed_Exchanges.includes("BINANCE_FUTURES")));
+    const volBText = (hasBinance && row.Volume_Formatted && row.Volume_Formatted !== "-" && row.Volume_Formatted !== "0") ? row.Volume_Formatted : "-";
     const mcapText = row.MarketCap_Formatted || "-";
 
     const volBEl = container._volBEl || (container._volBEl = container.querySelector(`#vol-binance-${tId}`));
@@ -614,9 +692,26 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
 
     const kimchiPctEl = container._kimchiPctEl || (container._kimchiPctEl = container.querySelector(".kimchi-pct"));
     if (kimchiPctEl) {
-      if (!row.Kimchi_Label || row.Kimchi_Label === "-" || !row.Kimchi_Formatted) {
+      const exList = (row.Listed_Exchanges || []).map(e => e.toUpperCase());
+      const hasUpbit = row.Upbit === "O" || exList.includes("UPBIT") || !!row.Upbit_Symbol;
+      const hasBithumb = exList.includes("BITHUMB") || !!row.Bithumb_Symbol;
+      const hasGlobal = (row.Binance === "O" || row.Binance_Futures === "O" || exList.includes("BINANCE") || exList.includes("BINANCE_FUTURES") || exList.includes("BYBIT") || exList.includes("BYBIT_FUTURES") || (row.Binance_Price_Futures > 0) || (row.Binance_Price_Spot > 0) || (row.Binance_Price > 0) || (row.Bybit_Price > 0));
+      const hasBoth = hasGlobal && (hasUpbit || hasBithumb);
+
+      const isInvalidKimchi = !hasBoth ||
+        !row.Kimchi_Label ||
+        row.Kimchi_Label === "-" ||
+        !row.Kimchi_Formatted ||
+        row.Kimchi_Formatted === "-" ||
+        row.Kimchi_Raw === null ||
+        row.Kimchi_Raw === undefined;
+
+      if (isInvalidKimchi) {
         kimchiPctEl.textContent = "-";
         kimchiPctEl.className = "kimchi-pct text-[12px] font-medium text-theme-text opacity-40";
+      } else if (row.Kimchi_Raw > 500 || row.Kimchi_Raw <= -90 || row.Kimchi_Formatted === "VOID") {
+        kimchiPctEl.textContent = "VOID";
+        kimchiPctEl.className = "kimchi-pct text-[11px] font-bold text-amber-500/80 tracking-wider";
       } else {
         kimchiPctEl.textContent = row.Kimchi_Formatted;
         kimchiPctEl.className = `kimchi-pct text-[12px] font-medium truncate ${row.Kimchi_Raw > 0 ? "text-theme-up" : "text-theme-down"}`;
@@ -902,6 +997,7 @@ export function renderTable(isRealtime = false) {
     );
 
     const fragment = document.createDocumentFragment();
+    const INITIAL_SYNC_ROWS = 50; // 🚀 초기 뷰포트 50개만 즉시 렌더 (5ms 컷, 2800개 DOM 폭탄 차단)
     for (let i = 0; i < allSource.length; i++) {
       const rowEl = document.createElement("div");
       rowEl.classList.add("coin-row");
@@ -919,24 +1015,31 @@ export function renderTable(isRealtime = false) {
         rowEl.dataset.sym = rowData.Ticker;
         store.rowDomMap.set(rowData.Ticker, rowEl);
 
-        // 🚀 최초 생성 시: 800개 전체 코인의 정적 레이어(명칭, 로고 등)를 즉시 그려 공백을 제거함!
-        updateRowStaticHTML(rowEl, rowData);
-        rowEl.dataset.renderedSym = rowData.Ticker;
-        rowEl.dataset.renderedLang = store.lang;
+        if (i < INITIAL_SYNC_ROWS) {
+          // 🚀 상위 50개는 즉시 정적 레이어 주입
+          updateRowStaticHTML(rowEl, rowData);
+          rowEl.dataset.renderedSym = rowData.Ticker;
+          rowEl.dataset.renderedLang = store.lang;
 
-        // 🚀 자바스크립트로 절대 순위 주입
-        const counterEl = rowEl.querySelector(".row-counter");
-        if (counterEl) {
-          counterEl.textContent = i + 1;
-        }
+          const counterEl = rowEl.querySelector(".row-counter");
+          if (counterEl) {
+            counterEl.textContent = i + 1;
+          }
 
-        // 🚀 상위 30개만 동적 데이터 즉시 채워넣기
-        if (i < 30) {
-          updateRowDynamicHTML(rowEl, rowData);
-          rowEl.dataset.renderedCurrency = store.currencyMode;
-          store.visibleSymbols.add(rowData.Ticker);
+          // 🚀 상위 30개만 동적 데이터 즉시 채워넣기
+          if (i < 30) {
+            updateRowDynamicHTML(rowEl, rowData);
+            rowEl.dataset.renderedCurrency = store.currencyMode;
+            store.visibleSymbols.add(rowData.Ticker);
+          } else {
+            rowEl.dataset.renderedCurrency = "";
+          }
         } else {
+          // 🚀 50번 이후 행은 가벼운 스켈레톤으로 등록 → IntersectionObserver가 뷰포트 진입 시 0ms로 채움
+          rowEl.dataset.renderedSym = "";
+          rowEl.dataset.renderedLang = "";
           rowEl.dataset.renderedCurrency = "";
+          rowEl.dataset.metricsRendered = "false";
         }
       }
       store.tableObserver.observe(rowEl);
@@ -1372,36 +1475,48 @@ window.updateRowPriceDisplay = (target, row) => {
   const p = store.getPrecision(row.DisplayTicker || row.Symbol);
   const currentMarket = store.currentMarket || "ALL";
 
-  const isFuturesOnly = row.Binance === "X" && row.Binance_Futures === "O";
+  const storeMult = getMultiplier(row.DisplayTicker || row.Symbol || row.Ticker);
+  const ovsFutMult = getMultiplier(row.Exact_Futures || row.Ticker || row.Symbol);
+  const ovsSpotMult = getMultiplier(row.Exact_Spot || row.Ticker || row.Symbol);
+
   let binanceP = null;
   let bybitP = null;
 
   if (currentMarket === "FUTURES") {
-    binanceP = row.Binance_Price_Futures ?? row.Binance_Price;
+    const rawFutP = row.Binance_Price_Futures ?? row.Binance_Price;
+    binanceP = (rawFutP !== null && rawFutP !== undefined) ? (rawFutP / ovsFutMult) * storeMult : null;
     bybitP = row.Bybit_Price_Futures ?? row.Bybit_Price;
   } else if (currentMarket === "SPOT") {
-    binanceP = row.Binance_Price_Spot ?? row.Binance_Price;
+    const rawSpotP = row.Binance_Price_Spot ?? row.Binance_Price;
+    binanceP = (rawSpotP !== null && rawSpotP !== undefined) ? (rawSpotP / ovsSpotMult) * storeMult : null;
     bybitP = row.Bybit_Price_Spot ?? row.Bybit_Price;
   } else if (currentMarket === "BYBIT") {
     bybitP = row.Bybit_Price_Spot ?? row.Bybit_Price;
-    binanceP = row.Binance_Price_Spot ?? row.Binance_Price;
+    const rawSpotP = row.Binance_Price_Spot ?? row.Binance_Price;
+    binanceP = (rawSpotP !== null && rawSpotP !== undefined) ? (rawSpotP / ovsSpotMult) * storeMult : null;
   } else if (currentMarket === "BYBIT_FUTURES") {
     bybitP = row.Bybit_Price_Futures ?? row.Bybit_Price;
-    binanceP = row.Binance_Price_Futures ?? row.Binance_Price;
+    const rawFutP = row.Binance_Price_Futures ?? row.Binance_Price;
+    binanceP = (rawFutP !== null && rawFutP !== undefined) ? (rawFutP / ovsFutMult) * storeMult : null;
   } else {
-    // ALL, KIMCHI, NEW 등 기본 탭 모드일 때 독점적 전담 바인딩 우선순위 (선물 -> 현물)
-    const hasFutures = row.Binance_Futures === "O" || row.Listed_Exchanges?.includes("BINANCE_FUTURES");
+    // ALL, KIMCHI, NEW 등 기본 탭 모드일 때: 현물 단가 우선 적용 및 선물 단가 배수 보정
     const hasSpot = row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE");
+    const hasFutures = row.Binance_Futures === "O" || row.Listed_Exchanges?.includes("BINANCE_FUTURES");
 
-    if (hasFutures) {
-      binanceP = row.Binance_Price_Futures ?? row.Binance_Price;
-      bybitP = row.Bybit_Price_Futures ?? row.Bybit_Price;
-    } else if (hasSpot) {
-      binanceP = row.Binance_Price_Spot ?? row.Binance_Price;
-      bybitP = row.Bybit_Price_Spot ?? row.Bybit_Price;
+    if (hasSpot && row.Binance_Price_Spot) {
+      binanceP = (row.Binance_Price_Spot / ovsSpotMult) * storeMult;
+    } else if (hasFutures && row.Binance_Price_Futures) {
+      binanceP = (row.Binance_Price_Futures / ovsFutMult) * storeMult;
+    } else if (row.Binance_Price) {
+      binanceP = (row.Binance_Price / ovsSpotMult) * storeMult;
+    }
+
+    if (row.Bybit_Price_Spot) {
+      bybitP = row.Bybit_Price_Spot;
+    } else if (row.Bybit_Price_Futures) {
+      bybitP = row.Bybit_Price_Futures;
     } else {
-      binanceP = null;
-      bybitP = null;
+      bybitP = row.Bybit_Price ?? null;
     }
   }
 
