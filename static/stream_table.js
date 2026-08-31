@@ -257,39 +257,24 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
       row.Bithumb_Price = newPrice;
     }
   } else {
-    const activeIsFutures = store.currentMarket === "FUTURES";
-    const isSpotOnly = row.Spot_Only === "O";
-
-    if (isAllMode) {
-      const hasFutures = row.Binance_Futures === "O" || row.Listed_Exchanges?.includes("BINANCE_FUTURES");
-      const hasSpot = row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE");
-
-      if (hasFutures) {
-        if (!isFutures) return;
-      } else if (hasSpot) {
-        if (isFutures) return;
-      }
-    }
-
-    let shouldUpdate = false;
-    if (isAllMode) {
-      shouldUpdate = true;
-    } else {
-      shouldUpdate = isSpotOnly ? !isFutures : activeIsFutures === isFutures;
-    }
+    const hasFutures = row.Binance_Futures === "O" || row.Listed_Exchanges?.includes("BINANCE_FUTURES");
+    const hasSpot = row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE");
+    const isFuturesOnly = hasFutures && !hasSpot;
+    const isSpotOnly = hasSpot && !hasFutures;
 
     const isBinance =
-      row.Binance === "O" ||
-      row.Binance_Futures === "O" ||
-      row.Listed_Exchanges?.includes("BINANCE") ||
-      row.Listed_Exchanges?.includes("BINANCE_FUTURES") ||
+      hasSpot ||
+      hasFutures ||
       row.Exact_Spot ||
       row.Exact_Futures;
 
     if (isBinance) {
       if (isFutures) {
         row.Binance_Price_Futures = newPrice;
-        if (data.P !== undefined) row.Change_24h_Futures = parseFloat(data.P);
+        if (data.P !== undefined) {
+          row.Change_24h_Futures = parseFloat(data.P);
+          row.Change_24h_Futures_Ex = parseFloat(data.P);
+        }
       } else {
         row.Binance_Price_Spot = newPrice;
         if (data.P !== undefined) row.Change_24h_Spot = parseFloat(data.P);
@@ -300,6 +285,37 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
       } else {
         row.Bybit_Price_Spot = newPrice;
       }
+    }
+
+    /*
+    // [기존 코드 보존] ALL 모드에서 선물/현물 존재 여부에 따라 상호 배타적으로 틱을 버리던 기존 로직
+    // (선물 전용 코인이 현물/바이낸스 탭 모드에서 갱신이 막히던 이슈로 인해 조건 완화)
+    const activeIsFutures = store.currentMarket === "FUTURES";
+    const isSpotOnly = row.Spot_Only === "O";
+    if (isAllMode) {
+      const hasFutures = row.Binance_Futures === "O" || row.Listed_Exchanges?.includes("BINANCE_FUTURES");
+      const hasSpot = row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE");
+
+      if (hasFutures) {
+        if (!isFutures) return;
+      } else if (hasSpot) {
+        if (isFutures) return;
+      }
+    }
+    let shouldUpdate = false;
+    if (isAllMode) {
+      shouldUpdate = true;
+    } else {
+      shouldUpdate = isSpotOnly ? !isFutures : activeIsFutures === isFutures;
+    }
+    */
+
+    // 🚀 [조건 완화] 선물전용/현물전용/동시상장 코인의 실시간 시세를 불필요한 마켓 분기 차단 없이 100% 매끄럽게 갱신
+    let shouldUpdate = true;
+    if (store.currentMarket === "SPOT" && isFutures && !isFuturesOnly) {
+      shouldUpdate = false;
+    } else if (store.currentMarket === "FUTURES" && !isFutures && !isSpotOnly) {
+      shouldUpdate = false;
     }
 
     if (shouldUpdate) {
@@ -328,12 +344,16 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
       }
     }
   } else {
-    const activeIsFutures = store.currentMarket === "FUTURES";
-    const isSpotOnly = row.Spot_Only === "O";
-    if (isAllMode) {
-      shouldUpdateChg = true;
-    } else {
-      shouldUpdateChg = isSpotOnly ? !isFutures : activeIsFutures === isFutures;
+    const hasFutures = row.Binance_Futures === "O" || row.Listed_Exchanges?.includes("BINANCE_FUTURES");
+    const hasSpot = row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE");
+    const isFuturesOnly = hasFutures && !hasSpot;
+    const isSpotOnly = hasSpot && !hasFutures;
+
+    shouldUpdateChg = true;
+    if (store.currentMarket === "SPOT" && isFutures && !isFuturesOnly) {
+      shouldUpdateChg = false;
+    } else if (store.currentMarket === "FUTURES" && !isFutures && !isSpotOnly) {
+      shouldUpdateChg = false;
     }
   }
 
@@ -343,8 +363,10 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
       if (data.isUpbitRealtime) row.Change_24h_Upbit = chg;
       else if (data.isBithumbRealtime) row.Change_24h_Bithumb = chg;
     } else {
-      if (isFutures) row.Change_24h_Futures_Ex = chg;
-      else if (
+      if (isFutures) {
+        row.Change_24h_Futures = chg;
+        row.Change_24h_Futures_Ex = chg;
+      } else if (
         row.Listed_Exchanges?.includes("BINANCE") ||
         row.Exact_Spot ||
         row.Exact_Futures
@@ -389,17 +411,16 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
     } else {
       openPrice = parseFloat(row.spot_utc0_open_Raw || row.utc0_open_Raw || 0);
     }
-    // 시가 데이터가 0 이하로 오염되거나 빈 경우, 현재 꽂힌 실시간 시세로 강제 보정 복구 (0% 고착 버그로 인해 주석 처리)
-    /*
-    if (openPrice <= 0) {
-      openPrice = newPrice;
-      if (isFutures) row.futures_utc0_open_Raw = newPrice;
-      else row.spot_utc0_open_Raw = newPrice;
-      row.utc0_open_Raw = newPrice;
-    }
-    */
-    if (openPrice > 0) {
-      const todayUsd = ((newPrice - openPrice) / openPrice) * 100;
+
+    if (openPrice > 0 && newPrice > 0) {
+      let normNewPrice = newPrice;
+      let normOpenPrice = openPrice;
+      const ovsMult = getMultiplier(row.Exact_Futures || row.Ticker || row.Symbol);
+      if (ovsMult > 1) {
+        if (normNewPrice > normOpenPrice * 10) normNewPrice /= ovsMult;
+        else if (normOpenPrice > normNewPrice * 10) normOpenPrice /= ovsMult;
+      }
+      const todayUsd = ((normNewPrice - normOpenPrice) / normOpenPrice) * 100;
       if (isFutures) row.Change_Today_Futures = todayUsd;
       else if (row.Listed_Exchanges?.includes("BINANCE") || row.Exact_Spot)
         row.Change_Today_Binance = todayUsd;
@@ -421,30 +442,18 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
         const exList = (r.Listed_Exchanges || []).map(e => e.toUpperCase());
         const hasUpbit = r.Upbit === "O" || exList.includes("UPBIT") || !!r.Upbit_Symbol;
         const hasBithumb = exList.includes("BITHUMB") || !!r.Bithumb_Symbol;
-        const hasGlobal = r.Binance === "O" || r.Binance_Futures === "O" || exList.includes("BINANCE") || exList.includes("BINANCE_FUTURES") || exList.includes("BYBIT") || exList.includes("BYBIT_FUTURES") || !!r.Price_Raw;
+        const hasGlobal = (r.Binance === "O" || r.Binance_Futures === "O" || exList.includes("BINANCE") || exList.includes("BINANCE_FUTURES") || exList.includes("BYBIT") || exList.includes("BYBIT_FUTURES") || (r.Binance_Price_Futures > 0) || (r.Binance_Price_Spot > 0) || (r.Binance_Price > 0) || (r.Bybit_Price > 0));
 
-        /*
         if (!hasGlobal || (!hasUpbit && !hasBithumb)) {
           r.Kimchi_Raw = null;
           r.Kimchi_Label = "-";
           r.Kimchi_Formatted = "-";
-          const rowEl = store.rowDomMap ? store.rowDomMap.get(r.Ticker) : null;
-          if (rowEl && typeof window.updateRowDynamicHTML === "function") {
-            if (store.blockRowDynamicHTML) {
-              if (store.bypassCounters) store.bypassCounters.dynamicHtml++;
-              window.updateRowDynamicHTML(rowEl, r, true);
-            } else {
-              window.updateRowDynamicHTML(rowEl, r, false);
-            }
-          }
           return;
         }
-        */
 
         let priceKor = 0;
         if (hasUpbit || hasBithumb) {
           // 🚀 [초정밀 UID 룩업] 다른 파일에서 시세를 덮어쓰고 복사하는 부작용 없이, 계산 시점에 동일 UID의 원화 코인 가격을 직접 읽어옵니다.
-          // 🚀 수정 후 (타입 에러 방어용 초정밀 문자열 룩업)
           const krwRow = store.uidToKrwRowMap ? store.uidToKrwRowMap.get(String(r.UID)) : null;
           if (hasUpbit) {
             priceKor = (krwRow ? krwRow.Upbit_Price || krwRow.Price_KRW : 0) || r.Upbit_Price || r.Price_KRW || 0;
@@ -453,17 +462,34 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
           }
         }
 
-        const domMult = getMultiplier(r.Upbit_Symbol || r.Bithumb_Symbol || r.Symbol || r.Ticker);
-        const ovsMult = getMultiplier(r.Exact_Futures || r.Exact_Spot || r.Symbol || r.Ticker);
+        // 🚀 [기존 함수 연동] 국내/해외 1000/1M 배수 정밀 추출 (1000PEPE, 1MBABYDOGE 등 1000% 왜곡 원천 차단)
+        const domMult = getMultiplier(r.Upbit_Symbol || r.Bithumb_Symbol || r.Ticker || r.Symbol);
+        const ovsMult = getMultiplier(r.Exact_Futures || r.Exact_Spot || r.Ticker || r.Symbol);
         const unitKorPrice = priceKor / domMult;
-        const unitGlbPrice = (r.Price_Raw || 0) / ovsMult;
+
+        let rawGlb = r.Price_Raw || 0;
+        if ((!rawGlb || r.Ticker?.endsWith("KRW")) && (r.Binance_Price_Futures || r.Binance_Price_Spot || r.Binance_Price || r.Bybit_Price)) {
+          rawGlb = r.Binance_Price_Futures || r.Binance_Price_Spot || r.Binance_Price || r.Bybit_Price || 0;
+        }
+        let unitGlbPrice = rawGlb;
+        if (ovsMult > 1 && unitGlbPrice > 0 && unitKorPrice > 0) {
+          const approxUsd = unitKorPrice / rate;
+          if (Math.abs(unitGlbPrice / ovsMult - approxUsd) < Math.abs(unitGlbPrice - approxUsd)) {
+            unitGlbPrice = unitGlbPrice / ovsMult;
+          }
+        }
 
         if (unitKorPrice > 0 && unitGlbPrice > 0) {
           const kimchiPct = (unitKorPrice / (unitGlbPrice * rate) - 1) * 100;
           if (isFinite(kimchiPct)) {
             r.Kimchi_Raw = kimchiPct;
-            r.Kimchi_Label = (kimchiPct > 0 ? "+" : "") + kimchiPct.toFixed(2) + "%";
-            r.Kimchi_Formatted = (kimchiPct > 0 ? "+" : "") + kimchiPct.toFixed(2) + "%";
+            if (kimchiPct > 500 || kimchiPct <= -90) {
+              r.Kimchi_Label = "VOID";
+              r.Kimchi_Formatted = "VOID";
+            } else {
+              r.Kimchi_Label = (kimchiPct > 0 ? "+" : "") + kimchiPct.toFixed(2) + "%";
+              r.Kimchi_Formatted = (kimchiPct > 0 ? "+" : "") + kimchiPct.toFixed(2) + "%";
+            }
             return;
           }
         }
@@ -480,9 +506,9 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
           r.Kimchi_Formatted === "0.00%";
 
         if (isFakeZero) {
-          r.Kimchi_Raw = null;
-          r.Kimchi_Label = "-";
-          r.Kimchi_Formatted = "-";
+        r.Kimchi_Raw = null;
+        r.Kimchi_Label = "-";
+        r.Kimchi_Formatted = "-";
           const rowEl = store.rowDomMap ? store.rowDomMap.get(r.Ticker) : null;
           if (rowEl && typeof window.updateRowDynamicHTML === "function") {
             if (store.blockRowDynamicHTML) {

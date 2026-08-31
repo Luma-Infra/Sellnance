@@ -76,6 +76,8 @@ export function simpleSortData() {
     Volume: "Volume_Raw",
     VolumeUpbit: "Upbit_Vol",
     Ticker: "DisplayTicker",
+    Name: "Name",
+    Caution: "Name",
     Kimchi: "Kimchi_Raw",
     Gap: "Basis_Raw",
     Funding: "Funding_Raw",
@@ -86,12 +88,20 @@ export function simpleSortData() {
   const isAsc = store.sortState === "asc";
   const isTextCol =
     store.currentSortCol === "Ticker" ||
+    store.currentSortCol === "Name" ||
+    store.currentSortCol === "Caution" ||
     store.currentSortCol === "Listing_Date";
 
   // 🚀 [Schwartzian Transform] 공통 Raw 변수 값 및 비어있음 판단을 O(N)으로 1회만 선계산하여 캐싱
   const mapped = dataCopy.map((d) => {
-    let val =
-      store.currentSortCol === "Listing_Date" ? getListingDate(d) : d[key];
+    let val;
+    if (store.currentSortCol === "Listing_Date") {
+      val = getListingDate(d);
+    } else if (store.currentSortCol === "Name" || store.currentSortCol === "Caution") {
+      val = (store.lang === "KR" ? (d.Name_KR || d.Name) : d.Name) || d.DisplayTicker || d.Symbol || "";
+    } else {
+      val = d[key];
+    }
 
     let isEmpty = false;
     if (val === undefined || val === null || val === "" || val === "-") {
@@ -131,6 +141,25 @@ export function simpleSortData() {
     if (a.isEmpty && b.isEmpty) return 0;
     if (a.isEmpty) return 1;
     if (b.isEmpty) return -1;
+
+    // 🚨 Caution(유의) 정렬 시: 상폐/유의 위험 종목들이 무조건 최상단에 우선 집결한 뒤, 알파벳/가나다 순으로 정렬
+    if (store.currentSortCol === "Caution") {
+      const hasWarnA = a.d.Warnings && Object.keys(a.d.Warnings).length > 0;
+      const hasWarnB = b.d.Warnings && Object.keys(b.d.Warnings).length > 0;
+
+      if (hasWarnA && !hasWarnB) return -1;
+      if (!hasWarnA && hasWarnB) return 1;
+
+      const strA = a.val.toString();
+      const strB = b.val.toString();
+      return isAsc ? strA.localeCompare(strB, "ko-KR") : strB.localeCompare(strA, "ko-KR");
+    }
+
+    if (store.currentSortCol === "Name") {
+      const strA = a.val.toString();
+      const strB = b.val.toString();
+      return isAsc ? strA.localeCompare(strB, "ko-KR") : strB.localeCompare(strA, "ko-KR");
+    }
 
     if (store.currentSortCol === "Listing_Date") {
       return isAsc ? a.val.localeCompare(b.val) : b.val.localeCompare(a.val);

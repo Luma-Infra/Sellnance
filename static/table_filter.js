@@ -469,6 +469,17 @@ export function closeSettingsModal() {
   }
 }
 
+if (typeof window !== "undefined") {
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      const modal = document.getElementById("settings-modal");
+      if (modal && modal.style.display !== "none") {
+        closeSettingsModal();
+      }
+    }
+  });
+}
+
 export async function saveSettings() {
   const input = document.getElementById("setting-cmc-key");
   let newKey = input.value.trim();
