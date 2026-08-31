@@ -695,22 +695,13 @@ if (initialRouteSym) {
     window.selectSymbol(initialRouteSym);
   }
 } else {
-  // 🚀 [UX 복원] 경로/해시가 없는 경우 마지막 선택 코인 및 타임프레임 자동 복원
+  // 🚀 [깔끔한 루트 / 주소 유지] 경로/해시가 없는 경우 타임프레임만 복원하고 URL과 안내창 유지
   try {
-    const lastSymbol = localStorage.getItem("sellnance_last_symbol");
     const lastTF = localStorage.getItem("sellnance_last_tf");
-
-    // 타임프레임 먼저 복원 (selectSymbol이 fetchHistory를 호출하기 전에 TF를 세팅해야 정확한 봉 데이터 요청)
     if (lastTF && typeof window.executeSetTF === "function") {
-      store.currentTF = lastTF; // store만 바꾸고 fetchHistory는 아직 미실행
-    }
-
-    // 코인 복원 (차트 + 우측 패널 전체를 마지막 상태로 자동 복원)
-    if (lastSymbol && typeof window.selectSymbol === "function") {
-      window.selectSymbol(lastSymbol);
+      store.currentTF = lastTF;
     }
   } catch (e) {
-    // 로컬 캐시 복원 실패 시 조용히 무시 (폴백: 기본 화면 유지)
   }
 }
 

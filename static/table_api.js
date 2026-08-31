@@ -89,9 +89,8 @@ export function processTableData(result) {
     if (typeof window.renderTable === "function") window.renderTable();
   }
 
-  // 🚀 [초기 경로/해시/선택 코인 즉시 렌더] 테이블 장부가 완성된 시점에 주소창(/TT, #TT 등)의 rowInfo를 100% 매칭하여 차트 즉시 로드
-  const activeRoute = (typeof window.getInitialRouteSymbol === "function" ? window.getInitialRouteSymbol() : null)
-    || (store.currentAsset || localStorage.getItem("sellnance_last_symbol"));
+  // 🚀 [초기 경로/해시/선택 코인 즉시 렌더] 주소창(/TT 등)에 명시적인 코인 경로가 있을 때만 차트 즉시 로드
+  const activeRoute = typeof window.getInitialRouteSymbol === "function" ? window.getInitialRouteSymbol() : null;
   if (activeRoute && typeof window.selectSymbol === "function") {
     window.selectSymbol(activeRoute);
   }
