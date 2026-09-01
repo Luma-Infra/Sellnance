@@ -412,28 +412,50 @@ def get_market_map():
 def get_coin_info(asset: str):
     """캐시된 데이터에서 코인 정보를 찾아 반환합니다. (CMC 호출 안 함 = 크레딧 0원)"""
     try:
-        # api_manager.py의 캐시 데이터를 가져옵니다 (force=False 이므로 API 새로 안 찌름)
+        # 🚀 접두사(BINANCE: 등) 및 접미사(_FUTURES, _SPOT 등) 정규화
+        clean_asset = (
+            asset.split(":")[-1]
+            .replace("_FUTURES", "")
+            .replace("_SPOT", "")
+            .replace("_UPBIT", "")
+            .replace("_BITHUMB", "")
+            .strip()
+            .upper()
+        )
+        clean_base = (
+            clean_asset[:-4]
+            if clean_asset.endswith("USDT")
+            else (clean_asset[:-3] if clean_asset.endswith("KRW") else clean_asset)
+        )
+
         cached_data, _ = api_manager.get_cached_data(force_reload=False)
 
-        # 캐시된 800개 리스트 중에서 내가 클릭한 코인을 찾습니다
+        # 캐시된 800개 리스트 중에서 코인을 찾습니다
         for coin in cached_data:
+            c_sym = str(coin.get("Symbol", "")).upper()
+            c_dt = str(coin.get("DisplayTicker", "")).upper()
+            c_t = str(coin.get("Ticker", "")).upper()
+
             if (
-                coin["Symbol"] == asset
-                or coin["DisplayTicker"] == asset
-                or coin["Ticker"] == asset
+                c_sym == clean_asset
+                or c_dt == clean_asset
+                or c_t == clean_asset
+                or c_sym == clean_base
+                or c_dt == clean_base
+                or c_t == clean_base
             ):
                 return {
-                    "asset": coin["DisplayTicker"],
-                    "symbol": coin["Symbol"],
-                    "name": coin["Name"],
-                    "market_cap": coin["MarketCap_Formatted"],
+                    "asset": coin.get("DisplayTicker", coin.get("Symbol", clean_base)),
+                    "symbol": coin.get("Symbol", clean_base),
+                    "name": coin.get("Name", clean_base),
+                    "market_cap": coin.get("MarketCap_Formatted", "정보 없음"),
                 }
 
         # 캐시에 없으면 (신규 상장 등)
         return {
-            "asset": asset,
-            "symbol": asset.split("(")[0],
-            "name": asset,
+            "asset": clean_base,
+            "symbol": clean_base.split("(")[0],
+            "name": clean_base,
             "market_cap": "정보 없음",
         }
     except Exception as e:

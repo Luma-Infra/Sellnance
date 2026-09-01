@@ -64,7 +64,10 @@ window.showCautionTooltip = (e, warningsJsonStr) => {
     // </div>
 
     // 툴팁 위치 계산 (배지 우측에 정렬, 화면 벗어남 방지)
-    const top = Math.max(10, Math.min(window.innerHeight - 150, rect.top + rect.height / 2));
+    const top = Math.max(
+      10,
+      Math.min(window.innerHeight - 150, rect.top + rect.height / 2),
+    );
     let left = rect.right + 10;
     if (left + 280 > window.innerWidth) {
       left = Math.max(10, rect.left - 290);
@@ -75,7 +78,7 @@ window.showCautionTooltip = (e, warningsJsonStr) => {
     tooltip.style.transform = "translateY(-50%)";
     tooltip.classList.remove("opacity-0", "pointer-events-none");
     tooltip.classList.add("opacity-100");
-  } catch (err) { }
+  } catch (err) {}
 };
 
 window.hideCautionTooltip = () => {
@@ -93,7 +96,12 @@ document.addEventListener("click", (e) => {
 });
 
 export function getWarningBadgeHtml(warnings) {
-  if (!warnings || typeof warnings !== "object" || Object.keys(warnings).length === 0) return "";
+  if (
+    !warnings ||
+    typeof warnings !== "object" ||
+    Object.keys(warnings).length === 0
+  )
+    return "";
   const encoded = encodeURIComponent(JSON.stringify(warnings));
   return `
     <span class="caution-badge px-1 py-[0.5px] text-[8.5px] font-black text-rose-400 bg-rose-500/15 border border-rose-500/40 rounded shadow-sm hover:scale-110 hover:bg-rose-500/25 transition-all inline-flex items-center justify-center leading-none cursor-pointer select-none z-30 flex-shrink-0 ml-auto mr-1"
@@ -244,13 +252,14 @@ export function updateRowStaticHTML(rowEl, row) {
   // 동적 수치 데이터 영역은 빈 Placeholder div 구조로 생성하여 레이아웃 깨짐을 방지하고 스크롤 시 공백(하얀 칸) 노출을 방어합니다.
   rowEl.innerHTML = `
   <div class="p-2 col-asset overflow-visible">
-    ${pendingAction
-      ? `
+    ${
+      pendingAction
+        ? `
       <div class="row-progress-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 2.5px; z-index: 50; pointer-events: none;">
          <div id="progress-bar-${row.Ticker}" class="row-progress-bar" style="height: 100%; width: 100%; background: linear-gradient(90deg, var(--accent) 0%, #3b82f6 100%); transition: width 50ms linear;"></div>
       </div>
     `
-      : ""
+        : ""
     }
     <div class="flex items-center gap-0.5 min-w-0 w-full">
       <!-- 0. 절대 순위 번호 (CSS 카운터로 1부터 800까지 순차 자동 렌더링) -->
@@ -262,8 +271,9 @@ export function updateRowStaticHTML(rowEl, row) {
         <button onclick="toggleFavorite('${uId}', event)" class="star-btn text-[14px] transition-all hover:scale-125 flex-shrink-0 ${starClass}" style="color: ${starColor}">
           ${starText}
         </button>
-        ${pendingAction
-      ? `
+        ${
+          pendingAction
+            ? `
           <button onclick="window.confirmFavoriteChange('${uId}', event)" class="confirm-fav-btn text-[9px] font-medium px-1.5 py-0.5 rounded transition-all flex-shrink-0 mr-1">
             확인
           </button>
@@ -271,8 +281,8 @@ export function updateRowStaticHTML(rowEl, row) {
             취소
           </button>
         `
-      : ""
-    }
+            : ""
+        }
       </div>
       
       <!-- 2. 티커 이미지 -->
@@ -285,12 +295,12 @@ export function updateRowStaticHTML(rowEl, row) {
         <b class="text-[12px] text-theme-text truncate font-medium tracking-tighter">${row.DisplayTicker || row.Symbol}</b>
         <span class="text-[9px] text-theme-text opacity-60 truncate font-medium tracking-tighter">
           ${(() => {
-      const n =
-        store.lang === "KR"
-          ? row.Name_KR || row.Name || ""
-          : row.Name || "";
-      return n.length > 8 ? n.substring(0, 8) + ".." : n;
-    })()}
+            const n =
+              store.lang === "KR"
+                ? row.Name_KR || row.Name || ""
+                : row.Name || "";
+            return n.length > 8 ? n.substring(0, 8) + ".." : n;
+          })()}
         </span>
       </div>
       <!-- 4. 유의/상폐 경고 뱃지 (셀 우측 끝에 배치) -->
@@ -366,7 +376,8 @@ export function updateRowStaticHTML(rowEl, row) {
     let debugArea = rowEl.querySelector(".first-row-debug-area");
     if (!debugArea) {
       debugArea = document.createElement("div");
-      debugArea.className = "first-row-debug-area absolute bottom-1 left-[10px] right-2 h-[165px] flex flex-col justify-start border-t border-[#ff0055]/30 text-[9px] text-[#ff0055] font-semibold font-mono z-50 pointer-events-none p-1.5 bg-[#1a050f]/85 rounded-b-md";
+      debugArea.className =
+        "first-row-debug-area absolute bottom-1 left-[10px] right-2 h-[165px] flex flex-col justify-start border-t border-[#ff0055]/30 text-[9px] text-[#ff0055] font-semibold font-mono z-50 pointer-events-none p-1.5 bg-[#1a050f]/85 rounded-b-md";
       debugArea.innerHTML = `
         <div class="flex items-center gap-1.5 border-b border-[#ff0055]/20 pb-1 mb-1 flex-shrink-0">
           <span class="opacity-80 text-[8px] uppercase text-white bg-[#ff0055] px-1 rounded flex-shrink-0 font-bold">Metrics Call Trace (Index 0 Row)</span>
@@ -403,13 +414,23 @@ export function updateRowStaticHTML(rowEl, row) {
       if (!store.traceRowCaller) return;
       const stack = new Error().stack || "";
       let callerId = "3 (UI/Filter)";
-      if (stack.includes("stream.js") || stack.includes("stream_korea.js") || stack.includes("updateStatus")) {
+      if (
+        stack.includes("stream.js") ||
+        stack.includes("stream_korea.js") ||
+        stack.includes("updateStatus")
+      ) {
         callerId = "1 (Stream)";
-      } else if (stack.includes("chart_utils.js") || stack.includes("chart.js") || stack.includes("chart_data.js")) {
+      } else if (
+        stack.includes("chart_utils.js") ||
+        stack.includes("chart.js") ||
+        stack.includes("chart_data.js")
+      ) {
         callerId = "2 (Chart)";
       }
       const debugText = `${callerId}`;
-      const firstRowDebug = document.querySelector('#coin-list-body > div[data-index="0"] .first-row-debug-area');
+      const firstRowDebug = document.querySelector(
+        '#coin-list-body > div[data-index="0"] .first-row-debug-area',
+      );
       if (firstRowDebug) {
         const spanEl = firstRowDebug.querySelector(`.trace-${metricName}`);
         if (spanEl && spanEl.textContent !== debugText) {
@@ -465,7 +486,11 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
     nPrice = row.Price_Raw ?? 0;
     n24h = row.Change_24h_Raw ?? 0;
   }
-  const isKrw = store.currencyMode === "KRW" || currentMarket === "UPBIT" || currentMarket === "BITHUMB" || row.Ticker?.endsWith("KRW");
+  const isKrw =
+    store.currencyMode === "KRW" ||
+    currentMarket === "UPBIT" ||
+    currentMarket === "BITHUMB" ||
+    row.Ticker?.endsWith("KRW");
   const formattedPrice = formatSmartPrice(nPrice, p, isKrw);
 
   const color24h =
@@ -503,7 +528,8 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
   const vmcColorClass = "text-theme-text";
 
   // 🚀 가격, 등락률 렌더링
-  const priceCell = rowEl._priceCell || (rowEl._priceCell = rowEl.querySelector(".col-price"));
+  const priceCell =
+    rowEl._priceCell || (rowEl._priceCell = rowEl.querySelector(".col-price"));
   if (priceCell) {
     priceCell.classList.remove("price-placeholder");
 
@@ -557,13 +583,17 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
     const chgText = `${n24h > 0 ? "+" : ""}${Number(n24h).toFixed(2)}%`;
     const todayText = `${nDay > 0 ? "+" : ""}${Number(nDay).toFixed(2)}%`;
 
-    const changeEl = container._changeEl || (container._changeEl = container.querySelector(`#change-${tId}`));
+    const changeEl =
+      container._changeEl ||
+      (container._changeEl = container.querySelector(`#change-${tId}`));
     if (changeEl) {
       changeEl.textContent = chgText;
       changeEl.className = `${color24h} ${chgText.length > 7 ? "text-[9px]" : "text-[10px]"} whitespace-nowrap flex-shrink-0`;
     }
 
-    const todayEl = container._todayEl || (container._todayEl = container.querySelector(`#today-${tId}`));
+    const todayEl =
+      container._todayEl ||
+      (container._todayEl = container.querySelector(`#today-${tId}`));
     if (todayEl) {
       todayEl.textContent = todayText;
       todayEl.className = `${colorDay} ${todayText.length > 7 ? "text-[9px]" : "text-[10px]"} whitespace-nowrap flex-shrink-0`;
@@ -571,7 +601,8 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
   }
 
   // 🚀 바이낸스 볼륨/시총 렌더링
-  const volBCell = rowEl._volBCell || (rowEl._volBCell = rowEl.querySelector(".col-vol-b"));
+  const volBCell =
+    rowEl._volBCell || (rowEl._volBCell = rowEl.querySelector(".col-vol-b"));
   if (volBCell) {
     volBCell.classList.remove("vol-b-placeholder");
 
@@ -590,28 +621,52 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
       volBCell._container = container;
     }
 
-    const hasBinance = row.Binance === "O" || row.Binance_Futures === "O" || (row.Listed_Exchanges && (row.Listed_Exchanges.includes("BINANCE") || row.Listed_Exchanges.includes("BINANCE_FUTURES")));
-    const volBText = (hasBinance && row.Volume_Formatted && row.Volume_Formatted !== "-" && row.Volume_Formatted !== "0") ? row.Volume_Formatted : "-";
+    const hasBinance =
+      row.Binance === "O" ||
+      row.Binance_Futures === "O" ||
+      (row.Listed_Exchanges &&
+        (row.Listed_Exchanges.includes("BINANCE") ||
+          row.Listed_Exchanges.includes("BINANCE_FUTURES")));
+    const volBText =
+      hasBinance &&
+      row.Volume_Formatted &&
+      row.Volume_Formatted !== "-" &&
+      row.Volume_Formatted !== "0"
+        ? row.Volume_Formatted
+        : "-";
     const mcapText = row.MarketCap_Formatted || "-";
 
-    const volBEl = container._volBEl || (container._volBEl = container.querySelector(`#vol-binance-${tId}`));
+    const volBEl =
+      container._volBEl ||
+      (container._volBEl = container.querySelector(`#vol-binance-${tId}`));
     if (volBEl && volBEl.textContent !== volBText) {
       volBEl.textContent = volBText;
       const fs = CONFIG.FONT_SCALE;
       if (fs && volBText.length > fs.VOL_THRESHOLD) {
-        const size = Math.max(fs.VOL_MIN_SIZE, fs.VOL_BASE_SIZE - (volBText.length - fs.VOL_THRESHOLD) * fs.VOL_REDUCE_STEP);
-        if (volBEl.style.fontSize !== `${size}px`) volBEl.style.fontSize = `${size}px`;
+        const size = Math.max(
+          fs.VOL_MIN_SIZE,
+          fs.VOL_BASE_SIZE -
+            (volBText.length - fs.VOL_THRESHOLD) * fs.VOL_REDUCE_STEP,
+        );
+        if (volBEl.style.fontSize !== `${size}px`)
+          volBEl.style.fontSize = `${size}px`;
       } else {
         if (volBEl.style.fontSize !== "") volBEl.style.fontSize = "";
       }
     }
 
-    const mcapEl = container._mcapEl || (container._mcapEl = container.querySelector(`#mcap-${tId}`));
+    const mcapEl =
+      container._mcapEl ||
+      (container._mcapEl = container.querySelector(`#mcap-${tId}`));
     if (mcapEl) {
       mcapEl.textContent = mcapText;
       const fs = CONFIG.FONT_SCALE;
       if (fs && mcapText.length > fs.MCAP_THRESHOLD) {
-        const size = Math.max(fs.MCAP_MIN_SIZE, fs.MCAP_BASE_SIZE - (mcapText.length - fs.MCAP_THRESHOLD) * fs.MCAP_REDUCE_STEP);
+        const size = Math.max(
+          fs.MCAP_MIN_SIZE,
+          fs.MCAP_BASE_SIZE -
+            (mcapText.length - fs.MCAP_THRESHOLD) * fs.MCAP_REDUCE_STEP,
+        );
         mcapEl.style.fontSize = `${size}px`;
       } else {
         mcapEl.style.fontSize = "";
@@ -620,7 +675,8 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
   }
 
   // 🚀 업비트 볼륨/VMC 렌더링
-  const volUCell = rowEl._volUCell || (rowEl._volUCell = rowEl.querySelector(".col-vol-u"));
+  const volUCell =
+    rowEl._volUCell || (rowEl._volUCell = rowEl.querySelector(".col-vol-u"));
   if (volUCell) {
     volUCell.classList.remove("vol-u-placeholder");
 
@@ -639,26 +695,43 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
       volUCell._container = container;
     }
 
-    const volUText = (row.Upbit_Vol_Formatted && row.Upbit_Vol_Formatted !== "-" && row.Upbit_Vol_Formatted !== "0") ? row.Upbit_Vol_Formatted : "-";
+    const volUText =
+      row.Upbit_Vol_Formatted &&
+      row.Upbit_Vol_Formatted !== "-" &&
+      row.Upbit_Vol_Formatted !== "0"
+        ? row.Upbit_Vol_Formatted
+        : "-";
 
-    const volUEl = container._volUEl || (container._volUEl = container.querySelector(`#vol-upbit-${tId}`));
+    const volUEl =
+      container._volUEl ||
+      (container._volUEl = container.querySelector(`#vol-upbit-${tId}`));
     if (volUEl && volUEl.textContent !== volUText) {
       volUEl.textContent = volUText;
       const fs = CONFIG.FONT_SCALE;
       if (fs && volUText.length > fs.VOL_THRESHOLD) {
-        const size = Math.max(fs.VOL_MIN_SIZE, fs.VOL_BASE_SIZE - (volUText.length - fs.VOL_THRESHOLD) * fs.VOL_REDUCE_STEP);
+        const size = Math.max(
+          fs.VOL_MIN_SIZE,
+          fs.VOL_BASE_SIZE -
+            (volUText.length - fs.VOL_THRESHOLD) * fs.VOL_REDUCE_STEP,
+        );
         volUEl.style.fontSize = `${size}px`;
       } else {
         volUEl.style.fontSize = "";
       }
     }
 
-    const vmcEl = container._vmcEl || (container._vmcEl = container.querySelector(`#vmc-${tId}`));
+    const vmcEl =
+      container._vmcEl ||
+      (container._vmcEl = container.querySelector(`#vmc-${tId}`));
     if (vmcEl && vmcEl.textContent !== vmcFormatted) {
       vmcEl.textContent = vmcFormatted;
       const fs = CONFIG.FONT_SCALE;
       if (fs && vmcFormatted.length > fs.VMC_THRESHOLD) {
-        const size = Math.max(fs.VMC_MIN_SIZE, fs.VMC_BASE_SIZE - (vmcFormatted.length - fs.VMC_THRESHOLD) * fs.VMC_REDUCE_STEP);
+        const size = Math.max(
+          fs.VMC_MIN_SIZE,
+          fs.VMC_BASE_SIZE -
+            (vmcFormatted.length - fs.VMC_THRESHOLD) * fs.VMC_REDUCE_STEP,
+        );
         vmcEl.style.fontSize = `${size}px`;
       } else {
         vmcEl.style.fontSize = "";
@@ -667,7 +740,9 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
   }
 
   // 🚀 김프/펀딩비 렌더링
-  const kimchiCell = rowEl._kimchiCell || (rowEl._kimchiCell = rowEl.querySelector(".col-kimch"));
+  const kimchiCell =
+    rowEl._kimchiCell ||
+    (rowEl._kimchiCell = rowEl.querySelector(".col-kimch"));
   if (kimchiCell) {
     kimchiCell.classList.remove("kimchi-placeholder");
 
@@ -677,10 +752,13 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
       kimchiCell._container = container;
     }
 
-    const kimchiPctEl = container._kimchiPctEl || (container._kimchiPctEl = container.querySelector(".kimchi-pct"));
+    const kimchiPctEl =
+      container._kimchiPctEl ||
+      (container._kimchiPctEl = container.querySelector(".kimchi-pct"));
     if (kimchiPctEl) {
       const exList = (row.Listed_Exchanges || []).map((e) => e.toUpperCase());
-      const hasUpbit = row.Upbit === "O" || exList.includes("UPBIT") || !!row.Upbit_Symbol;
+      const hasUpbit =
+        row.Upbit === "O" || exList.includes("UPBIT") || !!row.Upbit_Symbol;
       const hasBithumb = exList.includes("BITHUMB") || !!row.Bithumb_Symbol;
       const hasGlobal =
         row.Binance === "O" ||
@@ -706,17 +784,27 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
 
       if (isInvalidKimchi) {
         if (kimchiPctEl.textContent !== "-") kimchiPctEl.textContent = "-";
-        kimchiPctEl.className = "kimchi-pct text-[12px] font-medium text-theme-text opacity-40";
-      } else if (row.Kimchi_Raw > 500 || row.Kimchi_Raw <= -90 || row.Kimchi_Formatted === "VOID") {
-        if (kimchiPctEl.textContent !== "VOID") kimchiPctEl.textContent = "VOID";
-        kimchiPctEl.className = "kimchi-pct text-[11px] font-bold text-amber-500/80 tracking-wider";
+        kimchiPctEl.className =
+          "kimchi-pct text-[12px] font-medium text-theme-text opacity-40";
+      } else if (
+        row.Kimchi_Raw > 500 ||
+        row.Kimchi_Raw <= -90 ||
+        row.Kimchi_Formatted === "VOID"
+      ) {
+        if (kimchiPctEl.textContent !== "VOID")
+          kimchiPctEl.textContent = "VOID";
+        kimchiPctEl.className =
+          "kimchi-pct text-[11px] font-bold text-amber-500/80 tracking-wider";
       } else {
-        if (kimchiPctEl.textContent !== row.Kimchi_Formatted) kimchiPctEl.textContent = row.Kimchi_Formatted;
+        if (kimchiPctEl.textContent !== row.Kimchi_Formatted)
+          kimchiPctEl.textContent = row.Kimchi_Formatted;
         kimchiPctEl.className = `kimchi-pct text-[12px] font-medium truncate ${row.Kimchi_Raw > 0 ? "text-theme-up" : "text-theme-down"}`;
       }
     }
 
-    const fundingEl = container._fundingEl || (container._fundingEl = container.querySelector(".funding-val"));
+    const fundingEl =
+      container._fundingEl ||
+      (container._fundingEl = container.querySelector(".funding-val"));
     if (fundingEl) {
       const fundVal = row.Funding_Formatted || "-";
       if (fundingEl.textContent !== fundVal) fundingEl.textContent = fundVal;
@@ -744,45 +832,47 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
       exchCell.innerHTML = `
         <div class="grid grid-cols-4 content-center h-full gap-[2px] w-fit text-left min-w-0 cursor-pointer exch-grid-trigger">
           ${(() => {
-          const exchanges = row.Listed_Exchanges || [];
-          const list = [
-            { id: "BINANCE", cmcId: 270 },
-            { id: "UPBIT", cmcId: 351 },
-            { id: "BITHUMB", cmcId: 200 },
-            { id: "BYBIT", cmcId: 521 },
-            { id: "OKX", cmcId: 294 },
-            { id: "BITGET", cmcId: 513 },
-            { id: "GATEIO", cmcId: 302 },
-            { id: "COINBASE", cmcId: 89 },
-          ];
-          return list
-            .map((ex) => {
-              const isListed =
-                exchanges.some((e) => e.includes(ex.id)) ||
-                (ex.id === "UPBIT" && row.Upbit === "O");
-              const isFutures = exchanges.includes(`${ex.id}_FUTURES`);
-              const isSpot = exchanges.includes(ex.id) || (ex.id === "UPBIT" && row.Upbit === "O");
+            const exchanges = row.Listed_Exchanges || [];
+            const list = [
+              { id: "BINANCE", cmcId: 270 },
+              { id: "UPBIT", cmcId: 351 },
+              { id: "BITHUMB", cmcId: 200 },
+              { id: "BYBIT", cmcId: 521 },
+              { id: "OKX", cmcId: 294 },
+              { id: "BITGET", cmcId: 513 },
+              { id: "GATEIO", cmcId: 302 },
+              { id: "COINBASE", cmcId: 89 },
+            ];
+            return list
+              .map((ex) => {
+                const isListed =
+                  exchanges.some((e) => e.includes(ex.id)) ||
+                  (ex.id === "UPBIT" && row.Upbit === "O");
+                const isFutures = exchanges.includes(`${ex.id}_FUTURES`);
+                const isSpot =
+                  exchanges.includes(ex.id) ||
+                  (ex.id === "UPBIT" && row.Upbit === "O");
 
-              let badgeHtml = "";
-              if (isListed && (isFutures || isSpot)) {
-                badgeHtml = `
+                let badgeHtml = "";
+                if (isListed && (isFutures || isSpot)) {
+                  badgeHtml = `
                   <div class="absolute bottom-0 right-0 flex items-center gap-[0.5px] z-10 scale-[0.55] origin-bottom-right">
                     ${isSpot ? `<div class="badge-spot bg-[#0ecb81]/90 text-white text-[9px] font-black px-[1px] rounded-[1px] leading-none">S</div>` : ""}
                     ${isFutures ? `<div class="badge-futures bg-[#f0b90b]/90 text-black text-[9px] font-black px-[1px] rounded-[1px] leading-none">F</div>` : ""}
                   </div>
                 `;
-              }
-              const imgUrl = `https://s2.coinmarketcap.com/static/img/exchanges/64x64/${ex.cmcId}.png`;
-              return `
+                }
+                const imgUrl = `https://s2.coinmarketcap.com/static/img/exchanges/64x64/${ex.cmcId}.png`;
+                return `
                 <div class="relative w-[14px] h-[14px] flex items-center justify-center rounded-[2px] overflow-hidden bg-white/5 transition-all flex-shrink-0"
                      style="${isListed ? "filter: none; opacity: 1;" : "filter: grayscale(1); opacity: 0.1;"}">
                   <img src="${imgUrl}" alt="${ex.id}" class="w-full h-full object-contain rounded-[2px]" />
                   ${badgeHtml}
                 </div>
               `;
-            })
-            .join("");
-        })()}
+              })
+              .join("");
+          })()}
         </div>
       `;
     }
@@ -897,7 +987,10 @@ export function renderTable(isRealtime = false) {
 
   // 1. 최초 1회 전체 껍데기 풀(Pool) 생성 (DOM 파괴/생성 원천 차단, 가상화 스크롤 바 확보)
   const allSource = store.originalTableData || store.currentTableData || [];
-  if (!store.tablePoolInitialized || tbody.children.length !== allSource.length) {
+  if (
+    !store.tablePoolInitialized ||
+    tbody.children.length !== allSource.length
+  ) {
     tbody.innerHTML = "";
     store.rowDomMap = new Map();
     store.visibleSymbols.clear();
@@ -1004,15 +1097,18 @@ export function renderTable(isRealtime = false) {
         rowEl.classList.add("flip-row");
       }
       rowEl.dataset.index = i;
-      rowEl.style.height = (i === 0 && store.traceRowCaller) ? "221px" : "52px";
+      rowEl.style.height = i === 0 && store.traceRowCaller ? "221px" : "52px";
       rowEl.style.position = "absolute";
-      rowEl.style.transform = `translateY(${(i === 0 || !store.traceRowCaller) ? i * 52 : 221 + (i - 1) * 52}px)`;
+      rowEl.style.transform = `translateY(${i === 0 || !store.traceRowCaller ? i * 52 : 221 + (i - 1) * 52}px)`;
       rowEl.style.contain = "content";
 
       const rowData = allSource[i];
       if (rowData) {
         rowEl.dataset.sym = rowData.Ticker;
         store.rowDomMap.set(rowData.Ticker, rowEl);
+        if (rowData.UID) store.rowDomMap.set(String(rowData.UID), rowEl);
+        if (rowData.DisplayTicker)
+          store.rowDomMap.set(rowData.DisplayTicker, rowEl);
 
         if (i < INITIAL_SYNC_ROWS) {
           // 🚀 상위 50개는 즉시 정적 레이어 주입
@@ -1068,21 +1164,52 @@ export function renderTable(isRealtime = false) {
   for (let i = 0; i < totalCount; i++) {
     const rowData = filteredData[i];
     if (rowData) {
-      const rowEl = store.rowDomMap.get(rowData.Ticker);
+      // 🚀 [자가 치유 DOM 풀: 8등, 14등 구멍 뚫림 영구 방어]
+      let rowEl = store.rowDomMap.get(rowData.Ticker);
+      if (!rowEl && rowData.UID)
+        rowEl = store.rowDomMap.get(String(rowData.UID));
+      if (!rowEl && rowData.DisplayTicker)
+        rowEl = store.rowDomMap.get(rowData.DisplayTicker);
+
+      // 풀에 아예 없는 신규 코인이 상위권으로 진입한 경우 즉시 상자 1개 생성 보충
+      if (!rowEl) {
+        rowEl = document.createElement("div");
+        rowEl.classList.add("coin-row");
+        if (i < 30) rowEl.classList.add("flip-row");
+        rowEl.dataset.index = i;
+        rowEl.style.height = i === 0 && store.traceRowCaller ? "221px" : "52px";
+        rowEl.style.position = "absolute";
+        rowEl.style.transform = `translateY(${i === 0 || !store.traceRowCaller ? i * 52 : 221 + (i - 1) * 52}px)`;
+        rowEl.style.contain = "content";
+        rowEl.dataset.sym = rowData.Ticker;
+        store.rowDomMap.set(rowData.Ticker, rowEl);
+        if (rowData.UID) store.rowDomMap.set(String(rowData.UID), rowEl);
+        if (rowData.DisplayTicker)
+          store.rowDomMap.set(rowData.DisplayTicker, rowEl);
+        store.tableObserver.observe(rowEl);
+        tbody.appendChild(rowEl);
+      }
+
       if (rowEl) {
         rowEl.style.removeProperty("display");
         const oldIndex = parseInt(rowEl.dataset.index);
         // 🚀 실시간 정렬 시 30위 이하(31등~) 코인은 불필요한 연속 렌더링 방지를 위해 위치를 고정시키되,
         // 현재 위치(oldIndex)가 실제 정렬 순위(i)와 달라질 때만 딱 1번 올바른 목적지(31위든 300위든)에 공백/겹침 없이 정밀 배치하고 고정시킵니다.
-        let needsPositionUpdate = !isRealtime || i < 30 || oldIndex < 30 || isNaN(oldIndex) || oldIndex !== i;
+        let needsPositionUpdate =
+          !isRealtime ||
+          i < 30 ||
+          oldIndex < 30 ||
+          isNaN(oldIndex) ||
+          oldIndex !== i;
         if (isRealtime && i >= 30 && oldIndex >= 30) {
-          needsPositionUpdate = (oldIndex !== i);
+          needsPositionUpdate = oldIndex !== i;
         }
 
         if (needsPositionUpdate) {
           rowEl.dataset.index = i;
-          rowEl.style.height = (i === 0 && store.traceRowCaller) ? "221px" : "52px";
-          rowEl.style.transform = `translateY(${(i === 0 || !store.traceRowCaller) ? i * 52 : 221 + (i - 1) * 52}px)`;
+          rowEl.style.height =
+            i === 0 && store.traceRowCaller ? "221px" : "52px";
+          rowEl.style.transform = `translateY(${i === 0 || !store.traceRowCaller ? i * 52 : 221 + (i - 1) * 52}px)`;
 
           // 🚀 자바스크립트로 절대 순위 실시간 주입
           const counterEl = rowEl.querySelector(".row-counter");
@@ -1450,7 +1577,7 @@ export function applyPriceFlash(element, newPrice, oldPrice) {
     return;
   }
 
-  // 🚀 [동기식 색상 전환] 방향 전환 시(초록<->빨강) 1프레임 딜레이(흰색 깜빡임) 없이 
+  // 🚀 [동기식 색상 전환] 방향 전환 시(초록<->빨강) 1프레임 딜레이(흰색 깜빡임) 없이
   // 즉시 클래스를 교체하여 중간 흰색 노출 없이 다이렉트로 매끄럽게 변환합니다.
   element.classList.remove("flash-up", "flash-down");
   element.classList.add(flashClass);
@@ -1462,11 +1589,13 @@ export function applyPriceFlash(element, newPrice, oldPrice) {
 }
 
 window.updateRowPriceDisplay = (target, row) => {
-  const rowEl = target instanceof HTMLElement ? target : store.rowDomMap?.get(row.Ticker);
+  const rowEl =
+    target instanceof HTMLElement ? target : store.rowDomMap?.get(row.Ticker);
   if (!rowEl) return;
 
   const tId = row.Ticker || row.Symbol;
-  const parentEl = rowEl._priceEl || (rowEl._priceEl = rowEl.querySelector(`#price-${tId}`));
+  const parentEl =
+    rowEl._priceEl || (rowEl._priceEl = rowEl.querySelector(`#price-${tId}`));
   if (!parentEl) return;
 
   const rate = store.marketDataMap?.krw_usd_rate || 0;
@@ -1474,8 +1603,12 @@ window.updateRowPriceDisplay = (target, row) => {
   const p = store.getPrecision(row.DisplayTicker || row.Symbol);
   const currentMarket = store.currentMarket || "ALL";
 
-  const storeMult = getMultiplier(row.DisplayTicker || row.Symbol || row.Ticker);
-  const ovsFutMult = getMultiplier(row.Exact_Futures || row.Ticker || row.Symbol);
+  const storeMult = getMultiplier(
+    row.DisplayTicker || row.Symbol || row.Ticker,
+  );
+  const ovsFutMult = getMultiplier(
+    row.Exact_Futures || row.Ticker || row.Symbol,
+  );
   const ovsSpotMult = getMultiplier(row.Exact_Spot || row.Ticker || row.Symbol);
 
   let binanceP = null;
@@ -1483,24 +1616,39 @@ window.updateRowPriceDisplay = (target, row) => {
 
   if (currentMarket === "FUTURES") {
     const rawFutP = row.Binance_Price_Futures ?? row.Binance_Price;
-    binanceP = (rawFutP !== null && rawFutP !== undefined) ? (rawFutP / ovsFutMult) * storeMult : null;
+    binanceP =
+      rawFutP !== null && rawFutP !== undefined
+        ? (rawFutP / ovsFutMult) * storeMult
+        : null;
     bybitP = row.Bybit_Price_Futures ?? row.Bybit_Price;
   } else if (currentMarket === "SPOT") {
     const rawSpotP = row.Binance_Price_Spot ?? row.Binance_Price;
-    binanceP = (rawSpotP !== null && rawSpotP !== undefined) ? (rawSpotP / ovsSpotMult) * storeMult : null;
+    binanceP =
+      rawSpotP !== null && rawSpotP !== undefined
+        ? (rawSpotP / ovsSpotMult) * storeMult
+        : null;
     bybitP = row.Bybit_Price_Spot ?? row.Bybit_Price;
   } else if (currentMarket === "BYBIT") {
     bybitP = row.Bybit_Price_Spot ?? row.Bybit_Price;
     const rawSpotP = row.Binance_Price_Spot ?? row.Binance_Price;
-    binanceP = (rawSpotP !== null && rawSpotP !== undefined) ? (rawSpotP / ovsSpotMult) * storeMult : null;
+    binanceP =
+      rawSpotP !== null && rawSpotP !== undefined
+        ? (rawSpotP / ovsSpotMult) * storeMult
+        : null;
   } else if (currentMarket === "BYBIT_FUTURES") {
     bybitP = row.Bybit_Price_Futures ?? row.Bybit_Price;
     const rawFutP = row.Binance_Price_Futures ?? row.Binance_Price;
-    binanceP = (rawFutP !== null && rawFutP !== undefined) ? (rawFutP / ovsFutMult) * storeMult : null;
+    binanceP =
+      rawFutP !== null && rawFutP !== undefined
+        ? (rawFutP / ovsFutMult) * storeMult
+        : null;
   } else {
     // ALL, KIMCHI, NEW 등 기본 탭 모드일 때: 현물 단가 우선 적용 및 선물 단가 배수 보정
-    const hasSpot = row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE");
-    const hasFutures = row.Binance_Futures === "O" || row.Listed_Exchanges?.includes("BINANCE_FUTURES");
+    const hasSpot =
+      row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE");
+    const hasFutures =
+      row.Binance_Futures === "O" ||
+      row.Listed_Exchanges?.includes("BINANCE_FUTURES");
 
     if (hasSpot && row.Binance_Price_Spot) {
       binanceP = (row.Binance_Price_Spot / ovsSpotMult) * storeMult;
@@ -1544,7 +1692,11 @@ window.updateRowPriceDisplay = (target, row) => {
       displayPrice = rate > 0 ? bithumbP / rate : bithumbP;
     } else {
       activeExchange = isKrwCoin ? "upbit" : "binance";
-      displayPrice = isKrwCoin ? (rate > 0 ? (row.Price_KRW || 0) / rate : (row.Price_KRW || 0)) : (row.Price_Raw || 0);
+      displayPrice = isKrwCoin
+        ? rate > 0
+          ? (row.Price_KRW || 0) / rate
+          : row.Price_KRW || 0
+        : row.Price_Raw || 0;
     }
   } else {
     // ₩ 원화(KRW) 표시 모드
@@ -1562,7 +1714,9 @@ window.updateRowPriceDisplay = (target, row) => {
       displayPrice = bybitP * rate;
     } else {
       activeExchange = isKrwCoin ? "upbit" : "binance";
-      displayPrice = isKrwCoin ? (row.Price_KRW || 0) : (row.Price_Raw || 0) * rate;
+      displayPrice = isKrwCoin
+        ? row.Price_KRW || 0
+        : (row.Price_Raw || 0) * rate;
     }
   }
 
@@ -1584,10 +1738,12 @@ window.updateRowPriceDisplay = (target, row) => {
 
     if (ex === activeExchange) {
       const isKrw = isKrwMode || ["upbit", "bithumb"].includes(ex);
-      const formattedPrice = window.formatSmartPrice(displayPrice, p, isKrw) + (isKrw ? "" : "");
+      const formattedPrice =
+        window.formatSmartPrice(displayPrice, p, isKrw) + (isKrw ? "" : "");
       // 원화 가격 원 pss
 
-      const numEl = span._numEl || (span._numEl = span.querySelector(".price-num"));
+      const numEl =
+        span._numEl || (span._numEl = span.querySelector(".price-num"));
       // 🚀 [성능 극대화] innerText는 CSS 레이아웃을 계산하므로 렌더링 폭탄입니다. 단순 textContent로 교체하여 브라우저 부담을 90% 이상 줄입니다.
       // 🚀 또한 값이 실제로 다를 때만 DOM을 건드리도록 방어코드 추가 (DOM Mutation 렉 차단)
       if (numEl && numEl.textContent !== formattedPrice) {
@@ -1597,8 +1753,13 @@ window.updateRowPriceDisplay = (target, row) => {
         const len = formattedPrice.length;
         const fs = CONFIG.FONT_SCALE;
         if (fs && len > fs.PRICE_THRESHOLD) {
-          const sizePx = Math.max(fs.PRICE_MIN_SIZE, fs.PRICE_BASE_SIZE - (len - fs.PRICE_THRESHOLD) * fs.PRICE_REDUCE_STEP);
-          if (parentEl.style.fontSize !== `${sizePx}px`) parentEl.style.fontSize = `${sizePx}px`;
+          const sizePx = Math.max(
+            fs.PRICE_MIN_SIZE,
+            fs.PRICE_BASE_SIZE -
+              (len - fs.PRICE_THRESHOLD) * fs.PRICE_REDUCE_STEP,
+          );
+          if (parentEl.style.fontSize !== `${sizePx}px`)
+            parentEl.style.fontSize = `${sizePx}px`;
         } else {
           if (parentEl.style.fontSize !== "") parentEl.style.fontSize = "";
         }
@@ -1639,8 +1800,14 @@ window.updateRowPriceDisplay = (target, row) => {
     }
   } else {
     // target이 지정되지 않았을 때 DOM에서 첫 번째 행을 조회하여 매칭하는 방어 코드
-    const firstRow = document.querySelector('#coin-list-body > div[data-index="0"]');
-    if (firstRow && firstRow.dataset.sym === tId && typeof window.traceMetricCall === "function") {
+    const firstRow = document.querySelector(
+      '#coin-list-body > div[data-index="0"]',
+    );
+    if (
+      firstRow &&
+      firstRow.dataset.sym === tId &&
+      typeof window.traceMetricCall === "function"
+    ) {
       window.traceMetricCall("Price");
     }
   }
@@ -1696,7 +1863,7 @@ if (typeof window !== "undefined") {
           const baseIconSize = 16; // 원래 아이콘 크기인 16px 기준
 
           const iconSize = baseIconSize * scale; // 예: 3.0배면 48px
-          const cellHeight = iconSize + (12 * scale); // 뱃지 영역 포함 높이
+          const cellHeight = iconSize + 12 * scale; // 뱃지 영역 포함 높이
           const cellGap = 4;
           const popPadding = 6;
 
@@ -1724,7 +1891,7 @@ if (typeof window !== "undefined") {
           popoverEl.appendChild(warnEl);
 
           // 개별 아이콘 및 뱃지 동적 크기 계산 적용
-          gridWrapper.querySelectorAll(".relative").forEach(el => {
+          gridWrapper.querySelectorAll(".relative").forEach((el) => {
             el.style.width = `${iconSize}px`;
             el.style.height = `${cellHeight}px`;
             el.style.overflow = "visible";
@@ -1748,7 +1915,8 @@ if (typeof window !== "undefined") {
               const sEl = badge.querySelector(".badge-spot");
               if (sEl) {
                 sEl.innerText = "SPOT";
-                sEl.className = "bg-[#0ecb81] text-black font-black leading-none tracking-tight rounded-[1px]";
+                sEl.className =
+                  "bg-[#0ecb81] text-black font-black leading-none tracking-tight rounded-[1px]";
                 sEl.style.fontSize = `${3.1 * scale}px`;
                 sEl.style.padding = `${1 * scale}px ${1.2 * scale}px`;
               }
@@ -1756,7 +1924,8 @@ if (typeof window !== "undefined") {
               const fEl = badge.querySelector(".badge-futures");
               if (fEl) {
                 fEl.innerText = "FUTURES";
-                fEl.className = "bg-[#f0b90b] text-black font-black leading-none tracking-tight rounded-[1px]";
+                fEl.className =
+                  "bg-[#f0b90b] text-black font-black leading-none tracking-tight rounded-[1px]";
                 fEl.style.fontSize = `${3.1 * scale}px`;
                 fEl.style.padding = `${1 * scale}px ${1.2 * scale}px`;
               }
@@ -1764,8 +1933,9 @@ if (typeof window !== "undefined") {
           });
 
           // 팝오버 총 크기 및 오프셋 동적 정밀 산출
-          const popWidth = (iconSize * 4) + (cellGap * 3) + (popPadding * 2);
-          const popHeight = (cellHeight * 2) + (cellGap * 1) + (popPadding * 2) + (14 * scale);
+          const popWidth = iconSize * 4 + cellGap * 3 + popPadding * 2;
+          const popHeight =
+            cellHeight * 2 + cellGap * 1 + popPadding * 2 + 14 * scale;
 
           popoverEl.style.top = `${rect.top + rect.height / 2 - popHeight / 2}px`;
           if (rect.right + 12 + popWidth > window.innerWidth) {
@@ -1781,7 +1951,7 @@ if (typeof window !== "undefined") {
               popoverEl.style.opacity = "1";
               popoverEl.style.transform = "scale(1)";
             });
-          } catch (err) { }
+          } catch (err) {}
         }
       });
 
@@ -1798,7 +1968,7 @@ if (typeof window !== "undefined") {
             hideTimeout = setTimeout(() => {
               try {
                 popoverEl.hidePopover();
-              } catch (err) { }
+              } catch (err) {}
             }, 150); // 페이드아웃 트랜지션 시간 대기
           }, 50); // 호버 이탈 시 즉각적인 깜빡임 보정을 위한 딜레이
         }
@@ -1806,4 +1976,3 @@ if (typeof window !== "undefined") {
     }
   });
 }
-

@@ -97,8 +97,15 @@ export function simpleSortData() {
     let val;
     if (store.currentSortCol === "Listing_Date") {
       val = getListingDate(d);
-    } else if (store.currentSortCol === "Name" || store.currentSortCol === "Caution") {
-      val = (store.lang === "KR" ? (d.Name_KR || d.Name) : d.Name) || d.DisplayTicker || d.Symbol || "";
+    } else if (
+      store.currentSortCol === "Name" ||
+      store.currentSortCol === "Caution"
+    ) {
+      val =
+        (store.lang === "KR" ? d.Name_KR || d.Name : d.Name) ||
+        d.DisplayTicker ||
+        d.Symbol ||
+        "";
     } else {
       val = d[key];
     }
@@ -108,17 +115,41 @@ export function simpleSortData() {
       isEmpty = true;
     } else {
       // 🚀 화면에 하이픈(-)으로 노출되거나 유효값(볼륨/시총 등)이 0인 무효 데이터를 최하단 배치하기 위한 정밀 감지
-      if (store.currentSortCol === "VolumeUpbit" && (val === 0 || val === 0.0 || val === "0" || d.Upbit_Vol_Formatted === "-")) {
+      if (
+        store.currentSortCol === "VolumeUpbit" &&
+        (val === 0 ||
+          val === 0.0 ||
+          val === "0" ||
+          d.Upbit_Vol_Formatted === "-")
+      ) {
         isEmpty = true;
-      } else if (store.currentSortCol === "Volume" && (val === 0 || val === 0.0 || val === "0" || d.Volume_Formatted === "-")) {
+      } else if (
+        store.currentSortCol === "Volume" &&
+        (val === 0 || val === 0.0 || val === "0" || d.Volume_Formatted === "-")
+      ) {
         isEmpty = true;
-      } else if (store.currentSortCol === "MarketCap" && (val === 0 || val === 0.0 || val === "0" || d.MarketCap_Formatted === "-")) {
+      } else if (
+        store.currentSortCol === "MarketCap" &&
+        (val === 0 ||
+          val === 0.0 ||
+          val === "0" ||
+          d.MarketCap_Formatted === "-")
+      ) {
         isEmpty = true;
-      } else if (store.currentSortCol === "VMC" && (val === 0 || val === 0.0 || val === "0" || d.VMC_Formatted === "-")) {
+      } else if (
+        store.currentSortCol === "VMC" &&
+        (val === 0 || val === 0.0 || val === "0" || d.VMC_Formatted === "-")
+      ) {
         isEmpty = true;
-      } else if (store.currentSortCol === "Funding" && (val === 0 || val === 0.0 || val === "0" || d.Funding_Formatted === "-")) {
+      } else if (
+        store.currentSortCol === "Funding" &&
+        (val === 0 || val === 0.0 || val === "0" || d.Funding_Formatted === "-")
+      ) {
         isEmpty = true;
-      } else if (store.currentSortCol === "Kimchi" && (d.Kimchi_Label === "-" || !d.Kimchi_Label)) {
+      } else if (
+        store.currentSortCol === "Kimchi" &&
+        (d.Kimchi_Label === "-" || !d.Kimchi_Label)
+      ) {
         isEmpty = true;
       }
 
@@ -152,13 +183,17 @@ export function simpleSortData() {
 
       const strA = a.val.toString();
       const strB = b.val.toString();
-      return isAsc ? strA.localeCompare(strB, "ko-KR") : strB.localeCompare(strA, "ko-KR");
+      return isAsc
+        ? strA.localeCompare(strB, "ko-KR")
+        : strB.localeCompare(strA, "ko-KR");
     }
 
     if (store.currentSortCol === "Name") {
       const strA = a.val.toString();
       const strB = b.val.toString();
-      return isAsc ? strA.localeCompare(strB, "ko-KR") : strB.localeCompare(strA, "ko-KR");
+      return isAsc
+        ? strA.localeCompare(strB, "ko-KR")
+        : strB.localeCompare(strA, "ko-KR");
     }
 
     if (store.currentSortCol === "Listing_Date") {
@@ -191,7 +226,7 @@ export function applyRealtimeSort() {
   store.isRealtimeSorting = true;
   setTimeout(() => {
     store.isRealtimeSorting = false;
-  }, 25);
+  }, 250);
 
   simpleSortData();
   renderTable(true);

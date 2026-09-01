@@ -13,7 +13,8 @@ export function processTableData(result) {
   // 🚀 [신규] 상태 데이터 동기화
   if (result.active_users !== undefined) {
     store.activeUsers = result.active_users;
-    if (typeof window.updateStatusBadge === "function") window.updateStatusBadge();
+    if (typeof window.updateStatusBadge === "function")
+      window.updateStatusBadge();
   }
   if (result.last_updated_raw !== undefined) {
     store.lastUpdatedRaw = result.last_updated_raw;
@@ -53,8 +54,16 @@ export function processTableData(result) {
       if (!exist) {
         store.tickerRowMap.set(tKey, row);
       } else if (exist.UID !== row.UID) {
-        const isMajor = row.Upbit === "O" || row.Bithumb === "O" || row.Binance === "O" || row.Binance_Futures === "O";
-        const existIsMajor = exist.Upbit === "O" || exist.Bithumb === "O" || exist.Binance === "O" || exist.Binance_Futures === "O";
+        const isMajor =
+          row.Upbit === "O" ||
+          row.Bithumb === "O" ||
+          row.Binance === "O" ||
+          row.Binance_Futures === "O";
+        const existIsMajor =
+          exist.Upbit === "O" ||
+          exist.Bithumb === "O" ||
+          exist.Binance === "O" ||
+          exist.Binance_Futures === "O";
         if (isMajor && !existIsMajor) {
           store.tickerRowMap.set(tKey, row);
         }
@@ -66,8 +75,16 @@ export function processTableData(result) {
       if (!exist) {
         store.tickerRowMap.set(dKey, row);
       } else if (exist.UID !== row.UID) {
-        const isMajor = row.Upbit === "O" || row.Bithumb === "O" || row.Binance === "O" || row.Binance_Futures === "O";
-        const existIsMajor = exist.Upbit === "O" || exist.Bithumb === "O" || exist.Binance === "O" || exist.Binance_Futures === "O";
+        const isMajor =
+          row.Upbit === "O" ||
+          row.Bithumb === "O" ||
+          row.Binance === "O" ||
+          row.Binance_Futures === "O";
+        const existIsMajor =
+          exist.Upbit === "O" ||
+          exist.Bithumb === "O" ||
+          exist.Binance === "O" ||
+          exist.Binance_Futures === "O";
         if (isMajor && !existIsMajor) {
           store.tickerRowMap.set(dKey, row);
         }
@@ -89,10 +106,51 @@ export function processTableData(result) {
     if (typeof window.renderTable === "function") window.renderTable();
   }
 
-  // 🚀 [초기 경로/해시/선택 코인 즉시 렌더] 주소창(/TT 등)에 명시적인 코인 경로가 있을 때만 차트 즉시 로드
-  const activeRoute = typeof window.getInitialRouteSymbol === "function" ? window.getInitialRouteSymbol() : null;
-  if (activeRoute && typeof window.selectSymbol === "function") {
-    window.selectSymbol(activeRoute);
+  // 🚀 [초기 경로/해시/선택 코인 즉시 렌더 및 쓰레기 URL 방어]
+  const activeRoute =
+    typeof window.getInitialRouteSymbol === "function"
+      ? window.getInitialRouteSymbol()
+      : null;
+  const targetSym = activeRoute || store.currentSelectedSymbol;
+
+  if (targetSym) {
+    const raw = String(targetSym)
+      .split(":")
+      .pop()
+      .replace("_FUTURES", "")
+      .replace("_SPOT", "")
+      .replace("_UPBIT", "")
+      .replace("_BITHUMB", "")
+      .trim()
+      .toUpperCase();
+    const clean = raw.endsWith("USDT")
+      ? raw.slice(0, -4)
+      : raw.endsWith("KRW")
+        ? raw.slice(0, -3)
+        : raw;
+
+    const exists = store.originalTableData.some((r) => {
+      const sym = (r.Symbol || "").toUpperCase();
+      const dt = (r.DisplayTicker || "").toUpperCase();
+      const t = (r.Ticker || "").toUpperCase();
+      const uid = (r.UID || "").toUpperCase();
+      return (
+        sym === clean ||
+        dt === clean ||
+        t === clean ||
+        uid === clean ||
+        sym === raw ||
+        dt === raw ||
+        t === raw
+      );
+    });
+
+    if (exists && typeof window.selectSymbol === "function") {
+      window.selectSymbol(targetSym);
+    } else if (typeof window.selectSymbol === "function") {
+      // 🚀 존재하지 않는 유령/쓰레기 코인 주소 감지 시 -> 비트코인 퓨처스로 안전 짬통 폴백!
+      window.selectSymbol("BINANCE:BTC_FUTURES");
+    }
   }
 }
 
@@ -109,25 +167,35 @@ export async function loadTableData(force = false, silent = false) {
       const cachedResult = JSON.parse(cachedDataStr);
       if (cachedResult && cachedResult.data && cachedResult.data.length > 0) {
         // 🚀 [상위 30개 즉시 렌더] 마지막 정렬 기준으로 캐시 데이터를 빠르게 정렬 후 상위 30개만 선제 노출
-        const lastSortCol = localStorage.getItem("sellnance_last_sort_col") || "Volume";
-        const lastSortState = localStorage.getItem("sellnance_last_sort_state") || "desc";
+        const lastSortCol =
+          localStorage.getItem("sellnance_last_sort_col") || "Volume";
+        const lastSortState =
+          localStorage.getItem("sellnance_last_sort_state") || "desc";
 
         const sortKeyMap = {
-          MarketCap: "MarketCap_Raw", Price: "Price_Raw",
-          Change_24h: "Change_24h_Raw", Change_Today: "Change_Today_Raw",
-          Volume: "Volume_Raw", VolumeUpbit: "Upbit_Vol",
-          Ticker: "DisplayTicker", Kimchi: "Kimchi_Raw",
-          Gap: "Basis_Raw", Funding: "Funding_Raw", VMC: "VMC_Raw",
+          MarketCap: "MarketCap_Raw",
+          Price: "Price_Raw",
+          Change_24h: "Change_24h_Raw",
+          Change_Today: "Change_Today_Raw",
+          Volume: "Volume_Raw",
+          VolumeUpbit: "Upbit_Vol",
+          Ticker: "DisplayTicker",
+          Kimchi: "Kimchi_Raw",
+          Gap: "Basis_Raw",
+          Funding: "Funding_Raw",
+          VMC: "VMC_Raw",
         };
         const key = sortKeyMap[lastSortCol] || lastSortCol;
         const isAsc = lastSortState === "asc";
-        const isTextCol = lastSortCol === "Ticker" || lastSortCol === "Listing_Date";
+        const isTextCol =
+          lastSortCol === "Ticker" || lastSortCol === "Listing_Date";
 
         const top30 = [...cachedResult.data]
           .sort((a, b) => {
-            const va = isTextCol ? (a[key] || "") : (Number(a[key]) || -Infinity);
-            const vb = isTextCol ? (b[key] || "") : (Number(b[key]) || -Infinity);
-            if (isTextCol) return isAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+            const va = isTextCol ? a[key] || "" : Number(a[key]) || -Infinity;
+            const vb = isTextCol ? b[key] || "" : Number(b[key]) || -Infinity;
+            if (isTextCol)
+              return isAsc ? va.localeCompare(vb) : vb.localeCompare(va);
             return isAsc ? va - vb : vb - va;
           })
           .slice(0, 30);
@@ -143,7 +211,6 @@ export async function loadTableData(force = false, silent = false) {
       console.warn("로컬 스토리지 캐시 파싱 에러:", e);
     }
   }
-
 
   const tableLoading = document.getElementById("table-loading-indicator");
 
@@ -162,7 +229,7 @@ export async function loadTableData(force = false, silent = false) {
     if (localCmcKey) {
       headers["X-CMC-API-KEY"] = localCmcKey;
     }
-    
+
     // Xconsole.log("1. 파이썬 서버에 테이블 데이터 요청 시작!"); // ⭐️ 추가
     const res = await fetch(`/api/market-data?force=${force}`, { headers });
     // Xconsole.log("2. 파이썬 서버가 응답 완료!"); // ⭐️ 추가
@@ -172,7 +239,10 @@ export async function loadTableData(force = false, silent = false) {
     // 로컬 스토리지에 데이터 캐시 (비동기 백그라운드 지연으로 메인 스레드 렌더링 블로킹 방지)
     setTimeout(() => {
       try {
-        localStorage.setItem("sellnance_market_data_cache", JSON.stringify(result));
+        localStorage.setItem(
+          "sellnance_market_data_cache",
+          JSON.stringify(result),
+        );
       } catch (e) {
         console.warn("로컬 캐시 쓰기 실패:", e);
       }
@@ -217,14 +287,15 @@ export async function loadTableDataSilent() {
       store.currentTableData.forEach((row) => {
         let fresh = freshUidMap.get(row.UID);
         if (!fresh && row.Symbol) {
-          fresh = result.data.find(item => item.Symbol === row.Symbol);
+          fresh = result.data.find((item) => item.Symbol === row.Symbol);
         }
 
         if (fresh) {
           if (row.Ticker !== fresh.Ticker) {
             // Ticker가 변경된 경우 (예: TAIKOKRW -> TAIKO/TAIKOUSDT)
             if (row.Ticker) store.tickerRowMap.delete(row.Ticker.toUpperCase());
-            if (row.DisplayTicker) store.tickerRowMap.delete(row.DisplayTicker.toUpperCase());
+            if (row.DisplayTicker)
+              store.tickerRowMap.delete(row.DisplayTicker.toUpperCase());
 
             Object.assign(row, fresh);
 
@@ -234,7 +305,9 @@ export async function loadTableDataSilent() {
 
             const uid = row.UID ? String(row.UID) : null;
             const tKey = row.Ticker ? row.Ticker.toUpperCase() : null;
-            const dKey = row.DisplayTicker ? row.DisplayTicker.toUpperCase() : null;
+            const dKey = row.DisplayTicker
+              ? row.DisplayTicker.toUpperCase()
+              : null;
             const isDomestic = row.Upbit === "O" || row.Bithumb === "O";
 
             if (uid) {
@@ -263,13 +336,13 @@ export async function loadTableDataSilent() {
             row.VMC_Formatted = fresh.VMC_Formatted;
             row.Basis_Raw = fresh.Basis_Raw;
             row.Basis_Formatted = fresh.Basis_Formatted;
-            
+
             // 🚀 실시간 소켓이 없는 코인들을 위해, 백엔드로부터 최신 시세와 변동률(24h/Day) 데이터도 강제 갱신합니다.
             row.Price_Raw = fresh.Price_Raw;
             row.Price_KRW = fresh.Price_KRW;
             row.Change_24h_Raw = fresh.Change_24h_Raw;
             row.Change_Today_Raw = fresh.Change_Today_Raw;
-            
+
             // 거래소별 개별 속성들도 함께 머징하여 지표 정합성 보장
             row.Upbit_Price = fresh.Upbit_Price;
             row.Bithumb_Price = fresh.Bithumb_Price;
@@ -288,11 +361,16 @@ export async function loadTableDataSilent() {
       });
 
       const currentUids = new Set(store.currentTableData.map((d) => d.UID));
-      const currentTickers = new Set(store.currentTableData.map((d) => d.Ticker));
+      const currentTickers = new Set(
+        store.currentTableData.map((d) => d.Ticker),
+      );
 
       // 2. 신규 유입 코인만 찾아서 장부에 꽂아넣기
       result.data.forEach((freshItem) => {
-        if (!currentUids.has(freshItem.UID) && !currentTickers.has(freshItem.Ticker)) {
+        if (
+          !currentUids.has(freshItem.UID) &&
+          !currentTickers.has(freshItem.Ticker)
+        ) {
           // Xconsole.log(`➕ [사일런트 동기화] 신규 코인 장부 주입: ${freshItem.Ticker}`,);
 
           freshItem.DisplayTicker = (
@@ -304,9 +382,14 @@ export async function loadTableDataSilent() {
 
           // 맵핑 캐시 동기화 (UID 0순위 및 동명이인 교통정리)
           const fUid = freshItem.UID ? String(freshItem.UID) : null;
-          const fTkey = freshItem.Ticker ? freshItem.Ticker.toUpperCase() : null;
-          const fDkey = freshItem.DisplayTicker ? freshItem.DisplayTicker.toUpperCase() : null;
-          const fIsDomestic = freshItem.Upbit === "O" || freshItem.Bithumb === "O";
+          const fTkey = freshItem.Ticker
+            ? freshItem.Ticker.toUpperCase()
+            : null;
+          const fDkey = freshItem.DisplayTicker
+            ? freshItem.DisplayTicker.toUpperCase()
+            : null;
+          const fIsDomestic =
+            freshItem.Upbit === "O" || freshItem.Bithumb === "O";
 
           if (fUid) {
             store.tickerRowMap.set(fUid, freshItem);
@@ -360,7 +443,8 @@ export async function loadTableDataSilent() {
       // 🚀 [신규] 사일런트 갱신 시 상태 바 업데이트
       if (result.active_users !== undefined) {
         store.activeUsers = result.active_users;
-        if (typeof window.updateStatusBadge === "function") window.updateStatusBadge();
+        if (typeof window.updateStatusBadge === "function")
+          window.updateStatusBadge();
       }
       if (result.last_updated_raw !== undefined) {
         store.lastUpdatedRaw = result.last_updated_raw;

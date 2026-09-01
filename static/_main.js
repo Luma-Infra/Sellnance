@@ -7,6 +7,8 @@ if (ENABLE_NULL_VALUE_ERROR_SUPPRESSION && typeof window !== "undefined") {
     "Value is null",
     "Ping received after close",
     "message channel closed",
+    "Back-Forward Cache",
+    "Back-Forward",
   ];
   const guard = (e, msg) => {
     if (IGNORES.some((p) => msg?.includes(p))) {
@@ -25,6 +27,18 @@ if (ENABLE_NULL_VALUE_ERROR_SUPPRESSION && typeof window !== "undefined") {
     (e) => guard(e, e.reason?.message || String(e.reason)),
     true,
   );
+
+  // 🚀 콘솔 직접 출력 노이즈 가드
+  const origError = console.error;
+  console.error = (...args) => {
+    const text = args
+      .map((a) =>
+        typeof a === "object" ? a?.message || JSON.stringify(a) : String(a),
+      )
+      .join(" ");
+    if (IGNORES.some((p) => text.includes(p))) return;
+    origError.apply(console, args);
+  };
 }
 
 import { store, CONFIG, tfSec, measureDOM } from "./_store.js";

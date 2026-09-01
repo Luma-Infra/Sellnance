@@ -103,6 +103,16 @@ export function selectSymbol(
     });
   }
 
+  // 🚀 [쓰레기/오타 URL 방어] 테이블 데이터가 로드된 상태에서 목록에 없는 유령 코인이면 BTC_FUTURES로 자동 폴백
+  if (
+    !rowInfo &&
+    allSourceData.length > 0 &&
+    parsedSymbol !== "BTC" &&
+    parsedSymbol !== "BTCUSDT"
+  ) {
+    return selectSymbol("BINANCE:BTC_FUTURES");
+  }
+
   const uniqueTicker = rowInfo ? rowInfo.Ticker : parsedSymbol;
 
   // 🚀 [신규 가드] 이미 선택된 코인을 클릭했거나, 이미 선택된 활성 거래소 뱃지를 클릭한 경우 조기 리턴하여 불필요한 차트 초기화 및 리로드 차단
@@ -257,8 +267,8 @@ export function selectSymbol(
       const p = store.getPrecision(uniqueTicker);
       const headAssetName = document.getElementById("head-asset-name");
 
-      if (rowInfo) {
-        if (headAssetName) {
+      if (headAssetName) {
+        if (rowInfo) {
           const favorites = JSON.parse(
             localStorage.getItem("sellnance_favs") || "[]",
           );
@@ -313,6 +323,14 @@ export function selectSymbol(
               <span ${fontSizeStyle}>${fullText}</span>
             </div>
           `;
+        } else {
+          // 🚀 [신규] rowInfo 로드 대기 중(직접 URL 진입 등)에도 기본 깔끔한 심볼 표기
+          const pureSym = getPureBase(uniqueTicker || parsedSymbol);
+          headAssetName.innerHTML = `
+            <div class="flex items-center gap-2">
+              <span style="white-space: nowrap;">${pureSym}</span>
+            </div>
+          `;
         }
 
         if (typeof window.updateHeaderDisplay === "function") {
@@ -330,8 +348,10 @@ export function selectSymbol(
       // 코인 상세 이름 비동기 패치 (메모리에 이름이 없을 때만 보조 패치)
       if (!rowInfo || !rowInfo.Name) {
         try {
-          const querySym = rowInfo ? rowInfo.DisplayTicker : originalSym;
-          fetch(`/api/coin-info/${querySym}`)
+          const querySym = rowInfo
+            ? rowInfo.DisplayTicker
+            : uniqueTicker || parsedSymbol || originalSym;
+          fetch(`/api/coin-info/${encodeURIComponent(querySym)}`)
             .then((res) => res.json())
             .then((infoData) => {
               if (headAssetName && infoData.name) {
