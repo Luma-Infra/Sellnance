@@ -540,12 +540,20 @@ export async function fetchHistory(
           "15m": "5m",
           "30m": "30m",
           "1h": "1h",
-          "4h": "1h", // 🚀 1시간봉을 가져와서 글로벌 UTC 4시간(0,4,8,12,16,20) 기준으로 완벽 리샘플링
-          "12h": "1h", // 🚀 1시간봉을 가져와서 글로벌 UTC 12시간(0,12) 기준으로 완벽 리샘플링
-          "1d": "1h", // 🚀 1시간봉을 가져와서 글로벌 UTC 00시(=한국 09시) 기준 일봉으로 리샘플링
-          "3d": "1h", // 🚀 1시간봉을 가져와서 글로벌 UTC 3일봉으로 리샘플링
-          "1w": "1h", // 🚀 1시간봉을 가져와서 글로벌 UTC 주봉(월요일 00시)으로 리샘플링
-          "1M": "1h", // 🚀 1시간봉을 가져와서 글로벌 UTC 월봉(1일 00시)으로 리샘플링
+          "4h": "4h",
+          "12h": "12h",
+          "1d": "24h",
+          "3d": "24h",
+          "1w": "24h",
+          "1M": "24h",
+        };
+        const tfOffsetMap = {
+          "4h": 3600,   // 🚀 정확히 +1시간만 밀어서 바이낸스 4h와 1:1 완벽 일치!
+          "12h": 32400, // 🚀 +9시간 밀어서 바이낸스 12h와 1:1 완벽 일치!
+          "1d": 32400,  // 🚀 +9시간 밀어서 바이낸스 일봉과 1:1 완벽 일치!
+          "3d": 32400,  // 🚀 +9시간 밀어서 바이낸스 3일봉과 1:1 완벽 일치!
+          "1w": 32400,  // 🚀 +9시간 밀어서 바이낸스 주봉과 1:1 완벽 일치!
+          "1M": 32400,  // 🚀 +9시간 밀어서 바이낸스 월봉과 1:1 완벽 일치!
         };
         const bFetchInt = bMap[store.currentTF] || "1h";
         const bData = await fetchCandlesSmart(
@@ -555,8 +563,9 @@ export async function fetchHistory(
           1000,
         );
         if (bData.status === "0000" && Array.isArray(bData.data)) {
+          const shiftSec = tfOffsetMap[store.currentTF] || 0;
           const rawMapped = bData.data.map((d) => ({
-            time: Math.floor(Number(d[0]) / 1000),
+            time: Math.floor(Number(d[0]) / 1000) + shiftSec,
             open: Number(d[1]),
             close: Number(d[2]),
             high: Number(d[3]),
@@ -567,9 +576,6 @@ export async function fetchHistory(
           const getGroupTime = (t, tf) => {
             const d = new Date(t * 1000);
             if (tf === "15m") return Math.floor(t / 900) * 900;
-            if (tf === "4h") return Math.floor(t / 14400) * 14400; // UTC 0, 4, 8, 12, 16, 20
-            if (tf === "12h") return Math.floor(t / 43200) * 43200; // UTC 0, 12
-            if (tf === "1d") return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) / 1000;
             if (tf === "3d") {
               const dayTs = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) / 1000;
               return Math.floor(dayTs / 259200) * 259200;
@@ -583,7 +589,7 @@ export async function fetchHistory(
             return t;
           };
 
-          const tfNeedsResample = ["15m", "4h", "12h", "1d", "3d", "1w", "1M"].includes(store.currentTF);
+          const tfNeedsResample = ["15m", "3d", "1w", "1M"].includes(store.currentTF);
           if (tfNeedsResample) {
             const groups = {};
             rawMapped.forEach((d) => {
