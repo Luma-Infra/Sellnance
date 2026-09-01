@@ -853,17 +853,29 @@ function connectQuickViewSockets() {
 function disconnectQuickViewSockets() {
   if (qvState.binanceWs) {
     qvState.binanceWs.onmessage = null;
-    qvState.binanceWs.close();
+    qvState.binanceWs.onerror = null;
+    qvState.binanceWs.onclose = null;
+    try {
+      qvState.binanceWs.close(1000, "Normal Closure");
+    } catch (e) {}
     qvState.binanceWs = null;
   }
   if (qvState.binanceFuturesWs) {
     qvState.binanceFuturesWs.onmessage = null;
-    qvState.binanceFuturesWs.close();
+    qvState.binanceFuturesWs.onerror = null;
+    qvState.binanceFuturesWs.onclose = null;
+    try {
+      qvState.binanceFuturesWs.close(1000, "Normal Closure");
+    } catch (e) {}
     qvState.binanceFuturesWs = null;
   }
   if (qvState.upbitWs) {
     qvState.upbitWs.onmessage = null;
-    qvState.upbitWs.close();
+    qvState.upbitWs.onerror = null;
+    qvState.upbitWs.onclose = null;
+    try {
+      qvState.upbitWs.close(1000, "Normal Closure");
+    } catch (e) {}
     qvState.upbitWs = null;
   }
 }

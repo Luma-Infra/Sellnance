@@ -1,46 +1,4 @@
 // _main.js
-// 🚀 [에러 가드 스위치] 차트 내부 'Value is null' 등 비치명적 예외 콘솔 토글 (true: 숨김, false: 노출)
-export const ENABLE_NULL_VALUE_ERROR_SUPPRESSION = true;
-
-if (ENABLE_NULL_VALUE_ERROR_SUPPRESSION && typeof window !== "undefined") {
-  const IGNORES = [
-    "Value is null",
-    "Ping received after close",
-    "message channel closed",
-    "Back-Forward Cache",
-    "Back-Forward",
-  ];
-  const guard = (e, msg) => {
-    if (IGNORES.some((p) => msg?.includes(p))) {
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      return true;
-    }
-  };
-  window.addEventListener(
-    "error",
-    (e) => guard(e, e.message || e.error?.message),
-    true,
-  );
-  window.addEventListener(
-    "unhandledrejection",
-    (e) => guard(e, e.reason?.message || String(e.reason)),
-    true,
-  );
-
-  // 🚀 콘솔 직접 출력 노이즈 가드
-  const origError = console.error;
-  console.error = (...args) => {
-    const text = args
-      .map((a) =>
-        typeof a === "object" ? a?.message || JSON.stringify(a) : String(a),
-      )
-      .join(" ");
-    if (IGNORES.some((p) => text.includes(p))) return;
-    origError.apply(console, args);
-  };
-}
-
 import { store, CONFIG, tfSec, measureDOM } from "./_store.js";
 import { loadSymbols } from "./chart_api.js";
 import {

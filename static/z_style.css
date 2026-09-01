@@ -156,6 +156,7 @@ body {
   color: var(--text);
 }
 
+html.theme-binance,
 body.theme-binance {
   --bg: #131722;
   --panel: #1e222d;
@@ -170,6 +171,7 @@ body.theme-binance {
   --flash-down: rgba(239, 83, 80, 0.2);
 }
 
+html.theme-upbit,
 body.theme-upbit {
   --bg: #ffffff;
   --panel: #f8fafc;

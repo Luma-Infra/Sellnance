@@ -1126,7 +1126,7 @@ export function showRecentSearchChips() {
 
   dropdown.innerHTML = html;
   dropdown.className =
-    "fixed p-2.5 bg-theme-panel/98 backdrop-blur-2xl border border-theme-border/80 rounded-xl shadow-[0_16px_40px_rgba(0,0,0,0.85)] z-[9999999] flex flex-col gap-1.5 text-left select-none transition-opacity duration-150 opacity-100";
+    "fixed p-2.5 bg-theme-panel/98 backdrop-blur-2xl border border-theme-border/50 rounded-xl shadow-[0_10px_25px_rgba(0,0,0,0.35)] z-[9999999] flex flex-col gap-1.5 text-left select-none transition-opacity duration-150 opacity-100";
 
   // 🚀 정확한 좌표 계산 (모바일/PC 활성 검색창 input 바로 하단에 fixed 오버레이)
   const rect = input.getBoundingClientRect();

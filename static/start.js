@@ -95,7 +95,16 @@ function getStartScreenHTML() {
   return `
     <style>
       #start-screen {
-        background: #080a0f !important; 
+        --bg: #080a0f !important;
+        --panel: #12151c !important;
+        --border: rgba(255, 255, 255, 0.12) !important;
+        --text: #e2e8f0 !important;
+        --accent: #00d1ff !important;
+        --up: #0ecb81 !important;
+        --down: #f6465d !important;
+        background: #080a0f !important;
+        color: #e2e8f0 !important;
+        color-scheme: dark !important;
         font-family: 'Pretendard Variable', Pretendard, 'Outfit', sans-serif;
         perspective: ${START_3D_CONFIG.perspective}px;
         overflow: hidden;
@@ -875,12 +884,12 @@ function startStartPreviewWebSocket(tf) {
     if (oldWs.readyState === WebSocket.CONNECTING) {
       oldWs.onopen = () => {
         try {
-          oldWs.close();
+          oldWs.close(1000, "Normal Closure");
         } catch (e) {}
       };
     } else {
       try {
-        oldWs.close();
+        oldWs.close(1000, "Normal Closure");
       } catch (e) {}
     }
     startQvWs = null;

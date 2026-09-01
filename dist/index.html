@@ -2,6 +2,67 @@
 <html lang="ko">
 
 <head>
+  <!-- 🚀 [글로벌 에러 가드] 브라우저 확장프로그램 및 BFCache 비치명적 노이즈 원천 차단 -->
+  <script>
+    // 💡 [온오프 스위치] true: 콘솔 에러 숨김(배포/운영용), false: 콘솔 에러 모두 노출(디버깅용)
+    window.ENABLE_ERROR_SUPPRESSION = true;
+
+    (function () {
+      if (!window.ENABLE_ERROR_SUPPRESSION) return;
+
+      var IGNORES = [
+        "Value is null",
+        "Ping received after close",
+        "message channel closed",
+        "Back-Forward Cache",
+        "Back-Forward",
+        "asynchronous response by returning true"
+      ];
+      function isSuppressed(msg) {
+        if (!msg) return false;
+        var str = typeof msg === "object" ? (msg.message || msg.stack || JSON.stringify(msg)) : String(msg);
+        for (var i = 0; i < IGNORES.length; i++) {
+          if (str.indexOf(IGNORES[i]) !== -1) return true;
+        }
+        return false;
+      }
+      window.addEventListener("error", function (e) {
+        if (isSuppressed(e.message || (e.error && (e.error.message || e.error.stack)))) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          return true;
+        }
+      }, true);
+      window.addEventListener("unhandledrejection", function (e) {
+        if (isSuppressed(e.reason && (e.reason.message || e.reason.stack || e.reason))) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          return true;
+        }
+      }, true);
+      var origError = console.error;
+      console.error = function () {
+        var args = Array.prototype.slice.call(arguments);
+        var text = args.map(function (a) {
+          return typeof a === "object" ? (a && (a.message || a.stack) || JSON.stringify(a)) : String(a);
+        }).join(" ");
+        if (isSuppressed(text)) return;
+        origError.apply(console, args);
+      };
+    })();
+  </script>
+
+  <!-- 🚀 [초기 init 테마 즉시 복원] 새로고침/화면이동 시 잔상(FOUC) 차단해요-->
+  <script>
+    (function () {
+      try {
+        var savedTheme = localStorage.getItem("sellnance_theme") || "binance";
+        var isUpbit = savedTheme === "upbit";
+        document.documentElement.classList.add(isUpbit ? "theme-upbit" : "theme-binance");
+        document.documentElement.classList.remove(isUpbit ? "theme-binance" : "theme-upbit");
+      } catch (e) {}
+    })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" /> -->
   <!-- 📱 모바일 확대 차단 및 터치 개선 -->
@@ -105,14 +166,22 @@
     //   },
     // };
   </script>
-  <script type="module" crossorigin src="/assets/main-Dmqq-d4l.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/main-Cy0fMb94.css">
+  <script type="module" crossorigin src="/assets/main-dqZl8b0t.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/main-YbG4iIxo.css">
 </head>
 
 <!-- 스타트뷰(cmc api 로그인), 모바일 하단 네비바, 멀티 차트 퀵 탐색(4~8개) 메모 / 추가 완료 -->
 
 <body
-  class="theme-binance text-theme-text font-sans h-screen w-screen overflow-hidden flex justify-center transition-colors duration-10">
+  class="text-theme-text font-sans h-screen w-screen overflow-hidden flex justify-center">
+  <script>
+    (function () {
+      try {
+        var tgX = localStorage.getItem("sellnance_theme") || "binance";
+        document.body.classList.add(tgX === "upbit" ? "theme-upbit" : "theme-binance");
+      } catch (e) {}
+    })();
+  </script>
   <div id="app-loader"></div>
 
   <!-- 🚀 온보딩 모달 (첫 방문 안내) -->
@@ -543,47 +612,47 @@
 
           <!-- 🚀 상단 제어 바: 시총 슬라이더, 거래소 필터, 카테고리 탭 -->
           <div id="control-panel-parent"
-            class="flex flex-col gap-1.5 p-2 bg-theme-panel/10 border-b border-theme-border relative flex-1">
+            class="flex flex-col justify-between p-2 bg-theme-panel/10 relative flex-1">
 
             <!-- 🚀 [신규 추가] 거래소 다중 체크 AND 필터바 -->
             <div id="exchange-filter-container"
-              class="flex items-center gap-1.5 overflow-x-auto scrollbar-hide py-1 px-1 bg-theme-panel/5 border border-theme-border/20 rounded-xl">
+              class="flex items-center gap-1.5 overflow-x-auto overflow-y-hidden scrollbar-hide px-1 py-1.5 shrink-0">
               <!-- 동적으로 table_filter.js::updateExchFilterUI()가 버튼들을 그립니다 -->
             </div>
 
             <!-- 🚀 [신규 추가] 거래소 필터 프리셋 제어바 -->
             <div id="exchange-presets-container"
-              class="flex items-center justify-between py-1 px-2 bg-theme-panel/5 border border-theme-border/20 rounded-xl mt-0.5 text-[10px] select-none">
+              class="flex items-center justify-between px-1 py-0.5 mt-1.5 text-[10px] select-none shrink-0">
               <!-- 동적으로 table_filter.js::updateExchFilterUI()가 프리셋 라인을 그립니다 -->
             </div>
 
             <!-- 3층: 카테고리 탭 및 모바일 전용 인라인 돋보기(🔍) 토글 검색 바 -->
-            <div id="category-tab-container" class="relative flex items-center gap-1 px-1 mt-0.5 min-h-[34px] overflow-hidden">
+            <div id="category-tab-container" class="relative flex items-center gap-1 px-1 mt-1.5 mb-0.5 min-h-[36px] overflow-hidden">
               <!-- 탭 버튼 목록 -->
-              <div id="tab-buttons-group" class="flex items-center gap-1 flex-1 min-w-0 overflow-x-auto scrollbar-hide transition-opacity duration-200">
+              <div id="tab-buttons-group" class="flex items-center gap-1 flex-1 min-w-0 overflow-x-auto scrollbar-hide transition-opacity duration-200 min-[1200px]:w-full h-full py-0.5">
                 <button onclick="switchTab('ALL')" id="tab-all"
-                  class="tab-btn px-3.5 py-1.5 text-[10px] font-medium rounded-full transition-all bg-theme-accent text-white border border-theme-accent shadow-md whitespace-nowrap">
-                  ALL
+                  class="tab-btn px-3.5 min-[1200px]:px-4.5 py-2 text-[10.5px] font-semibold rounded-full transition-all bg-theme-accent text-white border border-theme-accent shadow-md whitespace-nowrap inline-flex items-center justify-center leading-none">
+                  ALL<span class="hidden min-[1200px]:inline"> LIST</span>
                 </button>
                 <button onclick="switchTab('FAV')" id="tab-fav"
-                  class="tab-btn px-3.5 py-1.5 text-[10px] font-medium rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap">
+                  class="tab-btn px-3.5 min-[1200px]:px-4.5 py-2 text-[10.5px] font-semibold rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap inline-flex items-center justify-center leading-none">
                   <span style="color: #e3b30a; margin-right: 2px">★</span>
-                  FAV 1
+                  FAV<span class="hidden min-[1200px]:inline">ORITES</span> 1
                 </button>
                 <button onclick="switchTab('FAV2')" id="tab-fav2"
-                  class="tab-btn px-3.5 py-1.5 text-[10px] font-medium rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap">
+                  class="tab-btn px-3.5 min-[1200px]:px-4.5 py-2 text-[10.5px] font-semibold rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap inline-flex items-center justify-center leading-none">
                   <span style="color: #3b82f6; margin-right: 2px">★</span>
-                  FAV 2
+                  FAV<span class="hidden min-[1200px]:inline">ORITES</span> 2
                 </button>
 
-                <div id="category-tab-separator" class="w-px h-4 bg-theme-border/30 mx-1 shrink-0"></div>
+                <div id="category-tab-separator" class="w-px h-5 bg-theme-border/30 mx-1 shrink-0 min-[1200px]:ml-auto"></div>
 
                 <button onclick="toggleSmallCap()" id="btn-small-cap"
-                  class="tab-btn px-3.5 py-1.5 text-[10px] font-medium rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap">
-                  🚫 Mcap &lt; 1M
+                  class="tab-btn px-3.5 min-[1200px]:px-4.5 py-2 text-[10.5px] font-semibold rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap inline-flex items-center justify-center leading-none">
+                  🚫 <span class="hidden min-[1200px]:inline">Hiding </span>Mcap &lt; 1M
                 </button>
                 <button onclick="window.toggleCustomFilter(event)" id="btn-custom-filter"
-                  class="tab-btn px-3.5 py-1.5 text-[10px] font-medium rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap hidden md:flex items-center gap-1 cursor-pointer">
+                  class="tab-btn px-3.5 min-[1200px]:px-4.5 py-2 text-[10.5px] font-semibold rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap hidden min-[1200px]:inline-flex items-center justify-center gap-1 cursor-pointer leading-none">
                   <span>🎛️</span>
                   <span id="btn-custom-filter-text">Custom</span>
                 </button>

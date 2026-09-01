@@ -18,7 +18,7 @@ function getOrCreateGlobalCautionTooltip() {
     globalCautionTooltip = document.createElement("div");
     globalCautionTooltip.id = "global-caution-tooltip";
     globalCautionTooltip.className =
-      "fixed pointer-events-none opacity-0 transition-opacity duration-150 p-2.5 bg-[#121622]/98 backdrop-blur-2xl border border-rose-500/60 rounded-xl shadow-[0_12px_40px_rgba(0,0,0,0.9)] z-[9999999] flex flex-col gap-1.5 text-left font-sans min-w-[220px] max-w-[320px]";
+      "fixed pointer-events-none opacity-0 transition-opacity duration-150 p-2.5 bg-theme-panel/98 backdrop-blur-2xl border border-rose-500/50 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.25)] z-[9999999] flex flex-col gap-1.5 text-left font-sans min-w-[220px] max-w-[320px] text-theme-text";
     document.body.appendChild(globalCautionTooltip);
   }
   return globalCautionTooltip;
@@ -41,13 +41,13 @@ window.showCautionTooltip = (e, warningsJsonStr) => {
       .map(([ex, msg]) => {
         const logoUrl = EXCH_LOGO_MAP[ex];
         const logoHtml = logoUrl
-          ? `<img src="${logoUrl}" alt="${ex}" class="w-3.5 h-3.5 object-contain rounded-[2px] flex-shrink-0 bg-white/10 p-[0.5px]" />`
-          : `<span class="text-[9px] font-bold text-white/70">${ex}</span>`;
+          ? `<img src="${logoUrl}" alt="${ex}" class="w-3.5 h-3.5 object-contain rounded-[2px] flex-shrink-0 bg-theme-panel p-[0.5px]" />`
+          : `<span class="text-[9px] font-bold text-theme-text opacity-70">${ex}</span>`;
         return `
-        <div class="flex items-center gap-2 py-1 text-[11px] leading-tight border-b border-white/5 last:border-0">
+        <div class="flex items-center gap-2 py-1 text-[11px] leading-tight border-b border-theme-border/30 last:border-0">
           ${logoHtml}
-          <span class="font-bold text-rose-400 font-mono tracking-tight">${ex}</span>
-          <span class="text-white/90 font-medium text-[11px]">${msg}</span>
+          <span class="font-bold text-rose-500 font-mono tracking-tight">${ex}</span>
+          <span class="text-theme-text font-medium text-[11px]">${msg}</span>
         </div>
       `;
       })
