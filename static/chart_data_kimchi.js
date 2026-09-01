@@ -68,7 +68,7 @@ export function calculateKimchiData(mainData, subRaw, params) {
       while (
         subIndex < sortedSub.length - 1 &&
         Math.abs(getSubTime(sortedSub[subIndex + 1]) - candleTimeSec) <
-        Math.abs(getSubTime(sortedSub[subIndex]) - candleTimeSec)
+          Math.abs(getSubTime(sortedSub[subIndex]) - candleTimeSec)
       ) {
         subIndex++;
       }
@@ -83,7 +83,7 @@ export function calculateKimchiData(mainData, subRaw, params) {
       } else {
         const tolerance = intervalSec * 3;
         // 시차가 너무 벌어졌다면(3배 이상) 이전 매칭된 가격 캐시를 완전히 초기화하여 무분별한 역방향 누적 차단
-        if (lastKnownSubTime && (candleTimeSec - lastKnownSubTime > tolerance)) {
+        if (lastKnownSubTime && candleTimeSec - lastKnownSubTime > tolerance) {
           lastKnownSubClose = null;
         }
       }

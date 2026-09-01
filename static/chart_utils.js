@@ -22,20 +22,28 @@ export const getNextBarTime = (lastCandleTime, tf) => {
   const lastCandleUnix = getUnixSeconds(lastCandleTime);
   if (tf === "1M") {
     const dt = new Date(lastCandleUnix * 1000);
-    return Math.floor(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth() + 1, 1) / 1000);
+    return Math.floor(
+      Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth() + 1, 1) / 1000,
+    );
   }
   if (tf === "1w") {
     const dt = new Date(lastCandleUnix * 1000);
     const day = dt.getUTCDay();
     const diff = day === 0 ? 1 : 8 - day;
-    return Math.floor(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate() + diff) / 1000);
+    return Math.floor(
+      Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate() + diff) /
+        1000,
+    );
   }
   if (tf === "1d") {
     const dt = new Date(lastCandleUnix * 1000);
-    return Math.floor(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate() + 1) / 1000);
+    return Math.floor(
+      Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate() + 1) /
+        1000,
+    );
   }
   if (tf === "3d") {
-    return lastCandleUnix + (3 * 86400);
+    return lastCandleUnix + 3 * 86400;
   }
   const sec = tfSec[tf] || 60;
   return lastCandleUnix + sec;
@@ -76,12 +84,18 @@ function resetChartScale() {
       timeScale.scrollToRealtime();
     }
   } catch (e) {
-    try { store.chart.timeScale().scrollToRealtime(); } catch (err) { }
+    try {
+      store.chart.timeScale().scrollToRealtime();
+    } catch (err) {}
   }
 
   if (store.chartVol) {
-    store.chartVol.priceScale("right").applyOptions({ minimumWidth: 0, autoScale: true });
-    store.chartVol.priceScale("left").applyOptions({ minimumWidth: 0, autoScale: true });
+    store.chartVol
+      .priceScale("right")
+      .applyOptions({ minimumWidth: 0, autoScale: true });
+    store.chartVol
+      .priceScale("left")
+      .applyOptions({ minimumWidth: 0, autoScale: true });
 
     try {
       const timeScaleVol = store.chartVol.timeScale();
@@ -97,7 +111,9 @@ function resetChartScale() {
         timeScaleVol.scrollToRealtime();
       }
     } catch (e) {
-      try { store.chartVol.timeScale().scrollToRealtime(); } catch (err) { }
+      try {
+        store.chartVol.timeScale().scrollToRealtime();
+      } catch (err) {}
     }
   }
 
@@ -112,8 +128,12 @@ function resetChartScale() {
 export function formatSmartPrice(price, p, isKrw = false) {
   try {
     if (price === 0) {
-      const d = p !== undefined && p !== null ? Math.max(0, parseInt(p, 16)) : 2;
-      return (0).toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d });
+      const d =
+        p !== undefined && p !== null ? Math.max(0, parseInt(p, 16)) : 2;
+      return (0).toLocaleString(undefined, {
+        minimumFractionDigits: d,
+        maximumFractionDigits: d,
+      });
     }
     if (!price || isNaN(price)) return "";
 
@@ -124,7 +144,8 @@ export function formatSmartPrice(price, p, isKrw = false) {
     // 0.2 - 0.2 연산 등으로 발생하는 2.7755e-17 같은 부동소수점 쓰레기값을 순수 0으로 정규화!
     if (Math.abs(numPrice) < 1e-12) {
       numPrice = 0;
-      const d = p !== undefined && p !== null ? Math.max(0, parseInt(p, 16)) : 2;
+      const d =
+        p !== undefined && p !== null ? Math.max(0, parseInt(p, 16)) : 2;
       return (0).toLocaleString(undefined, {
         minimumFractionDigits: d,
         maximumFractionDigits: d,
@@ -167,7 +188,8 @@ export function formatSmartPrice(price, p, isKrw = false) {
     }
 
     // 2️⃣ 달러(USD) 가격 규칙: 소수점 이하 유효숫자 4자리 보장 (0.00000001080 등 극소수 코인 0/잘림 방어)
-    let decimals = p !== undefined && p !== null ? Math.max(0, parseInt(p, 10)) : 2;
+    let decimals =
+      p !== undefined && p !== null ? Math.max(0, parseInt(p, 10)) : 2;
     if (numPrice > 0 && numPrice < 0.01) {
       const formattedStr = numPrice.toPrecision(4);
       const parts = formattedStr.split("e");
@@ -236,7 +258,8 @@ function updateLegend(d, v, k) {
   const leg = document.getElementById("ohlc-legend");
   if (!leg) return;
 
-  const isOhlcEnabled = localStorage.getItem("sellnance_ohlc_hidden") !== "true";
+  const isOhlcEnabled =
+    localStorage.getItem("sellnance_ohlc_hidden") !== "true";
   if (!isOhlcEnabled) {
     leg.style.display = "none";
     return;
@@ -267,7 +290,10 @@ function updateLegend(d, v, k) {
 
   // 🚀 [수정] 단일 진실 공급원(Single Source of Truth)인 store.getPrecision 사용! (O(1) 초광속 참조)
   let p = store.getPrecision(store.currentAsset);
-  if (store.currencyMode === "KRW" && typeof window.getKrwPrecision === "function") {
+  if (
+    store.currencyMode === "KRW" &&
+    typeof window.getKrwPrecision === "function"
+  ) {
     p = window.getKrwPrecision(d.close);
   }
 
@@ -378,15 +404,25 @@ function updateLegend(d, v, k) {
   if (store.paneConfig.kimchi) {
     // 🚀 [분리 락킹] 마우스가 과거의 역사적인 봉을 호버 중일 때만 해당 과거 시점(k)의 김프를 보여주고,
     // 마우스가 우측 여백(최신 시점)에 있거나 벗어난 실시간 상태일 때는 항상 최신 실시간 김프를 보여줍니다!
-    const isLatest = store.mainData && store.mainData.length > 0 && d && d.time === store.mainData[store.mainData.length - 1].time;
-    const targetKim = (store.isCrosshairActive && !isLatest)
-      ? k
-      : (store.realtimeKimchi || k || (store.kimchiData && store.kimchiData.length > 0 ? store.kimchiData[store.kimchiData.length - 1] : null));
+    const isLatest =
+      store.mainData &&
+      store.mainData.length > 0 &&
+      d &&
+      d.time === store.mainData[store.mainData.length - 1].time;
+    const targetKim =
+      store.isCrosshairActive && !isLatest
+        ? k
+        : store.realtimeKimchi ||
+          k ||
+          (store.kimchiData && store.kimchiData.length > 0
+            ? store.kimchiData[store.kimchiData.length - 1]
+            : null);
 
     let kimValue = "-";
     let kimColorStyle = "";
     if (targetKim && targetKim.value !== undefined) {
-      kimValue = (targetKim.value > 0 ? "+" : "") + targetKim.value.toFixed(2) + "%";
+      kimValue =
+        (targetKim.value > 0 ? "+" : "") + targetKim.value.toFixed(2) + "%";
       kimColorStyle = targetKim.color || "#57a4fc";
     }
     if (kimchiContainer) kimchiContainer.classList.remove("hidden");
@@ -409,7 +445,11 @@ function updateLegend(d, v, k) {
         callerId = "2 (Chart)"; // 🚀 마우스 크로스헤어 이동 시는 무조건 Chart
       } else if (stack.includes("stream") || stack.includes("updateStatus")) {
         callerId = "1 (Stream)";
-      } else if (stack.includes("chart_utils.js") || stack.includes("chart.js") || stack.includes("chart_data.js")) {
+      } else if (
+        stack.includes("chart_utils.js") ||
+        stack.includes("chart.js") ||
+        stack.includes("chart_data.js")
+      ) {
         callerId = "2 (Chart)";
       } else if (
         stack.includes("ui_control") ||
@@ -426,7 +466,9 @@ function updateLegend(d, v, k) {
     if (kimchiCallerEl) kimchiCallerEl.innerText = ` [${callerId}]`;
 
     // 🚀 [디버그 동적 전파] 무조건 첫번째 행(index 0)에 있는 디버그 영역에도 함께 기록해줍니다.
-    const firstRowDebug = document.querySelector('#coin-list-body > div[data-index="0"] .first-row-debug-area');
+    const firstRowDebug = document.querySelector(
+      '#coin-list-body > div[data-index="0"] .first-row-debug-area',
+    );
     if (firstRowDebug) {
       const ohlcDebug = firstRowDebug.querySelector(".debug-ohlc-caller");
       const kimchiDebug = firstRowDebug.querySelector(".debug-kimchi-caller");
@@ -464,10 +506,12 @@ function updateStatus(d, p) {
   // 가격 업데이트
   const asset = store.currentAsset || store.currentSelectedSymbol;
   const allSource = store.currentTableData || store.originalTableData || [];
-  const row = store.tickerRowMap.get(asset) || allSource.find(
-    (r) =>
-      r.DisplayTicker === asset || r.Ticker === asset || r.Symbol === asset,
-  );
+  const row =
+    store.tickerRowMap.get(asset) ||
+    allSource.find(
+      (r) =>
+        r.DisplayTicker === asset || r.Ticker === asset || r.Symbol === asset,
+    );
   if (row && typeof window.updateHeaderDisplay === "function") {
     const btnSim = document.getElementById("tab-btn-sim");
     const isSimMode = btnSim ? btnSim.classList.contains("active") : false;
@@ -524,7 +568,9 @@ function updateStatus(d, p) {
 function autoFit(isTabRestore = false) {
   // 🚀 [비동기/동기 로딩] 사용자가 맞춰둔 커스텀 여백(savedRightMargin)을 우선 준수, 없으면 10
   const margin = store.savedRightMargin ?? 10;
-  const defaultZoom = (typeof CONFIG !== "undefined" && CONFIG.CHART_CONFIG?.VISIBLE_COUNT) ?? 100;
+  const defaultZoom =
+    (typeof CONFIG !== "undefined" && CONFIG.CHART_CONFIG?.VISIBLE_COUNT) ??
+    100;
   if (isTabRestore && store.isUserZoomed) {
     // 🚀 [UX 개선] 탭 복귀/전환 시 기존 줌 상태(가로폭)는 유지하면서, 최신 봉(가장 우측) 위치로 화면을 강제 정렬하고 가격 스케일을 맞춥니다.
     try {
@@ -561,7 +607,7 @@ function autoFit(isTabRestore = false) {
           store.chartVol.priceScale("left").applyOptions({ autoScale: true });
         }
       }
-    } catch (e) { }
+    } catch (e) {}
     return;
   }
   if (store.chart && store.mainData.length) {
@@ -584,7 +630,7 @@ function autoFit(isTabRestore = false) {
         if (store.kimchiSeries) {
           store.chartVol.priceScale("left").applyOptions({ autoScale: true });
         }
-      } catch (e) { }
+      } catch (e) {}
     }
   }
 }
@@ -904,33 +950,44 @@ export function updateTabTitleManager(price, symbol, isKor) {
 
   const activeMarket = store.currentChartMarket || "ALL";
   const nowMs = performance.now();
-  const isStateChanged = (symbol !== lastTabSymbol || activeMarket !== lastTabMarket);
+  const isStateChanged =
+    symbol !== lastTabSymbol || activeMarket !== lastTabMarket;
 
   // 🚀 500ms 쓰로틀링으로 브라우저 탭 깜빡임 부하 완벽 방어! (단, 심볼이나 마켓이 바뀌었을 경우 즉시 갱신)
-  if (isStateChanged || !lastTabTitleUpdateMs || nowMs - lastTabTitleUpdateMs > 500) {
+  if (
+    isStateChanged ||
+    !lastTabTitleUpdateMs ||
+    nowMs - lastTabTitleUpdateMs > 500
+  ) {
     lastTabTitleUpdateMs = nowMs;
     lastTabSymbol = symbol;
     lastTabMarket = activeMarket;
 
     const row = store.currentTableData?.find(
-      (c) => c.Ticker === store.currentSelectedSymbol || c.Symbol === symbol || c.DisplayTicker === symbol
+      (c) =>
+        c.Ticker === store.currentSelectedSymbol ||
+        c.Symbol === symbol ||
+        c.DisplayTicker === symbol,
     );
     const targetSymbol = row?.Symbol || symbol;
 
-    const isFuturesMode = activeMarket === "FUTURES" || activeMarket === "BYBIT_FUTURES";
+    const isFuturesMode =
+      activeMarket === "FUTURES" || activeMarket === "BYBIT_FUTURES";
 
     // 🚀 선택된 심볼 기준의 최종 대상 배수 (예: 1000SHIB인 경우 1000)
     const storeMult = getMultiplier(targetSymbol);
 
     // 국내/해외의 현재 모드별 배수 획득
-    const activeOvsTicker = isFuturesMode ? row?.Exact_Futures : row?.Exact_Spot;
+    const activeOvsTicker = isFuturesMode
+      ? row?.Exact_Futures
+      : row?.Exact_Spot;
     const ovsMult = getMultiplier(activeOvsTicker || targetSymbol);
     const domMult = getMultiplier(row?.Upbit_Symbol || targetSymbol);
 
     const activeExchangeMult = isKor ? domMult : ovsMult;
 
     // 가격 스케일 조정 (예: SHIB Spot 가격 0.000005를 1000SHIB에 맞춰 0.005로 변환)
-    const scaledPrice = price / activeExchangeMult * storeMult;
+    const scaledPrice = (price / activeExchangeMult) * storeMult;
 
     const isMainKrw = store.currencyMode === "KRW" || isKor;
     let formatted = "";
@@ -1045,8 +1102,8 @@ export const sanitizeChartData = (dataArr, hasValueField = false) => {
         close: Number(d.close),
         volume:
           d.volume !== undefined &&
-            d.volume !== null &&
-            !isNaN(Number(d.volume))
+          d.volume !== null &&
+          !isNaN(Number(d.volume))
             ? Number(d.volume)
             : 0,
       });

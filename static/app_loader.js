@@ -32,18 +32,20 @@ const EngineUI = {
     if (text) text.innerText = `${data.percent}%`;
 
     if (list) {
-      list.innerHTML = data.phases.map((name, i) => {
-        const isDone = data.status[i].includes("완료");
-        const isIng = data.status[i].includes("진행");
-        return `
-          <div class="flex justify-between items-center p-2.5 rounded bg-theme-border/10 border border-transparent ${isIng ? 'border-theme-accent/30 bg-theme-accent/5' : ''}">
+      list.innerHTML = data.phases
+        .map((name, i) => {
+          const isDone = data.status[i].includes("완료");
+          const isIng = data.status[i].includes("진행");
+          return `
+          <div class="flex justify-between items-center p-2.5 rounded bg-theme-border/10 border border-transparent ${isIng ? "border-theme-accent/30 bg-theme-accent/5" : ""}">
             <span class="opacity-80">${i + 1}. ${name}</span>
-            <span class="${isDone ? 'text-theme-accent' : isIng ? 'text-blue-400 animate-pulse' : 'opacity-30'} font-medium">
-              ${isDone ? 'READY' : isIng ? 'RUNNING' : 'WAIT'}
+            <span class="${isDone ? "text-theme-accent" : isIng ? "text-blue-400 animate-pulse" : "opacity-30"} font-medium">
+              ${isDone ? "READY" : isIng ? "RUNNING" : "WAIT"}
             </span>
           </div>
         `;
-      }).join("");
+        })
+        .join("");
     }
 
     if (data.percent === 100) this.finish();
@@ -63,7 +65,7 @@ const EngineUI = {
       }
       document.body.classList.remove("overflow-hidden");
     }, 1000);
-  }
+  },
 };
 
 // 🚀 SSE 연결부 수정

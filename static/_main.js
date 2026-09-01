@@ -1,4 +1,32 @@
 // _main.js
+// 🚀 [에러 가드 스위치] 차트 내부 'Value is null' 등 비치명적 예외 콘솔 토글 (true: 숨김, false: 노출)
+export const ENABLE_NULL_VALUE_ERROR_SUPPRESSION = true;
+
+if (ENABLE_NULL_VALUE_ERROR_SUPPRESSION && typeof window !== "undefined") {
+  const IGNORES = [
+    "Value is null",
+    "Ping received after close",
+    "message channel closed",
+  ];
+  const guard = (e, msg) => {
+    if (IGNORES.some((p) => msg?.includes(p))) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      return true;
+    }
+  };
+  window.addEventListener(
+    "error",
+    (e) => guard(e, e.message || e.error?.message),
+    true,
+  );
+  window.addEventListener(
+    "unhandledrejection",
+    (e) => guard(e, e.reason?.message || String(e.reason)),
+    true,
+  );
+}
+
 import { store, CONFIG, tfSec, measureDOM } from "./_store.js";
 import { loadSymbols } from "./chart_api.js";
 import {
@@ -48,7 +76,13 @@ let headerThrottledRealtime = false;
 let headerThrottledCaller = "UNKNOWN";
 let headerThrottleTimeout = null;
 
-const realUpdateHeaderDisplay = (row, newPrice, p, isRealtimeStream = false, callerId = "UNKNOWN") => {
+const realUpdateHeaderDisplay = (
+  row,
+  newPrice,
+  p,
+  isRealtimeStream = false,
+  callerId = "UNKNOWN",
+) => {
   const headChg24h = document.getElementById("head-chg-24h");
   const headChgDay = document.getElementById("head-chg-day");
   const headMcap = document.getElementById("head-mcap");
@@ -71,11 +105,14 @@ const realUpdateHeaderDisplay = (row, newPrice, p, isRealtimeStream = false, cal
   const rate = store.marketDataMap?.krw_usd_rate || 0;
   const isKrwMode = store.currencyMode === "KRW";
 
-  const activeMarket = (store.currentTab === "quickview" || store.currentTab === "quickview-container")
-    ? (store.qvMarket || "ALL")
-    : (store.currentChartMarket || "ALL");
+  const activeMarket =
+    store.currentTab === "quickview" ||
+    store.currentTab === "quickview-container"
+      ? store.qvMarket || "ALL"
+      : store.currentChartMarket || "ALL";
 
-  const isFuturesMode = activeMarket === "FUTURES" || activeMarket === "BYBIT_FUTURES";
+  const isFuturesMode =
+    activeMarket === "FUTURES" || activeMarket === "BYBIT_FUTURES";
   const isSpotMode = activeMarket === "SPOT" || activeMarket === "BYBIT";
 
   // 🚀 선택된 심볼 기준의 최종 대상 배수 (예: 1000SHIB인 경우 1000)
@@ -90,32 +127,52 @@ const realUpdateHeaderDisplay = (row, newPrice, p, isRealtimeStream = false, cal
   let upbitP = row.Upbit_Price || row.Price_KRW || null;
   let bithumbP = row.Bithumb_Price || row.Price_KRW || null;
 
-  const ovsFutMult = getMultiplier(row.Exact_Futures || row.Ticker || row.Symbol);
+  const ovsFutMult = getMultiplier(
+    row.Exact_Futures || row.Ticker || row.Symbol,
+  );
   const ovsSpotMult = getMultiplier(row.Exact_Spot || row.Ticker || row.Symbol);
-  const domMult = getMultiplier(row.Upbit_Symbol || row.Bithumb_Symbol || row.Symbol || row.Ticker);
+  const domMult = getMultiplier(
+    row.Upbit_Symbol || row.Bithumb_Symbol || row.Symbol || row.Ticker,
+  );
 
   // 🚀 활성 차트/심볼의 배수 (1000SATS 등에서 1000 추출)
-  const chartSymbolMult = getMultiplier(store.currentAsset || store.currentSelectedSymbol || row.Exact_Futures || row.Ticker);
+  const chartSymbolMult = getMultiplier(
+    store.currentAsset ||
+      store.currentSelectedSymbol ||
+      row.Exact_Futures ||
+      row.Ticker,
+  );
 
   if (isFuturesMode) {
     const rawP = row.Binance_Price_Futures ?? row.Price_Raw ?? null;
     binanceP = rawP !== null ? rawP / ovsFutMult : null;
-    bybitP = row.Bybit_Price_Futures ? row.Bybit_Price_Futures / ovsFutMult : (row.Price_Raw ? row.Price_Raw / ovsFutMult : null);
+    bybitP = row.Bybit_Price_Futures
+      ? row.Bybit_Price_Futures / ovsFutMult
+      : row.Price_Raw
+        ? row.Price_Raw / ovsFutMult
+        : null;
   } else if (isSpotMode) {
     const rawP = row.Binance_Price_Spot ?? row.Price_Raw ?? null;
     binanceP = rawP !== null ? rawP / ovsSpotMult : null;
-    bybitP = row.Bybit_Price_Spot ? row.Bybit_Price_Spot / ovsSpotMult : (row.Price_Raw ? row.Price_Raw / ovsSpotMult : null);
+    bybitP = row.Bybit_Price_Spot
+      ? row.Bybit_Price_Spot / ovsSpotMult
+      : row.Price_Raw
+        ? row.Price_Raw / ovsSpotMult
+        : null;
   } else {
     // ALL, KIMCHI, NEW 등 기본 탭 모드일 때: 현물 단가 우선 적용 및 선물 단가 배수 보정
-    const hasSpot = row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE");
-    const hasFutures = row.Binance_Futures === "O" || row.Listed_Exchanges?.includes("BINANCE_FUTURES");
+    const hasSpot =
+      row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE");
+    const hasFutures =
+      row.Binance_Futures === "O" ||
+      row.Listed_Exchanges?.includes("BINANCE_FUTURES");
 
     if (hasSpot && row.Binance_Price_Spot) {
       binanceP = row.Binance_Price_Spot / ovsSpotMult;
     } else if (hasFutures && row.Binance_Price_Futures) {
       binanceP = row.Binance_Price_Futures / ovsFutMult;
     } else if (row.Price_Raw) {
-      const activeMult = (hasFutures && !hasSpot) ? ovsFutMult : ovsSpotMult;
+      const activeMult = hasFutures && !hasSpot ? ovsFutMult : ovsSpotMult;
       binanceP = row.Price_Raw / (activeMult || 1);
     } else {
       binanceP = null;
@@ -142,7 +199,14 @@ const realUpdateHeaderDisplay = (row, newPrice, p, isRealtimeStream = false, cal
       bybitP = newPrice / ovsFutMult;
     } else {
       // 🚀 바이낸스 실시간 시세 / 차트 시세는 차트 심볼의 배수(1000 등)로 나누어 순수 1개 단가로 정규화
-      const mult = chartSymbolMult > 1 ? chartSymbolMult : (isFuturesMode ? ovsFutMult : (ovsFutMult > 1 && !row.Binance_Price_Spot ? ovsFutMult : ovsSpotMult));
+      const mult =
+        chartSymbolMult > 1
+          ? chartSymbolMult
+          : isFuturesMode
+            ? ovsFutMult
+            : ovsFutMult > 1 && !row.Binance_Price_Spot
+              ? ovsFutMult
+              : ovsSpotMult;
       binanceP = newPrice / (mult || 1);
       if (isFuturesMode) {
         row.Binance_Price_Futures = newPrice;
@@ -155,7 +219,8 @@ const realUpdateHeaderDisplay = (row, newPrice, p, isRealtimeStream = false, cal
   let activeExchange = "binance";
   if (activeMarket === "UPBIT") activeExchange = "upbit";
   else if (activeMarket === "BITHUMB") activeExchange = "bithumb";
-  else if (activeMarket === "BYBIT" || activeMarket === "BYBIT_FUTURES") activeExchange = "bybit";
+  else if (activeMarket === "BYBIT" || activeMarket === "BYBIT_FUTURES")
+    activeExchange = "bybit";
 
   let rawPriceForTab = 0;
   if (activeExchange === "binance") rawPriceForTab = binanceP;
@@ -167,7 +232,7 @@ const realUpdateHeaderDisplay = (row, newPrice, p, isRealtimeStream = false, cal
     window.updateTabTitleManager(
       rawPriceForTab,
       row.Symbol || row.Ticker,
-      ["upbit", "bithumb"].includes(activeExchange)
+      ["upbit", "bithumb"].includes(activeExchange),
     );
   }
 
@@ -178,27 +243,28 @@ const realUpdateHeaderDisplay = (row, newPrice, p, isRealtimeStream = false, cal
 
   let displayPrice = 0;
   let subPrice = null;
-  const isMainKrw = isKrwMode || (activeExchange === "upbit" || activeExchange === "bithumb");
+  const isMainKrw =
+    isKrwMode || activeExchange === "upbit" || activeExchange === "bithumb";
 
   if (activeExchange === "binance") {
     const rawP = binanceP || 0;
     const actualKrw = upbitP || bithumbP || null;
     if (isMainKrw) {
-      displayPrice = actualKrw || (rawP * rate);
+      displayPrice = actualKrw || rawP * rate;
       subPrice = rawP;
     } else {
       displayPrice = rawP;
-      subPrice = actualKrw || (rawP * rate);
+      subPrice = actualKrw || rawP * rate;
     }
   } else if (activeExchange === "bybit") {
     const rawP = bybitP || 0;
     const actualKrw = upbitP || bithumbP || null;
     if (isMainKrw) {
-      displayPrice = actualKrw || (rawP * rate);
+      displayPrice = actualKrw || rawP * rate;
       subPrice = rawP;
     } else {
       displayPrice = rawP;
-      subPrice = actualKrw || (rawP * rate);
+      subPrice = actualKrw || rawP * rate;
     }
   } else if (activeExchange === "upbit") {
     const rawP = upbitP || 0;
@@ -261,12 +327,25 @@ const realUpdateHeaderDisplay = (row, newPrice, p, isRealtimeStream = false, cal
     n24 = row.Change_24h_Futures_Ex ?? row.Change_24h_Raw ?? 0;
     nDay = row.Change_Today_Futures ?? row.Change_Today_Raw ?? 0;
   } else if (activeMarket === "SPOT" || activeMarket === "BYBIT") {
-    n24 = (activeMarket === "SPOT" ? row.Change_24h_Binance : row.Change_24h_Bybit) ?? row.Change_24h_Raw ?? 0;
-    nDay = (activeMarket === "SPOT" ? row.Change_Today_Binance : row.Change_Today_Bybit) ?? row.Change_Today_Raw ?? 0;
+    n24 =
+      (activeMarket === "SPOT"
+        ? row.Change_24h_Binance
+        : row.Change_24h_Bybit) ??
+      row.Change_24h_Raw ??
+      0;
+    nDay =
+      (activeMarket === "SPOT"
+        ? row.Change_Today_Binance
+        : row.Change_Today_Bybit) ??
+      row.Change_Today_Raw ??
+      0;
   } else {
     // ALL, KIMCHI, NEW 등 기본 탭 모드에서의 우선순위 분기
-    const hasFutures = row.Binance_Futures === "O" || row.Listed_Exchanges?.includes("BINANCE_FUTURES");
-    const hasSpot = row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE");
+    const hasFutures =
+      row.Binance_Futures === "O" ||
+      row.Listed_Exchanges?.includes("BINANCE_FUTURES");
+    const hasSpot =
+      row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE");
     if (hasFutures) {
       n24 = row.Change_24h_Futures_Ex ?? row.Change_24h_Raw ?? 0;
       nDay = row.Change_Today_Futures ?? row.Change_Today_Raw ?? 0;
@@ -274,8 +353,16 @@ const realUpdateHeaderDisplay = (row, newPrice, p, isRealtimeStream = false, cal
       n24 = row.Change_24h_Binance ?? row.Change_24h_Raw ?? 0;
       nDay = row.Change_Today_Binance ?? row.Change_Today_Raw ?? 0;
     } else {
-      n24 = row.Change_24h_Upbit ?? row.Change_24h_Bithumb ?? row.Change_24h_Raw ?? 0;
-      nDay = row.Change_Today_Upbit ?? row.Change_Today_Bithumb ?? row.Change_Today_Raw ?? 0;
+      n24 =
+        row.Change_24h_Upbit ??
+        row.Change_24h_Bithumb ??
+        row.Change_24h_Raw ??
+        0;
+      nDay =
+        row.Change_Today_Upbit ??
+        row.Change_Today_Bithumb ??
+        row.Change_Today_Raw ??
+        0;
     }
   }
 
@@ -320,8 +407,20 @@ const realUpdateHeaderDisplay = (row, newPrice, p, isRealtimeStream = false, cal
   }
 
   if (headMcap) headMcap.innerText = displayMcap;
-  const hasBinance = row.Binance === "O" || row.Binance_Futures === "O" || (row.Listed_Exchanges && (row.Listed_Exchanges.includes("BINANCE") || row.Listed_Exchanges.includes("BINANCE_FUTURES")));
-  if (headVolB) headVolB.innerText = (hasBinance && row.Volume_Formatted && row.Volume_Formatted !== "-" && row.Volume_Formatted !== "0") ? row.Volume_Formatted : "-";
+  const hasBinance =
+    row.Binance === "O" ||
+    row.Binance_Futures === "O" ||
+    (row.Listed_Exchanges &&
+      (row.Listed_Exchanges.includes("BINANCE") ||
+        row.Listed_Exchanges.includes("BINANCE_FUTURES")));
+  if (headVolB)
+    headVolB.innerText =
+      hasBinance &&
+      row.Volume_Formatted &&
+      row.Volume_Formatted !== "-" &&
+      row.Volume_Formatted !== "0"
+        ? row.Volume_Formatted
+        : "-";
   if (headVolU) headVolU.innerText = row.Upbit_Vol_Formatted || "-";
 };
 
@@ -338,11 +437,25 @@ window.updateHeaderDisplay = (row, newPrice, p, isRealtimeStream = false) => {
   if (store.traceRowCaller) {
     const err = new Error();
     const stack = err.stack || "";
-    if (stack.includes("stream.js") || stack.includes("stream-") || stack.includes("updateStatus") || isRealtimeStream === true || isRealtimeStream === "STREAM") {
+    if (
+      stack.includes("stream.js") ||
+      stack.includes("stream-") ||
+      stack.includes("updateStatus") ||
+      isRealtimeStream === true ||
+      isRealtimeStream === "STREAM"
+    ) {
       autoCaller = "1 (Stream)";
-    } else if (stack.includes("chart_utils.js") || stack.includes("chart_utils") || stack.includes("table_render")) {
+    } else if (
+      stack.includes("chart_utils.js") ||
+      stack.includes("chart_utils") ||
+      stack.includes("table_render")
+    ) {
       autoCaller = "2 (Chart)";
-    } else if (stack.includes("ui_control") || stack.includes("table_filter") || stack.includes("main")) {
+    } else if (
+      stack.includes("ui_control") ||
+      stack.includes("table_filter") ||
+      stack.includes("main")
+    ) {
       autoCaller = "3 (UI/Filter)";
     } else {
       if (isRealtimeStream === true || isRealtimeStream === "STREAM") {
@@ -371,7 +484,7 @@ window.updateHeaderDisplay = (row, newPrice, p, isRealtimeStream = false) => {
     price: newPrice !== undefined ? newPrice : existing.price,
     p: p,
     isRealtimeStream: isRealtimeStream,
-    caller: autoCaller
+    caller: autoCaller,
   });
 
   if (!headerThrottleTimeout) {
@@ -384,7 +497,7 @@ window.updateHeaderDisplay = (row, newPrice, p, isRealtimeStream = false) => {
           state.price,
           state.p,
           state.isRealtimeStream,
-          state.caller
+          state.caller,
         );
       });
       window.headerThrottleMap.clear();
@@ -413,7 +526,8 @@ function restoreSavedUserSettings() {
     }
 
     // 2. 사이드바 폴딩 상태 복원
-    const isSidebarCollapsed = localStorage.getItem("sellnance_sidebar_collapsed") === "true";
+    const isSidebarCollapsed =
+      localStorage.getItem("sellnance_sidebar_collapsed") === "true";
     if (isSidebarCollapsed) {
       store.isSidebarOpen = false;
       const leftPanel = document.getElementById("left-panel");
@@ -426,7 +540,8 @@ function restoreSavedUserSettings() {
     }
 
     // 3. 차트 헤더 폴딩 상태 복원
-    const isHeaderCollapsed = localStorage.getItem("sellnance_header_collapsed") === "true";
+    const isHeaderCollapsed =
+      localStorage.getItem("sellnance_header_collapsed") === "true";
     if (isHeaderCollapsed) {
       const assetRow = document.getElementById("head-asset-row");
       const infoRow = document.getElementById("head-info-row");
@@ -444,7 +559,8 @@ function restoreSavedUserSettings() {
     }
 
     // 4. 좌우 패널 스왑 상태 복원
-    const isPanelSwapped = localStorage.getItem("sellnance_panel_swapped") === "true";
+    const isPanelSwapped =
+      localStorage.getItem("sellnance_panel_swapped") === "true";
     if (isPanelSwapped) {
       const container = document.getElementById("panel-split-container");
       if (container) {
@@ -521,13 +637,17 @@ window.updateStatusBadge = () => {
   }
 
   const now = Math.floor(Date.now() / 1000);
-  const hasKey = localStorage.getItem("CMC_API_KEY") && localStorage.getItem("CMC_API_KEY").trim() !== "";
+  const hasKey =
+    localStorage.getItem("CMC_API_KEY") &&
+    localStorage.getItem("CMC_API_KEY").trim() !== "";
   const interval = hasKey ? 900 : 86400; // 유저 15분, 서버 24시간
   const nextUpdate = Math.floor(store.lastUpdatedRaw) + interval;
   let diff = Math.floor(nextUpdate - now);
 
   if (diff < 0) {
-    timerEl.innerText = hasKey ? "수집 완료 대기 중..." : "일일 수집 대기 중...";
+    timerEl.innerText = hasKey
+      ? "수집 완료 대기 중..."
+      : "일일 수집 대기 중...";
     return;
   }
 
@@ -542,7 +662,9 @@ window.updateStatusBadge = () => {
     timerEl.innerText = `${formattedTime} 이후 시가총액 갱신`;
     timerEl.title = "";
     timerEl.style.cursor = "default";
-    if (dot) dot.className = "inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse";
+    if (dot)
+      dot.className =
+        "inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse";
     if (tooltip) tooltip.style.display = "none";
   } else {
     // 24시간 카운트다운 (HH:MM:SS) - 세련된 미니멀 다크 글래스 호버 툴팁 연동
@@ -553,7 +675,9 @@ window.updateStatusBadge = () => {
     timerEl.innerText = `⚠️ ${formattedTime} (일일 캐시)`;
     timerEl.title = "";
     timerEl.style.cursor = "default";
-    if (dot) dot.className = "inline-block w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse";
+    if (dot)
+      dot.className =
+        "inline-block w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse";
     if (tooltip) tooltip.style.display = "block";
   }
 };
@@ -567,8 +691,18 @@ window.updatePerformanceDebugger = () => {
   if (totalEl) totalEl.innerText = `Total: ${total}`;
 
   // 각 개별 항목 갱신
-  const keys = ["leftDom", "tabScroll", "tableUpdate", "kimchi", "radarBatch", "mouseEvent", "dynamicHtml", "throttleBypass", "throttlePass"];
-  keys.forEach(k => {
+  const keys = [
+    "leftDom",
+    "tabScroll",
+    "tableUpdate",
+    "kimchi",
+    "radarBatch",
+    "mouseEvent",
+    "dynamicHtml",
+    "throttleBypass",
+    "throttlePass",
+  ];
+  keys.forEach((k) => {
     const el = document.getElementById(`bypass-cnt-${k}`);
     if (el) el.textContent = store.bypassCounters[k] || 0;
   });
@@ -587,7 +721,8 @@ window.updatePerformanceDebugger = () => {
 
     if (maxVal === 0) {
       riskEl.innerText = "안정 (소켓 수급 정체 혹은 렉 유발 없음)";
-      riskEl.className = "text-[8.5px] font-semibold text-emerald-400 opacity-90 leading-tight bg-white/2 p-1 rounded font-sans";
+      riskEl.className =
+        "text-[8.5px] font-semibold text-emerald-400 opacity-90 leading-tight bg-white/2 p-1 rounded font-sans";
     } else {
       const labelMap = {
         leftDom: "좌측 테이블 DOM 최적화 차단",
@@ -604,7 +739,8 @@ window.updatePerformanceDebugger = () => {
         dynamicHtml: "김프 전파 HTML 동적 렌더링 과부하",
       };
       riskEl.innerText = `⚠️ ${labelMap[maxKey] || maxKey} (${maxVal}회 Bypass)`;
-      riskEl.className = "text-[8.5px] font-semibold text-rose-400 opacity-90 leading-tight bg-white/2 p-1 rounded font-sans";
+      riskEl.className =
+        "text-[8.5px] font-semibold text-rose-400 opacity-90 leading-tight bg-white/2 p-1 rounded font-sans";
     }
   }
 };
@@ -617,7 +753,7 @@ window.startPerformanceDebugger = () => {
   perfDebugStartTime = Date.now();
   // 디버그 활성 시 카운터들을 깨끗하게 초기화하여 이전 누적치 왜곡 방지
   if (store.bypassCounters) {
-    Object.keys(store.bypassCounters).forEach(k => {
+    Object.keys(store.bypassCounters).forEach((k) => {
       store.bypassCounters[k] = 0;
     });
   }
@@ -691,7 +827,23 @@ window.getInitialRouteSymbol = () => {
 
 try {
   const lastTF = localStorage.getItem("sellnance_last_tf");
-  if (lastTF && ["1m", "3m", "5m", "15m", "30m", "1h", "4h", "12h", "1d", "3d", "1w", "1M"].includes(lastTF)) {
+  if (
+    lastTF &&
+    [
+      "1m",
+      "3m",
+      "5m",
+      "15m",
+      "30m",
+      "1h",
+      "4h",
+      "12h",
+      "1d",
+      "3d",
+      "1w",
+      "1M",
+    ].includes(lastTF)
+  ) {
     store.currentTF = lastTF;
   }
 } catch (e) {}
@@ -786,7 +938,7 @@ function setupSearchNavigation() {
 
     // 실시간으로 렌더링된 자식 노드(절대 순서)를 매번 새로 수집
     const items = Array.from(resDiv.children).filter(
-      (item) => item.style.display !== "none"
+      (item) => item.style.display !== "none",
     );
     if (items.length === 0) return;
 
@@ -894,22 +1046,23 @@ document.addEventListener("keydown", (e) => {
   // 💡 1. 좌우 방향키: 타임프레임(TF) 퀵 스위칭
   if (left || right) {
     e.preventDefault();
-    const tfArray = (store.visibleTfs && store.visibleTfs.length > 0)
-      ? store.visibleTfs
-      : [
-        "1m",
-        "3m",
-        "5m",
-        "15m",
-        "30m",
-        "1h",
-        "4h",
-        "12h",
-        "1d",
-        "3d",
-        "1w",
-        "1M",
-      ];
+    const tfArray =
+      store.visibleTfs && store.visibleTfs.length > 0
+        ? store.visibleTfs
+        : [
+            "1m",
+            "3m",
+            "5m",
+            "15m",
+            "30m",
+            "1h",
+            "4h",
+            "12h",
+            "1d",
+            "3d",
+            "1w",
+            "1M",
+          ];
     let idx = tfArray.indexOf(store.currentTF);
     if (left && idx > 0 && typeof window.setTF === "function")
       window.setTF(tfArray[idx - 1]);
@@ -938,7 +1091,7 @@ document.addEventListener("keydown", (e) => {
 
     // 2. 현재 선택된 심볼이 논리 리스트의 몇 번째 인덱스에 있는지 탐색
     let currentIdx = sortedList.findIndex(
-      (item) => item.Ticker === store.currentSelectedSymbol
+      (item) => item.Ticker === store.currentSelectedSymbol,
     );
 
     let nextCoin = null;
@@ -953,7 +1106,7 @@ document.addEventListener("keydown", (e) => {
       if (down && targetIdx >= store.currentRenderLimit) {
         store.currentRenderLimit = Math.min(
           sortedList.length,
-          store.currentRenderLimit + 15
+          store.currentRenderLimit + 15,
         );
         if (typeof window.renderTable === "function") window.renderTable();
         else if (typeof renderTable === "function") renderTable();
@@ -972,7 +1125,7 @@ document.addEventListener("keydown", (e) => {
       // 🚀 가상 스크롤로 포커싱 코인이 화면 밖으로 탈출할 때 자동 스크롤 동기화
       setTimeout(() => {
         const targetRow = document.querySelector(
-          `#coin-list-body .coin-row[data-sym="${nextCoin.Ticker}"]`
+          `#coin-list-body .coin-row[data-sym="${nextCoin.Ticker}"]`,
         );
         if (targetRow) {
           targetRow.scrollIntoView({ block: "nearest", behavior: "instant" });
@@ -1056,7 +1209,7 @@ function scheduleDailyReset() {
 
     // 1. [무지연 덮어쓰기] 백엔드를 기다리지 않고, 프론트가 들고 있는 현재 웹소켓 가격을 즉시 '오늘의 시가'로 확정!
     if (store.currentTableData && Array.isArray(store.currentTableData)) {
-      store.currentTableData.forEach(row => {
+      store.currentTableData.forEach((row) => {
         if (row.Price_Raw) {
           row.utc0_open_Raw = row.Price_Raw; // 9시 정각 가격을 시가로 덮어쓰기
           row.Change_Today_Raw = 0; // 등락률 즉각 0% 리셋

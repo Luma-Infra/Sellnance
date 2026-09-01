@@ -71,7 +71,10 @@ function toggleSidebar() {
   }
 
   // 🚀 사이드바 폴딩 상태를 로컬에 영구 저장
-  localStorage.setItem("sellnance_sidebar_collapsed", (!store.isSidebarOpen).toString());
+  localStorage.setItem(
+    "sellnance_sidebar_collapsed",
+    (!store.isSidebarOpen).toString(),
+  );
 }
 
 export function switchViewMode(mode) {
@@ -275,7 +278,6 @@ function closeMobileChart() {
   }, 320);
 }
 
-
 // 🚀 모바일 하단 네비 탭 전환 컨트롤러
 function switchMobileTab(tab) {
   if (window.innerWidth >= CONFIG.SCREEN_WIDTH) return;
@@ -295,7 +297,6 @@ function switchMobileTab(tab) {
     }
     // 리스트 보이기
     if (leftPanel) leftPanel.style.display = "";
-
   } else if (tab === "chart") {
     // 설정 모달 닫기
     if (settingsModal) {
@@ -310,7 +311,8 @@ function switchMobileTab(tab) {
       qvContainer.classList.add("hidden");
       qvContainer.style.display = "none";
     }
-    if (typeof window.destroyQuickView === "function") window.destroyQuickView();
+    if (typeof window.destroyQuickView === "function")
+      window.destroyQuickView();
 
     // 차트 오버레이 열기
     if (store.currentSelectedSymbol) {
@@ -325,7 +327,6 @@ function switchMobileTab(tab) {
         window.selectSymbol(firstRow.dataset.sym);
       }
     }
-
   } else if (tab === "settings") {
     // 차트 오버레이 닫기
     closeMobileChart();
@@ -555,13 +556,33 @@ function toggleRightDomBlock(checked) {
   const containerOb = document.getElementById("child-orderbook-container");
   const containerLegend = document.getElementById("child-legend-container");
   const containerResize = document.getElementById("child-resize-container");
-  const containerMouseEvent = document.getElementById("child-mouse-event-container");
+  const containerMouseEvent = document.getElementById(
+    "child-mouse-event-container",
+  );
 
   if (checked) {
-    if (childChart) { childChart.disabled = true; childChart.checked = true; store.blockChartDom = true; }
-    if (childOb) { childOb.disabled = true; childOb.checked = true; store.blockOrderbook = true; if (typeof window.stopOrderbookStream === "function") window.stopOrderbookStream(); }
-    if (childLegend) { childLegend.disabled = true; childLegend.checked = true; store.blockLegend = true; }
-    if (childResize) { childResize.disabled = true; childResize.checked = true; store.blockChartResize = true; }
+    if (childChart) {
+      childChart.disabled = true;
+      childChart.checked = true;
+      store.blockChartDom = true;
+    }
+    if (childOb) {
+      childOb.disabled = true;
+      childOb.checked = true;
+      store.blockOrderbook = true;
+      if (typeof window.stopOrderbookStream === "function")
+        window.stopOrderbookStream();
+    }
+    if (childLegend) {
+      childLegend.disabled = true;
+      childLegend.checked = true;
+      store.blockLegend = true;
+    }
+    if (childResize) {
+      childResize.disabled = true;
+      childResize.checked = true;
+      store.blockChartResize = true;
+    }
     if (childMouseEvent) {
       childMouseEvent.disabled = true;
       childMouseEvent.checked = true;
@@ -574,10 +595,31 @@ function toggleRightDomBlock(checked) {
     if (containerResize) containerResize.style.opacity = "0.4";
     if (containerMouseEvent) containerMouseEvent.style.opacity = "0.4";
   } else {
-    if (childChart) { childChart.disabled = false; childChart.checked = false; store.blockChartDom = false; }
-    if (childOb) { childOb.disabled = false; childOb.checked = false; store.blockOrderbook = false; if (typeof window.startOrderbookStream === "function") window.startOrderbookStream(store.currentAsset, store.currentChartMarket); }
-    if (childLegend) { childLegend.disabled = false; childLegend.checked = false; store.blockLegend = false; }
-    if (childResize) { childResize.disabled = false; childResize.checked = false; store.blockChartResize = false; }
+    if (childChart) {
+      childChart.disabled = false;
+      childChart.checked = false;
+      store.blockChartDom = false;
+    }
+    if (childOb) {
+      childOb.disabled = false;
+      childOb.checked = false;
+      store.blockOrderbook = false;
+      if (typeof window.startOrderbookStream === "function")
+        window.startOrderbookStream(
+          store.currentAsset,
+          store.currentChartMarket,
+        );
+    }
+    if (childLegend) {
+      childLegend.disabled = false;
+      childLegend.checked = false;
+      store.blockLegend = false;
+    }
+    if (childResize) {
+      childResize.disabled = false;
+      childResize.checked = false;
+      store.blockChartResize = false;
+    }
     if (childMouseEvent) {
       childMouseEvent.disabled = false;
       childMouseEvent.checked = false;
@@ -601,7 +643,7 @@ export function toggleChartMouseEventBlock(checked) {
     try {
       if (store.chart) store.chart.clearCrosshairPosition();
       if (store.chartVol) store.chartVol.clearCrosshairPosition();
-    } catch (e) { }
+    } catch (e) {}
   }
 }
 
@@ -615,12 +657,24 @@ function toggleLeftDomBlock(checked) {
   const childTableUpdate = document.getElementById("block-table-update-toggle");
 
   const containerSort = document.getElementById("child-sort-container");
-  const containerTabScroll = document.getElementById("child-tabscroll-container");
-  const containerTableUpdate = document.getElementById("child-table-update-container");
+  const containerTabScroll = document.getElementById(
+    "child-tabscroll-container",
+  );
+  const containerTableUpdate = document.getElementById(
+    "child-table-update-container",
+  );
 
   if (checked) {
-    if (childSort) { childSort.disabled = true; childSort.checked = true; store.blockSort = true; }
-    if (childTabScroll) { childTabScroll.disabled = true; childTabScroll.checked = true; store.blockTableTabScroll = true; }
+    if (childSort) {
+      childSort.disabled = true;
+      childSort.checked = true;
+      store.blockSort = true;
+    }
+    if (childTabScroll) {
+      childTabScroll.disabled = true;
+      childTabScroll.checked = true;
+      store.blockTableTabScroll = true;
+    }
     if (childTableUpdate) {
       childTableUpdate.disabled = true;
       childTableUpdate.checked = true;
@@ -631,8 +685,16 @@ function toggleLeftDomBlock(checked) {
     if (containerTabScroll) containerTabScroll.style.opacity = "0.4";
     if (containerTableUpdate) containerTableUpdate.style.opacity = "0.4";
   } else {
-    if (childSort) { childSort.disabled = false; childSort.checked = false; store.blockSort = false; }
-    if (childTabScroll) { childTabScroll.disabled = false; childTabScroll.checked = false; store.blockTableTabScroll = false; }
+    if (childSort) {
+      childSort.disabled = false;
+      childSort.checked = false;
+      store.blockSort = false;
+    }
+    if (childTabScroll) {
+      childTabScroll.disabled = false;
+      childTabScroll.checked = false;
+      store.blockTableTabScroll = false;
+    }
     if (childTableUpdate) {
       childTableUpdate.disabled = false;
       childTableUpdate.checked = false;
@@ -672,22 +734,44 @@ function toggleSortBlock(checked) {
 
 function toggleKimchiBlock(checked) {
   // Xstore.blockKimchi = checked;
-  console.log(`⚡ [DEBUG] 김프 실시간 연산 차단 모드: ${checked ? "ON" : "OFF"}`);
+  console.log(
+    `⚡ [DEBUG] 김프 실시간 연산 차단 모드: ${checked ? "ON" : "OFF"}`,
+  );
 
   const childRadar = document.getElementById("block-radardatabatch-toggle");
-  const containerRadar = document.getElementById("child-radardatabatch-container");
+  const containerRadar = document.getElementById(
+    "child-radardatabatch-container",
+  );
   const childDynamicHtml = document.getElementById("block-dynamic-html-toggle");
-  const containerDynamicHtml = document.getElementById("child-dynamichtml-container");
+  const containerDynamicHtml = document.getElementById(
+    "child-dynamichtml-container",
+  );
 
   if (checked) {
-    if (childRadar) { childRadar.disabled = true; childRadar.checked = true; store.blockRadarBatch = true; }
+    if (childRadar) {
+      childRadar.disabled = true;
+      childRadar.checked = true;
+      store.blockRadarBatch = true;
+    }
     if (containerRadar) containerRadar.style.opacity = "0.4";
-    if (childDynamicHtml) { childDynamicHtml.disabled = true; childDynamicHtml.checked = true; store.blockRowDynamicHTML = true; }
+    if (childDynamicHtml) {
+      childDynamicHtml.disabled = true;
+      childDynamicHtml.checked = true;
+      store.blockRowDynamicHTML = true;
+    }
     if (containerDynamicHtml) containerDynamicHtml.style.opacity = "0.4";
   } else {
-    if (childRadar) { childRadar.disabled = false; childRadar.checked = false; store.blockRadarBatch = false; }
+    if (childRadar) {
+      childRadar.disabled = false;
+      childRadar.checked = false;
+      store.blockRadarBatch = false;
+    }
     if (containerRadar) containerRadar.style.opacity = "1.0";
-    if (childDynamicHtml) { childDynamicHtml.disabled = false; childDynamicHtml.checked = false; store.blockRowDynamicHTML = false; }
+    if (childDynamicHtml) {
+      childDynamicHtml.disabled = false;
+      childDynamicHtml.checked = false;
+      store.blockRowDynamicHTML = false;
+    }
     if (containerDynamicHtml) containerDynamicHtml.style.opacity = "1.0";
   }
 }
@@ -723,13 +807,16 @@ function setAggTradeInterval(ms) {
 
   const intervals = [0, 100, 500, 1500];
   intervals.forEach((val) => {
-    const btnId = val === 0 ? "aggtrade-interval-raw" : `aggtrade-interval-${val}`;
+    const btnId =
+      val === 0 ? "aggtrade-interval-raw" : `aggtrade-interval-${val}`;
     const btn = document.getElementById(btnId);
     if (btn) {
       if (val === ms) {
-        btn.className = "py-1 px-1.5 rounded bg-theme-accent text-white font-bold cursor-pointer text-center transition-all";
+        btn.className =
+          "py-1 px-1.5 rounded bg-theme-accent text-white font-bold cursor-pointer text-center transition-all";
       } else {
-        btn.className = "py-1 px-1.5 rounded bg-theme-border/40 text-theme-text/80 hover:bg-theme-border/60 cursor-pointer text-center transition-all";
+        btn.className =
+          "py-1 px-1.5 rounded bg-theme-border/40 text-theme-text/80 hover:bg-theme-border/60 cursor-pointer text-center transition-all";
       }
     }
   });
@@ -763,9 +850,12 @@ window.toggleTableUpdateBlock = toggleTableUpdateBlock;
 
 window.copyPerformanceStats = function () {
   if (!store.bypassCounters) return;
-  const elapsedText = document.getElementById("perf-run-time-display")?.innerText || "(알수없음 경과)";
+  const elapsedText =
+    document.getElementById("perf-run-time-display")?.innerText ||
+    "(알수없음 경과)";
   const total = Object.values(store.bypassCounters).reduce((a, b) => a + b, 0);
-  const riskText = document.getElementById("perf-top-risk-analysis")?.innerText || "NONE";
+  const riskText =
+    document.getElementById("perf-top-risk-analysis")?.innerText || "NONE";
 
   const textToCopy = `⚡ Sellnance 렉 디버거 성능 리포트
 경과 시간: ${elapsedText}
@@ -785,7 +875,8 @@ window.copyPerformanceStats = function () {
 🚨 최대 렉 위협 요소: ${riskText}
   `;
 
-  navigator.clipboard.writeText(textToCopy.trim())
+  navigator.clipboard
+    .writeText(textToCopy.trim())
     .then(() => {
       const btn = document.getElementById("copy-perf-stats-btn");
       if (btn) {
@@ -798,16 +889,65 @@ window.copyPerformanceStats = function () {
         }, 1200);
       }
     })
-    .catch(err => console.error("성능 로그 클립보드 복사 실패:", err));
+    .catch((err) => console.error("성능 로그 클립보드 복사 실패:", err));
 };
 
 // ================== api.js에서 이동됨 ==================
-// 검색창 비우기 (X 버튼용)
+
+// 🚀 탭 바 내 돋보기(🔍) 검색창 열기/닫기 제어 (모바일 전용)
+export function toggleTabSearch(open) {
+  const searchWrap = document.getElementById("tab-search-wrapper");
+  const tabGroup = document.getElementById("tab-buttons-group");
+  const toggleBtn = document.getElementById("btn-toggle-tab-search");
+  const inputMobile = document.getElementById("symbol-input-mobile");
+  if (!searchWrap) return;
+
+  if (open) {
+    searchWrap.classList.remove(
+      "opacity-0",
+      "pointer-events-none",
+      "translate-x-2",
+    );
+    searchWrap.classList.add(
+      "opacity-100",
+      "pointer-events-auto",
+      "translate-x-0",
+    );
+    if (tabGroup) tabGroup.classList.add("opacity-0", "pointer-events-none");
+    if (toggleBtn) toggleBtn.classList.add("opacity-0", "pointer-events-none");
+    if (inputMobile) {
+      setTimeout(() => inputMobile.focus(), 50);
+    }
+  } else {
+    searchWrap.classList.add(
+      "opacity-0",
+      "pointer-events-none",
+      "translate-x-2",
+    );
+    searchWrap.classList.remove(
+      "opacity-100",
+      "pointer-events-auto",
+      "translate-x-0",
+    );
+    if (tabGroup) tabGroup.classList.remove("opacity-0", "pointer-events-none");
+    if (toggleBtn)
+      toggleBtn.classList.remove("opacity-0", "pointer-events-none");
+    if (inputMobile && inputMobile.value.trim() !== "") {
+      clearSearch();
+    }
+  }
+}
+window.toggleTabSearch = toggleTabSearch;
+
+// 검색창 비우기 (X 버튼용 - PC/모바일 공통 지원)
 export function clearSearch() {
   const input = document.getElementById("symbol-input");
+  const inputMobile = document.getElementById("symbol-input-mobile");
   if (input) {
     input.value = "";
-    input.focus();
+  }
+  if (inputMobile) {
+    inputMobile.value = "";
   }
   searchSymbols("");
 }
@@ -840,7 +980,8 @@ export function searchSymbols(v) {
     loadingBar.style.transition = "none";
     loadingBar.style.width = "0%";
     void loadingBar.offsetWidth; // 강제 리플로우로 브라우저 애니메이션 프레임 동기화
-    loadingBar.style.transition = "width 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94)";
+    loadingBar.style.transition =
+      "width 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94)";
     loadingBar.style.width = "100%";
   }
 
@@ -869,7 +1010,9 @@ let globalRecentSearchDropdown = null;
 
 function getOrCreateRecentSearchDropdown() {
   if (!globalRecentSearchDropdown) {
-    globalRecentSearchDropdown = document.getElementById("recent-search-container");
+    globalRecentSearchDropdown = document.getElementById(
+      "recent-search-container",
+    );
     if (!globalRecentSearchDropdown) {
       globalRecentSearchDropdown = document.createElement("div");
       globalRecentSearchDropdown.id = "recent-search-container";
@@ -886,7 +1029,7 @@ export function getRecentSearches() {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) return parsed;
     }
-  } catch (e) { }
+  } catch (e) {}
   return [];
 }
 
@@ -894,12 +1037,12 @@ export function addRecentSearch(ticker) {
   if (!ticker) return;
   const t = String(ticker).toUpperCase().trim();
   let list = getRecentSearches();
-  list = list.filter(item => item !== t);
+  list = list.filter((item) => item !== t);
   list.unshift(t);
   if (list.length > 10) list = list.slice(0, 10);
   try {
     localStorage.setItem("sellnance_recent_searches", JSON.stringify(list));
-  } catch (e) { }
+  } catch (e) {}
 }
 
 export function removeRecentSearch(ticker, event) {
@@ -908,10 +1051,10 @@ export function removeRecentSearch(ticker, event) {
     event.stopPropagation();
   }
   let list = getRecentSearches();
-  list = list.filter(item => item !== ticker);
+  list = list.filter((item) => item !== ticker);
   try {
     localStorage.setItem("sellnance_recent_searches", JSON.stringify(list));
-  } catch (e) { }
+  } catch (e) {}
   showRecentSearchChips();
 }
 
@@ -922,12 +1065,23 @@ export function clearAllRecentSearches(event) {
   }
   try {
     localStorage.removeItem("sellnance_recent_searches");
-  } catch (e) { }
+  } catch (e) {}
   hideRecentSearchChips();
 }
 
+export function getActiveSearchInput() {
+  const isMobile = window.innerWidth < 1200;
+  const mobileInput = document.getElementById("symbol-input-mobile");
+  const pcInput = document.getElementById("symbol-input");
+
+  if (isMobile && mobileInput) {
+    return mobileInput;
+  }
+  return pcInput || mobileInput;
+}
+
 export function showRecentSearchChips() {
-  const input = document.getElementById("symbol-input");
+  const input = getActiveSearchInput();
   if (!input || input.value.trim().length > 0) {
     hideRecentSearchChips();
     return;
@@ -946,7 +1100,7 @@ export function showRecentSearchChips() {
   let html = `
     <div class="flex items-center justify-between w-full pb-1.5 border-b border-theme-border/40 mb-1">
       <span class="text-[9px] font-bold text-theme-accent flex items-center gap-1">
-        최근 검색 코인 (${visibleList.length}개)
+        최근 조회 코인 (${visibleList.length}개)
       </span>
       <button onclick="window.clearAllRecentSearches(event)"
         class="text-[9px] text-theme-text opacity-40 hover:opacity-100 hover:text-rose-400 cursor-pointer transition-opacity">
@@ -956,7 +1110,7 @@ export function showRecentSearchChips() {
     <div class="flex flex-wrap items-center gap-1.5 w-full">
   `;
 
-  visibleList.forEach(sym => {
+  visibleList.forEach((sym) => {
     html += `
       <div onclick="if (typeof window.selectSymbol === 'function') { window.selectSymbol('${sym}'); window.hideRecentSearchChips(); }"
         class="group/chip flex items-center gap-1 px-2.5 py-1 rounded-lg bg-theme-panel/90 hover:bg-theme-accent/20 border border-theme-border/60 hover:border-theme-accent/60 text-theme-text text-[10px] font-bold cursor-pointer transition-all shadow-sm">
@@ -974,11 +1128,11 @@ export function showRecentSearchChips() {
   dropdown.className =
     "fixed p-2.5 bg-theme-panel/98 backdrop-blur-2xl border border-theme-border/80 rounded-xl shadow-[0_16px_40px_rgba(0,0,0,0.85)] z-[9999999] flex flex-col gap-1.5 text-left select-none transition-opacity duration-150 opacity-100";
 
-  // 🚀 정확한 좌표 계산 (검색창 input 바로 하단에 fixed 오버레이)
+  // 🚀 정확한 좌표 계산 (모바일/PC 활성 검색창 input 바로 하단에 fixed 오버레이)
   const rect = input.getBoundingClientRect();
   dropdown.style.top = `${rect.bottom + 6}px`;
-  dropdown.style.left = `${rect.left}px`;
-  dropdown.style.width = `${Math.max(rect.width, isMobile ? 240 : 300)}px`;
+  dropdown.style.left = `${Math.max(10, Math.min(rect.left, window.innerWidth - (isMobile ? 260 : 320)))}px`;
+  dropdown.style.width = `${Math.min(window.innerWidth - 20, Math.max(rect.width, isMobile ? 250 : 300))}px`;
   dropdown.style.maxWidth = "calc(100vw - 20px)";
 }
 
@@ -1004,6 +1158,8 @@ window.clearAllRecentSearches = clearAllRecentSearches;
 window.showRecentSearchChips = showRecentSearchChips;
 window.hideRecentSearchChips = hideRecentSearchChips;
 window.renderRecentSearchChips = renderRecentSearchChips;
+window.getActiveSearchInput = getActiveSearchInput;
+
 window.addEventListener("resize", () => {
   const dropdown = document.getElementById("recent-search-container");
   if (dropdown && !dropdown.classList.contains("hidden")) {
@@ -1012,7 +1168,7 @@ window.addEventListener("resize", () => {
 });
 
 document.addEventListener("click", (e) => {
-  const input = document.getElementById("symbol-input");
+  const input = getActiveSearchInput();
   const dropdown = document.getElementById("recent-search-container");
   if (dropdown && !dropdown.classList.contains("hidden")) {
     if (input && input.contains(e.target)) return;
@@ -1021,19 +1177,21 @@ document.addEventListener("click", (e) => {
   }
 });
 
-document.addEventListener("scroll", () => {
-  const dropdown = document.getElementById("recent-search-container");
-  if (dropdown && !dropdown.classList.contains("hidden")) {
-    const input = document.getElementById("symbol-input");
-    if (input) {
-      const rect = input.getBoundingClientRect();
-      dropdown.style.top = `${rect.bottom + 6}px`;
-      dropdown.style.left = `${rect.left}px`;
+document.addEventListener(
+  "scroll",
+  () => {
+    const dropdown = document.getElementById("recent-search-container");
+    if (dropdown && !dropdown.classList.contains("hidden")) {
+      const input = getActiveSearchInput();
+      if (input) {
+        const rect = input.getBoundingClientRect();
+        dropdown.style.top = `${rect.bottom + 6}px`;
+        dropdown.style.left = `${Math.max(10, Math.min(rect.left, window.innerWidth - 270))}px`;
+      }
     }
-  }
-}, true);
-
-
+  },
+  true,
+);
 
 // executeSetTF나 코인 클릭 함수(selectSymbol) 등 마켓이 바뀌는 모든 시점에 이 '세척기'를 돌려야 합니다.
 // ================== chart.js에서 이동됨 ==================
@@ -1067,7 +1225,9 @@ export function setTF(tf) {
 export function executeSetTF(tf) {
   store.currentTF = tf;
   // 🚀 [UX 복원] 마지막 타임프레임 로컈 저장
-  try { localStorage.setItem("sellnance_last_tf", tf); } catch (e) { }
+  try {
+    localStorage.setItem("sellnance_last_tf", tf);
+  } catch (e) {}
   document.querySelectorAll(".tf-btn").forEach((b) => {
     const onClickAttr = b.getAttribute("onclick") || "";
     const isMatch = onClickAttr.includes(`'${tf}'`);
@@ -1324,12 +1484,18 @@ setTimeout(() => {
 
             // 🚀 tf-container를 원래 위치로 복원
             if (container._origParent) {
-              container._origParent.insertBefore(container, container._origNext);
+              container._origParent.insertBefore(
+                container,
+                container._origNext,
+              );
             }
 
             // 🚀 전체화면 버튼을 원래 위치로 복원
             if (fullscreenBtn._origParent) {
-              fullscreenBtn._origParent.insertBefore(fullscreenBtn, fullscreenBtn._origNext);
+              fullscreenBtn._origParent.insertBefore(
+                fullscreenBtn,
+                fullscreenBtn._origNext,
+              );
             }
 
             // 🚀 OHLC 레전드 탑 위치 원복
@@ -1448,14 +1614,14 @@ export function adjustNoticeFontSizes() {
     // 수학적 로그 방식 적용: 문장이 길어질수록 폰트 크기를 부드럽고 자연스럽게 한계점까지 축소
     const threshold = 30; // 기준 글자수
     const baseRem = 0.72; // 기본 rem 크기
-    const minRem = 0.45;  // 최소 rem 크기
+    const minRem = 0.45; // 최소 rem 크기
     const logMult = 0.45; // 로그 배율
 
     let sizeRem = baseRem;
     if (len > threshold) {
       sizeRem = Math.max(
         minRem,
-        baseRem - Math.log10(len / threshold) * logMult
+        baseRem - Math.log10(len / threshold) * logMult,
       );
     }
 
@@ -1463,7 +1629,11 @@ export function adjustNoticeFontSizes() {
     const scaleFactor = Math.min(1, window.innerWidth / 1200);
     const finalRem = sizeRem * scaleFactor;
 
-    div.style.setProperty("font-size", `${finalRem.toFixed(3)}rem`, "important");
+    div.style.setProperty(
+      "font-size",
+      `${finalRem.toFixed(3)}rem`,
+      "important",
+    );
   });
 }
 
@@ -1532,10 +1702,12 @@ function getVisibleTfs() {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed)) {
         // timeframes에 존재하지 않는 폐기된 타임프레임(2h 등)을 자동 제외
-        return parsed.filter((val) => timeframes.some((tf) => tf.value === val));
+        return parsed.filter((val) =>
+          timeframes.some((tf) => tf.value === val),
+        );
       }
     }
-  } catch (e) { }
+  } catch (e) {}
   return timeframes.map((t) => t.value);
 }
 
@@ -1609,10 +1781,11 @@ function renderTfCheckboxList() {
     const isChecked = visibleVals.includes(tf.value);
 
     // 🚀 체크박스 대신 예쁜 뱃지 토글 디자인 적용
-    btn.className = `px-2 py-1.5 text-[11px] font-bold rounded border transition-all cursor-pointer ${isChecked
-      ? "bg-theme-accent text-white border-theme-accent shadow-sm"
-      : "bg-theme-panel/50 text-theme-text opacity-50 border-theme-border/50 hover:opacity-100 hover:border-theme-border"
-      }`;
+    btn.className = `px-2 py-1.5 text-[11px] font-bold rounded border transition-all cursor-pointer ${
+      isChecked
+        ? "bg-theme-accent text-white border-theme-accent shadow-sm"
+        : "bg-theme-panel/50 text-theme-text opacity-50 border-theme-border/50 hover:opacity-100 hover:border-theme-border"
+    }`;
     btn.innerText = tf.label;
 
     btn.addEventListener("click", (e) => {

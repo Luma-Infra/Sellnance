@@ -10,7 +10,7 @@ import { startBybitSpotFeed } from "./feed_bybit_spot.js";
 import { startBybitFuturesFeed } from "./feed_bybit_futures.js";
 import { startUpbitFeed } from "./feed_upbit.js";
 import { startBithumbFeed } from "./feed_bithumb.js";
-import { renderRealtimeRow } from "./stream_table.js";
+import { renderRealtimeRow, calculateRowKimchi } from "./stream_table.js";
 
 // 차트 관련 실시간 처리 로드
 import "./stream_global.js";
@@ -20,8 +20,11 @@ export function syncRowPrioritizedMetrics(row) {
   const currentMarket = store.currentMarket || "ALL";
   const rate = store.marketDataMap?.krw_usd_rate || 1;
 
-  let hasFutures = row.Binance_Futures === "O" || row.Listed_Exchanges?.includes("BINANCE_FUTURES");
-  let hasSpot = row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE");
+  let hasFutures =
+    row.Binance_Futures === "O" ||
+    row.Listed_Exchanges?.includes("BINANCE_FUTURES");
+  let hasSpot =
+    row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE");
 
   let pPrice = null;
   let p24h = null;
@@ -30,7 +33,8 @@ export function syncRowPrioritizedMetrics(row) {
   let pInflow = "";
 
   if (currentMarket === "FUTURES") {
-    pPrice = row.Binance_Price_Futures ?? row.Bybit_Price_Futures ?? row.Price_Raw;
+    pPrice =
+      row.Binance_Price_Futures ?? row.Bybit_Price_Futures ?? row.Price_Raw;
     p24h = row.Change_24h_Futures_Ex ?? row.Change_24h_Raw;
     pToday = row.Change_Today_Futures ?? row.Change_Today_Raw;
     pOpen = row.futures_utc0_open_Raw ?? row.utc0_open_Raw;
@@ -38,60 +42,151 @@ export function syncRowPrioritizedMetrics(row) {
   } else if (currentMarket === "SPOT") {
     pPrice = row.Binance_Price_Spot ?? row.Bybit_Price_Spot ?? row.Price_Raw;
     p24h = row.Change_24h_Binance ?? row.Change_24h_Bybit ?? row.Change_24h_Raw;
-    pToday = row.Change_Today_Binance ?? row.Change_Today_Bybit ?? row.Change_Today_Raw;
+    pToday =
+      row.Change_Today_Binance ??
+      row.Change_Today_Bybit ??
+      row.Change_Today_Raw;
     pOpen = row.spot_utc0_open_Raw ?? row.utc0_open_Raw;
     pInflow = row.Binance === "O" ? "BINANCE_SPOT" : "BYBIT_SPOT";
   } else if (currentMarket === "UPBIT") {
-    pPrice = row.Upbit_Price ? (rate > 0 ? row.Upbit_Price / rate : row.Upbit_Price) : row.Price_Raw;
+    pPrice = row.Upbit_Price
+      ? rate > 0
+        ? row.Upbit_Price / rate
+        : row.Upbit_Price
+      : row.Price_Raw;
     p24h = row.Change_24h_Upbit ?? row.Change_24h_Raw;
     pToday = row.Change_Today_Upbit ?? row.Change_Today_Raw;
-    pOpen = row.utc0_open_KRW ? (rate > 0 ? parseFloat(row.utc0_open_KRW) / rate : parseFloat(row.utc0_open_KRW)) : row.utc0_open_Raw;
+    pOpen = row.utc0_open_KRW
+      ? rate > 0
+        ? parseFloat(row.utc0_open_KRW) / rate
+        : parseFloat(row.utc0_open_KRW)
+      : row.utc0_open_Raw;
     pInflow = "UPBIT";
   } else if (currentMarket === "BITHUMB") {
-    pPrice = row.Bithumb_Price ? (rate > 0 ? row.Bithumb_Price / rate : row.Bithumb_Price) : row.Price_Raw;
+    pPrice = row.Bithumb_Price
+      ? rate > 0
+        ? row.Bithumb_Price / rate
+        : row.Bithumb_Price
+      : row.Price_Raw;
     p24h = row.Change_24h_Bithumb ?? row.Change_24h_Raw;
     pToday = row.Change_Today_Bithumb ?? row.Change_Today_Raw;
-    pOpen = row.utc0_open_KRW ? (rate > 0 ? parseFloat(row.utc0_open_KRW) / rate : parseFloat(row.utc0_open_KRW)) : row.utc0_open_Raw;
+    pOpen = row.utc0_open_KRW
+      ? rate > 0
+        ? parseFloat(row.utc0_open_KRW) / rate
+        : parseFloat(row.utc0_open_KRW)
+      : row.utc0_open_Raw;
     pInflow = "BITHUMB";
   } else {
     // ALL 모드 등 기본: 해외선물 > 해외현물 > 업비트 순으로 락킹 (바이비트와 빗썸은 메인 락킹에서 배제)
-    if (hasFutures && (row.Binance_Futures === "O" || row.Listed_Exchanges?.includes("BINANCE_FUTURES"))) {
+    if (
+      hasFutures &&
+      (row.Binance_Futures === "O" ||
+        row.Listed_Exchanges?.includes("BINANCE_FUTURES"))
+    ) {
       pPrice = row.Binance_Price_Futures ?? row.Price_Raw;
       p24h = row.Change_24h_Futures_Ex ?? row.Change_24h_Raw;
       pToday = row.Change_Today_Futures ?? row.Change_Today_Raw;
       pOpen = row.futures_utc0_open_Raw ?? row.utc0_open_Raw;
       pInflow = "BINANCE_FUTURES";
-    } else if (hasSpot && (row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE"))) {
+    } else if (
+      hasSpot &&
+      (row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE"))
+    ) {
       pPrice = row.Binance_Price_Spot ?? row.Price_Raw;
       p24h = row.Change_24h_Binance ?? row.Change_24h_Raw;
       pToday = row.Change_Today_Binance ?? row.Change_Today_Raw;
       pOpen = row.spot_utc0_open_Raw ?? row.utc0_open_Raw;
       pInflow = "BINANCE_SPOT";
-    } else if (row.Bybit_Price_Futures && row.Listed_Exchanges?.includes("BYBIT_FUTURES")) {
+    } else if (
+      row.Bybit_Price_Futures &&
+      row.Listed_Exchanges?.includes("BYBIT_FUTURES")
+    ) {
       pPrice = row.Bybit_Price_Futures;
       p24h = row.Change_24h_Raw;
       pToday = row.Change_Today_Futures ?? row.Change_Today_Raw;
       pOpen = row.futures_utc0_open_Raw ?? row.utc0_open_Raw;
       pInflow = "BYBIT_FUTURES";
-    } else if (row.Bybit_Price_Spot && (row.Listed_Exchanges?.includes("BYBIT_SPOT") || row.Listed_Exchanges?.includes("BYBIT"))) {
+    } else if (
+      row.Bybit_Price_Spot &&
+      (row.Listed_Exchanges?.includes("BYBIT_SPOT") ||
+        row.Listed_Exchanges?.includes("BYBIT"))
+    ) {
       pPrice = row.Bybit_Price_Spot;
       p24h = row.Change_24h_Bybit ?? row.Change_24h_Raw;
       pToday = row.Change_Today_Bybit ?? row.Change_Today_Raw;
       pOpen = row.spot_utc0_open_Raw ?? row.utc0_open_Raw;
       pInflow = "BYBIT_SPOT";
-    } else if (row.Upbit_Price && (row.Upbit === "O" || row.Listed_Exchanges?.includes("UPBIT"))) {
-      const hasOvs = row.Binance === "O" || row.Binance_Futures === "O" || row.Bybit === "O" || row.Bybit_Futures === "O" || (row.Listed_Exchanges && row.Listed_Exchanges.some(e => e.includes("BINANCE") || e.includes("BYBIT")));
-      pPrice = (hasOvs && row.Price_Raw) ? row.Price_Raw : (rate > 0 ? row.Upbit_Price / rate : row.Upbit_Price);
-      p24h = (hasOvs && row.Change_24h_Raw) ? row.Change_24h_Raw : (row.Change_24h_Upbit ?? row.Change_24h_Raw);
-      pToday = (hasOvs && row.Change_Today_Raw) ? row.Change_Today_Raw : (row.Change_Today_Upbit ?? row.Change_Today_Raw);
-      pOpen = (hasOvs && row.utc0_open_Raw) ? row.utc0_open_Raw : (row.utc0_open_KRW ? (rate > 0 ? parseFloat(row.utc0_open_KRW) / rate : parseFloat(row.utc0_open_KRW)) : row.utc0_open_Raw);
+    } else if (
+      row.Upbit_Price &&
+      (row.Upbit === "O" || row.Listed_Exchanges?.includes("UPBIT"))
+    ) {
+      const hasOvs =
+        row.Binance === "O" ||
+        row.Binance_Futures === "O" ||
+        row.Bybit === "O" ||
+        row.Bybit_Futures === "O" ||
+        (row.Listed_Exchanges &&
+          row.Listed_Exchanges.some(
+            (e) => e.includes("BINANCE") || e.includes("BYBIT"),
+          ));
+      pPrice =
+        hasOvs && row.Price_Raw
+          ? row.Price_Raw
+          : rate > 0
+            ? row.Upbit_Price / rate
+            : row.Upbit_Price;
+      p24h =
+        hasOvs && row.Change_24h_Raw
+          ? row.Change_24h_Raw
+          : (row.Change_24h_Upbit ?? row.Change_24h_Raw);
+      pToday =
+        hasOvs && row.Change_Today_Raw
+          ? row.Change_Today_Raw
+          : (row.Change_Today_Upbit ?? row.Change_Today_Raw);
+      pOpen =
+        hasOvs && row.utc0_open_Raw
+          ? row.utc0_open_Raw
+          : row.utc0_open_KRW
+            ? rate > 0
+              ? parseFloat(row.utc0_open_KRW) / rate
+              : parseFloat(row.utc0_open_KRW)
+            : row.utc0_open_Raw;
       pInflow = "UPBIT";
-    } else if (row.Bithumb_Price && (row.Bithumb === "O" || row.Listed_Exchanges?.includes("BITHUMB"))) {
-      const hasOvs = row.Binance === "O" || row.Binance_Futures === "O" || row.Bybit === "O" || row.Bybit_Futures === "O" || (row.Listed_Exchanges && row.Listed_Exchanges.some(e => e.includes("BINANCE") || e.includes("BYBIT")));
-      pPrice = (hasOvs && row.Price_Raw) ? row.Price_Raw : (rate > 0 ? row.Bithumb_Price / rate : row.Bithumb_Price);
-      p24h = (hasOvs && row.Change_24h_Raw) ? row.Change_24h_Raw : (row.Change_24h_Bithumb ?? row.Change_24h_Raw);
-      pToday = (hasOvs && row.Change_Today_Raw) ? row.Change_Today_Raw : (row.Change_Today_Bithumb ?? row.Change_Today_Raw);
-      pOpen = (hasOvs && row.utc0_open_Raw) ? row.utc0_open_Raw : (row.utc0_open_KRW ? (rate > 0 ? parseFloat(row.utc0_open_KRW) / rate : parseFloat(row.utc0_open_KRW)) : row.utc0_open_Raw);
+    } else if (
+      row.Bithumb_Price &&
+      (row.Bithumb === "O" || row.Listed_Exchanges?.includes("BITHUMB"))
+    ) {
+      const hasOvs =
+        row.Binance === "O" ||
+        row.Binance_Futures === "O" ||
+        row.Bybit === "O" ||
+        row.Bybit_Futures === "O" ||
+        (row.Listed_Exchanges &&
+          row.Listed_Exchanges.some(
+            (e) => e.includes("BINANCE") || e.includes("BYBIT"),
+          ));
+      pPrice =
+        hasOvs && row.Price_Raw
+          ? row.Price_Raw
+          : rate > 0
+            ? row.Bithumb_Price / rate
+            : row.Bithumb_Price;
+      p24h =
+        hasOvs && row.Change_24h_Raw
+          ? row.Change_24h_Raw
+          : (row.Change_24h_Bithumb ?? row.Change_24h_Raw);
+      pToday =
+        hasOvs && row.Change_Today_Raw
+          ? row.Change_Today_Raw
+          : (row.Change_Today_Bithumb ?? row.Change_Today_Raw);
+      pOpen =
+        hasOvs && row.utc0_open_Raw
+          ? row.utc0_open_Raw
+          : row.utc0_open_KRW
+            ? rate > 0
+              ? parseFloat(row.utc0_open_KRW) / rate
+              : parseFloat(row.utc0_open_KRW)
+            : row.utc0_open_Raw;
       pInflow = "BITHUMB";
     }
   }
@@ -107,7 +202,10 @@ export function syncRowPrioritizedMetrics(row) {
     row.utc0_open_Raw = parseFloat(pOpen);
   }
   row.Inflow_Path = pInflow;
-  row.activeExchange = pInflow.toLowerCase().replace("_spot", "").replace("_futures", "");
+  row.activeExchange = pInflow
+    .toLowerCase()
+    .replace("_spot", "")
+    .replace("_futures", "");
 
   // 🚀 [HTS 가드 엔진] 외부 혹은 미확인 코드에 의한 김프 0.0% 강제 오염 완벽 격리 차단 (0% 고착 리셋 버그 차단용 주석 처리)
   /*
@@ -405,7 +503,7 @@ store.radarIntervalId = setInterval(() => {
                     window.updateRowDynamicHTML(rowEl, r, true);
                   } else {
                     window.updateRowDynamicHTML(rowEl, r, false);
-                  }
+        }
                 }
               });
             }
@@ -423,10 +521,10 @@ store.radarIntervalId = setInterval(() => {
             if (r) {
               if (!r.UID || !row.UID || r.UID == row.UID) {
                 calcKimchi(r);
+                }
               }
             }
           }
-        }
       }
     }
 

@@ -135,7 +135,7 @@ class MeasurePaneRenderer {
       const bgColor = style.getPropertyValue("--panel").trim() || "#131722";
       ctx.lineWidth = 3;
       ctx.strokeStyle = bgColor;
-      
+
       ctx.strokeText(text1, centerX, centerY - 14);
       ctx.strokeText(text2, centerX, centerY);
       ctx.strokeText(text3, centerX, centerY + 14);
@@ -214,15 +214,31 @@ export function toggleMeasureTool() {
     stopMeasuring();
     const btn = document.getElementById("toggle-measure-btn");
     if (btn) {
-      btn.classList.remove("text-theme-up", "border-theme-up/40", "bg-theme-up/10");
-      btn.classList.add("text-theme-text", "border-theme-border/50", "bg-theme-panel/50");
+      btn.classList.remove(
+        "text-theme-up",
+        "border-theme-up/40",
+        "bg-theme-up/10",
+      );
+      btn.classList.add(
+        "text-theme-text",
+        "border-theme-border/50",
+        "bg-theme-panel/50",
+      );
     }
   } else {
     store.activeTool = "measure";
     const btn = document.getElementById("toggle-measure-btn");
     if (btn) {
-      btn.classList.remove("text-theme-text", "border-theme-border/50", "bg-theme-panel/50");
-      btn.classList.add("text-theme-up", "border-theme-up/40", "bg-theme-up/10");
+      btn.classList.remove(
+        "text-theme-text",
+        "border-theme-border/50",
+        "bg-theme-panel/50",
+      );
+      btn.classList.add(
+        "text-theme-up",
+        "border-theme-up/40",
+        "bg-theme-up/10",
+      );
     }
   }
 }

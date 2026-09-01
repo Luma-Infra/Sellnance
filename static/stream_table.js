@@ -153,6 +153,95 @@ export function refreshSniperTarget() {
   if (typeof syncSniperSubscriptions === "function") syncSniperSubscriptions();
 }
 
+export function calculateRowKimchi(r, rate) {
+  if (!r || !rate || rate <= 0) return;
+
+  const exList = (r.Listed_Exchanges || []).map((e) => e.toUpperCase());
+  const hasUpbit = r.Upbit === "O" || exList.includes("UPBIT") || !!r.Upbit_Symbol;
+  const hasBithumb = exList.includes("BITHUMB") || !!r.Bithumb_Symbol;
+  const hasGlobal =
+    r.Binance === "O" ||
+    r.Binance_Futures === "O" ||
+    exList.includes("BINANCE") ||
+    exList.includes("BINANCE_FUTURES") ||
+    exList.includes("BYBIT") ||
+    exList.includes("BYBIT_FUTURES") ||
+    r.Binance_Price_Futures > 0 ||
+    r.Binance_Price_Spot > 0 ||
+    r.Binance_Price > 0 ||
+    r.Bybit_Price > 0 ||
+    !!r.Price_Raw;
+
+  if (!hasGlobal || (!hasUpbit && !hasBithumb)) {
+    r.Kimchi_Raw = null;
+    r.Kimchi_Label = "-";
+    r.Kimchi_Formatted = "-";
+    return;
+  }
+
+  let priceKor = 0;
+  if (hasUpbit || hasBithumb) {
+    const krwRow = store.uidToKrwRowMap ? store.uidToKrwRowMap.get(String(r.UID)) : null;
+    if (hasUpbit) {
+      priceKor = (krwRow ? krwRow.Upbit_Price || krwRow.Price_KRW : 0) || r.Upbit_Price || r.Price_KRW || 0;
+    } else if (hasBithumb) {
+      priceKor = (krwRow ? krwRow.Bithumb_Price || krwRow.Price_KRW : 0) || r.Bithumb_Price || r.Price_KRW || 0;
+    }
+  }
+
+  const domMult = getMultiplier(r.Upbit_Symbol || r.Bithumb_Symbol || r.Ticker || r.Symbol);
+  const ovsMult = getMultiplier(r.Exact_Futures || r.Exact_Spot || r.Ticker || r.Symbol);
+  const unitKorPrice = priceKor / domMult;
+
+  let rawGlb = r.Price_Raw || 0;
+  if ((!rawGlb || r.Ticker?.endsWith("KRW")) && (r.Binance_Price_Futures || r.Binance_Price_Spot || r.Binance_Price || r.Bybit_Price)) {
+    rawGlb = r.Binance_Price_Futures || r.Binance_Price_Spot || r.Binance_Price || r.Bybit_Price || 0;
+  }
+  let unitGlbPrice = rawGlb;
+  if (ovsMult > 1 && unitGlbPrice > 0 && unitKorPrice > 0) {
+    const approxUsd = unitKorPrice / rate;
+    if (Math.abs(unitGlbPrice / ovsMult - approxUsd) < Math.abs(unitGlbPrice - approxUsd)) {
+      unitGlbPrice = unitGlbPrice / ovsMult;
+    }
+  }
+
+  if (unitKorPrice > 0 && unitGlbPrice > 0) {
+    const kimchiPct = (unitKorPrice / (unitGlbPrice * rate) - 1) * 100;
+    if (isFinite(kimchiPct)) {
+      r.Kimchi_Raw = kimchiPct;
+      if (kimchiPct > 500 || kimchiPct <= -90) {
+        r.Kimchi_Label = "VOID";
+        r.Kimchi_Formatted = "VOID";
+      } else {
+        r.Kimchi_Label = (kimchiPct > 0 ? "+" : "") + kimchiPct.toFixed(2) + "%";
+        r.Kimchi_Formatted = (kimchiPct > 0 ? "+" : "") + kimchiPct.toFixed(2) + "%";
+      }
+      return;
+    }
+  }
+
+  /*
+  const isFakeZero =
+    r.Kimchi_Raw === 0 ||
+    r.Kimchi_Raw === 0.0 ||
+    r.Kimchi_Raw === null ||
+    r.Kimchi_Raw === undefined ||
+    !r.Kimchi_Formatted ||
+    /^(0\.0+%)?$/.test(r.Kimchi_Formatted) ||
+    r.Kimchi_Formatted === "-" ||
+    r.Kimchi_Formatted === "0.00%";
+
+  if (isFakeZero) {
+    r.Kimchi_Raw = null;
+    r.Kimchi_Label = "-";
+    r.Kimchi_Formatted = "-";
+  }
+  */
+}
+if (typeof window !== "undefined") {
+  window.calculateRowKimchi = calculateRowKimchi;
+}
+
 const lastRenderRowMap = new Map();
 
 // ⚡ [HTS 핵심] 개별 행 정밀 렌더링 엔진 (웹소켓 전용)
@@ -438,91 +527,7 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
 
   if (!store.blockKimchi) {
     if (rate > 0) {
-      const calcKimchi = (r) => {
-        const exList = (r.Listed_Exchanges || []).map(e => e.toUpperCase());
-        const hasUpbit = r.Upbit === "O" || exList.includes("UPBIT") || !!r.Upbit_Symbol;
-        const hasBithumb = exList.includes("BITHUMB") || !!r.Bithumb_Symbol;
-        const hasGlobal = (r.Binance === "O" || r.Binance_Futures === "O" || exList.includes("BINANCE") || exList.includes("BINANCE_FUTURES") || exList.includes("BYBIT") || exList.includes("BYBIT_FUTURES") || (r.Binance_Price_Futures > 0) || (r.Binance_Price_Spot > 0) || (r.Binance_Price > 0) || (r.Bybit_Price > 0));
-
-        if (!hasGlobal || (!hasUpbit && !hasBithumb)) {
-          r.Kimchi_Raw = null;
-          r.Kimchi_Label = "-";
-          r.Kimchi_Formatted = "-";
-          return;
-        }
-
-        let priceKor = 0;
-        if (hasUpbit || hasBithumb) {
-          // 🚀 [초정밀 UID 룩업] 다른 파일에서 시세를 덮어쓰고 복사하는 부작용 없이, 계산 시점에 동일 UID의 원화 코인 가격을 직접 읽어옵니다.
-          const krwRow = store.uidToKrwRowMap ? store.uidToKrwRowMap.get(String(r.UID)) : null;
-          if (hasUpbit) {
-            priceKor = (krwRow ? krwRow.Upbit_Price || krwRow.Price_KRW : 0) || r.Upbit_Price || r.Price_KRW || 0;
-          } else if (hasBithumb) {
-            priceKor = (krwRow ? krwRow.Bithumb_Price || krwRow.Price_KRW : 0) || r.Bithumb_Price || r.Price_KRW || 0;
-          }
-        }
-
-        // 🚀 [기존 함수 연동] 국내/해외 1000/1M 배수 정밀 추출 (1000PEPE, 1MBABYDOGE 등 1000% 왜곡 원천 차단)
-        const domMult = getMultiplier(r.Upbit_Symbol || r.Bithumb_Symbol || r.Ticker || r.Symbol);
-        const ovsMult = getMultiplier(r.Exact_Futures || r.Exact_Spot || r.Ticker || r.Symbol);
-        const unitKorPrice = priceKor / domMult;
-
-        let rawGlb = r.Price_Raw || 0;
-        if ((!rawGlb || r.Ticker?.endsWith("KRW")) && (r.Binance_Price_Futures || r.Binance_Price_Spot || r.Binance_Price || r.Bybit_Price)) {
-          rawGlb = r.Binance_Price_Futures || r.Binance_Price_Spot || r.Binance_Price || r.Bybit_Price || 0;
-        }
-        let unitGlbPrice = rawGlb;
-        if (ovsMult > 1 && unitGlbPrice > 0 && unitKorPrice > 0) {
-          const approxUsd = unitKorPrice / rate;
-          if (Math.abs(unitGlbPrice / ovsMult - approxUsd) < Math.abs(unitGlbPrice - approxUsd)) {
-            unitGlbPrice = unitGlbPrice / ovsMult;
-          }
-        }
-
-        if (unitKorPrice > 0 && unitGlbPrice > 0) {
-          const kimchiPct = (unitKorPrice / (unitGlbPrice * rate) - 1) * 100;
-          if (isFinite(kimchiPct)) {
-            r.Kimchi_Raw = kimchiPct;
-            if (kimchiPct > 500 || kimchiPct <= -90) {
-              r.Kimchi_Label = "VOID";
-              r.Kimchi_Formatted = "VOID";
-            } else {
-              r.Kimchi_Label = (kimchiPct > 0 ? "+" : "") + kimchiPct.toFixed(2) + "%";
-              r.Kimchi_Formatted = (kimchiPct > 0 ? "+" : "") + kimchiPct.toFixed(2) + "%";
-            }
-            return;
-          }
-        }
-
-        /*
-        const isFakeZero =
-          r.Kimchi_Raw === 0 ||
-          r.Kimchi_Raw === 0.0 ||
-          r.Kimchi_Raw === null ||
-          r.Kimchi_Raw === undefined ||
-          !r.Kimchi_Formatted ||
-          /^(0\.0+%)?$/.test(r.Kimchi_Formatted) ||
-          r.Kimchi_Formatted === "-" ||
-          r.Kimchi_Formatted === "0.00%";
-
-        if (isFakeZero) {
-        r.Kimchi_Raw = null;
-        r.Kimchi_Label = "-";
-        r.Kimchi_Formatted = "-";
-          const rowEl = store.rowDomMap ? store.rowDomMap.get(r.Ticker) : null;
-          if (rowEl && typeof window.updateRowDynamicHTML === "function") {
-            if (store.blockRowDynamicHTML) {
-              if (store.bypassCounters) store.bypassCounters.dynamicHtml++;
-              window.updateRowDynamicHTML(rowEl, r, true);
-            } else {
-              window.updateRowDynamicHTML(rowEl, r, false);
-            }
-          }
-        }
-        */
-      };
-
-      calcKimchi(row);
+      calculateRowKimchi(row, rate);
 
       if (isKrwCoin) {
         const pureBase = getPureBase(row.Symbol || row.Ticker);
@@ -536,7 +541,7 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
               } else if (data.isBithumbRealtime || tId.endsWith("_KRW")) {
                 r.Bithumb_Price = newPrice;
               }
-              calcKimchi(r);
+              calculateRowKimchi(r, rate);
             }
           });
         }

@@ -117,12 +117,12 @@
   <div id="app-loader"></div>
 
   <!-- 🚀 온보딩 모달 (첫 방문 안내) -->
-  <div id="onboarding-modal"
-    class="fixed z-[300] inset-0 bg-black/60 hidden backdrop-blur-sm flex-col justify-center items-center p-4 transition-opacity duration-300 opacity-0">
+  <div id="onboarding-modal" onclick="if (event.target === this) window.closeOnboardingModal()"
+    class="fixed z-[300] inset-0 bg-black/60 hidden backdrop-blur-sm flex-col justify-center items-center p-4 transition-opacity duration-300 opacity-0 cursor-pointer">
     <div
-      class="bg-theme-panel border border-theme-border/50 rounded-2xl w-full max-w-2xl max-h-[75vh] md:max-h-none shadow-2xl overflow-hidden flex flex-col transform scale-95 transition-transform duration-300"
+      class="bg-theme-panel border border-theme-border/50 rounded-2xl w-full max-w-2xl max-h-[85dvh] max-h-[85vh] md:max-h-none shadow-2xl overflow-hidden flex flex-col transform scale-95 transition-transform duration-300 cursor-default"
       id="onboarding-modal-content">
-      <div class="p-4 md:p-4 flex-1 overflow-y-auto">
+      <div class="p-4 md:p-4 flex-1 overflow-y-auto min-h-0 overscroll-contain">
         <h2 class="text-lg md:text-xl font-bold text-theme-text mb-2 flex items-center gap-1.5">
           <img src="../static/luma-deer-svg-light.svg" class="w-5 h-5 md:w-6 md:h-6 inline-block" alt="deer light" />
           <img src="../static/luma-deer-svg-dark.svg" class="w-5 h-5 md:w-6 md:h-6 inline-block" alt="deer dark" />
@@ -284,11 +284,11 @@
 
           <div class="bg-theme-bg/50 border border-theme-border/30 rounded-xl p-2">
             <h3 class="text-theme-down font-bold text-sm mb-1.5">
-              ⚠️ 주요 특징
+              ⚠️ 안내
             </h3>
             <ul class="text-sm text-theme-text opacity-90 space-y-1.5 list-disc pl-4 text-[12px] leading-snug">
-              <li>
-                <!-- <b>렌더링 병목 방어:</b> 실시간 호가 및 차트 마우스 연동
+              <!-- <li>
+                <b>렌더링 병목 방어:</b> 실시간 호가 및 차트 마우스 연동
                 레이아웃 리플로우(Reflow)와 가비지 컬렉션(GC) 부하 최소화를
                 위한 <b>이벤트 디바운스 및 스로틀링(Throttling)</b> 적용
               </li>
@@ -315,15 +315,17 @@
           </div>
         </div>
       </div>
-      <div class="border-t border-theme-border/30 p-4 bg-theme-bg/80 flex justify-between items-center">
-        <label class="flex items-center gap-2 cursor-pointer group select-none">
+      <!-- 🚀 온보딩 모달 하단 액션 푸터 (다크 글래스 칩 일체형) -->
+      <div class="border-t border-theme-border/40 px-4 py-3 bg-theme-bg/95 flex items-center justify-end gap-2 flex-wrap sm:flex-nowrap">
+        <label class="h-[38px] px-3.5 bg-black/40 hover:bg-white/10 border border-theme-border/50 hover:border-theme-accent/50 rounded-xl flex items-center gap-2 cursor-pointer select-none transition-all group">
           <input type="checkbox" id="onboarding-never-show"
-            class="w-4 h-4 rounded bg-theme-panel border-theme-border/50 text-theme-accent focus:ring-0 cursor-pointer" />
-          <span class="text-sm text-theme-text opacity-70 group-hover:opacity-100 transition-opacity">다시 보지 않기</span>
+            class="accent-theme-accent w-3.5 h-3.5 rounded cursor-pointer" />
+          <span class="text-xs text-theme-text/80 group-hover:text-white whitespace-nowrap font-medium transition-colors">다시 안 보기</span>
         </label>
         <button onclick="window.closeOnboardingModal()"
-          class="px-6 py-2 bg-theme-accent text-white font-bold rounded-lg hover:bg-opacity-90 transition-all shadow-lg shadow-theme-accent/20">
-          시작하기
+          class="h-[38px] px-6 bg-theme-accent text-white text-xs md:text-sm font-bold rounded-xl shadow-sm hover:brightness-105 active:scale-[0.98] transition-all tracking-wider flex items-center gap-1.5">
+          <span>시작하기</span>
+          <span>→</span>
         </button>
       </div>
     </div>
@@ -358,20 +360,21 @@
         <h2 class="m-0 text-lg font-bold tracking-tighter text-theme-accent uppercase flex items-center h-full">
           sellance
         </h2>
-        <!-- 🚀 [신규] 서버 갱신 쿨타임 & 접속자 수 상태 알림 배지 (미니멀 호버 툴팁) -->
+        <!-- 🚀 서버 갱신 상태 배지: PC는 풀 텍스트, 모바일은 펄스 불빛 점만 -->
         <div id="server-status-badge"
-          class="relative group flex flex-col justify-center items-start gap-0.5 px-2 py-0.5 bg-theme-border/10 hover:bg-theme-border/20 border border-theme-border/20 hover:border-theme-border/40 rounded text-[9px] font-bold text-theme-text/80 select-none leading-none cursor-default transition-colors">
-          <div class="flex items-center gap-1">
+          class="relative group flex items-center justify-center p-1 min-[1200px]:px-2 min-[1200px]:py-0.5 bg-theme-border/10 hover:bg-theme-border/20 border border-theme-border/20 hover:border-theme-border/40 rounded-full min-[1200px]:rounded select-none cursor-default transition-colors ml-1"
+          title="시가총액 갱신 상태">
+          <div class="flex items-center gap-1.5">
             <span id="status-timer-dot"
-              class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span id="status-timer">--:--:-- 이후 시가총액 갱신</span>
+              class="inline-block w-2 h-2 min-[1200px]:w-1.5 min-[1200px]:h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span id="status-timer" class="hidden min-[1200px]:inline-block text-[9px] font-bold text-theme-text/80">--:--:-- 이후 시가총액 갱신</span>
           </div>
-          <span id="status-users" class="pl-2.5 opacity-60 font-mono">1 Active</span>
+          <span id="status-users" class="hidden min-[1200px]:inline-block pl-2.5 opacity-60 font-mono text-[9px]">1 Active</span>
 
           <!-- 💎 심플 미니멀 다크 글래스 호버 툴팁 (순수 텍스트 설명 전용) -->
           <div id="status-cache-tooltip"
             class="absolute top-full left-0 mt-2 z-50 w-64 p-2.5 bg-[#12151c]/95 border border-theme-border/60 rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.7),0_0_20px_rgba(0,209,255,0.06)] backdrop-blur-md opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-200 transform translate-y-1 group-hover:translate-y-0 text-left">
-            <p class="text-[10px] text-white/85 leading-relaxed font-normal">
+            <p id="status-tooltip-text" class="text-[10px] text-white/85 leading-relaxed font-normal">
               개인 CMC API 키 미입력 상태에요 <br /> 서버 일일 캐시 모드(24시간 주기)로 시총을 갱신할게요
             </p>
           </div>
@@ -510,9 +513,10 @@
         <!-- 🚀 탭/검색창과 제어 패널을 통틀어 감싸는 좌측 최상단 공통 부모 요소 -->
         <div id="left-top-zone"
           class="flex flex-col w-full shrink-0 border-b border-theme-border h-auto max-[1199px]:!h-auto min-[1200px]:h-[224px] min-[1200px]:max-h-[224px]">
-          <!-- 🚀 검색창을 최상단으로 이동 (즉각 필터링) -->
+          
+          <!-- 🚀 [PC 전용 (>=1200px)] 기존 정통 상단 독립 검색창 (100% 원본 유지) -->
           <div id="search-input-wrapper"
-            class="flex w-[calc(100%-16px)] shrink-0 bg-theme-panel/10 p-2 items-center mt-1 mx-2">
+            class="hidden min-[1200px]:flex w-[calc(100%-16px)] shrink-0 bg-theme-panel/10 p-2 items-center mt-1 mx-2">
             <!-- 🚀 내부 검색 바 (우측 탭 컨테이너와 동일한 36px 높이 부여) -->
             <div id="search-bar-inner"
               class="relative flex flex-1 h-[36px] bg-theme-panel border border-theme-border rounded-md items-center z-0 overflow-hidden px-3 shadow-inner w-full focus-within:border-theme-accent transition-all">
@@ -538,49 +542,9 @@
             </div>
           </div>
 
-          <!-- 🚀 [신규] 상단 제어 바: 시총 슬라이더, 거래소 필터, 카테고리 탭 -->
+          <!-- 🚀 상단 제어 바: 시총 슬라이더, 거래소 필터, 카테고리 탭 -->
           <div id="control-panel-parent"
-            class="flex flex-col gap-2 p-2 bg-theme-panel/10 border-b border-theme-border mt-1 relative flex-1">
-
-            <!-- 🚀 1층: 통합 컨트롤 바 (필터, 뷰 모드, 플립) 쌀먹 최적화 -->
-            <div class="flex items-center gap-2 w-full">
-              <!-- [임시 주석 처리] 1층 컨트롤 바 버튼들
-            <div class="flex items-center bg-theme-border/20 rounded-lg p-0.5 flex-shrink-0">
-              <button onclick="window.switchViewMode('simple')" id="view-mode-simple-btn"
-                class="px-3 py-1 text-[10px] font-medium rounded transition-all text-theme-text opacity-50 hover:opacity-100">
-                SIMPLE
-              </button>
-              <button onclick="window.switchViewMode('basic')" id="view-mode-basic-btn"
-                class="px-3 py-1 text-[10px] font-bold rounded transition-all bg-theme-accent text-white shadow-md">
-                BASIC
-              </button>
-            </div>
-
-            <div class="relative flex p-1 bg-theme-border/20 rounded-xl overflow-hidden flex-1 max-w-[240px]">
-              <div id="filter-slider"
-                class="absolute top-1 left-1 bottom-1 w-[calc(50%-4px)] bg-theme-accent rounded-lg transition-all duration-300 ease-out z-0 shadow-lg"
-                style="left: 4px"></div>
-              <button onclick="switchFilter('BINANCE')" id="filter-binance"
-                class="relative z-10 flex-1 px-1 py-1.5 text-[9px] md:text-[10px] transition-all text-white font-bold truncate tracking-tighter">
-                BINANCE(USD)
-              </button>
-              <button onclick="switchFilter('UPBIT')" id="filter-upbit"
-                class="relative z-10 flex-1 px-1 py-1.5 text-[9px] md:text-[10px] font-medium transition-all text-theme-text opacity-50 hover:opacity-100 truncate tracking-tighter">
-                UPBIT(KRW)
-              </button>
-            </div>
-
-            <div class="flex items-center flex-shrink-0 ml-auto">
-              <label class="relative inline-flex items-center cursor-pointer scale-90 m-0">
-                <input type="checkbox" id="flip-toggle" class="sr-only peer" checked />
-                <span
-                  class="w-7 h-4 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-[12px] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-theme-accent">
-                </span>
-                <span class="ml-1.5 text-[9px] font-medium opacity-60 uppercase tracking-tighter">Flip</span>
-              </label>
-            </div>
-            -->
-            </div>
+            class="flex flex-col gap-1.5 p-2 bg-theme-panel/10 border-b border-theme-border relative flex-1">
 
             <!-- 🚀 [신규 추가] 거래소 다중 체크 AND 필터바 -->
             <div id="exchange-filter-container"
@@ -590,39 +554,81 @@
 
             <!-- 🚀 [신규 추가] 거래소 필터 프리셋 제어바 -->
             <div id="exchange-presets-container"
-              class="flex items-center justify-between py-1 px-2 bg-theme-panel/5 border border-theme-border/20 rounded-xl mt-1 text-[10px] select-none">
+              class="flex items-center justify-between py-1 px-2 bg-theme-panel/5 border border-theme-border/20 rounded-xl mt-0.5 text-[10px] select-none">
               <!-- 동적으로 table_filter.js::updateExchFilterUI()가 프리셋 라인을 그립니다 -->
             </div>
 
-            <!-- 3층: 카테고리 탭 및 간편 필터 -->
-            <div id="category-tab-container" class="flex items-center gap-1 overflow-x-auto scrollbar-hide px-1 mt-1">
-              <button onclick="switchTab('ALL')" id="tab-all"
-                class="tab-btn px-4 py-1.5 text-[10px] font-medium rounded-full transition-all bg-theme-accent text-white border border-theme-accent shadow-md whitespace-nowrap">
-                ALL
-              </button>
-              <button onclick="switchTab('FAV')" id="tab-fav"
-                class="tab-btn px-4 py-1.5 text-[10px] font-medium rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap">
-                <span style="color: #e3b30a; margin-right: 2px">★</span>
-                FAVORITES 1
-              </button>
-              <button onclick="switchTab('FAV2')" id="tab-fav2"
-                class="tab-btn px-4 py-1.5 text-[10px] font-medium rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap">
-                <span style="color: #3b82f6; margin-right: 2px">★</span>
-                FAVORITES 2
+            <!-- 3층: 카테고리 탭 및 모바일 전용 인라인 돋보기(🔍) 토글 검색 바 -->
+            <div id="category-tab-container" class="relative flex items-center gap-1 px-1 mt-0.5 min-h-[34px] overflow-hidden">
+              <!-- 탭 버튼 목록 -->
+              <div id="tab-buttons-group" class="flex items-center gap-1 flex-1 min-w-0 overflow-x-auto scrollbar-hide transition-opacity duration-200">
+                <button onclick="switchTab('ALL')" id="tab-all"
+                  class="tab-btn px-3.5 py-1.5 text-[10px] font-medium rounded-full transition-all bg-theme-accent text-white border border-theme-accent shadow-md whitespace-nowrap">
+                  ALL
+                </button>
+                <button onclick="switchTab('FAV')" id="tab-fav"
+                  class="tab-btn px-3.5 py-1.5 text-[10px] font-medium rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap">
+                  <span style="color: #e3b30a; margin-right: 2px">★</span>
+                  FAV 1
+                </button>
+                <button onclick="switchTab('FAV2')" id="tab-fav2"
+                  class="tab-btn px-3.5 py-1.5 text-[10px] font-medium rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap">
+                  <span style="color: #3b82f6; margin-right: 2px">★</span>
+                  FAV 2
+                </button>
+
+                <div id="category-tab-separator" class="w-px h-4 bg-theme-border/30 mx-1 shrink-0"></div>
+
+                <button onclick="toggleSmallCap()" id="btn-small-cap"
+                  class="tab-btn px-3.5 py-1.5 text-[10px] font-medium rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap">
+                  🚫 Mcap &lt; 1M
+                </button>
+                <button onclick="window.toggleCustomFilter(event)" id="btn-custom-filter"
+                  class="tab-btn px-3.5 py-1.5 text-[10px] font-medium rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap hidden md:flex items-center gap-1 cursor-pointer">
+                  <span>🎛️</span>
+                  <span id="btn-custom-filter-text">Custom</span>
+                </button>
+              </div>
+
+              <!-- 🚀 [모바일 전용 (<1200px)] 우측 돋보기 토글 버튼 -->
+              <button id="btn-toggle-tab-search" onclick="window.toggleTabSearch(true)"
+                class="min-[1200px]:hidden w-7 h-7 rounded-full bg-theme-panel border border-theme-border/60 flex items-center justify-center text-theme-text opacity-60 hover:opacity-100 hover:text-theme-accent hover:border-theme-accent transition-all shrink-0 ml-1 cursor-pointer"
+                title="코인 검색">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
               </button>
 
-              <div id="category-tab-separator" class="w-px h-4 bg-theme-border/30 mx-1 ml-auto"></div>
-              <!-- 구분선 -->
-
-              <button onclick="toggleSmallCap()" id="btn-small-cap"
-                class="tab-btn px-4 py-1.5 text-[10px] font-medium rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap">
-                🚫 Hiding Mcap &lt; 1M
-              </button>
-              <button onclick="window.toggleCustomFilter(event)" id="btn-custom-filter"
-                class="tab-btn px-4 py-1.5 text-[10px] font-medium rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap hidden md:flex items-center gap-1 cursor-pointer">
-                <span>🎛️</span>
-                <span id="btn-custom-filter-text">Custom</span>
-              </button>
+              <!-- 🚀 [모바일 전용 (<1200px)] 슬라이드 검색창 (돋보기 클릭 시 부드럽게 오버레이) -->
+              <div id="tab-search-wrapper"
+                class="min-[1200px]:hidden absolute inset-0 bg-theme-bg/95 flex items-center gap-1.5 px-1 z-20 transition-all duration-200 opacity-0 pointer-events-none translate-x-2">
+                <div class="relative flex flex-1 h-[30px] bg-theme-panel border border-theme-accent/70 rounded-full items-center px-3 shadow-inner">
+                  <span class="text-[11px] text-theme-accent mr-1.5">🔍</span>
+                  <input type="text" id="symbol-input-mobile" placeholder="Search Ticker or Name..."
+                    name="sellnance_coin_search_custom_mobile"
+                    autocomplete="off"
+                    autocorrect="off"
+                    autocapitalize="off"
+                    spellcheck="false"
+                    data-lpignore="true"
+                    data-form-type="other"
+                    oninput="searchSymbols(this.value)"
+                    onfocus="if (typeof window.showRecentSearchChips === 'function') window.showRecentSearchChips()"
+                    onclick="if (typeof window.showRecentSearchChips === 'function') window.showRecentSearchChips()"
+                    class="bg-transparent text-theme-text w-full text-xs font-medium focus:outline-none placeholder-opacity-40 h-full" />
+                  <button onclick="clearSearch()"
+                    class="ml-1.5 text-theme-text opacity-40 hover:opacity-100 transition-opacity h-full flex items-center justify-center cursor-pointer text-xs">
+                    ✕
+                  </button>
+                  <div id="search-loading-bar-mobile"
+                    class="absolute bottom-0 left-0 h-[2px] bg-theme-accent w-0 transition-all pointer-events-none"></div>
+                </div>
+                <button onclick="window.toggleTabSearch(false)"
+                  class="text-[11px] px-2.5 py-1 rounded-md text-theme-text opacity-70 hover:opacity-100 hover:text-white transition-all font-medium whitespace-nowrap cursor-pointer">
+                  닫기
+                </button>
+              </div>
             </div>
 
             <!-- 🚀 커스텀 필터 드롭다운 -->
@@ -1201,7 +1207,7 @@
 
           <!-- 2. 우측 호가창 (Orderbook) 패널 -->
           <div id="orderbook-panel"
-            class="hidden w-full md:w-[260px] flex-shrink-0 flex-col border border-theme-border rounded-lg bg-theme-panel relative overflow-hidden transition-all duration-300 shadow-md">
+            class="hidden w-full md:w-[260px] flex-shrink-0 flex-col bowrder border-theme-border rounded-lg bg-theme-panel relative overflow-hidden transition-all duration-300 shadow-md">
             <!-- Orderbook Header -->
             <div
               class="flex items-center justify-between p-2 border-b border-theme-border bg-theme-bg/40 shrink-0 backdrop-blur-sm">

@@ -4,7 +4,12 @@ import { store, CONFIG } from "./_store.js";
 import { fetchHistory } from "./chart_data.js";
 import { getPureBase } from "./chart_utils.js";
 
-export function selectSymbol(s, forceMarket = null, targetUid = null, isRowClick = false) {
+export function selectSymbol(
+  s,
+  forceMarket = null,
+  targetUid = null,
+  isRowClick = false,
+) {
   const allSourceData = store.currentTableData || store.originalTableData || [];
   // 1. suffix 및 트레이딩뷰 스타일(EXCHANGE:SYMBOL_MARKET) 파싱
   const originalSym = String(s).trim();
@@ -58,21 +63,43 @@ export function selectSymbol(s, forceMarket = null, targetUid = null, isRowClick
   }
   if (!rowInfo) {
     // 2-1. 1차 패스: 정확히 일치(Exact Match)하는 대상을 우선 검색
-    rowInfo = allSourceData.find((c) => c.UID === parsedSymbol || c.Ticker === parsedSymbol || c.DisplayTicker === parsedSymbol || c.Symbol === parsedSymbol);
+    rowInfo = allSourceData.find(
+      (c) =>
+        c.UID === parsedSymbol ||
+        c.Ticker === parsedSymbol ||
+        c.DisplayTicker === parsedSymbol ||
+        c.Symbol === parsedSymbol,
+    );
   }
   if (!rowInfo) {
     // 2-2. 2차 패스: 접미사(KRW, USDT 등)를 제거하고 유연하게 검색
     rowInfo = allSourceData.find((c) => {
       const t = (c.Ticker || "").toUpperCase();
-      const cleanT = t.endsWith("KRW") ? t.slice(0, -3) : (t.endsWith("USDT") ? t.slice(0, -4) : t);
+      const cleanT = t.endsWith("KRW")
+        ? t.slice(0, -3)
+        : t.endsWith("USDT")
+          ? t.slice(0, -4)
+          : t;
 
       const dt = (c.DisplayTicker || "").toUpperCase();
-      const cleanDt = dt.endsWith("KRW") ? dt.slice(0, -3) : (dt.endsWith("USDT") ? dt.slice(0, -4) : dt);
+      const cleanDt = dt.endsWith("KRW")
+        ? dt.slice(0, -3)
+        : dt.endsWith("USDT")
+          ? dt.slice(0, -4)
+          : dt;
 
       const sym = (c.Symbol || "").toUpperCase();
-      const cleanSym = sym.endsWith("KRW") ? sym.slice(0, -3) : (sym.endsWith("USDT") ? sym.slice(0, -4) : sym);
+      const cleanSym = sym.endsWith("KRW")
+        ? sym.slice(0, -3)
+        : sym.endsWith("USDT")
+          ? sym.slice(0, -4)
+          : sym;
 
-      return cleanT === parsedSymbol || cleanDt === parsedSymbol || cleanSym === parsedSymbol;
+      return (
+        cleanT === parsedSymbol ||
+        cleanDt === parsedSymbol ||
+        cleanSym === parsedSymbol
+      );
     });
   }
 
@@ -82,7 +109,11 @@ export function selectSymbol(s, forceMarket = null, targetUid = null, isRowClick
   if (isRowClick && store.currentAsset === uniqueTicker) {
     return;
   }
-  if (forceMarket !== null && store.currentSelectedSymbol === uniqueTicker && store.currentChartMarket === forceMarket) {
+  if (
+    forceMarket !== null &&
+    store.currentSelectedSymbol === uniqueTicker &&
+    store.currentChartMarket === forceMarket
+  ) {
     return;
   }
 
@@ -92,8 +123,10 @@ export function selectSymbol(s, forceMarket = null, targetUid = null, isRowClick
   store.isUserZoomed = false;
   store.currentAsset = uniqueTicker;
   store.currentSelectedSymbol = uniqueTicker;
-  // 🚀 [UX 복원] 마지막 선택 코인 로컬 저장 및 최근 검색어 등록
-  try { localStorage.setItem("sellnance_last_symbol", uniqueTicker); } catch(e) {}
+  // 🚀 [UX 복원] 마지막 선택 코인 로컬 저장 및 최근 조회한 검색어 등록
+  try {
+    localStorage.setItem("sellnance_last_symbol", uniqueTicker);
+  } catch (e) {}
   if (typeof window.addRecentSearch === "function") {
     window.addRecentSearch(uniqueTicker);
   }
@@ -114,17 +147,26 @@ export function selectSymbol(s, forceMarket = null, targetUid = null, isRowClick
   if (tempMarket && rowInfo && rowInfo.Listed_Exchanges) {
     const ex = rowInfo.Listed_Exchanges;
     let isValid = false;
-    if (tempMarket === "FUTURES" && ex.includes("BINANCE_FUTURES")) isValid = true;
+    if (tempMarket === "FUTURES" && ex.includes("BINANCE_FUTURES"))
+      isValid = true;
     else if (tempMarket === "SPOT" && ex.includes("BINANCE")) isValid = true;
-    else if (tempMarket === "UPBIT" && (ex.includes("UPBIT") || rowInfo.Upbit === "O")) isValid = true;
+    else if (
+      tempMarket === "UPBIT" &&
+      (ex.includes("UPBIT") || rowInfo.Upbit === "O")
+    )
+      isValid = true;
     else if (tempMarket === "BITHUMB" && ex.includes("BITHUMB")) isValid = true;
     else if (tempMarket === "BYBIT" && ex.includes("BYBIT")) isValid = true;
-    else if (tempMarket === "BYBIT_FUTURES" && ex.includes("BYBIT_FUTURES")) isValid = true;
+    else if (tempMarket === "BYBIT_FUTURES" && ex.includes("BYBIT_FUTURES"))
+      isValid = true;
     if (!isValid) tempMarket = null;
   }
   if (!tempMarket && rowInfo && rowInfo.Listed_Exchanges) {
     const ex = rowInfo.Listed_Exchanges;
-    if (store.filterMode === "UPBIT" && (ex.includes("UPBIT") || rowInfo.Upbit === "O")) {
+    if (
+      store.filterMode === "UPBIT" &&
+      (ex.includes("UPBIT") || rowInfo.Upbit === "O")
+    ) {
       tempMarket = "UPBIT";
     } else if (ex.includes("BINANCE_FUTURES")) {
       tempMarket = "FUTURES";
@@ -148,13 +190,17 @@ export function selectSymbol(s, forceMarket = null, targetUid = null, isRowClick
   else if (tempMarket === "SPOT") targetPath = `/BINANCE:${symbolOnly}_SPOT`;
   else if (tempMarket === "UPBIT") targetPath = `/UPBIT:${symbolOnly}`;
   else if (tempMarket === "BITHUMB") targetPath = `/BITHUMB:${symbolOnly}`;
-  else if (tempMarket === "BYBIT_FUTURES") targetPath = `/BYBIT:${symbolOnly}_FUTURES`;
+  else if (tempMarket === "BYBIT_FUTURES")
+    targetPath = `/BYBIT:${symbolOnly}_FUTURES`;
   else if (tempMarket === "BYBIT") targetPath = `/BYBIT:${symbolOnly}_SPOT`;
 
   if (window.history && window.history.pushState) {
     if (window.location.pathname !== targetPath && !window.location.hash) {
       window.history.pushState(null, null, targetPath);
-    } else if (window.location.hash || window.location.pathname !== targetPath) {
+    } else if (
+      window.location.hash ||
+      window.location.pathname !== targetPath
+    ) {
       // 🚀 기존 #해시로 진입한 경우 깔끔한 트레이딩뷰 스타일 URL로 전환
       window.history.replaceState(null, null, targetPath);
     }
@@ -236,7 +282,9 @@ export function selectSymbol(s, forceMarket = null, targetUid = null, isRowClick
           }
 
           const logoHtml = rowInfo.Logo || "";
-          const pureSym = getPureBase(rowInfo.Symbol || rowInfo.DisplayTicker || rowInfo.Ticker);
+          const pureSym = getPureBase(
+            rowInfo.Symbol || rowInfo.DisplayTicker || rowInfo.Ticker,
+          );
           const fullText = `${pureSym} (${rowInfo.Name || ""})`;
           const len = fullText.length;
           // 수학적 로그 방식 적용: 10글자 초과 시 길이에 반비례하여 부드럽게 폰트 크기 축소 (기본 1.125rem, 최소 0.65rem)
@@ -247,7 +295,7 @@ export function selectSymbol(s, forceMarket = null, targetUid = null, isRowClick
             const sizeRem = Math.max(
               fs.ASSET_MIN_REM,
               fs.ASSET_BASE_REM -
-              Math.log10(len / fs.ASSET_THRESHOLD) * fs.ASSET_LOG_MULT,
+                Math.log10(len / fs.ASSET_THRESHOLD) * fs.ASSET_LOG_MULT,
             );
             fontSizeStyle = `style="font-size: ${sizeRem.toFixed(3)}rem; line-height: 1.1; word-break: break-all; white-space: normal;"`;
           } else {
@@ -279,73 +327,75 @@ export function selectSymbol(s, forceMarket = null, targetUid = null, isRowClick
         window.startOrderbookStream(uniqueTicker, store.currentChartMarket);
       }
 
-      // 코인 상세 이름 비동기 패치
-      try {
-        const querySym = rowInfo ? rowInfo.DisplayTicker : originalSym;
-        fetch(`/api/coin-info/${querySym}`)
-          .then((res) => res.json())
-          .then((infoData) => {
-            if (headAssetName && infoData.name) {
-              const displaySym = getPureBase(
-                infoData.symbol ||
-                (rowInfo ? rowInfo.Symbol : querySym.split("(")[0])
-              );
-              const favorites = JSON.parse(
-                localStorage.getItem("sellnance_favs") || "[]",
-              );
-              const favorites2 = JSON.parse(
-                localStorage.getItem("sellnance_favs2") || "[]",
-              );
-              const isFav = favorites.includes(
-                rowInfo ? rowInfo.UID : uniqueTicker,
-              );
-              const isFav2 = favorites2.includes(
-                rowInfo ? rowInfo.UID : uniqueTicker,
-              );
-
-              let starText = "☆";
-              let starColor = "gray";
-              let starClass = "";
-              if (isFav) {
-                starText = "★";
-                starColor = "#e3b30a"; // 🚀 노란색 고정 (라이트모드 파란색 오염 방어)
-                starClass = "active";
-              } else if (isFav2) {
-                starText = "★";
-                starColor = "#3b82f6";
-                starClass = "active-blue";
-              }
-
-              const logoHtml = rowInfo ? rowInfo.Logo || "" : "";
-              const fullText2 = `${displaySym} (${infoData.name})`;
-              const len2 = fullText2.length;
-              let fontSizeStyle2 = "";
-              if (len2 > 10) {
-                const sizeRem = Math.max(
-                  0.65,
-                  1.125 - Math.log10(len2 / 10) * 0.6,
+      // 코인 상세 이름 비동기 패치 (메모리에 이름이 없을 때만 보조 패치)
+      if (!rowInfo || !rowInfo.Name) {
+        try {
+          const querySym = rowInfo ? rowInfo.DisplayTicker : originalSym;
+          fetch(`/api/coin-info/${querySym}`)
+            .then((res) => res.json())
+            .then((infoData) => {
+              if (headAssetName && infoData.name) {
+                const displaySym = getPureBase(
+                  infoData.symbol ||
+                    (rowInfo ? rowInfo.Symbol : querySym.split("(")[0]),
                 );
-                fontSizeStyle2 = `style="font-size: ${sizeRem.toFixed(3)}rem; line-height: 1.1; word-break: break-all; white-space: normal;"`;
-              } else {
-                fontSizeStyle2 = `style="white-space: nowrap;"`;
-              }
+                const favorites = JSON.parse(
+                  localStorage.getItem("sellnance_favs") || "[]",
+                );
+                const favorites2 = JSON.parse(
+                  localStorage.getItem("sellnance_favs2") || "[]",
+                );
+                const isFav = favorites.includes(
+                  rowInfo ? rowInfo.UID : uniqueTicker,
+                );
+                const isFav2 = favorites2.includes(
+                  rowInfo ? rowInfo.UID : uniqueTicker,
+                );
 
-              headAssetName.innerHTML = `
-                <div class="flex items-center gap-2">
-                  <button onclick="window.toggleFavorite('${rowInfo ? rowInfo.UID : uniqueTicker}', event, true); setTimeout(() => window.selectSymbol('${uniqueTicker}'), 50);" class="star-btn text-[16px] transition-all hover:scale-125 flex-shrink-0 ${starClass}" style="color: ${starColor}">
-                    ${starText}
-                  </button>
-                  <div class="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-white/5 rounded-full overflow-hidden">
-                    ${logoHtml}
+                let starText = "☆";
+                let starColor = "gray";
+                let starClass = "";
+                if (isFav) {
+                  starText = "★";
+                  starColor = "#e3b30a"; // 🚀 노란색 고정 (라이트모드 파란색 오염 방어)
+                  starClass = "active";
+                } else if (isFav2) {
+                  starText = "★";
+                  starColor = "#3b82f6";
+                  starClass = "active-blue";
+                }
+
+                const logoHtml = rowInfo ? rowInfo.Logo || "" : "";
+                const fullText2 = `${displaySym} (${infoData.name})`;
+                const len2 = fullText2.length;
+                let fontSizeStyle2 = "";
+                if (len2 > 10) {
+                  const sizeRem = Math.max(
+                    0.65,
+                    1.125 - Math.log10(len2 / 10) * 0.6,
+                  );
+                  fontSizeStyle2 = `style="font-size: ${sizeRem.toFixed(3)}rem; line-height: 1.1; word-break: break-all; white-space: normal;"`;
+                } else {
+                  fontSizeStyle2 = `style="white-space: nowrap;"`;
+                }
+
+                headAssetName.innerHTML = `
+                  <div class="flex items-center gap-2">
+                    <button onclick="window.toggleFavorite('${rowInfo ? rowInfo.UID : uniqueTicker}', event, true); setTimeout(() => window.selectSymbol('${uniqueTicker}'), 50);" class="star-btn text-[16px] transition-all hover:scale-125 flex-shrink-0 ${starClass}" style="color: ${starColor}">
+                      ${starText}
+                    </button>
+                    <div class="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-white/5 rounded-full overflow-hidden">
+                      ${logoHtml}
+                    </div>
+                    <span ${fontSizeStyle2}>${fullText2}</span>
                   </div>
-                  <span ${fontSizeStyle2}>${fullText2}</span>
-                </div>
-              `;
-            }
-          })
-          .catch((e) => console.error("이름 로드 실패", e));
-      } catch (e) {
-        console.error("이름 로드 에러", e);
+                `;
+              }
+            })
+            .catch((e) => console.error("이름 로드 실패", e));
+        } catch (e) {
+          console.error("이름 로드 에러", e);
+        }
       }
 
       // 리스트 스크롤 이동
@@ -387,9 +437,14 @@ export function selectSymbol(s, forceMarket = null, targetUid = null, isRowClick
       if (typeof window.showMobileChart === "function") {
         window.showMobileChart();
       }
-      if (typeof window.switchMobileTab === "function" && window.innerWidth < 1200) {
+      if (
+        typeof window.switchMobileTab === "function" &&
+        window.innerWidth < 1200
+      ) {
         // Alpine.js에 탭 변경 이벤트 전파하여 버튼 하이라이트 상태를 선언적으로 처리
-        window.dispatchEvent(new CustomEvent("mobile-tab-changed", { detail: "chart" }));
+        window.dispatchEvent(
+          new CustomEvent("mobile-tab-changed", { detail: "chart" }),
+        );
       }
     }, 0);
   });

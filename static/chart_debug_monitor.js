@@ -34,9 +34,16 @@
 
     // 드래그 앤 드롭 이동 기능 구현
     let isDragging = false;
-    let offsetX = 0, offsetY = 0;
+    let offsetX = 0,
+      offsetY = 0;
     monitorPanel.addEventListener("mousedown", (e) => {
-      if (e.target.tagName === "BUTTON" || e.target.closest("button") || e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+      if (
+        e.target.tagName === "BUTTON" ||
+        e.target.closest("button") ||
+        e.target.tagName === "INPUT" ||
+        e.target.tagName === "TEXTAREA"
+      )
+        return;
       isDragging = true;
       const rect = monitorPanel.getBoundingClientRect();
       offsetX = e.clientX - rect.left;
@@ -46,8 +53,8 @@
 
     document.addEventListener("mousemove", (e) => {
       if (!isDragging) return;
-      monitorPanel.style.left = (e.clientX - offsetX) + "px";
-      monitorPanel.style.top = (e.clientY - offsetY) + "px";
+      monitorPanel.style.left = e.clientX - offsetX + "px";
+      monitorPanel.style.top = e.clientY - offsetY + "px";
       monitorPanel.style.right = "auto"; // 우측 고정 풀기
     });
 
@@ -67,7 +74,7 @@
       time: new Date().toLocaleTimeString(),
       type,
       message,
-      payload: payload ? JSON.parse(JSON.stringify(payload)) : null
+      payload: payload ? JSON.parse(JSON.stringify(payload)) : null,
     });
     if (list.length > HISTORY_LIMIT) {
       list.shift();
@@ -84,12 +91,16 @@
       errorHTML = `
         <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; border-radius: 6px; padding: 8px; margin-bottom: 10px;">
           <div style="color: #ef4444; font-weight: bold; margin-bottom: 4px; font-size: 12px;">🚨 차트 크래시 감지 (Value is null)</div>
-          ${uncaughtErrors.map((err, idx) => `
+          ${uncaughtErrors
+            .map(
+              (err, idx) => `
             <div style="border-bottom: 1px dashed rgba(239, 68, 68, 0.3); padding-bottom: 6px; margin-bottom: 6px;">
               <div style="color: #ff6b6b; font-weight: bold;">[${err.time}] Error: ${err.message}</div>
               <div style="color: #aaa; font-size: 10px; max-height: 80px; overflow-y: auto; white-space: pre-wrap; margin-top: 4px;">${err.stack}</div>
             </div>
-          `).join("")}
+          `,
+            )
+            .join("")}
         </div>
       `;
     }
@@ -97,23 +108,29 @@
     let seriesHTML = "";
     seriesLogs.forEach((logs, name) => {
       const lastLog = logs[logs.length - 1];
-      const errCount = logs.filter(l => l.type === "ERROR" || l.type === "WARN").length;
+      const errCount = logs.filter(
+        (l) => l.type === "ERROR" || l.type === "WARN",
+      ).length;
 
       seriesHTML += `
         <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); padding: 8px; border-radius: 6px; margin-bottom: 6px;">
           <div style="display: flex; justify-content: space-between; font-weight: bold; color: #ffbc00; font-size: 11.5px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px; margin-bottom: 6px;">
             <span>📈 ${name}</span>
-            <span style="color: ${errCount > 0 ? '#ff6b6b' : '#10b981'};">오류/경고: ${errCount}건</span>
+            <span style="color: ${errCount > 0 ? "#ff6b6b" : "#10b981"};">오류/경고: ${errCount}건</span>
           </div>
           <div style="font-size: 10px; line-height: 1.4; color: #ccc;">
             <div>• 최근 동작: <span style="color: #57a4fc; font-weight: bold;">${lastLog ? lastLog.type : "없음"}</span> (${lastLog ? lastLog.time : "-"})</div>
             <div>• 상세 상태: <span style="color: #fff;">${lastLog ? lastLog.message : "대기 중"}</span></div>
-            ${lastLog && lastLog.payload ? `
+            ${
+              lastLog && lastLog.payload
+                ? `
               <div style="margin-top: 4px; background: rgba(0,0,0,0.4); padding: 4px; border-radius: 4px; font-size: 9px; max-height: 90px; overflow-y: auto;">
                 <strong>송신 페이로드 (샘플):</strong>
                 <pre style="margin: 2px 0 0 0; color: #0ecb81; white-space: pre-wrap; word-break: break-all;">${JSON.stringify(lastLog.payload, null, 2)}</pre>
               </div>
-            ` : ""}
+            `
+                : ""
+            }
           </div>
         </div>
       `;
@@ -153,15 +170,17 @@
     document.getElementById("chart-debug-copy-btn").onclick = () => {
       const dumpData = {
         timestamp: new Date().toISOString(),
-        storeState: window.store ? {
-          currentSelectedSymbol: window.store.currentSelectedSymbol,
-          currentChartMarket: window.store.currentChartMarket,
-          isCrosshairActive: window.store.isCrosshairActive,
-          paneConfig: window.store.paneConfig
-        } : null,
+        storeState: window.store
+          ? {
+              currentSelectedSymbol: window.store.currentSelectedSymbol,
+              currentChartMarket: window.store.currentChartMarket,
+              isCrosshairActive: window.store.isCrosshairActive,
+              paneConfig: window.store.paneConfig,
+            }
+          : null,
         errors: uncaughtErrors,
         logs: {},
-        payloadHistories: {}
+        payloadHistories: {},
       };
       seriesLogs.forEach((logs, name) => {
         dumpData.logs[name] = logs;
@@ -170,11 +189,15 @@
         dumpData.payloadHistories[name] = pHist;
       });
 
-      navigator.clipboard.writeText(JSON.stringify(dumpData, null, 2)).then(() => {
-        const btn = document.getElementById("chart-debug-copy-btn");
-        btn.innerText = "✓ 복사 완료";
-        setTimeout(() => { btn.innerText = "📋 로그 복사"; }, 1500);
-      });
+      navigator.clipboard
+        .writeText(JSON.stringify(dumpData, null, 2))
+        .then(() => {
+          const btn = document.getElementById("chart-debug-copy-btn");
+          btn.innerText = "✓ 복사 완료";
+          setTimeout(() => {
+            btn.innerText = "📋 로그 복사";
+          }, 1500);
+        });
     };
 
     // 닫기 이벤트 바인딩
@@ -191,15 +214,24 @@
   window.addEventListener("error", (event) => {
     if (!isMonitoring) return;
     const err = event.error;
-    if (err && (err.message?.includes("Value is null") || err.stack?.includes("lightweight-charts"))) {
-      
+    if (
+      err &&
+      (err.message?.includes("Value is null") ||
+        err.stack?.includes("lightweight-charts"))
+    ) {
       // 콘솔창에 즉각적인 데이터 원본 덤프 수행
       console.group("🚨 [차트 크래시 정밀 덤프]");
       console.error("오류 메시지:", err.message);
       console.error("에러 스택:", err.stack);
-      console.log("최근 5회 주입 페이로드 히스토리 (콘솔에서 직접 배열을 확인해 분석할 수 있습니다):");
+      console.log(
+        "최근 5회 주입 페이로드 히스토리 (콘솔에서 직접 배열을 확인해 분석할 수 있습니다):",
+      );
       payloadHistories.forEach((pHist, name) => {
-        console.log(`%c[${name}]`, "color: #ffbc00; font-weight: bold; background: #222; padding: 2px;", pHist);
+        console.log(
+          `%c[${name}]`,
+          "color: #ffbc00; font-weight: bold; background: #222; padding: 2px;",
+          pHist,
+        );
       });
       console.groupEnd();
 
@@ -212,7 +244,7 @@
         time: new Date().toLocaleTimeString(),
         message: err.message,
         stack: err.stack || "",
-        payloadHistories: dumpHistories
+        payloadHistories: dumpHistories,
       });
       updateUI();
     }
@@ -237,7 +269,7 @@
       pHist.push({
         time: new Date().toLocaleTimeString(),
         dataLength: dataArr ? dataArr.length : 0,
-        data: dataArr ? JSON.parse(JSON.stringify(dataArr)) : null
+        data: dataArr ? JSON.parse(JSON.stringify(dataArr)) : null,
       });
       if (pHist.length > 5) pHist.shift();
 
@@ -257,7 +289,7 @@
             nullCount++;
             continue;
           }
-          
+
           if (type === "value") {
             // Histogram / Line 검사
             if (item.value === null) nullCount++;
@@ -265,9 +297,27 @@
             if (typeof item.value === "number" && isNaN(item.value)) nanCount++;
           } else if (type === "candle") {
             // Candle 검사
-            if (item.open === null || item.high === null || item.low === null || item.close === null) nullCount++;
-            if (item.open === undefined || item.high === undefined || item.low === undefined || item.close === undefined) undefinedCount++;
-            if (isNaN(Number(item.open)) || isNaN(Number(item.high)) || isNaN(Number(item.low)) || isNaN(Number(item.close))) nanCount++;
+            if (
+              item.open === null ||
+              item.high === null ||
+              item.low === null ||
+              item.close === null
+            )
+              nullCount++;
+            if (
+              item.open === undefined ||
+              item.high === undefined ||
+              item.low === undefined ||
+              item.close === undefined
+            )
+              undefinedCount++;
+            if (
+              isNaN(Number(item.open)) ||
+              isNaN(Number(item.high)) ||
+              isNaN(Number(item.low)) ||
+              isNaN(Number(item.close))
+            )
+              nanCount++;
           }
         }
       }
@@ -277,21 +327,26 @@
           seriesName,
           "WARN",
           `setData 주입 감지! 크기: ${dataArr ? dataArr.length : 0} | 🚨 결측치 감지: null(${nullCount}), undefined(${undefinedCount}), NaN(${nanCount})`,
-          sample
+          sample,
         );
       } else {
         logDiagnostic(
           seriesName,
           "setData",
           `정상 데이터 설정 완료. 크기: ${dataArr ? dataArr.length : 0}`,
-          sample
+          sample,
         );
       }
 
       try {
         return originalSetData.apply(this, arguments);
       } catch (err) {
-        logDiagnostic(seriesName, "ERROR", `setData 크래시: ${err.message}`, dataArr ? dataArr.slice(-3) : null);
+        logDiagnostic(
+          seriesName,
+          "ERROR",
+          `setData 크래시: ${err.message}`,
+          dataArr ? dataArr.slice(-3) : null,
+        );
         throw err;
       }
     };
@@ -305,11 +360,26 @@
       } else {
         if (type === "value") {
           // Histogram / Line 검사
-          if (bar.value === null || bar.value === undefined || isNaN(Number(bar.value))) isInvalid = true;
+          if (
+            bar.value === null ||
+            bar.value === undefined ||
+            isNaN(Number(bar.value))
+          )
+            isInvalid = true;
         } else if (type === "candle") {
           // Candle 검사
-          if (bar.open === null || bar.open === undefined || isNaN(Number(bar.open))) isInvalid = true;
-          if (bar.close === null || bar.close === undefined || isNaN(Number(bar.close))) isInvalid = true;
+          if (
+            bar.open === null ||
+            bar.open === undefined ||
+            isNaN(Number(bar.open))
+          )
+            isInvalid = true;
+          if (
+            bar.close === null ||
+            bar.close === undefined ||
+            isNaN(Number(bar.close))
+          )
+            isInvalid = true;
         }
       }
 
@@ -318,21 +388,26 @@
           seriesName,
           "WARN",
           `update에 부적절한 바 유입! 데이터: ${JSON.stringify(bar)}`,
-          bar
+          bar,
         );
       } else {
         logDiagnostic(
           seriesName,
           "update",
           `실시간 바 업데이트 성공: Time(${bar ? bar.time : "-"}), Value/Close(${bar ? (bar.value !== undefined ? bar.value : bar.close) : "-"})`,
-          bar
+          bar,
         );
       }
 
       try {
         return originalUpdate.apply(this, arguments);
       } catch (err) {
-        logDiagnostic(seriesName, "ERROR", `update 크래시: ${err.message}`, bar);
+        logDiagnostic(
+          seriesName,
+          "ERROR",
+          `update 크래시: ${err.message}`,
+          bar,
+        );
         throw err;
       }
     };
@@ -344,10 +419,30 @@
   const initializeHook = () => {
     // 6-1. 기존 생성된 시리즈 래핑
     if (window.store) {
-      if (window.store.candleSeries) wrapSeriesInstance(window.store.candleSeries, "CandleSeries (가격)", "candle");
-      if (window.store.leftScaleSeries) wrapSeriesInstance(window.store.leftScaleSeries, "LeftScaleSeries (등락률)", "value");
-      if (window.store.volumeSeries) wrapSeriesInstance(window.store.volumeSeries, "VolumeSeries (거래량)", "value");
-      if (window.store.kimchiSeries) wrapSeriesInstance(window.store.kimchiSeries, "KimchiSeries (김프)", "value");
+      if (window.store.candleSeries)
+        wrapSeriesInstance(
+          window.store.candleSeries,
+          "CandleSeries (가격)",
+          "candle",
+        );
+      if (window.store.leftScaleSeries)
+        wrapSeriesInstance(
+          window.store.leftScaleSeries,
+          "LeftScaleSeries (등락률)",
+          "value",
+        );
+      if (window.store.volumeSeries)
+        wrapSeriesInstance(
+          window.store.volumeSeries,
+          "VolumeSeries (거래량)",
+          "value",
+        );
+      if (window.store.kimchiSeries)
+        wrapSeriesInstance(
+          window.store.kimchiSeries,
+          "KimchiSeries (김프)",
+          "value",
+        );
     }
 
     // 6-2. LightweightCharts.createChart 후킹하여 동적으로 새로 생기는 시리즈 래핑 지원
@@ -403,5 +498,7 @@
 
   // 최초 1회 점화
   initializeHook();
-  console.log("🕵️‍♂️ [차트 정밀 추적기 점화] static/chart_debug_monitor.js 로드 완료.");
+  console.log(
+    "🕵️‍♂️ [차트 정밀 추적기 점화] static/chart_debug_monitor.js 로드 완료.",
+  );
 })();

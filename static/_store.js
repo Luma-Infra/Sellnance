@@ -1,7 +1,23 @@
 let initialTF = "1d";
 try {
   const savedTF = localStorage.getItem("sellnance_last_tf");
-  if (savedTF && ["1m", "3m", "5m", "15m", "30m", "1h", "4h", "12h", "1d", "3d", "1w", "1M"].includes(savedTF)) {
+  if (
+    savedTF &&
+    [
+      "1m",
+      "3m",
+      "5m",
+      "15m",
+      "30m",
+      "1h",
+      "4h",
+      "12h",
+      "1d",
+      "3d",
+      "1w",
+      "1M",
+    ].includes(savedTF)
+  ) {
     initialTF = savedTF;
   }
 } catch (e) {}
@@ -133,7 +149,7 @@ export const store = {
     radarBatch: 0,
     dynamicHtml: 0,
     throttleBypass: 0, // 🚀 [신규] 100ms 진입 쓰로틀링 걸려 빠꾸먹은 건수
-    throttlePass: 0,   // 🚀 [신규] 100ms 가드 통과해서 실제 처리된 건수
+    throttlePass: 0, // 🚀 [신규] 100ms 가드 통과해서 실제 처리된 건수
   },
 
   curDir: "bull",
@@ -206,7 +222,11 @@ export const store = {
       row = store.tickerRowMap.get(cleanKey);
       if (!row) {
         for (const [k, r] of store.tickerRowMap.entries()) {
-          const cleanK = k.endsWith("KRW") ? k.slice(0, -3) : (k.endsWith("USDT") ? k.slice(0, -4) : k);
+          const cleanK = k.endsWith("KRW")
+            ? k.slice(0, -3)
+            : k.endsWith("USDT")
+              ? k.slice(0, -4)
+              : k;
           if (cleanK === cleanKey) {
             row = r;
             break;
@@ -225,10 +245,24 @@ export const store = {
         const t = (r.Ticker || "").toUpperCase();
         const dt = (r.DisplayTicker || "").toUpperCase();
         const s = (r.Symbol || "").toUpperCase();
-        const cleanT = t.endsWith("KRW") ? t.slice(0, -3) : (t.endsWith("USDT") ? t.slice(0, -4) : t);
-        const cleanDt = dt.endsWith("KRW") ? dt.slice(0, -3) : (dt.endsWith("USDT") ? dt.slice(0, -4) : dt);
-        const cleanS = s.endsWith("KRW") ? s.slice(0, -3) : (s.endsWith("USDT") ? s.slice(0, -4) : s);
-        return cleanT === cleanKey || cleanDt === cleanKey || cleanS === cleanKey;
+        const cleanT = t.endsWith("KRW")
+          ? t.slice(0, -3)
+          : t.endsWith("USDT")
+            ? t.slice(0, -4)
+            : t;
+        const cleanDt = dt.endsWith("KRW")
+          ? dt.slice(0, -3)
+          : dt.endsWith("USDT")
+            ? dt.slice(0, -4)
+            : dt;
+        const cleanS = s.endsWith("KRW")
+          ? s.slice(0, -3)
+          : s.endsWith("USDT")
+            ? s.slice(0, -4)
+            : s;
+        return (
+          cleanT === cleanKey || cleanDt === cleanKey || cleanS === cleanKey
+        );
       });
     }
 
@@ -259,10 +293,10 @@ export const CONFIG = {
 
   // ⚙️ [차트 전용 실시간 성능/쓰로틀 제어 콘솔 - 수동 조절 가능]
   CHART_PERF: {
-    REALTIME_THROTTLE_MS: 50,       // 🚀 캔들/볼륨 실시간 차트 렌더링 쓰로틀 (기본 50ms)
-    STATUS_DOM_THROTTLE_MS: 100,    // 🚀 OHLC 레전드 및 헤더 상태창 DOM 갱신 쓰로틀 (기본 100ms)
+    REALTIME_THROTTLE_MS: 50, // 🚀 캔들/볼륨 실시간 차트 렌더링 쓰로틀 (기본 50ms)
+    STATUS_DOM_THROTTLE_MS: 100, // 🚀 OHLC 레전드 및 헤더 상태창 DOM 갱신 쓰로틀 (기본 100ms)
     TITLE_UPDATE_THROTTLE_MS: 1000, // 🚀 브라우저 탭 타이틀 실시간 시세 갱신 쓰로틀 (기본 1000ms)
-    COUNTDOWN_THROTTLE_MS: 250,     // 🚀 카운트다운 타이머 DOM 갱신 쓰로틀 (기본 250ms)
+    COUNTDOWN_THROTTLE_MS: 250, // 🚀 카운트다운 타이머 DOM 갱신 쓰로틀 (기본 250ms)
   },
 
   CHART_CONFIG: { GHOST_COUNT: 500, VISIBLE_COUNT: 200, RIGHT_PADDING: 10 },

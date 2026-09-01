@@ -218,6 +218,12 @@ def update_listing_date(data: dict = Body(...)):
     return {"status": "skipped"}
 
 
+@app.get("/.well-known/appspecific/com.chrome.devtools.json")
+def chrome_devtools_dummy():
+    """Chrome DevTools F12 404 콘솔 로그 방어용 더미 핸들러"""
+    return {}
+
+
 @app.get("/")
 async def home(request: Request):
     # 뼈대만 렌더링하고 데이터는 AJAX로 그림

@@ -319,12 +319,12 @@ export function updateRowStaticHTML(rowEl, row) {
     </div>
   </div>
   <div class="p-2 col-kimch overflow-hidden kimchi-placeholder text-[12px] font-medium text-theme-text">
-    <div class="flex flex-col h-full justify-center leading-tight items-start min-w-0">
+    <div class="kimchi-container flex flex-col h-full justify-center leading-tight items-start min-w-0">
       <div class="flex items-center justify-start gap-1 min-w-0 max-w-full">
-        <span class="text-[12px] font-medium">-</span>
+        <span class="kimchi-pct text-[12px] font-medium truncate">-</span>
       </div>
       <div class="flex items-center justify-start gap-2 text-[10px] font-medium mt-0.5 min-w-0 max-w-full opacity-0">
-        <span>-</span>
+        <span class="funding-val text-theme-accent opacity-70 truncate">-</span>
       </div>
     </div>
   </div>
@@ -673,32 +673,30 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
 
     let container = kimchiCell._container;
     if (!container) {
-      container = kimchiCell.querySelector(".kimchi-container");
-      if (!container) {
-        kimchiCell.innerHTML = `
-          <div class="kimchi-container flex flex-col h-full justify-center leading-tight items-start min-w-0">
-            <div class="flex items-center justify-start gap-1 min-w-0 max-w-full">
-              <span class="kimchi-pct text-[12px] font-medium truncate">-</span>
-            </div>
-            <div class="flex items-center justify-start gap-2 text-[10px] font-medium mt-0.5 min-w-0 max-w-full">
-               <span class="funding-val text-theme-accent opacity-70 truncate">-</span>
-            </div>
-          </div>
-        `;
-        container = kimchiCell.querySelector(".kimchi-container");
-      }
+      container = kimchiCell.querySelector(".kimchi-container") || kimchiCell;
       kimchiCell._container = container;
     }
 
     const kimchiPctEl = container._kimchiPctEl || (container._kimchiPctEl = container.querySelector(".kimchi-pct"));
     if (kimchiPctEl) {
-      const exList = (row.Listed_Exchanges || []).map(e => e.toUpperCase());
+      const exList = (row.Listed_Exchanges || []).map((e) => e.toUpperCase());
       const hasUpbit = row.Upbit === "O" || exList.includes("UPBIT") || !!row.Upbit_Symbol;
       const hasBithumb = exList.includes("BITHUMB") || !!row.Bithumb_Symbol;
-      const hasGlobal = (row.Binance === "O" || row.Binance_Futures === "O" || exList.includes("BINANCE") || exList.includes("BINANCE_FUTURES") || exList.includes("BYBIT") || exList.includes("BYBIT_FUTURES") || (row.Binance_Price_Futures > 0) || (row.Binance_Price_Spot > 0) || (row.Binance_Price > 0) || (row.Bybit_Price > 0));
+      const hasGlobal =
+        row.Binance === "O" ||
+        row.Binance_Futures === "O" ||
+        exList.includes("BINANCE") ||
+        exList.includes("BINANCE_FUTURES") ||
+        exList.includes("BYBIT") ||
+        exList.includes("BYBIT_FUTURES") ||
+        row.Binance_Price_Futures > 0 ||
+        row.Binance_Price_Spot > 0 ||
+        row.Binance_Price > 0 ||
+        row.Bybit_Price > 0;
       const hasBoth = hasGlobal && (hasUpbit || hasBithumb);
 
-      const isInvalidKimchi = !hasBoth ||
+      const isInvalidKimchi =
+        !hasBoth ||
         !row.Kimchi_Label ||
         row.Kimchi_Label === "-" ||
         !row.Kimchi_Formatted ||
@@ -707,20 +705,21 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
         row.Kimchi_Raw === undefined;
 
       if (isInvalidKimchi) {
-        kimchiPctEl.textContent = "-";
+        if (kimchiPctEl.textContent !== "-") kimchiPctEl.textContent = "-";
         kimchiPctEl.className = "kimchi-pct text-[12px] font-medium text-theme-text opacity-40";
       } else if (row.Kimchi_Raw > 500 || row.Kimchi_Raw <= -90 || row.Kimchi_Formatted === "VOID") {
-        kimchiPctEl.textContent = "VOID";
+        if (kimchiPctEl.textContent !== "VOID") kimchiPctEl.textContent = "VOID";
         kimchiPctEl.className = "kimchi-pct text-[11px] font-bold text-amber-500/80 tracking-wider";
       } else {
-        kimchiPctEl.textContent = row.Kimchi_Formatted;
+        if (kimchiPctEl.textContent !== row.Kimchi_Formatted) kimchiPctEl.textContent = row.Kimchi_Formatted;
         kimchiPctEl.className = `kimchi-pct text-[12px] font-medium truncate ${row.Kimchi_Raw > 0 ? "text-theme-up" : "text-theme-down"}`;
       }
     }
 
     const fundingEl = container._fundingEl || (container._fundingEl = container.querySelector(".funding-val"));
     if (fundingEl) {
-      fundingEl.textContent = row.Funding_Formatted || "-";
+      const fundVal = row.Funding_Formatted || "-";
+      if (fundingEl.textContent !== fundVal) fundingEl.textContent = fundVal;
     }
   }
 

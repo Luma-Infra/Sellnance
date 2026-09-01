@@ -1,5 +1,5 @@
 // chart_layout.js
-import { store } from './_store.js';
+import { store } from "./_store.js";
 
 // 🚀 [추가] 차트 패널 (볼륨, 김프) 토글 관리자
 export function togglePane(paneName) {
@@ -38,7 +38,8 @@ export function applyChartLayout() {
   }
 
   // 🚀 [반응형 좌측 여백] 768px 미만(모바일)이면 좌측 스케일을 완전히 접어(0px) 캔버스 100% 확장, 768px 이상(PC/태블릿)이면 60px 수직 정렬 자동 복원
-  const isSmallMobile = typeof window !== "undefined" && window.innerWidth < 768;
+  const isSmallMobile =
+    typeof window !== "undefined" && window.innerWidth < 768;
 
   if (store.kimchiSeries) {
     store.kimchiSeries.applyOptions({ visible: !!k });
@@ -46,7 +47,7 @@ export function applyChartLayout() {
       store.chartVol.priceScale("left").applyOptions({
         visible: !isSmallMobile,
         minimumWidth: isSmallMobile ? 0 : 60,
-        borderColor: "transparent" // 🚀 김프 활성화 시에도 좌측 검은 실선이 생기지 않도록 상시 투명 유지
+        borderColor: "transparent", // 🚀 김프 활성화 시에도 좌측 검은 실선이 생기지 않도록 상시 투명 유지
       });
     }
 
@@ -60,7 +61,8 @@ export function applyChartLayout() {
   }
 
   // 2. 패널 표시/숨김 및 플렉스 비율
-  let mainFlex = 1, subFlex = 0;
+  let mainFlex = 1,
+    subFlex = 0;
 
   if (v || k) {
     if (paneVol) paneVol.style.display = "block";
@@ -79,7 +81,8 @@ export function applyChartLayout() {
 
   // 🚀 X축(시간) 스케일 중복 방지
   if (store.chart) store.chart.timeScale().applyOptions({ visible: !v && !k });
-  if (store.chartVol) store.chartVol.timeScale().applyOptions({ visible: v || k });
+  if (store.chartVol)
+    store.chartVol.timeScale().applyOptions({ visible: v || k });
 
   // 🚀 [리사이즈 비동기 스케줄링] DOM 너비/높이 강제 측정 비용(Reflow) 및 캔버스 중복 resize 방지
   // [성능 최적화] 실제 너비/높이 값이 1px이라도 달라졌을 때만 resize를 호출하여 불필요한 DOM Reflow 렉 차단
@@ -88,7 +91,11 @@ export function applyChartLayout() {
       if (store.chart && paneMain) {
         const w = paneMain.clientWidth;
         const h = paneMain.clientHeight;
-        if (w > 0 && h > 0 && (store.mainWidthCache !== w || store.mainHeightCache !== h)) {
+        if (
+          w > 0 &&
+          h > 0 &&
+          (store.mainWidthCache !== w || store.mainHeightCache !== h)
+        ) {
           store.mainWidthCache = w;
           store.mainHeightCache = h;
           store.chart.resize(w, h);
@@ -101,7 +108,7 @@ export function applyChartLayout() {
       if (store.chartVol && paneVol) {
         const w = paneVol.clientWidth;
         const h = paneVol.clientHeight;
-        
+
         // 🚀 [높이 0px 방어] 컨테이너가 켜지는 과정에서 일시적으로 clientHeight가 0일 경우, 50ms 대기 후 재리사이즈 예약
         if (h === 0 && (v || k)) {
           setTimeout(() => {
@@ -115,7 +122,11 @@ export function applyChartLayout() {
               }
             }
           }, 50);
-        } else if (w > 0 && h > 0 && (store.volWidthCache !== w || store.volHeightCache !== h)) {
+        } else if (
+          w > 0 &&
+          h > 0 &&
+          (store.volWidthCache !== w || store.volHeightCache !== h)
+        ) {
           store.volWidthCache = w;
           store.volHeightCache = h;
           store.chartVol.resize(w, h);
@@ -136,7 +147,6 @@ export function applyChartLayout() {
     }
   }
 }
-
 
 // 🚀 2. 드래그 엔진 초기화
 export function initResizers() {
@@ -161,7 +171,8 @@ export function initResizers() {
     if (pct < 0.2) pct = 0.2;
     if (pct > 0.9) pct = 0.9;
     store.chartSplits.s1 = pct;
-    if (typeof window.applyChartLayout === "function") window.applyChartLayout();
+    if (typeof window.applyChartLayout === "function")
+      window.applyChartLayout();
   });
 
   window.addEventListener("mouseup", () => {
