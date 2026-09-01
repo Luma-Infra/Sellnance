@@ -14,27 +14,26 @@ export function calculateKimchiData(mainData, subRaw, params) {
 
     // 🚀 서브 거래소 파싱 도우미 함수 정의
     const getSubTime = (item) => {
-      if (subExchange === "upbit") {
+      if (!item) return 0;
+      if (subExchange === "upbit" && item.candle_date_time_utc) {
         return Math.floor(Date.parse(item.candle_date_time_utc + "Z") / 1000);
-      } else if (subExchange === "bithumb") {
-        if (Array.isArray(item)) {
-          return Math.floor(Number(item[0]) / 1000);
-        } else {
-          return Math.floor(Number(item[0]) / 1000) - 32400;
-        }
-      } else {
+      }
+      if (Array.isArray(item)) {
         return Math.floor(Number(item[0]) / 1000);
       }
+      const t = item.time !== undefined ? item.time : item[0];
+      return Math.floor(Number(t) > 1e11 ? Number(t) / 1000 : Number(t));
     };
 
     const getSubClose = (item) => {
-      if (subExchange === "upbit") {
-        return item.trade_price;
-      } else if (subExchange === "bithumb") {
-        return Number(item[2]);
-      } else {
-        return Number(item[4]);
+      if (!item) return 0;
+      if (subExchange === "upbit" && item.trade_price !== undefined) {
+        return Number(item.trade_price);
       }
+      if (Array.isArray(item)) {
+        return subExchange === "bithumb" ? Number(item[2]) : Number(item[4]);
+      }
+      return Number(item.close !== undefined ? item.close : item[2] !== undefined ? item[2] : item[4]);
     };
 
     // 🚀 서브 데이터를 타임스탬프 기준 시간 오름차순으로 완벽 정렬
