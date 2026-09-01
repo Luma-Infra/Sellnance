@@ -187,11 +187,12 @@ def build_binance_row(
         else ""
     )
 
-    # 족보에 적어둔 이름(ticker_info_list[2])이 있으면 그것을 우선 사용
+    # 족보에 적어둔 이름(ticker_info_list[2])이 있으면 그것을 우선 사용 (NOTE_MAP 매핑 최우선)
     coin_name = (
-        explicit_name
-        if explicit_name
-        else (
+        NOTE_MAP.get(base)
+        or NOTE_MAP.get(raw_symbol)
+        or explicit_name
+        or (
             ticker_info_list[2]
             if len(ticker_info_list) >= 3 and ticker_info_list[2]
             else (

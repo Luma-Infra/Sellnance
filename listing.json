@@ -852,7 +852,8 @@
     "upbit_listing": "2017-09-01"
   },
   "BTR": {
-    "binance_listing": "2025-08-27"
+    "binance_listing": "2025-08-25",
+    "bybit_listing": "2025-08-27"
   },
   "BTRUSDT": {
     "binance_listing": "2025-08-27"
@@ -3323,7 +3324,10 @@
     "binance_listing": "2026-04-28"
   },
   "SC": {
-    "binance_listing": "2021-04-12"
+    "binance_listing": "2020-07-06",
+    "bybit_listing": "2023-12-07",
+    "upbit_listing": "2026-02-14",
+    "bithumb_listing": "2026-02-14"
   },
   "SCR": {
     "binance_listing": "2024-10-22"
@@ -4375,6 +4379,9 @@
   },
   "我踏马来了USDT": {
     "binance_listing": "2026-01-21"
+  },
+  "牛来": {
+    "binance_listing": "2026-08-30"
   },
   "龙虾": {
     "binance_listing": "2026-03-11"
