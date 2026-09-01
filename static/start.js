@@ -17,23 +17,25 @@ const START_3D_CONFIG = {
 
   // 📐 [황금비 직사각형 규격 설정 (Golden Ratio: 1.618 : 1)]
   goldenRatio: "1.618 / 1", // 덱 전체 및 4개 개별 카드의 가로:세로 황금비율
-  deckWidth: "100%",        // 좌측 영역 내 덱 가로폭
-  deckMaxWidth: "800px",    // 최대 가로폭 (세로 높이는 황금비로 100% 자동 계산됨)
+  deckWidth: "100%", // 좌측 영역 내 덱 가로폭
+  deckMaxWidth: "800px", // 최대 가로폭 (세로 높이는 황금비로 100% 자동 계산됨)
 
   // 🧭 화면 전환 시 순환할 방위 목록
   compassCycle: ["NW", "NE"], // 10시(북서) ➡️ 2시(북동)
 
   tiltAngle: [5, 5, -5, -5], // 📐 단계별 틸트 각도 (시계 방향으로 균일하게 매끄럽게 회전)
-  scale: 1.0,          // 기본 스케일 배율
-  perspective: 1200,   // 3D 원근 깊이 (px)
+  scale: 1.0, // 기본 스케일 배율
+  perspective: 1200, // 3D 원근 깊이 (px)
 
   // 🌟 [3D 바닥 앰비언트 오라 / 백라이트 커스텀 설정소]
-  auraInset: "-24px",       // 덱 외곽 확장 폭 (예: -20px ~ -60px)
+  auraInset: "-24px", // 덱 외곽 확장 폭 (예: -20px ~ -60px)
   auraBorderRadius: "24px", // 오라 모서리 둥글기 (px)
-  auraBlur: "24px",         // 블러 번짐 반경 (px)
-  auraOpacity: 0.5,         // 오라 투명도 (0.0 ~ 1.0)
-  auraBackground: "radial-gradient(ellipse at center, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.18) 45%, rgba(0, 209, 255, 0.12) 70%, transparent 90%)",
-  auraBoxShadow: "0 0 45px rgba(255, 255, 255, 0.16), 0 0 75px rgba(0, 209, 255, 0.12)",
+  auraBlur: "24px", // 블러 번짐 반경 (px)
+  auraOpacity: 0.5, // 오라 투명도 (0.0 ~ 1.0)
+  auraBackground:
+    "radial-gradient(ellipse at center, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.18) 45%, rgba(0, 209, 255, 0.12) 70%, transparent 90%)",
+  auraBoxShadow:
+    "0 0 45px rgba(255, 255, 255, 0.16), 0 0 75px rgba(0, 209, 255, 0.12)",
 };
 
 // ===================================================================================
@@ -51,15 +53,15 @@ const START_SHOWCASE_STATES = [
 
 // 🧭 8방위 축별 오일러 각(Pitch/Yaw/Roll) 틸트 맵 (회전이 아닌 동서남북 3D 시선 방향)
 const COMPASS_DIRECTIONS = {
-  NE: { rx: 1, ry: -1, rz: 1 },   // 북동 (North-East: 우상단 아이소메트릭)
-  NW: { rx: 1, ry: 1, rz: -1 },  // 북서 (North-West: 좌상단 아이소메트릭)
-  SW: { rx: -1, ry: 1, rz: 1 },   // 남서 (South-West: 좌하단 아이소메트릭)
-  SE: { rx: -1, ry: -1, rz: -1 },  // 남동 (South-East: 우하단 아이소메트릭)
-  N: { rx: 1.2, ry: 0, rz: 0 },   // 북 (North / Top Pitch)
-  S: { rx: -1.2, ry: 0, rz: 0 },   // 남 (South / Bottom Pitch)
-  E: { rx: 0, ry: -1.2, rz: 0 },   // 동 (East / Right Yaw)
-  W: { rx: 0, ry: 1.2, rz: 0 },   // 서 (West / Left Yaw)
-  CENTER: { rx: 0, ry: 0, rz: 0 },   // 정면 (Front View)
+  NE: { rx: 1, ry: -1, rz: 1 }, // 북동 (North-East: 우상단 아이소메트릭)
+  NW: { rx: 1, ry: 1, rz: -1 }, // 북서 (North-West: 좌상단 아이소메트릭)
+  SW: { rx: -1, ry: 1, rz: 1 }, // 남서 (South-West: 좌하단 아이소메트릭)
+  SE: { rx: -1, ry: -1, rz: -1 }, // 남동 (South-East: 우하단 아이소메트릭)
+  N: { rx: 1.2, ry: 0, rz: 0 }, // 북 (North / Top Pitch)
+  S: { rx: -1.2, ry: 0, rz: 0 }, // 남 (South / Bottom Pitch)
+  E: { rx: 0, ry: -1.2, rz: 0 }, // 동 (East / Right Yaw)
+  W: { rx: 0, ry: 1.2, rz: 0 }, // 서 (West / Left Yaw)
+  CENTER: { rx: 0, ry: 0, rz: 0 }, // 정면 (Front View)
 };
 
 let startCompassStep = 0;
@@ -138,6 +140,7 @@ function getStartScreenHTML() {
         stroke-dashoffset: 100.2;
         stroke-linecap: round;
         filter: drop-shadow(0 0 4px rgba(0, 209, 255, 0.5));
+        animation: startBorderProgress ${START_3D_CONFIG.cycleIntervalMs}ms linear infinite;
       }
       @keyframes startBorderProgress {
         0% {
@@ -305,10 +308,10 @@ function getStartScreenHTML() {
       id="start-screen" style="display: none;"
       class="fixed inset-0 z-[1000] flex items-center justify-center transition-opacity duration-500 overflow-hidden p-4 md:p-8"
     >
-      <div class="w-full max-w-6xl h-full max-h-[820px] flex flex-col md:flex-row items-center justify-between gap-8 relative z-10">
+      <div class="w-full max-w-6xl h-full max-h-[820px] flex flex-col md:flex-row items-center justify-center md:justify-between gap-4 sm:gap-5 md:gap-8 relative z-10">
         
         <!-- 🚀 [좌측 (58% 비중)]: 3D 아이소메트릭 쿼터뷰 4대장 차트 덱 -->
-        <div class="w-full md:w-[58%] h-[40vh] md:h-[75vh] relative flex items-center justify-center overflow-visible">
+        <div class="w-full md:w-[58%] h-auto md:h-[75vh] max-h-[240px] md:max-h-none relative flex items-center justify-center overflow-visible mb-2 md:mb-0">
           <div id="start-qv-preview-container" class="w-full relative overflow-visible pointer-events-none opacity-90 my-auto">
             <!-- 🚀 3D 덱 하단 바닥 투영 앰비언트 섀도우 (800px 황금비 직사각형 덱 전용) -->
             <div class="start-qv-floor-shadow"></div>
@@ -338,7 +341,7 @@ function getStartScreenHTML() {
             <div id="start-qv-overlap-view">
               <svg class="start-qv-inner-progress" viewBox="0 0 100 100" preserveAspectRatio="none">
                 <rect x="0.5" y="0.5" width="99" height="99" rx="3.5" ry="3.5" fill="none" stroke="rgba(0, 209, 255, 0.08)" stroke-width="0.7" />
-                <rect class="start-qv-progress-rect" x="0.5" y="0.5" width="99" height="99" rx="3.5" ry="3.5" fill="none" stroke="url(#startProgressGlow)" stroke-width="1.2" stroke-linecap="round" pathLength="100" />
+                <rect class="start-qv-progress-rect" x="0.5" y="0.5" width="99" height="99" rx="3.5" ry="3.5" fill="none" stroke="url(#startProgressGlow)" stroke-width="1.2" stroke-linecap="round" pathLength="100" stroke-dasharray="100.2 100.2" stroke-dashoffset="100.2" />
               </svg>
             </div>
           </div>
@@ -346,20 +349,20 @@ function getStartScreenHTML() {
 
         <!-- 🚀 [우측 (42% 비중)]: CMC 로그인 & 메인 대시보드 진입 패널 -->
         <div class="w-full md:w-[42%] max-w-md flex flex-col justify-center">
-          <div class="start-main-card p-7 md:p-8 w-full flex flex-col gap-5 text-center">
+          <div class="start-main-card p-4 sm:p-6 md:p-8 w-full flex flex-col gap-3.5 md:gap-5 text-center">
             <div>
               <!-- <div class="inline-flex items-center gap-2 mb-2 px-3 py-1 rounded-full bg-theme-accent/10 border border-theme-accent/30 text-theme-accent text-[11px] font-bold uppercase tracking-wider">
                 <span class="w-2 h-2 rounded-full bg-theme-accent animate-pulse"></span> 
                 <span>Live Terminal Engine</span> 
               </div> -->
-              <h1 class="text-3xl md:text-4xl font-extrabold text-white uppercase tracking-widest mb-1.5">
+              <h1 class="text-2xl md:text-4xl font-extrabold text-white uppercase tracking-widest mb-1">
                 SELLNANCE
               </h1>
               <p class="text-theme-text opacity-75 text-xs md:text-sm font-medium tracking-wide">
                 Enter CMC API Key to initialize dashboard
               </p>
 
-              <div class="mt-3.5 px-3.5 py-2.5 bg-black/40 rounded-xl border border-theme-border/40 flex flex-col items-center justify-center gap-1.5 text-center">
+              <div class="mt-2.5 px-3 py-2 bg-black/40 rounded-xl border border-theme-border/40 flex flex-col items-center justify-center gap-1 text-center">
                 <div class="flex items-center justify-center gap-2">
                   <p class="text-[11px] text-theme-text opacity-75 font-medium">
                     API 키가 없으신가요?
@@ -385,7 +388,7 @@ function getStartScreenHTML() {
                   id="cmc-api-input"
                   placeholder="Loading..."
                   disabled
-                  class="w-full bg-black/60 text-white border-2 border-theme-border/60 pl-4 pr-11 py-3.5 rounded-xl text-center font-tempTestDss text-sm focus:outline-none focus:border-theme-accent transition-all shadow-inner opacity-50 cursor-not-allowed"
+                  class="w-full bg-black/60 text-white border-2 border-theme-border/60 pl-4 pr-11 py-2.5 md:py-3.5 rounded-xl text-center font-tempTestDss text-sm focus:outline-none focus:border-theme-accent transition-all shadow-inner opacity-50 cursor-not-allowed"
                   autocomplete="off"
                   spellcheck="false"
                 />
@@ -403,7 +406,7 @@ function getStartScreenHTML() {
                 </button>
               </div>
 
-              <div class="flex flex-col gap-1 mt-0.5 px-1">
+              <div class="flex flex-col gap-0.5 mt-0.5 px-1">
                 <p class="text-[10px] text-theme-text opacity-40 text-left">
                   * Key is securely stored in your local browser.
                 </p>
@@ -413,20 +416,20 @@ function getStartScreenHTML() {
               </div>
             </div>
 
-            <div class="flex flex-col gap-2.5 mt-1">
+            <div class="flex flex-col gap-2 mt-0.5">
               <!-- 🚀 Start Dashboard 버튼 + 우측 자동 시작 토글 뱃지 나란히 배치 -->
               <div class="flex items-center gap-2 w-full">
                 <button
                   id="btn-start-engine"
                   disabled
                   onclick="saveAndStart()"
-                  class="flex-1 py-3.5 bg-theme-accent text-white font-bold rounded-xl shadow-sm hover:shadow-[0_0_15px_rgba(0,209,255,0.3)] hover:brightness-105 active:scale-[0.98] transition-all tracking-widest uppercase cursor-not-allowed pointer-events-none text-xs md:text-sm"
+                  class="flex-1 py-3 md:py-3.5 bg-theme-accent text-white font-bold rounded-xl shadow-sm hover:shadow-[0_0_15px_rgba(0,209,255,0.3)] hover:brightness-105 active:scale-[0.98] transition-all tracking-widest uppercase cursor-not-allowed pointer-events-none text-xs md:text-sm"
                 >
                   불러오는 중.. 📡
                 </button>
 
                 <label
-                  class="h-[48px] px-3.5 bg-black/40 hover:bg-white/10 border border-theme-border/50 hover:border-theme-accent/50 rounded-xl flex items-center gap-2 cursor-pointer select-none transition-all group"
+                  class="h-[42px] md:h-[48px] px-3 bg-black/40 hover:bg-white/10 border border-theme-border/50 hover:border-theme-accent/50 rounded-xl flex items-center gap-1.5 cursor-pointer select-none transition-all group"
                 >
                   <input type="checkbox" id="chk-auto-skip" class="accent-theme-accent w-3.5 h-3.5 rounded cursor-pointer" />
                   <span class="text-[11px] text-theme-text/80 group-hover:text-white whitespace-nowrap font-medium transition-colors">Skip</span>
@@ -437,9 +440,9 @@ function getStartScreenHTML() {
                 id="btn-skip-start"
                 disabled
                 onclick="skipAndStart()"
-                class="w-full py-3 bg-white/5 text-theme-text border border-theme-border/50 font-medium rounded-xl hover:bg-white/10 active:scale-[0.98] transition-all tracking-wide opacity-70 hover:opacity-100 cursor-not-allowed pointer-events-none text-xs"
+                class="w-full py-2.5 md:py-3 bg-white/5 text-theme-text border border-theme-border/50 font-medium rounded-xl hover:bg-white/10 active:scale-[0.98] transition-all tracking-wide opacity-70 hover:opacity-100 cursor-not-allowed pointer-events-none text-xs"
               >
-                불러오는 중.. 📡
+                불러오는 중...
               </button>
             </div>
           </div>
@@ -531,10 +534,34 @@ async function initPixiBackground() {
 
 // ================= 4대장 퀵뷰 프리뷰 쇼케이스 엔진 =================
 const START_ASSETS = [
-  { symbol: "BTCUSDT", ticker: "BTC", icon: "https://s2.coinmarketcap.com/static/img/coins/64x64/1.png", color: "#f0b90b", rgba: "rgba(240, 185, 11, 0.65)" },
-  { symbol: "ETHUSDT", ticker: "ETH", icon: "https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png", color: "#3b82f6", rgba: "rgba(59, 130, 246, 0.65)" },
-  { symbol: "XRPUSDT", ticker: "XRP", icon: "https://s2.coinmarketcap.com/static/img/coins/64x64/52.png", color: "#26a69a", rgba: "rgba(38, 166, 154, 0.65)" },
-  { symbol: "SOLUSDT", ticker: "SOL", icon: "https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png", color: "#a855f7", rgba: "rgba(168, 85, 247, 0.65)" },
+  {
+    symbol: "BTCUSDT",
+    ticker: "BTC",
+    icon: "https://s2.coinmarketcap.com/static/img/coins/64x64/1.png",
+    color: "#f0b90b",
+    rgba: "rgba(240, 185, 11, 0.65)",
+  },
+  {
+    symbol: "ETHUSDT",
+    ticker: "ETH",
+    icon: "https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png",
+    color: "#3b82f6",
+    rgba: "rgba(59, 130, 246, 0.65)",
+  },
+  {
+    symbol: "XRPUSDT",
+    ticker: "XRP",
+    icon: "https://s2.coinmarketcap.com/static/img/coins/64x64/52.png",
+    color: "#26a69a",
+    rgba: "rgba(38, 166, 154, 0.65)",
+  },
+  {
+    symbol: "SOLUSDT",
+    ticker: "SOL",
+    icon: "https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png",
+    color: "#a855f7",
+    rgba: "rgba(168, 85, 247, 0.65)",
+  },
 ];
 
 let startQvSpreadCharts = [];
@@ -602,18 +629,43 @@ async function initStartQuickViewPreview() {
 
     const canvasArea = card.querySelector(".start-qv-canvas");
     const chart = LightweightCharts.createChart(canvasArea, {
-      layout: { background: { color: "transparent" }, textColor: "rgba(255,255,255,0.4)", fontSize: 9, fontFamily: "Outfit, sans-serif", attributionLogo: false },
-      grid: { vertLines: { color: "rgba(255,255,255,0.03)" }, horzLines: { color: "rgba(255,255,255,0.03)" } },
+      layout: {
+        background: { color: "transparent" },
+        textColor: "rgba(255,255,255,0.4)",
+        fontSize: 9,
+        fontFamily: "Outfit, sans-serif",
+        attributionLogo: false,
+      },
+      grid: {
+        vertLines: { color: "rgba(255,255,255,0.03)" },
+        horzLines: { color: "rgba(255,255,255,0.03)" },
+      },
       crosshair: { vertLine: { visible: false }, horzLine: { visible: false } },
       rightPriceScale: { visible: false, borderVisible: false },
-      timeScale: { visible: false, borderVisible: false, rightOffset: 1, fixLeftEdge: false },
-      handleScroll: false, handleScale: false,
+      timeScale: {
+        visible: false,
+        borderVisible: false,
+        rightOffset: 1,
+        fixLeftEdge: false,
+      },
+      handleScroll: false,
+      handleScale: false,
     });
 
-    const seriesOptions = { upColor: asset.color, downColor: asset.color, wickUpColor: asset.color, wickDownColor: asset.color, borderVisible: false };
-    const series = typeof chart.addCandlestickSeries === "function"
-      ? chart.addCandlestickSeries(seriesOptions)
-      : chart.addSeries(window.LightweightCharts.CandlestickSeries, seriesOptions);
+    const seriesOptions = {
+      upColor: asset.color,
+      downColor: asset.color,
+      wickUpColor: asset.color,
+      wickDownColor: asset.color,
+      borderVisible: false,
+    };
+    const series =
+      typeof chart.addCandlestickSeries === "function"
+        ? chart.addCandlestickSeries(seriesOptions)
+        : chart.addSeries(
+            window.LightweightCharts.CandlestickSeries,
+            seriesOptions,
+          );
 
     startQvSpreadCharts.push(chart);
     startQvSpreadSeries.push(series);
@@ -631,19 +683,20 @@ async function initStartQuickViewPreview() {
       <span id="start-qv-overlap-tf" class="text-[9px] px-1.5 py-0.2 font-mono font-bold rounded bg-theme-accent/20 border border-theme-accent/40 text-theme-accent">15M</span>
       <div class="flex items-center gap-2 ml-2">
         ${START_ASSETS.map(
-    (a, i) => `
+          (a, i) => `
           <div class="start-qv-legend-item flex items-center gap-1 cursor-pointer px-1.5 py-0.5" data-idx="${i}">
             <img src="${a.icon}" class="w-3 h-3 rounded-full object-cover flex-shrink-0" alt="${a.ticker}" />
             <span style="color: ${a.color}">${a.ticker}</span>
             <span id="start-qv-overlap-price-${i}" class="text-[10px] text-white/70 font-tempTestDss">...</span>
-          </div>`
-  ).join("")}
+          </div>`,
+        ).join("")}
       </div>
     </div>
     <div class="relative w-full flex-1 min-h-[80px]">
       ${START_ASSETS.map(
-    (a, i) => `<div class="start-qv-canvas absolute inset-0 w-full h-full" id="start-qv-overlap-canvas-${i}"></div>`
-  ).join("")}
+        (a, i) =>
+          `<div class="start-qv-canvas absolute inset-0 w-full h-full" id="start-qv-overlap-canvas-${i}"></div>`,
+      ).join("")}
     </div>
   `;
 
@@ -655,19 +708,37 @@ async function initStartQuickViewPreview() {
   });
 
   START_ASSETS.forEach((asset, idx) => {
-    const overlapCanvasArea = document.getElementById(`start-qv-overlap-canvas-${idx}`);
+    const overlapCanvasArea = document.getElementById(
+      `start-qv-overlap-canvas-${idx}`,
+    );
     if (!overlapCanvasArea) return;
 
     const chart = LightweightCharts.createChart(overlapCanvasArea, {
-      layout: { background: { color: "transparent" }, textColor: "rgba(255,255,255,0.4)", fontSize: 9, fontFamily: "Outfit, sans-serif", attributionLogo: false },
+      layout: {
+        background: { color: "transparent" },
+        textColor: "rgba(255,255,255,0.4)",
+        fontSize: 9,
+        fontFamily: "Outfit, sans-serif",
+        attributionLogo: false,
+      },
       grid: {
-        vertLines: { color: idx === 0 ? "rgba(255,255,255,0.03)" : "transparent" },
-        horzLines: { color: idx === 0 ? "rgba(255,255,255,0.03)" : "transparent" },
+        vertLines: {
+          color: idx === 0 ? "rgba(255,255,255,0.03)" : "transparent",
+        },
+        horzLines: {
+          color: idx === 0 ? "rgba(255,255,255,0.03)" : "transparent",
+        },
       },
       crosshair: { vertLine: { visible: false }, horzLine: { visible: false } },
       rightPriceScale: { visible: false, borderVisible: false },
-      timeScale: { visible: false, borderVisible: false, rightOffset: 1, fixLeftEdge: false },
-      handleScroll: false, handleScale: false,
+      timeScale: {
+        visible: false,
+        borderVisible: false,
+        rightOffset: 1,
+        fixLeftEdge: false,
+      },
+      handleScroll: false,
+      handleScale: false,
     });
 
     // 🚀 반투명(Translucent) 캔들 기본 적용 (서로 가리지 않는 자연스러운 오버레이)
@@ -678,9 +749,13 @@ async function initStartQuickViewPreview() {
       wickDownColor: asset.rgba,
       borderVisible: false,
     };
-    const series = typeof chart.addCandlestickSeries === "function"
-      ? chart.addCandlestickSeries(seriesOptions)
-      : chart.addSeries(window.LightweightCharts.CandlestickSeries, seriesOptions);
+    const series =
+      typeof chart.addCandlestickSeries === "function"
+        ? chart.addCandlestickSeries(seriesOptions)
+        : chart.addSeries(
+            window.LightweightCharts.CandlestickSeries,
+            seriesOptions,
+          );
 
     startQvOverlapCharts.push(chart);
     startQvOverlapSeries.push(series);
@@ -712,7 +787,9 @@ async function initStartQuickViewPreview() {
 function setStartOverlapFocus(focusIdx) {
   START_ASSETS.forEach((asset, i) => {
     const canvas = document.getElementById(`start-qv-overlap-canvas-${i}`);
-    const legendItem = document.querySelector(`.start-qv-legend-item[data-idx="${i}"]`);
+    const legendItem = document.querySelector(
+      `.start-qv-legend-item[data-idx="${i}"]`,
+    );
     if (!canvas) return;
     if (focusIdx === -1) {
       canvas.style.opacity = "0.55";
@@ -741,7 +818,7 @@ async function loadStartPreviewKlines(tf) {
   const promises = START_ASSETS.map(async (asset, idx) => {
     try {
       const res = await fetch(
-        `https://api.binance.com/api/v3/klines?symbol=${asset.symbol}&interval=${tf}&limit=60`
+        `https://api.binance.com/api/v3/klines?symbol=${asset.symbol}&interval=${tf}&limit=60`,
       );
       const data = await res.json();
       if (Array.isArray(data)) {
@@ -757,7 +834,9 @@ async function loadStartPreviewKlines(tf) {
           startQvSpreadSeries[idx].setData(candles);
           if (startQvSpreadCharts[idx]) {
             startQvSpreadCharts[idx].timeScale().fitContent();
-            startQvSpreadCharts[idx].timeScale().applyOptions({ rightOffset: 1 });
+            startQvSpreadCharts[idx]
+              .timeScale()
+              .applyOptions({ rightOffset: 1 });
           }
         }
 
@@ -765,7 +844,9 @@ async function loadStartPreviewKlines(tf) {
           startQvOverlapSeries[idx].setData(candles);
           if (startQvOverlapCharts[idx]) {
             startQvOverlapCharts[idx].timeScale().fitContent();
-            startQvOverlapCharts[idx].timeScale().applyOptions({ rightOffset: 1 });
+            startQvOverlapCharts[idx]
+              .timeScale()
+              .applyOptions({ rightOffset: 1 });
           }
         }
 
@@ -777,7 +858,7 @@ async function loadStartPreviewKlines(tf) {
           if (ovEl) ovEl.innerText = `$${lastPrice.toLocaleString()}`;
         }
       }
-    } catch (e) { }
+    } catch (e) {}
   });
   await Promise.all(promises);
 }
@@ -793,19 +874,25 @@ function startStartPreviewWebSocket(tf) {
     oldWs.onerror = null;
     if (oldWs.readyState === WebSocket.CONNECTING) {
       oldWs.onopen = () => {
-        try { oldWs.close(); } catch (e) { }
+        try {
+          oldWs.close();
+        } catch (e) {}
       };
     } else {
-      try { oldWs.close(); } catch (e) { }
+      try {
+        oldWs.close();
+      } catch (e) {}
     }
     startQvWs = null;
   }
   startQvLastUpdateTimes = {};
   try {
     const streams = START_ASSETS.map(
-      (a) => `${a.symbol.toLowerCase()}@kline_${tf}`
+      (a) => `${a.symbol.toLowerCase()}@kline_${tf}`,
     ).join("/");
-    startQvWs = new WebSocket(`wss://stream.binance.com:9443/stream?streams=${streams}`);
+    startQvWs = new WebSocket(
+      `wss://stream.binance.com:9443/stream?streams=${streams}`,
+    );
     startQvWs.onmessage = (e) => {
       try {
         const res = JSON.parse(e.data);
@@ -815,7 +902,10 @@ function startStartPreviewWebSocket(tf) {
 
         // 🚀 [1초 쓰로틀]: 틱이 아무리 쏟아져도 코인별로 정확히 1초(1000ms)에 1회만 캔버스/시세 갱신
         const now = Date.now();
-        if (startQvLastUpdateTimes[symbol] && now - startQvLastUpdateTimes[symbol] < 500) {
+        if (
+          startQvLastUpdateTimes[symbol] &&
+          now - startQvLastUpdateTimes[symbol] < 500
+        ) {
           return;
         }
         startQvLastUpdateTimes[symbol] = now;
@@ -830,16 +920,17 @@ function startStartPreviewWebSocket(tf) {
             close: parseFloat(k.c),
           };
           if (startQvSpreadSeries[idx]) startQvSpreadSeries[idx].update(candle);
-          if (startQvOverlapSeries[idx]) startQvOverlapSeries[idx].update(candle);
+          if (startQvOverlapSeries[idx])
+            startQvOverlapSeries[idx].update(candle);
 
           const spEl = document.getElementById(`start-qv-spread-price-${idx}`);
           const ovEl = document.getElementById(`start-qv-overlap-price-${idx}`);
           if (spEl) spEl.innerText = `$${candle.close.toLocaleString()}`;
           if (ovEl) ovEl.innerText = `$${candle.close.toLocaleString()}`;
         }
-      } catch (err) { }
+      } catch (err) {}
     };
-  } catch (err) { }
+  } catch (err) {}
 }
 
 // ⏱️ 캔들 색상 동적 전환 (네온 고유색 vs 클래식 양음봉)
@@ -895,8 +986,13 @@ function resetAndStartProgressBar() {
   const progressRects = document.querySelectorAll(".start-qv-progress-rect");
   progressRects.forEach((rect) => {
     rect.style.animation = "none";
-    void rect.offsetWidth; // Force DOM reflow to cancel previous animation immediately
-    rect.style.animation = `startBorderProgress ${START_3D_CONFIG.cycleIntervalMs}ms linear 1 forwards`;
+  });
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      progressRects.forEach((rect) => {
+        rect.style.animation = `startBorderProgress ${START_3D_CONFIG.cycleIntervalMs}ms linear infinite`;
+      });
+    });
   });
 }
 
@@ -964,7 +1060,10 @@ function toggleStartQuickViewLayout() {
   if (floorShadow) {
     const scale = currentShowcase.layout === "spread" ? 1.04 : 0.96;
     floorShadow.style.transform = getShadowTransform(scale);
-    floorShadow.style.opacity = (START_3D_CONFIG.auraOpacity * (currentShowcase.layout === "spread" ? 1.0 : 0.8)).toFixed(2);
+    floorShadow.style.opacity = (
+      START_3D_CONFIG.auraOpacity *
+      (currentShowcase.layout === "spread" ? 1.0 : 0.8)
+    ).toFixed(2);
   }
 
   resizeStartQuickViewCharts();
@@ -1003,7 +1102,7 @@ function destroyStartQuickViewPreview() {
   if (startQvWs) {
     try {
       startQvWs.close();
-    } catch (e) { }
+    } catch (e) {}
     startQvWs = null;
   }
   window.removeEventListener("resize", resizeStartQuickViewCharts);
@@ -1011,14 +1110,14 @@ function destroyStartQuickViewPreview() {
     if (c) {
       try {
         c.remove();
-      } catch (e) { }
+      } catch (e) {}
     }
   });
   startQvOverlapCharts.forEach((c) => {
     if (c) {
       try {
         c.remove();
-      } catch (e) { }
+      } catch (e) {}
     }
   });
   startQvSpreadCharts = [];
@@ -1042,7 +1141,8 @@ async function initStartScreen() {
     const res = await fetch("/api/get-env-key");
     const data = await res.json();
 
-    const isAutoSkipEnabled = localStorage.getItem("sellnance_skip_start") === "true";
+    const isAutoSkipEnabled =
+      localStorage.getItem("sellnance_skip_start") === "true";
 
     /* [기존 단일 조건 스킵 코드 보존]
     if (data.exists) {
@@ -1107,10 +1207,22 @@ async function initStartScreen() {
     if (!btnClearKey) return;
     const hasValue = !!(rawCmcKey || (input && input.value));
     if (hasValue) {
-      btnClearKey.classList.remove("opacity-0", "pointer-events-none", "scale-75");
-      btnClearKey.classList.add("opacity-100", "pointer-events-auto", "scale-100");
+      btnClearKey.classList.remove(
+        "opacity-0",
+        "pointer-events-none",
+        "scale-75",
+      );
+      btnClearKey.classList.add(
+        "opacity-100",
+        "pointer-events-auto",
+        "scale-100",
+      );
     } else {
-      btnClearKey.classList.remove("opacity-100", "pointer-events-auto", "scale-100");
+      btnClearKey.classList.remove(
+        "opacity-100",
+        "pointer-events-auto",
+        "scale-100",
+      );
       btnClearKey.classList.add("opacity-0", "pointer-events-none", "scale-75");
     }
   }
@@ -1143,7 +1255,6 @@ async function initStartScreen() {
   await initPixiBackground();
   */
   await initStartQuickViewPreview();
-
 
   // 🚀 수정된 부분: beforeinput 이벤트 핸들러
   input.addEventListener("beforeinput", (e) => {
@@ -1199,9 +1310,15 @@ function saveAndStart() {
   if (keyToSave.length !== 32) {
     const input = document.getElementById("cmc-api-input");
     if (input) {
-      input.classList.add("!border-red-500/80", "shadow-[0_0_15px_rgba(239,68,68,0.3)]");
+      input.classList.add(
+        "!border-red-500/80",
+        "shadow-[0_0_15px_rgba(239,68,68,0.3)]",
+      );
       setTimeout(() => {
-        input.classList.remove("!border-red-500/80", "shadow-[0_0_15px_rgba(239,68,68,0.3)]");
+        input.classList.remove(
+          "!border-red-500/80",
+          "shadow-[0_0_15px_rgba(239,68,68,0.3)]",
+        );
       }, 2000);
       input.focus();
     }
@@ -1218,7 +1335,8 @@ function saveAndStart() {
         background: "rgba(18, 21, 28, 0.95)",
         color: "#ffffff",
         customClass: {
-          popup: "border border-amber-500/30 rounded-xl shadow-2xl backdrop-blur-md text-xs",
+          popup:
+            "border border-amber-500/30 rounded-xl shadow-2xl backdrop-blur-md text-xs",
         },
       });
     }
@@ -1264,7 +1382,7 @@ function skipAndStart() {
   // 🚀 [INP 최적화 1] 클릭 즉시 시각적 피드백 제공
   const buttons = document.querySelectorAll("#start-screen button");
   if (buttons.length > 1 && buttons[1]) {
-    buttons[1].innerText = "ENTERING CACHE MODE... ⏭️";
+    buttons[1].innerText = "ENTERING CACHE MODE...";
     buttons[1].style.pointerEvents = "none";
   }
 
@@ -1345,7 +1463,9 @@ export async function showStartScreen() {
     startQvTimer = null;
   }
   if (startQvWs) {
-    try { startQvWs.close(); } catch (e) { }
+    try {
+      startQvWs.close();
+    } catch (e) {}
     startQvWs = null;
   }
 
