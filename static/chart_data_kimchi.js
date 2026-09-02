@@ -15,11 +15,14 @@ export function calculateKimchiData(mainData, subRaw, params) {
     // 🚀 서브 거래소 파싱 도우미 함수 정의
     const getSubTime = (item) => {
       if (!item) return 0;
+      if (typeof item.time === "number") {
+        return Math.floor(item.time > 1e11 ? item.time / 1000 : item.time);
+      }
       if (subExchange === "upbit" && item.candle_date_time_utc) {
         return Math.floor(Date.parse(item.candle_date_time_utc + "Z") / 1000);
       }
       if (Array.isArray(item)) {
-        return Math.floor(Number(item[0]) / 1000);
+        return Math.floor(Number(item[0]) > 1e11 ? Number(item[0]) / 1000 : Number(item[0]));
       }
       const t = item.time !== undefined ? item.time : item[0];
       return Math.floor(Number(t) > 1e11 ? Number(t) / 1000 : Number(t));
@@ -27,13 +30,14 @@ export function calculateKimchiData(mainData, subRaw, params) {
 
     const getSubClose = (item) => {
       if (!item) return 0;
+      if (typeof item.close === "number") return item.close;
       if (subExchange === "upbit" && item.trade_price !== undefined) {
         return Number(item.trade_price);
       }
       if (Array.isArray(item)) {
         return subExchange === "bithumb" ? Number(item[2]) : Number(item[4]);
       }
-      return Number(item.close !== undefined ? item.close : item[2] !== undefined ? item[2] : item[4]);
+      return Number(item.close !== undefined ? item.close : item[4] !== undefined ? item[4] : item[2]);
     };
 
     // 🚀 서브 데이터를 타임스탬프 기준 시간 오름차순으로 완벽 정렬

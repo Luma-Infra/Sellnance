@@ -498,7 +498,7 @@ async function initPixiBackground() {
   }
 
   if (typeof PIXI === "undefined") {
-    console.error("🚨 PIXI is not defined. PixiJS background initialization skipped.");
+    // Xconsole.error("🚨 PIXI is not defined. PixiJS background initialization skipped.");
     return;
   }
 
@@ -1152,36 +1152,20 @@ async function initStartScreen() {
 
     const isAutoSkipEnabled =
       localStorage.getItem("sellnance_skip_start") === "true";
+    rawCmcKey = localStorage.getItem("CMC_API_KEY") || "";
 
-    /* [기존 단일 조건 스킵 코드 보존]
-    if (data.exists) {
-      // 🚀 env 키가 존재하면 로컬 스토리지를 오염시키지 않고 시작 화면을 바로 스킵합니다.
+    // 🚀 유료(키 등록 유저) & 무료(캐시 모드 유저) 모두 스킵 설정 시 즉시 대시보드로 진입!
+    if (isAutoSkipEnabled) {
       hideStartScreen();
       return;
-    } else {
-      // env에 없으면 로컬 스토리지 확인
-      rawCmcKey = localStorage.getItem("CMC_API_KEY") || "";
-      // Xconsole.log("ℹ️ env에 키가 없어 로컬 스토리지를 확인했습니다.");
-    }
-    */
-
-    // 🚀 [복합 AND 조건 적용]: (1) 유효한 키 존재 AND (2) 'sellnance_skip_start' 플래그가 true일 때만 즉시 스킵!
-    if (data.exists) {
-      rawCmcKey = localStorage.getItem("CMC_API_KEY") || ""; // env 키 또는 로컬 키 매핑
-      if (isAutoSkipEnabled) {
-        hideStartScreen();
-        return;
-      }
-    } else {
-      rawCmcKey = localStorage.getItem("CMC_API_KEY") || "";
-      if (rawCmcKey && isAutoSkipEnabled) {
-        hideStartScreen();
-        return;
-      }
     }
   } catch (e) {
-    console.error("🚨 서버 통신 실패, 로컬 스토리지로 대체합니다.");
+    // Xconsole.error("🚨 서버 통신 실패, 로컬 스토리지로 대체합니다.");
     rawCmcKey = localStorage.getItem("CMC_API_KEY") || "";
+    if (localStorage.getItem("sellnance_skip_start") === "true") {
+      hideStartScreen();
+      return;
+    }
   } finally {
     // 🚀 공백이든 값 없든 무조건 불러오기 작업 이후 활성화!
     if (input) {
@@ -1251,6 +1235,20 @@ async function initStartScreen() {
       }
       localStorage.removeItem("CMC_API_KEY");
       updateClearBtnVisibility();
+    });
+  }
+
+  // 🚀 Skip 체크박스 상태 동기화 및 실시간 저장
+  const chkAutoSkip = document.getElementById("chk-auto-skip");
+  if (chkAutoSkip) {
+    chkAutoSkip.checked =
+      localStorage.getItem("sellnance_skip_start") === "true";
+    chkAutoSkip.addEventListener("change", (e) => {
+      if (e.target.checked) {
+        localStorage.setItem("sellnance_skip_start", "true");
+      } else {
+        localStorage.removeItem("sellnance_skip_start");
+      }
     });
   }
 
@@ -1409,7 +1407,7 @@ function hideStartScreen() {
     try {
       pixiApp.destroy(true, { children: true, texture: true, baseTexture: true });
     } catch (e) {
-      console.error("Error destroying Pixi app:", e);
+      Xconsole.error("Error destroying Pixi app:", e);
     }
     pixiApp = null;
   }
@@ -1459,6 +1457,11 @@ export async function showStartScreen() {
   if (btnSkip) {
     btnSkip.innerText = "바로 이동 (서버 캐시 모드, 느린 갱신)";
     btnSkip.style.pointerEvents = "auto";
+  }
+
+  const chk = document.getElementById("chk-auto-skip");
+  if (chk) {
+    chk.checked = localStorage.getItem("sellnance_skip_start") === "true";
   }
 
   // 🚀 [쇼케이스 0초 및 1단계 완전 리셋]

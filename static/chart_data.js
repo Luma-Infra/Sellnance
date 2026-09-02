@@ -19,6 +19,7 @@ import {
   formatListingDateWithExchange,
   updateRowDynamicHTML,
 } from "./table_render.js";
+import { fetchBithumbUnifiedCandles } from "./chart_bithumb_sync.js";
 
 export async function fetchCandlesSmart(
   exchange,
@@ -531,124 +532,47 @@ export async function fetchHistory(
           vol: Number(d[5]),
         }));
       }
-    } else if (isUpbit || isBithumb) {
-      if (isBithumb) {
-        const bMap = {
-          "1m": "1m",
-          "3m": "3m",
-          "5m": "5m",
-          "15m": "5m",
-          "30m": "30m",
-          "1h": "1h",
-          "4h": "4h",
-          "12h": "12h",
-          "1d": "24h",
-          "3d": "24h",
-          "1w": "24h",
-          "1M": "24h",
-        };
-        const tfOffsetMap = {
-          "4h": 3600,   // 🚀 정확히 +1시간만 밀어서 바이낸스 4h와 1:1 완벽 일치!
-          "12h": 32400, // 🚀 +9시간 밀어서 바이낸스 12h와 1:1 완벽 일치!
-          "1d": 32400,  // 🚀 +9시간 밀어서 바이낸스 일봉과 1:1 완벽 일치!
-          "3d": 32400,  // 🚀 +9시간 밀어서 바이낸스 3일봉과 1:1 완벽 일치!
-          "1w": 32400,  // 🚀 +9시간 밀어서 바이낸스 주봉과 1:1 완벽 일치!
-          "1M": 32400,  // 🚀 +9시간 밀어서 바이낸스 월봉과 1:1 완벽 일치!
-        };
-        const bFetchInt = bMap[store.currentTF] || "1h";
-        const bData = await fetchCandlesSmart(
-          "bithumb",
-          krwTicker,
-          bFetchInt,
-          1000,
-        );
-        if (bData.status === "0000" && Array.isArray(bData.data)) {
-          const shiftSec = tfOffsetMap[store.currentTF] || 0;
-          const rawMapped = bData.data.map((d) => ({
-            time: Math.floor(Number(d[0]) / 1000) + shiftSec,
-            open: Number(d[1]),
-            close: Number(d[2]),
-            high: Number(d[3]),
-            low: Number(d[4]),
-            vol: Number(d[5]),
-          })).sort((a, b) => a.time - b.time);
-
-          const getGroupTime = (t, tf) => {
-            const d = new Date(t * 1000);
-            if (tf === "15m") return Math.floor(t / 900) * 900;
-            if (tf === "3d") {
-              const dayTs = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) / 1000;
-              return Math.floor(dayTs / 259200) * 259200;
-            }
-            if (tf === "1w") {
-              const day = d.getUTCDay();
-              const diff = d.getUTCDate() - day + (day === 0 ? -6 : 1);
-              return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), diff, 0, 0, 0) / 1000;
-            }
-            if (tf === "1M") return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1, 0, 0, 0) / 1000;
-            return t;
-          };
-
-          const tfNeedsResample = ["15m", "3d", "1w", "1M"].includes(store.currentTF);
-          if (tfNeedsResample) {
-            const groups = {};
-            rawMapped.forEach((d) => {
-              const gt = getGroupTime(d.time, store.currentTF);
-              if (!groups[gt]) groups[gt] = [];
-              groups[gt].push(d);
-            });
-            rawMain = Object.keys(groups)
-              .sort((a, b) => Number(a) - Number(b))
-              .map((gtStr) => {
-                const gt = Number(gtStr);
-                const chunk = groups[gt].sort((a, b) => a.time - b.time);
-                return {
-                  time: gt,
-                  open: chunk[0].open,
-                  close: chunk[chunk.length - 1].close,
-                  high: Math.max(...chunk.map((c) => c.high)),
-                  low: Math.min(...chunk.map((c) => c.low)),
-                  vol: chunk.reduce((sum, c) => sum + (c.vol || 0), 0),
-                };
-              });
-            mainStep = 1;
-          } else {
-            rawMain = rawMapped;
-            mainStep = 1;
-          }
-        }
+    } else if (isBithumb) {
+      rawMain = await fetchBithumbUnifiedCandles({
+        symbol: krwTicker,
+        tf: store.currentTF,
+        exactFutures,
+        exactSpot,
+        pureBase,
+        fetchCandlesSmart,
+      });
+      mainStep = 1;
+    } else if (isUpbit) {
+      const supportedMin = [1, 3, 5, 10, 15, 30, 60, 240];
+      const totalSec = tfSec[store.currentTF] || 60;
+      const u = store.currentTF.replace(/[0-9]/g, "");
+      if (u === "d" || u === "w" || u === "M") {
+        fetchInterval = u === "w" ? "weeks" : u === "M" ? "months" : "days";
+        mainStep = store.currentTF === "3d" ? 3 : 1;
       } else {
-        const supportedMin = [1, 3, 5, 10, 15, 30, 60, 240];
-        const totalSec = tfSec[store.currentTF] || 60;
-        const u = store.currentTF.replace(/[0-9]/g, "");
-        if (u === "d" || u === "w" || u === "M") {
-          fetchInterval = u === "w" ? "weeks" : u === "M" ? "months" : "days";
-          mainStep = store.currentTF === "3d" ? 3 : 1;
-        } else {
-          const targetMin = totalSec / 60;
-          const baseMin =
-            supportedMin.reverse().find((m) => targetMin % m === 0) || 1;
-          fetchInterval = `minutes/${baseMin}`;
-          mainStep = targetMin / baseMin;
-        }
-        const raw = await fetchCandlesSmart(
-          "upbit",
-          krwTicker,
-          fetchInterval,
-          500,
-        );
-        if (Array.isArray(raw)) {
-          rawMain = raw
-            .map((d) => ({
-              time: new Date(d.candle_date_time_utc + "Z").getTime() / 1000,
-              open: d.opening_price,
-              high: d.high_price,
-              low: d.low_price,
-              close: d.trade_price,
-              vol: d.candle_acc_trade_volume,
-            }))
-            .sort((a, b) => a.time - b.time);
-        }
+        const targetMin = totalSec / 60;
+        const baseMin =
+          supportedMin.reverse().find((m) => targetMin % m === 0) || 1;
+        fetchInterval = `minutes/${baseMin}`;
+        mainStep = targetMin / baseMin;
+      }
+      const raw = await fetchCandlesSmart(
+        "upbit",
+        krwTicker,
+        fetchInterval,
+        500,
+      );
+      if (Array.isArray(raw)) {
+        rawMain = raw
+          .map((d) => ({
+            time: new Date(d.candle_date_time_utc + "Z").getTime() / 1000,
+            open: d.opening_price,
+            high: d.high_price,
+            low: d.low_price,
+            close: d.trade_price,
+            vol: d.candle_acc_trade_volume,
+          }))
+          .sort((a, b) => a.time - b.time);
       }
     }
 

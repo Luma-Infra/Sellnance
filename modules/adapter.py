@@ -107,7 +107,8 @@ class ExchangeAdapter:
         # 3. BITHUMB (Public API 기반)
         elif exchange == "bithumb":
             # 빗썸은 symbol_quote 형식 (예: BTC_KRW)
-            b_sym = norm_sym.replace("KRW-", "") + "_KRW"
+            clean_sym = norm_sym.replace("KRW-", "").replace("_KRW", "")
+            b_sym = f"{clean_sym}_KRW"
             return f"https://api.bithumb.com/public/candlestick/{b_sym}/{norm_int}"
 
         # 4. BYBIT (V5 API)

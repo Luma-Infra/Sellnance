@@ -359,7 +359,9 @@
     "binance_listing": "2021-09-28"
   },
   "ARB": {
-    "binance_listing": "2023-03-23"
+    "binance_listing": "2023-03-01",
+    "upbit_listing": "2023-03-01",
+    "bithumb_listing": "2026-02-01"
   },
   "ARBUSDT": {
     "binance_listing": "2026-03-19"
@@ -1165,7 +1167,8 @@
     "binance_listing": "2023-08-01"
   },
   "CYS": {
-    "binance_listing": "2025-12-12"
+    "binance_listing": "2025-12-12",
+    "bithumb_listing": "2026-03-01"
   },
   "CYSUSDT": {
     "binance_listing": "2025-12-08"

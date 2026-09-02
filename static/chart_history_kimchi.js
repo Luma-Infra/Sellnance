@@ -2,6 +2,7 @@ import { store, tfSec } from "./_store.js";
 import { getMultiplier, sanitizeChartData, rebuildKimchiDataMap } from "./chart_utils.js";
 import { fetchCandlesSmart, fetchPaginated, mapTime } from "./chart_data.js";
 import { calculateKimchiData } from "./chart_data_kimchi.js";
+import { fetchBithumbUnifiedCandles } from "./chart_bithumb_sync.js";
 
 // 🚀 [역할 분리] 김프 데이터 백그라운드 Lazy 수집 및 차트 렌더링 전담
 export async function lazyRenderKimchiData(params) {
@@ -206,103 +207,14 @@ export async function lazyRenderKimchiData(params) {
           500,
         );
       } else if (subExchange === "bithumb") {
-        const bMap = {
-          "1m": "1m",
-          "3m": "3m",
-          "5m": "5m",
-          "15m": "5m",
-          "30m": "30m",
-          "1h": "1h",
-          "4h": "4h",
-          "12h": "12h",
-          "1d": "24h",
-          "3d": "24h",
-          "1w": "24h",
-          "1M": "24h",
-        };
-        const tfOffsetMap = {
-          "4h": 3600,   // 🚀 정확히 +1시간만 밀어서 바이낸스 4h와 1:1 완벽 일치!
-          "12h": 32400, // 🚀 +9시간 밀어서 바이낸스 12h와 1:1 완벽 일치!
-          "1d": 32400,  // 🚀 +9시간 밀어서 바이낸스 일봉과 1:1 완벽 일치!
-          "3d": 32400,  // 🚀 +9시간 밀어서 바이낸스 3일봉과 1:1 완벽 일치!
-          "1w": 32400,  // 🚀 +9시간 밀어서 바이낸스 주봉과 1:1 완벽 일치!
-          "1M": 32400,  // 🚀 +9시간 밀어서 바이낸스 월봉과 1:1 완벽 일치!
-        };
-        const bFetchInt = bMap[store.currentTF] || "1h";
-        const r = await fetchCandlesSmart(
-          "bithumb",
-          subSymbol,
-          bFetchInt,
-          1000,
-        );
-        const rawData = r.data || [];
-        if (Array.isArray(rawData) && rawData.length > 0) {
-          const shiftSec = tfOffsetMap[store.currentTF] || 0;
-          const rawMapped = rawData.map((d) => ({
-            time: Math.floor(Number(d[0]) / 1000) + shiftSec,
-            open: Number(d[1]),
-            close: Number(d[2]),
-            high: Number(d[3]),
-            low: Number(d[4]),
-            vol: Number(d[5]),
-          })).sort((a, b) => a.time - b.time);
-
-          const getGroupTime = (t, tf) => {
-            const d = new Date(t * 1000);
-            if (tf === "15m") return Math.floor(t / 900) * 900;
-            if (tf === "3d") {
-              const dayTs = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) / 1000;
-              return Math.floor(dayTs / 259200) * 259200;
-            }
-            if (tf === "1w") {
-              const day = d.getUTCDay();
-              const diff = d.getUTCDate() - day + (day === 0 ? -6 : 1);
-              return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), diff, 0, 0, 0) / 1000;
-            }
-            if (tf === "1M") return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1, 0, 0, 0) / 1000;
-            return t;
-          };
-
-          const tfNeedsResample = [
-            "15m",
-            "3d",
-            "1w",
-            "1M"
-          ].includes(store.currentTF);
-          if (tfNeedsResample) {
-            const groups = {};
-            rawMapped.forEach((d) => {
-              const gt = getGroupTime(d.time, store.currentTF);
-              if (!groups[gt]) groups[gt] = [];
-              groups[gt].push(d);
-            });
-            subRaw = Object.keys(groups)
-              .sort((a, b) => Number(a) - Number(b))
-              .map((gtStr) => {
-                const gt = Number(gtStr);
-                const chunk = groups[gt].sort((a, b) => a.time - b.time);
-                return [
-                  gt * 1000,
-                  chunk[0].open,
-                  chunk[chunk.length - 1].close,
-                  Math.max(...chunk.map((c) => c.high)),
-                  Math.min(...chunk.map((c) => c.low)),
-                  chunk.reduce((sum, c) => sum + (c.vol || 0), 0)
-                ];
-              });
-          } else {
-            subRaw = rawMapped.map(d => [
-              d.time * 1000,
-              d.open,
-              d.close,
-              d.high,
-              d.low,
-              d.vol
-            ]);
-          }
-        } else {
-          subRaw = [];
-        }
+        subRaw = await fetchBithumbUnifiedCandles({
+          symbol: subSymbol,
+          tf: store.currentTF,
+          exactFutures,
+          exactSpot,
+          pureBase: uniqueTicker,
+          fetchCandlesSmart,
+        });
       } else {
         const subJson = await fetchCandlesSmart(
           subExchange,
