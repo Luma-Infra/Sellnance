@@ -22,7 +22,18 @@ class ExchangeAdapter:
 
         # 3. BITHUMB
         elif exchange == "bithumb":
-            mapping = {"1d": "24h", "days": "24h", "1w": "24h", "1M": "24h"}
+            mapping = {
+                "1d": "24h",
+                "days": "24h",
+                "1w": "1w",
+                "w": "1w",
+                "weeks": "1w",
+                "3d": "24h",
+                "3D": "24h",
+                "1M": "1M",
+                "M": "1M",
+                "months": "1M",
+            }
             if interval.startswith("minutes/"):
                 m = interval.split("/")[1]
                 return f"{m}m"

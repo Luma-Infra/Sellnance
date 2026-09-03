@@ -1,7 +1,63 @@
 # utils.py
 import re
-from decimal import Decimal, ROUND_HALF_UP
+import os
+import json
+import tempfile
+import threading
 from modules import config_manager
+from decimal import Decimal, ROUND_HALF_UP
+
+from pathlib import Path
+from typing import Union
+
+# --- 🔒 THREAD-SAFE ATOMIC FILE STORAGE 🔒 ---
+_FILE_LOCKS = {}
+_FILE_LOCKS_LOCK = threading.Lock()
+
+
+def get_file_lock(filepath: Union[str, os.PathLike, Path]) -> threading.Lock:
+    abs_path = os.path.abspath(str(filepath))
+    with _FILE_LOCKS_LOCK:
+        if abs_path not in _FILE_LOCKS:
+            _FILE_LOCKS[abs_path] = threading.Lock()
+        return _FILE_LOCKS[abs_path]
+
+
+def atomic_save_json(
+    filepath: Union[str, os.PathLike, Path],
+    data,
+    indent=None,
+    ensure_ascii=False,
+):
+    """
+    동시 쓰기 시 파일 손상(Race condition & corrupted JSON)을 원천 차단하는 원자적 저장 함수.
+    1) 스레드 락으로 동일 프로세스 내 동시 쓰기 충돌 방지
+    2) 동일 디렉토리에 임시 파일(.tmp) 완전 기록 후 os.replace()로 원자적(Atomic) 교체
+    """
+    abs_path = os.path.abspath(str(filepath))
+    lock = get_file_lock(abs_path)
+    with lock:
+        dir_name = os.path.dirname(abs_path)
+        os.makedirs(dir_name, exist_ok=True)
+        temp_fd, temp_path = tempfile.mkstemp(
+            dir=dir_name, prefix=".tmp_", suffix=".json"
+        )
+        try:
+            with open(temp_fd, "w", encoding="utf-8") as f:
+                if indent is not None:
+                    json.dump(data, f, indent=indent, ensure_ascii=ensure_ascii)
+                else:
+                    json.dump(data, f, ensure_ascii=ensure_ascii)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(temp_path, abs_path)
+        except Exception:
+            if os.path.exists(temp_path):
+                try:
+                    os.remove(temp_path)
+                except OSError:
+                    pass
+            raise
 
 
 # --- ⭐️ FORMATTING FUNCTIONS ⭐️ ---

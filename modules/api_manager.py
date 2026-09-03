@@ -63,22 +63,20 @@ def _load_market_data_cache_from_file():
 
 def _save_market_data_cache_to_file():
     try:
-        os.makedirs(os.path.dirname(MARKET_DATA_CACHE_FILE), exist_ok=True)
-        with open(MARKET_DATA_CACHE_FILE, "w", encoding="utf-8") as f:
-            json.dump(
-                {
-                    "data": GLOBAL_CACHE["data"],
-                    "last_updated_str": GLOBAL_CACHE["last_updated_str"],
-                    "timestamp": (
-                        GLOBAL_CACHE["timestamp"].isoformat()
-                        if GLOBAL_CACHE["timestamp"] != datetime.min
-                        else ""
-                    ),
-                },
-                f,
-                indent=2,
-                ensure_ascii=False,
-            )
+        utils.atomic_save_json(
+            MARKET_DATA_CACHE_FILE,
+            {
+                "data": GLOBAL_CACHE["data"],
+                "last_updated_str": GLOBAL_CACHE["last_updated_str"],
+                "timestamp": (
+                    GLOBAL_CACHE["timestamp"].isoformat()
+                    if GLOBAL_CACHE["timestamp"] != datetime.min
+                    else ""
+                ),
+            },
+            indent=2,
+            ensure_ascii=False,
+        )
         print("💾 [MARKET DATA CACHE] 파일 캐시 저장 완료 (market_data_cache.json)")
     except Exception as e:
         print(f"🚨 [MARKET DATA CACHE SAVE ERROR] {e}")
@@ -104,22 +102,20 @@ def _load_owner_cache_from_file():
 
 def _save_owner_cache_to_file():
     try:
-        os.makedirs(os.path.dirname(OWNER_CACHE_FILE), exist_ok=True)
-        with open(OWNER_CACHE_FILE, "w", encoding="utf-8") as f:
-            json.dump(
-                {
-                    "map": GLOBAL_CMC_CACHE["map"],
-                    "lookup": GLOBAL_CMC_CACHE["lookup"],
-                    "timestamp": (
-                        GLOBAL_CMC_CACHE["timestamp"].isoformat()
-                        if GLOBAL_CMC_CACHE["timestamp"] != datetime.min
-                        else ""
-                    ),
-                },
-                f,
-                indent=2,
-                ensure_ascii=False,
-            )
+        utils.atomic_save_json(
+            OWNER_CACHE_FILE,
+            {
+                "map": GLOBAL_CMC_CACHE["map"],
+                "lookup": GLOBAL_CMC_CACHE["lookup"],
+                "timestamp": (
+                    GLOBAL_CMC_CACHE["timestamp"].isoformat()
+                    if GLOBAL_CMC_CACHE["timestamp"] != datetime.min
+                    else ""
+                ),
+            },
+            indent=2,
+            ensure_ascii=False,
+        )
         print("💾 [CMC CACHE] 파일 캐시 저장 완료")
     except Exception as e:
         print(f"🚨 [CMC CACHE SAVE ERROR] {e}")

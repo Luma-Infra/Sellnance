@@ -28,23 +28,33 @@ import re
 # Windows 환경 콘솔 이모지 인코딩 보호
 if sys.platform == "win32":
     try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+        if isinstance(sys.stdout, io.TextIOWrapper):
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        if isinstance(sys.stderr, io.TextIOWrapper):
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
     except Exception:
         pass
 
 import config  # 🚀 설정 모듈 임포트
 
-# 🚀 [전역 print 오버라이드] 모든 콘솔 출력에 KST 타임스탬프 접두사 추가
+# 🚀 [표준 로깅 시스템] KST 타임스탬프 로거 및 안전한 print 브릿지
 import builtins
+from .logger import logger
+from . import utils
 
-builtins.print = (
-    lambda orig: lambda *a, **kw: orig(
-        f"[{datetime.now(pytz.timezone('Asia/Seoul')).strftime('%Y-%m-%d %H:%M:%S')}]",
-        *a,
-        **kw,
-    )
-)(builtins.print)
+_orig_print = builtins.print
+
+
+def safe_print(*args, **kwargs):
+    # 특수 출력(file 지정, end 지정 등)은 원본 print를 유지하여 타 라이브러리/프로그레스바 간섭 방지
+    if kwargs.get("file") is not None or kwargs.get("end", "\n") != "\n":
+        _orig_print(*args, **kwargs)
+        return
+    msg = " ".join(str(a) for a in args)
+    logger.info(msg)
+
+
+builtins.print = safe_print
 
 from . import trace_hooking
 from . import api_manager
@@ -132,10 +142,14 @@ def _load_listing_file() -> dict:
 
 
 def _save_listing_file(data: dict):
-    """listing.json 쓰기 (알파벳 정렬)."""
+    """listing.json 쓰기 (알파벳 정렬 및 원자적 저장)."""
     try:
-        with open(LISTING_FILE, "w", encoding="utf-8") as f:
-            json.dump(dict(sorted(data.items())), f, indent=2, ensure_ascii=False)
+        utils.atomic_save_json(
+            LISTING_FILE,
+            dict(sorted(data.items())),
+            indent=2,
+            ensure_ascii=False,
+        )
     except Exception as e:
         print(f"🚨 [LISTING] listing.json 저장 실패: {e}")
 
@@ -517,7 +531,7 @@ def get_usdkrw_history():
                 raw_map = {}
                 if df_fx is not None and not df_fx.empty:
                     for date, row in df_fx.iterrows():
-                        dt = pd.to_datetime(date)
+                        dt = pd.to_datetime(str(date))
                         ts = int(
                             datetime(
                                 dt.year, dt.month, dt.day, tzinfo=pytz.UTC
@@ -551,9 +565,8 @@ def get_usdkrw_history():
                                     history_map[str(curr_ts)] = raw_map[next_ts]
                         curr_ts += day_sec
 
-                    # 디스크에 영구 저장
-                    with open(cache_path, "w", encoding="utf-8") as f:
-                        json.dump(history_map, f)
+                    # 디스크에 영구 원자적 저장
+                    utils.atomic_save_json(cache_path, history_map)
                     print(
                         f"💾 [환율 캐시] {len(history_map)}일치 과거 환율 디스크 파일 영구 저장 완료!"
                     )

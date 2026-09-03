@@ -32,10 +32,9 @@ async def get_tv_candles_aiohttp(symbol="BINANCE:AIAUSDT", timeframe="1D", n_bar
     }
     candles = []
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.ws_connect(
-                url, headers=headers, timeout=aiohttp.ClientTimeout(total=4)
-            ) as ws:
+        timeout = aiohttp.ClientTimeout(total=4)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.ws_connect(url, headers=headers) as ws:
                 chart_session = "cs_fast_" + str(int(time.time() * 1000))[-8:]
                 await ws.send_str(
                     _construct_tv_msg("set_auth_token", ["unauthorized_user_token"])
@@ -137,12 +136,13 @@ async def _raw_fetch_candles(
             "2h": "120",
             "4h": "240",
             "6h": "360",
-            "12h": "720",
+            "12h": "240",
             "24h": "1D",
             "1d": "1D",
             "d": "1D",
             "days": "1D",
-            "3d": "3D",
+            "3d": "1D",
+            "3D": "1D",
             "1w": "1W",
             "w": "1W",
             "weeks": "1W",

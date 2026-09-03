@@ -26,8 +26,7 @@ def load_utc0_cache():
 
 def save_utc0_cache():
     try:
-        with open(UTC0_CACHE_FILE, "w") as f:
-            json.dump(UTC0_OPEN_CACHE, f)
+        utils.atomic_save_json(UTC0_CACHE_FILE, UTC0_OPEN_CACHE)
     except:
         pass
 
