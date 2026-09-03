@@ -37,10 +37,11 @@ export function startRealtimeCandle(
   const hasBinance = row ? row.Listed_Exchanges?.some(ex => ex.includes("BINANCE")) : true;
   const hasBybit = row ? row.Listed_Exchanges?.some(ex => ex.includes("BYBIT")) : false;
 
-  const needBinance = (isFutures || isSpot) || (["UPBIT", "BITHUMB", "BYBIT", "BYBIT_FUTURES"].includes(store.currentChartMarket) && hasBinance);
-  const needBybit = isBybit || (["UPBIT", "BITHUMB", "SPOT", "FUTURES"].includes(store.currentChartMarket) && hasBybit && !hasBinance);
-  const needUpbit = isUpbit || (["SPOT", "FUTURES", "BYBIT", "BYBIT_FUTURES"].includes(store.currentChartMarket) && hasUpbit);
-  const needBithumb = isBithumb || (["SPOT", "FUTURES", "BYBIT", "BYBIT_FUTURES"].includes(store.currentChartMarket) && hasBithumb);
+  const needKimchiPartner = !store.isKimchiDisabled;
+  const needBinance = (isFutures || isSpot) || (needKimchiPartner && ["UPBIT", "BITHUMB", "BYBIT", "BYBIT_FUTURES"].includes(store.currentChartMarket) && hasBinance);
+  const needBybit = isBybit || (needKimchiPartner && ["UPBIT", "BITHUMB", "SPOT", "FUTURES"].includes(store.currentChartMarket) && hasBybit && !hasBinance);
+  const needUpbit = isUpbit || (needKimchiPartner && ["SPOT", "FUTURES", "BYBIT", "BYBIT_FUTURES"].includes(store.currentChartMarket) && hasUpbit);
+  const needBithumb = isBithumb || (needKimchiPartner && ["SPOT", "FUTURES", "BYBIT", "BYBIT_FUTURES"].includes(store.currentChartMarket) && hasBithumb);
 
   if (!needBinance && store.binanceChartWs) {
     try { store.binanceChartWs.close(); } catch (e) { }
@@ -139,7 +140,9 @@ export function startRealtimeCandle(
       }
 
       // 김프 조립 (자체 455ms 쓰로틀 보유)
-      updateRealtimeKimchiThrottled(currentCandle, latestSymbol, chartTime);
+      if (!store.isKimchiDisabled) {
+        updateRealtimeKimchiThrottled(currentCandle, latestSymbol, chartTime);
+      }
 
       // OHLC 레전드 및 헤더 상태창 DOM 갱신 (쓰로틀 적용)
       if (nowRaf - lastStatusUpdateTime >= perfConfig.STATUS_DOM_THROTTLE_MS) {
@@ -348,19 +351,31 @@ export function startRealtimeCandle(
       ? "wss://fstream.binance.com/market/ws"
       : "wss://stream.binance.com:9443/ws";
 
-    if (!store.binanceChartWs || store.binanceChartWs.readyState !== WebSocket.OPEN || !store.binanceChartWs.url.includes(binanceIsFutures ? "fstream" : "stream.binance.com")) {
+    const isBinanceConnectingOrOpen = store.binanceChartWs &&
+      (store.binanceChartWs.readyState === WebSocket.CONNECTING || store.binanceChartWs.readyState === WebSocket.OPEN) &&
+      store.binanceChartWs.url.includes(binanceIsFutures ? "fstream" : "stream.binance.com");
+
+    const desiredKlineStream = `${aggStream}/${klineStream}`;
+
+    if (!isBinanceConnectingOrOpen) {
       if (store.binanceChartWs) { try { store.binanceChartWs.close(); } catch (e) { } }
+      store.currentKlineStream = desiredKlineStream;
       store.binanceChartWs = new WebSocket(wsBasePartner);
       store.binanceChartWs.onopen = () => {
-        store.binanceChartWs.send(JSON.stringify({ method: "SUBSCRIBE", params: [aggStream, klineStream], id: getWsId() }));
-        store.currentKlineStream = `${aggStream}/${klineStream}`;
+        const streamToSub = store.currentKlineStream || desiredKlineStream;
+        store.binanceChartWs.send(JSON.stringify({ method: "SUBSCRIBE", params: streamToSub.split("/"), id: getWsId() }));
       };
-    } else if (store.currentKlineStream !== `${aggStream}/${klineStream}`) {
-      try {
-        store.binanceChartWs.send(JSON.stringify({ method: "UNSUBSCRIBE", params: store.currentKlineStream.split("/"), id: getWsId() }));
-        store.binanceChartWs.send(JSON.stringify({ method: "SUBSCRIBE", params: [aggStream, klineStream], id: getWsId() }));
-        store.currentKlineStream = `${aggStream}/${klineStream}`;
-      } catch (e) { }
+    } else if (store.currentKlineStream !== desiredKlineStream) {
+      const oldStream = store.currentKlineStream;
+      store.currentKlineStream = desiredKlineStream;
+      if (store.binanceChartWs.readyState === WebSocket.OPEN) {
+        try {
+          if (oldStream) {
+            store.binanceChartWs.send(JSON.stringify({ method: "UNSUBSCRIBE", params: oldStream.split("/"), id: getWsId() }));
+          }
+          store.binanceChartWs.send(JSON.stringify({ method: "SUBSCRIBE", params: desiredKlineStream.split("/"), id: getWsId() }));
+        } catch (e) { }
+      }
     }
     store.binanceChartWs.onmessage = handleBinanceMessage;
   }
@@ -392,20 +407,24 @@ export function startRealtimeCandle(
 
   if (needBithumb) {
     const bithumbCode = `${symbol}_KRW`.toUpperCase();
-    if (!store.bithumbChartWs || store.bithumbChartWs.readyState !== WebSocket.OPEN) {
+    const isBithumbConnectingOrOpen = store.bithumbChartWs &&
+      (store.bithumbChartWs.readyState === WebSocket.CONNECTING || store.bithumbChartWs.readyState === WebSocket.OPEN);
+
+    if (!isBithumbConnectingOrOpen) {
       if (store.bithumbChartWs) { try { store.bithumbChartWs.close(); } catch (e) { } }
+      store.currentBithumbStream = bithumbCode;
       store.bithumbChartWs = new WebSocket("wss://pubwss.bithumb.com/pub/ws");
       store.bithumbChartWs.onopen = () => {
-        store.bithumbChartWs.send(JSON.stringify({ type: "transaction", symbols: [bithumbCode] }));
-        store.currentBithumbStream = bithumbCode;
+        const activeBithumb = store.currentBithumbStream || bithumbCode;
+        store.bithumbChartWs.send(JSON.stringify({ type: "transaction", symbols: [activeBithumb] }));
       };
     } else if (store.currentBithumbStream !== bithumbCode) {
-      try { store.bithumbChartWs.close(); } catch (e) { }
-      store.bithumbChartWs = new WebSocket("wss://pubwss.bithumb.com/pub/ws");
-      store.bithumbChartWs.onopen = () => {
-        store.bithumbChartWs.send(JSON.stringify({ type: "transaction", symbols: [bithumbCode] }));
-        store.currentBithumbStream = bithumbCode;
-      };
+      store.currentBithumbStream = bithumbCode;
+      if (store.bithumbChartWs.readyState === WebSocket.OPEN) {
+        try {
+          store.bithumbChartWs.send(JSON.stringify({ type: "transaction", symbols: [bithumbCode] }));
+        } catch (e) { }
+      }
     }
     store.bithumbChartWs.onmessage = getBithumbMessageHandler(symbol, broadcastCandleUpdate);
   }
@@ -414,20 +433,29 @@ export function startRealtimeCandle(
     const bybitCode = `${symbol}USDT`.toUpperCase();
     const bybitIsFutures = isBybitFutures || (store.currentChartMarket !== "BYBIT" && store.currentChartMarket !== "BYBIT_FUTURES" && row?.Exact_Futures);
     const wsUrlPartner = bybitIsFutures ? "wss://stream.bybit.com/v5/public/linear" : "wss://stream.bybit.com/v5/public/spot";
+    const isBybitConnectingOrOpen = store.bybitChartWs &&
+      (store.bybitChartWs.readyState === WebSocket.CONNECTING || store.bybitChartWs.readyState === WebSocket.OPEN) &&
+      store.bybitChartWs.url.includes(bybitIsFutures ? "linear" : "spot");
 
-    if (!store.bybitChartWs || store.bybitChartWs.readyState !== WebSocket.OPEN || !store.bybitChartWs.url.includes(bybitIsFutures ? "linear" : "spot")) {
+    if (!isBybitConnectingOrOpen) {
       if (store.bybitChartWs) { try { store.bybitChartWs.close(); } catch (e) { } }
+      store.currentBybitStream = bybitCode;
       store.bybitChartWs = new WebSocket(wsUrlPartner);
       store.bybitChartWs.onopen = () => {
-        store.bybitChartWs.send(JSON.stringify({ op: "subscribe", args: [`publicTrade.${bybitCode}`] }));
-        store.currentBybitStream = bybitCode;
+        const activeBybit = store.currentBybitStream || bybitCode;
+        store.bybitChartWs.send(JSON.stringify({ op: "subscribe", args: [`publicTrade.${activeBybit}`] }));
       };
     } else if (store.currentBybitStream !== bybitCode) {
-      try {
-        store.bybitChartWs.send(JSON.stringify({ op: "unsubscribe", args: [`publicTrade.${store.currentBybitStream}`] }));
-        store.bybitChartWs.send(JSON.stringify({ op: "subscribe", args: [`publicTrade.${bybitCode}`] }));
-        store.currentBybitStream = bybitCode;
-      } catch (e) { }
+      const oldBybit = store.currentBybitStream;
+      store.currentBybitStream = bybitCode;
+      if (store.bybitChartWs.readyState === WebSocket.OPEN) {
+        try {
+          if (oldBybit) {
+            store.bybitChartWs.send(JSON.stringify({ op: "unsubscribe", args: [`publicTrade.${oldBybit}`] }));
+          }
+          store.bybitChartWs.send(JSON.stringify({ op: "subscribe", args: [`publicTrade.${bybitCode}`] }));
+        } catch (e) { }
+      }
     }
     store.bybitChartWs.onmessage = handleBybitMessage;
   }

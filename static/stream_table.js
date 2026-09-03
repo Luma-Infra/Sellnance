@@ -618,7 +618,9 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
     const displayedPrice = parseFloat(priceCell.getAttribute("data-raw-price")) || 0;
     if (displayedPrice !== oldPrice) {
       const activeExchange = priceCell.getAttribute("data-active-exchange");
-      const activeSpan = document.getElementById(`price-val-${activeExchange}-${row.Ticker}`);
+      const activeSpan =
+        document.getElementById(`price-val-${activeExchange}-${row.Ticker}`) ||
+        priceCell.querySelector(".price-num");
       if (activeSpan && typeof window.applyPriceFlash === "function") {
         window.applyPriceFlash(activeSpan, displayedPrice, oldPrice);
       }
@@ -630,7 +632,10 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
     row.UID === store.currentSelectedSymbol
   ) {
     if (typeof window.updateHeaderDisplay === "function") {
-      const pPrecision = store.getPrecision(row.Ticker);
+      const pPrecision =
+        row.precision !== undefined && row.precision !== null
+          ? Number(row.precision)
+          : store.getPrecision(row.Ticker || row.DisplayTicker || row.Symbol);
       let activePrice = row.Price_Raw;
       const activeMkt = store.currentChartMarket || "ALL";
       if (activeMkt === "UPBIT") {

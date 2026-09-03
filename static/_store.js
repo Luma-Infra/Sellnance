@@ -267,22 +267,19 @@ export const store = {
       });
     }
 
-    const p =
-      row && row.precision !== undefined
-        ? Number(row.precision)
-        : store.currentPrecision || 2;
-
-    if (row) {
+    if (row && row.precision !== undefined && row.precision !== null) {
+      const p = Number(row.precision);
       if (row.Ticker) store.precisionMap.set(row.Ticker.toUpperCase(), p);
       if (row.DisplayTicker)
         store.precisionMap.set(row.DisplayTicker.toUpperCase(), p);
       if (row.Symbol) store.precisionMap.set(row.Symbol.toUpperCase(), p);
-    } else {
       store.precisionMap.set(key, p);
+      store.currentPrecision = p;
+      return p;
     }
 
-    store.currentPrecision = p;
-    return p;
+    // 🚀 [캐시 오염 방지] row를 아직 찾지 못한 초기 로딩 단계에서는 precisionMap을 2로 영구 오염시키지 않고 임시 폴백만 반환
+    return store.currentPrecision || 2;
   },
 };
 

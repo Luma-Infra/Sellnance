@@ -2,6 +2,7 @@ import { store, tfSec } from "./_store.js";
 import { getMultiplier, sanitizeChartData, rebuildKimchiDataMap } from "./chart_utils.js";
 import { fetchCandlesSmart, fetchPaginated, mapTime } from "./chart_data.js";
 import { calculateKimchiData } from "./chart_data_kimchi.js";
+import { applyChartLayout } from "./chart_layout.js";
 // import { fetchBithumbUnifiedCandles } from "./chart_bithumb_sync.js"; // 빗썸 정신차릴 때까지 임시 대기
 
 // 🚀 [거래소별 특유 색상 테마 매핑 - 현선(SPOT/FUT) 완벽 분리]
@@ -81,11 +82,13 @@ window.hideKimchiLoading = hideKimchiLoading;
 export function updateKimchiComparisonUI() {
   const btn = document.getElementById("toggle-kimchi-btn");
   const notice = document.getElementById("kimchi-disabled-notice");
+  const ohlcKimchi = document.getElementById("ohlc-kimchi-container");
+  const switcher = document.getElementById("kimchi-switcher");
   const isDisabled = !!store.isKimchiDisabled;
 
   if (btn) {
     if (isDisabled) {
-      btn.innerText = "김프 비교 켜기";
+      btn.innerText = "김프 비교 OFF";
       btn.classList.remove(
         "text-theme-accent",
         "border-theme-accent/40",
@@ -99,7 +102,7 @@ export function updateKimchiComparisonUI() {
         "bg-theme-panel/50",
       );
     } else {
-      btn.innerText = "김프 비교 끄기";
+      btn.innerText = "김프 비교 ON";
       btn.classList.add(
         "text-theme-accent",
         "border-theme-accent/40",
@@ -123,12 +126,35 @@ export function updateKimchiComparisonUI() {
     }
   }
 
-  // 김프 시리즈 및 가격축 가시성 제어
+  // 🚀 OHLC 레전드 내부 kimp 컨테이너 숨김/표시
+  if (ohlcKimchi) {
+    if (isDisabled) {
+      ohlcKimchi.classList.add("hidden");
+    } else {
+      ohlcKimchi.classList.remove("hidden");
+    }
+  }
+
+  // 🚀 김프 비교군 스위처 버튼 숨김/표시
+  if (switcher) {
+    if (isDisabled) {
+      switcher.style.display = "none";
+    } else {
+      switcher.style.display = "flex";
+    }
+  }
+
+  // 김프 시리즈 가시성 제어
   if (store.kimchiSeries) {
     store.kimchiSeries.applyOptions({ visible: !isDisabled });
+    if (isDisabled) {
+      try {
+        store.kimchiSeries.setData([]);
+      } catch (e) { }
+    }
   }
-  if (store.chartVol) {
-    store.chartVol.priceScale("left").applyOptions({ visible: !isDisabled });
+  if (typeof applyChartLayout === "function") {
+    applyChartLayout();
   }
 }
 
@@ -143,12 +169,40 @@ export function toggleKimchiComparison(forceVal) {
       "sellnance_kimchi_disabled",
       store.isKimchiDisabled ? "true" : "false",
     );
-  } catch (e) {}
+  } catch (e) { }
 
   updateKimchiComparisonUI();
 
-  if (typeof window.fetchHistory === "function" && store.currentAsset) {
-    window.fetchHistory(store.currentAsset, false, false, true);
+  if (store.isKimchiDisabled) {
+    // 🎯 [김프 끄기] 전체 재조회(fetchHistory) 없이 캔들과 볼륨은 100% 실시간 스트리밍 유지하고 김프만 즉시 정화
+    if (store.kimchiSeries) {
+      try {
+        store.kimchiSeries.setData([]);
+      } catch (e) { }
+    }
+    store.kimchiData = [];
+    if (store.kimchiDataMap) store.kimchiDataMap.clear();
+    store.realtimeKimchi = null;
+
+    if (typeof applyChartLayout === "function") applyChartLayout();
+    if (typeof window.syncPriceScaleWidths === "function") {
+      window.syncPriceScaleWidths(true);
+    }
+
+    if (
+      store.mainData &&
+      store.mainData.length > 0 &&
+      typeof window.updateLegend === "function"
+    ) {
+      const lastIdx = store.mainData.length - 1;
+      const v = store.volumeData ? store.volumeData[lastIdx] : null;
+      window.updateLegend(store.mainData[lastIdx], v, null);
+    }
+  } else {
+    // 🎯 [김프 켜기] 백그라운드에서 김프 데이터만 수집하여 차트에 바인딩
+    if (typeof window.fetchHistory === "function" && store.currentAsset) {
+      window.fetchHistory(store.currentAsset, false, false, true);
+    }
   }
 }
 
@@ -170,8 +224,41 @@ export async function lazyRenderKimchiData(params) {
     isTfChange,
     snapshotAsset,
     snapshotTF,
-    applyChartLayout
-  } = params;
+    applyChartLayout: paramApplyLayout,
+  } = params || {};
+
+  const effectiveApplyLayout = paramApplyLayout || applyChartLayout;
+
+  // 🎯 [김프 비교 끄기 상태 가드] 즉시 리턴 때려서 네트워크 통신 및 렌더링 전면 차단
+  if (store.isKimchiDisabled) {
+    if (store.kimchiSeries) {
+      try {
+        store.kimchiSeries.setData([]);
+      } catch (e) { }
+    }
+    store.kimchiData = [];
+    if (store.kimchiDataMap) store.kimchiDataMap.clear();
+    store.realtimeKimchi = null;
+
+    const wrapper = document.getElementById("chart-wrapper");
+    if (wrapper) wrapper.style.setProperty("--kimchi-color", "transparent");
+
+    const disabledNotice = document.getElementById("kimchi-disabled-notice");
+    if (disabledNotice) disabledNotice.classList.remove("hidden");
+    const noDataMsg = document.getElementById("kimchi-no-data");
+    if (noDataMsg) noDataMsg.classList.add("hidden");
+    const switcher = document.getElementById("kimchi-switcher");
+    if (switcher) switcher.style.display = "none";
+    const ohlcKimchi = document.getElementById("ohlc-kimchi-container");
+    if (ohlcKimchi) ohlcKimchi.classList.add("hidden");
+
+    if (typeof effectiveApplyLayout === "function") {
+      effectiveApplyLayout();
+    }
+
+    hideKimchiLoading();
+    return; // 🎯 네트워크 통신 즉시 차단 (Early Return)
+  }
 
   try {
     let subExchange = null;
@@ -299,25 +386,25 @@ export async function lazyRenderKimchiData(params) {
         loadingMessageContainer = document.createElement("div");
         loadingMessageContainer.id = "kimchi-loading-message";
         loadingMessageContainer.className =
-          "absolute right-3 z-[120] flex gap-1.5 transition-all duration-300 pointer-events-none";
-        const chartParent =
-          document.getElementById("kimchi-no-data")?.parentElement || wrapper;
-        if (chartParent) chartParent.appendChild(loadingMessageContainer);
+          "absolute right-3 z-[110] flex gap-1.5 transition-all duration-300 pointer-events-none";
+        if (wrapper) wrapper.appendChild(loadingMessageContainer);
+      } else if (wrapper && loadingMessageContainer.parentElement !== wrapper) {
+        wrapper.appendChild(loadingMessageContainer);
       }
-
-      const chartParent =
-        document.getElementById("kimchi-no-data")?.parentElement || wrapper;
 
       let switcherContainer = document.getElementById("kimchi-switcher");
       if (!switcherContainer) {
         switcherContainer = document.createElement("div");
         switcherContainer.id = "kimchi-switcher";
         switcherContainer.className =
-          "absolute right-3 z-[120] flex flex-col items-end gap-1 transition-all duration-300 pointer-events-auto select-none";
-        if (chartParent) chartParent.appendChild(switcherContainer);
+          "absolute right-3 z-[110] flex flex-col items-end gap-1 transition-all duration-300 pointer-events-auto select-none";
+        if (wrapper) wrapper.appendChild(switcherContainer);
       } else {
         switcherContainer.className =
-          "absolute right-3 z-[120] flex flex-col items-end gap-1 transition-all duration-300 pointer-events-auto select-none";
+          "absolute right-3 z-[110] flex flex-col items-end gap-1 transition-all duration-300 pointer-events-auto select-none";
+        if (wrapper && switcherContainer.parentElement !== wrapper) {
+          wrapper.appendChild(switcherContainer);
+        }
       }
 
       let buttonsHtml = "";
@@ -342,35 +429,8 @@ export async function lazyRenderKimchiData(params) {
       `;
       switcherContainer.style.display = "flex";
 
-      // 🚀 [김프 비교 끄기 상태 가드]
       const disabledNotice = document.getElementById("kimchi-disabled-notice");
-      if (store.isKimchiDisabled) {
-        if (store.kimchiSeries) {
-          try { store.kimchiSeries.setData([]); } catch (e) {}
-        }
-        store.kimchiData = [];
-        if (store.kimchiDataMap) store.kimchiDataMap.clear();
-        store.realtimeKimchi = null;
-        if (wrapper) wrapper.style.setProperty("--kimchi-color", "transparent");
-
-        if (disabledNotice) disabledNotice.classList.remove("hidden");
-        const noDataMsg = document.getElementById("kimchi-no-data");
-        if (noDataMsg) noDataMsg.classList.add("hidden");
-
-        if (store.chartVol) {
-          store.chartVol.priceScale("left").applyOptions({ visible: false });
-        }
-        requestAnimationFrame(() => {
-          try {
-            if (typeof applyChartLayout === "function") applyChartLayout();
-          } catch (e) {}
-        });
-
-        hideKimchiLoading();
-        return; // 🎯 김프 비교 끔: 비교군 캔들 수집, 환율 수집, 김프 계산 전면 스킵! (Early Return)
-      } else {
-        if (disabledNotice) disabledNotice.classList.add("hidden");
-      }
+      if (disabledNotice) disabledNotice.classList.add("hidden");
 
       store.paneConfig.kimchi = true;
       const noDataMsg = document.getElementById("kimchi-no-data");
@@ -398,16 +458,25 @@ export async function lazyRenderKimchiData(params) {
 
       showKimchiLoading(subExchange);
 
+      // 🚀 [1:N 기간 일치 보장] 메인이 3d/12h일 때 메인은 500개(=1,500일치/6,000시간치)를 가져오므로,
+      // 서브 캔들도 3배(1,500개)를 가져와야 메인 전체 기간(4년치)의 김프가 공백 없이 100% 가득 참!
+      const subMult = (store.currentTF === "3d" || store.currentTF === "12h") ? 3 : 1;
+      const initialSubLimit = 500 * subMult;
+
       let subRaw = [];
       if (subExchange === "upbit") {
         subRaw = await fetchPaginated(
           subExchange,
           subSymbol,
           upbitInterval,
-          500,
+          initialSubLimit,
         );
       } else if (subExchange === "bithumb") {
-        const bData = await fetchCandlesSmart("bithumb", subSymbol, store.currentTF, 1000);
+        let bInterval = store.currentTF;
+        if (store.currentTF === "12h") bInterval = "4h";
+        else if (store.currentTF === "3d") bInterval = "1d";
+
+        const bData = await fetchCandlesSmart("bithumb", subSymbol, bInterval, Math.min(2000, initialSubLimit));
         const rawList = Array.isArray(bData?.data) ? bData.data : (Array.isArray(bData) ? bData : []);
         subRaw = rawList
           .map((d) => ({
@@ -473,7 +542,7 @@ export async function lazyRenderKimchiData(params) {
               loadedFromLocal = true;
             }
           }
-        } catch (e) {}
+        } catch (e) { }
 
         if (!loadedFromLocal) {
           const res = await fetch("/api/usdkrw");
@@ -481,7 +550,7 @@ export async function lazyRenderKimchiData(params) {
           if (usdkrwRaw && !usdkrwRaw.error) {
             try {
               localStorage.setItem("sellnance_usdkrw_cache", JSON.stringify(usdkrwRaw));
-            } catch (e) {}
+            } catch (e) { }
             let fiatTimeline = [];
             for (let [ts, price] of Object.entries(usdkrwRaw)) {
               fiatTimeline.push({

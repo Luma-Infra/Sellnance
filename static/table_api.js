@@ -90,6 +90,14 @@ export function processTableData(result) {
         }
       }
     }
+
+    if (row.precision !== undefined && row.precision !== null) {
+      const p = Number(row.precision);
+      if (row.Ticker) store.precisionMap.set(row.Ticker.toUpperCase(), p);
+      if (row.DisplayTicker)
+        store.precisionMap.set(row.DisplayTicker.toUpperCase(), p);
+      if (row.Symbol) store.precisionMap.set(row.Symbol.toUpperCase(), p);
+    }
   });
 
   // 🚀 [추가] 최초 데이터 로드 시점에 모든 코인에 대해 대표 지표(Price_Raw, Change_Today_Raw 등) 우선순위 조율 강제 실행

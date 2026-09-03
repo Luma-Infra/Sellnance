@@ -496,9 +496,12 @@ export async function initChart() {
     };
 
     store.kimchiSeries.update = (dataObj) => {
+      if (store.isKimchiDisabled) return;
       if (!dataObj || dataObj.time === undefined || dataObj.time === null) return;
       const safeVal = (dataObj.value === null || dataObj.value === undefined || isNaN(Number(dataObj.value))) ? 0 : Number(dataObj.value);
-      rawKimchiUpdate({ ...dataObj, value: safeVal });
+      try {
+        rawKimchiUpdate({ ...dataObj, value: safeVal });
+      } catch (e) {}
     };
   }
 
@@ -517,13 +520,12 @@ export async function initChart() {
   const syncTimeScales = (sourceChart, targetCharts) => {
     sourceChart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
       if (isSyncingTimeScales) return;
-      // 🚀 [해결] 차트 데이터 갱신 중일 때는 시간축 동기화를 전면 차단하여 Value is null 오류 원천 차단!
-      if (store.isFetchingChart || window.isFetchingChart) return;
+      if (!range) return;
 
-      if (range) {
-        isSyncingTimeScales = true;
+      isSyncingTimeScales = true;
+      try {
         targetCharts.forEach((target) => {
-          if (target) {
+          if (target && typeof target.timeScale === "function") {
             try {
               target.timeScale().setVisibleLogicalRange(range);
             } catch (syncErr) {
@@ -531,6 +533,7 @@ export async function initChart() {
             }
           }
         });
+      } finally {
         isSyncingTimeScales = false;
       }
     });
@@ -637,6 +640,7 @@ export async function initChart() {
 
           // 🚀 2. 가로축(시간축) 방향 마그네틱(자석) 효과 적용
           let magnetX = param.point.x;
+          let currentLogical = null;
           if (
             sourceChart.timeScale &&
             typeof sourceChart.timeScale().coordinateToLogical === "function" &&
@@ -646,6 +650,7 @@ export async function initChart() {
               .timeScale()
               .coordinateToLogical(param.point.x);
             if (logical !== null) {
+              currentLogical = logical;
               const snappedX = sourceChart
                 .timeScale()
                 .logicalToCoordinate(Math.round(logical));
@@ -713,7 +718,7 @@ export async function initChart() {
             }
           }
 
-          renderTargetCharts(targetCharts, normalizedTime, targetTime, magnetX);
+          renderTargetCharts(targetCharts, normalizedTime, targetTime, magnetX, currentLogical);
 
           // 🚀 5. 레전드 업데이트 등 기존 로직 유지
           if (
@@ -820,7 +825,7 @@ export async function initChart() {
   };
 
   // Helper function to render target charts and keep the subscribe handler flat
-  function renderTargetCharts(targetCharts, normalizedTime, targetTime, magnetX) {
+  function renderTargetCharts(targetCharts, normalizedTime, targetTime, magnetX, logical = null) {
     targetCharts.forEach((targetObj) => {
       try {
         const { chart: tChart, series: tSeries } = targetObj;
@@ -862,10 +867,23 @@ export async function initChart() {
           }
         }
 
+        // 🚀 타겟 차트 자체의 timeScale에서 논리적 인덱스로 1:1 도킹 좌표 계산
+        let targetX = magnetX;
+        if (
+          logical !== null &&
+          tChart.timeScale &&
+          typeof tChart.timeScale().logicalToCoordinate === "function"
+        ) {
+          const snappedTarget = tChart.timeScale().logicalToCoordinate(Math.round(logical));
+          if (snappedTarget !== null) {
+            targetX = snappedTarget;
+          }
+        }
+
         if (tChart === store.chartVol && store._volCrosshair) {
-          store._volCrosshair.setX(magnetX, timeStr);
+          store._volCrosshair.setX(targetX, timeStr);
         } else if (tChart === store.chart && store._mainCrosshair) {
-          store._mainCrosshair.setX(magnetX, timeStr);
+          store._mainCrosshair.setX(targetX, timeStr);
         }
       } catch (e) { /* suppress lightweight-charts internal null value errors */ }
     });

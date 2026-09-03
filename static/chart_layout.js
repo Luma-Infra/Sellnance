@@ -37,29 +37,32 @@ export function applyChartLayout() {
     store.chartVol.priceScale("right").applyOptions({ visible: v });
   }
 
-  // 🚀 [반응형 좌측 여백] 768px 미만(모바일)이면 좌측 스케일을 완전히 접어(0px) 캔버스 100% 확장, 768px 이상(PC/태블릿)이면 60px 수직 정렬 자동 복원
+  // 🚀 [반응형 좌측 여백] 768px 미만(모바일)이면 좌측 스케일을 완전히 접어(0px) 캔버스 100% 확장, 768px 이상(PC/태블릿)이면 60px 수직 정렬 항상 고정
+  // 🎯 [핵심] 김프 비교 끄기/켜기 시에도 상하 차트의 좌측 스케일을 100% 일치시켜 캔버스 시작점과 크로스헤어 수직선을 1px 오차 없이 일치 보장!
   const isSmallMobile =
     typeof window !== "undefined" && window.innerWidth < 768;
 
   const isKimchiActuallyVisible = !!k && !store.isKimchiDisabled;
 
+  // 🎯 [핵심] ON일 때는 둘 다 60px, OFF일 때는 둘 다 0px로 완벽 일치! (크로스헤어 0px 오차 + OFF 시 캔버스 100% 확장)
+  const leftWidth = !isSmallMobile && isKimchiActuallyVisible ? 60 : 0;
+  const isLeftVisible = leftWidth > 0;
+
+  const leftScaleOptions = {
+    visible: isLeftVisible,
+    minimumWidth: leftWidth,
+    borderColor: "transparent",
+  };
+
+  if (store.chart) {
+    store.chart.priceScale("left").applyOptions(leftScaleOptions);
+  }
+  if (store.chartVol) {
+    store.chartVol.priceScale("left").applyOptions(leftScaleOptions);
+  }
+
   if (store.kimchiSeries) {
     store.kimchiSeries.applyOptions({ visible: isKimchiActuallyVisible });
-    if (store.chartVol) {
-      store.chartVol.priceScale("left").applyOptions({
-        visible: isKimchiActuallyVisible && !isSmallMobile,
-        minimumWidth: isKimchiActuallyVisible && !isSmallMobile ? 60 : 0,
-        borderColor: "transparent", // 🚀 김프 활성화 시에도 좌측 검은 실선이 생기지 않도록 상시 투명 유지
-      });
-    }
-
-    // 메인 차트도 동일한 너비로 맞춰서 완벽한 수직 정렬 구현
-    if (store.chart) {
-      store.chart.priceScale("left").applyOptions({
-        visible: isKimchiActuallyVisible && !isSmallMobile,
-        minimumWidth: isKimchiActuallyVisible && !isSmallMobile ? 60 : 0,
-      });
-    }
   }
 
   // 2. 패널 표시/숨김 및 플렉스 비율
@@ -137,10 +140,10 @@ export function applyChartLayout() {
     });
   }
 
-  // 🚀 김프 비교군 스위처 위치 연동
+  // 🚀 김프 비교군 스위처 (pane-vol 영역 상단 위치) 연동
   const kimchiSwitcher = document.getElementById("kimchi-switcher");
   if (kimchiSwitcher) {
-    if (k) {
+    if (isKimchiActuallyVisible) {
       kimchiSwitcher.style.display = "flex";
       kimchiSwitcher.style.top = "auto";
       kimchiSwitcher.style.bottom = `calc(${subFlex * 100}% - 30px)`;

@@ -15,12 +15,17 @@ export default defineConfig({
   build: {
     // 빌드 결과물을 프로젝트 루트의 dist 폴더로 전송
     outDir: "../dist",
-    emptyOutDir: false,
+    emptyOutDir: true,
     sourcemap: false,
     rollupOptions: {
       input: {
         // 엔트리 포인트 경로 설정
         main: resolve(__dirname, "templates/index.html"),
+      },
+      output: {
+        entryFileNames: "assets/[name].js",
+        chunkFileNames: "assets/[name].js",
+        assetFileNames: "assets/[name].[ext]",
       },
     },
   },

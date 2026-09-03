@@ -129,7 +129,7 @@ export function formatSmartPrice(price, p, isKrw = false) {
   try {
     if (price === 0) {
       const d =
-        p !== undefined && p !== null ? Math.max(0, parseInt(p, 16)) : 2;
+        p !== undefined && p !== null ? Math.max(0, parseInt(p, 10)) : 2;
       return (0).toLocaleString(undefined, {
         minimumFractionDigits: d,
         maximumFractionDigits: d,
@@ -145,7 +145,7 @@ export function formatSmartPrice(price, p, isKrw = false) {
     if (Math.abs(numPrice) < 1e-12) {
       numPrice = 0;
       const d =
-        p !== undefined && p !== null ? Math.max(0, parseInt(p, 16)) : 2;
+        p !== undefined && p !== null ? Math.max(0, parseInt(p, 10)) : 2;
       return (0).toLocaleString(undefined, {
         minimumFractionDigits: d,
         maximumFractionDigits: d,
@@ -204,6 +204,22 @@ export function formatSmartPrice(price, p, isKrw = false) {
       } else {
         const exp = Math.abs(parseInt(parts[1], 10));
         decimals = Math.max(decimals, Math.min(10, exp + 3));
+      }
+    } else if (numPrice > 0 && numPrice < 1 && decimals <= 2) {
+      // 🚀 [1달러 미만 코인 보정] 정밀도가 2 이하로 잘못 넘어온 경우 최소 4자리 유효숫자 보장 (0.11, 0.12 잘림 방지)
+      const formattedStr = numPrice.toPrecision(4);
+      const parts = formattedStr.split("e");
+      if (parts.length === 1) {
+        const dotIndex = formattedStr.indexOf(".");
+        if (dotIndex !== -1) {
+          const sub = formattedStr.substring(dotIndex + 1);
+          const firstActive = sub.search(/[1-9]/);
+          const minDecimals = firstActive !== -1 ? firstActive + 4 : 4;
+          decimals = Math.max(decimals, Math.min(8, minDecimals));
+        }
+      } else {
+        const exp = Math.abs(parseInt(parts[1], 10));
+        decimals = Math.max(decimals, Math.min(8, exp + 3));
       }
     }
     return numPrice.toLocaleString(undefined, {
@@ -401,7 +417,7 @@ function updateLegend(d, v, k) {
 
   // 🚀 김프 전광판 포맷팅 및 다이내믹 색상 적용
   const kimchiContainer = document.getElementById("ohlc-kimchi-container");
-  if (store.paneConfig.kimchi) {
+  if (store.paneConfig.kimchi && !store.isKimchiDisabled) {
     // 🚀 [분리 락킹] 마우스가 과거의 역사적인 봉을 호버 중일 때만 해당 과거 시점(k)의 김프를 보여주고,
     // 마우스가 우측 여백(최신 시점)에 있거나 벗어난 실시간 상태일 때는 항상 최신 실시간 김프를 보여줍니다!
     const isLatest =

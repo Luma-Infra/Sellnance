@@ -54,7 +54,7 @@ export function updateRealtimeKimchi(liveData, symbol, chartTime) {
   const nowCallMs = Date.now();
   const callGapMs = store._lastKimchiCallMs ? (nowCallMs - store._lastKimchiCallMs) : 0;
   store._lastKimchiCallMs = nowCallMs;
-  if (store.blockKimchi) return;
+  if (store.blockKimchi || store.isKimchiDisabled) return;
   if (!store.kimchiSeries || !store.paneConfig.kimchi) return;
 
   // 🚀 [김프 침범 방지 - 리버스 락킹]
@@ -304,6 +304,7 @@ let latestKimchiSymbol = null;
 let latestKimchiChartTime = null;
 
 export function updateRealtimeKimchiThrottled(liveData, symbol, chartTime) {
+  if (store.isKimchiDisabled) return;
   latestKimchiLiveData = liveData;
   latestKimchiSymbol = symbol;
   latestKimchiChartTime = chartTime;

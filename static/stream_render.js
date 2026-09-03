@@ -85,16 +85,19 @@ export function renderRealtimeUpdate(normalizedTime, currentCandle) {
                 ? store.volumeData[store.volumeData.length - 1]
                 : null;
 
-            if (!lastVolItem || normalizedTime >= lastVolItem.time) {
+            const normSec = getUnixSeconds(normalizedTime);
+            const lastSec = lastVolItem ? getUnixSeconds(lastVolItem.time) : -1;
+
+            if (!lastVolItem || normSec >= lastSec) {
                 // console.log("VOLUME_UPDATE_DATA:", volObj);
                 store.volumeSeries.update(volObj);
                 if (store.volumeData && store.volumeData.length > 0) {
-                    if (normalizedTime > lastVolItem.time) {
+                    if (normSec > lastSec) {
                         store.volumeData.push(volObj);
-                    } else if (normalizedTime === lastVolItem.time) {
+                    } else if (normSec === lastSec) {
                         store.volumeData[store.volumeData.length - 1] = volObj;
                     }
-                    store.volumeDataMap.set(getUnixSeconds(volObj.time), volObj);
+                    store.volumeDataMap.set(normSec, volObj);
                 }
             }
         } catch (e) {

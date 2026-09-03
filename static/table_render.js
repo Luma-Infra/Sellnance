@@ -466,11 +466,14 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
   //   window.syncRowPrioritizedMetrics(row);
   // }
   const tId = row.Ticker;
-  const p = row.precision || 2;
+  const p =
+    row.precision !== undefined && row.precision !== null
+      ? Number(row.precision)
+      : store.getPrecision(row.Ticker || row.DisplayTicker || row.Symbol);
   const rate = store.marketDataMap?.krw_usd_rate || 0;
   const isKrw = store.currencyMode === "KRW";
 
-  const { displayPrice: nPrice, n24h, nDay } = getRowDisplayMetrics(row, isKrw, rate);
+  const { displayPrice: nPrice, n24h, nDay, activeExchange } = getRowDisplayMetrics(row, isKrw, rate);
   const formattedPrice = formatSmartPrice(nPrice, p, isKrw);
 
   const color24h =
@@ -515,6 +518,42 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
         container = priceCell.querySelector(".price-container");
       }
       priceCell._container = container;
+    }
+
+    // 🚀 가격 수치 및 data-raw-price 실시간 갱신 (플래시 애니메이션 및 폰트 축소 연동)
+    const priceDiv =
+      container._priceDiv ||
+      (container._priceDiv = container.querySelector(`#price-${tId}`));
+    if (priceDiv) {
+      const numEl =
+        priceDiv._numEl ||
+        (priceDiv._numEl = priceDiv.querySelector(".price-num"));
+      if (numEl) {
+        const oldPrice = parseFloat(priceDiv.getAttribute("data-raw-price") || "0");
+        if (numEl.textContent !== formattedPrice) {
+          if (oldPrice > 0 && nPrice > 0 && oldPrice !== nPrice && typeof window.applyPriceFlash === "function") {
+            window.applyPriceFlash(numEl, nPrice, oldPrice);
+          }
+          numEl.textContent = formattedPrice;
+
+          // 🚀 글자 수에 비례하여 폰트 크기 유동 축소
+          const len = formattedPrice.length;
+          const fs = CONFIG.FONT_SCALE;
+          const threshold = fs?.PRICE_THRESHOLD || 8;
+          if (len > threshold) {
+            const sizePx = Math.max(
+              fs?.PRICE_MIN_SIZE || 11,
+              (fs?.PRICE_BASE_SIZE || 14) - (len - threshold) * (fs?.PRICE_REDUCE_STEP || 0.6),
+            );
+            if (priceDiv.style.fontSize !== `${sizePx}px`)
+              priceDiv.style.fontSize = `${sizePx}px`;
+          } else {
+            if (priceDiv.style.fontSize !== "") priceDiv.style.fontSize = "";
+          }
+        }
+      }
+      priceDiv.setAttribute("data-raw-price", nPrice);
+      priceDiv.setAttribute("data-active-exchange", activeExchange || "binance");
     }
 
     // Direct textContent 및 클래스 갱신 (리플로우 방지)
@@ -1627,7 +1666,10 @@ window.updateRowPriceDisplay = (target, row) => {
 
   const rate = store.marketDataMap?.krw_usd_rate || 0;
   const isKrwMode = store.currencyMode === "KRW";
-  const p = store.getPrecision(row.DisplayTicker || row.Symbol);
+  const p =
+    row.precision !== undefined && row.precision !== null
+      ? Number(row.precision)
+      : store.getPrecision(row.Ticker || row.DisplayTicker || row.Symbol);
 
   const oldPrice = parseFloat(parentEl.getAttribute("data-raw-price") || "0");
   const { displayPrice, activeExchange } = getRowDisplayMetrics(row, isKrwMode, rate);
