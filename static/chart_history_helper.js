@@ -56,11 +56,11 @@ export function findRowInfo(displayName, pureBase, exchangeFlags) {
       return true;
     if (isFutures && c.Listed_Exchanges?.includes("BINANCE_FUTURES"))
       return true;
-    if (isSpot && c.Listed_Exchanges?.includes("BINANCE")) return true;
+    if (isSpot && c.Listed_Exchanges?.includes("BINANCE_SPOT")) return true;
     if (isBithumb && c.Listed_Exchanges?.includes("BITHUMB")) return true;
     if (isBybitFutures && c.Listed_Exchanges?.includes("BYBIT_FUTURES"))
       return true;
-    if (isBybit && c.Listed_Exchanges?.includes("BYBIT")) return true;
+    if (isBybit && c.Listed_Exchanges?.includes("BYBIT_SPOT")) return true;
     return false;
   });
 
@@ -84,12 +84,20 @@ export function findRowInfo(displayName, pureBase, exchangeFlags) {
 
 // 🚀 [역할 분리] 신규 상장일(Listing Date) 갱신 및 백엔드 비동기 저장
 export function determineListingDate(rawMain, rowInfo, pureBase, exchangeFlags) {
+  if (!rawMain || rawMain.length === 0) return;
   const { isUpbit, isBithumb, isBybit, isFutures, isSpot } = exchangeFlags;
   try {
-    const earliestTime = rawMain[0].time;
-    const newDateStr = new Date(earliestTime * 1000)
-      .toISOString()
-      .split("T")[0]; // YYYY-MM-DD
+    const rawTime = rawMain[0].time;
+    let dt = null;
+
+    if (typeof rawTime === "string") {
+      dt = new Date(rawTime);
+    } else if (typeof rawTime === "number") {
+      dt = rawTime > 1e11 ? new Date(rawTime) : new Date(rawTime * 1000);
+    }
+
+    if (!dt || isNaN(dt.getTime())) return;
+    const newDateStr = dt.toISOString().split("T")[0]; // YYYY-MM-DD
 
     let exchangeKey = null;
     if (isFutures || isSpot) exchangeKey = "binance_listing";

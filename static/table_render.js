@@ -2,6 +2,12 @@
 import { store, CONFIG } from "./_store.js";
 import { formatSmartPrice, getMultiplier, getPureBase } from "./chart_utils.js";
 import { getFilteredData } from "./table_filter.js";
+import {
+  isFuturesCoin,
+  getRowDisplayMetrics,
+  getDisplayTickerHtml,
+  getRowExchangeMeta,
+} from "./_market_rules.js";
 
 // 🚨 [거래소별 유의/상폐/모니터링 경고 전역 포털 툴팁 엔진 (document.body 직속 100% 무잘림 보장)]
 const EXCH_LOGO_MAP = {
@@ -78,7 +84,7 @@ window.showCautionTooltip = (e, warningsJsonStr) => {
     tooltip.style.transform = "translateY(-50%)";
     tooltip.classList.remove("opacity-0", "pointer-events-none");
     tooltip.classList.add("opacity-100");
-  } catch (err) {}
+  } catch (err) { }
 };
 
 window.hideCautionTooltip = () => {
@@ -186,6 +192,9 @@ export function formatListingDateWithExchange(row) {
 export function createRowElement(row) {
   const rowEl = document.createElement("div");
   rowEl.classList.add("coin-row");
+  if (row.isDelisted) {
+    rowEl.classList.add("opacity-40", "grayscale", "hover:opacity-90", "transition-opacity");
+  }
   const ticker = row.Ticker; // 🚀 중복 없는 유니크 티커 사용 (BTCKRW != BTCUSDT)
   rowEl.dataset.sym = ticker;
   rowEl.style.position = "relative";
@@ -203,6 +212,12 @@ export function updateRowStaticHTML(rowEl, row) {
   rowEl._volUCell = null;
   rowEl._kimchiCell = null;
   rowEl._priceEl = null;
+
+  if (row.isDelisted) {
+    rowEl.classList.add("opacity-40", "grayscale", "hover:opacity-90", "transition-opacity");
+  } else {
+    rowEl.classList.remove("opacity-40", "grayscale", "hover:opacity-90");
+  }
 
   const pureSymbol = row.Symbol;
   const tId = row.Ticker; // 🚀 DOM ID용 완벽한 고유키
@@ -252,14 +267,13 @@ export function updateRowStaticHTML(rowEl, row) {
   // 동적 수치 데이터 영역은 빈 Placeholder div 구조로 생성하여 레이아웃 깨짐을 방지하고 스크롤 시 공백(하얀 칸) 노출을 방어합니다.
   rowEl.innerHTML = `
   <div class="p-2 col-asset overflow-visible">
-    ${
-      pendingAction
-        ? `
+    ${pendingAction
+      ? `
       <div class="row-progress-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 2.5px; z-index: 50; pointer-events: none;">
          <div id="progress-bar-${row.Ticker}" class="row-progress-bar" style="height: 100%; width: 100%; background: linear-gradient(90deg, var(--accent) 0%, #3b82f6 100%); transition: width 50ms linear;"></div>
       </div>
     `
-        : ""
+      : ""
     }
     <div class="flex items-center gap-0.5 min-w-0 w-full">
       <!-- 0. 절대 순위 번호 (CSS 카운터로 1부터 800까지 순차 자동 렌더링) -->
@@ -271,9 +285,8 @@ export function updateRowStaticHTML(rowEl, row) {
         <button onclick="toggleFavorite('${uId}', event)" class="star-btn text-[14px] transition-all hover:scale-125 flex-shrink-0 ${starClass}" style="color: ${starColor}">
           ${starText}
         </button>
-        ${
-          pendingAction
-            ? `
+        ${pendingAction
+      ? `
           <button onclick="window.confirmFavoriteChange('${uId}', event)" class="confirm-fav-btn text-[9px] font-medium px-1.5 py-0.5 rounded transition-all flex-shrink-0 mr-1">
             확인
           </button>
@@ -281,8 +294,8 @@ export function updateRowStaticHTML(rowEl, row) {
             취소
           </button>
         `
-            : ""
-        }
+      : ""
+    }
       </div>
       
       <!-- 2. 티커 이미지 -->
@@ -292,19 +305,21 @@ export function updateRowStaticHTML(rowEl, row) {
       
       <!-- 3. 티커 & 이름 -->
       <div class="flex flex-col leading-[1.1] min-w-0 flex-1">
-        <b class="text-[12px] text-theme-text truncate font-medium tracking-tighter">${row.DisplayTicker || row.Symbol}</b>
+        <b class="text-[12px] text-theme-text truncate font-medium tracking-tighter">
+          ${getDisplayTickerHtml(row)}
+        </b>
         <span class="text-[9px] text-theme-text opacity-60 truncate font-medium tracking-tighter">
           ${(() => {
-            const n =
-              store.lang === "KR"
-                ? row.Name_KR || row.Name || ""
-                : row.Name || "";
-            return n.length > 8 ? n.substring(0, 8) + ".." : n;
-          })()}
+      const n =
+        store.lang === "KR"
+          ? row.Name_KR || row.Name || ""
+          : row.Name || "";
+      return n.length > 8 ? n.substring(0, 8) + ".." : n;
+    })()}
         </span>
       </div>
       <!-- 4. 유의/상폐 경고 뱃지 (셀 우측 끝에 배치) -->
-      ${getWarningBadgeHtml(row.Warnings)}
+      ${row.isDelisted ? `<span class="bg-red-500/20 text-red-400 border border-red-500/40 text-[9px] px-1 py-0.5 rounded font-bold ml-auto shrink-0">상폐</span>` : getWarningBadgeHtml(row.Warnings)}
     </div>
   </div>
   <div class="p-2 col-price overflow-hidden price-placeholder text-theme-text font-medium text-[14px]">
@@ -333,7 +348,7 @@ export function updateRowStaticHTML(rowEl, row) {
       <div class="flex items-center justify-start gap-1 min-w-0 max-w-full">
         <span class="kimchi-pct text-[12px] font-medium truncate">-</span>
       </div>
-      <div class="flex items-center justify-start gap-2 text-[10px] font-medium mt-0.5 min-w-0 max-w-full opacity-0">
+      <div class="flex items-center justify-start gap-2 text-[10px] font-medium mt-0.5 min-w-0 max-w-full">
         <span class="funding-val text-theme-accent opacity-70 truncate">-</span>
       </div>
     </div>
@@ -452,45 +467,10 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
   // }
   const tId = row.Ticker;
   const p = row.precision || 2;
-  const currentMarket = store.currentMarket || "ALL";
   const rate = store.marketDataMap?.krw_usd_rate || 0;
-  let nPrice = row.Price_Raw ?? 0;
-  let n24h = row.Change_24h_Raw ?? 0;
-  if (currentMarket === "UPBIT") {
-    nPrice = row.Upbit_Price ?? nPrice;
-    n24h = row.Change_24h_Upbit ?? n24h;
-  } else if (currentMarket === "BITHUMB") {
-    nPrice = row.Bithumb_Price ?? nPrice;
-    n24h = row.Change_24h_Bithumb ?? n24h;
-  } else if (currentMarket === "FUTURES" || currentMarket === "BYBIT_FUTURES") {
-    nPrice =
-      (currentMarket === "FUTURES"
-        ? row.Binance_Price_Futures
-        : row.Bybit_Price_Futures) ?? nPrice;
-    n24h = row.Change_24h_Futures_Ex ?? n24h;
-  } else if (currentMarket === "SPOT" || currentMarket === "BYBIT") {
-    nPrice =
-      (currentMarket === "SPOT"
-        ? row.Binance_Price_Spot
-        : row.Bybit_Price_Spot) ?? nPrice;
-    n24h =
-      (currentMarket === "SPOT"
-        ? row.Change_24h_Binance
-        : row.Change_24h_Bybit) ?? n24h;
-  } else {
-    /*
-    // [기존 코드 보존] ALL, KIMCHI, NEW만 한정하던 분기 (BINANCE 탭 진입 시 누락되던 이슈로 인해 전체 fallback else로 통합)
-    // } else if (currentMarket === "ALL" || currentMarket === "KIMCHI" || currentMarket === "NEW") {
-    */
-    // 🚀 [구원] ALL, BINANCE, KIMCHI, NEW 등 기본 모드는 단일 진실 대표값 매핑
-    nPrice = row.Price_Raw ?? 0;
-    n24h = row.Change_24h_Raw ?? 0;
-  }
-  const isKrw =
-    store.currencyMode === "KRW" ||
-    currentMarket === "UPBIT" ||
-    currentMarket === "BITHUMB" ||
-    row.Ticker?.endsWith("KRW");
+  const isKrw = store.currencyMode === "KRW";
+
+  const { displayPrice: nPrice, n24h, nDay } = getRowDisplayMetrics(row, isKrw, rate);
   const formattedPrice = formatSmartPrice(nPrice, p, isKrw);
 
   const color24h =
@@ -500,23 +480,6 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
         ? "text-theme-down"
         : "text-theme-text";
 
-  const isDetailed = store.viewMode === "detailed";
-  let nDay = row.Change_Today_Raw ?? 0;
-  if (currentMarket === "UPBIT") {
-    nDay = row.Change_Today_Upbit ?? nDay;
-  } else if (currentMarket === "BITHUMB") {
-    nDay = row.Change_Today_Bithumb ?? nDay;
-  } else if (currentMarket === "FUTURES" || currentMarket === "BYBIT_FUTURES") {
-    nDay = row.Change_Today_Futures ?? nDay;
-  } else if (currentMarket === "SPOT" || currentMarket === "BYBIT") {
-    nDay =
-      (currentMarket === "SPOT"
-        ? row.Change_Today_Binance
-        : row.Change_Today_Bybit) ?? nDay;
-  } else {
-    // 🚀 ALL, BINANCE, KIMCHI, NEW 등 기본 모드
-    nDay = row.Change_Today_Raw ?? 0;
-  }
   const colorDay =
     nDay > 0
       ? "text-theme-up"
@@ -540,33 +503,8 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
       if (!container) {
         priceCell.innerHTML = `
           <div class="price-container flex flex-col leading-tight min-w-0 gap-0.5">
-            <div id="price-${tId}" data-raw-price="0" class="font-medium text-[14px] text-theme-text price-cell tracking-tighter truncate block flex items-center">
-              <span id="price-val-binance-${tId}" class="hidden items-center">
-                <span class="price-num">-</span>
-                <div class="relative inline-flex items-center justify-center w-[12px] h-[12px] rounded-[2px] overflow-hidden bg-white/2 ml-1 align-middle flex-shrink-0">
-                  <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/270.png" alt="binance" class="w-full h-full object-contain rounded-[2px]" />
-                  <div class="price-futures-badge absolute bottom-[0.5px] right-[0.5px] bg-[#f0b90b] text-black text-[8px] font-black px-[0.5px] rounded-[1px] leading-none z-10 scale-[0.6] origin-bottom-right hidden">F</div>
-                </div>
-              </span>
-              <span id="price-val-bybit-${tId}" class="hidden items-center">
-                <span class="price-num">-</span>
-                <div class="relative inline-flex items-center justify-center w-[12px] h-[12px] rounded-[2px] overflow-hidden bg-white/2 ml-1 align-middle flex-shrink-0">
-                  <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/521.png" alt="bybit" class="w-full h-full object-contain rounded-[2px]" />
-                  <div class="price-futures-badge absolute bottom-[0.5px] right-[0.5px] bg-[#f0b90b] text-black text-[8px] font-black px-[0.5px] rounded-[1px] leading-none z-10 scale-[0.6] origin-bottom-right hidden">F</div>
-                </div>
-              </span>
-              <span id="price-val-upbit-${tId}" class="hidden items-center">
-                <span class="price-num">-</span>
-                <div class="relative inline-flex items-center justify-center w-[12px] h-[12px] rounded-[2px] overflow-hidden bg-white/2 ml-1 align-middle flex-shrink-0">
-                  <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/351.png" alt="upbit" class="w-full h-full object-contain rounded-[2px]" />
-                </div>
-              </span>
-              <span id="price-val-bithumb-${tId}" class="hidden items-center">
-                <span class="price-num">-</span>
-                <div class="relative inline-flex items-center justify-center w-[12px] h-[12px] rounded-[2px] overflow-hidden bg-white/2 ml-1 align-middle flex-shrink-0">
-                  <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/200.png" alt="bithumb" class="w-full h-full object-contain rounded-[2px]" />
-                </div>
-              </span>
+            <div id="price-${tId}" data-raw-price="0" class="font-medium text-[14px] text-theme-text price-cell tracking-tighter block flex items-center min-w-0">
+              <span class="price-num whitespace-nowrap">${formattedPrice}</span>
             </div>
             <div class="flex items-center justify-between gap-1 text-[10px] font-medium text-left mt-0.5 w-full min-w-0">
               <span id="change-${tId}" class="whitespace-nowrap flex-shrink-0">-</span>
@@ -625,16 +563,19 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
       row.Binance === "O" ||
       row.Binance_Futures === "O" ||
       (row.Listed_Exchanges &&
-        (row.Listed_Exchanges.includes("BINANCE") ||
+        (row.Listed_Exchanges.includes("BINANCE_SPOT") ||
+          row.Listed_Exchanges.includes("BINANCE") ||
           row.Listed_Exchanges.includes("BINANCE_FUTURES")));
     const volBText =
       hasBinance &&
-      row.Volume_Formatted &&
-      row.Volume_Formatted !== "-" &&
-      row.Volume_Formatted !== "0"
+        row.Volume_Formatted &&
+        row.Volume_Formatted !== "-" &&
+        row.Volume_Formatted !== "0"
         ? row.Volume_Formatted
         : "-";
-    const mcapText = row.MarketCap_Formatted || "-";
+    const mcapText = row.isDelisted
+      ? `uid : ${row.UID || "-"}`
+      : row.MarketCap_Formatted || "-";
 
     const volBEl =
       container._volBEl ||
@@ -646,7 +587,7 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
         const size = Math.max(
           fs.VOL_MIN_SIZE,
           fs.VOL_BASE_SIZE -
-            (volBText.length - fs.VOL_THRESHOLD) * fs.VOL_REDUCE_STEP,
+          (volBText.length - fs.VOL_THRESHOLD) * fs.VOL_REDUCE_STEP,
         );
         if (volBEl.style.fontSize !== `${size}px`)
           volBEl.style.fontSize = `${size}px`;
@@ -660,12 +601,21 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
       (container._mcapEl = container.querySelector(`#mcap-${tId}`));
     if (mcapEl) {
       mcapEl.textContent = mcapText;
+      if (row.isDelisted) {
+        volBCell.style.overflow = "visible";
+        mcapEl.className = "text-[10px] font-bold opacity-80 text-left mt-0.5 whitespace-nowrap text-theme-accent z-10 pointer-events-none";
+        mcapEl.style.whiteSpace = "nowrap";
+      } else {
+        volBCell.style.overflow = "";
+        mcapEl.style.whiteSpace = "";
+        mcapEl.className = "text-[10px] font-bold opacity-60 text-left mt-0.5 truncate";
+      }
       const fs = CONFIG.FONT_SCALE;
-      if (fs && mcapText.length > fs.MCAP_THRESHOLD) {
+      if (!row.isDelisted && fs && mcapText.length > fs.MCAP_THRESHOLD) {
         const size = Math.max(
           fs.MCAP_MIN_SIZE,
           fs.MCAP_BASE_SIZE -
-            (mcapText.length - fs.MCAP_THRESHOLD) * fs.MCAP_REDUCE_STEP,
+          (mcapText.length - fs.MCAP_THRESHOLD) * fs.MCAP_REDUCE_STEP,
         );
         mcapEl.style.fontSize = `${size}px`;
       } else {
@@ -695,12 +645,14 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
       volUCell._container = container;
     }
 
-    const volUText =
-      row.Upbit_Vol_Formatted &&
-      row.Upbit_Vol_Formatted !== "-" &&
-      row.Upbit_Vol_Formatted !== "0"
+    const volUText = row.isDelisted
+      ? ""
+      : row.Upbit_Vol_Formatted &&
+        row.Upbit_Vol_Formatted !== "-" &&
+        row.Upbit_Vol_Formatted !== "0"
         ? row.Upbit_Vol_Formatted
         : "-";
+    const vmcText = row.isDelisted ? "" : vmcFormatted;
 
     const volUEl =
       container._volUEl ||
@@ -712,7 +664,7 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
         const size = Math.max(
           fs.VOL_MIN_SIZE,
           fs.VOL_BASE_SIZE -
-            (volUText.length - fs.VOL_THRESHOLD) * fs.VOL_REDUCE_STEP,
+          (volUText.length - fs.VOL_THRESHOLD) * fs.VOL_REDUCE_STEP,
         );
         volUEl.style.fontSize = `${size}px`;
       } else {
@@ -723,14 +675,14 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
     const vmcEl =
       container._vmcEl ||
       (container._vmcEl = container.querySelector(`#vmc-${tId}`));
-    if (vmcEl && vmcEl.textContent !== vmcFormatted) {
-      vmcEl.textContent = vmcFormatted;
+    if (vmcEl && vmcEl.textContent !== vmcText) {
+      vmcEl.textContent = vmcText;
       const fs = CONFIG.FONT_SCALE;
       if (fs && vmcFormatted.length > fs.VMC_THRESHOLD) {
         const size = Math.max(
           fs.VMC_MIN_SIZE,
           fs.VMC_BASE_SIZE -
-            (vmcFormatted.length - fs.VMC_THRESHOLD) * fs.VMC_REDUCE_STEP,
+          (vmcFormatted.length - fs.VMC_THRESHOLD) * fs.VMC_REDUCE_STEP,
         );
         vmcEl.style.fontSize = `${size}px`;
       } else {
@@ -762,12 +714,12 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
       const hasBithumb = exList.includes("BITHUMB") || !!row.Bithumb_Symbol;
       const hasGlobal =
         row.Binance === "O" ||
-        row.Binance_Futures === "O" ||
+        // row.Binance_Futures === "O" ||
         exList.includes("BINANCE") ||
-        exList.includes("BINANCE_FUTURES") ||
+        // exList.includes("BINANCE_FUTURES") ||
         exList.includes("BYBIT") ||
-        exList.includes("BYBIT_FUTURES") ||
-        row.Binance_Price_Futures > 0 ||
+        // exList.includes("BYBIT_FUTURES") ||
+        // row.Binance_Price_Futures > 0 ||
         row.Binance_Price_Spot > 0 ||
         row.Binance_Price > 0 ||
         row.Bybit_Price > 0;
@@ -786,6 +738,7 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
         if (kimchiPctEl.textContent !== "-") kimchiPctEl.textContent = "-";
         kimchiPctEl.className =
           "kimchi-pct text-[12px] font-medium text-theme-text opacity-40";
+        if (kimchiPctEl.style.fontSize) kimchiPctEl.style.fontSize = "";
       } else if (
         row.Kimchi_Raw > 500 ||
         row.Kimchi_Raw <= -90 ||
@@ -795,10 +748,20 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
           kimchiPctEl.textContent = "VOID";
         kimchiPctEl.className =
           "kimchi-pct text-[11px] font-bold text-amber-500/80 tracking-wider";
+        if (kimchiPctEl.style.fontSize) kimchiPctEl.style.fontSize = "";
       } else {
         if (kimchiPctEl.textContent !== row.Kimchi_Formatted)
           kimchiPctEl.textContent = row.Kimchi_Formatted;
         kimchiPctEl.className = `kimchi-pct text-[12px] font-medium truncate ${row.Kimchi_Raw > 0 ? "text-theme-up" : "text-theme-down"}`;
+
+        // 🚀 최대 +333.33%(8글자) 대응 로그 폰트 축소 (6글자 초과 시 10.0px까지 스케일 다운)
+        const kLen = (row.Kimchi_Formatted || "").length;
+        if (kLen > 6) {
+          const scaledPx = Math.max(10.0, 12.0 - Math.log10(kLen / 6) * 16.0);
+          kimchiPctEl.style.fontSize = `${scaledPx.toFixed(1)}px`;
+        } else if (kimchiPctEl.style.fontSize) {
+          kimchiPctEl.style.fontSize = "";
+        }
       }
     }
 
@@ -808,6 +771,11 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
     if (fundingEl) {
       const fundVal = row.Funding_Formatted || "-";
       if (fundingEl.textContent !== fundVal) fundingEl.textContent = fundVal;
+      if (fundVal === "-") {
+        fundingEl.className = "funding-val text-theme-accent opacity-30 truncate";
+      } else {
+        fundingEl.className = "funding-val text-theme-accent opacity-70 truncate";
+      }
     }
   }
 
@@ -832,47 +800,53 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
       exchCell.innerHTML = `
         <div class="grid grid-cols-4 content-center h-full gap-[2px] w-fit text-left min-w-0 cursor-pointer exch-grid-trigger">
           ${(() => {
-            const exchanges = row.Listed_Exchanges || [];
-            const list = [
-              { id: "BINANCE", cmcId: 270 },
-              { id: "UPBIT", cmcId: 351 },
-              { id: "BITHUMB", cmcId: 200 },
-              { id: "BYBIT", cmcId: 521 },
-              { id: "OKX", cmcId: 294 },
-              { id: "BITGET", cmcId: 513 },
-              { id: "GATEIO", cmcId: 302 },
-              { id: "COINBASE", cmcId: 89 },
-            ];
-            return list
-              .map((ex) => {
-                const isListed =
-                  exchanges.some((e) => e.includes(ex.id)) ||
-                  (ex.id === "UPBIT" && row.Upbit === "O");
-                const isFutures = exchanges.includes(`${ex.id}_FUTURES`);
-                const isSpot =
-                  exchanges.includes(ex.id) ||
-                  (ex.id === "UPBIT" && row.Upbit === "O");
+          const exchanges = row.Listed_Exchanges || [];
+          const list = [
+            { id: "BINANCE", cmcId: 270 },
+            { id: "UPBIT", cmcId: 351 },
+            { id: "BITHUMB", cmcId: 200 },
+            { id: "BYBIT", cmcId: 521 },
+            { id: "OKX", cmcId: 294 },
+            { id: "BITGET", cmcId: 513 },
+            { id: "GATEIO", cmcId: 302 },
+            { id: "COINBASE", cmcId: 89 },
+          ];
+          return list
+            .map((ex) => {
+              const isSpot =
+                exchanges.includes(`${ex.id}_SPOT`) ||
+                exchanges.includes(ex.id) ||
+                (ex.id === "BINANCE" && row.Binance === "O") ||
+                (ex.id === "BYBIT" && row.Bybit === "O") ||
+                (ex.id === "UPBIT" && row.Upbit === "O");
 
-                let badgeHtml = "";
-                if (isListed && (isFutures || isSpot)) {
-                  badgeHtml = `
+              const isFutures =
+                exchanges.includes(`${ex.id}_FUTURES`) ||
+                (ex.id === "BINANCE" && (row.Binance_Futures === "O" || !!row.Exact_Futures)) ||
+                (ex.id === "BYBIT" && (row.Bybit_Futures === "O" || !!row.Exact_Futures));
+
+              const isListed = isSpot || isFutures || exchanges.some((e) => e.startsWith(ex.id));
+
+              let badgeHtml = "";
+              if (isListed && (isFutures || isSpot)) {
+                badgeHtml = `
                   <div class="absolute bottom-0 right-0 flex items-center gap-[0.5px] z-10 scale-[0.55] origin-bottom-right">
                     ${isSpot ? `<div class="badge-spot bg-[#0ecb81]/90 text-white text-[9px] font-black px-[1px] rounded-[1px] leading-none">S</div>` : ""}
                     ${isFutures ? `<div class="badge-futures bg-[#f0b90b]/90 text-black text-[9px] font-black px-[1px] rounded-[1px] leading-none">F</div>` : ""}
                   </div>
                 `;
-                }
-                const imgUrl = `https://s2.coinmarketcap.com/static/img/exchanges/64x64/${ex.cmcId}.png`;
-                return `
+              }
+              const imgUrl = `https://s2.coinmarketcap.com/static/img/exchanges/64x64/${ex.cmcId}.png`;
+              return `
                 <div class="relative w-[14px] h-[14px] flex items-center justify-center rounded-[2px] overflow-hidden bg-white/5 transition-all flex-shrink-0"
                      style="${isListed ? "filter: none; opacity: 1;" : "filter: grayscale(1); opacity: 0.1;"}">
                   <img src="${imgUrl}" alt="${ex.id}" class="w-full h-full object-contain rounded-[2px]" />
                   ${badgeHtml}
                 </div>
               `;
-              })
-              .join("");
-          })()}
+            })
+            .join("");
+        })()}
         </div>
       `;
     }
@@ -989,8 +963,10 @@ export function renderTable(isRealtime = false) {
   const allSource = store.originalTableData || store.currentTableData || [];
   if (
     !store.tablePoolInitialized ||
-    tbody.children.length !== allSource.length
+    !store.lastPoolSourceLength ||
+    store.lastPoolSourceLength !== allSource.length
   ) {
+    store.lastPoolSourceLength = allSource.length;
     tbody.innerHTML = "";
     store.rowDomMap = new Map();
     store.visibleSymbols.clear();
@@ -1140,6 +1116,37 @@ export function renderTable(isRealtime = false) {
       store.tableObserver.observe(rowEl);
       fragment.appendChild(rowEl);
     }
+
+    // 🚀 [상폐 코인 영구 풀 등록] 로컬스토리지 즐겨찾기 상폐 코인도 풀에 1회성 사전 탑승 (무한 깜빡임 0% 차단)
+    try {
+      const allUids = new Set(allSource.map((d) => String(d.UID)));
+      const fav1 = JSON.parse(localStorage.getItem("sellnance_favs") || "[]");
+      const fav2 = JSON.parse(localStorage.getItem("sellnance_favs2") || "[]");
+      const favMeta = JSON.parse(localStorage.getItem("sellnance_fav_meta") || "{}");
+      const delistedFavUids = Array.from(new Set([...fav1, ...fav2])).filter((uid) => !allUids.has(String(uid)));
+
+      delistedFavUids.forEach((uid) => {
+        const meta = favMeta[uid] || {};
+        const cleanSym = meta.symbol || String(uid)
+          .replace(/^\d+_/, "")
+          .replace(/_(BINANCE|UPBIT|BITHUMB|BYBIT)$/i, "")
+          .toUpperCase();
+        const ghostRowEl = document.createElement("div");
+        ghostRowEl.classList.add("coin-row");
+        ghostRowEl.dataset.sym = cleanSym;
+        ghostRowEl.dataset.delisted = "true";
+        ghostRowEl.style.cursor = "default";
+        ghostRowEl.style.position = "absolute";
+        ghostRowEl.style.height = "52px";
+        ghostRowEl.style.contain = "content";
+        ghostRowEl.style.setProperty("display", "none", "important");
+        store.rowDomMap.set(cleanSym, ghostRowEl);
+        store.rowDomMap.set(String(uid), ghostRowEl);
+        store.tableObserver.observe(ghostRowEl);
+        fragment.appendChild(ghostRowEl);
+      });
+    } catch (e) { }
+
     tbody.appendChild(fragment);
     store.tablePoolInitialized = true;
   }
@@ -1156,9 +1163,24 @@ export function renderTable(isRealtime = false) {
   }
   tbody.style.height = `${store.traceRowCaller ? 221 + (totalCount - 1) * 52 : totalCount * 52}px`;
 
-  // 🚀 [최적화] 먼저 전체 코인 행들을 숨김 처리 (display = none !important)
+  const currentVisibleSet = new Set();
+  for (let i = 0; i < totalCount; i++) {
+    const d = filteredData[i];
+    if (d) {
+      currentVisibleSet.add(d.Ticker);
+      if (d.UID) currentVisibleSet.add(String(d.UID));
+      if (d.DisplayTicker) currentVisibleSet.add(d.DisplayTicker);
+    }
+  }
+
+  // 🚀 [스마트 숨김] 전체를 껐다 켜지 않고, 이번 필터에 없는 행들만 골라서 숨김 (화면 점멸/깜빡임 0% 원천 차단)
   for (const child of tbody.children) {
-    child.style.setProperty("display", "none", "important");
+    const sym = child.dataset.sym;
+    if (!sym || !currentVisibleSet.has(sym)) {
+      if (child.style.display !== "none") {
+        child.style.setProperty("display", "none", "important");
+      }
+    }
   }
 
   for (let i = 0; i < totalCount; i++) {
@@ -1186,11 +1208,16 @@ export function renderTable(isRealtime = false) {
         if (rowData.UID) store.rowDomMap.set(String(rowData.UID), rowEl);
         if (rowData.DisplayTicker)
           store.rowDomMap.set(rowData.DisplayTicker, rowEl);
+        updateRowInnerHTML(rowEl, rowData);
         store.tableObserver.observe(rowEl);
         tbody.appendChild(rowEl);
       }
 
       if (rowEl) {
+        if (rowData.isDelisted) {
+          rowEl.dataset.delisted = "true";
+          rowEl.style.cursor = "default";
+        }
         rowEl.style.removeProperty("display");
         const oldIndex = parseInt(rowEl.dataset.index);
         // 🚀 실시간 정렬 시 30위 이하(31등~) 코인은 불필요한 연속 렌더링 방지를 위해 위치를 고정시키되,
@@ -1400,9 +1427,9 @@ export function toggleFavorite(uid, event, forceImmediate = false) {
       targetState,
     });
 
-    const row = store.currentTableData.find((r) => r.UID === uid);
+    const row = store.currentTableData.find((r) => r.UID === uid) || (store.tickerRowMap && store.tickerRowMap.get(String(uid)));
     if (row) {
-      const rowEl = store.rowDomMap.get(row.Ticker);
+      const rowEl = store.rowDomMap.get(row.Ticker) || store.rowDomMap.get(String(row.UID));
       if (rowEl) {
         updateRowInnerHTML(rowEl, row);
       }
@@ -1431,9 +1458,9 @@ export function toggleFavorite(uid, event, forceImmediate = false) {
     localStorage.setItem("sellnance_favs2", JSON.stringify(favorites2));
   }
 
-  const row = store.currentTableData.find((r) => r.UID === uid);
+  const row = store.currentTableData.find((r) => r.UID === uid) || (store.tickerRowMap && store.tickerRowMap.get(String(uid)));
   if (row) {
-    const rowEl = store.rowDomMap.get(row.Ticker);
+    const rowEl = store.rowDomMap.get(row.Ticker) || store.rowDomMap.get(String(row.UID));
     if (rowEl) {
       updateRowInnerHTML(rowEl, row);
     }
@@ -1601,193 +1628,35 @@ window.updateRowPriceDisplay = (target, row) => {
   const rate = store.marketDataMap?.krw_usd_rate || 0;
   const isKrwMode = store.currencyMode === "KRW";
   const p = store.getPrecision(row.DisplayTicker || row.Symbol);
-  const currentMarket = store.currentMarket || "ALL";
 
-  const storeMult = getMultiplier(
-    row.DisplayTicker || row.Symbol || row.Ticker,
-  );
-  const ovsFutMult = getMultiplier(
-    row.Exact_Futures || row.Ticker || row.Symbol,
-  );
-  const ovsSpotMult = getMultiplier(row.Exact_Spot || row.Ticker || row.Symbol);
+  const oldPrice = parseFloat(parentEl.getAttribute("data-raw-price") || "0");
+  const { displayPrice, activeExchange } = getRowDisplayMetrics(row, isKrwMode, rate);
+  const isKrw = isKrwMode;
+  const formattedPrice = window.formatSmartPrice(displayPrice, p, isKrw);
 
-  let binanceP = null;
-  let bybitP = null;
-
-  if (currentMarket === "FUTURES") {
-    const rawFutP = row.Binance_Price_Futures ?? row.Binance_Price;
-    binanceP =
-      rawFutP !== null && rawFutP !== undefined
-        ? (rawFutP / ovsFutMult) * storeMult
-        : null;
-    bybitP = row.Bybit_Price_Futures ?? row.Bybit_Price;
-  } else if (currentMarket === "SPOT") {
-    const rawSpotP = row.Binance_Price_Spot ?? row.Binance_Price;
-    binanceP =
-      rawSpotP !== null && rawSpotP !== undefined
-        ? (rawSpotP / ovsSpotMult) * storeMult
-        : null;
-    bybitP = row.Bybit_Price_Spot ?? row.Bybit_Price;
-  } else if (currentMarket === "BYBIT") {
-    bybitP = row.Bybit_Price_Spot ?? row.Bybit_Price;
-    const rawSpotP = row.Binance_Price_Spot ?? row.Binance_Price;
-    binanceP =
-      rawSpotP !== null && rawSpotP !== undefined
-        ? (rawSpotP / ovsSpotMult) * storeMult
-        : null;
-  } else if (currentMarket === "BYBIT_FUTURES") {
-    bybitP = row.Bybit_Price_Futures ?? row.Bybit_Price;
-    const rawFutP = row.Binance_Price_Futures ?? row.Binance_Price;
-    binanceP =
-      rawFutP !== null && rawFutP !== undefined
-        ? (rawFutP / ovsFutMult) * storeMult
-        : null;
-  } else {
-    // ALL, KIMCHI, NEW 등 기본 탭 모드일 때: 현물 단가 우선 적용 및 선물 단가 배수 보정
-    const hasSpot =
-      row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE");
-    const hasFutures =
-      row.Binance_Futures === "O" ||
-      row.Listed_Exchanges?.includes("BINANCE_FUTURES");
-
-    if (hasSpot && row.Binance_Price_Spot) {
-      binanceP = (row.Binance_Price_Spot / ovsSpotMult) * storeMult;
-    } else if (hasFutures && row.Binance_Price_Futures) {
-      binanceP = (row.Binance_Price_Futures / ovsFutMult) * storeMult;
-    } else if (row.Binance_Price) {
-      binanceP = (row.Binance_Price / ovsSpotMult) * storeMult;
+  const numEl = parentEl._numEl || (parentEl._numEl = parentEl.querySelector(".price-num"));
+  if (numEl && numEl.textContent !== formattedPrice) {
+    // 🚀 가격 변동 시 글자 번쩍임(Flash) 애니메이션 활성화
+    if (oldPrice > 0 && displayPrice > 0 && oldPrice !== displayPrice) {
+      applyPriceFlash(numEl, displayPrice, oldPrice);
     }
+    numEl.textContent = formattedPrice;
 
-    if (row.Bybit_Price_Spot) {
-      bybitP = row.Bybit_Price_Spot;
-    } else if (row.Bybit_Price_Futures) {
-      bybitP = row.Bybit_Price_Futures;
-    } else {
-      bybitP = row.Bybit_Price ?? null;
-    }
-  }
-
-  const upbitP = row.Upbit_Price || null;
-  const bithumbP = null;
-
-  let activeExchange = "";
-  let displayPrice = 0;
-
-  const isKrwCoin = row.Ticker?.endsWith("KRW");
-
-  // 🚀 해외 거래소 가격(Binance, Bybit)을 최우선으로 매칭하여 환율 오염 방지
-  if (!isKrwMode) {
-    // 💵 달러(USD) 표시 모드
-    if (binanceP !== null) {
-      activeExchange = "binance";
-      displayPrice = binanceP;
-    } else if (bybitP !== null) {
-      activeExchange = "bybit";
-      displayPrice = bybitP;
-    } else if (upbitP !== null) {
-      activeExchange = "upbit";
-      displayPrice = rate > 0 ? upbitP / rate : upbitP;
-    } else if (bithumbP !== null) {
-      activeExchange = "bithumb";
-      displayPrice = rate > 0 ? bithumbP / rate : bithumbP;
-    } else {
-      activeExchange = isKrwCoin ? "upbit" : "binance";
-      displayPrice = isKrwCoin
-        ? rate > 0
-          ? (row.Price_KRW || 0) / rate
-          : row.Price_KRW || 0
-        : row.Price_Raw || 0;
-    }
-  } else {
-    // ₩ 원화(KRW) 표시 모드
-    if (upbitP !== null) {
-      activeExchange = "upbit";
-      displayPrice = upbitP;
-    } else if (bithumbP !== null) {
-      activeExchange = "bithumb";
-      displayPrice = bithumbP;
-    } else if (binanceP !== null) {
-      activeExchange = "binance";
-      displayPrice = binanceP * rate;
-    } else if (bybitP !== null) {
-      activeExchange = "bybit";
-      displayPrice = bybitP * rate;
-    } else {
-      activeExchange = isKrwCoin ? "upbit" : "binance";
-      displayPrice = isKrwCoin
-        ? row.Price_KRW || 0
-        : (row.Price_Raw || 0) * rate;
-    }
-  }
-
-  const exchanges = ["binance", "bybit", "upbit", "bithumb"];
-  const exchangeImgUrls = {
-    binance: "https://s2.coinmarketcap.com/static/img/exchanges/64x64/270.png",
-    bybit: "https://s2.coinmarketcap.com/static/img/exchanges/64x64/521.png",
-    upbit: "https://s2.coinmarketcap.com/static/img/exchanges/64x64/351.png",
-    bithumb: "https://s2.coinmarketcap.com/static/img/exchanges/64x64/200.png",
-  };
-
-  exchanges.forEach((ex) => {
-    let span = parentEl[`_priceVal_${ex}`];
-    if (!span) {
-      span = parentEl.querySelector(`#price-val-${ex}-${tId}`);
-      parentEl[`_priceVal_${ex}`] = span;
-    }
-    if (!span) return;
-
-    if (ex === activeExchange) {
-      const isKrw = isKrwMode || ["upbit", "bithumb"].includes(ex);
-      const formattedPrice =
-        window.formatSmartPrice(displayPrice, p, isKrw) + (isKrw ? "" : "");
-      // 원화 가격 원 pss
-
-      const numEl =
-        span._numEl || (span._numEl = span.querySelector(".price-num"));
-      // 🚀 [성능 극대화] innerText는 CSS 레이아웃을 계산하므로 렌더링 폭탄입니다. 단순 textContent로 교체하여 브라우저 부담을 90% 이상 줄입니다.
-      // 🚀 또한 값이 실제로 다를 때만 DOM을 건드리도록 방어코드 추가 (DOM Mutation 렉 차단)
-      if (numEl && numEl.textContent !== formattedPrice) {
-        numEl.textContent = formattedPrice;
-
-        // 🚀 글자 수에 비례하여 동적으로 폰트 크기 축소
-        const len = formattedPrice.length;
-        const fs = CONFIG.FONT_SCALE;
-        if (fs && len > fs.PRICE_THRESHOLD) {
-          const sizePx = Math.max(
-            fs.PRICE_MIN_SIZE,
-            fs.PRICE_BASE_SIZE -
-              (len - fs.PRICE_THRESHOLD) * fs.PRICE_REDUCE_STEP,
-          );
-          if (parentEl.style.fontSize !== `${sizePx}px`)
-            parentEl.style.fontSize = `${sizePx}px`;
-        } else {
-          if (parentEl.style.fontSize !== "") parentEl.style.fontSize = "";
-        }
-      }
-
-      const isFutures = row.Listed_Exchanges?.includes(
-        `${ex.toUpperCase()}_FUTURES`,
+    // 🚀 글자 수에 비례하여 폰트 크기 유동 축소
+    const len = formattedPrice.length;
+    const fs = CONFIG.FONT_SCALE;
+    const threshold = fs?.PRICE_THRESHOLD || 8;
+    if (len > threshold) {
+      const sizePx = Math.max(
+        fs?.PRICE_MIN_SIZE || 11,
+        (fs?.PRICE_BASE_SIZE || 14) - (len - threshold) * (fs?.PRICE_REDUCE_STEP || 0.6),
       );
-      const badge = span.querySelector(".price-futures-badge");
-      if (badge) {
-        if (isFutures) {
-          if (badge.classList.contains("hidden"))
-            badge.classList.remove("hidden");
-        } else {
-          if (!badge.classList.contains("hidden"))
-            badge.classList.add("hidden");
-        }
-      }
-
-      if (span.classList.contains("hidden")) span.classList.remove("hidden");
-      if (!span.classList.contains("inline-flex"))
-        span.classList.add("inline-flex");
+      if (parentEl.style.fontSize !== `${sizePx}px`)
+        parentEl.style.fontSize = `${sizePx}px`;
     } else {
-      if (!span.classList.contains("hidden")) span.classList.add("hidden");
-      if (span.classList.contains("inline-flex"))
-        span.classList.remove("inline-flex");
+      if (parentEl.style.fontSize !== "") parentEl.style.fontSize = "";
     }
-  });
+  }
 
   parentEl.setAttribute("data-raw-price", displayPrice);
   parentEl.setAttribute("data-active-exchange", activeExchange);
@@ -1951,7 +1820,7 @@ if (typeof window !== "undefined") {
               popoverEl.style.opacity = "1";
               popoverEl.style.transform = "scale(1)";
             });
-          } catch (err) {}
+          } catch (err) { }
         }
       });
 
@@ -1968,7 +1837,7 @@ if (typeof window !== "undefined") {
             hideTimeout = setTimeout(() => {
               try {
                 popoverEl.hidePopover();
-              } catch (err) {}
+              } catch (err) { }
             }, 150); // 페이드아웃 트랜지션 시간 대기
           }, 50); // 호버 이탈 시 즉각적인 깜빡임 보정을 위한 딜레이
         }

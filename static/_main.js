@@ -14,6 +14,7 @@ import { initSniperSocket } from "./stream_table.js";
 import { initMeasureEvents } from "./chart_measure.js";
 import { initDrawingEvents, initDrawingToolbar } from "./chart_draw.js";
 import { getMultiplier } from "./chart_utils.js";
+import "./_market_rules.js";
 import "./chart_layout.js";
 import "./sim_engine.js";
 import "./stream.js";
@@ -296,18 +297,18 @@ const realUpdateHeaderDisplay = (
     n24 = row.Change_24h_Bithumb ?? row.Change_24h_Raw ?? 0;
     nDay = row.Change_Today_Bithumb ?? row.Change_Today_Raw ?? 0;
   } else if (activeMarket === "FUTURES" || activeMarket === "BYBIT_FUTURES") {
-    n24 = row.Change_24h_Futures_Ex ?? row.Change_24h_Raw ?? 0;
+    n24 = row.Change_24h_Futures ?? row.Change_24h_Raw ?? 0;
     nDay = row.Change_Today_Futures ?? row.Change_Today_Raw ?? 0;
   } else if (activeMarket === "SPOT" || activeMarket === "BYBIT") {
     n24 =
       (activeMarket === "SPOT"
-        ? row.Change_24h_Binance
+        ? (row.Change_24h_Spot ?? row.Change_24h_Binance)
         : row.Change_24h_Bybit) ??
       row.Change_24h_Raw ??
       0;
     nDay =
       (activeMarket === "SPOT"
-        ? row.Change_Today_Binance
+        ? (row.Change_Today_Spot ?? row.Change_Today_Binance)
         : row.Change_Today_Bybit) ??
       row.Change_Today_Raw ??
       0;
@@ -319,11 +320,11 @@ const realUpdateHeaderDisplay = (
     const hasSpot =
       row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE");
     if (hasFutures) {
-      n24 = row.Change_24h_Futures_Ex ?? row.Change_24h_Raw ?? 0;
+      n24 = row.Change_24h_Futures ?? row.Change_24h_Raw ?? 0;
       nDay = row.Change_Today_Futures ?? row.Change_Today_Raw ?? 0;
     } else if (hasSpot) {
-      n24 = row.Change_24h_Binance ?? row.Change_24h_Raw ?? 0;
-      nDay = row.Change_Today_Binance ?? row.Change_Today_Raw ?? 0;
+      n24 = (row.Change_24h_Spot ?? row.Change_24h_Binance) ?? row.Change_24h_Raw ?? 0;
+      nDay = (row.Change_Today_Spot ?? row.Change_Today_Binance) ?? row.Change_Today_Raw ?? 0;
     } else {
       n24 =
         row.Change_24h_Upbit ??
@@ -1169,24 +1170,43 @@ function scheduleDailyReset() {
   // 단 1밀리초의 지연도 없이 경주마(펌핑 코인) 등락률을 잡기 위해 00초 정각으로 세팅
   nextReset.setUTCHours(0, 0, 0, 0);
 
-  if (now > nextReset) {
+  if (now >= nextReset) {
     nextReset.setUTCDate(nextReset.getUTCDate() + 1);
   }
 
   const timeUntilReset = nextReset.getTime() - now.getTime();
-  // Xconsole.log(`⏰ 다음 9시 정각(KST) 무지연 일일 리셋까지 ${(timeUntilReset / 1000 / 3600).toFixed(2)}시간 남았습니다.`);
 
   setTimeout(() => {
-    // Xconsole.log("🚨 09:00:00.000 KST 정각! 프론트엔드 무지연 0% 리셋 발동!");
-
-    // 1. [무지연 덮어쓰기] 백엔드를 기다리지 않고, 프론트가 들고 있는 현재 웹소켓 가격을 즉시 '오늘의 시가'로 확정!
+    // 1. [무지연 9시 리셋 완전체] 선물/현물/원화 시가 및 모든 등락률을 즉각 0% 리셋!
+    const rate = store.marketDataMap?.krw_usd_rate || 0;
     if (store.currentTableData && Array.isArray(store.currentTableData)) {
       store.currentTableData.forEach((row) => {
-        if (row.Price_Raw) {
-          row.utc0_open_Raw = row.Price_Raw; // 9시 정각 가격을 시가로 덮어쓰기
-          row.Change_Today_Raw = 0; // 등락률 즉각 0% 리셋
+        // 선물 시가 덮어쓰기
+        if (row.Binance_Price_Futures || row.Price_Raw) {
+          row.futures_utc0_open_Raw = row.Binance_Price_Futures || row.Price_Raw;
         }
+        // 현물 시가 덮어쓰기
+        if (row.Binance_Price_Spot || row.Price_Raw) {
+          row.spot_utc0_open_Raw = row.Binance_Price_Spot || row.Price_Raw;
+        }
+        // 원화 시가 덮어쓰기
+        if (row.Price_KRW || (row.Price_Raw && rate > 0)) {
+          row.utc0_open_KRW = row.Price_KRW || (row.Price_Raw * rate);
+        }
+        if (row.Price_Raw) {
+          row.utc0_open_Raw = row.Price_Raw;
+        }
+
+        // 모든 당일 변동률 변수 0% 일괄 초기화 (9시 경주마 즉시 0% 출발)
+        row.Change_Today_Raw = 0;
+        row.Change_Today_Futures = 0;
+        row.Change_Today_Spot = 0;
+        row.Change_Today_Binance = 0;
+        row.Change_Today_Upbit = 0;
+        row.Change_Today_Bithumb = 0;
+        row.Change_Today_Bybit = 0;
       });
+
       // 화면 즉시 리렌더링 (0% 리셋 적용)
       if (typeof window.renderTable === "function") window.renderTable();
     }
@@ -1198,7 +1218,6 @@ function scheduleDailyReset() {
 
     // 3. [백그라운드 사후 동기화] 2초 뒤에 백엔드를 조용히 찔러서, 거래소의 공식 데이터와 장부를 완벽하게 일치시킴
     setTimeout(() => {
-      // Xconsole.log("🔄 09:00:02 KST 백그라운드 서버 동기화 진행");
       if (typeof window.loadTableData === "function") {
         window.loadTableData(true, true); // force=true, silent=true 로 로딩 마스크 없이 동기화
       }
@@ -1211,6 +1230,26 @@ function scheduleDailyReset() {
 
 // 타이머 최초 가동
 scheduleDailyReset();
+
+// 🔄 [10시간 장기 방치 자가치유] 탭을 30분 이상 떠나있었을 때만 1회성 스마트 동기화
+let _tabHiddenAt = 0;
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
+    _tabHiddenAt = Date.now();
+  } else if (document.visibilityState === "visible") {
+    const elapsed = Date.now() - _tabHiddenAt;
+    // 30분 이상 백그라운드에 방치되었을 때만 동기화 (탭 전환 시 검색어/차트 완벽 보존)
+    if (_tabHiddenAt > 0 && elapsed > 30 * 60 * 1000) {
+      if (typeof window.refreshSniperTarget === "function") {
+        window.refreshSniperTarget();
+      }
+      if (typeof window.loadTableData === "function") {
+        window.loadTableData(false, true);
+      }
+    }
+    _tabHiddenAt = 0;
+  }
+});
 
 // 📱 PWA Service Worker 등록
 if ("serviceWorker" in navigator) {

@@ -1458,3 +1458,33 @@ body.theme-upbit #pane-vol {
 body.theme-upbit #right-panel {
   background-color: #ffffff !important;
 }
+
+/* 🚀 김프 거래소별 특유 색상 초슬림 로딩 바 */
+.kimchi-progress-bar {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.kimchi-progress-inner {
+  height: 100%;
+  width: 30%;
+  border-radius: 9999px;
+  animation: kimchi-progress-anim 1.1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  transition: width 0.2s ease, opacity 0.2s ease;
+}
+
+@keyframes kimchi-progress-anim {
+  0% {
+    margin-left: 0%;
+    width: 20%;
+  }
+  50% {
+    margin-left: 35%;
+    width: 55%;
+  }
+  100% {
+    margin-left: 80%;
+    width: 20%;
+  }
+}

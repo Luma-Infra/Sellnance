@@ -351,10 +351,11 @@ export async function loadTableDataSilent() {
             row.Change_24h_Upbit = fresh.Change_24h_Upbit;
             row.Change_Today_Upbit = fresh.Change_Today_Upbit;
             row.Change_24h_Bithumb = fresh.Change_24h_Bithumb;
-            row.Change_Today_Bithumb = fresh.Change_Today_Bithumb;
+            row.Change_24h_Spot = fresh.Change_24h_Spot ?? fresh.Change_24h_Binance;
+            row.Change_Today_Spot = fresh.Change_Today_Spot ?? fresh.Change_Today_Binance;
             row.Change_24h_Binance = fresh.Change_24h_Binance;
             row.Change_Today_Binance = fresh.Change_Today_Binance;
-            row.Change_24h_Futures_Ex = fresh.Change_24h_Futures_Ex;
+            row.Change_24h_Futures = fresh.Change_24h_Futures;
             row.Change_Today_Futures = fresh.Change_Today_Futures;
           }
         }

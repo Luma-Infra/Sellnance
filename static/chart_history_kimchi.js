@@ -2,7 +2,158 @@ import { store, tfSec } from "./_store.js";
 import { getMultiplier, sanitizeChartData, rebuildKimchiDataMap } from "./chart_utils.js";
 import { fetchCandlesSmart, fetchPaginated, mapTime } from "./chart_data.js";
 import { calculateKimchiData } from "./chart_data_kimchi.js";
-import { fetchBithumbUnifiedCandles } from "./chart_bithumb_sync.js";
+// import { fetchBithumbUnifiedCandles } from "./chart_bithumb_sync.js"; // 빗썸 정신차릴 때까지 임시 대기
+
+// 🚀 [거래소별 특유 색상 테마 매핑 - 현선(SPOT/FUT) 완벽 분리]
+export function getExchangeLoadingTheme(exchId) {
+  const id = (exchId || "").toLowerCase();
+  // 1. 국내 거래소
+  if (id.includes("upbit")) {
+    return {
+      bg: "linear-gradient(90deg, #093687 0%, #1E60D5 50%, #60a5fa 100%)",
+      glow: "0 0 10px rgba(30, 96, 213, 0.95)",
+    };
+  }
+  if (id.includes("bithumb")) {
+    return {
+      bg: "linear-gradient(90deg, #FF5C00 0%, #FF8B00 50%, #FBBF24 100%)",
+      glow: "0 0 10px rgba(255, 139, 0, 0.95)",
+    };
+  }
+  // 2. 바이낸스 (현물/선물 일치)
+  if (id.includes("binance") || id.includes("b-spot") || id.includes("b-fut")) {
+    return {
+      bg: "linear-gradient(90deg, #D4A007 0%, #F0B90B 50%, #FFF080 100%)", // 🟡 바이낸스 골드
+      glow: "0 0 10px rgba(240, 185, 11, 0.95)",
+    };
+  }
+  // 3. 바이비트 (현물/선물 일치)
+  if (id.includes("bybit") || id.includes("byb")) {
+    return {
+      bg: "linear-gradient(90deg, #E58A00 0%, #F7A600 50%, #FFD270 100%)", // 🟠 바이비트 앰버
+      glow: "0 0 10px rgba(247, 166, 0, 0.95)",
+    };
+  }
+  return {
+    bg: "linear-gradient(90deg, var(--accent) 0%, #3b82f6 100%)",
+    glow: "0 0 8px rgba(59, 130, 246, 0.8)",
+  };
+}
+
+export function showKimchiLoading(subExchange) {
+  const switcher = document.getElementById("kimchi-switcher");
+  let loadingBar = document.getElementById("kimchi-loading-bar");
+
+  if (!loadingBar && switcher) {
+    loadingBar = document.createElement("div");
+    loadingBar.id = "kimchi-loading-bar";
+    loadingBar.className =
+      "kimchi-progress-bar w-full h-[3px] rounded-full overflow-hidden transition-all duration-200 pointer-events-none opacity-0";
+    switcher.appendChild(loadingBar);
+  }
+
+  if (!loadingBar) return;
+
+  const theme = getExchangeLoadingTheme(subExchange);
+  loadingBar.innerHTML = `<div class="kimchi-progress-inner" style="background: ${theme.bg}; box-shadow: ${theme.glow};"></div>`;
+  loadingBar.classList.remove("opacity-0");
+  loadingBar.classList.add("opacity-100");
+}
+
+export function hideKimchiLoading() {
+  const loadingBar = document.getElementById("kimchi-loading-bar");
+  if (!loadingBar) return;
+
+  const inner = loadingBar.querySelector(".kimchi-progress-inner");
+  if (inner) {
+    inner.style.animation = "none";
+    inner.style.width = "100%";
+    inner.style.marginLeft = "0%";
+  }
+  setTimeout(() => {
+    loadingBar.classList.remove("opacity-100");
+    loadingBar.classList.add("opacity-0");
+  }, 180);
+}
+
+window.showKimchiLoading = showKimchiLoading;
+window.hideKimchiLoading = hideKimchiLoading;
+export function updateKimchiComparisonUI() {
+  const btn = document.getElementById("toggle-kimchi-btn");
+  const notice = document.getElementById("kimchi-disabled-notice");
+  const isDisabled = !!store.isKimchiDisabled;
+
+  if (btn) {
+    if (isDisabled) {
+      btn.innerText = "김프 비교 켜기";
+      btn.classList.remove(
+        "text-theme-accent",
+        "border-theme-accent/40",
+        "bg-theme-accent/10",
+        "shadow-sm",
+      );
+      btn.classList.add(
+        "text-theme-text",
+        "opacity-50",
+        "border-theme-border/50",
+        "bg-theme-panel/50",
+      );
+    } else {
+      btn.innerText = "김프 비교 끄기";
+      btn.classList.add(
+        "text-theme-accent",
+        "border-theme-accent/40",
+        "bg-theme-accent/10",
+        "shadow-sm",
+      );
+      btn.classList.remove(
+        "text-theme-text",
+        "opacity-50",
+        "border-theme-border/50",
+        "bg-theme-panel/50",
+      );
+    }
+  }
+
+  if (notice) {
+    if (isDisabled) {
+      notice.classList.remove("hidden");
+    } else {
+      notice.classList.add("hidden");
+    }
+  }
+
+  // 김프 시리즈 및 가격축 가시성 제어
+  if (store.kimchiSeries) {
+    store.kimchiSeries.applyOptions({ visible: !isDisabled });
+  }
+  if (store.chartVol) {
+    store.chartVol.priceScale("left").applyOptions({ visible: !isDisabled });
+  }
+}
+
+export function toggleKimchiComparison(forceVal) {
+  if (forceVal !== undefined) {
+    store.isKimchiDisabled = !forceVal;
+  } else {
+    store.isKimchiDisabled = !store.isKimchiDisabled;
+  }
+  try {
+    localStorage.setItem(
+      "sellnance_kimchi_disabled",
+      store.isKimchiDisabled ? "true" : "false",
+    );
+  } catch (e) {}
+
+  updateKimchiComparisonUI();
+
+  if (typeof window.fetchHistory === "function" && store.currentAsset) {
+    window.fetchHistory(store.currentAsset, false, false, true);
+  }
+}
+
+window.toggleKimchiComparison = toggleKimchiComparison;
+window.updateKimchiComparisonUI = updateKimchiComparisonUI;
 
 // 🚀 [역할 분리] 김프 데이터 백그라운드 Lazy 수집 및 차트 렌더링 전담
 export async function lazyRenderKimchiData(params) {
@@ -47,6 +198,17 @@ export async function lazyRenderKimchiData(params) {
       store.currentChartMarket === "UPBIT" ||
       store.currentChartMarket === "BITHUMB"
     ) {
+      // 🚀 [현물 우선 -> 선물 fallback] 바이낸스 현물 (B-SPOT)
+      if (listedEx.includes("BINANCE_SPOT") || listedEx.includes("BINANCE"))
+        availableSubs.push({
+          id: "binance_spot",
+          name: "B-SPOT",
+          bg: "#444",
+          text: "#fff",
+          sym: `${exactSpot}USDT`,
+          pureSym: exactSpot,
+        });
+      // 🚀 바이낸스 선물 (B-FUT)
       if (listedEx.includes("BINANCE_FUTURES"))
         availableSubs.push({
           id: "binance_futures",
@@ -56,30 +218,23 @@ export async function lazyRenderKimchiData(params) {
           sym: `${exactFutures}USDT`,
           pureSym: exactFutures,
         });
-      if (listedEx.includes("BINANCE"))
+      // 🚀 바이비트 현물 (BYBIT)
+      if (listedEx.includes("BYBIT_SPOT") || listedEx.includes("BYBIT"))
         availableSubs.push({
-          id: "binance_spot",
-          name: "B-SPOT",
-          bg: "#444",
+          id: "bybit_spot",
+          name: "BYBIT",
+          bg: "#f7a600",
           text: "#fff",
-          sym: `${exactSpot}USDT`,
-          pureSym: exactSpot,
+          sym: `${exactBybit}USDT`,
+          pureSym: exactBybit,
         });
+      // 🚀 바이비트 선물 (BYB-F)
       if (listedEx.includes("BYBIT_FUTURES"))
         availableSubs.push({
           id: "bybit_futures",
           name: "BYB-F",
           bg: "#f7a600",
           text: "#000",
-          sym: `${exactBybit}USDT`,
-          pureSym: exactBybit,
-        });
-      if (listedEx.includes("BYBIT"))
-        availableSubs.push({
-          id: "bybit_spot",
-          name: "BYBIT",
-          bg: "#f7a600",
-          text: "#fff",
           sym: `${exactBybit}USDT`,
           pureSym: exactBybit,
         });
@@ -144,34 +299,77 @@ export async function lazyRenderKimchiData(params) {
         loadingMessageContainer = document.createElement("div");
         loadingMessageContainer.id = "kimchi-loading-message";
         loadingMessageContainer.className =
-          "absolute right-3 z-[110] flex gap-1.5 transition-all duration-300 pointer-events-none";
-        if (wrapper) wrapper.appendChild(loadingMessageContainer);
+          "absolute right-3 z-[120] flex gap-1.5 transition-all duration-300 pointer-events-none";
+        const chartParent =
+          document.getElementById("kimchi-no-data")?.parentElement || wrapper;
+        if (chartParent) chartParent.appendChild(loadingMessageContainer);
       }
+
+      const chartParent =
+        document.getElementById("kimchi-no-data")?.parentElement || wrapper;
 
       let switcherContainer = document.getElementById("kimchi-switcher");
       if (!switcherContainer) {
         switcherContainer = document.createElement("div");
         switcherContainer.id = "kimchi-switcher";
         switcherContainer.className =
-          "absolute right-3 z-[110] flex gap-1.5 transition-all duration-300 pointer-events-auto";
-        if (wrapper) wrapper.appendChild(switcherContainer);
+          "absolute right-3 z-[120] flex flex-col items-end gap-1 transition-all duration-300 pointer-events-auto select-none";
+        if (chartParent) chartParent.appendChild(switcherContainer);
+      } else {
+        switcherContainer.className =
+          "absolute right-3 z-[120] flex flex-col items-end gap-1 transition-all duration-300 pointer-events-auto select-none";
       }
 
+      let buttonsHtml = "";
       if (availableSubs.length > 1) {
-        switcherContainer.innerHTML = availableSubs
+        buttonsHtml = availableSubs
           .map((s) => {
             const isActive = s.id === subExchange;
             const opacity = isActive
-              ? "opacity-100 ring-2 ring-white/50 scale-105"
+              ? "opacity-100 ring-2 ring-white/80 scale-105"
               : "opacity-40 hover:opacity-80";
             return `<button class="text-[10px] font-medium px-1.5 py-0.5 rounded shadow-sm transition-all ${opacity}" style="background-color: ${s.bg}; color: ${s.text};" onclick="switchKimchiSub('${s.id}')">${s.name}</button>`;
           })
           .join("");
-        switcherContainer.style.display = "flex";
       } else {
         const s = availableSubs[0];
-        switcherContainer.innerHTML = `<span class="text-[10px] font-medium px-1.5 py-0.5 rounded opacity-60 pointer-events-none" style="background-color: ${s.bg}; color: ${s.text};">vs ${s.name}</span>`;
-        switcherContainer.style.display = "flex";
+        buttonsHtml = `<span class="text-[10px] font-medium px-1.5 py-0.5 rounded opacity-60 pointer-events-none" style="background-color: ${s.bg}; color: ${s.text};">vs ${s.name}</span>`;
+      }
+
+      switcherContainer.innerHTML = `
+        <div class="kimchi-btn-group flex gap-1.5">${buttonsHtml}</div>
+        <div id="kimchi-loading-bar" class="kimchi-progress-bar w-full h-[3px] rounded-full overflow-hidden transition-all duration-200 pointer-events-none opacity-0"></div>
+      `;
+      switcherContainer.style.display = "flex";
+
+      // 🚀 [김프 비교 끄기 상태 가드]
+      const disabledNotice = document.getElementById("kimchi-disabled-notice");
+      if (store.isKimchiDisabled) {
+        if (store.kimchiSeries) {
+          try { store.kimchiSeries.setData([]); } catch (e) {}
+        }
+        store.kimchiData = [];
+        if (store.kimchiDataMap) store.kimchiDataMap.clear();
+        store.realtimeKimchi = null;
+        if (wrapper) wrapper.style.setProperty("--kimchi-color", "transparent");
+
+        if (disabledNotice) disabledNotice.classList.remove("hidden");
+        const noDataMsg = document.getElementById("kimchi-no-data");
+        if (noDataMsg) noDataMsg.classList.add("hidden");
+
+        if (store.chartVol) {
+          store.chartVol.priceScale("left").applyOptions({ visible: false });
+        }
+        requestAnimationFrame(() => {
+          try {
+            if (typeof applyChartLayout === "function") applyChartLayout();
+          } catch (e) {}
+        });
+
+        hideKimchiLoading();
+        return; // 🎯 김프 비교 끔: 비교군 캔들 수집, 환율 수집, 김프 계산 전면 스킵! (Early Return)
+      } else {
+        if (disabledNotice) disabledNotice.classList.add("hidden");
       }
 
       store.paneConfig.kimchi = true;
@@ -198,6 +396,8 @@ export async function lazyRenderKimchiData(params) {
         upbitInterval = `minutes/${baseMin}`;
       }
 
+      showKimchiLoading(subExchange);
+
       let subRaw = [];
       if (subExchange === "upbit") {
         subRaw = await fetchPaginated(
@@ -207,14 +407,18 @@ export async function lazyRenderKimchiData(params) {
           500,
         );
       } else if (subExchange === "bithumb") {
-        subRaw = await fetchBithumbUnifiedCandles({
-          symbol: subSymbol,
-          tf: store.currentTF,
-          exactFutures,
-          exactSpot,
-          pureBase: uniqueTicker,
-          fetchCandlesSmart,
-        });
+        const bData = await fetchCandlesSmart("bithumb", subSymbol, store.currentTF, 1000);
+        const rawList = Array.isArray(bData?.data) ? bData.data : (Array.isArray(bData) ? bData : []);
+        subRaw = rawList
+          .map((d) => ({
+            time: Math.floor(Number(d[0]) / 1000),
+            open: Number(d[1]),
+            close: Number(d[2]),
+            high: Number(d[3]),
+            low: Number(d[4]),
+            vol: Number(d[5]),
+          }))
+          .sort((a, b) => a.time - b.time);
       } else {
         const subJson = await fetchCandlesSmart(
           subExchange,
@@ -245,19 +449,55 @@ export async function lazyRenderKimchiData(params) {
 
       if (!store.fiatRateCache) store.fiatRateCache = {};
       if (!store.fiatRateCache[rateCacheKey]) {
-        const res = await fetch("/api/usdkrw");
-        const usdkrwRaw = await res.json();
-        if (usdkrwRaw && !usdkrwRaw.error) {
-          let fiatTimeline = [];
-          for (let [ts, price] of Object.entries(usdkrwRaw)) {
-            fiatTimeline.push({
-              time: Number(ts),
-              price: price,
-              source: "tv_fiat",
-            });
+        let loadedFromLocal = false;
+        try {
+          const localStr = localStorage.getItem("sellnance_usdkrw_cache");
+          if (localStr) {
+            const parsed = JSON.parse(localStr);
+            if (parsed && typeof parsed === "object") {
+              let fiatTimeline = [];
+              for (let [ts, price] of Object.entries(parsed)) {
+                fiatTimeline.push({
+                  time: Number(ts),
+                  price: price,
+                  source: "tv_fiat",
+                });
+              }
+              const liveRate = store.marketDataMap?.krw_usd_rate;
+              if (liveRate && Number(liveRate) > 0) {
+                const nowSec = Math.floor(Date.now() / 1000);
+                fiatTimeline.push({ time: nowSec, price: Number(liveRate), source: "live_fiat" });
+              }
+              fiatTimeline.sort((a, b) => a.time - b.time);
+              store.fiatRateCache[rateCacheKey] = fiatTimeline;
+              loadedFromLocal = true;
+            }
           }
-          fiatTimeline.sort((a, b) => a.time - b.time);
-          store.fiatRateCache[rateCacheKey] = fiatTimeline;
+        } catch (e) {}
+
+        if (!loadedFromLocal) {
+          const res = await fetch("/api/usdkrw");
+          const usdkrwRaw = await res.json();
+          if (usdkrwRaw && !usdkrwRaw.error) {
+            try {
+              localStorage.setItem("sellnance_usdkrw_cache", JSON.stringify(usdkrwRaw));
+            } catch (e) {}
+            let fiatTimeline = [];
+            for (let [ts, price] of Object.entries(usdkrwRaw)) {
+              fiatTimeline.push({
+                time: Number(ts),
+                price: price,
+                source: "tv_fiat",
+              });
+            }
+            const liveRate = store.marketDataMap?.krw_usd_rate;
+            if (liveRate && Number(liveRate) > 0) {
+              const nowSec = Math.floor(Date.now() / 1000);
+              fiatTimeline.push({ time: nowSec, price: Number(liveRate), source: "live_fiat" });
+            }
+            fiatTimeline.sort((a, b) => a.time - b.time);
+            store.fiatRateCache[rateCacheKey] = fiatTimeline;
+          }
         }
       }
 
@@ -270,8 +510,10 @@ export async function lazyRenderKimchiData(params) {
       if (
         store.currentAsset !== snapshotAsset ||
         store.currentTF !== snapshotTF
-      )
+      ) {
+        hideKimchiLoading();
         return;
+      }
 
       store.kimchiData = newKimchiData.map((d) => mapTime(d));
       rebuildKimchiDataMap();
@@ -287,6 +529,9 @@ export async function lazyRenderKimchiData(params) {
             if (currentRange)
               store.chart.timeScale().setVisibleLogicalRange(currentRange);
 
+            // 🎯 김프 선이 차트에 완전히 렌더링된 순간 로딩 종료!
+            hideKimchiLoading();
+
             // 🚀 [해결] 데이터가 성공적으로 바인딩되었으므로 오버레이 경고 문구를 숨깁니다.
             if (typeof window.toggleVolFallback === "function") {
               window.toggleVolFallback(false);
@@ -297,15 +542,18 @@ export async function lazyRenderKimchiData(params) {
               setTimeout(window.syncPriceScaleWidths, 50);
           } catch (setErr) {
             console.warn("🚨 kimchiSeries.setData 렌더링 예외 우회 완료:", setErr);
+            hideKimchiLoading();
           }
         });
       } else {
+        hideKimchiLoading();
         // 데이터가 없거나 로드되지 않은 상태이므로 경고 문구 표시
         if (typeof window.toggleVolFallback === "function") {
           window.toggleVolFallback(true);
         }
       }
     } else {
+      hideKimchiLoading();
       store.paneConfig.kimchi = false;
       if (store.kimchiSeries) {
         try {
@@ -351,5 +599,13 @@ export async function lazyRenderKimchiData(params) {
     if (typeof window.toggleVolFallback === "function") {
       window.toggleVolFallback(true);
     }
+  }
+}
+
+if (typeof document !== "undefined") {
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", updateKimchiComparisonUI);
+  } else {
+    setTimeout(updateKimchiComparisonUI, 50);
   }
 }

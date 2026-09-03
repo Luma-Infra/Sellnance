@@ -35,15 +35,15 @@ export function syncRowPrioritizedMetrics(row) {
   if (currentMarket === "FUTURES") {
     pPrice =
       row.Binance_Price_Futures ?? row.Bybit_Price_Futures ?? row.Price_Raw;
-    p24h = row.Change_24h_Futures_Ex ?? row.Change_24h_Raw;
+    p24h = row.Change_24h_Futures ?? row.Change_24h_Raw;
     pToday = row.Change_Today_Futures ?? row.Change_Today_Raw;
     pOpen = row.futures_utc0_open_Raw ?? row.utc0_open_Raw;
     pInflow = row.Binance_Futures === "O" ? "BINANCE_FUTURES" : "BYBIT_FUTURES";
   } else if (currentMarket === "SPOT") {
     pPrice = row.Binance_Price_Spot ?? row.Bybit_Price_Spot ?? row.Price_Raw;
-    p24h = row.Change_24h_Binance ?? row.Change_24h_Bybit ?? row.Change_24h_Raw;
+    p24h = (row.Change_24h_Spot ?? row.Change_24h_Binance) ?? row.Change_24h_Bybit ?? row.Change_24h_Raw;
     pToday =
-      row.Change_Today_Binance ??
+      (row.Change_Today_Spot ?? row.Change_Today_Binance) ??
       row.Change_Today_Bybit ??
       row.Change_Today_Raw;
     pOpen = row.spot_utc0_open_Raw ?? row.utc0_open_Raw;
@@ -84,7 +84,7 @@ export function syncRowPrioritizedMetrics(row) {
         row.Listed_Exchanges?.includes("BINANCE_FUTURES"))
     ) {
       pPrice = row.Binance_Price_Futures ?? row.Price_Raw;
-      p24h = row.Change_24h_Futures_Ex ?? row.Change_24h_Raw;
+      p24h = row.Change_24h_Futures ?? row.Change_24h_Raw;
       pToday = row.Change_Today_Futures ?? row.Change_Today_Raw;
       pOpen = row.futures_utc0_open_Raw ?? row.utc0_open_Raw;
       pInflow = "BINANCE_FUTURES";
@@ -339,8 +339,9 @@ store.radarIntervalId = setInterval(() => {
         row.Change_24h_Upbit = chg;
       } else {
         if (isFuturesTicker) {
-          row.Change_24h_Futures_Ex = chg;
+          row.Change_24h_Futures = chg;
         } else if (row.Listed_Exchanges?.includes("BINANCE") || row.Exact_Spot) {
+          row.Change_24h_Spot = chg;
           row.Change_24h_Binance = chg;
         } else {
           row.Change_24h_Bybit = chg;
@@ -414,7 +415,7 @@ store.radarIntervalId = setInterval(() => {
           const exList = (r.Listed_Exchanges || []).map(e => e.toUpperCase());
           const hasUpbit = r.Upbit === "O" || exList.includes("UPBIT") || !!r.Upbit_Symbol;
           const hasBithumb = exList.includes("BITHUMB") || !!r.Bithumb_Symbol;
-          const hasGlobal = r.Binance === "O" || r.Binance_Futures === "O" || exList.includes("BINANCE") || exList.includes("BINANCE_FUTURES") || exList.includes("BYBIT") || exList.includes("BYBIT_FUTURES") || !!r.Price_Raw;
+          const hasGlobal = r.Binance === "O" || exList.includes("BINANCE_SPOT") || exList.includes("BINANCE") || exList.includes("BINANCE_FUTURES") || exList.includes("BYBIT_SPOT") || exList.includes("BYBIT") || exList.includes("BYBIT_FUTURES") || !!r.Price_Raw;
 
           if (!hasGlobal || (!hasUpbit && !hasBithumb)) {
             r.Kimchi_Raw = null;
@@ -455,11 +456,15 @@ store.radarIntervalId = setInterval(() => {
           }
 
           const domMult = getMultiplier(r.Upbit_Symbol || (r.Bithumb_Symbol ? r.Bithumb_Symbol : null) || r.Ticker || r.Symbol);
-          const ovsMult = getMultiplier(r.Exact_Futures || r.Exact_Spot || r.Ticker || r.Symbol);
+          const ovsMult = getMultiplier(r.Exact_Spot || r.Exact_Futures || r.Ticker || r.Symbol);
           const unitKorPrice = priceKor / domMult;
-          let priceGlb = r.Price_Raw || 0;
-          if ((!priceGlb || r.Ticker?.endsWith("KRW")) && (r.Binance_Price_Futures || r.Binance_Price_Spot || r.Binance_Price)) {
-            priceGlb = r.Binance_Price_Futures || r.Binance_Price_Spot || r.Binance_Price || 0;
+          let priceGlb = 0;
+          if (r.Binance_Price_Spot || r.Binance_Price) {
+            priceGlb = r.Binance_Price_Spot || r.Binance_Price || 0;
+          } else if (r.Binance_Price_Futures) {
+            priceGlb = r.Binance_Price_Futures;
+          } else {
+            priceGlb = r.Price_Raw || 0;
           }
           const unitGlbPrice = priceGlb / ovsMult;
 
@@ -470,42 +475,6 @@ store.radarIntervalId = setInterval(() => {
               r.Kimchi_Label = (kimchiPct > 0 ? "+" : "") + kimchiPct.toFixed(2) + "%";
               r.Kimchi_Formatted = (kimchiPct > 0 ? "+" : "") + kimchiPct.toFixed(2) + "%";
               return;
-            }
-          }
-          /*
-          const isFakeZero =
-            r.Kimchi_Raw === 0 ||
-            r.Kimchi_Raw === 0.0 ||
-            r.Kimchi_Raw === null ||
-            r.Kimchi_Raw === undefined ||
-            !r.Kimchi_Formatted ||
-            /^(0\.0+%)?$/.test(r.Kimchi_Formatted) ||
-            r.Kimchi_Formatted === "-" ||
-            r.Kimchi_Formatted === "0.00%";
-
-          if (isFakeZero) {
-          r.Kimchi_Raw = null;
-          r.Kimchi_Label = "-";
-          r.Kimchi_Formatted = "-";
-
-            // 🚀 [렉 차단] visible 코인에만 DOM 큐 예약 (3초 주기는 setInterval이 보장)
-            const _isVisR2 = store.visibleSymbols?.has(r.Ticker) ||
-              store.visibleSymbols?.has(r.Ticker?.toUpperCase()) ||
-              store.visibleSymbols?.has(r.Ticker?.toLowerCase()) ||
-              store.visibleSymbols?.has(r.Symbol) ||
-              store.visibleSymbols?.has(r.DisplayTicker);
-            if (_isVisR2 && window._realtimeRenderQueue) {
-              window._realtimeRenderQueue.set(r.Ticker, () => {
-                const rowEl = store.rowDomMap ? store.rowDomMap.get(r.Ticker) : null;
-                if (rowEl && typeof window.updateRowDynamicHTML === "function") {
-                  if (store.blockRowDynamicHTML) {
-                    if (store.bypassCounters) store.bypassCounters.dynamicHtml++;
-                    window.updateRowDynamicHTML(rowEl, r, true);
-                  } else {
-                    window.updateRowDynamicHTML(rowEl, r, false);
-        }
-                }
-              });
             }
           }
         };
@@ -521,10 +490,10 @@ store.radarIntervalId = setInterval(() => {
             if (r) {
               if (!r.UID || !row.UID || r.UID == row.UID) {
                 calcKimchi(r);
-                }
               }
             }
           }
+        }
       }
     }
 

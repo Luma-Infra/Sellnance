@@ -69,50 +69,17 @@ export async function fetchBithumbUnifiedCandles(options) {
   const cleanSymbol = symbol.replace("KRW-", "").replace("_KRW", "");
   const bithumbSym = `${cleanSymbol}_KRW`;
 
-  // 1️⃣ 4시간봉, 12시간봉, 일봉, 3일봉, 주봉, 월봉 200개 캔들 풀 합성 조립
+  // 1️⃣ 4시간봉, 12시간봉, 일봉, 3일봉, 주봉, 월봉 캔들 수신 (트뷰 본진 직통 aiohttp TV 캔들)
   if (isSynthesisTF) {
-    const glbTicker = exactFutures
-      ? `${exactFutures}USDT`
-      : exactSpot
-        ? `${exactSpot}USDT`
-        : pureBase
-          ? `${pureBase}USDT`
-          : `${cleanSymbol}USDT`;
-    const glbEx = exactFutures ? "binance_futures" : "binance_spot";
-
     const bFetchInt = ["4h", "12h"].includes(tf) ? tf : "24h";
-    const [bData, glbData] = await Promise.all([
-      fetchCandlesSmart("bithumb", bithumbSym, bFetchInt, 1000),
-      fetchCandlesSmart(glbEx, glbTicker, tf, 200).catch(() => null),
-    ]);
-
+    const bData = await fetchCandlesSmart("bithumb", bithumbSym, bFetchInt, 1000);
     const rawBithumbList = Array.isArray(bData?.data) ? bData.data : [];
-    const bLen = rawBithumbList.length;
-    const currentRate = store.marketDataMap?.krw_usd_rate || 1353;
 
-    // 바이낸스 표준 글로벌 24시간 변동폭(몸통/꼬리)에 빗썸 KRW 환율/김프를 입혀 완벽한 200개 캔들 합성
-    if (Array.isArray(glbData) && glbData.length > 0) {
-      const gLen = glbData.length;
-      return glbData
-        .map((d, idx) => {
-          const tSec = Math.floor(Number(d[0]) / 1000);
-          const open = Number(d[1]) * currentRate;
-          const high = Number(d[2]) * currentRate;
-          const low = Number(d[3]) * currentRate;
-          const close = Number(d[4]) * currentRate;
-          // 💡 vol은 시프트/쪼개기 없이 빗썸 원본 볼륨 그대로 직결 매핑
-          const bIdx = bLen - (gLen - idx);
-          const vol = bIdx >= 0 && rawBithumbList[bIdx] ? Number(rawBithumbList[bIdx][5]) : Number(d[5]) || 0;
-          return { time: tSec, open, high, low, close, vol };
-        })
-        .sort((a, b) => a.time - b.time);
-    }
-
-    // 폴백: 순수 국내 코인은 24h 시프트 후 그룹 조립
+    // 🚀 트레이딩뷰 본진 규격(UTC0 기준) 빗썸 캔들을 순수 그대로 반환 (중복 바이낸스 200개 호출 영구 삭제)
     if (rawBithumbList.length > 0) {
-      const raw24hMapped = rawBithumbList
+      return rawBithumbList
         .map((d) => ({
-          time: Math.floor(Number(d[0]) / 1000) + 32400,
+          time: Math.floor(Number(d[0]) / 1000),
           open: Number(d[1]),
           close: Number(d[2]),
           high: Number(d[3]),
@@ -120,28 +87,6 @@ export async function fetchBithumbUnifiedCandles(options) {
           vol: Number(d[5]),
         }))
         .sort((a, b) => a.time - b.time);
-
-      const groups = {};
-      raw24hMapped.forEach((d) => {
-        const gt = getBithumbGroupTime(d.time, tf);
-        if (!groups[gt]) groups[gt] = [];
-        groups[gt].push(d);
-      });
-
-      return Object.keys(groups)
-        .sort((a, b) => Number(a) - Number(b))
-        .map((gtStr) => {
-          const gt = Number(gtStr);
-          const chunk = groups[gt].sort((a, b) => a.time - b.time);
-          return {
-            time: gt,
-            open: chunk[0].open,
-            close: chunk[chunk.length - 1].close,
-            high: Math.max(...chunk.map((c) => c.high)),
-            low: Math.min(...chunk.map((c) => c.low)),
-            vol: chunk.reduce((sum, c) => sum + (c.vol || 0), 0),
-          };
-        });
     }
     return [];
   }

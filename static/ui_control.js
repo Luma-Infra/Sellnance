@@ -115,7 +115,7 @@ export function switchViewMode(mode) {
   const tabFav2 = document.getElementById("tab-fav2");
   const btnSmallCap = document.getElementById("btn-small-cap");
 
-  // if (tabAll) tabAll.textContent = isSimple ? "ALL" : "ALL LIST";
+  // if (tabAll) tabAll.textContent = isSimple ? "ALL" : "ALL LIST";  
 
   if (typeof window.updateFavoritesCount === "function") {
     window.updateFavoritesCount();
@@ -643,7 +643,7 @@ export function toggleChartMouseEventBlock(checked) {
     try {
       if (store.chart) store.chart.clearCrosshairPosition();
       if (store.chartVol) store.chartVol.clearCrosshairPosition();
-    } catch (e) {}
+    } catch (e) { }
   }
 }
 
@@ -1029,7 +1029,7 @@ export function getRecentSearches() {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) return parsed;
     }
-  } catch (e) {}
+  } catch (e) { }
   return [];
 }
 
@@ -1042,7 +1042,7 @@ export function addRecentSearch(ticker) {
   if (list.length > 10) list = list.slice(0, 10);
   try {
     localStorage.setItem("sellnance_recent_searches", JSON.stringify(list));
-  } catch (e) {}
+  } catch (e) { }
 }
 
 export function removeRecentSearch(ticker, event) {
@@ -1054,7 +1054,7 @@ export function removeRecentSearch(ticker, event) {
   list = list.filter((item) => item !== ticker);
   try {
     localStorage.setItem("sellnance_recent_searches", JSON.stringify(list));
-  } catch (e) {}
+  } catch (e) { }
   showRecentSearchChips();
 }
 
@@ -1065,7 +1065,7 @@ export function clearAllRecentSearches(event) {
   }
   try {
     localStorage.removeItem("sellnance_recent_searches");
-  } catch (e) {}
+  } catch (e) { }
   hideRecentSearchChips();
 }
 
@@ -1227,7 +1227,7 @@ export function executeSetTF(tf) {
   // 🚀 [UX 복원] 마지막 타임프레임 로컈 저장
   try {
     localStorage.setItem("sellnance_last_tf", tf);
-  } catch (e) {}
+  } catch (e) { }
   document.querySelectorAll(".tf-btn").forEach((b) => {
     const onClickAttr = b.getAttribute("onclick") || "";
     const isMatch = onClickAttr.includes(`'${tf}'`);
@@ -1707,7 +1707,7 @@ function getVisibleTfs() {
         );
       }
     }
-  } catch (e) {}
+  } catch (e) { }
   return timeframes.map((t) => t.value);
 }
 
@@ -1781,11 +1781,10 @@ function renderTfCheckboxList() {
     const isChecked = visibleVals.includes(tf.value);
 
     // 🚀 체크박스 대신 예쁜 뱃지 토글 디자인 적용
-    btn.className = `px-2 py-1.5 text-[11px] font-bold rounded border transition-all cursor-pointer ${
-      isChecked
-        ? "bg-theme-accent text-white border-theme-accent shadow-sm"
-        : "bg-theme-panel/50 text-theme-text opacity-50 border-theme-border/50 hover:opacity-100 hover:border-theme-border"
-    }`;
+    btn.className = `px-2 py-1.5 text-[11px] font-bold rounded border transition-all cursor-pointer ${isChecked
+      ? "bg-theme-accent text-white border-theme-accent shadow-sm"
+      : "bg-theme-panel/50 text-theme-text opacity-50 border-theme-border/50 hover:opacity-100 hover:border-theme-border"
+      }`;
     btn.innerText = tf.label;
 
     btn.addEventListener("click", (e) => {

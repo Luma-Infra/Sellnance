@@ -41,12 +41,14 @@ export function applyChartLayout() {
   const isSmallMobile =
     typeof window !== "undefined" && window.innerWidth < 768;
 
+  const isKimchiActuallyVisible = !!k && !store.isKimchiDisabled;
+
   if (store.kimchiSeries) {
-    store.kimchiSeries.applyOptions({ visible: !!k });
+    store.kimchiSeries.applyOptions({ visible: isKimchiActuallyVisible });
     if (store.chartVol) {
       store.chartVol.priceScale("left").applyOptions({
-        visible: !isSmallMobile,
-        minimumWidth: isSmallMobile ? 0 : 60,
+        visible: isKimchiActuallyVisible && !isSmallMobile,
+        minimumWidth: isKimchiActuallyVisible && !isSmallMobile ? 60 : 0,
         borderColor: "transparent", // 🚀 김프 활성화 시에도 좌측 검은 실선이 생기지 않도록 상시 투명 유지
       });
     }
@@ -54,8 +56,8 @@ export function applyChartLayout() {
     // 메인 차트도 동일한 너비로 맞춰서 완벽한 수직 정렬 구현
     if (store.chart) {
       store.chart.priceScale("left").applyOptions({
-        visible: !isSmallMobile,
-        minimumWidth: isSmallMobile ? 0 : 60,
+        visible: isKimchiActuallyVisible && !isSmallMobile,
+        minimumWidth: isKimchiActuallyVisible && !isSmallMobile ? 60 : 0,
       });
     }
   }

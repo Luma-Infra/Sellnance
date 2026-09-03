@@ -6,6 +6,7 @@ import {
   applySelectedHighlight,
   getListingDate,
 } from "./table_render.js";
+import { getRowDisplayMetrics } from "./_market_rules.js";
 
 let lastSortTime = 0;
 
@@ -92,6 +93,9 @@ export function simpleSortData() {
     store.currentSortCol === "Caution" ||
     store.currentSortCol === "Listing_Date";
 
+  const isKrwMode = store.currencyMode === "KRW";
+  const rate = store.marketDataMap?.krw_usd_rate || 0;
+
   // 🚀 [Schwartzian Transform] 공통 Raw 변수 값 및 비어있음 판단을 O(N)으로 1회만 선계산하여 캐싱
   const mapped = dataCopy.map((d) => {
     let val;
@@ -106,6 +110,12 @@ export function simpleSortData() {
         d.DisplayTicker ||
         d.Symbol ||
         "";
+    } else if (store.currentSortCol === "Change_24h") {
+      val = getRowDisplayMetrics(d, isKrwMode, rate).n24h;
+    } else if (store.currentSortCol === "Change_Today") {
+      val = getRowDisplayMetrics(d, isKrwMode, rate).nDay;
+    } else if (store.currentSortCol === "Price") {
+      val = getRowDisplayMetrics(d, isKrwMode, rate).displayPrice;
     } else {
       val = d[key];
     }

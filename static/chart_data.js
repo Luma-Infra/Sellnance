@@ -19,7 +19,7 @@ import {
   formatListingDateWithExchange,
   updateRowDynamicHTML,
 } from "./table_render.js";
-import { fetchBithumbUnifiedCandles } from "./chart_bithumb_sync.js";
+// import { fetchBithumbUnifiedCandles } from "./chart_bithumb_sync.js"; // 빗썸 정신차릴 때까지 임시 대기
 
 export async function fetchCandlesSmart(
   exchange,
@@ -141,11 +141,11 @@ export async function fetchCandlesSmart(
         };
         const bInt = bMap[interval] || interval;
         directUrl = `https://api.bybit.com/v5/market/kline?category=${category}&symbol=${symbol}&interval=${bInt}&limit=1000`; // 바이빗 최대 한도: 1000개
-      } else if (exchange === "bithumb") {
+      } /* else if (exchange === "bithumb") {
         const cleanSymbol = symbol.replace("KRW-", "").replace("_KRW", "").replace("KRW", "");
         const bSym = cleanSymbol + "_KRW";
         directUrl = `https://api.bithumb.com/public/candlestick/${bSym}/${interval}`;
-      }
+      } */
 
       if (directUrl) {
         const res = await fetch(directUrl);
@@ -161,9 +161,9 @@ export async function fetchCandlesSmart(
           } else if (exchange === "upbit" && Array.isArray(data)) {
             // Xconsole.log(`⚡ [DIRECT FETCH SUCCESS] ${exchange} - ${symbol} (${data.length} candles)`,);
             return data;
-          } else if (exchange === "bithumb" && data && data.status === "0000") {
-            // Xconsole.log(`⚡ [DIRECT FETCH SUCCESS] ${exchange} - ${symbol}`);
-            return data;
+            /* } else if (exchange === "bithumb" && data && data.status === "0000") {
+              // Xconsole.log(`⚡ [DIRECT FETCH SUCCESS] ${exchange} - ${symbol}`);
+              return data; */
           } else if (
             exchange.startsWith("bybit") &&
             data &&
@@ -310,7 +310,9 @@ export async function fetchHistory(
 
   store.isFetchingChart = true;
   window.isFetchingChart = true;
-  clearChartData(isTfChange);
+  if (!isSubSwitch) {
+    clearChartData(isTfChange);
+  }
 
   let displayName = symbol || store.currentAsset;
   if (!displayName) {
@@ -339,6 +341,8 @@ export async function fetchHistory(
       store.currentChartMarket = "FUTURES";
     } else if (exPart === "BYBIT") {
       store.currentChartMarket = "BYBIT_FUTURES";
+    } else if (exPart === "GATEIO") {
+      store.currentChartMarket = symPart.endsWith("_SPOT") ? "GATE_SPOT" : "GATE_FUTURES";
     }
     displayName = symPart;
   }
@@ -371,6 +375,8 @@ export async function fetchHistory(
   const isBybit =
     store.currentChartMarket === "BYBIT" || store.currentChartMarket === "BYBIT_FUTURES";
   const isBybitFutures = store.currentChartMarket === "BYBIT_FUTURES";
+  const isGate = store.currentChartMarket === "GATE_SPOT" || store.currentChartMarket === "GATE_FUTURES";
+  const isGateFutures = store.currentChartMarket === "GATE_FUTURES";
 
   const pureBase = getPureBase(rawSymbol)
     .replace(/KRW$/, "")
@@ -464,6 +470,8 @@ export async function fetchHistory(
     let rawMain = [];
     let mainStep = 1;
     let fetchInterval;
+    let newMainData = [];
+    let newVolumeData = [];
 
     const style = getComputedStyle(document.body);
     const upColorVol =
@@ -471,8 +479,13 @@ export async function fetchHistory(
     const downColorVol =
       (style.getPropertyValue("--down").trim() || "#ef5350") + "80";
 
-    // 1️⃣ 데이터 수집
-    if (isFutures || isSpot || isBybit) {
+    // 1️⃣ 데이터 수집 (스위처 클릭 시에는 이미 화면에 있는 메인 캔들 100% 재활용하여 메인 거래소 fetch 0% 생략)
+    const canReuseMain = isSubSwitch && store.mainData && store.mainData.length > 0;
+    if (canReuseMain) {
+      rawMain = [...store.mainData];
+      newMainData = [...store.mainData];
+      newVolumeData = store.volumeData ? [...store.volumeData] : [];
+    } else if (isFutures || isSpot || isBybit) {
       const exchange = isFutures
         ? "binance_futures"
         : isBybitFutures
@@ -533,15 +546,50 @@ export async function fetchHistory(
         }));
       }
     } else if (isBithumb) {
-      rawMain = await fetchBithumbUnifiedCandles({
-        symbol: krwTicker,
-        tf: store.currentTF,
-        exactFutures,
-        exactSpot,
-        pureBase,
-        fetchCandlesSmart,
-      });
+      const bData = await fetchCandlesSmart("bithumb", krwTicker, store.currentTF, 1000);
+      const rawList = Array.isArray(bData?.data) ? bData.data : (Array.isArray(bData) ? bData : []);
+      rawMain = rawList
+        .map((d) => ({
+          time: Math.floor(Number(d[0]) / 1000),
+          open: Number(d[1]),
+          close: Number(d[2]),
+          high: Number(d[3]),
+          low: Number(d[4]),
+          vol: Number(d[5]),
+        }))
+        .sort((a, b) => a.time - b.time);
       mainStep = 1;
+    } else if (isGate) {
+      const exName = isGateFutures ? "gateio_futures" : "gateio_spot";
+      const gateSym = isGateFutures ? `${pureBase}USDT.P` : `${pureBase}USDT`;
+
+      let fetchTf = store.currentTF;
+      if (store.currentTF === "3d") {
+        fetchTf = "1d";
+        mainStep = 3;
+      } else if (store.currentTF === "12h") {
+        fetchTf = "4h";
+        mainStep = 3;
+      } else {
+        mainStep = 1;
+      }
+
+      const raw = await fetchCandlesSmart(
+        exName,
+        gateSym,
+        fetchTf,
+        1000,
+      );
+      if (Array.isArray(raw)) {
+        rawMain = raw.map((d) => ({
+          time: Number(d[0]) / 1000,
+          open: Number(d[1]),
+          high: Number(d[2]),
+          low: Number(d[3]),
+          close: Number(d[4]),
+          vol: Number(d[5]),
+        })).sort((a, b) => a.time - b.time);
+      }
     } else if (isUpbit) {
       const supportedMin = [1, 3, 5, 10, 15, 30, 60, 240];
       const totalSec = tfSec[store.currentTF] || 60;
@@ -576,7 +624,7 @@ export async function fetchHistory(
       }
     }
 
-    if (!rawMain || rawMain.length === 0) {
+    if (!canReuseMain && (!rawMain || rawMain.length === 0)) {
       // 🚀 [1순위 해외 거래소 폴백] 바이빗 데이터 부재 시: 바이낸스 선물 -> 바이낸스 현물 -> 국내 거래소 순으로 지능적 폴백
       if (isBybit) {
         if (rowInfo?.Listed_Exchanges?.includes("BINANCE_FUTURES") || rowInfo?.Binance_Futures === "O") {
@@ -668,8 +716,10 @@ export async function fetchHistory(
     determineListingDate(rawMain, rowInfo, pureBase, exchangeFlags);
 
     // 2️⃣ 조립
-    let newMainData = [];
-    let newVolumeData = [];
+    if (!canReuseMain) {
+      newMainData = [];
+      newVolumeData = [];
+    }
 
     if (isFutures || isSpot || isBybit) {
       rawMain.forEach((d) => {
@@ -715,13 +765,15 @@ export async function fetchHistory(
     if (store.currentAsset !== snapshotAsset || store.currentTF !== snapshotTF)
       return;
 
-    store.mainData = sanitizeChartData(newMainData.map((d) => mapTime(d)));
-    store.volumeData = sanitizeChartData(
-      newVolumeData.map((d) => mapTime(d)),
-      true,
-    );
-    rebuildMainDataMap();
-    rebuildVolumeDataMap();
+    if (!canReuseMain) {
+      store.mainData = sanitizeChartData(newMainData.map((d) => mapTime(d)));
+      store.volumeData = sanitizeChartData(
+        newVolumeData.map((d) => mapTime(d)),
+        true,
+      );
+      rebuildMainDataMap();
+      rebuildVolumeDataMap();
+    }
 
     store.lastFetchParams = {
       symbol: symbol,
@@ -839,7 +891,7 @@ export async function fetchHistory(
         // 🚀 [렌더 동기화] 캔들과 볼륨의 주입을 동일한 프레임으로 묶어 페인팅 시간 차 박멸
         requestAnimationFrame(() => {
           try {
-            if (store.candleSeries) {
+            if (store.candleSeries && !isSubSwitch) {
               store.candleSeries.setData(sanitizeChartData(store.mainData));
             }
 
@@ -975,6 +1027,23 @@ export async function fetchHistory(
 
 window.switchKimchiSub = function (newSubId) {
   store.preferredKimchiSub = newSubId;
+  if (typeof window.showKimchiLoading === "function") {
+    window.showKimchiLoading(newSubId);
+  }
+  const switcherContainer = document.getElementById("kimchi-switcher");
+  if (switcherContainer) {
+    const btns = switcherContainer.querySelectorAll("button");
+    btns.forEach((btn) => {
+      const onclickAttr = btn.getAttribute("onclick") || "";
+      if (onclickAttr.includes(`'${newSubId}'`)) {
+        btn.classList.add("ring-2", "ring-white/80", "scale-105", "opacity-100");
+        btn.classList.remove("opacity-40");
+      } else {
+        btn.classList.remove("ring-2", "ring-white/80", "scale-105", "opacity-100");
+        btn.classList.add("opacity-40");
+      }
+    });
+  }
   if (typeof fetchHistory === "function") {
     fetchHistory(store.currentAsset, false, false, true);
   }

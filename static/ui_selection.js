@@ -3,6 +3,7 @@
 import { store, CONFIG } from "./_store.js";
 import { fetchHistory } from "./chart_data.js";
 import { getPureBase } from "./chart_utils.js";
+import { getChartDefaultMarket, getRowExchangeMeta } from "./_market_rules.js";
 
 export function selectSymbol(
   s,
@@ -136,7 +137,7 @@ export function selectSymbol(
   // 🚀 [UX 복원] 마지막 선택 코인 로컬 저장 및 최근 조회한 검색어 등록
   try {
     localStorage.setItem("sellnance_last_symbol", uniqueTicker);
-  } catch (e) {}
+  } catch (e) { }
   if (typeof window.addRecentSearch === "function") {
     window.addRecentSearch(uniqueTicker);
   }
@@ -159,39 +160,22 @@ export function selectSymbol(
     let isValid = false;
     if (tempMarket === "FUTURES" && ex.includes("BINANCE_FUTURES"))
       isValid = true;
-    else if (tempMarket === "SPOT" && ex.includes("BINANCE")) isValid = true;
+    else if (tempMarket === "SPOT" && ex.includes("BINANCE_SPOT")) isValid = true;
     else if (
       tempMarket === "UPBIT" &&
       (ex.includes("UPBIT") || rowInfo.Upbit === "O")
     )
       isValid = true;
     else if (tempMarket === "BITHUMB" && ex.includes("BITHUMB")) isValid = true;
-    else if (tempMarket === "BYBIT" && ex.includes("BYBIT")) isValid = true;
+    else if (tempMarket === "BYBIT" && ex.includes("BYBIT_SPOT")) isValid = true;
     else if (tempMarket === "BYBIT_FUTURES" && ex.includes("BYBIT_FUTURES"))
+      isValid = true;
+    else if ((tempMarket === "GATE_FUTURES" || tempMarket === "GATE_SPOT") && ["BTC", "ETH", "XRP"].includes(rowInfo.Symbol?.toUpperCase()))
       isValid = true;
     if (!isValid) tempMarket = null;
   }
-  if (!tempMarket && rowInfo && rowInfo.Listed_Exchanges) {
-    const ex = rowInfo.Listed_Exchanges;
-    if (
-      store.filterMode === "UPBIT" &&
-      (ex.includes("UPBIT") || rowInfo.Upbit === "O")
-    ) {
-      tempMarket = "UPBIT";
-    } else if (ex.includes("BINANCE_FUTURES")) {
-      tempMarket = "FUTURES";
-    } else if (ex.includes("BINANCE")) {
-      tempMarket = "SPOT";
-    } else if (ex.includes("UPBIT") || rowInfo.Upbit === "O") {
-      tempMarket = "UPBIT";
-    } else if (ex.includes("BITHUMB")) {
-      tempMarket = "BITHUMB";
-    } else if (ex.includes("BYBIT")) {
-      tempMarket = "BYBIT";
-    }
-  }
   if (!tempMarket) {
-    tempMarket = "FUTURES"; // 🚀 기본 마켓: 바이낸스 선물(FUTURES)
+    tempMarket = getChartDefaultMarket(rowInfo);
   }
 
   const symbolOnly = rowInfo ? rowInfo.Symbol : parsedSymbol;
@@ -203,6 +187,9 @@ export function selectSymbol(
   else if (tempMarket === "BYBIT_FUTURES")
     targetPath = `/BYBIT:${symbolOnly}_FUTURES`;
   else if (tempMarket === "BYBIT") targetPath = `/BYBIT:${symbolOnly}_SPOT`;
+  else if (tempMarket === "GATE_FUTURES")
+    targetPath = `/GATEIO:${symbolOnly}_FUTURES`;
+  else if (tempMarket === "GATE_SPOT") targetPath = `/GATEIO:${symbolOnly}_SPOT`;
 
   if (window.history && window.history.pushState) {
     if (window.location.pathname !== targetPath && !window.location.hash) {
@@ -237,32 +224,7 @@ export function selectSymbol(
   requestAnimationFrame(() => {
     setTimeout(() => {
       // 마켓 우선순위 결정
-      if (tempMarket) {
-        store.currentChartMarket = tempMarket;
-      } else if (rowInfo && rowInfo.Listed_Exchanges) {
-        const ex = rowInfo.Listed_Exchanges;
-        const isQuoteCurrency = uniqueTicker.startsWith("USDT");
-
-        // 🚀 [추가] 필터 모드가 UPBIT이면 무조건 업비트를 최우선으로 잡도록 분기 처리
-        if (store.filterMode === "UPBIT" && ex.includes("UPBIT")) {
-          store.currentChartMarket = "UPBIT";
-        } else if (
-          isQuoteCurrency &&
-          (ex.includes("UPBIT") || ex.includes("BITHUMB"))
-        ) {
-          store.currentChartMarket = ex.includes("UPBIT") ? "UPBIT" : "BITHUMB";
-        } else if (ex.includes("BINANCE_FUTURES")) {
-          store.currentChartMarket = "FUTURES";
-        } else if (ex.includes("BINANCE")) {
-          store.currentChartMarket = "SPOT";
-        } else if (ex.includes("UPBIT")) {
-          store.currentChartMarket = "UPBIT";
-        } else if (ex.includes("BITHUMB")) {
-          store.currentChartMarket = "BITHUMB";
-        } else if (ex.includes("BYBIT")) {
-          store.currentChartMarket = "BYBIT";
-        }
-      }
+      store.currentChartMarket = tempMarket || getChartDefaultMarket(rowInfo);
 
       const p = store.getPrecision(uniqueTicker);
       const headAssetName = document.getElementById("head-asset-name");
@@ -305,7 +267,7 @@ export function selectSymbol(
             const sizeRem = Math.max(
               fs.ASSET_MIN_REM,
               fs.ASSET_BASE_REM -
-                Math.log10(len / fs.ASSET_THRESHOLD) * fs.ASSET_LOG_MULT,
+              Math.log10(len / fs.ASSET_THRESHOLD) * fs.ASSET_LOG_MULT,
             );
             fontSizeStyle = `style="font-size: ${sizeRem.toFixed(3)}rem; line-height: 1.1; word-break: break-all; white-space: normal;"`;
           } else {
@@ -357,7 +319,7 @@ export function selectSymbol(
               if (headAssetName && infoData.name) {
                 const displaySym = getPureBase(
                   infoData.symbol ||
-                    (rowInfo ? rowInfo.Symbol : querySym.split("(")[0]),
+                  (rowInfo ? rowInfo.Symbol : querySym.split("(")[0]),
                 );
                 const favorites = JSON.parse(
                   localStorage.getItem("sellnance_favs") || "[]",
@@ -493,7 +455,7 @@ export function updateExchangeBadges(s, targetUid = null) {
         id: "B-SPOT",
         cmcId: 270,
         market: "SPOT",
-        condition: rowInfo.Listed_Exchanges?.includes("BINANCE"),
+        condition: rowInfo.Listed_Exchanges?.includes("BINANCE_SPOT"),
       },
       {
         id: "BYBIT-FUT",
@@ -505,20 +467,33 @@ export function updateExchangeBadges(s, targetUid = null) {
         id: "BYBIT-SPOT",
         cmcId: 521,
         market: "BYBIT",
-        condition: rowInfo.Listed_Exchanges?.includes("BYBIT"),
+        condition: rowInfo.Listed_Exchanges?.includes("BYBIT_SPOT"),
       },
       {
         id: "UPBIT",
         cmcId: 351,
         market: "UPBIT",
-        condition:
-          rowInfo.Listed_Exchanges?.includes("UPBIT") || rowInfo.Upbit === "O",
+        condition: rowInfo.Listed_Exchanges?.includes("UPBIT"),
       },
       {
         id: "BITHUMB",
         cmcId: 200,
         market: "BITHUMB",
         condition: rowInfo.Listed_Exchanges?.includes("BITHUMB"),
+      },
+      {
+        id: "GATE-FUT",
+        cmcId: 302,
+        market: "GATE_FUTURES",
+        condition: ["BTC", "ETH", "XRP"].includes(rowInfo.Symbol?.toUpperCase()),
+        isBeta: true,
+      },
+      {
+        id: "GATE-SPOT",
+        cmcId: 302,
+        market: "GATE_SPOT",
+        condition: ["BTC", "ETH", "XRP"].includes(rowInfo.Symbol?.toUpperCase()),
+        isBeta: true,
       },
     ];
 
@@ -534,16 +509,23 @@ export function updateExchangeBadges(s, targetUid = null) {
 
         // 🚀 구분용 타입 배지 (우측 하단) - SPOT / FUTURE 텍스트 적용 (가시성 개선)
         let typeBadge = "";
-        if (item.id === "B-SPOT" || item.id === "BYBIT-SPOT") {
+        if (item.id === "B-SPOT" || item.id === "BYBIT-SPOT" || item.id === "GATE-SPOT") {
           typeBadge = `<div class="absolute -bottom-1.5 -right-2 bg-zinc-900 text-white text-[9px] px-1.5 py-0.5 rounded border border-white/30 leading-none font-black shadow-md whitespace-nowrap select-none">SPOT</div>`;
-        } else if (item.id === "B-FUT" || item.id === "BYBIT-FUT") {
+        } else if (item.id === "B-FUT" || item.id === "BYBIT-FUT" || item.id === "GATE-FUT") {
           typeBadge = `<div class="absolute -bottom-1.5 -right-2 bg-[#f0b90b] text-black text-[9px] px-1.5 py-0.5 rounded leading-none font-black shadow-md whitespace-nowrap select-none">FUTURE</div>`;
+        }
+
+        let betaBadge = "";
+        if (item.isBeta) {
+          betaBadge = `<div style="position: absolute; top: -7px; right: -5px; min-width: 26px; height: 14px; font-size: 8.5px;" class="bg-blue-600 text-white px-1.5 rounded-full flex items-center justify-center font-bold leading-none shadow-md select-none z-10 border border-blue-400/50 whitespace-nowrap">beta</div>`;
         }
 
         badges += `
           <button onclick="selectSymbol('${rowInfo.Ticker}', '${item.market}', '${rowInfo.UID}')" 
+                  title="${item.id} (Beta)"
                   class="relative flex items-center justify-center p-1 border border-theme-border/30 rounded-xl transition-all duration-200 w-8 h-8 cursor-pointer select-none active:scale-95 ml-1.5 first:ml-0 ${ringClass}">
             <img src="${imgUrl}" alt="${item.id}" class="w-full h-full object-contain rounded" />
+            ${betaBadge}
             ${typeBadge}
           </button>
         `;

@@ -128,6 +128,7 @@ export const store = {
   aggTradeInterval: 0, // 🚀 aggTrade 주기 조절 (ms 단위, 0 = Raw)
   lastFetchTime: 0, // 🚀 마지막 데이터 수집 시간 기록용
   isLogMode: false, // 🚀 차트 로그 스케일 활성화 여부
+  isKimchiDisabled: typeof localStorage !== "undefined" && localStorage.getItem("sellnance_kimchi_disabled") === "true", // 🚀 김프 비교 끄기 여부
   traceRowCaller: false, // 🚀 [디버그 토글] 단 1줄로 좌측 1번 행(Index 0) callerId 전광판 추적 및 확장 영역 보이기/사라지기 제어!
   enableOrderbookVisual: true, // 호가창 보기
   showCountdown: true, // 🚀 차트 카운트다운 표시 여부

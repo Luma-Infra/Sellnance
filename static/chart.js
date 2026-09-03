@@ -290,6 +290,9 @@ export async function initChart() {
 
   // 🚀 [Lazy Load & Zoom Width Save] 가로폭(줌 상태) 저장 및 과거 데이터 로딩 통합 관리
   let isCheckingLoadMore = false;
+  let isUserInteractingWithChart = false;
+  let userInteractionTimeout = null;
+
   store.chart.timeScale().subscribeVisibleLogicalRangeChange(async (range) => {
     if (!range) return;
     if (store.isFetchingChart) return; // 🚀 데이터 로딩/초기 기동 중 발생한 내부 레이아웃 리액션에 의한 가로폭 오염 방지
@@ -310,26 +313,49 @@ export async function initChart() {
     }
 
     if (isCheckingLoadMore) return;
-    if (range.from < 15) {
+
+    // 🚀 [철통 방어 가드] 사용자가 실제로 마우스 드래그/휠/터치 조작 중일 때만 과거 추가 로드 허용!
+    // 단순 실시간 새 캔들 생성/틱 수신으로 인한 timeScale 밀림 시에는 절대 트리거 방지!
+    if (!isUserInteractingWithChart) return;
+
+    if (range.from < 10) {
       isCheckingLoadMore = true;
       if (typeof window.loadMoreHistory === "function") {
         await window.loadMoreHistory();
       }
       setTimeout(() => {
         isCheckingLoadMore = false;
-      }, 500); // 0.5초 디바운스로 스크롤 프레임 폭주 원천 차단
+      }, 800); // 디바운스로 스크롤 프레임 폭주 원천 차단
     }
   });
 
-  // 🚀 사용자의 마우스/터치/휠 입력을 감지하여 차트 조작 상태(isUserZoomed)를 세밀하게 설정
+  // 🚀 사용자의 마우스/터치/휠 입력을 감지하여 차트 조작 상태(isUserZoomed & isUserInteractingWithChart)를 세밀하게 설정
   const chartWrapper = document.getElementById("chart-wrapper");
   if (chartWrapper) {
-    const setUserZoomed = () => {
+    const onUserInteract = () => {
       store.isUserZoomed = true;
+      isUserInteractingWithChart = true;
+      if (userInteractionTimeout) clearTimeout(userInteractionTimeout);
+      userInteractionTimeout = setTimeout(() => {
+        isUserInteractingWithChart = false;
+      }, 1200); // 사용자 조작 멈춤 후 1.2초 뒤 비활성화
     };
-    chartWrapper.addEventListener("mousedown", setUserZoomed, { passive: true });
-    chartWrapper.addEventListener("touchstart", setUserZoomed, { passive: true });
-    chartWrapper.addEventListener("wheel", setUserZoomed, { passive: true });
+
+    chartWrapper.addEventListener("mousedown", onUserInteract, { passive: true });
+    chartWrapper.addEventListener("touchstart", onUserInteract, { passive: true });
+    chartWrapper.addEventListener("wheel", onUserInteract, { passive: true });
+    window.addEventListener("mouseup", () => {
+      if (userInteractionTimeout) clearTimeout(userInteractionTimeout);
+      userInteractionTimeout = setTimeout(() => {
+        isUserInteractingWithChart = false;
+      }, 400);
+    }, { passive: true });
+    window.addEventListener("touchend", () => {
+      if (userInteractionTimeout) clearTimeout(userInteractionTimeout);
+      userInteractionTimeout = setTimeout(() => {
+        isUserInteractingWithChart = false;
+      }, 400);
+    }, { passive: true });
   }
 
   // 🚀 DOM 이벤트 기반 activeChart 제어 제거 (라이브러리 내부 이벤트로 100% 통합 제어)

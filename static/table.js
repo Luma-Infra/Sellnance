@@ -75,6 +75,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const rowDiv = e.target.closest("#coin-list-body .coin-row");
       if (rowDiv && rowDiv.dataset.sym) {
+        // 🚀 [자원 절약] 상장 폐지(Delisted) 코인은 클릭 시 차트 로드 및 자원 낭비 원천 차단 (즉시 리턴)
+        if (rowDiv.dataset.delisted === "true") return;
+        const rowObj = store.tickerRowMap?.get(rowDiv.dataset.sym.toUpperCase());
+        if (rowObj?.isDelisted) return;
+
         const ticker = rowDiv.dataset.sym;
         const uid = rowDiv.dataset.uid;
 

@@ -15,7 +15,7 @@ export default defineConfig({
   build: {
     // 빌드 결과물을 프로젝트 루트의 dist 폴더로 전송
     outDir: "../dist",
-    emptyOutDir: true,
+    emptyOutDir: false,
     sourcemap: false,
     rollupOptions: {
       input: {

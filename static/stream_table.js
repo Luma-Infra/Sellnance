@@ -2,23 +2,13 @@
 import { store, CONFIG } from "./_store.js";
 import { updateVisibleSymbols } from "./table_render.js";
 import { getMultiplier, getPureBase } from "./chart_utils.js";
+import {
+  getRowKimchiGlobalPrice,
+  getRowExchangeMeta,
+  getRowDisplayMetrics,
+} from "./_market_rules.js";
 
-// 🚀 [신규] 렌더링 과부하 방지용 쓰로틀 메모리 및 일괄 Batch 렌더러
-if (!window._realtimeRenderQueue) {
-  window._realtimeRenderQueue = new Map();
-  const processQueue = () => {
-    if (window._realtimeRenderQueue.size > 0) {
-      window._realtimeRenderQueue.forEach((updateFn) => {
-        try {
-          updateFn();
-        } catch (e) { }
-      });
-      window._realtimeRenderQueue.clear();
-    }
-    requestAnimationFrame(processQueue);
-  };
-  requestAnimationFrame(processQueue);
-}
+
 
 // 🎯 개별 스트림 스나이퍼 소켓 초기화 (피드 드라이버 내부 전용 함수들을 호출)
 export function initSniperSocket() {
@@ -50,7 +40,7 @@ export function syncSniperSubscriptions() {
     if (!row) return;
 
     // 1. Spot 상장 코인인 경우
-    const hasSpot = row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE") || row.Exact_Spot;
+    const hasSpot = row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE_SPOT") || row.Listed_Exchanges?.includes("BINANCE") || row.Exact_Spot;
     if (hasSpot) {
       let bSpotTicker = row.Exact_Spot || (row.Ticker && !row.Ticker.endsWith("KRW") ? row.Ticker.replace("USDT", "") : null);
       if (bSpotTicker) {
@@ -162,12 +152,16 @@ export function calculateRowKimchi(r, rate) {
   const hasGlobal =
     r.Binance === "O" ||
     r.Binance_Futures === "O" ||
+    exList.includes("BINANCE_SPOT") ||
     exList.includes("BINANCE") ||
     exList.includes("BINANCE_FUTURES") ||
+    exList.includes("BYBIT_SPOT") ||
     exList.includes("BYBIT") ||
     exList.includes("BYBIT_FUTURES") ||
-    r.Binance_Price_Futures > 0 ||
     r.Binance_Price_Spot > 0 ||
+    r.Binance_Price_Futures > 0 ||
+    r.Bybit_Price_Spot > 0 ||
+    r.Bybit_Price_Futures > 0 ||
     r.Binance_Price > 0 ||
     r.Bybit_Price > 0 ||
     !!r.Price_Raw;
@@ -190,13 +184,11 @@ export function calculateRowKimchi(r, rate) {
   }
 
   const domMult = getMultiplier(r.Upbit_Symbol || r.Bithumb_Symbol || r.Ticker || r.Symbol);
-  const ovsMult = getMultiplier(r.Exact_Futures || r.Exact_Spot || r.Ticker || r.Symbol);
   const unitKorPrice = priceKor / domMult;
 
-  let rawGlb = r.Price_Raw || 0;
-  if ((!rawGlb || r.Ticker?.endsWith("KRW")) && (r.Binance_Price_Futures || r.Binance_Price_Spot || r.Binance_Price || r.Bybit_Price)) {
-    rawGlb = r.Binance_Price_Futures || r.Binance_Price_Spot || r.Binance_Price || r.Bybit_Price || 0;
-  }
+  // 🚀 [김프 해외 단가 연산] market_rules.js의 단일 룰북 호출
+  const { rawGlb, ovsMult } = getRowKimchiGlobalPrice(r);
+
   let unitGlbPrice = rawGlb;
   if (ovsMult > 1 && unitGlbPrice > 0 && unitKorPrice > 0) {
     const approxUsd = unitKorPrice / rate;
@@ -333,7 +325,7 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
     store.currentMarket === "KIMCHI" ||
     store.currentMarket === "NEW";
 
-  const hasGlobal = row.Binance === "O" || row.Binance_Futures === "O" || row.Listed_Exchanges?.includes("BINANCE") || row.Listed_Exchanges?.includes("BINANCE_FUTURES");
+  const hasGlobal = row.Binance === "O" || row.Binance_Futures === "O" || row.Listed_Exchanges?.includes("BINANCE_SPOT") || row.Listed_Exchanges?.includes("BINANCE") || row.Listed_Exchanges?.includes("BINANCE_FUTURES");
 
   if (isKoreaSocket) {
     row.Price_KRW = newPrice;
@@ -347,7 +339,7 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
     }
   } else {
     const hasFutures = row.Binance_Futures === "O" || row.Listed_Exchanges?.includes("BINANCE_FUTURES");
-    const hasSpot = row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE");
+    const hasSpot = row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE_SPOT") || row.Listed_Exchanges?.includes("BINANCE");
     const isFuturesOnly = hasFutures && !hasSpot;
     const isSpotOnly = hasSpot && !hasFutures;
 
@@ -362,11 +354,13 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
         row.Binance_Price_Futures = newPrice;
         if (data.P !== undefined) {
           row.Change_24h_Futures = parseFloat(data.P);
-          row.Change_24h_Futures_Ex = parseFloat(data.P);
         }
       } else {
         row.Binance_Price_Spot = newPrice;
-        if (data.P !== undefined) row.Change_24h_Spot = parseFloat(data.P);
+        if (data.P !== undefined) {
+          row.Change_24h_Spot = parseFloat(data.P);
+          row.Change_24h_Binance = parseFloat(data.P);
+        }
       }
     } else {
       if (isFutures) {
@@ -399,12 +393,13 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
     }
     */
 
-    // 🚀 [조건 완화] 선물전용/현물전용/동시상장 코인의 실시간 시세를 불필요한 마켓 분기 차단 없이 100% 매끄럽게 갱신
+    // 🚀 [선물 우선 (Futures First) 원칙] 둘 다 있거나 선물이 있으면 선물 틱 우선 매핑, 현물만 있으면 현물 틱
     let shouldUpdate = true;
-    if (store.currentMarket === "SPOT" && isFutures && !isFuturesOnly) {
-      shouldUpdate = false;
-    } else if (store.currentMarket === "FUTURES" && !isFutures && !isSpotOnly) {
-      shouldUpdate = false;
+    if (store.currentMarket === "SPOT") {
+      shouldUpdate = !isFutures || isFuturesOnly;
+    } else {
+      // FUTURES 및 ALL, KIMCHI, NEW, FAV 등 기본 탭: 선물 상장 코인은 선물 틱으로 대표 시세 갱신
+      shouldUpdate = hasFutures ? isFutures : !isFutures;
     }
 
     if (shouldUpdate) {
@@ -433,16 +428,16 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
       }
     }
   } else {
-    const hasFutures = row.Binance_Futures === "O" || row.Listed_Exchanges?.includes("BINANCE_FUTURES");
-    const hasSpot = row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE");
+    const hasFutures = row.Binance_Futures === "O" || row.Listed_Exchanges?.includes("BINANCE_FUTURES") || !!row.Exact_Futures;
+    const hasSpot = row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE_SPOT") || row.Listed_Exchanges?.includes("BINANCE") || !!row.Exact_Spot;
     const isFuturesOnly = hasFutures && !hasSpot;
     const isSpotOnly = hasSpot && !hasFutures;
 
-    shouldUpdateChg = true;
-    if (store.currentMarket === "SPOT" && isFutures && !isFuturesOnly) {
-      shouldUpdateChg = false;
-    } else if (store.currentMarket === "FUTURES" && !isFutures && !isSpotOnly) {
-      shouldUpdateChg = false;
+    if (store.currentMarket === "SPOT") {
+      shouldUpdateChg = !isFutures || isFuturesOnly;
+    } else {
+      // FUTURES 및 ALL 등 기본 탭: 선물 상장 코인은 선물 등락률로 대표 24h/Day 갱신 (1초 경주마 정렬 연동)
+      shouldUpdateChg = hasFutures ? isFutures : !isFutures;
     }
   }
 
@@ -454,7 +449,6 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
     } else {
       if (isFutures) {
         row.Change_24h_Futures = chg;
-        row.Change_24h_Futures_Ex = chg;
       } else if (
         row.Listed_Exchanges?.includes("BINANCE") ||
         row.Exact_Spot ||
@@ -612,19 +606,16 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
     row._lastStreamUpdate = nowTime;
   }
 
-  window._realtimeRenderQueue.set(row.Ticker, () => {
-    const priceCell = document.getElementById(`price-${row.Ticker}`);
-    const oldPrice = priceCell ? parseFloat(priceCell.getAttribute("data-raw-price")) || 0 : 0;
+  const priceCell = document.getElementById(`price-${row.Ticker}`);
+  const oldPrice = priceCell ? parseFloat(priceCell.getAttribute("data-raw-price")) || 0 : 0;
 
-    const rowEl = store.rowDomMap?.get(row.Ticker);
-    if (rowEl && typeof window.updateRowDynamicHTML === "function") {
-      window.updateRowDynamicHTML(rowEl, row, true);
-    }
+  const rowEl = store.rowDomMap?.get(row.Ticker);
+  if (rowEl && typeof window.updateRowDynamicHTML === "function") {
+    window.updateRowDynamicHTML(rowEl, row, true);
+  }
 
-    if (!priceCell) return;
-
+  if (priceCell) {
     const displayedPrice = parseFloat(priceCell.getAttribute("data-raw-price")) || 0;
-
     if (displayedPrice !== oldPrice) {
       const activeExchange = priceCell.getAttribute("data-active-exchange");
       const activeSpan = document.getElementById(`price-val-${activeExchange}-${row.Ticker}`);
@@ -632,53 +623,53 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
         window.applyPriceFlash(activeSpan, displayedPrice, oldPrice);
       }
     }
+  }
 
-    if (
-      row.Ticker === store.currentSelectedSymbol ||
-      row.UID === store.currentSelectedSymbol
-    ) {
-      if (typeof window.updateHeaderDisplay === "function") {
-        const pPrecision = store.getPrecision(row.Ticker);
-        let activePrice = row.Price_Raw;
-        const activeMkt = store.currentChartMarket || "ALL";
-        if (activeMkt === "UPBIT") {
-          activePrice = row.Upbit_Price;
-        } else if (activeMkt === "BITHUMB") {
-          activePrice = row.Bithumb_Price;
-        } else if (activeMkt === "BYBIT" || activeMkt === "BYBIT_FUTURES") {
-          activePrice = (activeMkt === "BYBIT_FUTURES") ? row.Bybit_Price_Futures : row.Bybit_Price_Spot;
-        } else if (activeMkt === "FUTURES") {
-          activePrice = row.Binance_Price_Futures;
-        } else if (activeMkt === "SPOT") {
-          activePrice = row.Binance_Price_Spot;
-        }
-        window.updateHeaderDisplay(row, activePrice, pPrecision, true);
+  if (
+    row.Ticker === store.currentSelectedSymbol ||
+    row.UID === store.currentSelectedSymbol
+  ) {
+    if (typeof window.updateHeaderDisplay === "function") {
+      const pPrecision = store.getPrecision(row.Ticker);
+      let activePrice = row.Price_Raw;
+      const activeMkt = store.currentChartMarket || "ALL";
+      if (activeMkt === "UPBIT") {
+        activePrice = row.Upbit_Price;
+      } else if (activeMkt === "BITHUMB") {
+        activePrice = row.Bithumb_Price;
+      } else if (activeMkt === "BYBIT" || activeMkt === "BYBIT_FUTURES") {
+        activePrice = (activeMkt === "BYBIT_FUTURES") ? row.Bybit_Price_Futures : row.Bybit_Price_Spot;
+      } else if (activeMkt === "FUTURES") {
+        activePrice = row.Binance_Price_Futures;
+      } else if (activeMkt === "SPOT") {
+        activePrice = row.Binance_Price_Spot;
       }
+      window.updateHeaderDisplay(row, activePrice, pPrecision, true);
     }
+  }
 
-    const changeCell = document.getElementById(`change-${row.Ticker}`);
-    if (changeCell) {
-      let change24h = row.Change_24h_Raw || 0;
-      const isFocus = store.currentSortCol !== "Change_Today";
-      const themeClass = change24h > 0 ? "text-theme-up" : change24h < 0 ? "text-theme-down" : "text-theme-text";
-      const chgText = `${change24h > 0 ? "+" : ""}${change24h.toFixed(2)}%`;
-      const chgFontSize = chgText.length > 7 ? "text-[8px]" : "text-[10px]";
-      changeCell.className = `${themeClass} font-medium whitespace-nowrap flex-shrink-0 ${isFocus ? "opacity-100" : "opacity-40"} ${chgFontSize}`;
-      changeCell.textContent = chgText;
-    }
+  const { n24h: change24h, nDay: todayChange } = getRowDisplayMetrics(row);
 
-    const todayCell = document.getElementById(`today-${row.Ticker}`);
-    if (todayCell) {
-      let todayChange = row.Change_Today_Raw || 0;
-      const isFocus = store.currentSortCol === "Change_Today";
-      const tThemeClass = todayChange > 0 ? "text-theme-up" : todayChange < 0 ? "text-theme-down" : "text-theme-text";
-      const safeChange = todayChange < -99.9 ? -99.9 : todayChange;
-      const todayText = `${safeChange > 0 ? "+" : ""}${safeChange.toFixed(2)}%`;
-      const todayFontSize = todayText.length > 7 ? "text-[8px]" : "text-[10px]";
-      todayCell.className = `${tThemeClass} font-medium whitespace-nowrap flex-shrink-0 ${isFocus ? "opacity-100" : "opacity-40"} ${todayFontSize}`;
-      todayCell.textContent = todayText;
-    }
-  });
+  const changeCell = document.getElementById(`change-${row.Ticker}`);
+  if (changeCell) {
+    const isFocus = store.currentSortCol !== "Change_Today";
+    const themeClass = change24h > 0 ? "text-theme-up" : change24h < 0 ? "text-theme-down" : "text-theme-text";
+    const chgText = `${change24h > 0 ? "+" : ""}${Number(change24h).toFixed(2)}%`;
+    const chgFontSize = chgText.length > 7 ? "text-[8px]" : "text-[10px]";
+    changeCell.className = `${themeClass} font-medium whitespace-nowrap flex-shrink-0 ${isFocus ? "opacity-100" : "opacity-40"} ${chgFontSize}`;
+    changeCell.textContent = chgText;
+  }
+
+  const todayCell = document.getElementById(`today-${row.Ticker}`);
+  if (todayCell) {
+    const isFocus = store.currentSortCol === "Change_Today";
+    const tThemeClass = todayChange > 0 ? "text-theme-up" : todayChange < 0 ? "text-theme-down" : "text-theme-text";
+    const safeChange = todayChange < -99.9 ? -99.9 : todayChange;
+    const todayText = `${safeChange > 0 ? "+" : ""}${Number(safeChange).toFixed(2)}%`;
+    const todayFontSize = todayText.length > 7 ? "text-[8px]" : "text-[10px]";
+    todayCell.className = `${tThemeClass} font-medium whitespace-nowrap flex-shrink-0 ${isFocus ? "opacity-100" : "opacity-40"} ${todayFontSize}`;
+    todayCell.textContent = todayText;
+  }
 }
 
 window.renderRealtimeRow = renderRealtimeRow;

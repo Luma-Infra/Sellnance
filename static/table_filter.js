@@ -53,16 +53,75 @@ export function getFilteredData() {
   }
 
   // 1. 탭 필터링 (ALL, FAV, FAV2)
-  if (store.currentTab === "FAV") {
-    const favorites = JSON.parse(
-      localStorage.getItem("sellnance_favs") || "[]",
-    );
+  let delistedRows = [];
+  if (store.currentTab === "FAV" || store.currentTab === "FAV2") {
+    const favKey = store.currentTab === "FAV" ? "sellnance_favs" : "sellnance_favs2";
+    const favorites = JSON.parse(localStorage.getItem(favKey) || "[]");
+
+    // 🚀 즐겨찾기 메타데이터 캐시 로드 & 현재 살아있는 코인 메타데이터 자동 동기화
+    let favMeta = JSON.parse(localStorage.getItem("sellnance_fav_meta") || "{}");
+    (store.currentTableData || []).forEach((d) => {
+      if (d.UID && (d.Name || d.Name_KR)) {
+        favMeta[d.UID] = {
+          name: d.Name || d.Symbol || d.Ticker,
+          name_kr: d.Name_KR || d.Name || d.Symbol || d.Ticker,
+          symbol: d.DisplayTicker || d.Symbol || d.Ticker,
+        };
+      }
+    });
+    localStorage.setItem("sellnance_fav_meta", JSON.stringify(favMeta));
+
+    // 현재 서버 데이터에 존재하는 코인들만 1차 필터링
     filteredData = filteredData.filter((d) => favorites.includes(d.UID));
-  } else if (store.currentTab === "FAV2") {
-    const favorites2 = JSON.parse(
-      localStorage.getItem("sellnance_favs2") || "[]",
-    );
-    filteredData = filteredData.filter((d) => favorites2.includes(d.UID));
+
+    // 🚀 [이스터에그] 즐겨찾기에 남아있으나 현재 상장 폐지된 코인 껍데기(Ghost Row) 생성
+    const currentUids = new Set(store.currentTableData.map((d) => d.UID));
+    const delistedUids = favorites.filter((uid) => !currentUids.has(uid));
+
+    delistedRows = delistedUids.map((uid) => {
+      const meta = favMeta[uid] || {};
+      const cleanSym = meta.symbol || String(uid)
+        .replace(/^\d+_/, "")
+        .replace(/_(BINANCE|UPBIT|BITHUMB|BYBIT)$/i, "")
+        .toUpperCase();
+      const realName = meta.name || cleanSym;
+      const realNameKR = meta.name_kr || realName;
+
+      const ghost = {
+        UID: uid,
+        Ticker: cleanSym,
+        DisplayTicker: cleanSym,
+        Symbol: cleanSym,
+        Name: realName,
+        Name_KR: realNameKR,
+        Price_Formatted: "-",
+        Price_Raw: 0,
+        Price_KRW: 0,
+        Change_Today_Formatted: "-",
+        Change_Today_Raw: 0,
+        Change_24h_Formatted: "-",
+        Change_24h_Raw: 0,
+        Kimchi_Formatted: "-",
+        Kimchi_Raw: null,
+        Volume_Formatted: "-",
+        Volume_Raw: 0,
+        Upbit_Vol_Formatted: "-",
+        Upbit_Vol: 0,
+        MarketCap_Formatted: "-",
+        MarketCap_Raw: 0,
+        Funding_Formatted: "-",
+        Listed_Exchanges: [],
+        isDelisted: true,
+        Logo: `<span class="text-[18px] select-none flex items-center justify-center opacity-70 cursor-help" title="상장 폐지된 코인입니다. (FAV 이스터에그)">💀</span>`,
+      };
+      // 🚀 [필수] IntersectionObserver와 렌더러가 정상 참조할 수 있도록 tickerRowMap에 등록
+      if (store.tickerRowMap) {
+        store.tickerRowMap.set(cleanSym, ghost);
+        store.tickerRowMap.set(cleanSym.toUpperCase(), ghost);
+        store.tickerRowMap.set(String(uid), ghost);
+      }
+      return ghost;
+    });
   }
 
   // 2. 마켓/통화 필터링 (구버전의 코인 거르기 로직 삭제됨)
@@ -142,52 +201,53 @@ export function getFilteredData() {
       const isExcluded = excludeFilters.some(([exchId]) => {
         if (exchId === "UPBIT") return hasUpbit;
         if (exchId === "BITHUMB") return listed.includes("BITHUMB");
-        if (exchId === "BINANCE") {
-          return listed.includes("BINANCE") && !isStockCoin(row);
-        }
-        if (exchId === "BINANCE_FUTURES") {
-          return listed.includes("BINANCE_FUTURES") && !isStockCoin(row);
-        }
-        if (exchId === "BINANCE_STOCK") {
-          return isStockCoin(row);
-        }
-        return listed.some((ex) => ex.startsWith(exchId));
+        if (exchId === "BINANCE_STOCK") return isStockCoin(row);
+        if (exchId === "BINANCE_SPOT") return (listed.includes("BINANCE_SPOT") || listed.includes("BINANCE")) && !isStockCoin(row);
+        if (exchId === "BINANCE_FUTURES") return listed.includes("BINANCE_FUTURES") && !isStockCoin(row);
+        if (exchId === "BYBIT_SPOT") return listed.includes("BYBIT_SPOT") || listed.includes("BYBIT");
+        if (exchId === "BYBIT_FUTURES") return listed.includes("BYBIT_FUTURES");
+        if (exchId === "OKX_SPOT") return listed.includes("OKX_SPOT") || listed.includes("OKX");
+        if (exchId === "BITGET_SPOT") return listed.includes("BITGET_SPOT") || listed.includes("BITGET");
+        if (exchId === "GATEIO_SPOT") return listed.includes("GATEIO_SPOT") || listed.includes("GATEIO");
+        if (exchId === "COINBASE_SPOT") return listed.includes("COINBASE_SPOT") || listed.includes("COINBASE");
+        return listed.includes(exchId);
       });
       if (isExcluded) return false;
 
-      // ─── [B] ONLY(순수 독점) 모드 자동 배제 검사 ───
+      // ─── [B] ONLY(순수 독점) 모드 자동 배제 검사 (A안: 완전 엄격 독점) ───
       if (filterMode === "ONLY") {
         const targetExchs = [
-          "BINANCE",
+          "BINANCE_SPOT",
           "BINANCE_FUTURES",
           "BINANCE_STOCK",
           "UPBIT",
           "BITHUMB",
-          "BYBIT",
-          "OKX",
-          "BITGET",
-          "GATEIO",
-          "COINBASE",
+          "BYBIT_SPOT",
+          "BYBIT_FUTURES",
+          "OKX_SPOT",
+          "BITGET_SPOT",
+          "GATEIO_SPOT",
+          "COINBASE_SPOT",
         ];
-        // 명시적으로 포함되지 않은 타 거래소들 목록
+        // 사용자가 선택하지 않은 타 거래소들 목록
         const unselectedExchs = targetExchs.filter(
           (exId) => !includeFilters.some(([incId]) => incId === exId),
         );
 
-        // 이 코인이 미선택된 다른 거래소에 단 하나라도 상장되어 있으면 탈락!
+        // 이 코인이 미선택된 다른 거래소(선물이든 현물이든)에 단 하나라도 상장되어 있으면 즉시 탈락! (A안 엄격 독점)
         const hasUnselectedExch = unselectedExchs.some((exchId) => {
           if (exchId === "UPBIT") return hasUpbit;
           if (exchId === "BITHUMB") return listed.includes("BITHUMB");
-          if (exchId === "BINANCE") {
-            return listed.includes("BINANCE") && !isStockCoin(row);
-          }
-          if (exchId === "BINANCE_FUTURES") {
-            return listed.includes("BINANCE_FUTURES") && !isStockCoin(row);
-          }
-          if (exchId === "BINANCE_STOCK") {
-            return isStockCoin(row);
-          }
-          return listed.some((ex) => ex.startsWith(exchId));
+          if (exchId === "BINANCE_STOCK") return isStockCoin(row);
+          if (exchId === "BINANCE_SPOT") return (listed.includes("BINANCE_SPOT") || listed.includes("BINANCE")) && !isStockCoin(row);
+          if (exchId === "BINANCE_FUTURES") return listed.includes("BINANCE_FUTURES") && !isStockCoin(row);
+          if (exchId === "BYBIT_SPOT") return listed.includes("BYBIT_SPOT") || listed.includes("BYBIT");
+          if (exchId === "BYBIT_FUTURES") return listed.includes("BYBIT_FUTURES");
+          if (exchId === "OKX_SPOT") return listed.includes("OKX_SPOT") || listed.includes("OKX");
+          if (exchId === "BITGET_SPOT") return listed.includes("BITGET_SPOT") || listed.includes("BITGET");
+          if (exchId === "GATEIO_SPOT") return listed.includes("GATEIO_SPOT") || listed.includes("GATEIO");
+          if (exchId === "COINBASE_SPOT") return listed.includes("COINBASE_SPOT") || listed.includes("COINBASE");
+          return listed.includes(exchId);
         });
         if (hasUnselectedExch) return false;
       }
@@ -195,22 +255,18 @@ export function getFilteredData() {
       // ─── [C] 포함(Include) 필터 검사 ───
       if (includeFilters.length > 0) {
         const checkMatch = ([exchId, state]) => {
-          if (exchId === "BINANCE") {
-            return listed.includes("BINANCE") && !isStockCoin(row);
-          }
-          if (exchId === "BINANCE_FUTURES") {
-            return listed.includes("BINANCE_FUTURES") && !isStockCoin(row);
-          }
-          if (exchId === "BINANCE_STOCK") {
-            return isStockCoin(row);
-          }
-          if (exchId === "UPBIT") {
-            return hasUpbit; // 업비트 현물
-          }
-          if (exchId === "BITHUMB") {
-            return listed.includes("BITHUMB"); // 빗썸 현물
-          }
-          return listed.some((ex) => ex.startsWith(exchId));
+          if (exchId === "BINANCE_SPOT") return (listed.includes("BINANCE_SPOT") || listed.includes("BINANCE")) && !isStockCoin(row);
+          if (exchId === "BINANCE_FUTURES") return listed.includes("BINANCE_FUTURES") && !isStockCoin(row);
+          if (exchId === "BINANCE_STOCK") return isStockCoin(row);
+          if (exchId === "BYBIT_SPOT") return listed.includes("BYBIT_SPOT") || listed.includes("BYBIT");
+          if (exchId === "BYBIT_FUTURES") return listed.includes("BYBIT_FUTURES");
+          if (exchId === "OKX_SPOT") return listed.includes("OKX_SPOT") || listed.includes("OKX");
+          if (exchId === "BITGET_SPOT") return listed.includes("BITGET_SPOT") || listed.includes("BITGET");
+          if (exchId === "GATEIO_SPOT") return listed.includes("GATEIO_SPOT") || listed.includes("GATEIO");
+          if (exchId === "COINBASE_SPOT") return listed.includes("COINBASE_SPOT") || listed.includes("COINBASE");
+          if (exchId === "UPBIT") return hasUpbit;
+          if (exchId === "BITHUMB") return listed.includes("BITHUMB");
+          return listed.includes(exchId);
         };
 
         if (filterMode === "AND" || filterMode === "ONLY") {
@@ -228,7 +284,9 @@ export function getFilteredData() {
     });
   }
 
-  return filteredData;
+  return delistedRows.length > 0
+    ? [...filteredData, ...delistedRows]
+    : filteredData;
 }
 
 export function switchTab(tab) {
@@ -558,16 +616,17 @@ export function updateExchFilterUI() {
   if (!container) return;
 
   const list = [
-    { id: "BINANCE", cmcId: 270, label: "S", name: "B-SPOT" },
+    { id: "BINANCE_SPOT", cmcId: 270, label: "S", name: "B-SPOT" },
     { id: "BINANCE_FUTURES", cmcId: 270, label: "F", name: "B-FUT" },
     { id: "BINANCE_STOCK", cmcId: 270, label: "ST", name: "B-STOCK" },
     { id: "UPBIT", cmcId: 351, name: "UPBIT" },
     { id: "BITHUMB", cmcId: 200, name: "BITHUMB" },
-    { id: "BYBIT", cmcId: 521, name: "BYBIT" },
-    { id: "OKX", cmcId: 294, name: "OKX" },
-    { id: "BITGET", cmcId: 513, name: "BITGET" },
-    { id: "GATEIO", cmcId: 302, name: "GATEIO" },
-    { id: "COINBASE", cmcId: 89, name: "COINBASE" },
+    { id: "BYBIT_SPOT", cmcId: 521, label: "S", name: "BYBIT" },
+    { id: "BYBIT_FUTURES", cmcId: 521, label: "F", name: "BYB-F" },
+    { id: "OKX_SPOT", cmcId: 294, name: "OKX" },
+    { id: "BITGET_SPOT", cmcId: 513, name: "BITGET" },
+    { id: "GATEIO_SPOT", cmcId: 302, name: "GATEIO" },
+    { id: "COINBASE_SPOT", cmcId: 89, name: "COINBASE" },
   ];
 
   // 🚀 [추가] 3단 스위치 모드 토글 HTML (AND / OR / ONLY)
@@ -633,9 +692,9 @@ export function updateExchFilterUI() {
 
       // 🚀 구분용 타입 배지 (우측 하단) (가시성 개선)
       let typeBadge = "";
-      if (ex.id === "BINANCE") {
+      if (ex.id === "BINANCE_SPOT" || ex.id === "BYBIT_SPOT") {
         typeBadge = `<div class="absolute -bottom-1 -right-1 bg-gray-600 text-white text-[8px] px-0.5 rounded leading-none font-black shadow-sm">S</div>`;
-      } else if (ex.id === "BINANCE_FUTURES") {
+      } else if (ex.id === "BINANCE_FUTURES" || ex.id === "BYBIT_FUTURES") {
         typeBadge = `<div class="absolute -bottom-1 -right-1 bg-[#f0b90b] text-black text-[8px] px-0.5 rounded leading-none font-black shadow-sm">F</div>`;
       } else if (ex.id === "BINANCE_STOCK") {
         typeBadge = `<div class="absolute -bottom-1 -right-1 bg-blue-600 text-white text-[8px] px-0.5 rounded leading-none font-black shadow-sm">ST</div>`;
