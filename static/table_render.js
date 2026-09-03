@@ -1475,6 +1475,9 @@ export function toggleFavorite(uid, event, forceImmediate = false) {
     }
 
     updateProgressBar();
+    if (typeof window.updateFavoritesCount === "function") {
+      window.updateFavoritesCount();
+    }
     return;
   }
 
@@ -1495,6 +1498,10 @@ export function toggleFavorite(uid, event, forceImmediate = false) {
   } else {
     favorites2 = favorites2.filter((f) => f !== uid);
     localStorage.setItem("sellnance_favs2", JSON.stringify(favorites2));
+  }
+
+  if (typeof window.updateFavoritesCount === "function") {
+    window.updateFavoritesCount();
   }
 
   const row = store.currentTableData.find((r) => r.UID === uid) || (store.tickerRowMap && store.tickerRowMap.get(String(uid)));
@@ -1535,6 +1542,9 @@ export function commitFavoriteChange(uid) {
 
   renderTable();
   updateProgressBar();
+  if (typeof window.updateFavoritesCount === "function") {
+    window.updateFavoritesCount();
+  }
 
   const row = store.currentTableData.find((r) => r.UID === uid);
   if (
@@ -1561,6 +1571,9 @@ window.cancelFavoriteChange = function (uid, event) {
   // 원래 localStorage의 상태(isFav, isFav2)대로 안전하게 되돌려줍니다.
   renderTable();
   updateProgressBar();
+  if (typeof window.updateFavoritesCount === "function") {
+    window.updateFavoritesCount();
+  }
 };
 
 window.confirmFavoriteChange = function (uid, event) {
@@ -1617,6 +1630,9 @@ export function clearAllPendingFavActions() {
   if (store.progressInterval) {
     clearInterval(store.progressInterval);
     store.progressInterval = null;
+  }
+  if (typeof window.updateFavoritesCount === "function") {
+    window.updateFavoritesCount();
   }
 }
 

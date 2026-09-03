@@ -25,11 +25,11 @@ class ExchangeAdapter:
             mapping = {
                 "1d": "24h",
                 "days": "24h",
+                "3d": "24h",
+                "3D": "24h",
                 "1w": "1w",
                 "w": "1w",
                 "weeks": "1w",
-                "3d": "24h",
-                "3D": "24h",
                 "1M": "1M",
                 "M": "1M",
                 "months": "1M",

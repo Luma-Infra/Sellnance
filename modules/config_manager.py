@@ -20,7 +20,7 @@ def load_mapping_data():
                 if (
                     data
                     and isinstance(data, dict)
-                    and len(data.get("TICKER_DATA", {})) > 10
+                    and (len(data.get("TICKER_DATA", {})) > 10 or len(data.get("DUPLICATED_LIST", {})) >= 5)
                 ):
                     _LAST_VALID_MAPPING_DATA = data
                     # utils의 캐시 갱신
@@ -82,14 +82,16 @@ def save_mapping_data(mapping_data):
 # --- ⭐️ 아래는 다른 파일에서 "부품"으로 쓰기 좋게 파싱해주는 함수들 ⭐️ ---
 def get_mapping_parts(mapping_data):
     """조립에 필요한 각 리스트/맵을 튜플로 한 방에 뱉어줌"""
+    if not isinstance(mapping_data, dict):
+        mapping_data = {}
     return (
-        mapping_data.get("NOTE_MAP", {}),
-        mapping_data.get("TICKER_DATA", {}),
-        mapping_data.get("CHAIN_LOGO_MAP", {}),
-        mapping_data.get("EXCLUSION_LIST", []),
-        mapping_data.get("DUPLICATED_LIST", {}),
-        mapping_data.get("SYMBOL_TO_ID_MAP", {}),
-        mapping_data.get("MANUAL_SUPPLY_MAP", {}),
-        mapping_data.get("SPECIAL_SYMBOL_MAP", {}),
-        mapping_data.get("HARDCODE_VERIFY_SKIP_LIST", []),
+        mapping_data.get("NOTE_MAP") or {},
+        mapping_data.get("TICKER_DATA") or {},
+        mapping_data.get("CHAIN_LOGO_MAP") or {},
+        mapping_data.get("EXCLUSION_LIST") or [],
+        mapping_data.get("DUPLICATED_LIST") or {},
+        mapping_data.get("SYMBOL_TO_ID_MAP") or {},
+        mapping_data.get("MANUAL_SUPPLY_MAP") or {},
+        mapping_data.get("SPECIAL_SYMBOL_MAP") or {},
+        mapping_data.get("HARDCODE_VERIFY_SKIP_LIST") or [],
     )

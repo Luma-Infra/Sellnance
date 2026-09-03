@@ -1,4 +1,6 @@
-# builder_upbit.py
+import os
+
+NEW_CONTENT = """# builder_upbit.py
 from modules import utils, config_manager
 import re
 
@@ -406,3 +408,7 @@ def build_upbit_row(
         "Exact_Futures": bin_agg["exact_futures_ticker"],
     }
     return row, is_updated
+"""
+
+with open("c:\\Users\\78831\\Sellnance\\modules\\builder_upbit.py", "w", encoding="utf-8") as f:
+    f.write(NEW_CONTENT)

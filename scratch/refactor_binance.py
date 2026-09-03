@@ -1,4 +1,7 @@
-# builder_binance.py
+import re
+import os
+
+NEW_CONTENT = """# builder_binance.py
 from modules import utils, config_manager
 import re
 
@@ -545,3 +548,7 @@ def build_binance_row(
         "Exact_Futures": exact_futures_ticker,
     }
     return row, is_updated
+"""
+
+with open("c:\\Users\\78831\\Sellnance\\modules\\builder_binance.py", "w", encoding="utf-8") as f:
+    f.write(NEW_CONTENT)

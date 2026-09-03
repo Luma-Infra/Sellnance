@@ -293,6 +293,7 @@ export function switchTab(tab) {
   if (typeof clearAllPendingFavActions === "function") {
     clearAllPendingFavActions();
   }
+  updateFavoritesCount();
 
   if (tab === "FAV" && store.currentTab === "FAV") {
     tab = "ALL";
@@ -948,8 +949,23 @@ export function deleteCurrentPreset() {
 }
 
 export function updateFavoritesCount() {
-  const f1 = JSON.parse(localStorage.getItem("sellnance_favs") || "[]").length;
-  const f2 = JSON.parse(localStorage.getItem("sellnance_favs2") || "[]").length;
+  const f1Set = new Set(JSON.parse(localStorage.getItem("sellnance_favs") || "[]"));
+  const f2Set = new Set(JSON.parse(localStorage.getItem("sellnance_favs2") || "[]"));
+
+  if (store && store.pendingFavActions && store.pendingFavActions.size > 0) {
+    store.pendingFavActions.forEach((action, uid) => {
+      f1Set.delete(uid);
+      f2Set.delete(uid);
+      if (action.targetState === "FAV") {
+        f1Set.add(uid);
+      } else if (action.targetState === "FAV2") {
+        f2Set.add(uid);
+      }
+    });
+  }
+
+  const f1 = f1Set.size;
+  const f2 = f2Set.size;
   const tabFav = document.getElementById("tab-fav");
   const tabFav2 = document.getElementById("tab-fav2");
   if (tabFav) tabFav.innerHTML = `<span style="color: #e3b30a; margin-right: 2px">★</span>` + (f1 > 0 ? `FAV (${f1})` : "FAV");
