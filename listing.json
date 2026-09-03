@@ -989,7 +989,7 @@
     "binance_listing": "2024-11-01"
   },
   "CHIP": {
-    "binance_listing": "2026-04-16"
+    "binance_listing": "2026-04-01"
   },
   "CHIPUSDT": {
     "binance_listing": "2026-04-16"
@@ -1804,7 +1804,8 @@
     "binance_listing": "2025-02-01"
   },
   "HEMI": {
-    "binance_listing": "2025-08-29"
+    "binance_listing": "2025-08-29",
+    "bithumb_listing": "2026-07-23"
   },
   "HEMIUSDT": {
     "binance_listing": "2025-08-29"
@@ -3632,7 +3633,7 @@
   },
   "STRAX": {
     "binance_listing": "2023-10-11",
-    "upbit_listing": "2026-06-26",
+    "upbit_listing": "2026-02-16",
     "bithumb_listing": "2025-11-25"
   },
   "STRAXUSDT": {
@@ -4343,7 +4344,8 @@
     "binance_listing": "2026-07-17"
   },
   "ZIL": {
-    "binance_listing": "2019-09-25"
+    "binance_listing": "2019-09-25",
+    "upbit_listing": "2026-02-16"
   },
   "ZILUSDT": {
     "binance_listing": "2022-04-21"
