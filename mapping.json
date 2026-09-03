@@ -5,7 +5,7 @@
         "SOL": "https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png",
         "SUI": "https://s2.coinmarketcap.com/static/img/coins/64x64/20947.png"
     },
-    "DEFAULT_KRW_USD_RATE": 1372.58,
+    "DEFAULT_KRW_USD_RATE": 1358.98,
     "__MEMO__1": "BTC ETH 파생형 너무 많아서 고정 + 중국어 포함 모든 언어 티커 대응",
     "__MEMO__2": "----------------------------------------------------------",
     "EXCLUSION_LIST": [
@@ -16,6 +16,7 @@
         "EUR"
     ],
     "HARDCODE_VERIFY_SKIP_LIST": [
+        "WBTC",
         "币安人生",
         "我踏马来了",
         "龙虾",
@@ -1839,6 +1840,13 @@
             "CRWD",
             "STOCK"
         ],
+        "CRWDB(STOCK)": [
+            "41960",
+            null,
+            "CRWDB (Derivatives)",
+            "CRWDB",
+            "STOCK"
+        ],
         "CRWVB": [
             "40877",
             null,
@@ -1964,6 +1972,13 @@
             "Decred",
             "DCR",
             "COIN"
+        ],
+        "DDOG(STOCK)": [
+            "40715",
+            null,
+            "DDOG (Derivatives)",
+            "DDOG",
+            "STOCK"
         ],
         "DEEP": [
             "33391",
@@ -2770,6 +2785,13 @@
             "GTC",
             "COIN"
         ],
+        "GTLB(STOCK)": [
+            "41974",
+            null,
+            "GTLB (Derivatives)",
+            "GTLB",
+            "STOCK"
+        ],
         "GUA": [
             "38984",
             null,
@@ -3568,6 +3590,13 @@
             "MARA",
             "STOCK"
         ],
+        "MARSCOIN": [
+            "40944",
+            null,
+            "MarsCoin",
+            "MARSCOIN",
+            "COIN"
+        ],
         "MASK": [
             "8536",
             null,
@@ -3595,6 +3624,13 @@
             "MovieBloc",
             "MBL",
             "COIN"
+        ],
+        "MDB(STOCK)": [
+            "40754",
+            null,
+            "MDB (Derivatives)",
+            "MDB",
+            "STOCK"
         ],
         "ME": [
             "32197",
@@ -3825,6 +3861,13 @@
             null,
             "MRNA (Derivatives)",
             "MRNA",
+            "STOCK"
+        ],
+        "MRNAB(STOCK)": [
+            "41961",
+            null,
+            "MRNAB (Derivatives)",
+            "MRNAB",
             "STOCK"
         ],
         "MRVLB": [
@@ -4105,6 +4148,13 @@
             null,
             "NVDAB (Derivatives)",
             "NVDAB",
+            "STOCK"
+        ],
+        "NVDL(STOCK)": [
+            "41947",
+            null,
+            "NVDL (Derivatives)",
+            "NVDL",
             "STOCK"
         ],
         "NVO(STOCK)": [
@@ -5353,6 +5403,13 @@
             "SQQQ",
             "STOCK"
         ],
+        "SQQQB(STOCK)": [
+            "41962",
+            null,
+            "SQQQB (Derivatives)",
+            "SQQQB",
+            "STOCK"
+        ],
         "SSV": [
             "12999",
             null,
@@ -5435,6 +5492,13 @@
             null,
             "Stacks",
             "STX",
+            "COIN"
+        ],
+        "STXB": [
+            "41963",
+            null,
+            "STXB",
+            "STXB",
             "COIN"
         ],
         "SUI": [
@@ -5547,6 +5611,13 @@
             null,
             "TBT (Derivatives)",
             "TBT",
+            "STOCK"
+        ],
+        "TEAM(STOCK)": [
+            "41971",
+            null,
+            "TEAM (Derivatives)",
+            "TEAM",
             "STOCK"
         ],
         "TEM(STOCK)": [
@@ -5736,6 +5807,13 @@
             null,
             "TSLAB (Derivatives)",
             "TSLAB",
+            "STOCK"
+        ],
+        "TSLL(STOCK)": [
+            "41944",
+            null,
+            "TSLL (Derivatives)",
+            "TSLL",
             "STOCK"
         ],
         "TSMB": [
@@ -6465,6 +6543,13 @@
             "0x Protocol",
             "ZRX",
             "COIN"
+        ],
+        "ZS(STOCK)": [
+            "40766",
+            null,
+            "ZS (Derivatives)",
+            "ZS",
+            "STOCK"
         ],
         "币安人生": [
             "38590",

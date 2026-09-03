@@ -60,7 +60,7 @@
         var isUpbit = savedTheme === "upbit";
         document.documentElement.classList.add(isUpbit ? "theme-upbit" : "theme-binance");
         document.documentElement.classList.remove(isUpbit ? "theme-binance" : "theme-upbit");
-      } catch (e) {}
+      } catch (e) { }
     })();
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -166,20 +166,19 @@
     //   },
     // };
   </script>
-  <script type="module" crossorigin src="/assets/main-7xSWSWRB.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/main-YbG4iIxo.css">
+  <script type="module" crossorigin src="/assets/main-i4JsYzYp.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/main-BODWqM7A.css">
 </head>
 
 <!-- 스타트뷰(cmc api 로그인), 모바일 하단 네비바, 멀티 차트 퀵 탐색(4~8개) 메모 / 추가 완료 -->
 
-<body
-  class="text-theme-text font-sans h-screen w-screen overflow-hidden flex justify-center">
+<body class="text-theme-text font-sans h-screen w-screen overflow-hidden flex justify-center">
   <script>
     (function () {
       try {
         var tgX = localStorage.getItem("sellnance_theme") || "binance";
         document.body.classList.add(tgX === "upbit" ? "theme-upbit" : "theme-binance");
-      } catch (e) {}
+      } catch (e) { }
     })();
   </script>
   <div id="app-loader"></div>
@@ -384,11 +383,15 @@
         </div>
       </div>
       <!-- 🚀 온보딩 모달 하단 액션 푸터 (다크 글래스 칩 일체형) -->
-      <div class="border-t border-theme-border/40 px-4 py-3 bg-theme-bg/95 flex items-center justify-end gap-2 flex-wrap sm:flex-nowrap">
-        <label class="h-[38px] px-3.5 bg-black/40 hover:bg-white/10 border border-theme-border/50 hover:border-theme-accent/50 rounded-xl flex items-center gap-2 cursor-pointer select-none transition-all group">
+      <div
+        class="border-t border-theme-border/40 px-4 py-3 bg-theme-bg/95 flex items-center justify-end gap-2 flex-wrap sm:flex-nowrap">
+        <label
+          class="h-[38px] px-3.5 bg-black/40 hover:bg-white/10 border border-theme-border/50 hover:border-theme-accent/50 rounded-xl flex items-center gap-2 cursor-pointer select-none transition-all group">
           <input type="checkbox" id="onboarding-never-show"
             class="accent-theme-accent w-3.5 h-3.5 rounded cursor-pointer" />
-          <span class="text-xs text-theme-text/80 group-hover:text-white whitespace-nowrap font-medium transition-colors">다시 안 보기</span>
+          <span
+            class="text-xs text-theme-text/80 group-hover:text-white whitespace-nowrap font-medium transition-colors">다시
+            안 보기</span>
         </label>
         <button onclick="window.closeOnboardingModal()"
           class="h-[38px] px-6 bg-theme-accent text-white text-xs md:text-sm font-bold rounded-xl shadow-sm hover:brightness-105 active:scale-[0.98] transition-all tracking-wider flex items-center gap-1.5">
@@ -435,9 +438,12 @@
           <div class="flex items-center gap-1.5">
             <span id="status-timer-dot"
               class="inline-block w-2 h-2 min-[1200px]:w-1.5 min-[1200px]:h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span id="status-timer" class="hidden min-[1200px]:inline-block text-[9px] font-bold text-theme-text/80">--:--:-- 이후 시가총액 갱신</span>
+            <span id="status-timer"
+              class="hidden min-[1200px]:inline-block text-[9px] font-bold text-theme-text/80">--:--:-- 이후 시가총액
+              갱신</span>
           </div>
-          <span id="status-users" class="hidden min-[1200px]:inline-block pl-2.5 opacity-60 font-mono text-[9px]">1 Active</span>
+          <span id="status-users" class="hidden min-[1200px]:inline-block pl-2.5 opacity-60 font-mono text-[9px]">1
+            Active</span>
 
           <!-- 💎 심플 미니멀 다크 글래스 호버 툴팁 (순수 텍스트 설명 전용) -->
           <div id="status-cache-tooltip"
@@ -581,7 +587,7 @@
         <!-- 🚀 탭/검색창과 제어 패널을 통틀어 감싸는 좌측 최상단 공통 부모 요소 -->
         <div id="left-top-zone"
           class="flex flex-col w-full shrink-0 border-b border-theme-border h-auto max-[1199px]:!h-auto min-[1200px]:h-[224px] min-[1200px]:max-h-[224px]">
-          
+
           <!-- 🚀 [PC 전용 (>=1200px)] 기존 정통 상단 독립 검색창 (100% 원본 유지) -->
           <div id="search-input-wrapper"
             class="hidden min-[1200px]:flex w-[calc(100%-16px)] shrink-0 bg-theme-panel/10 p-2 items-center mt-1 mx-2">
@@ -589,14 +595,8 @@
             <div id="search-bar-inner"
               class="relative flex flex-1 h-[36px] bg-theme-panel border border-theme-border rounded-md items-center z-0 overflow-hidden px-3 shadow-inner w-full focus-within:border-theme-accent transition-all">
               <input type="text" id="symbol-input" placeholder="Search Ticker or Name..."
-                name="sellnance_coin_search_custom"
-                autocomplete="off"
-                autocorrect="off"
-                autocapitalize="off"
-                spellcheck="false"
-                data-lpignore="true"
-                data-form-type="other"
-                oninput="searchSymbols(this.value)"
+                name="sellnance_coin_search_custom" autocomplete="off" autocorrect="off" autocapitalize="off"
+                spellcheck="false" data-lpignore="true" data-form-type="other" oninput="searchSymbols(this.value)"
                 onfocus="if (typeof window.showRecentSearchChips === 'function') window.showRecentSearchChips()"
                 onclick="if (typeof window.showRecentSearchChips === 'function') window.showRecentSearchChips()"
                 class="bg-transparent text-theme-text w-full text-xs font-medium focus:outline-none placeholder-opacity-40 h-full" />
@@ -611,8 +611,7 @@
           </div>
 
           <!-- 🚀 상단 제어 바: 시총 슬라이더, 거래소 필터, 카테고리 탭 -->
-          <div id="control-panel-parent"
-            class="flex flex-col justify-between p-2 bg-theme-panel/10 relative flex-1">
+          <div id="control-panel-parent" class="flex flex-col justify-between p-2 bg-theme-panel/10 relative flex-1">
 
             <!-- 🚀 [신규 추가] 거래소 다중 체크 AND 필터바 -->
             <div id="exchange-filter-container"
@@ -627,9 +626,11 @@
             </div>
 
             <!-- 3층: 카테고리 탭 및 모바일 전용 인라인 돋보기(🔍) 토글 검색 바 -->
-            <div id="category-tab-container" class="relative flex items-center gap-1 px-1 mt-1.5 mb-0.5 min-h-[36px] overflow-hidden">
+            <div id="category-tab-container"
+              class="relative flex items-center gap-1 px-1 mt-1.5 mb-0.5 min-h-[36px] overflow-hidden">
               <!-- 탭 버튼 목록 -->
-              <div id="tab-buttons-group" class="flex items-center gap-1 flex-1 min-w-0 overflow-x-auto scrollbar-hide transition-opacity duration-200 min-[1200px]:w-full h-full py-0.5">
+              <div id="tab-buttons-group"
+                class="flex items-center gap-1 flex-1 min-w-0 overflow-x-auto scrollbar-hide transition-opacity duration-200 min-[1200px]:w-full h-full py-0.5">
                 <button onclick="switchTab('ALL')" id="tab-all"
                   class="tab-btn px-3.5 min-[1200px]:px-4.5 py-2 text-[10.5px] font-semibold rounded-full transition-all bg-theme-accent text-white border border-theme-accent shadow-md whitespace-nowrap inline-flex items-center justify-center leading-none">
                   ALL<span class="hidden min-[1200px]:inline"> LIST</span>
@@ -645,7 +646,8 @@
                   FAV<span class="hidden min-[1200px]:inline">ORITES</span> 2
                 </button>
 
-                <div id="category-tab-separator" class="w-px h-5 bg-theme-border/30 mx-1 shrink-0 min-[1200px]:ml-auto"></div>
+                <div id="category-tab-separator" class="w-px h-5 bg-theme-border/30 mx-1 shrink-0 min-[1200px]:ml-auto">
+                </div>
 
                 <button onclick="toggleSmallCap()" id="btn-small-cap"
                   class="tab-btn px-3.5 min-[1200px]:px-4.5 py-2 text-[10.5px] font-semibold rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap inline-flex items-center justify-center leading-none">
@@ -662,7 +664,8 @@
               <button id="btn-toggle-tab-search" onclick="window.toggleTabSearch(true)"
                 class="min-[1200px]:hidden w-7 h-7 rounded-full bg-theme-panel border border-theme-border/60 flex items-center justify-center text-theme-text opacity-60 hover:opacity-100 hover:text-theme-accent hover:border-theme-accent transition-all shrink-0 ml-1 cursor-pointer"
                 title="코인 검색">
-                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="11" cy="11" r="8"></circle>
                   <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                 </svg>
@@ -671,17 +674,12 @@
               <!-- 🚀 [모바일 전용 (<1200px)] 슬라이드 검색창 (돋보기 클릭 시 부드럽게 오버레이) -->
               <div id="tab-search-wrapper"
                 class="min-[1200px]:hidden absolute inset-0 bg-theme-bg/95 flex items-center gap-1.5 px-1 z-20 transition-all duration-200 opacity-0 pointer-events-none translate-x-2">
-                <div class="relative flex flex-1 h-[30px] bg-theme-panel border border-theme-accent/70 rounded-full items-center px-3 shadow-inner">
+                <div
+                  class="relative flex flex-1 h-[30px] bg-theme-panel border border-theme-accent/70 rounded-full items-center px-3 shadow-inner">
                   <span class="text-[11px] text-theme-accent mr-1.5">🔍</span>
                   <input type="text" id="symbol-input-mobile" placeholder="Search Ticker or Name..."
-                    name="sellnance_coin_search_custom_mobile"
-                    autocomplete="off"
-                    autocorrect="off"
-                    autocapitalize="off"
-                    spellcheck="false"
-                    data-lpignore="true"
-                    data-form-type="other"
-                    oninput="searchSymbols(this.value)"
+                    name="sellnance_coin_search_custom_mobile" autocomplete="off" autocorrect="off" autocapitalize="off"
+                    spellcheck="false" data-lpignore="true" data-form-type="other" oninput="searchSymbols(this.value)"
                     onfocus="if (typeof window.showRecentSearchChips === 'function') window.showRecentSearchChips()"
                     onclick="if (typeof window.showRecentSearchChips === 'function') window.showRecentSearchChips()"
                     class="bg-transparent text-theme-text w-full text-xs font-medium focus:outline-none placeholder-opacity-40 h-full" />
@@ -690,7 +688,8 @@
                     ✕
                   </button>
                   <div id="search-loading-bar-mobile"
-                    class="absolute bottom-0 left-0 h-[2px] bg-theme-accent w-0 transition-all pointer-events-none"></div>
+                    class="absolute bottom-0 left-0 h-[2px] bg-theme-accent w-0 transition-all pointer-events-none">
+                  </div>
                 </div>
                 <button onclick="window.toggleTabSearch(false)"
                   class="text-[11px] px-2.5 py-1 rounded-md text-theme-text opacity-70 hover:opacity-100 hover:text-white transition-all font-medium whitespace-nowrap cursor-pointer">
@@ -824,15 +823,8 @@
                 </div>
                 <div onclick="sortTable('Volume')"
                   class="p-2 cursor-pointer hover:bg-white/5 transition-colors col-vol-b flex items-center gap-1">
-                  <div
-                    class="relative w-3.5 h-3.5 flex items-center justify-center rounded-full bg-white/5 overflow-visible">
-                    <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/270.png"
-                      class="w-full h-full rounded-full" alt="B" />
-                    <div
-                      class="absolute -top-1.5 -right-1.5 bg-[#f0b90b] text-black text-[8px] font-bold px-[2px] rounded-[2px] leading-none z-10 scale-[0.65]">
-                      F
-                    </div>
-                  </div>
+                  <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/270.png"
+                    class="w-3.5 h-3.5 rounded-full" alt="B" />
                   Vol <span id="sort-Volume" class="sort-arrow"></span>
                 </div>
                 <div onclick="sortTable('VolumeUpbit')"
@@ -856,12 +848,16 @@
 
               <div class="flex w-full items-center bg-theme-bg/50 h-8">
                 <div
-                  class="p-2 text-[9px] opacity-70 overflow-hidden col-asset flex items-center justify-between gap-2 text-left w-full min-w-0">
+                  class="p-2 text-[9px] opacity-70 overflow-hidden col-asset flex items-center justify-between gap-1 text-left w-full min-w-0">
+                  <span
+                    class="cursor-pointer hover:text-theme-accent active:opacity-50 w-[18px] flex-shrink-0 text-center truncate select-none">No
+                  </span>
                   <span onclick="sortTable('Name')"
-                    class="cursor-pointer hover:text-theme-accent flex-1 text-left truncate">NAME
-                    <span id="sort-Name" class="sort-arrow text-[8px]"></span></span>
+                    class="cursor-pointer hover:text-theme-accent flex-1 text-left truncate pl-4">NAME
+                    <span id="sort-Name" class="sort-arrow text-[8px]"></span>
+                  </span>
                   <span onclick="sortTable('Caution')"
-                    class="cursor-pointer hover:text-theme-accent flex-1 text-left truncate">RISKY
+                    class="cursor-pointer hover:text-theme-accent w-10 flex-shrink-0 text-left truncate pr-2">RISK
                     <span id="sort-Caution" class="sort-arrow text-[8px]"></span></span>
                 </div>
                 <div
@@ -1061,12 +1057,12 @@
                   OHLC 끄기
                 </button>
 
-                <!-- 🚀 로그/리니어 스케일 토글 버튼 (주석 처리됨, 차트 내 A/L 스위치로 대체)
-                <button id="toggle-log-scale-btn"
-                  class="px-2.5 py-1 text-[10px] md:text-[11px] font-medium text-theme-text opacity-70 hover:opacity-100 border border-theme-border/50 rounded bg-theme-panel/50 transition-all whitespace-nowrap mr-1 cursor-pointer"
-                  onclick="if (window.toggleLogScale) window.toggleLogScale();">
-                  Linear 축
-                </button>-->
+                <!-- 🚀 김프 비교 끄기/켜기 토글 버튼 -->
+                <button id="toggle-kimchi-btn"
+                  class="px-2.5 py-1 text-[10px] md:text-[11px] font-medium text-theme-accent border border-theme-accent/40 bg-theme-accent/10 rounded transition-all whitespace-nowrap mr-1 cursor-pointer shadow-sm"
+                  onclick="if (window.toggleKimchiComparison) window.toggleKimchiComparison();">
+                  김프 비교 끄기
+                </button>
 
                 <!-- 🚀 카운트다운 토글 버튼 -->
                 <button id="toggle-countdown-btn"
@@ -1253,6 +1249,13 @@
                     <span id="ohlc-kimchi" class="font-medium text-right">-</span>
                   </div>
                 </div>
+              <!-- 🚀 김프 비교 끔 안내 문구 (kimchi-no-data 바로 위) -->
+              <div id="kimchi-disabled-notice"
+                class="absolute bottom-22 left-[70px] z-[110] hidden bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-lg border border-theme-accent/25 shadow-[0_0_15px_rgba(0,0,0,0.4)] pointer-events-auto opacity-80 hover:opacity-100 transition-all cursor-pointer flex items-center gap-2 select-none"
+                onclick="if (window.toggleKimchiComparison) window.toggleKimchiComparison();"
+                title="클릭하여 김프 비교 켜기">
+                <span class="text-xs">💡</span>
+                <span class="text-[9px] md:text-[10px] text-theme-accent font-medium tracking-tight">김프 비교가 꺼져 있어요 (클릭하여 켜기)</span>
               </div>
 
               <div id="kimchi-no-data"
