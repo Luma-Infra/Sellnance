@@ -4,11 +4,11 @@
 # ==========================================
 
 from concurrent.futures import ThreadPoolExecutor
-from logging import config
+import config
 import re
 
-import requests
 from modules import config_manager
+import requests
 
 from modules import utils
 from modules.utils import get_pure_base_asset, is_valid_ticker
@@ -181,10 +181,11 @@ def fetch_cmc_market_data(binance_data, upbit_krw_set, MAPPING_DATA, api_key=Non
 
 # ThreadPool 돌려서 CMC 데이터 긁어오고 market_data_map 만드는 로직.
 def execute_cmc_requests(id_lookup, sym_lookup, api_key=None):
-    import config
-
     url = "https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest"
-    headers = {"Accepts": "application/json", "X-CMC_PRO_API_KEY": api_key or config.CMC_API_KEY}
+    headers = {
+        "Accepts": "application/json",
+        "X-CMC_PRO_API_KEY": api_key or config.CMC_API_KEY,
+    }
     quote_tasks = []
 
     # ID 묶음 생성

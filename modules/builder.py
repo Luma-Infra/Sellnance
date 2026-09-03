@@ -4,9 +4,9 @@
 # ==========================================
 import re
 import requests
+from tvDatafeed import TvDatafeed, Interval
 from modules import utils, config_manager
-
-
+from modules.exchange_api import EXCHANGE_WARNINGS
 from modules.builder_binance import build_binance_row
 from modules.builder_upbit import build_upbit_row
 
@@ -99,8 +99,6 @@ def assemble_final_dashboard(
     # 🚀 법정 환율 (USD/KRW) 실시간 수집 (tvDatafeed 단일 연동)
     krw_usd_rate = float(mapping.get("DEFAULT_KRW_USD_RATE", 0.0))
     try:
-        from tvDatafeed import TvDatafeed, Interval
-
         tv = TvDatafeed()
         df = tv.get_hist(
             symbol="USDKRW", exchange="FX_IDC", interval=Interval.in_1_minute, n_bars=1
@@ -276,7 +274,7 @@ def assemble_final_dashboard(
                     if by_futures_p > 0:
                         row.setdefault("Listed_Exchanges", []).append("BYBIT_FUTURES")
                     if by_spot_p > 0:
-                        row.setdefault("Listed_Exchanges", []).append("BYBIT")
+                        row.setdefault("Listed_Exchanges", []).append("BYBIT_SPOT")
                     row["Listed_Exchanges"] = list(set(row.get("Listed_Exchanges", [])))
                 row["krw_usd_rate"] = krw_usd_rate  # 🚀 모든 행에 테더 환율 공급
                 final_results[uid] = row
@@ -316,8 +314,6 @@ def assemble_final_dashboard(
     #                         any_update = True
 
     # 🚨 [거래소별 유의/상폐/모니터링 경고 라벨 통합 바인딩]
-    from modules.exchange_api import EXCHANGE_WARNINGS
-
     for row in final_results.values():
         base_sym = (row.get("Symbol") or row.get("DisplayTicker") or "").upper()
         pure_base = utils.get_pure_base_asset(base_sym).upper()
@@ -333,7 +329,9 @@ def assemble_final_dashboard(
         if bit_warn:
             warnings["BITHUMB"] = bit_warn
 
-        bin_warn = EXCHANGE_WARNINGS.get("BINANCE", {}).get(pure_base) or EXCHANGE_WARNINGS.get("BINANCE", {}).get(base_sym)
+        bin_warn = EXCHANGE_WARNINGS.get("BINANCE", {}).get(
+            pure_base
+        ) or EXCHANGE_WARNINGS.get("BINANCE", {}).get(base_sym)
         if bin_warn:
             warnings["BINANCE"] = bin_warn
 

@@ -1,6 +1,7 @@
 # utils.py
 import re
 from decimal import Decimal, ROUND_HALF_UP
+from modules import config_manager
 
 
 # --- ⭐️ FORMATTING FUNCTIONS ⭐️ ---
@@ -91,6 +92,10 @@ def create_image_tag(url):
 
 
 def get_pure_base_asset(ticker):
+    # 🚀 WBTC 단독 코인은 BTC 자르기 스킵!
+    if ticker in ("WBTC", "WETH"):
+        return ticker
+
     # 🚀 mapping.json의 HARDCODE_VERIFY_SKIP_LIST 예외 캐시 조회 시 바로 반환 (스킵 가드)
     if _SKIP_LIST_CACHE and ticker in _SKIP_LIST_CACHE:
         return ticker
@@ -153,8 +158,6 @@ def is_valid_ticker(ticker, skip_list=None):
     if skip_list is None:
         if _SKIP_LIST_CACHE is None:
             try:
-                from modules import config_manager
-
                 mapping = config_manager.load_mapping_data()
                 _SKIP_LIST_CACHE = mapping.get("HARDCODE_VERIFY_SKIP_LIST", [])
             except:

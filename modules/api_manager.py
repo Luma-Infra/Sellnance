@@ -3,12 +3,13 @@ from contextlib import contextmanager
 from datetime import datetime
 import threading
 import traceback
+import hashlib
+import time
+import json
 import pytz
 import sys
 import os
 import re
-import json
-import hashlib
 
 # ✅ 수정 (옆방 부하들 호출하는 정석)
 from modules import builder, cmc_api, exchange_api, config_manager, utils
@@ -131,8 +132,6 @@ _load_market_data_cache_from_file()
 
 # 🚀 [추가] 9시 정밀 캡처 스케줄러
 def start_kst_9am_scheduler():
-    import time
-
     # 0초, 5초, 10초, 20초, 1분, 2분, 3분, 5분 정각에 안전하게 트리거
     def run_scheduler():
         print("⏰ [SYSTEM] 9시 정밀 시가 스케줄러 가동 중...")
@@ -168,8 +167,6 @@ SILENT_REFRESH_INTERVAL = 900  # 15분 (초)
 
 
 def start_silent_background_scheduler():
-    import time
-
     def run():
         print("🔄 [SYSTEM] Silent 백그라운드 자동 갱신 스케줄러 가동 (5분 주기)...")
         while True:
@@ -366,8 +363,6 @@ def _fetch_and_process_data(silent_mode=False, api_key=None):
         print(f"📊 [3/3 장부 조립 완료] 최종 {len(final_results)}개 자산 입고")
     except Exception as e:
         print(f"🚨 [조립 치명적 에러]: {e}")
-        import traceback
-
         traceback.print_exc()
 
     if is_mapping_updated:
@@ -443,15 +438,30 @@ def get_cached_data(force_reload=False, silent_mode=False, user_api_key=None):
         key_hash = hashlib.sha256(user_api_key.strip().encode()).hexdigest()
         with user_cache_lock:
             user_cache = USER_CMC_CACHES.setdefault(
-                key_hash, {"map": {}, "lookup": {}, "timestamp": datetime.min, "assembled_data": None}
+                key_hash,
+                {
+                    "map": {},
+                    "lookup": {},
+                    "timestamp": datetime.min,
+                    "assembled_data": None,
+                },
             )
             is_user_expired = (
                 user_cache["timestamp"] == datetime.min
-                or (now_kst - user_cache["timestamp"].astimezone(KST)).total_seconds() > USER_CACHE_TIMEOUT
+                or (now_kst - user_cache["timestamp"].astimezone(KST)).total_seconds()
+                > USER_CACHE_TIMEOUT
             )
-            if not force_reload and not is_user_expired and user_cache.get("assembled_data"):
+            if (
+                not force_reload
+                and not is_user_expired
+                and user_cache.get("assembled_data")
+            ):
                 user_ts = user_cache.get("timestamp", datetime.min)
-                ts_str = user_ts.astimezone(kst).strftime("%Y-%m-%d %H:%M:%S") if user_ts != datetime.min else now_kst.strftime("%Y-%m-%d %H:%M:%S")
+                ts_str = (
+                    user_ts.astimezone(kst).strftime("%Y-%m-%d %H:%M:%S")
+                    if user_ts != datetime.min
+                    else now_kst.strftime("%Y-%m-%d %H:%M:%S")
+                )
                 return user_cache["assembled_data"], ts_str
 
         raw_data = _fetch_and_process_data(silent_mode=False, api_key=user_api_key)

@@ -1,11 +1,12 @@
 # exchange_api.py
 from concurrent.futures import ThreadPoolExecutor, wait
-import requests
 from requests.adapters import HTTPAdapter
 from modules import config_manager, utils
 from modules.utils import is_valid_ticker
 from datetime import datetime, timezone
+import requests
 import json
+import time
 import os
 
 # 🚀 9시 시가 캐시 (메모리 & 파일)
@@ -105,7 +106,7 @@ def fetch_global_listings():
                     .json()
                     .get("data", [])
                 ],
-                "OKX",
+                "OKX_SPOT",
             )
         except:
             pass
@@ -140,7 +141,7 @@ def fetch_global_listings():
                     .get("result", {})
                     .get("list", [])
                 ],
-                "BYBIT",
+                "BYBIT_SPOT",
             )
         except:
             pass
@@ -174,7 +175,7 @@ def fetch_global_listings():
                     .json()
                     .get("data", [])
                 ],
-                "BITGET",
+                "BITGET_SPOT",
             )
         except:
             pass
@@ -205,7 +206,7 @@ def fetch_global_listings():
                         "https://api.gateio.ws/api/v4/spot/currency_pairs", timeout=5
                     ).json()
                 ],
-                "GATEIO",
+                "GATEIO_SPOT",
             )
         except:
             pass
@@ -233,7 +234,7 @@ def fetch_global_listings():
                         "https://api.exchange.coinbase.com/products", timeout=5
                     ).json()
                 ],
-                "COINBASE",
+                "COINBASE_SPOT",
             )
         except:
             pass
@@ -809,8 +810,6 @@ def fetch_upbit_prices(upbit_assets):
                 success = True
                 break
             except Exception as e:
-                import time
-
                 print(f"🚨 [업비트 수집 에러 (Chunk)] (시도 {attempt+1}/3): {e}")
                 time.sleep(1.0)
         if not success:

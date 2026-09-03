@@ -1,6 +1,7 @@
 # config_manager.py
 import json
 import os
+from modules import utils
 
 # 파일 경로 고정
 MAPPING_FILE = 'mapping.json'
@@ -18,7 +19,6 @@ def load_mapping_data():
                 if data and isinstance(data, dict) and len(data.get("TICKER_DATA", {})) > 10:
                     _LAST_VALID_MAPPING_DATA = data
                     # utils의 캐시 갱신
-                    from modules import utils
                     skip_list = data.get("HARDCODE_VERIFY_SKIP_LIST", [])
                     sym_to_id_keys = list(data.get("SYMBOL_TO_ID_MAP", {}).keys())
                     utils._SKIP_LIST_CACHE = list(set(skip_list + sym_to_id_keys))
@@ -52,7 +52,6 @@ def save_mapping_data(mapping_data):
             mapping_data["TICKER_DATA"] = dict(sorted(mapping_data["TICKER_DATA"].items()))
         
         # utils의 캐시 갱신
-        from modules import utils
         skip_list = mapping_data.get("HARDCODE_VERIFY_SKIP_LIST", [])
         sym_to_id_keys = list(mapping_data.get("SYMBOL_TO_ID_MAP", {}).keys())
         utils._SKIP_LIST_CACHE = list(set(skip_list + sym_to_id_keys))

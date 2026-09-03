@@ -1,6 +1,6 @@
 # builder_binance.py
-import re
 from modules import utils, config_manager
+import re
 
 
 def build_binance_row(
@@ -324,7 +324,7 @@ def build_binance_row(
                 continue
 
             if b_inf.get("is_spot"):
-                listed_on.add("BINANCE")
+                listed_on.add("BINANCE_SPOT")
                 binance_spot_price = b_inf.get("spot_price") or b_inf.get("price", 0.0)
                 binance_spot_change_24h = b_inf.get("spot_change_24h") or b_inf.get(
                     "change_24h", 0.0
@@ -374,7 +374,13 @@ def build_binance_row(
                 upbit_direct_match = False
         elif base in upbit_data:
             up_uid = str(upbit_data[base].get("uid", ""))
-            if up_uid and final_ucid and up_uid.isdigit() and final_ucid.isdigit() and up_uid != final_ucid:
+            if (
+                up_uid
+                and final_ucid
+                and up_uid.isdigit()
+                and final_ucid.isdigit()
+                and up_uid != final_ucid
+            ):
                 upbit_direct_match = False
 
     target_up_base = (
@@ -421,7 +427,7 @@ def build_binance_row(
     if by_futures_p > 0:
         listed_on.add("BYBIT_FUTURES")
     if by_spot_p > 0:
-        listed_on.add("BYBIT")
+        listed_on.add("BYBIT_SPOT")
 
     target_spot_p = binance_spot_price or by_spot_p
     target_futures_p = binance_futures_price
@@ -521,26 +527,26 @@ def build_binance_row(
         dom_name = "BITHUMB"
         dom_base = bithumb_symbol
 
-    # 2. 해외 거래소 결정 (바낸 선물 -> 바낸 현물 -> 바이빗 선물 -> 바이빗 현물)
+    # 2. 해외 거래소 결정 (바낸 현물 -> 바낸 선물 -> 바이빗 현물 -> 바이빗 선물)
     ovs_p = 0.0
     ovs_name = ""
     ovs_base = ""
-    if binance_futures_price > 0:
-        ovs_p = binance_futures_price
-        ovs_name = "BIN FUT"
-        ovs_base = exact_futures_ticker or ticker or raw_symbol
-    elif binance_spot_price > 0:
+    if binance_spot_price > 0:
         ovs_p = binance_spot_price
         ovs_name = "BIN SPOT"
         ovs_base = exact_spot_ticker or base
-    elif by_futures_p > 0:
-        ovs_p = by_futures_p
-        ovs_name = "BYB FUT"
-        ovs_base = raw_symbol or ticker or base
+    elif binance_futures_price > 0:
+        ovs_p = binance_futures_price
+        ovs_name = "BIN FUT"
+        ovs_base = exact_futures_ticker or ticker or raw_symbol
     elif by_spot_p > 0:
         ovs_p = by_spot_p
         ovs_name = "BYB SPOT"
         ovs_base = base
+    elif by_futures_p > 0:
+        ovs_p = by_futures_p
+        ovs_name = "BYB FUT"
+        ovs_base = raw_symbol or ticker or base
 
     if dom_p > 0 and ovs_p > 0 and krw_usd_rate > 0:
         dom_mult = utils.get_multiplier(dom_base)
@@ -595,12 +601,14 @@ def build_binance_row(
         "Price": utils.format_dynamic_price(b_info["price"], precision),
         "Price_KRW": up_price_krw if up_price_krw > 0 else None,
         "Binance_Price": (
-            (binance_futures_price or binance_spot_price)
-            if (binance_futures_price > 0 or binance_spot_price > 0)
-            else None
+            binance_futures_price
+            if b_info.get("is_futures") and binance_futures_price > 0
+            else (binance_spot_price if binance_spot_price > 0 else None)
         ),
         "Bybit_Price": (
-            (by_futures_p or by_spot_p) if (by_futures_p > 0 or by_spot_p > 0) else None
+            by_futures_p
+            if b_info.get("is_futures") and by_futures_p > 0
+            else (by_spot_p if by_spot_p > 0 else None)
         ),
         "Upbit_Price": up_price_krw if up_price_krw > 0 else None,
         "Bithumb_Price": bithumb_price if bithumb_price > 0 else None,
@@ -633,11 +641,13 @@ def build_binance_row(
         # ==========================================
         "Binance_Price_Spot": binance_spot_price if binance_spot_price > 0 else None,
         "Bybit_Price_Spot": by_spot_p if by_spot_p > 0 else None,
+        "Change_24h_Spot": binance_spot_change_24h,
         "Change_24h_Binance": binance_spot_change_24h,
         "Change_24h_Bybit": float(
             bybit_data.get(raw_symbol, {}).get("change_24h", 0.0)
             or bybit_data.get(base, {}).get("change_24h", 0.0)
         ),
+        "Change_Today_Spot": binance_spot_change_today,
         "Change_Today_Binance": binance_spot_change_today,
         "Change_Today_Bybit": float(
             bybit_data.get(raw_symbol, {}).get("change_today", 0.0)
@@ -662,7 +672,7 @@ def build_binance_row(
             binance_futures_price if binance_futures_price > 0 else None
         ),
         "Bybit_Price_Futures": by_futures_p if by_futures_p > 0 else None,
-        "Change_24h_Futures_Ex": binance_futures_change_24h,
+        "Change_24h_Futures": binance_futures_change_24h,
         "Change_Today_Futures": binance_futures_change_today,
         "Funding_Raw": funding_rate,
         "Funding_Formatted": funding_f,

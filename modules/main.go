@@ -59,9 +59,9 @@ func main() {
 	app.Get("/api/market-map", func(c *fiber.Ctx) error {
 		data, _ := GetCachedData()
 		
+		spot := []string{}
 		upbit := []string{}
 		futures := []string{}
-		spot := []string{}
 		allAssetsMap := make(map[string]bool)
 
 		for _, item := range data {
