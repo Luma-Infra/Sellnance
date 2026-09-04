@@ -4,7 +4,6 @@ import os
 import json
 import tempfile
 import threading
-from modules import config_manager
 from decimal import Decimal, ROUND_HALF_UP
 
 from pathlib import Path
@@ -214,6 +213,7 @@ def is_valid_ticker(ticker, skip_list=None):
     if skip_list is None:
         if _SKIP_LIST_CACHE is None:
             try:
+                from modules import config_manager
                 mapping = config_manager.load_mapping_data()
                 _SKIP_LIST_CACHE = mapping.get("HARDCODE_VERIFY_SKIP_LIST", [])
             except:

@@ -35,6 +35,7 @@ USER_CACHE_TIMEOUT = 900  # 15분
 
 USER_CMC_CACHES = {}
 user_cache_lock = threading.Lock()
+data_lock = threading.Lock()
 
 
 def _load_market_data_cache_from_file():
@@ -417,9 +418,6 @@ def _fetch_and_process_data(silent_mode=False, api_key=None):
         print(f"💾 새로운 코인 정보가 mapping.json에 저장 완료되었습니다!")
 
     return final_results
-
-
-data_lock = threading.Lock()
 
 
 def get_cached_data(force_reload=False, silent_mode=False, user_api_key=None):
