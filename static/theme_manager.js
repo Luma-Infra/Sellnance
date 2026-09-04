@@ -155,6 +155,11 @@ export function applyCandleTheme(theme) {
 
   // 6. 버튼 UI 갱신
   updateCandleThemeButtons();
+
+  // 7. 시뮬레이터 콩나물 대가리 색상 즉시 동기화
+  if (typeof window.changeDir === "function" && store.curDir) {
+    window.changeDir(store.curDir);
+  }
 }
 
 /**

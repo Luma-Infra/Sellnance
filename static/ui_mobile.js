@@ -183,18 +183,23 @@ export function switchChartTab(mode) {
   if (mode === "chart" && btnSim && btnSim.classList.contains("active")) {
     window.Swal.fire({
       title: "시뮬레이션 종료 🚨",
-      text: "그려둔 가상 캔들이 모두 초기화되고 실제 차트로 돌아갑니다. 종료하시겠습니까?",
+      html: "그려둔 가상 캔들이 모두 초기화되고 실제 차트로 돌아가요<br/>진짜로 넘어갈까요?",
       icon: "warning",
       showCancelButton: true,
       background: "var(--panel)",
       color: "var(--text)",
       confirmButtonColor: "var(--down)",
       cancelButtonColor: "var(--border)",
-      confirmButtonText: "네, 초기화할게요 🗑️",
+      confirmButtonText: "네, 넘어갈게요",
       cancelButtonText: "아니요, 계속할게요",
     }).then((result) => {
       if (result.isConfirmed) {
         executeTabSwitch(mode);
+      } else {
+        // 취소 시 슬라이더 활성 바를 시뮬레이터(index 1) 위치로 확실하게 유지/복원
+        if (typeof window.moveTabSlider === "function") {
+          window.moveTabSlider(1);
+        }
       }
     });
   } else {
@@ -209,6 +214,7 @@ export function executeTabSwitch(mode) {
     controls = document.getElementById("sim-controls");
 
   if (mode === "chart") {
+    if (typeof window.moveTabSlider === "function") window.moveTabSlider(0);
     if (btnChart) btnChart.classList.add("active");
     if (btnSim) btnSim.classList.remove("active");
     if (btnQuick) btnQuick.classList.remove("active");
@@ -225,7 +231,14 @@ export function executeTabSwitch(mode) {
 
     if (typeof fetchHistory === "function")
       fetchHistory(undefined, false, true);
+
+    requestAnimationFrame(() => {
+      if (typeof window.applyChartLayout === "function") {
+        window.applyChartLayout();
+      }
+    });
   } else if (mode === "sim") {
+    if (typeof window.moveTabSlider === "function") window.moveTabSlider(1);
     if (btnSim) btnSim.classList.add("active");
     if (btnChart) btnChart.classList.remove("active");
     if (btnQuick) btnQuick.classList.remove("active");
@@ -253,7 +266,18 @@ export function executeTabSwitch(mode) {
     if (statusDot) statusDot.style.background = "gray";
     const statusText = document.getElementById("status-text");
     if (statusText) statusText.innerText = "SIMULATION";
+
+    if (typeof window.changeDir === "function") {
+      window.changeDir(store.curDir || "bull");
+    }
+
+    requestAnimationFrame(() => {
+      if (typeof window.applyChartLayout === "function") {
+        window.applyChartLayout();
+      }
+    });
   } else if (mode === "quickview") {
+    if (typeof window.moveTabSlider === "function") window.moveTabSlider(2);
     if (btnQuick) btnQuick.classList.add("active");
     if (btnChart) btnChart.classList.remove("active");
     if (btnSim) btnSim.classList.remove("active");

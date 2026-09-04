@@ -36,6 +36,21 @@ function changeDir(d) {
     if (btnGen) btnGen.style.backgroundColor = "var(--down)";
   }
 
+  // 🚀 슬라이더 콩나물 대가리 및 % 수치 색상 - 차트 캔들 상승/하락 컬러에 100% 귀속
+  const simControls = document.getElementById("sim-controls");
+  const simColor = d === "bull" ? "var(--up)" : "var(--down)";
+  if (simControls) {
+    simControls.style.setProperty("--sim-color", simColor);
+  }
+  ["input-body", "input-top", "input-bottom"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.style.accentColor = simColor;
+  });
+  ["val-body", "val-top", "val-bottom"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.style.color = simColor;
+  });
+
   document.getElementById("val-body").innerText = bodyInput.value + "%";
   if (typeof updateStatus === "function") updateStatus();
   if (store.isHover && typeof updatePreview === "function") updatePreview();
