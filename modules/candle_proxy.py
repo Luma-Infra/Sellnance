@@ -1,5 +1,6 @@
 # modules/candle_proxy.py
 from datetime import datetime
+import urllib.parse
 import requests
 import aiohttp
 import asyncio
@@ -7,16 +8,91 @@ import json
 import time
 import pytz
 import re
+import os
 
 from .adapter import ExchangeAdapter
 from . import api_manager
 
+CF_WORKER_PROXY_URL = os.getenv("CF_WORKER_PROXY_URL", "").strip()
+
 # 🚀 [500명 무지성 폭격 방어 엔진]
 CANDLE_SEMAPHORE = asyncio.Semaphore(20)
 IN_FLIGHT_CANDLE_REQUESTS = {}
-CANDLE_CACHE_TTL = 30
 CANDLE_CACHE = {}
 TV_GAP_CACHE = {}
+
+
+def get_candle_ttl(interval: str, to: str = "") -> float:
+    """
+    타임프레임별 적응형 캐시 수명(TTL):
+    - 과거 고정 캔들(to 파라미터 존재 시): 600초 (10분)
+    - 일봉/주봉/월봉: 300초 (5분)
+    - 1시간~12시간봉: 180초 (3분)
+    - 15분~30분봉: 60초 (1분)
+    - 3분~5분봉: 30초
+    - 1분봉 등 초단기봉: 15초
+    (💡 실시간 최신가는 프론트엔드 웹소켓이 매초 보정하므로 과거 캔들 배열 캐싱은 길어도 100% 안전)
+    """
+    if to:
+        return 600.0
+
+    inv = str(interval).strip()
+    inv_lower = inv.lower()
+
+    # 1. 일봉 / 주봉 / 월봉 (대문자 M은 월봉, 소문자 m은 1m/15m 분봉)
+    if (
+        inv.endswith("d")
+        or inv.endswith("w")
+        or inv.endswith("M")
+        or inv_lower in ["days", "weeks", "months", "1d", "3d", "1w", "1m_month"]
+    ) and not inv_lower.startswith("minutes"):
+        return 300.0  # 5분
+
+    # 2. 시간봉 (1h, 4h, minutes/60, minutes/240 등)
+    if any(
+        k in inv_lower
+        for k in ["60", "120", "240", "360", "720", "1h", "2h", "4h", "6h", "12h"]
+    ):
+        return 180.0  # 3분
+
+    # 3. 15분 ~ 30분봉
+    if any(k in inv_lower for k in ["15m", "30m", "minutes/15", "minutes/30"]):
+        return 60.0  # 1분
+
+    # 4. 3분 ~ 5분봉
+    if any(k in inv_lower for k in ["3m", "5m", "minutes/3", "minutes/5"]):
+        return 30.0  # 30초
+
+    # 5. 1분봉 등 초단기봉
+    return 15.0  # 15초
+
+
+# 🛡️ [업비트 429 차단 선제적 레이트 리미터 (초당 최대 5회 / 200ms 간격 및 429 전역 쿨다운)]
+class UpbitRateLimiter:
+    def __init__(self, max_per_second: float = 5.0):
+        self.interval = 1.0 / max_per_second
+        self.last_call = 0.0
+        self.cooldown_until = 0.0
+        self.lock = asyncio.Lock()
+
+    def trigger_cooldown(self, seconds: float = 1.2):
+        now = time.time()
+        self.cooldown_until = max(self.cooldown_until, now + seconds)
+
+    async def wait(self):
+        async with self.lock:
+            now = time.time()
+            if now < self.cooldown_until:
+                await asyncio.sleep(self.cooldown_until - now)
+                now = time.time()
+
+            elapsed = now - self.last_call
+            if elapsed < self.interval:
+                await asyncio.sleep(self.interval - elapsed)
+            self.last_call = time.time()
+
+
+UPBIT_RATE_LIMITER = UpbitRateLimiter(max_per_second=5.0)
 
 
 def _construct_tv_msg(func, param_list):
@@ -273,16 +349,63 @@ async def _raw_fetch_candles(
         if not url:
             return {"error": "지원하지 않는 거래소입니다."}
 
+        if exchange == "upbit":
+            await UPBIT_RATE_LIMITER.wait()
+
         # requests.get을 비동기 스레드풀에서 실행하여 이벤트 루프 블로킹 0% 보장
         loop = asyncio.get_running_loop()
-        res = await loop.run_in_executor(
-            None,
-            lambda: requests.get(
-                url, headers={"Accept": "application/json"}, timeout=5
-            ),
-        )
-        res.raise_for_status()
-        data = res.json()
+
+        fetch_url = url
+        if CF_WORKER_PROXY_URL and exchange == "upbit":
+            fetch_url = (
+                f"{CF_WORKER_PROXY_URL.rstrip('/')}/?url={urllib.parse.quote(url)}"
+            )
+
+        def _do_get():
+            max_attempts = 3
+            current_target = fetch_url
+            for attempt in range(max_attempts):
+                try:
+                    r = requests.get(
+                        current_target,
+                        headers={"Accept": "application/json"},
+                        timeout=5,
+                    )
+                    if r.status_code == 429:
+                        if exchange == "upbit":
+                            UPBIT_RATE_LIMITER.trigger_cooldown(1.5)
+                        if attempt < max_attempts - 1:
+                            time.sleep(1.0 * (attempt + 1))
+                            continue
+                        else:
+                            return []
+                    # Cloudflare Worker 이상 시 직통 URL로 1회 안전 폴백
+                    if r.status_code != 200 and current_target != url and attempt == 0:
+                        current_target = url
+                        continue
+                    r.raise_for_status()
+                    return r.json()
+                except requests.exceptions.RequestException as re:
+                    if (
+                        hasattr(re, "response")
+                        and re.response is not None
+                        and re.response.status_code == 429
+                    ):
+                        if exchange == "upbit":
+                            UPBIT_RATE_LIMITER.trigger_cooldown(1.5)
+                        if attempt < max_attempts - 1:
+                            time.sleep(1.0 * (attempt + 1))
+                            continue
+                        return []
+                    if current_target != url and attempt == 0:
+                        current_target = url
+                        continue
+                    if attempt == max_attempts - 1:
+                        raise
+                    time.sleep(0.5)
+            return []
+
+        data = await loop.run_in_executor(None, _do_get)
 
         # 🚀 [설정 기반 단절 복구 엔진 (mapping.json 연동)]
         recovery_map = (
@@ -388,6 +511,9 @@ async def _raw_fetch_candles(
 
         return data
     except Exception as e:
+        if "429" in str(e):
+            print(f"⚠️ [업비트 429 레이트 리밋 임시 스킵] ({symbol}): {e}")
+            return []
         print(f"🚨 통합 프록시 에러 ({exchange} - {symbol}): {e}")
         return {"error": str(e)}
 
@@ -402,23 +528,23 @@ async def fetch_candles_guarded(
 ):
     """
     🛡️ [3중 철통 방어 관문]:
-      1. 30초 LRU 메모리 캐시 (0ms 즉각 반환)
+      1. 타임프레임별 적응형 LRU 메모리 캐시 (15초~600초, 0ms 즉각 반환)
       2. Single-Flight (동일 코인 요청 시 1대 비행기에 전원 합승하여 외부 호출 0회 압축)
       3. Global Semaphore (동시 외부 연결 최대 20개 톨게이트 제어로 IP 차단 원천 봉쇄)
     """
     global CANDLE_CACHE
     now = time.time()
-    if len(CANDLE_CACHE) > 100:
-        CANDLE_CACHE = {
-            k: v for k, v in CANDLE_CACHE.items() if now - v[0] < CANDLE_CACHE_TTL
-        }
+    ttl = get_candle_ttl(interval, to)
+
+    if len(CANDLE_CACHE) > 500:
+        CANDLE_CACHE = {k: v for k, v in CANDLE_CACHE.items() if now - v[0] < 600}
 
     req_cache_key = f"{exchange}_{symbol}_{interval}_{limit}_{start}_{to}"
 
-    # 1️⃣ [30초 캐시 검사]
+    # 1️⃣ [적응형 캐시 검사 (0ms 즉시 반환)]
     if req_cache_key in CANDLE_CACHE:
         cached_time, cached_data = CANDLE_CACHE[req_cache_key]
-        if now - cached_time < CANDLE_CACHE_TTL:
+        if now - cached_time < ttl:
             return cached_data
 
     # 2️⃣ [Single-Flight 합승]
@@ -433,7 +559,7 @@ async def fetch_candles_guarded(
         async with CANDLE_SEMAPHORE:
             if req_cache_key in CANDLE_CACHE:
                 c_time, c_data = CANDLE_CACHE[req_cache_key]
-                if time.time() - c_time < CANDLE_CACHE_TTL:
+                if time.time() - c_time < ttl:
                     return c_data
             data = await _raw_fetch_candles(
                 exchange, symbol, interval, limit, to, start

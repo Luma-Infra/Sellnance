@@ -3,7 +3,22 @@ import { getPureBase } from "./chart_utils.js";
 import { formatListingDateWithExchange } from "./table_render.js";
 
 // 🚀 [역할 분리] UID 및 거래소 우선순위에 따라 정확한 rowInfo 로드
-export function findRowInfo(displayName, pureBase, exchangeFlags) {
+export function findRowInfo(displayName, pureBase, exchangeFlags, targetUid = null) {
+  // 1. targetUid 또는 store.currentSelectedUid가 있으면 최우선으로 UID 기준 즉각 반환! (동명이인 오염 완벽 방어)
+  const effectiveUid = targetUid || store.currentSelectedUid;
+  if (effectiveUid) {
+    const byUid = store.currentTableData.find((c) => String(c.UID) === String(effectiveUid));
+    if (byUid) return byUid;
+  }
+
+  // 2. DisplayTicker 또는 Ticker 완전 일치 우선 검색 (예: AI(Sleepless), AIUSDT 등)
+  if (displayName) {
+    const exactMatch = store.currentTableData.find(
+      (c) => c.DisplayTicker === displayName || c.Ticker === displayName,
+    );
+    if (exactMatch) return exactMatch;
+  }
+
   const { isUpbit, isBithumb, isBybit, isBybitFutures, isFutures, isSpot } = exchangeFlags;
 
   let expectedUid = null;
@@ -17,13 +32,28 @@ export function findRowInfo(displayName, pureBase, exchangeFlags) {
           ? "BYBIT"
           : "BINANCE";
 
+    // 1차 패스: v[2](해당 거래소 실제 심볼)와 pureBase가 일치하고 거래소가 맞는 항목
     for (const [key, v] of Object.entries(dupList)) {
       if (Array.isArray(v) && v.length >= 4) {
-        const dupBase = key.split("(")[0].toUpperCase();
+        const dupSym = (v[2] || "").toUpperCase();
         const dupEx = v[3].toUpperCase();
-        if (dupBase === pureBase && dupEx === exchangeTag) {
+        if (dupSym === pureBase && dupEx === exchangeTag) {
           expectedUid = v[0];
           break;
+        }
+      }
+    }
+
+    // 2차 패스: 괄호 앞 베이스명이 일치하는 경우
+    if (!expectedUid) {
+      for (const [key, v] of Object.entries(dupList)) {
+        if (Array.isArray(v) && v.length >= 4) {
+          const dupBase = key.split("(")[0].toUpperCase();
+          const dupEx = v[3].toUpperCase();
+          if (dupBase === pureBase && dupEx === exchangeTag) {
+            expectedUid = v[0];
+            break;
+          }
         }
       }
     }
@@ -38,7 +68,7 @@ export function findRowInfo(displayName, pureBase, exchangeFlags) {
   else if (cleanDisplayName.endsWith("USDT")) cleanDisplayName = cleanDisplayName.slice(0, -4);
 
   let rowInfo = store.currentTableData.find((c) => {
-    if (expectedUid && c.UID === expectedUid) return true;
+    if (expectedUid && String(c.UID) === String(expectedUid)) return true;
 
     const t = (c.Ticker || "").toUpperCase();
     const cleanT = t.endsWith("KRW") ? t.slice(0, -3) : (t.endsWith("USDT") ? t.slice(0, -4) : t);

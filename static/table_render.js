@@ -300,7 +300,7 @@ export function updateRowStaticHTML(rowEl, row) {
       
       <!-- 2. 티커 이미지 -->
       <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-white/1 overflow-hidden">
-        ${row.Logo || ""}
+        ${row.Logo || `<img src="${document.body?.classList.contains('theme-upbit') ? '/static/luma-deer-svg-light.svg' : '/static/luma-deer-svg-dark.svg'}" class="fallback-logo" loading="lazy" style="width: 24px; height: 24px; vertical-align: middle; border-radius: 50%;">`}
       </div>
       
       <!-- 3. 티커 & 이름 -->
@@ -589,7 +589,7 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
       if (!container) {
         volBCell.innerHTML = `
           <div class="vol-b-container flex flex-col h-full justify-center leading-tight min-w-0 gap-0.5">
-            <span id="vol-binance-${tId}" class="text-[#f0b90b] text-[11px] font-tempTestDss font-bold truncate"></span>
+            <span id="vol-binance-${tId}" class="text-binance-color text-[11px] font-tempTestDss font-bold truncate"></span>
             <span id="mcap-${tId}" class="text-[10px] font-bold opacity-60 text-left mt-0.5 truncate"></span>
           </div>
         `;
@@ -675,7 +675,7 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
       if (!container) {
         volUCell.innerHTML = `
           <div class="vol-u-container flex flex-col h-full justify-center items-end leading-tight min-w-0 gap-0.5 text-right w-full">
-            <span id="vol-upbit-${tId}" class="text-[#093687] text-[11px] font-tempTestDss font-bold truncate w-full text-right"></span>
+            <span id="vol-upbit-${tId}" class="text-upbit-color text-[11px] font-tempTestDss font-bold truncate w-full text-right"></span>
             <span id="vmc-${tId}" class="text-[10px] font-bold opacity-60 mt-0.5 truncate w-full text-right ${vmcColorClass}"></span>
           </div>
         `;
@@ -698,18 +698,18 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
       (container._volUEl = container.querySelector(`#vol-upbit-${tId}`));
     if (volUEl && volUEl.textContent !== volUText) {
       volUEl.textContent = volUText;
-      const fs = CONFIG.FONT_SCALE;
-      if (fs && volUText.length > fs.VOL_THRESHOLD) {
-        const size = Math.max(
-          fs.VOL_MIN_SIZE,
-          fs.VOL_BASE_SIZE -
-          (volUText.length - fs.VOL_THRESHOLD) * fs.VOL_REDUCE_STEP,
-        );
-        volUEl.style.fontSize = `${size}px`;
-      } else {
-        volUEl.style.fontSize = "";
+        const fs = CONFIG.FONT_SCALE;
+        if (fs && volUText.length > fs.VOL_THRESHOLD) {
+          const size = Math.max(
+            fs.VOL_MIN_SIZE,
+            fs.VOL_BASE_SIZE -
+            (volUText.length - fs.VOL_THRESHOLD) * fs.VOL_REDUCE_STEP,
+          );
+          volUEl.style.fontSize = `${size}px`;
+        } else {
+          volUEl.style.fontSize = "";
+        }
       }
-    }
 
     const vmcEl =
       container._vmcEl ||

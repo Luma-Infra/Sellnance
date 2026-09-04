@@ -11,6 +11,7 @@
   --color-theme-up: var(--up);
   --color-theme-down: var(--down);
   --color-theme-accent: var(--accent);
+  --color-theme-upbit: var(--upbit-blue);
 
   /* 🚀 메인 폰트 (Pretendard) */
   --font-sans:
@@ -36,6 +37,8 @@
   --up: #c84a31;
   --down: #1261c4;
   --accent: #093687;
+  --upbit-blue: #093687;
+  --binance-gold: #f0b90b;
 
   /* 🚀 테이블 컬럼 너비 배수 관리소 (원하는 배수 비율을 적으면 알아서 100% 기준 황금비율로 자동 계산됩니다!) */
   --ratio-asset: 2.2;
@@ -167,6 +170,7 @@ body.theme-binance {
   --down: #ef5350;
   --accent: #f0b90b;
   --accent-rgb: 240, 185, 11;
+  --upbit-blue: #60a5fa;
   --flash-up: rgba(38, 166, 154, 0.2);
   --flash-down: rgba(239, 83, 80, 0.2);
 }
@@ -182,6 +186,7 @@ body.theme-upbit {
   --down: #1261c4;
   --accent: #1261c4;
   --accent-rgb: 18, 97, 196;
+  --upbit-blue: #093687;
   --flash-up: rgba(200, 74, 49, 0.2);
   --flash-down: rgba(18, 97, 196, 0.2);
 }
@@ -195,21 +200,38 @@ body {
   --color-theme-up: var(--up);
   --color-theme-down: var(--down);
   --color-theme-accent: var(--accent);
+  --color-theme-upbit: var(--upbit-blue);
 
   background-color: var(--bg);
   color: var(--text);
-  transition: background-color 0.1s ease;
-  /* 테마 전환 시 부드럽게 */
 }
 
-/* 🚀 업비트 전용 텍스트 색상 (다크 모드 가독성 개선) */
+/* 🚀 [테마 일괄 동기화 스무스 트랜지션] 전환 순간에만 모든 요소가 동일한 속도로 스르륵 */
+html.theme-transitioning,
+html.theme-transitioning *,
+html.theme-transitioning *::before,
+html.theme-transitioning *::after {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, fill 0.2s ease, stroke 0.2s ease !important;
+  transition-delay: 0s !important;
+}
+
+/* 🚀 업비트 전용 텍스트 색상 (CSS 변수 연동) */
 .text-upbit-color {
-  color: #093687 !important;
+  color: var(--upbit-blue) !important;
+}
+
+.text-theme-upbit {
+  color: var(--upbit-blue);
 }
 
 body.theme-binance .text-upbit-color {
-  color: #60a5fa !important;
+  color: var(--upbit-blue) !important;
   /* 다크 모드용 밝은 파란색 */
+}
+
+/* 🚀 바이낸스 전용 텍스트 색상 (골드) */
+.text-binance-color {
+  color: var(--binance-gold, #f0b90b) !important;
 }
 
 body.theme-binance {

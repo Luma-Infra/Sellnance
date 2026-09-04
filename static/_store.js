@@ -22,6 +22,17 @@ try {
   }
 } catch (e) {}
 
+// 🚀 [신규] control-panel-parent 세션 스토리지 복원
+let sessionControlPanel = null;
+try {
+  const savedCP =
+    typeof sessionStorage !== "undefined" &&
+    sessionStorage.getItem("sellnance_session_control_panel");
+  if (savedCP) {
+    sessionControlPanel = JSON.parse(savedCP);
+  }
+} catch (e) {}
+
 export const store = {
   marketDataMap: { upbit: [], spot: [], futures: [], krw_usd_rate: 0.0 },
   allSymbols: [],
@@ -36,22 +47,25 @@ export const store = {
 
   currentAsset: null,
   currentSelectedSymbol: null,
+  currentSelectedUid: null,
   isScrolling: false, // 🚀 스크롤 중 여부 플래그
   isEngineStarted: false, // 🚀 최초 코인 선택 시 소켓 및 차트 점화 여부 플래그
   mcapMin: 0, // 🚀 시총 최소값 (기본 0)
   mcapMax: 10000000000, // 🚀 시총 최대값 (기본 10B)
-  customMcapMin: 0, // 🚀 커스텀 시총 최소값
-  customMcapMax: 10000000000000, // 🚀 커스텀 시총 최대값 (기본 10T)
-  customVolMin: 0, // 🚀 커스텀 거래량 최소값
-  customVolMax: 100000000000, // 🚀 커스텀 거래량 최대값 (기본 100B)
-  customVolSource: "BINANCE", // 🚀 커스텀 거래량 소스 (BINANCE 또는 UPBIT)
-  tempMcapMin: 0,
-  tempMcapMax: 10000000000000,
-  tempVolMin: 0,
-  tempVolMax: 100000000000,
-  tempVolSource: "BINANCE",
+  customMcapMin: sessionControlPanel?.customMcapMin ?? 0, // 🚀 커스텀 시총 최소값
+  customMcapMax: sessionControlPanel?.customMcapMax ?? 10000000000000, // 🚀 커스텀 시총 최대값 (기본 10T)
+  customVolMin: sessionControlPanel?.customVolMin ?? 0, // 🚀 커스텀 거래량 최소값
+  customVolMax: sessionControlPanel?.customVolMax ?? 100000000000, // 🚀 커스텀 거래량 최대값 (기본 100B)
+  customVolSource: sessionControlPanel?.customVolSource ?? "BINANCE", // 🚀 커스텀 거래량 소스 (BINANCE 또는 UPBIT)
+  tempMcapMin: sessionControlPanel?.customMcapMin ?? 0,
+  tempMcapMax: sessionControlPanel?.customMcapMax ?? 10000000000000,
+  tempVolMin: sessionControlPanel?.customVolMin ?? 0,
+  tempVolMax: sessionControlPanel?.customVolMax ?? 100000000000,
+  tempVolSource: sessionControlPanel?.customVolSource ?? "BINANCE",
   useFlip: true, // 🚀 플립 애니메이션 사용 여부
-  hideSmallCap: false, // 🚀 시총 1M 미만 숨기기 여부
+  hideSmallCap: sessionControlPanel?.hideSmallCap ?? false, // 🚀 시총 1M 미만 숨기기 여부
+  currentTab: sessionControlPanel?.currentTab || "ALL", // 🚀 카테고리 탭 (ALL, FAV, FAV2)
+  activePresetIndex: sessionControlPanel?.activePresetIndex, // 🚀 활성 프리셋 인덱스
   lang: "EN", // 🚀 한/영 토글 (KR, EN)
   filterMode: "BINANCE", // 🚀 [추가] ALL, BINANCE, UPBIT, FUTURES, SPOT
   currentMarket: "ALL", // 🚀 테이블 활성 마켓 탭 상태 추적
@@ -97,7 +111,7 @@ export const store = {
   countdownPriceLine: null,
   paneConfig: { volume: true, kimchi: true },
   chartSplits: { s1: 0.65, s2: 0.85 },
-  exchFilterStates: {
+  exchFilterStates: sessionControlPanel?.exchFilterStates ?? {
     BINANCE: 0,
     BINANCE_FUTURES: 0,
     BINANCE_STOCK: 0,
@@ -109,7 +123,7 @@ export const store = {
     GATEIO: 0,
     COINBASE: 0,
   },
-  exchFilterMode: "AND", // 🚀 거래소 필터링 결합 모드 (AND, OR, ONLY)
+  exchFilterMode: sessionControlPanel?.exchFilterMode ?? "AND", // 🚀 거래소 필터링 결합 모드 (AND, OR, ONLY)
 
   isFetchingChart: false, // 🚀 차트 데이터 호출 진행 상태 플래그
   blockLeftDom: false, // 🚀 좌측 테이블 DOM 렌더링 최적화/차단 여부

@@ -478,6 +478,35 @@ window.updateHeaderDisplay = (row, newPrice, p, isRealtimeStream = false) => {
   }
 };
 
+// 🚀 [로고 이미지 폴백 엔진] 깨진 코인 로고를 감지하여 테마별 루마 디어 svg로 자동 치환
+window.handleLogoError = function (img) {
+  if (!img || img._fallbackApplied) return;
+  img._fallbackApplied = true;
+  img.classList.add("fallback-logo");
+  const isUpbitTheme = document.body.classList.contains("theme-upbit");
+  img.src = isUpbitTheme
+    ? "/static/luma-deer-svg-light.svg"
+    : "/static/luma-deer-svg-dark.svg";
+};
+
+// 캡처링 단계에서 모든 동적/정적 <img>의 로드 실패를 즉시 가로채기
+window.addEventListener(
+  "error",
+  (e) => {
+    if (e.target && e.target.tagName === "IMG") {
+      const img = e.target;
+      if (
+        img.src.includes("coinmarketcap.com/static/img/coins") ||
+        img.closest(".col-asset") ||
+        img.closest("#head-asset-name")
+      ) {
+        window.handleLogoError(img);
+      }
+    }
+  },
+  true,
+);
+
 // 🚀 엔진 시동 파트
 // 🚀 사용자의 테마, 사이드바, 테이블 뷰 모드 설정을 로컬 저장소로부터 복원하는 함수
 function restoreSavedUserSettings() {
@@ -543,9 +572,18 @@ function restoreSavedUserSettings() {
     }
 
     // 5. 테이블 상세/간편 뷰 모드 복원 (모바일은 강제로 simple 모드 적용)
-    // const isMobile = window.innerWidth < 1200;
-    // const savedViewMode = isMobile ? "simple" : (localStorage.getItem("sellnance_table_view_mode") || "basic");
-    switchViewMode(savedViewMode);
+    const isMobile = window.innerWidth < 1200;
+    const savedViewMode = isMobile
+      ? "simple"
+      : localStorage.getItem("sellnance_table_view_mode") || "basic";
+    if (typeof switchViewMode === "function") {
+      switchViewMode(savedViewMode);
+    }
+
+    // 6. 🚀 세션에 저장된 컨트롤 패널 UI 즉시 복원
+    if (typeof window.restoreControlPanelUI === "function") {
+      window.restoreControlPanelUI();
+    }
   } catch (e) {
     // Xconsole.error("Failed to restore user settings:", e);
   }
@@ -558,6 +596,9 @@ window.initDashboardEngine = async function () {
   _isDashboardEngineStarted = true;
 
   restoreSavedUserSettings();
+  if (typeof window.restoreControlPanelUI === "function") {
+    window.restoreControlPanelUI();
+  }
   if (typeof initOrderbookDOM === "function") initOrderbookDOM();
 
   try {
@@ -589,9 +630,19 @@ window.initDashboardEngine = async function () {
   }
 };
 
-document.addEventListener("DOMContentLoaded", async () => {
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", async () => {
+    restoreSavedUserSettings();
+    if (typeof window.restoreControlPanelUI === "function") {
+      window.restoreControlPanelUI();
+    }
+  });
+} else {
   restoreSavedUserSettings();
-});
+  if (typeof window.restoreControlPanelUI === "function") {
+    window.restoreControlPanelUI();
+  }
+}
 
 // 🚀 [신규] 브라우저 로컬 타이머 루프 구동 (서버 부하 0%)
 window.updateStatusBadge = () => {

@@ -110,7 +110,8 @@ class ExchangeAdapter:
 
         # 2. UPBIT
         elif exchange == "upbit":
-            url = f"https://api.upbit.com/v1/candles/{norm_int}?market={norm_sym}&count={limit}"
+            upbit_count = min(int(limit or 200), 200)
+            url = f"https://api.upbit.com/v1/candles/{norm_int}?market={norm_sym}&count={upbit_count}"
             if to:
                 url += f"&to={to}"
             return url

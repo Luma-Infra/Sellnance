@@ -33,6 +33,8 @@ import {
   selectExchPreset,
   saveCurrentPreset,
   deleteCurrentPreset,
+  restoreControlPanelUI,
+  saveControlPanelSession,
 } from "./table_filter.js";
 
 // ⭐️ 1. 좌우 넓이 드래그 조절 기능 (UI 공통 제어) ⭐️
@@ -165,10 +167,20 @@ window.switchExchFilterMode = switchExchFilterMode;
 window.selectExchPreset = selectExchPreset;
 window.saveCurrentPreset = saveCurrentPreset;
 window.deleteCurrentPreset = deleteCurrentPreset;
+window.restoreControlPanelUI = restoreControlPanelUI;
+window.saveControlPanelSession = saveControlPanelSession;
 
-// DOM 로드 완료 후 상단 거래소 필터바 UI 최초 초기화
-document.addEventListener("DOMContentLoaded", () => {
-  if (typeof updateExchFilterUI === "function") {
+// DOM 로드 완료 후 상단 거래소 필터바 및 제어 패널 UI 최초 초기화
+function initTableControlPanel() {
+  if (typeof restoreControlPanelUI === "function") {
+    restoreControlPanelUI();
+  } else if (typeof updateExchFilterUI === "function") {
     updateExchFilterUI();
   }
-});
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initTableControlPanel);
+} else {
+  initTableControlPanel();
+}

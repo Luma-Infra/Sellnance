@@ -11,7 +11,10 @@ export function selectSymbol(
   targetUid = null,
   isRowClick = false,
 ) {
-  const allSourceData = store.currentTableData || store.originalTableData || [];
+  const allSourceData =
+    store.originalTableData && store.originalTableData.length > 0
+      ? store.originalTableData
+      : (store.currentTableData || []);
   // 1. suffix 및 트레이딩뷰 스타일(EXCHANGE:SYMBOL_MARKET) 파싱
   const originalSym = String(s).trim();
   let parsedSymbol = originalSym.toUpperCase();
@@ -62,6 +65,11 @@ export function selectSymbol(
   if (targetUid) {
     rowInfo = allSourceData.find((c) => c.UID === targetUid);
   }
+  if (!rowInfo && store.tickerRowMap) {
+    rowInfo =
+      store.tickerRowMap.get(parsedSymbol) ||
+      (targetUid ? store.tickerRowMap.get(targetUid) : null);
+  }
   if (!rowInfo) {
     // 2-1. 1차 패스: 정확히 일치(Exact Match)하는 대상을 우선 검색
     rowInfo = allSourceData.find(
@@ -104,10 +112,20 @@ export function selectSymbol(
     });
   }
 
-  // 🚀 [쓰레기/오타 URL 방어] 테이블 데이터가 로드된 상태에서 목록에 없는 유령 코인이면 BTC_FUTURES로 자동 폴백
+  // 🚀 [쓰레기/오타 URL 방어] 전체 데이터(100개 초과)가 로드된 상태에서 최초 진입 시 목록에 없는 유령 코인이면 BTC_FUTURES로 자동 폴백
+  // 🔒 [보고 있는 코인 무한 락업] UID 0순위 일치 검사 및 Ticker/Symbol 일치 검사로 동명이인 코인까지 완벽 방어
+  const isAlreadyViewing =
+    (targetUid && store.currentSelectedUid && String(targetUid) === String(store.currentSelectedUid)) ||
+    (rowInfo && store.currentSelectedUid && String(rowInfo.UID) === String(store.currentSelectedUid)) ||
+    store.currentAsset === parsedSymbol ||
+    store.currentSelectedSymbol === parsedSymbol ||
+    (store.currentAsset && store.currentAsset.toUpperCase().includes(parsedSymbol)) ||
+    (store.currentSelectedSymbol && store.currentSelectedSymbol.toUpperCase().includes(parsedSymbol));
+
   if (
     !rowInfo &&
-    allSourceData.length > 0 &&
+    allSourceData.length > 100 &&
+    !isAlreadyViewing &&
     parsedSymbol !== "BTC" &&
     parsedSymbol !== "BTCUSDT"
   ) {
@@ -134,6 +152,7 @@ export function selectSymbol(
   store.isUserZoomed = false;
   store.currentAsset = uniqueTicker;
   store.currentSelectedSymbol = uniqueTicker;
+  store.currentSelectedUid = rowInfo ? rowInfo.UID : (targetUid || null);
   // 🚀 [UX 복원] 마지막 선택 코인 로컬 저장 및 최근 조회한 검색어 등록
   try {
     localStorage.setItem("sellnance_last_symbol", uniqueTicker);
@@ -253,7 +272,8 @@ export function selectSymbol(
             starClass = "active-blue";
           }
 
-          const logoHtml = rowInfo.Logo || "";
+          const defaultDeerFallback = `<img src="${document.body?.classList.contains('theme-upbit') ? '/static/luma-deer-svg-light.svg' : '/static/luma-deer-svg-dark.svg'}" class="fallback-logo" loading="lazy" style="width: 24px; height: 24px; vertical-align: middle; border-radius: 50%;">`;
+          const logoHtml = rowInfo.Logo || defaultDeerFallback;
           const pureSym = getPureBase(
             rowInfo.Symbol || rowInfo.DisplayTicker || rowInfo.Ticker,
           );
@@ -347,7 +367,10 @@ export function selectSymbol(
                   starClass = "active-blue";
                 }
 
-                const logoHtml = rowInfo ? rowInfo.Logo || "" : "";
+                const logoHtml =
+                  (rowInfo && rowInfo.Logo)
+                    ? rowInfo.Logo
+                    : `<img src="${document.body?.classList.contains('theme-upbit') ? '/static/luma-deer-svg-light.svg' : '/static/luma-deer-svg-dark.svg'}" class="fallback-logo" loading="lazy" style="width: 24px; height: 24px; vertical-align: middle; border-radius: 50%;">`;
                 const fullText2 = `${displaySym} (${infoData.name})`;
                 const len2 = fullText2.length;
                 let fontSizeStyle2 = "";
@@ -407,7 +430,7 @@ export function selectSymbol(
 
       // 🚀 [핵심] 차트 데이터 패치 실행 (메인 스레드 경합 완벽 해소)
       if (typeof fetchHistory === "function") {
-        fetchHistory(uniqueTicker, false, false);
+        fetchHistory(uniqueTicker, false, false, false, rowInfo?.UID);
       }
 
       // 🚀 [추가] 코인 선택 시 실시간 정렬 엔진 강제 점화 및 즉시 적용
@@ -434,8 +457,9 @@ export function selectSymbol(
 
 export function updateExchangeBadges(s, targetUid = null) {
   let rowInfo = null;
-  if (targetUid) {
-    rowInfo = store.currentTableData.find((c) => c.UID === targetUid);
+  const effUid = targetUid || store.currentSelectedUid;
+  if (effUid) {
+    rowInfo = store.currentTableData.find((c) => String(c.UID) === String(effUid));
   }
   if (!rowInfo) {
     rowInfo = store.currentTableData.find(

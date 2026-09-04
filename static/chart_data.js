@@ -224,7 +224,8 @@ export async function fetchPaginated(
     lastTo = data[data.length - 1].candle_date_time_utc;
 
     if (remaining > 0) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      // 🛡️ 업비트 초당 8회 이하 안전 간격 보장
     }
   }
   return result;

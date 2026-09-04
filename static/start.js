@@ -95,21 +95,11 @@ function getStartScreenHTML() {
   return `
     <style>
       #start-screen {
-        --bg: #080a0f !important;
-        --panel: #12151c !important;
-        --border: rgba(255, 255, 255, 0.12) !important;
-        --text: #e2e8f0 !important;
-        --accent: #00d1ff !important;
-        --up: #0ecb81 !important;
-        --down: #f6465d !important;
-        background: #080a0f !important;
-        color: #e2e8f0 !important;
-        color-scheme: dark !important;
-        font-family: 'Pretendard Variable', Pretendard, 'Outfit', sans-serif;
+        font-family: var(--font-sans);
         perspective: ${START_3D_CONFIG.perspective}px;
         overflow: hidden;
       }
-      
+
       /* 🚀 [기존 코드 주석 보존] PixiJS WebGL 캔버스 스타일
       #pixi-canvas-container {
         position: absolute;
@@ -148,25 +138,14 @@ function getStartScreenHTML() {
         stroke-dasharray: 100.2 100.2;
         stroke-dashoffset: 100.2;
         stroke-linecap: round;
-        filter: drop-shadow(0 0 4px rgba(0, 209, 255, 0.5));
+        filter: drop-shadow(0 0 4px var(--accent));
         animation: startBorderProgress ${START_3D_CONFIG.cycleIntervalMs}ms linear infinite;
       }
       @keyframes startBorderProgress {
-        0% {
-          stroke-dashoffset: 100.2;
-          opacity: 0.15;
-        }
-        4% {
-          opacity: 0.8;
-        }
-        96% {
-          stroke-dashoffset: 0;
-          opacity: 0.8;
-        }
-        100% {
-          stroke-dashoffset: 0;
-          opacity: 0.15;
-        }
+        0% { stroke-dashoffset: 100.2; opacity: 0.15; }
+        4% { opacity: 0.8; }
+        96% { stroke-dashoffset: 0; opacity: 0.8; }
+        100% { stroke-dashoffset: 0; opacity: 0.15; }
       }
 
       #start-qv-spread-view {
@@ -190,15 +169,15 @@ function getStartScreenHTML() {
         width: 100%;
         height: 100%;
       }
-      /* 🚀 3D 덱 네 모서리 바깥으로 선명하게 피어오르는 바닥 앰비언트 오라 */
+      /* 🚀 3D 덱 하단 바닥 투영 은은한 앰비언트 섀도우 (눈이 편안한 약한 발광) */
       .start-qv-floor-shadow {
         position: absolute;
         inset: ${START_3D_CONFIG.auraInset};
         border-radius: ${START_3D_CONFIG.auraBorderRadius};
-        background: ${START_3D_CONFIG.auraBackground};
-        box-shadow: ${START_3D_CONFIG.auraBoxShadow};
+        background: radial-gradient(ellipse at center, var(--accent) 0%, transparent 45%);
+        box-shadow: 0 0 25px var(--accent);
         filter: blur(${START_3D_CONFIG.auraBlur});
-        opacity: ${START_3D_CONFIG.auraOpacity};
+        opacity: 0.2;
         pointer-events: none;
         z-index: 0;
         transform-origin: center center;
@@ -211,8 +190,9 @@ function getStartScreenHTML() {
         inset: 0;
         border-radius: 20px;
         aspect-ratio: ${START_3D_CONFIG.goldenRatio};
-        background: rgba(18, 21, 28, 0.75);
-        border: 1px solid rgba(0, 209, 255, 0.22);
+        background: var(--panel);
+        border: 1px solid var(--border);
+        box-shadow: 0 20px 48px -8px rgba(0, 0, 0, 0.4);
         backdrop-filter: blur(16px);
         -webkit-backdrop-filter: blur(16px);
         overflow: hidden;
@@ -223,24 +203,19 @@ function getStartScreenHTML() {
         will-change: opacity, transform;
         transform: ${get3DTransform(0.96)};
         opacity: 0;
-        box-shadow: 0 20px 48px -8px rgba(0, 0, 0, 0.8),
-                    0 8px 16px -4px rgba(0, 0, 0, 0.6),
-                    0 0 20px rgba(0, 209, 255, 0.05);
       }
       .start-qv-card {
         position: relative;
         aspect-ratio: ${START_3D_CONFIG.goldenRatio};
-        background: rgba(18, 21, 28, 0.65);
-        border: 1px solid rgba(0, 209, 255, 0.18);
+        background: var(--panel);
+        border: 1px solid var(--border);
         border-radius: 16px;
         overflow: hidden;
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
         display: flex;
         flex-direction: column;
-        box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.75),
-                    0 6px 12px -3px rgba(0, 0, 0, 0.5),
-                    0 0 15px rgba(0, 209, 255, 0.04);
+        box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.25);
         transition: transform 0.85s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.85s ease;
         will-change: transform;
       }
@@ -255,7 +230,11 @@ function getStartScreenHTML() {
         font-size: 11px;
         font-weight: 800;
         letter-spacing: 0.05em;
-        text-shadow: 0 0 10px rgba(0,0,0,0.8);
+      }
+      .start-qv-badge [id^="start-qv-spread-price"],
+      [id^="start-qv-overlap-price"] {
+        color: var(--text);
+        font-weight: 700;
       }
       .start-qv-overlap-legend {
         position: absolute;
@@ -284,7 +263,7 @@ function getStartScreenHTML() {
         border-radius: 6px;
       }
       .start-qv-legend-item:hover {
-        background: rgba(255, 255, 255, 0.08);
+        background: var(--border);
       }
 
       /* 드로퍼 다이내믹 등장 애니메이션 */
@@ -293,29 +272,23 @@ function getStartScreenHTML() {
         100% { transform: translateY(0) scale(1); opacity: 1; }
       }
 
-      /* 🚀 메인 대시보드 테마 일체화 스타일 카드 */
+      /* 🚀 메인 대시보드 테마 일체화 스타일 카드 (눈 편한 미니멀 스타일) */
       .start-main-card {
-        background: rgba(18, 21, 28, 0.88) !important;
-        backdrop-filter: blur(30px) saturate(190%) !important;
-        -webkit-backdrop-filter: blur(30px) saturate(190%) !important;
-        border: 1px solid rgba(0, 209, 255, 0.22) !important;
-        box-shadow: 0 24px 64px rgba(0, 0, 0, 0.8), 
-                    0 0 40px rgba(0, 209, 255, 0.08),
-                    inset 0 1px 1px rgba(255, 255, 255, 0.08) !important;
+        background: var(--panel) !important;
+        border: 1px solid var(--border) !important;
+        box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.2) !important;
         border-radius: 24px !important;
         animation: dynamicDropIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        transition: all 0.3s ease;
       }
       .start-main-card:focus-within {
-        border-color: rgba(0, 209, 255, 0.5) !important;
-        box-shadow: 0 24px 64px rgba(0, 0, 0, 0.85), 
-                    0 0 60px rgba(0, 209, 255, 0.18) !important;
+        border-color: var(--border) !important;
+        box-shadow: 0 20px 40px -4px rgba(0, 0, 0, 0.25) !important;
       }
     </style>
 
     <div
       id="start-screen" style="display: none;"
-      class="fixed inset-0 z-[1000] flex items-center justify-center transition-opacity duration-500 overflow-hidden p-4 md:p-8"
+      class="fixed inset-0 z-[1000] flex items-center justify-center transition-opacity duration-500 overflow-hidden p-4 md:p-8 bg-theme-bg text-theme-text"
     >
       <div class="w-full max-w-6xl h-full max-h-[820px] flex flex-col md:flex-row items-center justify-center md:justify-between gap-4 sm:gap-5 md:gap-8 relative z-10">
         
@@ -329,9 +302,8 @@ function getStartScreenHTML() {
             <svg width="0" height="0" class="absolute pointer-events-none">
               <defs>
                 <linearGradient id="startProgressGlow" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stop-color="#00d1ff" stop-opacity="0.65" />
-                  <stop offset="50%" stop-color="#0ecb81" stop-opacity="0.5" />
-                  <stop offset="100%" stop-color="#00d1ff" stop-opacity="0.65" />
+                  <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.8" />
+                  <stop offset="100%" stop-color="var(--accent)" stop-opacity="0.3" />
                 </linearGradient>
               </defs>
             </svg>
@@ -340,7 +312,7 @@ function getStartScreenHTML() {
             <div id="start-qv-spread-view">
               <!-- 🚀 4개 카드 전체 둘레를 감싸는 단 1개의 3D 외곽 프로그레스 바 -->
               <svg class="start-qv-inner-progress pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
-                <rect x="0.5" y="0.5" width="99" height="99" rx="3.5" ry="3.5" fill="none" stroke="rgba(0, 209, 255, 0.08)" stroke-width="0.7" />
+                <rect x="0.5" y="0.5" width="99" height="99" rx="3.5" ry="3.5" fill="none" stroke="var(--border)" stroke-width="0.7" />
                 <rect class="start-qv-progress-rect" x="0.5" y="0.5" width="99" height="99" rx="3.5" ry="3.5" fill="none" stroke="url(#startProgressGlow)" stroke-width="1.2" stroke-linecap="round" pathLength="100" stroke-dasharray="100.2 100.2" stroke-dashoffset="100.2" />
               </svg>
               <div id="start-qv-cards-grid"></div>
@@ -349,7 +321,7 @@ function getStartScreenHTML() {
             <!-- 2. Overlap 3D 레이어 (내부 직접 3D 투영 프로그레스) -->
             <div id="start-qv-overlap-view">
               <svg class="start-qv-inner-progress" viewBox="0 0 100 100" preserveAspectRatio="none">
-                <rect x="0.5" y="0.5" width="99" height="99" rx="3.5" ry="3.5" fill="none" stroke="rgba(0, 209, 255, 0.08)" stroke-width="0.7" />
+                <rect x="0.5" y="0.5" width="99" height="99" rx="3.5" ry="3.5" fill="none" stroke="var(--border)" stroke-width="0.7" />
                 <rect class="start-qv-progress-rect" x="0.5" y="0.5" width="99" height="99" rx="3.5" ry="3.5" fill="none" stroke="url(#startProgressGlow)" stroke-width="1.2" stroke-linecap="round" pathLength="100" stroke-dasharray="100.2 100.2" stroke-dashoffset="100.2" />
               </svg>
             </div>
@@ -358,34 +330,40 @@ function getStartScreenHTML() {
 
         <!-- 🚀 [우측 (42% 비중)]: CMC 로그인 & 메인 대시보드 진입 패널 -->
         <div class="w-full md:w-[42%] max-w-md flex flex-col justify-center">
-          <div class="start-main-card p-4 sm:p-6 md:p-8 w-full flex flex-col gap-3.5 md:gap-5 text-center">
+          <div class="start-main-card relative p-4 sm:p-6 md:p-8 w-full flex flex-col gap-3.5 md:gap-5 text-center">
+            <!-- 🚀 우측 상단 다크/라이트 모드 토글 버튼 -->
+            <button
+              type="button"
+              id="start-theme-toggle-btn"
+              onclick="if (window.toggleTheme) window.toggleTheme();"
+              class="absolute top-3 sm:top-4 right-3 sm:right-4 w-8 h-8 rounded-xl flex items-center justify-center text-sm bg-theme-bg/60 hover:bg-theme-bg border border-theme-border text-theme-text active:scale-90 cursor-pointer shadow-sm z-30 select-none transition-transform"
+              title="다크 / 라이트 테마 전환"
+            >
+              ${(document.documentElement.classList.contains('theme-upbit') || document.body?.classList.contains('theme-upbit') || localStorage.getItem('sellnance_theme') === 'upbit') ? '🌙' : '☀️'}
+            </button>
             <div>
-              <!-- <div class="inline-flex items-center gap-2 mb-2 px-3 py-1 rounded-full bg-theme-accent/10 border border-theme-accent/30 text-theme-accent text-[11px] font-bold uppercase tracking-wider">
-                <span class="w-2 h-2 rounded-full bg-theme-accent animate-pulse"></span> 
-                <span>Live Terminal Engine</span> 
-              </div> -->
-              <h1 class="text-2xl md:text-4xl font-extrabold text-white uppercase tracking-widest mb-1">
+              <h1 class="text-2xl md:text-4xl font-extrabold text-theme-accent uppercase tracking-widest mb-1">
                 SELLNANCE
               </h1>
-              <p class="text-theme-text opacity-75 text-xs md:text-sm font-medium tracking-wide">
+              <p class="text-theme-text opacity-70 text-xs md:text-sm font-medium tracking-wide">
                 Enter CMC API Key to initialize dashboard
               </p>
 
-              <div class="mt-2.5 px-3 py-2 bg-black/40 rounded-xl border border-theme-border/40 flex flex-col items-center justify-center gap-1 text-center">
+              <div class="mt-2.5 px-3 py-2 bg-theme-bg/50 rounded-xl border border-theme-border/60 flex flex-col items-center justify-center gap-1 text-center">
                 <div class="flex items-center justify-center gap-2">
-                  <p class="text-[11px] text-theme-text opacity-75 font-medium">
+                  <p class="text-[11px] text-theme-text opacity-70 font-medium">
                     API 키가 없으신가요?
                   </p>
                   <a
                     href="https://coinmarketcap.com/api/"
                     target="_blank"
-                    class="text-theme-accent font-bold underline hover:text-white transition-colors text-[11px]"
+                    class="text-theme-accent font-bold underline hover:opacity-80 transition-opacity text-[11px]"
                   >
                     무료 키 발급 ↗
                   </a>
                 </div>
                 <p class="text-[10px] text-theme-text opacity-50 border-t border-theme-border/30 pt-1.5 leading-tight text-center w-full">
-                  💡 기본 2만 크레딧 제공! (1회 약 3크레딧 소모 / 하루 200회 조회도 넉넉해요)
+                  💡 기본 1.5만 크레딧 제공! (1회 약 3크레딧 소모 / 하루 100회 조회도 넉넉해요)
                 </p>
               </div>
             </div>
@@ -397,7 +375,7 @@ function getStartScreenHTML() {
                   id="cmc-api-input"
                   placeholder="Loading..."
                   disabled
-                  class="w-full bg-black/60 text-white border-2 border-theme-border/60 pl-4 pr-11 py-2.5 md:py-3.5 rounded-xl text-center font-tempTestDss text-sm focus:outline-none focus:border-theme-accent transition-all shadow-inner opacity-50 cursor-not-allowed"
+                  class="w-full bg-theme-bg text-theme-text border-2 border-theme-border pl-4 pr-11 py-2.5 md:py-3.5 rounded-xl text-center font-tempTestDss text-sm focus:outline-none focus:border-theme-accent shadow-inner opacity-50 cursor-not-allowed"
                   autocomplete="off"
                   spellcheck="false"
                 />
@@ -405,7 +383,7 @@ function getStartScreenHTML() {
                 <button
                   type="button"
                   id="btn-clear-cmc-key"
-                  class="absolute right-3 w-6 h-6 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 active:scale-90 text-white/60 hover:text-theme-accent transition-all duration-200 opacity-0 pointer-events-none scale-75 border border-white/10"
+                  class="absolute right-3 w-6 h-6 rounded-full flex items-center justify-center bg-theme-panel hover:bg-theme-border border border-theme-border text-theme-text/60 hover:text-theme-accent active:scale-90 transition-transform opacity-0 pointer-events-none scale-75"
                   title="입력 내용 지우기"
                 >
                   <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -432,16 +410,16 @@ function getStartScreenHTML() {
                   id="btn-start-engine"
                   disabled
                   onclick="saveAndStart()"
-                  class="flex-1 py-3 md:py-3.5 bg-theme-accent text-white font-bold rounded-xl shadow-sm hover:shadow-[0_0_15px_rgba(0,209,255,0.3)] hover:brightness-105 active:scale-[0.98] transition-all tracking-widest uppercase cursor-not-allowed pointer-events-none text-xs md:text-sm"
+                  class="flex-1 py-3 md:py-3.5 bg-theme-accent text-white font-bold rounded-xl shadow-sm hover:brightness-105 active:scale-[0.98] transition-transform tracking-widest uppercase cursor-not-allowed pointer-events-none text-xs md:text-sm"
                 >
                   불러오는 중.. 📡
                 </button>
 
                 <label
-                  class="h-[42px] md:h-[48px] px-3 bg-black/40 hover:bg-white/10 border border-theme-border/50 hover:border-theme-accent/50 rounded-xl flex items-center gap-1.5 cursor-pointer select-none transition-all group"
+                  class="h-[42px] md:h-[48px] px-3 bg-theme-bg/60 hover:bg-theme-panel border border-theme-border hover:border-theme-accent rounded-xl flex items-center gap-1.5 cursor-pointer select-none group"
                 >
                   <input type="checkbox" id="chk-auto-skip" class="accent-theme-accent w-3.5 h-3.5 rounded cursor-pointer" />
-                  <span class="text-[11px] text-theme-text/80 group-hover:text-white whitespace-nowrap font-medium transition-colors">Skip</span>
+                  <span class="text-[11px] text-theme-text/80 group-hover:text-theme-text whitespace-nowrap font-medium transition-colors">Skip</span>
                 </label>
               </div>
 
@@ -449,7 +427,7 @@ function getStartScreenHTML() {
                 id="btn-skip-start"
                 disabled
                 onclick="skipAndStart()"
-                class="w-full py-2.5 md:py-3 bg-white/5 text-theme-text border border-theme-border/50 font-medium rounded-xl hover:bg-white/10 active:scale-[0.98] transition-all tracking-wide opacity-70 hover:opacity-100 cursor-not-allowed pointer-events-none text-xs"
+                class="w-full py-2.5 md:py-3 bg-theme-bg/40 text-theme-text border border-theme-border font-medium rounded-xl hover:bg-theme-panel active:scale-[0.98] transition-transform tracking-wide opacity-70 hover:opacity-100 cursor-not-allowed pointer-events-none text-xs"
               >
                 불러오는 중...
               </button>
@@ -474,72 +452,6 @@ function maskApiKey(key) {
   const dots = "*".repeat(len - 8);
   return `${start}${dots}${end}`;
 }
-
-/* ================================================================
-   🚀 [기존 PixiJS WebGL 배경 엔진 코드 보존]
-================================================================ */
-/*
-let pixiApp = null; // 대시보드 진입 시 메모리 및 Ticker 정지를 위한 변수
-
-async function initPixiBackground() {
-  if (typeof PIXI === "undefined") {
-    await new Promise((resolve) => {
-      const checkInterval = setInterval(() => {
-        if (typeof PIXI !== "undefined") {
-          clearInterval(checkInterval);
-          resolve();
-        }
-      }, 20);
-      setTimeout(() => {
-        clearInterval(checkInterval);
-        resolve();
-      }, 5000);
-    });
-  }
-
-  if (typeof PIXI === "undefined") {
-    // Xconsole.error("🚨 PIXI is not defined. PixiJS background initialization skipped.");
-    return;
-  }
-
-  const container = document.getElementById('pixi-canvas-container');
-  if (!container) return;
-
-  const app = new PIXI.Application({
-    backgroundAlpha: 0,
-    resizeTo: container,
-    antialias: false,
-    resolution: window.devicePixelRatio || 1,
-    autoDensity: true
-  });
-  pixiApp = app;
-  container.appendChild(app.view);
-
-  const coinIds = [1, 1027, 5426, 52, 2010, 5805, 74, 6636];
-  const textures = coinIds.map(id => PIXI.Texture.from(`https://s2.coinmarketcap.com/static/img/coins/64x64/${id}.png`));
-  const graphics = new PIXI.Graphics();
-  app.stage.addChild(graphics);
-
-  const particles = [];
-  const numParticles = 25;
-  for (let i = 0; i < numParticles; i++) {
-    particles.push({
-      x: Math.random() * app.screen.width,
-      y: Math.random() * app.screen.height,
-      vx: (Math.random() - 0.5) * 1.8,
-      vy: (Math.random() - 0.5) * 1.8,
-      radius: Math.random() * 2 + 1
-    });
-  }
-
-  const coinContainer = new PIXI.Container();
-  app.stage.addChild(coinContainer);
-  const coinSprites = [];
-  textures.forEach((texture, index) => {
-    const depth = Math.random();
-  });
-}
-*/
 
 // ================= 4대장 퀵뷰 프리뷰 쇼케이스 엔진 =================
 const START_ASSETS = [
@@ -672,9 +584,9 @@ async function initStartQuickViewPreview() {
       typeof chart.addCandlestickSeries === "function"
         ? chart.addCandlestickSeries(seriesOptions)
         : chart.addSeries(
-            window.LightweightCharts.CandlestickSeries,
-            seriesOptions,
-          );
+          window.LightweightCharts.CandlestickSeries,
+          seriesOptions,
+        );
 
     startQvSpreadCharts.push(chart);
     startQvSpreadSeries.push(series);
@@ -692,20 +604,20 @@ async function initStartQuickViewPreview() {
       <span id="start-qv-overlap-tf" class="text-[9px] px-1.5 py-0.2 font-mono font-bold rounded bg-theme-accent/20 border border-theme-accent/40 text-theme-accent">15M</span>
       <div class="flex items-center gap-2 ml-2">
         ${START_ASSETS.map(
-          (a, i) => `
+    (a, i) => `
           <div class="start-qv-legend-item flex items-center gap-1 cursor-pointer px-1.5 py-0.5" data-idx="${i}">
             <img src="${a.icon}" class="w-3 h-3 rounded-full object-cover flex-shrink-0" alt="${a.ticker}" />
             <span style="color: ${a.color}">${a.ticker}</span>
             <span id="start-qv-overlap-price-${i}" class="text-[10px] text-white/70 font-tempTestDss">...</span>
           </div>`,
-        ).join("")}
+  ).join("")}
       </div>
     </div>
     <div class="relative w-full flex-1 min-h-[80px]">
       ${START_ASSETS.map(
-        (a, i) =>
-          `<div class="start-qv-canvas absolute inset-0 w-full h-full" id="start-qv-overlap-canvas-${i}"></div>`,
-      ).join("")}
+    (a, i) =>
+      `<div class="start-qv-canvas absolute inset-0 w-full h-full" id="start-qv-overlap-canvas-${i}"></div>`,
+  ).join("")}
     </div>
   `;
 
@@ -762,9 +674,9 @@ async function initStartQuickViewPreview() {
       typeof chart.addCandlestickSeries === "function"
         ? chart.addCandlestickSeries(seriesOptions)
         : chart.addSeries(
-            window.LightweightCharts.CandlestickSeries,
-            seriesOptions,
-          );
+          window.LightweightCharts.CandlestickSeries,
+          seriesOptions,
+        );
 
     startQvOverlapCharts.push(chart);
     startQvOverlapSeries.push(series);
@@ -867,7 +779,7 @@ async function loadStartPreviewKlines(tf) {
           if (ovEl) ovEl.innerText = `$${lastPrice.toLocaleString()}`;
         }
       }
-    } catch (e) {}
+    } catch (e) { }
   });
   await Promise.all(promises);
 }
@@ -885,12 +797,12 @@ function startStartPreviewWebSocket(tf) {
       oldWs.onopen = () => {
         try {
           oldWs.close(1000, "Normal Closure");
-        } catch (e) {}
+        } catch (e) { }
       };
     } else {
       try {
         oldWs.close(1000, "Normal Closure");
-      } catch (e) {}
+      } catch (e) { }
     }
     startQvWs = null;
   }
@@ -937,9 +849,9 @@ function startStartPreviewWebSocket(tf) {
           if (spEl) spEl.innerText = `$${candle.close.toLocaleString()}`;
           if (ovEl) ovEl.innerText = `$${candle.close.toLocaleString()}`;
         }
-      } catch (err) {}
+      } catch (err) { }
     };
-  } catch (err) {}
+  } catch (err) { }
 }
 
 // ⏱️ 캔들 색상 동적 전환 (네온 고유색 vs 클래식 양음봉)
@@ -1111,7 +1023,7 @@ function destroyStartQuickViewPreview() {
   if (startQvWs) {
     try {
       startQvWs.close();
-    } catch (e) {}
+    } catch (e) { }
     startQvWs = null;
   }
   window.removeEventListener("resize", resizeStartQuickViewCharts);
@@ -1119,14 +1031,14 @@ function destroyStartQuickViewPreview() {
     if (c) {
       try {
         c.remove();
-      } catch (e) {}
+      } catch (e) { }
     }
   });
   startQvOverlapCharts.forEach((c) => {
     if (c) {
       try {
         c.remove();
-      } catch (e) {}
+      } catch (e) { }
     }
   });
   startQvSpreadCharts = [];
@@ -1178,14 +1090,14 @@ async function initStartScreen() {
       btnStart.disabled = false;
       btnStart.innerText = "Start Dashboard";
       btnStart.className =
-        "flex-1 py-3.5 bg-theme-accent text-white font-semibold rounded-xl shadow-sm hover:shadow-[0_0_15px_rgba(0,209,255,0.3)] hover:brightness-105 active:scale-[0.98] transition-all tracking-widest uppercase cursor-pointer pointer-events-auto border border-theme-accent/40";
+        "flex-1 py-3.5 bg-theme-accent text-white font-semibold rounded-xl shadow-sm hover:brightness-105 active:scale-[0.98] transition-transform tracking-widest uppercase cursor-pointer pointer-events-auto border border-theme-accent/40";
     }
 
     if (btnSkip) {
       btnSkip.disabled = false;
       btnSkip.innerText = "바로 이동 (서버 캐시 모드, 느린 갱신)";
       btnSkip.className =
-        "w-full py-3 bg-transparent text-theme-text border border-theme-border font-medium rounded-xl hover:bg-white/5 hover:border-white/30 active:scale-[0.98] transition-all tracking-wide opacity-60 hover:opacity-100 cursor-pointer pointer-events-auto";
+        "w-full py-3 bg-theme-bg/40 text-theme-text border border-theme-border font-medium rounded-xl hover:bg-theme-panel active:scale-[0.98] transition-transform tracking-wide opacity-70 hover:opacity-100 cursor-pointer pointer-events-auto";
     }
   }
 
@@ -1420,6 +1332,9 @@ function hideStartScreen() {
   if (typeof window.initDashboardEngine === "function") {
     window.initDashboardEngine();
   }
+  if (typeof window.restoreControlPanelUI === "function") {
+    window.restoreControlPanelUI();
+  }
 
   const screen = document.getElementById("start-screen");
   if (screen) {
@@ -1464,6 +1379,12 @@ export async function showStartScreen() {
     chk.checked = localStorage.getItem("sellnance_skip_start") === "true";
   }
 
+  const themeBtn = document.getElementById("start-theme-toggle-btn");
+  if (themeBtn) {
+    const isUpbit = document.body.classList.contains("theme-upbit") || localStorage.getItem("sellnance_theme") === "upbit";
+    themeBtn.innerHTML = isUpbit ? "🌙" : "☀️";
+  }
+
   // 🚀 [쇼케이스 0초 및 1단계 완전 리셋]
   startShowcaseStep = 0;
   startCompassStep = 0;
@@ -1477,7 +1398,7 @@ export async function showStartScreen() {
   if (startQvWs) {
     try {
       startQvWs.close();
-    } catch (e) {}
+    } catch (e) { }
     startQvWs = null;
   }
 

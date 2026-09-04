@@ -17,6 +17,7 @@ export async function fetchHistory(
   isTfChange = false,
   isTabRestore = false,
   isSubSwitch = false,
+  targetUid = null,
 ) {
   const now = Date.now();
   if (now - store.lastFetchTime < 10) return;
@@ -103,7 +104,10 @@ export async function fetchHistory(
   const exchangeFlags = { isFutures, isSpot, isUpbit, isBithumb, isBybit, isBybitFutures };
 
   // 🚀 [역할 분리] UID 및 거래소 태그 매칭 rowInfo 찾기 도우미 호출
-  const rowInfo = findRowInfo(displayName, pureBase, exchangeFlags);
+  const rowInfo = findRowInfo(displayName, pureBase, exchangeFlags, targetUid || store.currentSelectedUid);
+  if (rowInfo?.UID) {
+    store.currentSelectedUid = rowInfo.UID;
+  }
 
   const uniqueTicker = rowInfo ? rowInfo.Ticker : displayName;
 
@@ -163,9 +167,9 @@ export async function fetchHistory(
       gapOverlay = document.createElement("div");
       gapOverlay.id = "gap-recovery-overlay";
       gapOverlay.className =
-        "absolute inset-0 z-50 flex flex-col items-center justify-center bg-theme-bg/80 backdrop-blur-sm transition-all duration-300";
+        "absolute inset-0 z-50 flex flex-col items-center justify-center bg-theme-bg/60 backdrop-blur-sm transition-all duration-300";
       gapOverlay.innerHTML = `
-        <div class="flex flex-col items-center gap-3 p-6 rounded-2xl bg-theme-panel/90 border border-theme-border shadow-2xl text-center">
+        <div class="flex flex-col items-center gap-3 p-6 rounded-2xl bg-theme-panel/60 border border-theme-border shadow-2xl text-center">
           <div class="w-10 h-10 border-4 border-theme-accent border-t-transparent rounded-full animate-spin"></div>
           <div class="flex flex-col gap-1">
             <span class="text-[15px] font-medium text-theme-accent tracking-wider uppercase">라이브러리 호출 중...</span>
@@ -350,7 +354,7 @@ export async function fetchHistory(
           store.currentChartMarket = "FUTURES";
           updateExchangeBadges(displayName, rowInfo?.UID);
           store.lastFetchTime = 0;
-          fetchHistory(displayName, isTfChange, isTabRestore);
+          fetchHistory(displayName, isTfChange, isTabRestore, false, rowInfo?.UID);
           return;
         }
         if (rowInfo?.Listed_Exchanges?.includes("BINANCE") || rowInfo?.Binance === "O") {
@@ -358,7 +362,7 @@ export async function fetchHistory(
           store.currentChartMarket = "SPOT";
           updateExchangeBadges(displayName, rowInfo?.UID);
           store.lastFetchTime = 0;
-          fetchHistory(displayName, isTfChange, isTabRestore);
+          fetchHistory(displayName, isTfChange, isTabRestore, false, rowInfo?.UID);
           return;
         }
         if (rowInfo?.Listed_Exchanges?.includes("UPBIT") || rowInfo?.Upbit === "O") {
@@ -366,7 +370,7 @@ export async function fetchHistory(
           store.currentChartMarket = "UPBIT";
           updateExchangeBadges(displayName, rowInfo?.UID);
           store.lastFetchTime = 0;
-          fetchHistory(displayName, isTfChange, isTabRestore);
+          fetchHistory(displayName, isTfChange, isTabRestore, false, rowInfo?.UID);
           return;
         }
         if (rowInfo?.Listed_Exchanges?.includes("BITHUMB")) {
@@ -374,7 +378,7 @@ export async function fetchHistory(
           store.currentChartMarket = "BITHUMB";
           updateExchangeBadges(displayName, rowInfo?.UID);
           store.lastFetchTime = 0;
-          fetchHistory(displayName, isTfChange, isTabRestore);
+          fetchHistory(displayName, isTfChange, isTabRestore, false, rowInfo?.UID);
           return;
         }
       }
@@ -387,7 +391,7 @@ export async function fetchHistory(
           store.currentChartMarket = "FUTURES";
           updateExchangeBadges(displayName, rowInfo?.UID);
           store.lastFetchTime = 0;
-          fetchHistory(displayName, isTfChange, isTabRestore);
+          fetchHistory(displayName, isTfChange, isTabRestore, false, rowInfo?.UID);
           return;
         }
       }
@@ -399,7 +403,7 @@ export async function fetchHistory(
           store.currentChartMarket = "UPBIT";
           updateExchangeBadges(displayName, rowInfo?.UID);
           store.lastFetchTime = 0;
-          fetchHistory(displayName, isTfChange, isTabRestore);
+          fetchHistory(displayName, isTfChange, isTabRestore, false, rowInfo?.UID);
           return;
         }
         if (rowInfo?.Listed_Exchanges?.includes("BITHUMB")) {
@@ -407,7 +411,7 @@ export async function fetchHistory(
           store.currentChartMarket = "BITHUMB";
           updateExchangeBadges(displayName, rowInfo?.UID);
           store.lastFetchTime = 0;
-          fetchHistory(displayName, isTfChange, isTabRestore);
+          fetchHistory(displayName, isTfChange, isTabRestore, false, rowInfo?.UID);
           return;
         }
         if (rowInfo?.Listed_Exchanges?.includes("BINANCE") || rowInfo?.Binance === "O") {
@@ -415,7 +419,7 @@ export async function fetchHistory(
           store.currentChartMarket = "SPOT";
           updateExchangeBadges(displayName, rowInfo?.UID);
           store.lastFetchTime = 0;
-          fetchHistory(displayName, isTfChange, isTabRestore);
+          fetchHistory(displayName, isTfChange, isTabRestore, false, rowInfo?.UID);
           return;
         }
       }

@@ -16,27 +16,44 @@ function toggleTheme() {
   isThemeToggling = true;
   setTimeout(() => {
     isThemeToggling = false;
-  }, 500);
+  }, 300);
 
+  const html = document.documentElement;
   const body = document.body;
-  const btn = document.getElementById("theme-toggle-btn");
-  const isCurrentlyDark = body.classList.contains("theme-binance");
+  const isCurrentlyDark = body.classList.contains("theme-binance") || html.classList.contains("theme-binance");
   const faviconLink = document.getElementById("favicon-link");
   const mainLogoImg = document.getElementById("main-logo-img");
   const staticPath = "../static/";
 
+  // 🚀 [스무스 동기화 1단계] 전환 순간에만 모든 요소에 일괄 0.2초 스무스 트랜지션 적용 (250ms 후 자동 해제)
+  html.classList.add("theme-transitioning");
+  setTimeout(() => {
+    html.classList.remove("theme-transitioning");
+  }, 250);
+
+  const updateThemeButtons = (emoji) => {
+    document.querySelectorAll("#theme-toggle-btn, #start-theme-toggle-btn").forEach((b) => {
+      b.innerHTML = emoji;
+    });
+  };
+
+  // 🚀 [스무스 동기화 2단계] 1프레임에 모든 핵심 테마 클래스와 토큰 일괄 스위칭
   if (isCurrentlyDark) {
     body.classList.remove("theme-binance");
     body.classList.add("theme-upbit");
+    html.classList.remove("theme-binance");
+    html.classList.add("theme-upbit");
     store.currentTheme = "upbit";
-    if (btn) btn.innerHTML = "🌙";
+    updateThemeButtons("🌙");
     if (faviconLink) faviconLink.href = staticPath + "luma-deer-svg-light.svg";
     if (mainLogoImg) mainLogoImg.src = staticPath + "luma-deer-svg-light.svg";
   } else {
     body.classList.remove("theme-upbit");
     body.classList.add("theme-binance");
+    html.classList.remove("theme-upbit");
+    html.classList.add("theme-binance");
     store.currentTheme = "binance";
-    if (btn) btn.innerHTML = "☀️";
+    updateThemeButtons("☀️");
     if (faviconLink) faviconLink.href = staticPath + "luma-deer-svg-dark.svg";
     if (mainLogoImg) mainLogoImg.src = staticPath + "luma-deer-svg-dark.svg";
   }
@@ -44,11 +61,43 @@ function toggleTheme() {
   // 🚀 테마 설정을 로컬에 영구 저장
   localStorage.setItem("sellnance_theme", store.currentTheme);
 
-  // 🚀 차트 테마 업데이트 (브라우저 스타일 재계산 및 트랜지션 즉각 반영을 위해 즉시 호출 및 50ms 후 최종 확정 호출)
-  if (typeof updateChartTheme === "function") {
-    updateChartTheme();
-    setTimeout(updateChartTheme, 50);
-  }
+  // 🚀 [스무스 동기화 3단계] 무거운 DOM 순회/메모리 정리는 비동기 분리하여 UI 프리징 0 보장
+  requestAnimationFrame(() => {
+    const targetSvg =
+      store.currentTheme === "upbit"
+        ? "luma-deer-svg-light.svg"
+        : "luma-deer-svg-dark.svg";
+    const fallbackSrc = "/static/" + targetSvg;
+
+    // 1. 현재 DOM에 존재하는 모든 루마 디어 이미지 일괄 교체
+    document
+      .querySelectorAll('img[src*="luma-deer-svg"], img.fallback-logo')
+      .forEach((img) => {
+        img.src = fallbackSrc;
+        img.classList.add("fallback-logo");
+      });
+
+    // 2. 가상 스크롤 렌더링 시에도 즉시 반영되도록 메모리 캐시 교체
+    const updateMemoryLogos = (list) => {
+      if (!Array.isArray(list)) return;
+      for (let i = 0; i < list.length; i++) {
+        const row = list[i];
+        if (row && row.Logo && row.Logo.includes("luma-deer-svg")) {
+          row.Logo = row.Logo.replace(
+            /luma-deer-svg-(dark|light)\.svg/g,
+            targetSvg,
+          );
+        }
+      }
+    };
+    updateMemoryLogos(store.currentTableData);
+    updateMemoryLogos(store.originalTableData);
+
+    // 3. 차트 테마 업데이트 (불필요한 2중 호출 제거하고 1회만 깔끔하게 호출)
+    if (typeof updateChartTheme === "function") {
+      updateChartTheme();
+    }
+  });
 }
 
 // 데스크탑: 좌측 패널 접기/펴기
@@ -121,7 +170,7 @@ export function switchViewMode(mode) {
     window.updateFavoritesCount();
   }
   if (btnSmallCap)
-    btnSmallCap.textContent = isSimple ? "🚫 Mcap < 1M" : "🚫 Hiding Mcap < 1M";
+    btnSmallCap.textContent = "🚫 Mcap < 1M";
 
   const btnCustomText = document.getElementById("btn-custom-filter-text");
   if (btnCustomText) {

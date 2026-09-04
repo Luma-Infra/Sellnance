@@ -144,7 +144,7 @@ def format_change(percent):
 def create_image_tag(url):
     if not url:
         return ""
-    return f'<img src="{url}" loading="lazy" style="width: 24px; height: 24px; vertical-align: middle; border-radius: 50%;">'
+    return f'<img src="{url}" loading="lazy" style="width: 24px; height: 24px; vertical-align: middle; border-radius: 50%;" onerror="this.onerror=null;this.classList.add(\'fallback-logo\');this.src=(document.body.classList.contains(\'theme-upbit\')?\'/static/luma-deer-svg-light.svg\':\'/static/luma-deer-svg-dark.svg\');">'
 
 
 def get_pure_base_asset(ticker):

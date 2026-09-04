@@ -1,9 +1,10 @@
 # exchange_api.py
 from concurrent.futures import ThreadPoolExecutor, wait
+from modules.utils import is_valid_ticker
 from requests.adapters import HTTPAdapter
 from modules import config_manager, utils
-from modules.utils import is_valid_ticker
 from datetime import datetime, timezone
+import urllib.parse
 import requests
 import json
 import time
@@ -18,10 +19,19 @@ def load_utc0_cache():
     global UTC0_OPEN_CACHE
     if os.path.exists(UTC0_CACHE_FILE):
         try:
-            with open(UTC0_CACHE_FILE, "r") as f:
-                UTC0_OPEN_CACHE = json.load(f)
-        except:
-            UTC0_OPEN_CACHE = {}
+            with open(UTC0_CACHE_FILE, "r", encoding="utf-8") as f:
+                disk_cache = json.load(f)
+                today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+                if today_str in UTC0_OPEN_CACHE:
+                    if today_str not in disk_cache:
+                        disk_cache[today_str] = UTC0_OPEN_CACHE[today_str]
+                    else:
+                        disk_cache[today_str].update(UTC0_OPEN_CACHE[today_str])
+                UTC0_OPEN_CACHE = disk_cache
+        except Exception as e:
+            print(f"⚠️ [시가 캐시 로드 실패]: {e}")
+            if not UTC0_OPEN_CACHE:
+                UTC0_OPEN_CACHE = {}
 
 
 def save_utc0_cache():
@@ -345,10 +355,11 @@ def capture_utc0_prices_bulk():
 
     try:
         today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-        # 🚀 9시 정각에 캐시를 비우고 (혹은 초기화하고), 다음 시세 갱신 사이클이 무결점 tradingDay 로직으로 수집하도록 유도합니다.
-        # 이렇게 하면 1d 캔들의 정확한 openPrice와 100% 일치하게 됩니다.
-        UTC0_OPEN_CACHE.clear()
-        UTC0_OPEN_CACHE[today_str] = {}
+        # 🚀 이전 날짜들만 정리하고 오늘 날짜는 빈 딕셔너리로 안전하게 초기화
+        for old_k in list(UTC0_OPEN_CACHE.keys()):
+            if old_k != today_str:
+                del UTC0_OPEN_CACHE[old_k]
+        UTC0_OPEN_CACHE.setdefault(today_str, {}).clear()
         save_utc0_cache()
         print(
             f"✅ [SUCCESS] {today_str} 시가 캐시 초기화 완료 (메인 루프에서 무결점 1d 시가로 자동 수집됩니다)"
@@ -367,39 +378,54 @@ def fetch_missing_utc0_opens_parallel(tasks):
     """
     global UTC0_OPEN_CACHE
     today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    if today_str not in UTC0_OPEN_CACHE:
-        UTC0_OPEN_CACHE.clear()
-        UTC0_OPEN_CACHE[today_str] = {}
+    today_cache = UTC0_OPEN_CACHE.setdefault(today_str, {})
 
     print(
         f"⏳ [시가 정밀 보정] 캐시 누락 감지. IP 밴 위험 0% 하이브리드 벌크 캡처 개시..."
     )
 
-    # 1. 현물 tradingDay 벌크 타격 (단 1방에 현물 전체 당일 09시 시가 확보!)
-    try:
-        res_trading_day = api_session.get(
-            "https://api.binance.com/api/v3/ticker/tradingDay", timeout=5
-        ).json()
-        if isinstance(res_trading_day, list):
-            for item in res_trading_day:
-                symbol_str = item.get("symbol", "")
-                if symbol_str.endswith("USDT"):
-                    sym = symbol_str[
-                        :-4
-                    ]  # 🚀 [FIX] replace 대신 안전한 슬라이싱으로 NOMO -> NOM 오염 방지
-                    if is_valid_ticker(sym):
-                        UTC0_OPEN_CACHE[today_str][sym] = float(item["openPrice"])
-            print(
-                f"✅ [벌크 도킹] 현물 tradingDay API로 {len(res_trading_day)}개 종목 09시 시가 1초컷 확보!"
-            )
-    except Exception as e:
-        print(f"⚠️ tradingDay 벌크 실패, 백업 로직 전환: {e}")
+    # 1. 현물 tradingDay 100개씩 벌크 타격 (현물 당일 09시 시가 초고속 확보)
+    spot_missing = [
+        f"{sym}USDT" for sym, is_fut in tasks if not is_fut and sym not in today_cache
+    ]
+    if spot_missing:
+        try:
+            docked_count = 0
+            for i in range(0, len(spot_missing), 100):
+                chunk = spot_missing[i : i + 100]
+                params = {"symbols": json.dumps(chunk, separators=(",", ":"))}
+                res_trading_day = api_session.get(
+                    "https://api.binance.com/api/v3/ticker/tradingDay",
+                    params=params,
+                    timeout=5,
+                ).json()
+                if isinstance(res_trading_day, list):
+                    for item in res_trading_day:
+                        symbol_str = item.get("symbol", "")
+                        if symbol_str.endswith("USDT"):
+                            sym = symbol_str[:-4]
+                            if is_valid_ticker(sym):
+                                today_cache[sym] = float(item["openPrice"])
+                                docked_count += 1
+            if docked_count > 0:
+                print(
+                    f"✅ [벌크 도킹] 현물 tradingDay API로 {docked_count}개 종목 09시 시가 확보 완료!"
+                )
+        except Exception as e:
+            print(f"⚠️ tradingDay 벌크 실패, 백업 로직 전환: {e}")
 
-    # 2. 남은 누락분 필터링 (현물에 없고 선물에만 있는 극소수 코인 또는 선물 시가 정밀 식별)
+    # 2. 🚀 선물 코인은 현물 09시 시가를 1차 도킹하여 klines 호출 대상 대폭 소각
+    for sym, is_futures in tasks:
+        if is_futures:
+            f_key = f"{sym}_FUTURES"
+            if f_key not in today_cache and sym in today_cache:
+                today_cache[f_key] = today_cache[sym]
+
+    # 3. 남은 누락분 필터링 (현물에 없는 선물 전용 코인 등)
     remaining_tasks = []
     for sym, is_futures in tasks:
         cache_key = f"{sym}_FUTURES" if is_futures else sym
-        if cache_key not in UTC0_OPEN_CACHE[today_str]:
+        if cache_key not in today_cache:
             remaining_tasks.append((sym, is_futures))
 
     if remaining_tasks:
@@ -443,11 +469,11 @@ def fetch_missing_utc0_opens_parallel(tasks):
                 sym, is_fut, val = f.result()
                 if val is not None:
                     cache_key = f"{sym}_FUTURES" if is_fut else sym
-                    UTC0_OPEN_CACHE[today_str][cache_key] = val
+                    today_cache[cache_key] = val
 
     save_utc0_cache()
     print(
-        f"✅ [SUCCESS] {today_str} 당일 09시 시가 무결점 보정 완료 ({len(UTC0_OPEN_CACHE[today_str])}개 확보)"
+        f"✅ [SUCCESS] {today_str} 당일 09시 시가 무결점 보정 완료 ({len(today_cache)}개 확보)"
     )
 
 
@@ -785,17 +811,22 @@ def fetch_upbit_prices(upbit_assets):
     if not upbit_assets:
         return upbit_data
 
+    cf_proxy = os.getenv("CF_WORKER_PROXY_URL", "").strip()
     upbit_list = list(upbit_assets)
-    for i in range(0, len(upbit_list), 40):
-        chunk = upbit_list[i : i + 40]
+    for i in range(0, len(upbit_list), 70):
+        chunk = upbit_list[i : i + 70]
         markets_str = ",".join([f"KRW-{k}" for k in chunk])
+        target_url = f"https://api.upbit.com/v1/ticker?markets={markets_str}"
+        fetch_url = (
+            f"{cf_proxy.rstrip('/')}/?url={urllib.parse.quote(target_url)}"
+            if cf_proxy
+            else target_url
+        )
 
         success = False
         for attempt in range(3):
             try:
-                res = api_session.get(
-                    f"https://api.upbit.com/v1/ticker?markets={markets_str}", timeout=5
-                ).json()
+                res = api_session.get(fetch_url, timeout=5).json()
 
                 for item in res:
                     sym = item["market"].replace("KRW-", "")
@@ -809,12 +840,17 @@ def fetch_upbit_prices(upbit_assets):
                 success = True
                 break
             except Exception as e:
+                # Cloudflare 오류 시 직통 target_url로 1회 폴백
+                if fetch_url != target_url and attempt == 0:
+                    fetch_url = target_url
+                    continue
                 print(f"🚨 [업비트 수집 에러 (Chunk)] (시도 {attempt+1}/3): {e}")
                 time.sleep(1.0)
         if not success:
             print(
                 f"❌ [업비트 수집 최종 실패 (Chunk)] {markets_str[:40]}... 청크 데이터 유실"
             )
+        time.sleep(0.08)  # 업비트 1초 쿼터 보호용 청크 간 80ms 간격 확보
 
     return upbit_data
 

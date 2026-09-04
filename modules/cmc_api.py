@@ -224,11 +224,12 @@ def execute_cmc_requests(id_lookup, sym_lookup, api_key=None):
                 q = info["quote"]["USD"]
                 ucid_str = str(info.get("id", ""))
                 name = info.get("name", "")
+                mcap = q.get("market_cap") or info.get("self_reported_market_cap") or q.get("fully_diluted_market_cap")
 
                 # 🚀 [핵심] builder가 찾기 쉽게 공통 데이터 맵을 만듭니다.
                 asset_info = {
                     "name": name,
-                    "market_cap": q.get("market_cap"),
+                    "market_cap": mcap,
                     "cmc_price": q.get("price"),
                     "volume_24h": q.get("volume_24h"),
                     "ucid": ucid_str,
