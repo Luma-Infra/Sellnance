@@ -990,25 +990,49 @@ export function updateTabTitleManager(price, symbol, isKor) {
     const isFuturesMode =
       activeMarket === "FUTURES" || activeMarket === "BYBIT_FUTURES";
 
-    // 🚀 선택된 심볼 기준의 최종 대상 배수 (예: 1000SHIB인 경우 1000)
-    const storeMult = getMultiplier(targetSymbol);
+    const targetMult = getMultiplier(targetSymbol);
 
-    // 국내/해외의 현재 모드별 배수 획득
-    const activeOvsTicker = isFuturesMode
-      ? row?.Exact_Futures
-      : row?.Exact_Spot;
-    const ovsMult = getMultiplier(activeOvsTicker || targetSymbol);
-    const domMult = getMultiplier(row?.Upbit_Symbol || targetSymbol);
+    // 🚀 기준 가격 확인 (코인의 대표 배율 가격 추정)
+    const refRawPrice =
+      Number(row?.Price_Raw) ||
+      Number(row?.Binance_Price_Futures) ||
+      parseFloat(row?.Price) ||
+      0;
 
-    const activeExchangeMult = isKor ? domMult : ovsMult;
+    let scaledPrice = price;
 
-    // 가격 스케일 조정 (예: SHIB Spot 가격 0.000005를 1000SHIB에 맞춰 0.005로 변환)
-    const scaledPrice = (price / activeExchangeMult) * storeMult;
+    if (targetMult > 1) {
+      // 심볼이 1000SATS, 1000PEPE, 1000SHIB 등 배율 심볼인 경우:
+      // 넘어온 price가 1단위 원본 가격(예: 0.0000037)인지 배율 가격(예: 0.0037)인지 판별하여
+      // 무조건 탭 표시줄에는 '배율 처리 가격'만 표출되도록 정규화
+      if (refRawPrice > 0 && price < refRawPrice / (targetMult / 10)) {
+        scaledPrice = price * targetMult;
+      } else if (isKor) {
+        const domMult = getMultiplier(row?.Upbit_Symbol || targetSymbol);
+        if (domMult === 1 && targetMult > 1) {
+          scaledPrice = price * targetMult;
+        }
+      }
+    } else {
+      const ovsMult = getMultiplier(
+        (isFuturesMode ? row?.Exact_Futures : row?.Exact_Spot) || targetSymbol,
+      );
+      const domMult = getMultiplier(row?.Upbit_Symbol || targetSymbol);
+      const activeExchangeMult = isKor ? domMult : ovsMult;
+      if (activeExchangeMult > 1) {
+        scaledPrice = price / activeExchangeMult;
+      }
+    }
 
     const isMainKrw = store.currencyMode === "KRW" || isKor;
     let formatted = "";
 
     if (isMainKrw) {
+      let krwPrice = scaledPrice;
+      if (!isKor) {
+        const rate = store.marketDataMap?.krw_usd_rate || 0;
+        if (rate > 0) krwPrice = scaledPrice * rate;
+      }
       // 업비트/빗썸 KRW 마켓 호가 단위 정밀도 자동 계산
       const getLocalKrwPrecision = (pr) => {
         if (!pr || isNaN(pr)) return 0;
@@ -1018,15 +1042,25 @@ export function updateTabTitleManager(price, symbol, isKor) {
         if (pr >= 1) return 3;
         return 4;
       };
-      const krwP = getLocalKrwPrecision(scaledPrice);
-      formatted = `${Number(scaledPrice).toLocaleString(undefined, { maximumFractionDigits: krwP })}`;
+      const krwP = getLocalKrwPrecision(krwPrice);
+      formatted = `${Number(krwPrice).toLocaleString(undefined, { maximumFractionDigits: krwP })}`;
     } else {
       // 바이낸스/바이빗 USDT 마켓 정밀도 참조
       const p = store.getPrecision(store.currentSelectedSymbol || symbol);
       formatted = `${formatSmartPrice(scaledPrice, p)}`;
     }
 
-    document.title = `${formatted} ${targetSymbol.toUpperCase()} | Sellnance`;
+    const displayTitleTicker = (
+      row?.DisplayTicker ||
+      getPureBase(
+        targetSymbol
+          .replace(/^KRW-?/i, "")
+          .replace(/[_-]?(USDT|KRW)$/i, ""),
+      ) ||
+      targetSymbol
+    ).toUpperCase();
+
+    document.title = `${formatted} ${displayTitleTicker} | Sellnance`;
   }
 }
 window.updateTabTitleManager = updateTabTitleManager;

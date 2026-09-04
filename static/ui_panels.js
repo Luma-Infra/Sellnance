@@ -60,7 +60,7 @@ export function switchViewMode(mode) {
     window.updateFavoritesCount();
   }
   if (btnSmallCap)
-    btnSmallCap.textContent = "🚫 Mcap < 1M";
+    btnSmallCap.innerHTML = `<svg class="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg><span>Mcap &lt; 1M</span>`;
 
   const btnCustomText = document.getElementById("btn-custom-filter-text");
   if (btnCustomText) {

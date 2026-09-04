@@ -494,25 +494,42 @@
         <div id="notice-slider" class="flex flex-col animate-notice-roll w-full">
           <div
             class="h-[28px] shrink-0 flex items-center justify-center text-[11px] sm:text-[12px] text-theme-text font-medium text-center whitespace-nowrap px-3">
-            <span class="mr-1.5 opacity-90">📢</span> (1/4) 서비스 초기 단계로
-            일부 성능 저하 또는 렉, 수치 오류 등 다소 미흡한 부분이 있으니
-            양해 바랍니다 (추후 개선 예정)
+            <svg class="w-3.5 h-3.5 mr-1.5 opacity-80 shrink-0 inline-block align-[-2px]" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m3 11 18-5v12L3 14v-3z"></path>
+              <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"></path>
+            </svg>
+            (1/4) 서비스 초기 단계로 일부 성능 저하 또는 렉, 수치 오류 등 다소 미흡한 부분이 있으니 양해 바랍니다 (추후 개선 예정)
           </div>
           <div
             class="h-[28px] shrink-0 flex items-center justify-center text-[11px] sm:text-[12px] text-theme-text font-medium text-center whitespace-nowrap px-3">
-            <span class="mr-1.5 opacity-90">⚠️</span> (2/4) 실제 트레이딩을
-            위한 매매 환경 서비스는 제공되지 않습니다
+            <svg class="w-3.5 h-3.5 mr-1.5 opacity-80 shrink-0 inline-block align-[-2px]" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            (2/4) 실제 트레이딩을 위한 매매 환경 서비스는 제공되지 않습니다
           </div>
           <div
             class="h-[28px] shrink-0 flex items-center justify-center text-[11px] sm:text-[12px] text-theme-text font-medium text-center whitespace-nowrap px-3">
-            <span class="mr-1.5 opacity-90">🔄</span> (3/4) 차트에 문제가
-            있다면 새로고침, 타임프레임 혹은 코인을 변경해 보세요
+            <svg class="w-3.5 h-3.5 mr-1.5 opacity-80 shrink-0 inline-block align-[-2px]" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+              <path d="M3 3v5h5"></path>
+              <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path>
+              <path d="M16 16h5v5"></path>
+            </svg>
+            (3/4) 차트에 문제가 있다면 새로고침, 타임프레임 혹은 코인을 변경해 보세요
           </div>
           <div
             class="h-[28px] shrink-0 flex items-center justify-center text-[11px] sm:text-[12px] text-theme-text font-medium text-center whitespace-nowrap px-3">
-            <span class="mr-1.5 opacity-90">🗠</span> (4/4) TradingView
-            Lightweight v5 버전이므로 대부분의 Advanced Charts 기능 (드로잉
-            도구, 보조 지표 등, Pine script)은 제한됩니다
+            <svg class="w-3.5 h-3.5 mr-1.5 opacity-80 shrink-0 inline-block align-[-2px]" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 3v18h18"></path>
+              <path d="m19 9-5 5-4-4-3 3"></path>
+            </svg>
+            (4/4) TradingView Lightweight v5 버전이므로 대부분의 Advanced Charts 기능 (드로잉 도구, 보조 지표 등, Pine script)은 제한됩니다
           </div>
         </div>
 
@@ -667,12 +684,28 @@
                 </div>
 
                 <button onclick="toggleSmallCap()" id="btn-small-cap"
-                  class="tab-btn px-3.5 min-[1200px]:px-4.5 py-2 text-[10.5px] font-semibold rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap inline-flex items-center justify-center leading-none">
-                  🚫 Mcap &lt; 1M
+                  class="tab-btn px-3.5 min-[1200px]:px-4.5 py-2 text-[10.5px] font-semibold rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap inline-flex items-center justify-center gap-1 leading-none">
+                  <svg class="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                  </svg>
+                  <span>Mcap &lt; 1M</span>
                 </button>
                 <button onclick="window.toggleCustomFilter(event)" id="btn-custom-filter"
                   class="tab-btn px-3.5 min-[1200px]:px-4.5 py-2 text-[10.5px] font-semibold rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap hidden min-[1200px]:inline-flex items-center justify-center gap-1 cursor-pointer leading-none">
-                  <span>🎛️</span>
+                  <svg class="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="4" y1="21" x2="4" y2="14"></line>
+                    <line x1="4" y1="10" x2="4" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12" y2="3"></line>
+                    <line x1="20" y1="21" x2="20" y2="16"></line>
+                    <line x1="20" y1="12" x2="20" y2="3"></line>
+                    <line x1="1" y1="14" x2="7" y2="14"></line>
+                    <line x1="9" y1="8" x2="15" y2="8"></line>
+                    <line x1="17" y1="16" x2="23" y2="16"></line>
+                  </svg>
                   <span id="btn-custom-filter-text">Custom</span>
                 </button>
               </div>
@@ -938,25 +971,35 @@
               </div>
 
               <button id="tab-btn-chart"
-                class="chart-tabs-btn active relative flex-1 h-full bg-transparent border-none text-theme-text text-sm font-medium transition-all cursor-pointer z-20 flex items-center justify-center gap-1 opacity-60 [&.active]:opacity-100 min-w-0 px-1"
+                class="chart-tabs-btn active relative flex-1 h-full bg-transparent border-none text-theme-text text-sm font-medium transition-all cursor-pointer z-20 flex items-center justify-center gap-1.5 opacity-60 [&.active]:opacity-100 min-w-0 px-1"
                 onclick="
                     switchChartTab('chart');
                   ">
-                <span class="flex-shrink-0">📈</span>
+                <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="20" x2="18" y2="10"></line>
+                  <line x1="12" y1="20" x2="12" y2="4"></line>
+                  <line x1="6" y1="20" x2="6" y2="14"></line>
+                </svg>
                 <span class="truncate">Pure Chart</span>
               </button>
 
               <button id="tab-btn-sim"
-                class="chart-tabs-btn relative flex-1 h-full bg-transparent border-none text-theme-text text-sm font-medium transition-all cursor-pointer z-20 flex items-center justify-center gap-1 opacity-60 [&.active]:opacity-100 min-w-0 px-1"
+                class="chart-tabs-btn relative flex-1 h-full bg-transparent border-none text-theme-text text-sm font-medium transition-all cursor-pointer z-20 flex items-center justify-center gap-1.5 opacity-60 [&.active]:opacity-100 min-w-0 px-1"
                 onclick="
                     switchChartTab('sim');
                   ">
-                <span class="flex-shrink-0">🧪</span>
+                <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M10 2v7.31L4.62 18.1A2 2 0 0 0 6.32 21h11.36a2 2 0 0 0 1.7-2.9L14 9.31V2"></path>
+                  <path d="M8.5 2h7"></path>
+                  <path d="M14 9.3h-4"></path>
+                </svg>
                 <span class="truncate">Simulator</span>
               </button>
 
               <button id="tab-btn-quickview"
-                class="chart-tabs-btn active:opacity-100 [&.active]:opacity-100 relative flex-1 h-full bg-transparent border-none text-theme-text text-sm font-medium transition-all cursor-pointer z-20 flex items-center justify-center gap-1 opacity-70 overflow-hidden rounded-md group hover:opacity-100 min-w-0 px-1"
+                class="chart-tabs-btn active:opacity-100 [&.active]:opacity-100 relative flex-1 h-full bg-transparent border-none text-theme-text text-sm font-medium transition-all cursor-pointer z-20 flex items-center justify-center gap-1.5 opacity-70 overflow-hidden rounded-md group hover:opacity-100 min-w-0 px-1"
                 style="isolation: isolate; transform: translate3d(0, 0, 0)" onclick="
                     switchChartTab('quickview');
                   ">
@@ -968,8 +1011,11 @@
 
                 <span class="absolute inset-[1.5px] z-10 bg-theme-panel rounded-[inherit]"></span>
 
-                <span class="relative z-20 flex items-center justify-center gap-1 min-w-0 px-1 w-full">
-                  <span class="text-theme-accent drop-shadow-[0_0_3px_rgba(59,130,246,0.6)] flex-shrink-0">⚡</span>
+                <span class="relative z-20 flex items-center justify-center gap-1.5 min-w-0 px-1 w-full">
+                  <svg class="w-3.5 h-3.5 shrink-0 text-theme-accent drop-shadow-[0_0_3px_rgba(59,130,246,0.6)]"
+                    viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                  </svg>
                   <span class="truncate">Quick View</span>
                 </span>
               </button>
@@ -991,16 +1037,16 @@
             <div id="head-info-row" class="flex items-center gap-6 justify-start flex-wrap w-full pt-0.5 px-3 pb-1">
               <!-- border-t border-theme-border/30 -->
               <!-- 🚀 1. 실시간 가격 전광판 (USD & KRW 동시 표기) -->
-              <div class="flex flex-col text-xs text-left min-w-0">
+              <div class="flex flex-col text-xs text-left min-w-[140px] shrink-0">
                 <span class="opacity-50 text-[10px] uppercase font-medium tracking-wider">Price
                   <!-- <span id="head-caller-id-price" class="text-[9px] text-[#ff0055] font-bold ml-1"></span> -->
                 </span>
                 <div class="flex flex-col min-w-0 leading-none mt-0.5 gap-1">
                   <div id="head-price-active" class="flex flex-col gap-0.5">
                     <b id="head-price-main"
-                      class="text-[20px] md:text-[20px] font-tempTestDss text-theme-accent truncate">-</b>
+                      class="text-[20px] md:text-[20px] font-tempTestDss tabular-nums text-theme-accent truncate">-</b>
                     <span id="head-price-sub"
-                      class="text-[11px] font-tempTestDss text-theme-text opacity-50 truncate hidden"></span>
+                      class="text-[11px] font-tempTestDss tabular-nums text-theme-text opacity-50 truncate hidden"></span>
                   </div>
                 </div>
               </div>
@@ -1009,29 +1055,29 @@
                 <span class="opacity-50 text-[10px] uppercase font-medium tracking-wider">24H Chg
                   <!-- <span id="head-caller-id-24h" class="text-[9px] text-[#ff0055] font-bold ml-1"></span> -->
                 </span>
-                <b id="head-chg-24h" class="text-[12px] md:text-[13px] font-tempTestDss mt-0.5">-</b>
+                <b id="head-chg-24h" class="text-[12px] md:text-[13px] font-tempTestDss tabular-nums mt-0.5">-</b>
               </div>
               <!-- 🚀 3. DAY 변동률 전광판 -->
               <div class="flex flex-col text-xs text-left shrink-0 min-w-fit">
                 <span class="opacity-50 text-[10px] uppercase font-medium tracking-wider">Day Chg
                   <!-- <span id="head-caller-id" class="text-[9px] text-[#ff0055] font-bold ml-1"></span> -->
                 </span>
-                <b id="head-chg-day" class="text-[12px] md:text-[13px] font-tempTestDss mt-0.5">-</b>
+                <b id="head-chg-day" class="text-[12px] md:text-[13px] font-tempTestDss tabular-nums mt-0.5">-</b>
               </div>
               <!-- Market Cap -->
               <div class="flex flex-col text-xs text-left shrink-0 min-w-fit">
                 <span class="opacity-50 text-[10px] uppercase font-medium tracking-wider">Market Cap</span>
-                <b id="head-mcap" class="text-[12px] md:text-[13px] font-tempTestDss mt-0.5">-</b>
+                <b id="head-mcap" class="text-[12px] md:text-[13px] font-tempTestDss tabular-nums mt-0.5">-</b>
               </div>
               <!-- Vol(24h) -->
               <div class="flex flex-col text-xs text-left shrink-0 min-w-fit">
                 <span class="opacity-50 text-[10px] uppercase font-medium tracking-wider">F-Vol(24h)</span>
-                <b id="head-vol-binance" class="text-[12px] md:text-[13px] font-tempTestDss mt-0.5 text-[#f0b90b]">-</b>
+                <b id="head-vol-binance" class="text-[12px] md:text-[13px] font-tempTestDss tabular-nums mt-0.5 text-[#f0b90b]">-</b>
               </div>
               <!-- U-Vol(24h) -->
               <div class="flex flex-col text-xs text-left shrink-0 min-w-fit">
                 <span class="opacity-50 text-[10px] uppercase font-medium tracking-wider">U-Vol(24h)</span>
-                <b id="head-vol-upbit" class="text-[12px] md:text-[13px] font-tempTestDss mt-0.5 text-upbit-color">-</b>
+                <b id="head-vol-upbit" class="text-[12px] md:text-[13px] font-tempTestDss tabular-nums mt-0.5 text-upbit-color">-</b>
               </div>
             </div>
             <!-- 3층: 컨트롤 패널 (리니어/로그, 카운트다운, 스케일 리셋, 호가창) -->
@@ -1296,64 +1342,63 @@
 
           <!-- 2. 우측 호가창 (Orderbook) 패널 -->
           <div id="orderbook-panel"
-              class="hidden w-full md:w-[260px] flex-shrink-0 flex-col bowrder border-theme-border rounded-lg bg-theme-panel relative overflow-hidden transition-all duration-300 shadow-md">
-              <!-- Orderbook Header -->
-              <div
-                class="flex items-center justify-between p-2 border-b border-theme-border bg-theme-bg/40 shrink-0 backdrop-blur-sm">
-                <span class="text-[11px] font-medium text-theme-text opacity-80">Orderbook</span>
-                <div class="flex items-center">
-                  <span id="orderbook-precision-label"
-                    class="text-[10px] font-tempTestDss font-medium text-theme-accent px-2 min-w-[60px] text-right whitespace-nowrap flex-shrink-0">Auto</span>
-                  <div class="flex items-center bg-theme-border/20 rounded border border-theme-border/30 ml-1">
-                    <button
-                      class="w-6 h-5 flex items-center justify-center text-[10px] font-medium text-theme-text opacity-70 hover:opacity-100 hover:bg-theme-border/50 transition-colors rounded-l border-r border-theme-border/30"
-                      onclick="
+            class="hidden w-full md:w-[260px] flex-shrink-0 flex-col bowrder border-theme-border rounded-lg bg-theme-panel relative overflow-hidden transition-all duration-300 shadow-md">
+            <!-- Orderbook Header -->
+            <div
+              class="flex items-center justify-between p-2 border-b border-theme-border bg-theme-bg/40 shrink-0 backdrop-blur-sm">
+              <span class="text-[11px] font-medium text-theme-text opacity-80">Orderbook</span>
+              <div class="flex items-center">
+                <span id="orderbook-precision-label"
+                  class="text-[10px] font-tempTestDss font-medium text-theme-accent px-2 min-w-[60px] text-right whitespace-nowrap flex-shrink-0">Auto</span>
+                <div class="flex items-center bg-theme-border/20 rounded border border-theme-border/30 ml-1">
+                  <button
+                    class="w-6 h-5 flex items-center justify-center text-[10px] font-medium text-theme-text opacity-70 hover:opacity-100 hover:bg-theme-border/50 transition-colors rounded-l border-r border-theme-border/30"
+                    onclick="
                         if (window.changeOrderbookPrecision)
                           window.changeOrderbookPrecision(-1);
                       ">
-                      -
-                    </button>
-                    <button
-                      class="w-6 h-5 flex items-center justify-center text-[10px] font-medium text-theme-text opacity-70 hover:opacity-100 hover:bg-theme-border/50 transition-colors border-r border-theme-border/30"
-                      onclick="
+                    -
+                  </button>
+                  <button
+                    class="w-6 h-5 flex items-center justify-center text-[10px] font-medium text-theme-text opacity-70 hover:opacity-100 hover:bg-theme-border/50 transition-colors border-r border-theme-border/30"
+                    onclick="
                         if (window.changeOrderbookPrecision)
                           window.changeOrderbookPrecision(1);
                       ">
-                      +
-                    </button>
-                    <button
-                      class="w-6 h-5 flex items-center justify-center text-[12px] font-medium text-theme-text opacity-70 hover:opacity-100 hover:bg-theme-border/50 transition-colors rounded-r"
-                      onclick="
+                    +
+                  </button>
+                  <button
+                    class="w-6 h-5 flex items-center justify-center text-[12px] font-medium text-theme-text opacity-70 hover:opacity-100 hover:bg-theme-border/50 transition-colors rounded-r"
+                    onclick="
                         if (window.resetOrderbookPrecision)
                           window.resetOrderbookPrecision();
                       " title="Reset Precision">
-                      ↺
-                    </button>
-                  </div>
+                    ↺
+                  </button>
                 </div>
               </div>
+            </div>
 
-              <!-- Asks (매도) -->
-              <div id="orderbook-asks" class="flex-1 flex flex-col justify-end overflow-hidden min-h-0 bg-theme-panel">
-                <!-- JS will inject ask rows here -->
-              </div>
+            <!-- Asks (매도) -->
+            <div id="orderbook-asks" class="flex-1 flex flex-col justify-end overflow-hidden min-h-0 bg-theme-panel">
+              <!-- JS will inject ask rows here -->
+            </div>
 
-              <!-- Spread / Current Price -->
-              <div
-                class="flex items-center justify-center py-1.5 border-y border-theme-border/50 bg-theme-bg/40 shrink-0 backdrop-blur-sm">
-                <span id="orderbook-current-price"
-                  class="text-[13px] font-tempTestDss font-medium text-theme-text">--</span>
-              </div>
+            <!-- Spread / Current Price -->
+            <div
+              class="flex items-center justify-center py-1.5 border-y border-theme-border/50 bg-theme-bg/40 shrink-0 backdrop-blur-sm">
+              <span id="orderbook-current-price"
+                class="text-[13px] font-tempTestDss font-medium text-theme-text">--</span>
+            </div>
 
-              <!-- Bids (매수) -->
-              <div id="orderbook-bids"
-                class="flex-1 flex flex-col justify-start overflow-hidden min-h-0 bg-theme-panel">
-                <!-- JS will inject bid rows here -->
-              </div>
+            <!-- Bids (매수) -->
+            <div id="orderbook-bids" class="flex-1 flex flex-col justify-start overflow-hidden min-h-0 bg-theme-panel">
+              <!-- JS will inject bid rows here -->
             </div>
           </div>
+        </div>
 
-          <!-- <div id="chart-loading-modal"
+        <!-- <div id="chart-loading-modal"
           class="absolute z-[200] inset-0 hidden flex flex-col justify-center items-center bg-transparent backdrop-blur-[2px] text-theme-text transition-opacity duration-100">
           <div class="chart-spinner"></div>
           <div class="text-[10px] opacity-60 mt-3 font-medium tracking-[0.2em] uppercase">
@@ -1361,95 +1406,90 @@
           </div>
         </div> -->
 
-          <div
-            class="hidden flex-col gap-3 p-3.5 bg-theme-panel/85 backdrop-blur-md border border-theme-border/50 rounded-xl shadow-lg w-full mx-auto mb-4 mt-2 font-bold"
-            id="sim-controls">
-            <!-- 1층: 모드 토글 + 슬라이더 영역 -->
-            <div class="flex flex-wrap lg:flex-nowrap items-center gap-3 w-full">
-              <!-- 1. 방향 선택 토글 (슬림형) -->
-              <div
-                class="relative flex p-1 bg-theme-bg/60 border border-theme-border/50 rounded-lg overflow-hidden shrink-0 w-[160px] h-[34px]">
-                <div id="dir-slider"
-                  class="absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] bg-theme-up rounded-md transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] shadow-sm">
-                </div>
-                <button id="dir-bull"
-                  class="relative z-10 flex-1 cursor-pointer bg-transparent text-white font-bold tracking-tight text-[11px] transition-colors duration-300 border-none outline-none"
-                  onclick="changeDir('bull')">
-                  LONG
-                </button>
-                <button id="dir-bear"
-                  class="relative z-10 flex-1 cursor-pointer bg-transparent text-theme-text font-bold tracking-tight text-[11px] transition-colors duration-300 border-none outline-none"
-                  onclick="changeDir('bear')">
-                  SHORT
-                </button>
+        <div
+          class="hidden flex-col gap-3 p-3.5 bg-theme-panel/85 backdrop-blur-md border border-theme-border/50 rounded-xl shadow-lg w-full mx-auto mb-4 mt-2 font-bold"
+          id="sim-controls">
+          <!-- 1층: 모드 토글 + 슬라이더 영역 -->
+          <div class="flex flex-wrap lg:flex-nowrap items-center gap-3 w-full">
+            <!-- 1. 방향 선택 토글 (슬림형) -->
+            <div
+              class="relative flex p-1 bg-theme-bg/60 border border-theme-border/50 rounded-lg overflow-hidden shrink-0 w-[160px] h-[34px]">
+              <div id="dir-slider"
+                class="absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] bg-theme-up rounded-md transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] shadow-sm">
               </div>
-
-              <!-- 2. 슬라이더 3개 가로 배치 -->
-              <div class="flex-1 flex gap-2 min-w-0 flex-wrap sm:flex-nowrap w-full">
-                <div
-                  class="flex-1 flex items-center gap-2 bg-theme-bg/30 px-2 py-1 rounded-lg border border-theme-border/10 min-w-[120px]">
-                  <span class="opacity-50 text-[10px] font-bold uppercase tracking-wider shrink-0">Body</span>
-                  <input type="range" id="input-body"
-                    class="flex-1 cursor-ew-resize h-1.5 bg-theme-border rounded appearance-none shadow-inner min-w-0"
-                    style="accent-color: var(--sim-color, var(--up));"
-                    min="0" max="200" value="10" step="1" />
-                  <b id="val-body"
-                    class="text-xs font-tempTestDss shrink-0 w-[30px] text-right"
-                    style="color: var(--sim-color, var(--up));">10%</b>
-                </div>
-
-                <div
-                  class="flex-1 flex items-center gap-2 bg-theme-bg/30 px-2 py-1 rounded-lg border border-theme-border/10 min-w-[120px]">
-                  <span class="opacity-50 text-[10px] font-bold uppercase tracking-wider shrink-0">Upper</span>
-                  <input type="range" id="input-top"
-                    class="flex-1 cursor-ew-resize h-1.5 bg-theme-border rounded appearance-none shadow-inner min-w-0"
-                    style="accent-color: var(--sim-color, var(--up));"
-                    min="0" max="100" value="5" step="1" />
-                  <b id="val-top" class="text-xs font-tempTestDss shrink-0 w-[24px] text-right"
-                    style="color: var(--sim-color, var(--up));">5%</b>
-                </div>
-
-                <div
-                  class="flex-1 flex items-center gap-2 bg-theme-bg/30 px-2 py-1 rounded-lg border border-theme-border/10 min-w-[120px]">
-                  <span class="opacity-50 text-[10px] font-bold uppercase tracking-wider shrink-0">Lower</span>
-                  <input type="range" id="input-bottom"
-                    class="flex-1 cursor-ew-resize h-1.5 bg-theme-border rounded appearance-none shadow-inner min-w-0"
-                    style="accent-color: var(--sim-color, var(--up));"
-                    min="0" max="100" value="5" step="1" />
-                  <b id="val-bottom"
-                    class="text-xs font-tempTestDss shrink-0 w-[24px] text-right"
-                    style="color: var(--sim-color, var(--up));">5%</b>
-                </div>
-              </div>
+              <button id="dir-bull"
+                class="relative z-10 flex-1 cursor-pointer bg-transparent text-white font-bold tracking-tight text-[11px] transition-colors duration-300 border-none outline-none"
+                onclick="changeDir('bull')">
+                LONG
+              </button>
+              <button id="dir-bear"
+                class="relative z-10 flex-1 cursor-pointer bg-transparent text-theme-text font-bold tracking-tight text-[11px] transition-colors duration-300 border-none outline-none"
+                onclick="changeDir('bear')">
+                SHORT
+              </button>
             </div>
 
-            <!-- 2층: 액션 버튼 전용 영역 (경계선으로 분리 및 가로 풀사이즈) -->
-            <div class="flex gap-2 w-full pt-1.5 border-t border-theme-border/20">
-              <button id="btn-generate"
-                class="flex-1 h-[36px] border-none bg-theme-up hover:bg-theme-up/90 text-white font-bold text-xs cursor-pointer rounded-lg shadow-md hover:brightness-105 active:scale-[0.98] transition-all tracking-wide"
-                onclick="addCandle()">
-                ⚡ Add Simulation Candle
-              </button>
-              <button id="btn-undo"
-                class="px-4 h-[36px] bg-transparent text-theme-text border border-theme-border hover:border-theme-down hover:bg-theme-border/20 cursor-pointer rounded-lg font-bold text-xs hover:text-theme-down active:scale-[0.98] transition-all"
-                onclick="undoLast()">
-                🔙 Undo
-              </button>
+            <!-- 2. 슬라이더 3개 가로 배치 -->
+            <div class="flex-1 flex gap-2 min-w-0 flex-wrap sm:flex-nowrap w-full">
+              <div
+                class="flex-1 flex items-center gap-2 bg-theme-bg/30 px-2 py-1 rounded-lg border border-theme-border/10 min-w-[120px]">
+                <span class="opacity-50 text-[10px] font-bold uppercase tracking-wider shrink-0">Body</span>
+                <input type="range" id="input-body"
+                  class="flex-1 cursor-ew-resize h-1.5 bg-theme-border rounded appearance-none shadow-inner min-w-0"
+                  style="accent-color: var(--sim-color, var(--up));" min="0" max="200" value="10" step="1" />
+                <b id="val-body" class="text-xs font-tempTestDss shrink-0 w-[30px] text-right"
+                  style="color: var(--sim-color, var(--up));">10%</b>
+              </div>
+
+              <div
+                class="flex-1 flex items-center gap-2 bg-theme-bg/30 px-2 py-1 rounded-lg border border-theme-border/10 min-w-[120px]">
+                <span class="opacity-50 text-[10px] font-bold uppercase tracking-wider shrink-0">Upper</span>
+                <input type="range" id="input-top"
+                  class="flex-1 cursor-ew-resize h-1.5 bg-theme-border rounded appearance-none shadow-inner min-w-0"
+                  style="accent-color: var(--sim-color, var(--up));" min="0" max="100" value="5" step="1" />
+                <b id="val-top" class="text-xs font-tempTestDss shrink-0 w-[24px] text-right"
+                  style="color: var(--sim-color, var(--up));">5%</b>
+              </div>
+
+              <div
+                class="flex-1 flex items-center gap-2 bg-theme-bg/30 px-2 py-1 rounded-lg border border-theme-border/10 min-w-[120px]">
+                <span class="opacity-50 text-[10px] font-bold uppercase tracking-wider shrink-0">Lower</span>
+                <input type="range" id="input-bottom"
+                  class="flex-1 cursor-ew-resize h-1.5 bg-theme-border rounded appearance-none shadow-inner min-w-0"
+                  style="accent-color: var(--sim-color, var(--up));" min="0" max="100" value="5" step="1" />
+                <b id="val-bottom" class="text-xs font-tempTestDss shrink-0 w-[24px] text-right"
+                  style="color: var(--sim-color, var(--up));">5%</b>
+              </div>
             </div>
           </div>
 
-          <!-- ⚡ 퀵뷰 실행 중 placeholder -->
-          <div id="quickview-placeholder" style="display: none"
-            class="hidden flex-1 flex-col items-center justify-center p-8 text-center">
-            <div class="flex flex-col items-center gap-3">
-              <div
-                class="relative flex items-center justify-center w-12 h-12 rounded-full bg-theme-accent/10 border border-theme-accent/20 animate-pulse">
-                <span class="text-xl text-theme-accent">⚡</span>
-              </div>
-              <span class="text-xs font-bold text-theme-text opacity-70">실행 중입니다...</span>
-              <span class="text-[10px] text-theme-text opacity-40">별도 모달 창에서 퀵뷰 엔진이 작동하고 있습니다.</span>
-            </div>
+          <!-- 2층: 액션 버튼 전용 영역 (경계선으로 분리 및 가로 풀사이즈) -->
+          <div class="flex gap-2 w-full pt-1.5 border-t border-theme-border/20">
+            <button id="btn-generate"
+              class="flex-1 h-[36px] border-none bg-theme-up hover:bg-theme-up/90 text-white font-bold text-xs cursor-pointer rounded-lg shadow-md hover:brightness-105 active:scale-[0.98] transition-all tracking-wide"
+              onclick="addCandle()">
+              Add Simulation Candle (추가하기)
+            </button>
+            <button id="btn-undo"
+              class="px-4 h-[36px] bg-transparent text-theme-text border border-theme-border hover:border-theme-down hover:bg-theme-border/20 cursor-pointer rounded-lg font-bold text-xs hover:text-theme-down active:scale-[0.98] transition-all"
+              onclick="undoLast()">
+              Undo (되돌리기)
+            </button>
           </div>
+        </div>
+
+        <!-- ⚡ 퀵뷰 실행 중 placeholder -->
+        <div id="quickview-placeholder" style="display: none"
+          class="hidden flex-1 flex-col items-center justify-center p-8 text-center">
+          <div class="flex flex-col items-center gap-3">
+            <div
+              class="relative flex items-center justify-center w-12 h-12 rounded-full bg-theme-accent/10 border border-theme-accent/20 animate-pulse">
+              <span class="text-xl text-theme-accent">⚡</span>
+            </div>
+            <span class="text-xs font-bold text-theme-text opacity-70">실행 중입니다...</span>
+            <span class="text-[10px] text-theme-text opacity-40">별도 모달 창에서 퀵뷰 엔진이 작동하고 있습니다.</span>
+          </div>
+        </div>
         <!-- 🚀 #right-panel 닫기 -->
       </div>
 
@@ -1706,22 +1746,39 @@
           </div>
 
           <!-- 🚀 [추가] 모니터링 대상 범위 선택 (전체 vs 즐겨찾기) -->
-          <div class="flex items-center gap-1.5 bg-theme-border/10 p-1 rounded-xl border border-theme-border/20">
+          <div id="qv-base-selector"
+            class="flex flex-nowrap items-center gap-1.5 bg-theme-border/10 p-1 rounded-xl border border-theme-border/20 whitespace-nowrap shrink-0 max-w-full overflow-x-auto scrollbar-hide">
             <button id="qv-base-all"
-              class="px-4 py-2 text-xs font-bold rounded-lg transition-all text-white bg-theme-accent cursor-pointer"
+              class="px-3.5 sm:px-4 py-2 text-xs font-bold rounded-lg transition-all text-white bg-theme-accent cursor-pointer inline-flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0"
               onclick="setQuickViewBase('ALL')">
-              🌐 전체 코인 기준
+              <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z">
+                </path>
+              </svg>
+              <span class="whitespace-nowrap">전체 코인 기준</span>
             </button>
             <button id="qv-base-fav"
-              class="px-4 py-2 text-xs font-bold rounded-lg transition-all text-theme-text opacity-50 hover:opacity-100 cursor-pointer"
+              class="px-3.5 sm:px-4 py-2 text-xs font-bold rounded-lg transition-all text-theme-text opacity-50 hover:opacity-100 cursor-pointer inline-flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0"
               onclick="setQuickViewBase('FAV')">
-              ⭐ 즐겨찾기1 기준
+              <svg class="w-3.5 h-3.5 shrink-0 text-[#e3b30a]" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                <polygon
+                  points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+                </polygon>
+              </svg>
+              <span class="whitespace-nowrap">FAV1 기준</span>
             </button>
             <button id="qv-base-fav2"
-              class="px-4 py-2 text-xs font-bold rounded-lg transition-all text-theme-text opacity-50 hover:opacity-100 cursor-pointer"
+              class="px-3.5 sm:px-4 py-2 text-xs font-bold rounded-lg transition-all text-theme-text opacity-50 hover:opacity-100 cursor-pointer inline-flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0"
               onclick="setQuickViewBase('FAV2')">
-              <span style="color: #3b82f6; margin-right: 2px">★</span> 즐겨찾기
-              2 기준
+              <svg class="w-3.5 h-3.5 shrink-0 text-[#3b82f6]" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                <polygon
+                  points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+                </polygon>
+              </svg>
+              <span class="whitespace-nowrap">FAV2 기준</span>
             </button>
           </div>
 

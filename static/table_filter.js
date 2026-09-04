@@ -381,7 +381,7 @@ export function restoreControlPanelUI() {
         "border-theme-border",
       );
     }
-    btnSmallCap.innerText = "🚫 Mcap < 1M";
+    btnSmallCap.innerHTML = `<svg class="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg><span>Mcap &lt; 1M</span>`;
   }
 
   // 2. 카테고리 탭 버튼 복원
@@ -622,7 +622,7 @@ export function toggleSmallCap() {
 
   const btn = document.getElementById("btn-small-cap");
   if (btn) {
-    const btnText = "🚫 Mcap < 1M";
+    const btnHtml = `<svg class="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg><span>Mcap &lt; 1M</span>`;
 
     if (store.hideSmallCap) {
       btn.classList.remove(
@@ -637,7 +637,7 @@ export function toggleSmallCap() {
         "shadow-md",
         "opacity-100",
       );
-      btn.innerText = btnText;
+      btn.innerHTML = btnHtml;
     } else {
       btn.classList.add("text-theme-text", "opacity-50", "border-theme-border");
       btn.classList.remove(
@@ -647,7 +647,7 @@ export function toggleSmallCap() {
         "shadow-md",
         "opacity-100",
       );
-      btn.innerText = btnText;
+      btn.innerHTML = btnHtml;
     }
   }
 

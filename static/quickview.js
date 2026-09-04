@@ -1352,14 +1352,14 @@ export function setQuickViewBase(base) {
     [btnAll, btnFav, btnFav2].forEach((btn) => {
       if (btn) {
         btn.className =
-          "px-4 py-2 text-xs font-bold rounded-lg transition-all text-theme-text opacity-50 hover:opacity-100 cursor-pointer";
+          "px-3.5 sm:px-4 py-2 text-xs font-bold rounded-lg transition-all text-theme-text opacity-50 hover:opacity-100 cursor-pointer inline-flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0";
       }
     });
     const activeBtn =
       base === "ALL" ? btnAll : base === "FAV" ? btnFav : btnFav2;
     if (activeBtn) {
       activeBtn.className =
-        "px-4 py-2 text-xs font-bold rounded-lg transition-all text-white bg-theme-accent cursor-pointer";
+        "px-3.5 sm:px-4 py-2 text-xs font-bold rounded-lg transition-all text-white bg-theme-accent cursor-pointer inline-flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0";
     }
   }
 }
