@@ -22,6 +22,7 @@ import "./table.js";
 import "./start.js";
 import { initOrderbookDOM } from "./orderbook.js";
 import "./quickview.js";
+import { restoreThemeSettings } from "./theme_manager.js";
 
 window.store = store;
 
@@ -80,7 +81,7 @@ const realUpdateHeaderDisplay = (
 
   const activeMarket =
     store.currentTab === "quickview" ||
-    store.currentTab === "quickview-container"
+      store.currentTab === "quickview-container"
       ? store.qvMarket || "ALL"
       : store.currentChartMarket || "ALL";
 
@@ -111,9 +112,9 @@ const realUpdateHeaderDisplay = (
   // 🚀 활성 차트/심볼의 배수 (1000SATS 등에서 1000 추출)
   const chartSymbolMult = getMultiplier(
     store.currentAsset ||
-      store.currentSelectedSymbol ||
-      row.Exact_Futures ||
-      row.Ticker,
+    store.currentSelectedSymbol ||
+    row.Exact_Futures ||
+    row.Ticker,
   );
 
   if (isFuturesMode) {
@@ -389,9 +390,9 @@ const realUpdateHeaderDisplay = (
   if (headVolB)
     headVolB.innerText =
       hasBinance &&
-      row.Volume_Formatted &&
-      row.Volume_Formatted !== "-" &&
-      row.Volume_Formatted !== "0"
+        row.Volume_Formatted &&
+        row.Volume_Formatted !== "-" &&
+        row.Volume_Formatted !== "0"
         ? row.Volume_Formatted
         : "-";
   if (headVolU) headVolU.innerText = row.Upbit_Vol_Formatted || "-";
@@ -511,21 +512,8 @@ window.addEventListener(
 // 🚀 사용자의 테마, 사이드바, 테이블 뷰 모드 설정을 로컬 저장소로부터 복원하는 함수
 function restoreSavedUserSettings() {
   try {
-    // 1. 테마 복원
-    const savedTheme = localStorage.getItem("sellnance_theme");
-    if (savedTheme === "upbit") {
-      const body = document.body;
-      body.classList.remove("theme-binance");
-      body.classList.add("theme-upbit");
-      store.currentTheme = "upbit";
-
-      const btn = document.getElementById("theme-toggle-btn");
-      if (btn) btn.innerHTML = "🌙";
-      const faviconLink = document.getElementById("favicon-link");
-      if (faviconLink) faviconLink.href = "../static/luma-deer-svg-light.svg";
-      const mainLogoImg = document.getElementById("main-logo-img");
-      if (mainLogoImg) mainLogoImg.src = "../static/luma-deer-svg-light.svg";
-    }
+    // 1. 테마 및 컬러 모드 복원
+    restoreThemeSettings();
 
     // 2. 사이드바 폴딩 상태 복원
     const isSidebarCollapsed =
@@ -583,6 +571,11 @@ function restoreSavedUserSettings() {
     // 6. 🚀 세션에 저장된 컨트롤 패널 UI 즉시 복원
     if (typeof window.restoreControlPanelUI === "function") {
       window.restoreControlPanelUI();
+    }
+
+    // 7. 🚀 차트 캔들 색상 버튼 상태 복원
+    if (typeof window.updateCandleThemeButtons === "function") {
+      window.updateCandleThemeButtons();
     }
   } catch (e) {
     // Xconsole.error("Failed to restore user settings:", e);
@@ -870,7 +863,7 @@ try {
   ) {
     store.currentTF = lastTF;
   }
-} catch (e) {}
+} catch (e) { }
 
 const initialRouteSym = window.getInitialRouteSymbol();
 if (initialRouteSym) {
@@ -1074,19 +1067,19 @@ document.addEventListener("keydown", (e) => {
       store.visibleTfs && store.visibleTfs.length > 0
         ? store.visibleTfs
         : [
-            "1m",
-            "3m",
-            "5m",
-            "15m",
-            "30m",
-            "1h",
-            "4h",
-            "12h",
-            "1d",
-            "3d",
-            "1w",
-            "1M",
-          ];
+          "1m",
+          "3m",
+          "5m",
+          "15m",
+          "30m",
+          "1h",
+          "4h",
+          "12h",
+          "1d",
+          "3d",
+          "1w",
+          "1M",
+        ];
     let idx = tfArray.indexOf(store.currentTF);
     if (left && idx > 0 && typeof window.setTF === "function")
       window.setTF(tfArray[idx - 1]);

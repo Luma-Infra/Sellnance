@@ -2,6 +2,8 @@
 import { store, tfSec, measureDOM } from "./_store.js";
 import { fetchHistory } from "./chart_data.js";
 import { getUnixSeconds, formatCrosshairPrice } from "./chart_utils.js";
+import { getCandleThemeColors, applyCandleTheme } from "./theme_manager.js";
+export { getCandleThemeColors, applyCandleTheme };
 
 // === DEBUG_PERF_TOGGLE ===
 const ENABLE_PERF_LOG = false; // Set to false to disable all performance logging instantly
@@ -164,8 +166,9 @@ export async function initChart() {
   const style = getComputedStyle(document.body);
   const textColor = style.getPropertyValue("--text").trim() || "#d1d4dc";
   const gridColor = style.getPropertyValue("--grid").trim() || style.getPropertyValue("--border").trim() || "#2a2a22";
-  const upColor = style.getPropertyValue("--up").trim() || "#26a69a";
-  const downColor = style.getPropertyValue("--down").trim() || "#ef5350";
+  const { up: upColor, down: downColor } = getCandleThemeColors();
+  store.upColorCache = upColor;
+  store.downColorCache = downColor;
 
   const commonOptions = {
     autoSize: true, // 🚀 v5 핵심 기능: 창 크기에 맞춰 자동 리사이징!
@@ -1012,8 +1015,7 @@ export function updateChartTheme() {
   const style = getComputedStyle(document.body);
   const textColor = style.getPropertyValue("--text").trim() || "#d1d4dc";
   const gridColor = style.getPropertyValue("--grid").trim() || style.getPropertyValue("--border").trim() || "#2a2a22";
-  const upColor = style.getPropertyValue("--up").trim() || "#26a69a";
-  const downColor = style.getPropertyValue("--down").trim() || "#ef5350";
+  const { up: upColor, down: downColor } = getCandleThemeColors();
 
   // Update caches
   store.upColorCache = upColor;
@@ -1024,6 +1026,8 @@ export function updateChartTheme() {
     layout: { textColor: textColor },
     grid: { vertLines: { color: gridColor }, horzLines: { color: gridColor } },
     rightPriceScale: { borderColor: gridColor },
+    leftPriceScale: { borderColor: "transparent" },
+    timeScale: { borderColor: gridColor },
   };
 
   store.chart.applyOptions(commonTheme);
@@ -1046,13 +1050,15 @@ export function updateChartTheme() {
     });
   }
 
-  // 🚀 3. 볼륨 시리즈 및 막대그래프 색상 업데이트
+  // 🚀 3. 볼륨 시리즈 색상 업데이트 (테마 전환 시 setData 전체 재그리기 제거 → applyOptions만으로 처리)
   if (store.volumeSeries && store.volumeData && store.mainData) {
     const upColorVol = upColor + "80"; // 50% 투명도
     const downColorVol = downColor + "80";
 
+    // 볼륨 기본 색상만 즉시 업데이트 (전체 재그리기 없음)
     store.volumeSeries.applyOptions({ color: upColorVol });
 
+    // 메모리 캐시 색상 업데이트 (다음 실시간 갱신 시 자동 반영)
     store.volumeData.forEach((volItem, index) => {
       const candle = store.mainData[index];
       if (candle) {
@@ -1060,27 +1066,29 @@ export function updateChartTheme() {
       }
     });
 
-    const isDayUnit = !(store.currentTF || "1h").match(/[hm]/);
-    const mapTime = (d) => {
-      if (isDayUnit) {
-        if (typeof d.time === "string" && d.time.includes("-")) return d;
-        const numTime = Number(d.time);
-        if (isNaN(numTime)) return d;
-        const dt = new Date(numTime * 1000);
-        return {
-          ...d,
-          time: `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, "0")}-${String(dt.getUTCDate()).padStart(2, "0")}`,
-        };
-      } else {
-        if (typeof d.time === "string" && d.time.includes("-")) {
-          const parsedUnix = Math.floor(new Date(d.time).getTime() / 1000);
-          return { ...d, time: isNaN(parsedUnix) ? d.time : parsedUnix };
+    // 🚀 [성능 최적화] 무거운 setData 전체 재렌더링은 requestIdleCallback으로 유휴 시간에 처리
+    // 테마 전환 직후 즉각적인 UI 반응을 보장하고, 볼륨 막대 색 동기화는 백그라운드에서 처리
+    const _idleFn = () => {
+      if (!store.volumeSeries || !store.volumeData) return;
+      const isDayUnit = !(store.currentTF || "1h").match(/[hm]/);
+      const mapTime = (d) => {
+        if (isDayUnit) {
+          if (typeof d.time === "string" && d.time.includes("-")) return d;
+          const numTime = Number(d.time);
+          if (isNaN(numTime)) return d;
+          const dt = new Date(numTime * 1000);
+          return {
+            ...d,
+            time: `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, "0")}-${String(dt.getUTCDate()).padStart(2, "0")}`,
+          };
+        } else {
+          if (typeof d.time === "string" && d.time.includes("-")) {
+            const parsedUnix = Math.floor(new Date(d.time).getTime() / 1000);
+            return { ...d, time: isNaN(parsedUnix) ? d.time : parsedUnix };
+          }
+          return d;
         }
-        return d;
-      }
-    };
-
-    if (store.volumeSeries && store.volumeData) {
+      };
       try {
         const mappedVol = store.volumeData.map(mapTime);
         store.volumeSeries.setData(
@@ -1089,11 +1097,13 @@ export function updateChartTheme() {
             : mappedVol,
         );
       } catch (volThemeErr) {
-        console.warn(
-          "🚨 volumeSeries.setData in updateChartTheme 예외 우회 완료:",
-          volThemeErr,
-        );
+        console.warn("🚨 volumeSeries.setData in updateChartTheme 예외 우회 완료:", volThemeErr);
       }
+    };
+    if (typeof requestIdleCallback !== "undefined") {
+      requestIdleCallback(_idleFn, { timeout: 500 });
+    } else {
+      setTimeout(_idleFn, 0);
     }
   }
 
@@ -1164,3 +1174,5 @@ export function setupScaleModeButtons() {
 }
 
 window.setupScaleModeButtons = setupScaleModeButtons;
+window.updateChartTheme = updateChartTheme;
+

@@ -30,15 +30,8 @@
 }
 
 :root {
-  --bg: #ffffff;
-  --panel: #f4f5f8;
-  --border: #d5d5d5;
-  --text: #333;
-  --up: #c84a31;
-  --down: #1261c4;
-  --accent: #093687;
-  --upbit-blue: #093687;
-  --binance-gold: #f0b90b;
+  /* 🚀 [테마 전환 속도 전역 제어] 이 값 하나만 바꾸면 CSS + JS 전체 동기화 */
+  --theme-transition-ms: 0;
 
   /* 🚀 테이블 컬럼 너비 배수 관리소 (원하는 배수 비율을 적으면 알아서 100% 기준 황금비율로 자동 계산됩니다!) */
   --ratio-asset: 2.2;
@@ -82,8 +75,13 @@
 
 /* ⚡ [광속 네온 테이퍼드 아크 로더] */
 @keyframes neonArcSpin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .neon-tapered-spinner {
@@ -159,22 +157,15 @@ body {
   color: var(--text);
 }
 
-html.theme-binance,
-body.theme-binance {
-  --bg: #131722;
-  --panel: #1e222d;
-  --border: #2a2e39;
-  --grid: rgba(42, 46, 57, 0.4);
-  --text: #d2d2d2;
-  --up: #26a69a;
-  --down: #ef5350;
-  --accent: #f0b90b;
-  --accent-rgb: 240, 185, 11;
-  --upbit-blue: #60a5fa;
-  --flash-up: rgba(38, 166, 154, 0.2);
-  --flash-down: rgba(239, 83, 80, 0.2);
-}
+/* ==========================================================================
+   🎨 SELLNANCE THEME & COLOR PALETTE SYSTEM (테마 및 상승/하락 색상 집중 관리소)
+   - 라이트/다크 배경 테마: theme-upbit (라이트), theme-binance (다크)
+   - 상승/하락 컬러 모드: data-color-mode="kr" (업비트 빨/파), "global" (바이낸스 초/빨)
+   - 캔들, 24h/Day 변동률, 김프, 호가창, 경주마 플래시까지 일괄 & 세밀 제어 지원
+   ========================================================================== */
 
+/* 1. [배경 & 레이아웃 테마] 라이트/다크 모드 기본 토큰 */
+:root,
 html.theme-upbit,
 body.theme-upbit {
   --bg: #ffffff;
@@ -182,13 +173,79 @@ body.theme-upbit {
   --border: #e2e8f0;
   --grid: #f1f5f9;
   --text: #0f172a;
-  --up: #c84a31;
-  --down: #1261c4;
   --accent: #1261c4;
   --accent-rgb: 18, 97, 196;
   --upbit-blue: #093687;
+  --binance-gold: #f0b90b;
+}
+
+html.theme-binance,
+body.theme-binance {
+  --bg: #131722;
+  --panel: #1e222d;
+  --border: #2a2e39;
+  --grid: rgba(42, 46, 57, 0.4);
+  --text: #d2d2d2;
+  --accent: #f0b90b;
+  --accent-rgb: 240, 185, 11;
+  --upbit-blue: #60a5fa;
+  --binance-gold: #f0b90b;
+}
+
+/* 2. [상승 / 하락 컬러 시스템] */
+/* [모드 A] 한국식 (업비트: 상승 빨강, 하락 파랑) - 라이트모드 */
+:root,
+html[data-color-mode="kr"],
+body[data-color-mode="kr"] {
+  --up: #c84a31;
+  --down: #1261c4;
+  --candle-up: var(--up);
+  --candle-down: var(--down);
+  --text-up: var(--up);
+  --text-down: var(--down);
   --flash-up: rgba(200, 74, 49, 0.2);
   --flash-down: rgba(18, 97, 196, 0.2);
+}
+
+/* [모드 A-다크] 한국식 (업비트: 상승 빨강, 하락 파랑) - 다크모드 (선명한 대비) */
+html.theme-binance[data-color-mode="kr"],
+body.theme-binance[data-color-mode="kr"],
+html.theme-binance:not([data-color-mode="global"]),
+body.theme-binance:not([data-color-mode="global"]) {
+  --up: #f7525f;
+  --down: #3179f5;
+  --candle-up: var(--up);
+  --candle-down: var(--down);
+  --text-up: var(--up);
+  --text-down: var(--down);
+  --flash-up: rgba(247, 82, 95, 0.25);
+  --flash-down: rgba(49, 121, 245, 0.25);
+}
+
+/* [모드 B] 글로벌식 (바이낸스: 상승 초록, 하락 빨강) - 라이트모드 */
+html[data-color-mode="global"],
+body[data-color-mode="global"] {
+  --up: #00a068;
+  --down: #dc2626;
+  --candle-up: var(--up);
+  --candle-down: var(--down);
+  --text-up: var(--up);
+  --text-down: var(--down);
+  --flash-up: rgba(0, 160, 104, 0.2);
+  --flash-down: rgba(220, 38, 38, 0.2);
+}
+
+/* [모드 B-다크] 글로벌식 (바이낸스: 상승 초록, 하락 빨강) - 다크모드 */
+html.theme-binance[data-color-mode="global"],
+body.theme-binance[data-color-mode="global"] {
+  --up: #26a69a;
+  --down: #ef5350;
+  --candle-up: var(--up);
+  --candle-down: var(--down);
+  --text-up: var(--up);
+  --text-down: var(--down);
+  --flash-up: rgba(38, 166, 154, 0.2);
+  --flash-down: rgba(239, 83, 80, 0.2);
 }
 
 body {
@@ -206,12 +263,15 @@ body {
   color: var(--text);
 }
 
-/* 🚀 [테마 일괄 동기화 스무스 트랜지션] 전환 순간에만 모든 요소가 동일한 속도로 스르륵 */
-html.theme-transitioning,
+/* 🚀 [테마 일괄 동기화 스무스 트랜지션] --theme-transition-ms 변수 하나로 전체 속도 제어 */
+html.theme-transitioning {
+  transition: background-color calc(var(--theme-transition-ms) * 1ms) ease, color calc(var(--theme-transition-ms) * 1ms) ease !important;
+}
+
 html.theme-transitioning *,
 html.theme-transitioning *::before,
 html.theme-transitioning *::after {
-  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, fill 0.2s ease, stroke 0.2s ease !important;
+  transition: background-color calc(var(--theme-transition-ms) * 1ms) ease, border-color calc(var(--theme-transition-ms) * 1ms) ease, color calc(var(--theme-transition-ms) * 1ms) ease !important;
   transition-delay: 0s !important;
 }
 
@@ -1501,12 +1561,14 @@ body.theme-upbit #right-panel {
     margin-left: 0%;
     width: 20%;
   }
+
   50% {
     margin-left: 35%;
     width: 55%;
   }
+
   100% {
     margin-left: 80%;
     width: 20%;
   }
-}
+}

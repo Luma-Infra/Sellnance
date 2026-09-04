@@ -423,7 +423,7 @@
   <!-- hidden -->
   <div id="main-dashboard-content" x-data="{ currentMobileTab: 'list' }"
     @mobile-tab-changed.window="currentMobileTab = $event.detail"
-    class="flex flex-col h-[100dvh] md:h-[98dvh] max-h-[100dvh] md:max-h-[880px] w-full max-w-[1440px] bg-theme-bg relative shadow-none md:shadow-2xl overflow-hidden shrink-0 mx-auto md:mb-[2dvh] rounded-none md:rounded-md max-[1199px]:pb-[56px]">
+    class="flex flex-col h-[100dvh] md:h-[98dvh] max-h-[100dvh] md:max-h-[880px] w-full max-w-[1440px] bg-theme-bg relative shadow-none md:shadow-md dark:md:shadow-2xl overflow-hidden shrink-0 mx-auto md:mb-[2dvh] rounded-none md:rounded-md max-[1199px]:pb-[56px]">
     <!-- 🚀 글로벌 통합 탑 헤더 (모든 패널 위에 위치) -->
     <header
       class="relative flex w-full shrink-0 h-11 bg-theme-panel border-b border-theme-border/50 px-4 items-center justify-between z-10 shadow-sm">
@@ -531,6 +531,22 @@
           class="w-7 h-7 flex items-center justify-center bg-theme-border/20 border border-theme-border/30 text-theme-text rounded-md cursor-pointer text-xs hover:bg-theme-accent hover:text-white transition-all shadow-sm leading-none"
           title="테마 변경">
           <span>☀️</span>
+        </button>
+
+        <button id="candle-theme-btn" onclick="toggleCandleTheme()"
+          class="w-7 h-7 flex items-center justify-center bg-theme-border/20 border border-theme-border/30 text-theme-text rounded-md cursor-pointer text-xs hover:bg-theme-accent hover:text-white transition-all shadow-sm leading-none"
+          title="차트 캔들 변경 (업비트/바이낸스)">
+          <span id="candle-theme-icon" class="flex items-center justify-center select-none leading-none">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"
+              class="pointer-events-none">
+              <!-- 왼쪽 캔들 (상승, 위쪽 엇박자) -->
+              <line x1="4.5" y1="1.5" x2="4.5" y2="12.5" stroke="#f7525f" stroke-width="1.2" stroke-linecap="round" />
+              <rect x="2.5" y="3.5" width="4" height="6.5" rx="0.75" fill="#f7525f" />
+              <!-- 오른쪽 캔들 (하락, 아래쪽 엇박자) -->
+              <line x1="11.5" y1="3.5" x2="11.5" y2="14.5" stroke="#3179f5" stroke-width="1.2" stroke-linecap="round" />
+              <rect x="9.5" y="6" width="4" height="6.5" rx="0.75" fill="#3179f5" />
+            </svg>
+          </span>
         </button>
 
         <button onclick="togglePanelSwap()"
@@ -1041,6 +1057,13 @@
                   자(Ruler)
                 </button>
 
+                <!-- 🚀 OHLC 레전드 보이기 가리기 토글 버튼 -->
+                <button id="toggle-ohlc-legend-btn"
+                  class="px-2.5 py-1 text-[10px] md:text-[11px] font-medium text-theme-text opacity-70 hover:opacity-100 border border-theme-border/50 rounded bg-theme-panel/50 transition-all whitespace-nowrap mr-1 cursor-pointer"
+                  onclick="if (window.toggleOhlc) window.toggleOhlc();">
+                  OHLC 끄기
+                </button>
+
                 <!-- 🚀 크로스헤어 등락률(%) 라벨 보이기/숨기기 토글 버튼 -->
                 <button id="toggle-crosshair-pct-btn"
                   class="px-2.5 py-1 text-[10px] md:text-[11px] font-medium text-theme-text opacity-70 hover:opacity-100 border border-theme-border/50 rounded bg-theme-panel/50 transition-all whitespace-nowrap mr-1 cursor-pointer"
@@ -1048,13 +1071,6 @@
                     if (window.toggleCrosshairPct) window.toggleCrosshairPct();
                   ">
                   우측 퍼센트% 끄기
-                </button>
-
-                <!-- 🚀 OHLC 레전드 보이기 가리기 토글 버튼 -->
-                <button id="toggle-ohlc-legend-btn"
-                  class="px-2.5 py-1 text-[10px] md:text-[11px] font-medium text-theme-text opacity-70 hover:opacity-100 border border-theme-border/50 rounded bg-theme-panel/50 transition-all whitespace-nowrap mr-1 cursor-pointer"
-                  onclick="if (window.toggleOhlc) window.toggleOhlc();">
-                  OHLC 끄기
                 </button>
 
                 <!-- 🚀 카운트다운 토글 버튼 -->
@@ -1181,7 +1197,7 @@
                 </div>
                 <!-- 🚀 김프 데이터 없음 안내 문구 (pane-vol 내부 좌측 배치) -->
                 <div id="kimchi-no-data"
-                  class="absolute top-2 left-3 z-[60] hidden bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-lg border border-theme-accent/25 shadow-[0_0_15px_rgba(0,0,0,0.4)] pointer-events-auto opacity-80 hover:opacity-100 transition-all flex items-center justify-between gap-3 select-none">
+                  class="absolute top-2 left-3 z-[60] hidden bg-theme-panel/90 backdrop-blur-md px-3 py-1.5 rounded-lg border border-theme-accent/25 shadow-[0_0_8px_rgba(0,0,0,0.15)] dark:shadow-[0_0_15px_rgba(0,0,0,0.4)] pointer-events-auto opacity-80 hover:opacity-100 transition-all flex items-center justify-between gap-3 select-none">
                   <p
                     class="text-[9px] md:text-[10px] text-theme-accent font-medium tracking-tight flex items-center gap-2 m-0">
                     <span>⚠️</span>
@@ -1668,7 +1684,8 @@
           <button type="button" id="qv-init-close-btn" onclick="closeQuickViewModal()"
             class="absolute top-4 right-4 md:top-5 md:right-5 w-9 h-9 rounded-xl flex items-center justify-center text-theme-text/60 hover:text-theme-text hover:bg-theme-border/30 border border-theme-border/40 hover:border-theme-border transition-all active:scale-95 cursor-pointer shadow-sm group"
             title="닫기">
-            <svg class="w-4 h-4 transition-transform group-hover:rotate-90 duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4 transition-transform group-hover:rotate-90 duration-200" fill="none"
+              stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
             </svg>
           </button>

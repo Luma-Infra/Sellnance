@@ -189,6 +189,10 @@ export const store = {
   radarIntervalId: null,
 
   currentTheme: "binance",
+  candleTheme:
+    (typeof localStorage !== "undefined" &&
+      localStorage.getItem("sellnance_candle_theme")) ||
+    "kr",
   isCollapsed: false,
   isSidebarOpen: true,
   countdownTimerId: null,
