@@ -190,14 +190,16 @@
     "binance_listing": "2025-01-02"
   },
   "AIA": {
-    "binance_listing": "2025-09-18"
+    "binance_listing": "2025-09-01"
   },
   "AIAUSDT": {
     "binance_listing": "2025-09-01"
   },
   "AIGENSYN": {
     "binance_listing": "2024-01-01",
-    "bybit_listing": "2026-04-27"
+    "bybit_listing": "2026-04-27",
+    "upbit_listing": "2026-06-30",
+    "bithumb_listing": "2026-05-18"
   },
   "AIGENSYNUSDT": {
     "binance_listing": "2026-04-29"
@@ -632,6 +634,9 @@
   },
   "BBUSDT": {
     "binance_listing": "2024-05-13"
+  },
+  "BBX": {
+    "binance_listing": "2026-06-01"
   },
   "BBXUSDT": {
     "binance_listing": "2026-06-01"
@@ -1828,6 +1833,9 @@
   "HIGHUSDT": {
     "binance_listing": "2023-02-01"
   },
+  "HIMS": {
+    "binance_listing": "2026-06-09"
+  },
   "HIPPO": {
     "binance_listing": "2024-11-13"
   },
@@ -1837,6 +1845,15 @@
   },
   "HIVEUSDT": {
     "binance_listing": "2025-01-17"
+  },
+  "HK0625": {
+    "binance_listing": "2026-09-01"
+  },
+  "HK0700": {
+    "binance_listing": "2026-07-22"
+  },
+  "HK1810": {
+    "binance_listing": "2026-07-22"
   },
   "HMSTR": {
     "binance_listing": "2024-09-23"
@@ -3781,6 +3798,9 @@
   "TAUSDT": {
     "binance_listing": "2025-07-01"
   },
+  "TBT": {
+    "binance_listing": "2026-07-27"
+  },
   "THE": {
     "binance_listing": "2024-11-27"
   },
@@ -4405,6 +4425,9 @@
   },
   "ZRXUSDT": {
     "binance_listing": "2026-04-29"
+  },
+  "ZS": {
+    "binance_listing": "2026-09-02"
   },
   "币安人生": {
     "binance_listing": "2025-10-20"

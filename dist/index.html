@@ -234,7 +234,7 @@
                       <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/270.png"
                         class="w-full h-full rounded-full" alt="Binance" />
                     </div>
-                    <span class="text-[8px] font-bold text-white">B-SPOT</span>
+                    <span class="text-[8px] font-bold text-theme-text">B-SPOT</span>
                   </div>
                   <div
                     class="flex items-center gap-1 p-0.5 border border-theme-accent bg-theme-accent/10 rounded-xl pr-1.5 shadow-[0_0_5px_rgba(59,130,246,0.2)]">
@@ -246,7 +246,7 @@
                         F
                       </div>
                     </div>
-                    <span class="text-[8px] font-bold text-white">B-FUT</span>
+                    <span class="text-[8px] font-bold text-theme-text">B-FUT</span>
                   </div>
                   <div
                     class="flex items-center gap-1 p-0.5 border border-theme-accent bg-theme-accent/10 rounded-xl pr-1.5 shadow-[0_0_5px_rgba(59,130,246,0.2)]">
@@ -254,7 +254,7 @@
                       <img src="https://s2.coinmarketcap.com/static/img/exchanges/64x64/351.png"
                         class="w-full h-full rounded-full" alt="Upbit" />
                     </div>
-                    <span class="text-[8px] font-bold text-white">UPBIT</span>
+                    <span class="text-[8px] font-bold text-theme-text">UPBIT</span>
                   </div>
                   <div
                     class="flex items-center gap-1 p-0.5 border border-theme-border/30 bg-transparent rounded-xl pr-1.5 opacity-50 grayscale">
@@ -651,7 +651,7 @@
 
                 <button onclick="toggleSmallCap()" id="btn-small-cap"
                   class="tab-btn px-3.5 min-[1200px]:px-4.5 py-2 text-[10.5px] font-semibold rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap inline-flex items-center justify-center leading-none">
-                  🚫 <span class="hidden min-[1200px]:inline">Hiding </span>Mcap &lt; 1M
+                  🚫 Mcap &lt; 1M
                 </button>
                 <button onclick="window.toggleCustomFilter(event)" id="btn-custom-filter"
                   class="tab-btn px-3.5 min-[1200px]:px-4.5 py-2 text-[10.5px] font-semibold rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap hidden min-[1200px]:inline-flex items-center justify-center gap-1 cursor-pointer leading-none">
@@ -1664,6 +1664,15 @@
         <!-- 3) 퀵뷰 초기 정렬 기준 오버레이 (Glassmorphic) -->
         <div id="quickview-init-overlay"
           class="absolute inset-0 backdrop-blur-xl z-[150] flex flex-col justify-center items-center gap-6 rounded-2xl transition-all duration-500 ease-out">
+          <!-- 🚀 우측 상단 닫기(X) 버튼 -->
+          <button type="button" id="qv-init-close-btn" onclick="closeQuickViewModal()"
+            class="absolute top-4 right-4 md:top-5 md:right-5 w-9 h-9 rounded-xl flex items-center justify-center text-theme-text/60 hover:text-theme-text hover:bg-theme-border/30 border border-theme-border/40 hover:border-theme-border transition-all active:scale-95 cursor-pointer shadow-sm group"
+            title="닫기">
+            <svg class="w-4 h-4 transition-transform group-hover:rotate-90 duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+
           <div class="text-center flex flex-col gap-2">
             <h2 class="m-0 text-theme-accent text-3xl font-bold tracking-widest uppercase">
               ⚡ Muntiple Quick View
