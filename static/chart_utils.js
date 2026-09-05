@@ -32,14 +32,14 @@ export const getNextBarTime = (lastCandleTime, tf) => {
     const diff = day === 0 ? 1 : 8 - day;
     return Math.floor(
       Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate() + diff) /
-        1000,
+      1000,
     );
   }
   if (tf === "1d") {
     const dt = new Date(lastCandleUnix * 1000);
     return Math.floor(
       Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate() + 1) /
-        1000,
+      1000,
     );
   }
   if (tf === "3d") {
@@ -86,16 +86,16 @@ function resetChartScale() {
   } catch (e) {
     try {
       store.chart.timeScale().scrollToRealtime();
-    } catch (err) {}
+    } catch (err) { }
   }
 
   if (store.chartVol) {
     store.chartVol
       .priceScale("right")
-      .applyOptions({ minimumWidth: 0, autoScale: true });
+      .applyOptions({ autoScale: true });
     store.chartVol
       .priceScale("left")
-      .applyOptions({ minimumWidth: 0, autoScale: true });
+      .applyOptions({ autoScale: true });
 
     try {
       const timeScaleVol = store.chartVol.timeScale();
@@ -113,7 +113,7 @@ function resetChartScale() {
     } catch (e) {
       try {
         store.chartVol.timeScale().scrollToRealtime();
-      } catch (err) {}
+      } catch (err) { }
     }
   }
 
@@ -429,10 +429,10 @@ function updateLegend(d, v, k) {
       store.isCrosshairActive && !isLatest
         ? k
         : store.realtimeKimchi ||
-          k ||
-          (store.kimchiData && store.kimchiData.length > 0
-            ? store.kimchiData[store.kimchiData.length - 1]
-            : null);
+        k ||
+        (store.kimchiData && store.kimchiData.length > 0
+          ? store.kimchiData[store.kimchiData.length - 1]
+          : null);
 
     let kimValue = "-";
     let kimColorStyle = "";
@@ -623,7 +623,7 @@ function autoFit(isTabRestore = false) {
           store.chartVol.priceScale("left").applyOptions({ autoScale: true });
         }
       }
-    } catch (e) {}
+    } catch (e) { }
     return;
   }
   if (store.chart && store.mainData.length) {
@@ -646,7 +646,7 @@ function autoFit(isTabRestore = false) {
         if (store.kimchiSeries) {
           store.chartVol.priceScale("left").applyOptions({ autoScale: true });
         }
-      } catch (e) {}
+      } catch (e) { }
     }
   }
 }
@@ -778,8 +778,28 @@ export function toggleCountdown(forceVal) {
       btn.classList.add("bg-theme-panel/50");
     }
   }
+
+  if (store.candleSeries) {
+    store.candleSeries.applyOptions({
+      lastValueVisible: !store.showCountdown,
+      priceLineVisible: !store.showCountdown,
+    });
+  }
+
+  if (store.showCountdown) {
+    updateRealtimeCountdown(store.lastServerMs || Date.now());
+  } else if (store.countdownPriceLine && store.candleSeries) {
+    try {
+      store.candleSeries.removePriceLine(store.countdownPriceLine);
+    } catch (e) { }
+    store.countdownPriceLine = null;
+  }
+
   if (!store.showCountdown && store.countdownOverlay) {
     store.countdownOverlay.style.display = "none";
+  }
+  if (typeof window.syncChartControlsModalUI === "function") {
+    window.syncChartControlsModalUI();
   }
 }
 
@@ -819,13 +839,18 @@ export function toggleOhlc(forceVal) {
       btn.classList.add("bg-theme-panel/50");
     }
   }
+  if (typeof window.syncChartControlsModalUI === "function") {
+    window.syncChartControlsModalUI();
+  }
 }
 
-export function updateRealtimeCountdown(serverMs) {
-  if (store.isFetchingChart) return;
-  if (!store.candleSeries || store.mainData.length === 0) {
+export function updateRealtimeCountdown(serverMs, overridePrice) {
+  if (store.isFetchingChart || window.isFetchingChart) return;
+  if (!store.candleSeries || !store.mainData || store.mainData.length === 0) {
     if (store.countdownPriceLine) {
-      store.candleSeries.removePriceLine(store.countdownPriceLine);
+      try {
+        store.candleSeries.removePriceLine(store.countdownPriceLine);
+      } catch (e) { }
       store.countdownPriceLine = null;
     }
     return;
@@ -845,14 +870,6 @@ export function updateRealtimeCountdown(serverMs) {
   const interpolatedMs =
     store.lastServerMs + (performance.now() - store.localTimeAtUpdate);
 
-  const secondsPerBar = tfSec[store.currentTF] || 60;
-  const rawCandleTime = store.mainData[store.mainData.length - 1].time;
-  const lastCandleUnix =
-    typeof rawCandleTime === "number"
-      ? rawCandleTime
-      : Math.floor(new Date(rawCandleTime).getTime() / 1000);
-  const nextBarTimeMs = (lastCandleUnix + secondsPerBar) * 1000;
-
   if (typeof window.calculateTimeRemaining === "function") {
     displayTime = window.calculateTimeRemaining(
       store.currentTF,
@@ -866,7 +883,10 @@ export function updateRealtimeCountdown(serverMs) {
   const showTitle = store.showCountdown && !isSimActive;
 
   const lastCandle = store.mainData[store.mainData.length - 1];
-  const isDown = lastCandle.close < lastCandle.open;
+  const currentClose = (overridePrice !== undefined && overridePrice !== null && !isNaN(overridePrice))
+    ? Number(overridePrice)
+    : Number(lastCandle.close);
+  const isDown = currentClose < Number(lastCandle.open);
 
   if (!store.upColorCache || !store.downColorCache) {
     const style = getComputedStyle(document.body);
@@ -876,22 +896,30 @@ export function updateRealtimeCountdown(serverMs) {
   const rawColor = isDown ? store.downColorCache : store.upColorCache;
 
   const lineOptions = {
-    price: lastCandle.close,
-    color: rawColor, // 🚀 투명색 대신 현재 양봉/음봉 색상 사용 (이게 없어서 안 보였음)
+    price: currentClose,
+    color: rawColor,
+    lineVisible: true,
     lineWidth: 1,
     lineStyle: window.LightweightCharts
       ? window.LightweightCharts.LineStyle.Dashed
-      : 2, // 🚀 점선(Dashed)으로 차별화
-    axisLabelVisible: true,
+      : 2,
+    axisLabelVisible: true, // 🚀 우측 가격 스케일 축에 카운트다운 바 노출
     title: showTitle ? `${displayTime}` : "",
     axisLabelColor: rawColor,
     axisLabelTextColor: "#ffffff",
   };
 
-  if (!store.countdownPriceLine) {
-    store.countdownPriceLine = store.candleSeries.createPriceLine(lineOptions);
-  } else {
-    store.countdownPriceLine.applyOptions(lineOptions);
+  if (showTitle) {
+    if (!store.countdownPriceLine) {
+      store.countdownPriceLine = store.candleSeries.createPriceLine(lineOptions);
+    } else {
+      store.countdownPriceLine.applyOptions(lineOptions);
+    }
+  } else if (store.countdownPriceLine) {
+    try {
+      store.candleSeries.removePriceLine(store.countdownPriceLine);
+    } catch (e) { }
+    store.countdownPriceLine = null;
   }
 }
 
@@ -932,6 +960,10 @@ export function toggleCrosshairPct(forceVal) {
   if (window.store && window.store._drawingPrimitive) {
     window.store._drawingPrimitive.updateAll();
   }
+
+  if (typeof window.syncChartControlsModalUI === "function") {
+    window.syncChartControlsModalUI();
+  }
 }
 
 window.toggleCountdown = toggleCountdown;
@@ -939,11 +971,12 @@ window.toggleOhlc = toggleOhlc;
 window.toggleCrosshairPct = toggleCrosshairPct;
 window.updateRealtimeCountdown = updateRealtimeCountdown;
 
+// 🚀 카운트다운 타이머 숫자(시간)만 실시간 갱신 (스케일 가격표 중복 ZERO)
 setInterval(() => {
-  if (store.lastServerMs > 0) {
+  if (store.showCountdown && store.lastServerMs > 0 && !store.isFetchingChart) {
     updateRealtimeCountdown(store.lastServerMs);
   }
-}, 250);
+}, 500);
 
 // 🚀 페이지 로드 직후 토글 UI들의 슬라이더 슬라이딩 초기 위치 동기화
 setTimeout(() => {
@@ -1152,8 +1185,8 @@ export const sanitizeChartData = (dataArr, hasValueField = false) => {
         close: Number(d.close),
         volume:
           d.volume !== undefined &&
-          d.volume !== null &&
-          !isNaN(Number(d.volume))
+            d.volume !== null &&
+            !isNaN(Number(d.volume))
             ? Number(d.volume)
             : 0,
       });

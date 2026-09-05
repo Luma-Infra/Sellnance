@@ -156,6 +156,9 @@ export function updateKimchiComparisonUI() {
   if (typeof applyChartLayout === "function") {
     applyChartLayout();
   }
+  if (typeof window.syncChartControlsModalUI === "function") {
+    window.syncChartControlsModalUI();
+  }
 }
 
 export function toggleKimchiComparison(forceVal) {

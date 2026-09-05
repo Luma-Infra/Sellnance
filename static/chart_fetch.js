@@ -350,7 +350,7 @@ export async function fetchHistory(
       // 🚀 [1순위 해외 거래소 폴백] 바이빗 데이터 부재 시: 바이낸스 선물 -> 바이낸스 현물 -> 국내 거래소 순으로 지능적 폴백
       if (isBybit) {
         if (rowInfo?.Listed_Exchanges?.includes("BINANCE_FUTURES") || rowInfo?.Binance_Futures === "O") {
-          console.warn(`⚠️ 바이빗 데이터 없음 (${exactBybit}), 바이낸스 선물 폴백 시도`);
+          //Xconsole.warn(`⚠️ 바이빗 데이터 없음 (${exactBybit}), 바이낸스 선물 폴백 시도`);
           store.currentChartMarket = "FUTURES";
           updateExchangeBadges(displayName, rowInfo?.UID);
           store.lastFetchTime = 0;
@@ -358,7 +358,7 @@ export async function fetchHistory(
           return;
         }
         if (rowInfo?.Listed_Exchanges?.includes("BINANCE") || rowInfo?.Binance === "O") {
-          console.warn(`⚠️ 바이빗 데이터 없음 (${exactBybit}), 바이낸스 현물 폴백 시도`);
+          //Xconsole.warn(`⚠️ 바이빗 데이터 없음 (${exactBybit}), 바이낸스 현물 폴백 시도`);
           store.currentChartMarket = "SPOT";
           updateExchangeBadges(displayName, rowInfo?.UID);
           store.lastFetchTime = 0;
@@ -366,7 +366,7 @@ export async function fetchHistory(
           return;
         }
         if (rowInfo?.Listed_Exchanges?.includes("UPBIT") || rowInfo?.Upbit === "O") {
-          console.warn(`⚠️ 바이빗 데이터 없음 (${exactBybit}), 업비트 폴백 시도`);
+          //Xconsole.warn(`⚠️ 바이빗 데이터 없음 (${exactBybit}), 업비트 폴백 시도`);
           store.currentChartMarket = "UPBIT";
           updateExchangeBadges(displayName, rowInfo?.UID);
           store.lastFetchTime = 0;
@@ -374,7 +374,7 @@ export async function fetchHistory(
           return;
         }
         if (rowInfo?.Listed_Exchanges?.includes("BITHUMB")) {
-          console.warn(`⚠️ 바이빗 데이터 없음 (${exactBybit}), 빗썸 폴백 시도`);
+          //Xconsole.warn(`⚠️ 바이빗 데이터 없음 (${exactBybit}), 빗썸 폴백 시도`);
           store.currentChartMarket = "BITHUMB";
           updateExchangeBadges(displayName, rowInfo?.UID);
           store.lastFetchTime = 0;
@@ -387,7 +387,7 @@ export async function fetchHistory(
       if (isSpot) {
         const canFallbackFutures = !rowInfo || rowInfo?.Listed_Exchanges?.includes("BINANCE_FUTURES") || rowInfo?.Binance_Futures === "O";
         if (canFallbackFutures) {
-          console.warn(`⚠️ 바이낸스 현물 데이터 없음 (${exactSpot}), 바이낸스 선물 폴백 시도`);
+          //Xconsole.warn(`⚠️ 바이낸스 현물 데이터 없음 (${exactSpot}), 바이낸스 선물 폴백 시도`);
           store.currentChartMarket = "FUTURES";
           updateExchangeBadges(displayName, rowInfo?.UID);
           store.lastFetchTime = 0;
@@ -399,7 +399,7 @@ export async function fetchHistory(
       // 🚀 [국내/현물 전용 코인 폴백] 바이낸스 선물 데이터 부재 시: 업비트 -> 빗썸 -> 현물 순으로 자동 전환
       if (isFutures) {
         if (rowInfo?.Listed_Exchanges?.includes("UPBIT") || rowInfo?.Upbit === "O") {
-          console.warn(`⚠️ 바이낸스 선물 데이터 없음 (${displayName}), 업비트 폴백 시도`);
+          //Xconsole.warn(`⚠️ 바이낸스 선물 데이터 없음 (${displayName}), 업비트 폴백 시도`);
           store.currentChartMarket = "UPBIT";
           updateExchangeBadges(displayName, rowInfo?.UID);
           store.lastFetchTime = 0;
@@ -407,7 +407,7 @@ export async function fetchHistory(
           return;
         }
         if (rowInfo?.Listed_Exchanges?.includes("BITHUMB")) {
-          console.warn(`⚠️ 바이낸스 선물 데이터 없음 (${displayName}), 빗썸 폴백 시도`);
+          //Xconsole.warn(`⚠️ 바이낸스 선물 데이터 없음 (${displayName}), 빗썸 폴백 시도`);
           store.currentChartMarket = "BITHUMB";
           updateExchangeBadges(displayName, rowInfo?.UID);
           store.lastFetchTime = 0;
@@ -415,7 +415,7 @@ export async function fetchHistory(
           return;
         }
         if (rowInfo?.Listed_Exchanges?.includes("BINANCE") || rowInfo?.Binance === "O") {
-          console.warn(`⚠️ 바이낸스 선물 데이터 없음 (${displayName}), 바이낸스 현물 폴백 시도`);
+          //Xconsole.warn(`⚠️ 바이낸스 선물 데이터 없음 (${displayName}), 바이낸스 현물 폴백 시도`);
           store.currentChartMarket = "SPOT";
           updateExchangeBadges(displayName, rowInfo?.UID);
           store.lastFetchTime = 0;
@@ -424,9 +424,7 @@ export async function fetchHistory(
         }
       }
 
-      console.warn(
-        `⚠️ [No Data] ${displayName} / ${store.currentChartMarket} - 차트 데이터 없음`,
-      );
+      //Xconsole.warn(`⚠️ [No Data] ${displayName} / ${store.currentChartMarket} - 차트 데이터 없음`,);
       store.isFetchingChart = false;
       window.isFetchingChart = false;
       if (loadingModal) loadingModal.classList.add("hidden");
@@ -562,9 +560,13 @@ export async function fetchHistory(
       });
 
       try {
-        // 🚀 [렌더 동기화] 캔들과 볼륨의 주입을 동일한 프레임으로 묶어 페인팅 시간 차 박멸
+        // 🚀 [원자적 단일 프레임 교체] 캔들/볼륨 주입 + 뷰포트 피팅 + 스케일 너비 동기화를 단 1프레임에 원자적으로 처리 (덜컹거림 0% 바통 터치)
         requestAnimationFrame(() => {
           try {
+            // 🚀 [자릿수 축소 공백 제거] 이전 10자리(0.0000000001) 코인의 minimumWidth 잔상을 해제하여 1달러 코인 전환 시 우측 여백 공백 제거
+            if (store.chart) store.chart.priceScale("right").applyOptions({ minimumWidth: 0 });
+            if (store.chartVol) store.chartVol.priceScale("right").applyOptions({ minimumWidth: 0 });
+
             if (store.candleSeries && !isSubSwitch) {
               store.candleSeries.setData(sanitizeChartData(store.mainData));
             }
@@ -598,37 +600,39 @@ export async function fetchHistory(
               store.kimchiDataMap.clear();
             }
             store.realtimeKimchi = null;
+
+            if (typeof applyChartLayout === "function") applyChartLayout();
+            if (typeof autoFit === "function") autoFit(isTabRestore); // 🚀 [1차 선제 피팅] 캔들/볼륨 로드 직후 뷰포트 즉시 고정
+            if (typeof updateStatus === "function") updateStatus();
+
+            if (typeof startRealtimeCandle === "function") {
+              startRealtimeCandle(
+                mainTickerStr,
+                store.currentTF,
+                isFutures,
+                isSpot,
+                isUpbit,
+                isBithumb,
+              );
+            }
+
+            if (typeof window.syncPriceScaleWidths === "function")
+              window.syncPriceScaleWidths(true);
+
+            // 🚀 [핵심] 캔들과 거래량이 차트에 안착한 즉시 Fetching 락 해제
+            window.isFetchingChart = false;
+            store.isFetchingChart = false;
           } catch (err) {
-            console.warn("🚨 시리즈 데이터 동기 세팅 예외 우회:", err);
+            //Xconsole.warn("🚨 시리즈 데이터 원자적 세팅 예외 우회:", err);
+            window.isFetchingChart = false;
+            store.isFetchingChart = false;
           }
         });
       } catch (e) {
-        console.warn("🚨 rAF 데이터 세팅 오류 방어:", e);
-      }
-
-      requestAnimationFrame(() => {
-        if (typeof applyChartLayout === "function") applyChartLayout();
-        if (typeof autoFit === "function") autoFit(isTabRestore); // 🚀 [1차 선제 피팅] 캔들/볼륨 로드 직후 뷰포트를 선제 고정하여 과거 점프 완벽 방지
-        if (typeof updateStatus === "function") updateStatus();
-
-        if (typeof startRealtimeCandle === "function") {
-          startRealtimeCandle(
-            mainTickerStr,
-            store.currentTF,
-            isFutures,
-            isSpot,
-            isUpbit,
-            isBithumb,
-          );
-        }
-
-        if (typeof window.syncPriceScaleWidths === "function")
-          window.syncPriceScaleWidths();
-
-        // 🚀 [핵심] 캔들과 거래량이 차트에 안착한 즉시 Fetching 락을 해제하여 사용자가 지체 없이 드래그/스크롤 가능하도록 보장!
+        //Xconsole.warn("🚨 rAF 데이터 세팅 오류 방어:", e);
         window.isFetchingChart = false;
         store.isFetchingChart = false;
-      });
+      }
 
       if (
         store.candleSeries &&
@@ -691,7 +695,7 @@ export async function fetchHistory(
     });
 
   } catch (e) {
-    console.error("차트 로드 실패:", e);
+    //Xconsole.error("차트 로드 실패:", e);
     window.isFetchingChart = false;
     store.isFetchingChart = false;
   } finally {

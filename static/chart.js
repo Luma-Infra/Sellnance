@@ -321,14 +321,15 @@ export async function initChart() {
     // 단순 실시간 새 캔들 생성/틱 수신으로 인한 timeScale 밀림 시에는 절대 트리거 방지!
     if (!isUserInteractingWithChart) return;
 
-    if (range.from < 10) {
+    // 🚀 [와리가리 프리징 방어] 왼쪽 끝 도달 판정 기준을 10 -> 2로 좁혀 불필요한 API 폭주 원천 차단
+    if (range.from < 2) {
       isCheckingLoadMore = true;
       if (typeof window.loadMoreHistory === "function") {
         await window.loadMoreHistory();
       }
       setTimeout(() => {
         isCheckingLoadMore = false;
-      }, 800); // 디바운스로 스크롤 프레임 폭주 원천 차단
+      }, 1000); // 1초 디바운스로 스크롤 프레임 폭주 원천 차단
     }
   });
 
@@ -385,8 +386,8 @@ export async function initChart() {
       borderVisible: false,
       wickUpColor: upColor,
       wickDownColor: downColor,
-      lastValueVisible: false, // 🚀 기본 가격 라벨 숨기기
-      priceLineVisible: false, // 🚀 기본 가격선 숨기기
+      lastValueVisible: !store.showCountdown, // 🚀 카운트다운 활성화 시 카운트다운 일체형 바 단독 노출 (중복 뱃지 방지)
+      priceLineVisible: !store.showCountdown, // 🚀 카운트다운 활성화 시 카운트다운 선 단독 노출 (중복 점선 방지)
       priceFormat: customPriceFormat,
     },
   );
@@ -504,7 +505,7 @@ export async function initChart() {
       const safeVal = (dataObj.value === null || dataObj.value === undefined || isNaN(Number(dataObj.value))) ? 0 : Number(dataObj.value);
       try {
         rawKimchiUpdate({ ...dataObj, value: safeVal });
-      } catch (e) {}
+      } catch (e) { }
     };
   }
 
@@ -518,32 +519,29 @@ export async function initChart() {
     store.volumeSeries.attachPrimitive(store._volCrosshair);
   }
 
-  // 🌊 시간축 스크롤 완벽 동기화 엔진 (순환 참조에 의한 중복 렌더링 루프 완벽 방쇄)
+  // 🌊 시간축 스크롤 완벽 동기화 엔진 (1:1 다이렉트 캐싱 & 동기식 뮤텍스 락으로 오버헤드 0 / 0ms 무지연 보장)
   let isSyncingTimeScales = false;
-  const syncTimeScales = (sourceChart, targetCharts) => {
+
+  const syncTimeScalePair = (sourceChart, targetChart) => {
+    if (!sourceChart || !targetChart) return;
+    const targetTs = targetChart.timeScale();
+
     sourceChart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
-      if (isSyncingTimeScales) return;
-      if (!range) return;
+      if (isSyncingTimeScales || !range) return;
 
       isSyncingTimeScales = true;
       try {
-        targetCharts.forEach((target) => {
-          if (target && typeof target.timeScale === "function") {
-            try {
-              target.timeScale().setVisibleLogicalRange(range);
-            } catch (syncErr) {
-              // 동기화 실패 시 예외가 전파되어 멈추는 현상 완벽 방어
-            }
-          }
-        });
+        targetTs.setVisibleLogicalRange(range);
+      } catch (syncErr) {
+        // 동기화 실패 시 예외가 전파되어 멈추는 현상 완벽 방어
       } finally {
         isSyncingTimeScales = false;
       }
     });
   };
 
-  syncTimeScales(store.chart, [store.chartVol]);
-  syncTimeScales(store.chartVol, [store.chart]);
+  syncTimeScalePair(store.chart, store.chartVol);
+  syncTimeScalePair(store.chartVol, store.chart);
 
   // 🎯 십자선 크로스헤어 완벽 동기화 엔진 (레이스 컨디션 원천 차단 무적 알고리즘)
   const syncCrosshair = (sourceChart, targetCharts) => {
@@ -916,49 +914,62 @@ export async function initChart() {
     requestAnimationFrame(() => {
       widthSyncPending = false;
       lastWidthSyncTime = performance.now();
-      const charts = [store.chart, store.chartVol].filter(Boolean);
+      const c1 = store.chart;
+      const c2 = store.chartVol;
+      if (!c1 && !c2) return;
+
       let maxRight = 0;
       let maxLeft = 0;
 
-      charts.forEach((c) => {
-        let rWidth = c.priceScale("right").width();
-        if (store.isLogMode) {
-          rWidth = Math.min(rWidth, 80);
-        }
-        maxRight = Math.max(maxRight, rWidth);
-        maxLeft = Math.max(maxLeft, c.priceScale("left").width());
-      });
+      if (c1) {
+        let rWidth = c1.priceScale("right").width();
+        if (store.isLogMode) rWidth = Math.min(rWidth, 80);
+        if (rWidth > maxRight) maxRight = rWidth;
+        const lWidth = c1.priceScale("left").width();
+        if (lWidth > maxLeft) maxLeft = lWidth;
+      }
+      if (c2) {
+        let rWidth = c2.priceScale("right").width();
+        if (store.isLogMode) rWidth = Math.min(rWidth, 80);
+        if (rWidth > maxRight) maxRight = rWidth;
+        const lWidth = c2.priceScale("left").width();
+        if (lWidth > maxLeft) maxLeft = lWidth;
+      }
 
       // 🚀 [초고속 캐시 방어벽] 너비가 실제 변경된 경우에만 applyOptions 호출하여 60fps 렌더링 성능 100% 보장!
       if (maxRight > 0 && maxRight !== currentMaxRight) {
         currentMaxRight = maxRight;
         store.savedPriceScaleWidth = maxRight; // 🚀 [UX 개선] 우측 가격 축의 실시간 너비를 전역 store에 실시간 동기화 저장
-        charts.forEach((c) =>
-          c.priceScale("right").applyOptions({ minimumWidth: maxRight }),
-        );
+        if (c1) c1.priceScale("right").applyOptions({ minimumWidth: maxRight });
+        if (c2) c2.priceScale("right").applyOptions({ minimumWidth: maxRight });
       }
       if (maxLeft > 0 && maxLeft !== currentMaxLeft) {
         currentMaxLeft = maxLeft;
-        charts.forEach((c) =>
-          c.priceScale("left").applyOptions({ minimumWidth: maxLeft }),
-        );
+        if (c1) c1.priceScale("left").applyOptions({ minimumWidth: maxLeft });
+        if (c2) c2.priceScale("left").applyOptions({ minimumWidth: maxLeft });
       }
     });
   };
 
   let sizeChangeTimeout = null;
-  const allCharts = [store.chart, store.chartVol].filter(Boolean);
-  allCharts.forEach((c) => {
-    c.timeScale().subscribeSizeChange(() => {
-      if (sizeChangeTimeout) clearTimeout(sizeChangeTimeout);
-      sizeChangeTimeout = setTimeout(() => {
-        window.syncPriceScaleWidths(true);
-      }, 150);
-    });
-    c.timeScale().subscribeVisibleLogicalRangeChange(() => {
+  const onChartSizeChange = () => {
+    if (sizeChangeTimeout) clearTimeout(sizeChangeTimeout);
+    sizeChangeTimeout = setTimeout(() => {
+      window.syncPriceScaleWidths(true);
+    }, 150);
+  };
+  if (store.chart) {
+    store.chart.timeScale().subscribeSizeChange(onChartSizeChange);
+    store.chart.timeScale().subscribeVisibleLogicalRangeChange(() => {
       window.syncPriceScaleWidths();
     });
-  });
+  }
+  if (store.chartVol) {
+    store.chartVol.timeScale().subscribeSizeChange(onChartSizeChange);
+    store.chartVol.timeScale().subscribeVisibleLogicalRangeChange(() => {
+      window.syncPriceScaleWidths();
+    });
+  }
 
   // 🚀 [메모리 누수 방지] 이전 더블클릭 이벤트 리스너 제거
   [elMain, elVol].forEach((el) => {
@@ -972,16 +983,22 @@ export async function initChart() {
     window.isResettingWidth = true; // 🚨 락 활성화!
     currentMaxRight = 0;
     currentMaxLeft = 0;
-    allCharts.forEach((c) => {
-      c.priceScale("right").applyOptions({ minimumWidth: 0, autoScale: true });
-      c.priceScale("left").applyOptions({ minimumWidth: 0, autoScale: true });
-    });
+    const c1 = store.chart;
+    const c2 = store.chartVol;
+    if (c1) {
+      c1.priceScale("right").applyOptions({ minimumWidth: 0, autoScale: true });
+      c1.priceScale("left").applyOptions({ minimumWidth: 0, autoScale: true });
+    }
+    if (c2) {
+      c2.priceScale("right").applyOptions({ minimumWidth: 0, autoScale: true });
+      c2.priceScale("left").applyOptions({ minimumWidth: 0, autoScale: true });
+    }
 
     // 🚀 브라우저 렌더링 사이클(Repaint)이 완벽히 끝나 라이브러리 내부 width()가 순수하게 줄어든 150ms 뒤에 락 해제 및 최종 싱크!
     setTimeout(() => {
       window.isResettingWidth = false;
       window.syncPriceScaleWidths();
-    }, 150);
+    }, 100);
   };
 
   window.resetPriceScaleWidthSync();
@@ -1120,8 +1137,8 @@ export function setupScaleModeButtons() {
     mainA.onclick = (e) => {
       e.stopPropagation();
       if (typeof resetChartScale === "function") resetChartScale();
-      if (typeof window.resetPriceScaleWidthSync === "function") {
-        window.resetPriceScaleWidthSync();
+      if (typeof window.syncPriceScaleWidths === "function") {
+        window.syncPriceScaleWidths(true);
       }
     };
   }
@@ -1144,16 +1161,11 @@ export function setupScaleModeButtons() {
     volA.onclick = (e) => {
       e.stopPropagation();
       if (store.chartVol) {
-        // 거래량(우측)과 김프(좌측) 스케일을 모두 자동 스케일링으로 맞춤 리셋
-        store.chartVol.priceScale("right").applyOptions({ minimumWidth: 0, autoScale: true });
-        store.chartVol.priceScale("left").applyOptions({ minimumWidth: 0, autoScale: true });
+        store.chartVol.priceScale("right").applyOptions({ autoScale: true });
+        store.chartVol.priceScale("left").applyOptions({ autoScale: true });
       }
-      if (typeof window.resetPriceScaleWidthSync === "function") {
-        window.resetPriceScaleWidthSync();
-      } else if (typeof window.syncPriceScaleWidths === "function") {
-        setTimeout(() => {
-          window.syncPriceScaleWidths(true);
-        }, 100);
+      if (typeof window.syncPriceScaleWidths === "function") {
+        window.syncPriceScaleWidths(true);
       }
     };
   }

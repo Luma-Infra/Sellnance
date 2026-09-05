@@ -53,8 +53,11 @@ export function startBithumbFeed() {
       if (row && (row.Bithumb === "O" || row.Listed_Exchanges?.includes("BITHUMB") || row.Bithumb_Symbol)) {
         row.Bithumb_Price = newPrice;
         // 업비트에 상장되지 않은 빗썸 단독 상장 코인인 경우에만 Price_KRW로 전파 허용
-        const exList = (row.Listed_Exchanges || []).map((e) => e.toUpperCase());
-        const hasUpbit = row.Upbit === "O" || exList.includes("UPBIT") || !!row.Upbit_Symbol;
+        const hasUpbit =
+          row.Upbit === "O" ||
+          !!row.Upbit_Symbol ||
+          (Array.isArray(row.Listed_Exchanges) &&
+            row.Listed_Exchanges.some((e) => typeof e === "string" && e.toUpperCase() === "UPBIT"));
         if (!hasUpbit) {
           row.Price_KRW = newPrice;
         }

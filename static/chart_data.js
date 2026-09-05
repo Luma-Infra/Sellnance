@@ -232,7 +232,7 @@ export async function fetchPaginated(
 }
 
 export function mapTime(d, tf) {
-  let activeTF = "1h";
+  let activeTF = "1d";
   if (typeof tf === "string" && tf) {
     activeTF = tf;
   } else if (store && typeof store.currentTF === "string" && store.currentTF) {
@@ -259,14 +259,9 @@ export function mapTime(d, tf) {
 }
 
 export function clearChartData(isTfChange = false) {
-  // 🚀 [여백 초기화 방지] 차트/타임프레임 전환 시 줌 조작 플래그를 꺼서 임시 0여백 상태가 저장되는 현상을 방지
+  // 🚀 [우측 가격축 여백 유지] 데이터 페칭 중 0px로 찌그러지는 깜빡임을 방지하고, 데이터 도착 시 syncPriceScaleWidths(true)로 즉시 확정
   store.isUserZoomed = false;
   store._symbolToRowCache = null;
-
-  // 🚀 [우측 가격축 여백 리셋] 코인 변경 시 이전 코인의 넓은 minimumWidth 잔상을 0으로 초기화하여 축소 허용
-  if (!isTfChange && typeof window.resetPriceScaleWidthSync === "function") {
-    window.resetPriceScaleWidthSync();
-  }
 
   // 🚀 코인 변경 및 타임프레임 변경 시: 기존 캔들과 김프 데이터를 모두 유지하여 눈의 피로(깜빡임)를 완벽히 제거합니다.
   // (새로운 데이터를 받아오는 순간 한 방에 덮어씌움으로써 자연스럽고 부드럽게 전환)

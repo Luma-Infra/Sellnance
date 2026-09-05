@@ -65,7 +65,7 @@ class DrawingPriceAxisView {
     return "#e1e4eb";
   }
   backColor() {
-    return "#2a2e39";
+    return "#2C2A43";
   }
   visible() {
     const pctEnabled =

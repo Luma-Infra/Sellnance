@@ -365,16 +365,6 @@ export function initMeasureEvents() {
 
     if (curPrice === null) return;
 
-    let curUnixTime = curTimeRaw;
-    if (typeof curTimeRaw === "object" && curTimeRaw !== null)
-      curUnixTime =
-        new Date(
-          curTimeRaw.year,
-          curTimeRaw.month - 1,
-          curTimeRaw.day,
-        ).getTime() / 1000;
-    else if (typeof curTimeRaw === "string")
-      curUnixTime = new Date(curTimeRaw).getTime() / 1000;
 
     store.measureEnd = {
       price: curPrice,
