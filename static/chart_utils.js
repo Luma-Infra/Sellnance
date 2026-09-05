@@ -1084,12 +1084,8 @@ export function updateTabTitleManager(price, symbol, isKor) {
     }
 
     const displayTitleTicker = (
-      row?.DisplayTicker ||
-      getPureBase(
-        targetSymbol
-          .replace(/^KRW-?/i, "")
-          .replace(/[_-]?(USDT|KRW)$/i, ""),
-      ) ||
+      row?.Symbol ||
+      getPureBase(targetSymbol) ||
       targetSymbol
     ).toUpperCase();
 

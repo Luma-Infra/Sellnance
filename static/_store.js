@@ -20,7 +20,7 @@ try {
   ) {
     initialTF = savedTF;
   }
-} catch (e) {}
+} catch (e) { }
 
 // 🚀 [신규] control-panel-parent 세션 스토리지 복원
 let sessionControlPanel = null;
@@ -31,7 +31,7 @@ try {
   if (savedCP) {
     sessionControlPanel = JSON.parse(savedCP);
   }
-} catch (e) {}
+} catch (e) { }
 
 export const store = {
   marketDataMap: { upbit: [], spot: [], futures: [], krw_usd_rate: 0.0 },
@@ -63,6 +63,7 @@ export const store = {
   tempVolMax: sessionControlPanel?.customVolMax ?? 100000000000,
   tempVolSource: sessionControlPanel?.customVolSource ?? "BINANCE",
   useFlip: true, // 🚀 플립 애니메이션 사용 여부
+  chartZoomSpeed: 1.2, // 🚀 캔버스 휠 스크롤 줌 가속 배속 (1.0: 기본 트뷰 속도, 2.0~2.5: 초고속 쾌적 줌, 3.5: 초광속)
   hideSmallCap: sessionControlPanel?.hideSmallCap ?? false, // 🚀 시총 1M 미만 숨기기 여부
   currentTab: sessionControlPanel?.currentTab || "ALL", // 🚀 카테고리 탭 (ALL, FAV, FAV2)
   activePresetIndex: sessionControlPanel?.activePresetIndex, // 🚀 활성 프리셋 인덱스
@@ -142,6 +143,7 @@ export const store = {
   aggTradeInterval: 0, // 🚀 aggTrade 주기 조절 (ms 단위, 0 = Raw)
   lastFetchTime: 0, // 🚀 마지막 데이터 수집 시간 기록용
   isLogMode: false, // 🚀 차트 로그 스케일 활성화 여부
+  chartTimezone: typeof localStorage !== "undefined" && localStorage.getItem("sellnance_chart_timezone") || "UTC+9", // 🚀 차트 시간대 (기본 KST: UTC+9)
   isKimchiDisabled: typeof localStorage !== "undefined" && localStorage.getItem("sellnance_kimchi_disabled") === "true", // 🚀 김프 비교 끄기 여부
   traceRowCaller: false, // 🚀 [디버그 토글] 단 1줄로 좌측 1번 행(Index 0) callerId 전광판 추적 및 확장 영역 보이기/사라지기 제어!
   enableOrderbookVisual: true, // 호가창 보기
@@ -222,7 +224,7 @@ export const store = {
   magnetActive: false,
   _drawingPrimitive: null,
 
-  // 🚀 [단일 진실 공급원] 조건식 떡칠 제거용 전역 정밀도 캐시 맵 및 헬퍼
+  // 🚀 [단일 진실 공급원] 조건식 제거용 전역 정밀도 캐시 맵 및 헬퍼
   precisionMap: new Map(),
   getPrecision: function (sym) {
     if (!sym) return store.currentPrecision || 2;

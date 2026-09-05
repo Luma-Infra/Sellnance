@@ -860,7 +860,7 @@ export function initDrawingEvents() {
               time: true,
               price: true,
             },
-            mouseWheel: true,
+            mouseWheel: false,
             pinch: true,
           },
         });

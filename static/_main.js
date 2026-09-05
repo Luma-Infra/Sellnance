@@ -11,6 +11,7 @@ import {
 // 하위 서브시스템 등록
 import "./_market_rules.js";
 import "./chart_layout.js";
+import "./chart_timezone.js";
 import "./sim_engine.js";
 import "./stream.js";
 import "./table.js";

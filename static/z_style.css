@@ -14,6 +14,8 @@
   --color-theme-down: var(--down);
   --color-theme-accent: var(--accent);
   --color-theme-upbit: var(--upbit-blue);
+  --color-theme-row: var(--row-bg);
+  --color-theme-row-hover: var(--row-hover-bg);
 
   /* 🚀 메인 폰트 (Pretendard) */
   --font-sans:
@@ -28,6 +30,7 @@
     /* 🚀 기본적으로 프리텐다드 적용 및 금융 필수 옵션(숫자 고정폭) 강제 활성화 */
     font-family: var(--font-sans);
     font-variant-numeric: tabular-nums;
+    background-color: var(--bg);
   }
 }
 
@@ -159,6 +162,11 @@ body {
   color: var(--text);
 }
 
+.text-theme-upbit,
+.text-upbit-color {
+  color: var(--upbit-blue);
+}
+
 /* ==========================================================================
    🎨 SELLNANCE THEME & COLOR PALETTE SYSTEM (테마 및 상승/하락 색상 집중 관리소)
    - 라이트/다크 배경 테마: theme-upbit (라이트), theme-binance (다크)
@@ -170,15 +178,17 @@ body {
 :root,
 html.theme-upbit,
 body.theme-upbit {
-  --bg: #ffffff;
-  --panel: #f8fafc;
-  --border: #e2e8f0;
+  --bg: #f4f5f8;
+  --panel: #ffffff;
+  --border: #edf2f7;
   --grid: #f1f5f9;
   --text: #0f172a;
   --accent: #1261c4;
   --accent-rgb: 18, 97, 196;
   --upbit-blue: #093687;
   --binance-gold: #f0b90b;
+  --row-bg: #ffffff;
+  --row-hover-bg: #f1f5f9;
   /* 🚀 라이트테마 메인 대시보드 바깥 그림자 (더욱 연하고 부드러운 소프트 글로우) */
   --dashboard-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
   /* 🚀 라이트테마 모바일 하단 네비게이션 바 그림자 (소프트하고 연한 섀도우) */
@@ -197,11 +207,23 @@ body.theme-binance {
   --accent-rgb: 240, 185, 11;
   --upbit-blue: #60a5fa;
   --binance-gold: #f0b90b;
+  --row-bg: #14161c;
+  --row-hover-bg: #1e222a;
   /* 🚀 다크테마 메인 대시보드 바깥 그림자 */
   --dashboard-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   /* 🚀 다크테마 모바일 하단 네비게이션 바 그림자 */
   --mobile-nav-shadow: 0 16px 36px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.08);
   --mobile-nav-pill-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), 0 0 14px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+/* 🚀 테이블 코인 행 배경색 및 호버 트랜지션 */
+.coin-row {
+  background-color: var(--row-bg);
+  transition: background-color 0.12s ease;
+}
+
+.coin-row:hover {
+  background-color: var(--row-hover-bg);
 }
 
 @media (min-width: 1200px) {
@@ -593,9 +615,9 @@ body.theme-upbit:not(.resizing-active) #right-panel {
 }
 
 /* 🚀 실시간 정렬 경마장 영역 (1~30위) 가시성 표시 (행 자체의 가장 좌측에 세로 포인트 라인 주입, 높이 60% 정도 여백 생성) */
-#coin-list-body .coin-row.realtime-live-row {
+/* #coin-list-body .coin-row.realtime-live-row {
   background: transparent !important;
-}
+} */
 
 /* #coin-list-body .coin-row.realtime-live-row::before {
   content: "";

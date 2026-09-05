@@ -20,7 +20,7 @@ export async function fetchHistory(
   targetUid = null,
 ) {
   const now = Date.now();
-  if (now - store.lastFetchTime < 10) return;
+  if (now - store.lastFetchTime < 100) return;
   store.lastFetchTime = now;
 
   if (!isTfChange && !isSubSwitch) {
@@ -550,86 +550,78 @@ export async function fetchHistory(
         }
       }
 
-      store.candleSeries.applyOptions({
-        priceFormat: {
-          type: "custom",
-          precision: p,
-          minMove: p > 0 ? Number((1 / Math.pow(10, p)).toFixed(p)) : 1,
-          formatter: (price) => formatCrosshairPrice(price, p, false),
-        },
-      });
-
       try {
-        // 🚀 [원자적 단일 프레임 교체] 캔들/볼륨 주입 + 뷰포트 피팅 + 스케일 너비 동기화를 단 1프레임에 원자적으로 처리 (덜컹거림 0% 바통 터치)
-        requestAnimationFrame(() => {
-          try {
-            // 🚀 [자릿수 축소 공백 제거] 이전 10자리(0.0000000001) 코인의 minimumWidth 잔상을 해제하여 1달러 코인 전환 시 우측 여백 공백 제거
-            if (store.chart) store.chart.priceScale("right").applyOptions({ minimumWidth: 0 });
-            if (store.chartVol) store.chartVol.priceScale("right").applyOptions({ minimumWidth: 0 });
-
-            if (store.candleSeries && !isSubSwitch) {
-              store.candleSeries.setData(sanitizeChartData(store.mainData));
-            }
-
-            if (store.leftScaleSeries) {
-              const leftData = store.mainData.map((d) => {
-                const m = mapTime(d);
-                return { time: m.time, value: m.close };
-              });
-              store.leftScaleSeries.setData(sanitizeChartData(leftData, true));
-            }
-
-            if (
-              store.volumeSeries &&
-              store.volumeData &&
-              store.volumeData.length > 0
-            ) {
-              store.volumeSeries.setData(sanitizeChartData(store.volumeData, true));
-              if (typeof window.toggleVolFallback === "function") {
-                window.toggleVolFallback(false);
-              }
-            } else if (store.volumeSeries) {
-              store.volumeSeries.setData([]);
-            }
-
-            if (store.kimchiSeries) {
-              store.kimchiSeries.setData([]);
-            }
-            store.kimchiData = [];
-            if (store.kimchiDataMap) {
-              store.kimchiDataMap.clear();
-            }
-            store.realtimeKimchi = null;
-
-            if (typeof applyChartLayout === "function") applyChartLayout();
-            if (typeof autoFit === "function") autoFit(isTabRestore); // 🚀 [1차 선제 피팅] 캔들/볼륨 로드 직후 뷰포트 즉시 고정
-            if (typeof updateStatus === "function") updateStatus();
-
-            if (typeof startRealtimeCandle === "function") {
-              startRealtimeCandle(
-                mainTickerStr,
-                store.currentTF,
-                isFutures,
-                isSpot,
-                isUpbit,
-                isBithumb,
-              );
-            }
-
-            if (typeof window.syncPriceScaleWidths === "function")
-              window.syncPriceScaleWidths(true);
-
-            // 🚀 [핵심] 캔들과 거래량이 차트에 안착한 즉시 Fetching 락 해제
-            window.isFetchingChart = false;
-            store.isFetchingChart = false;
-          } catch (err) {
-            //Xconsole.warn("🚨 시리즈 데이터 원자적 세팅 예외 우회:", err);
-            window.isFetchingChart = false;
-            store.isFetchingChart = false;
-          }
+        // 🚀 [네이티브 단일 동기 배치 교체] 포맷 + 스케일 리셋 + 캔들/볼륨 주입 + 뷰포트 피팅을 단 1회의 동기 틱에서 일괄 처리 (1프레임 분열 및 잔상 원천 차단)
+        store.candleSeries.applyOptions({
+          priceFormat: {
+            type: "custom",
+            precision: p,
+            minMove: p > 0 ? Number((1 / Math.pow(10, p)).toFixed(p)) : 1,
+            formatter: (price) => formatCrosshairPrice(price, p, false),
+          },
         });
-      } catch (e) {
-        //Xconsole.warn("🚨 rAF 데이터 세팅 오류 방어:", e);
+
+        // 🚀 [자릿수 축소 공백 제거] 이전 10자리(0.0000000001) 코인의 minimumWidth 잔상을 해제하여 1달러 코인 전환 시 우측 여백 공백 제거
+        if (store.chart) store.chart.priceScale("right").applyOptions({ minimumWidth: 0 });
+        if (store.chartVol) store.chartVol.priceScale("right").applyOptions({ minimumWidth: 0 });
+
+        if (store.candleSeries && !isSubSwitch) {
+          store.candleSeries.setData(sanitizeChartData(store.mainData));
+        }
+
+        if (store.leftScaleSeries) {
+          const leftData = store.mainData.map((d) => {
+            const m = mapTime(d);
+            return { time: m.time, value: m.close };
+          });
+          store.leftScaleSeries.setData(sanitizeChartData(leftData, true));
+        }
+
+        if (
+          store.volumeSeries &&
+          store.volumeData &&
+          store.volumeData.length > 0
+        ) {
+          store.volumeSeries.setData(sanitizeChartData(store.volumeData, true));
+          if (typeof window.toggleVolFallback === "function") {
+            window.toggleVolFallback(false);
+          }
+        } else if (store.volumeSeries) {
+          store.volumeSeries.setData([]);
+        }
+
+        if (store.kimchiSeries) {
+          store.kimchiSeries.setData([]);
+        }
+        store.kimchiData = [];
+        if (store.kimchiDataMap) {
+          store.kimchiDataMap.clear();
+        }
+        store.realtimeKimchi = null;
+
+        if (typeof applyChartLayout === "function") applyChartLayout();
+        if (typeof autoFit === "function") autoFit(isTabRestore); // 🚀 [1차 선제 피팅] 캔들/볼륨 로드 직후 뷰포트 즉시 고정
+        if (typeof updateStatus === "function") updateStatus();
+
+        if (typeof startRealtimeCandle === "function") {
+          startRealtimeCandle(
+            mainTickerStr,
+            store.currentTF,
+            isFutures,
+            isSpot,
+            isUpbit,
+            isBithumb,
+          );
+        }
+
+        if (typeof window.syncPriceScaleWidths === "function")
+          window.syncPriceScaleWidths(true);
+
+        // 🚀 [핵심] 캔들과 거래량이 차트에 안착한 즉시 Fetching 락 해제
+        window.isFetchingChart = false;
+        store.isFetchingChart = false;
+      } catch (err) {
+        //Xconsole.warn("🚨 시리즈 데이터 원자적 세팅 예외 우회:", err);
         window.isFetchingChart = false;
         store.isFetchingChart = false;
       }

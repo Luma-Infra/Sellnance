@@ -3,6 +3,11 @@ import { store, tfSec, measureDOM } from "./_store.js";
 import { fetchHistory } from "./chart_data.js";
 import { getUnixSeconds, formatCrosshairPrice } from "./chart_utils.js";
 import { getCandleThemeColors, applyCandleTheme } from "./theme_manager.js";
+import {
+  formatChartTickMark,
+  formatChartTime,
+  mountTimezoneButton,
+} from "./chart_timezone.js";
 export { getCandleThemeColors, applyCandleTheme };
 
 // === DEBUG_PERF_TOGGLE ===
@@ -64,10 +69,14 @@ class CanvasCrosshairTimeAxisView {
     return this._source._timeStr || "";
   }
   background() {
-    return "#000000ff";
+    return this.backColor();
   }
   backColor() {
-    return "#000000ff"; // 🚀 트뷰 엔진이 요구하는 정확한 배경색 인터페이스명
+    const isUpbit =
+      typeof document !== "undefined" &&
+      document.body &&
+      document.body.classList.contains("theme-upbit");
+    return isUpbit ? "#363c4e" : "#2b2b43"; // 🚀 트레이딩뷰 네이티브 크로스헤어 라벨 배경색
   }
   color() {
     return "#ffffff";
@@ -195,45 +204,23 @@ export async function initChart() {
         labelVisible: true,
       },
     },
-    handleScale: { axisPressedMouseMove: { time: true, price: true } },
+    handleScale: {
+      axisPressedMouseMove: { time: true, price: true },
+      mouseWheel: false, // 🚀 기본 느린 트뷰 휠 줌 비활성화 (초고속 네이티브 가속 줌으로 대체)
+    },
     handleScroll: { vertTouchDrag: true },
     timeScale: {
       borderColor: gridColor,
       timeVisible: true,
       secondsVisible: false,
       fixRightEdge: false,
-      tickMarkFormatter: (time, tickMarkType) => {
-        const d = new Date(getUnixSeconds(time) * 1000);
-        if (isNaN(d.getTime())) return "";
-
-        // 🚀 연도, 날짜, 시간 단위별 스마트 표시
-        if (tickMarkType === 0) return `${d.getFullYear()}년`;
-
-        const isDayUnit = !(store.currentTF || "1h").match(/[hm]/);
-        if (isDayUnit) {
-          return `${d.getMonth() + 1}/${d.getDate()}`;
-        } else {
-          return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-        }
-      },
+      tickMarkFormatter: (time, tickMarkType) =>
+        formatChartTickMark(time, tickMarkType, store.currentTF),
     },
     localization: {
       locale: navigator.language,
-      timeFormatter: (tick) => {
-        const d = new Date(getUnixSeconds(tick) * 1000);
-        if (isNaN(d.getTime())) return "";
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, "0");
-        const date = String(d.getDate()).padStart(2, "0");
-        const h = String(d.getHours()).padStart(2, "0");
-        const min = String(d.getMinutes()).padStart(2, "0");
-
-        if ((store.currentTF || "1h").match(/[hm]/)) {
-          return `${y}-${m}-${date} ${h}:${min}`;
-        } else {
-          return `${y}-${m}-${date}`;
-        }
-      },
+      timeFormatter: (tick) =>
+        formatChartTime(tick, store.currentTF),
     },
   };
 
@@ -333,7 +320,7 @@ export async function initChart() {
     }
   });
 
-  // 🚀 사용자의 마우스/터치/휠 입력을 감지하여 차트 조작 상태(isUserZoomed & isUserInteractingWithChart)를 세밀하게 설정
+  // 🚀 [초고속 0ms 네이티브 휠 줌 가속 엔진]
   const chartWrapper = document.getElementById("chart-wrapper");
   if (chartWrapper) {
     const onUserInteract = () => {
@@ -345,20 +332,117 @@ export async function initChart() {
       }, 1200); // 사용자 조작 멈춤 후 1.2초 뒤 비활성화
     };
 
+    const handleFastChartWheel = (e) => {
+      if (!store.chart || !store.mainData || store.mainData.length === 0) return;
+      if (Math.abs(e.deltaY) < 1) return;
+
+      e.preventDefault();
+
+      const timeScale = store.chart.timeScale();
+      const range = timeScale.getVisibleLogicalRange();
+      if (!range) return;
+
+      const currentSpan = range.to - range.from;
+      if (currentSpan <= 0) return;
+
+      const len = store.mainData.length;
+      const margin = store.savedRightMargin ?? 10;
+      const MIN_SPAN = 6;
+      const MAX_SPAN = Math.min(len + margin + 15, 1500);
+      const maxTo = len - 1 + margin + 2;
+
+      // 🛑 [한계점 즉시 감지 & 0ms 조기 탈출 (위/아래 스크롤 한계 시 1px 밀림 완벽 차단)]
+      if (e.deltaY > 0) {
+        // 최대 축소 상태 도달 시 즉각 종료
+        if (currentSpan >= MAX_SPAN - 0.5 || (range.from <= -1 && range.to >= maxTo - 0.5)) {
+          return;
+        }
+      } else if (e.deltaY < 0) {
+        // 최대 확대(6개 봉) 도달 시 즉각 종료
+        if (currentSpan <= MIN_SPAN + 0.1) {
+          return;
+        }
+      }
+
+      // 🚀 [크로스헤어 정밀 앵커] 트레이딩뷰 네이티브 API로 십자선 아래의 정확한 봉 인덱스 추출
+      const rect = elMain.getBoundingClientRect();
+      const cursorX = e.clientX - rect.left;
+      const width = rect.width || 1;
+      const ratio = Math.max(0.02, Math.min(0.98, cursorX / width));
+
+      let cursorLogical = timeScale.coordinateToLogical(cursorX);
+      if (cursorLogical === null || isNaN(cursorLogical)) {
+        cursorLogical = range.from + currentSpan * ratio;
+      }
+
+      // 🚀 스토어 배속 변수 (기본 1.5~2.5배속, 언제든 변경 가능)
+      const zoomMultiplier = store.chartZoomSpeed ?? 2.0;
+      const normalizedDelta = Math.sign(e.deltaY) * Math.min(Math.abs(e.deltaY) / 100, 1.5);
+      const zoomFactor = normalizedDelta * 0.12 * zoomMultiplier;
+
+      let newSpan;
+      if (e.deltaY < 0) {
+        newSpan = currentSpan * (1 - Math.abs(zoomFactor));
+      } else {
+        newSpan = currentSpan * (1 + Math.abs(zoomFactor));
+      }
+
+      newSpan = Math.max(MIN_SPAN, Math.min(MAX_SPAN, newSpan));
+
+      let newFrom = cursorLogical - newSpan * ratio;
+      let newTo = cursorLogical + newSpan * (1 - ratio);
+
+      // 🚀 [스마트 앵커링] 줌아웃 시 우측 여백 초과 팽창으로 인한 강제 좌측 밀림 100% 차단
+      if (newTo > maxTo) {
+        const overflow = newTo - maxTo;
+        newTo = maxTo;
+        newFrom = Math.max(-2, newFrom - overflow);
+      }
+
+      // 🚀 좌측 끝 안전 바운더리
+      if (newFrom < -2) {
+        newTo = Math.min(maxTo, -2 + newSpan);
+        newFrom = -2;
+      }
+
+      // 🚀 미세 변화 무시 (0.05px 이하 불필요한 차트 렌더링 호출 스킵)
+      if (Math.hypot(newFrom - range.from, newTo - range.to) < 0.05) {
+        return;
+      }
+
+      const targetRange = { from: newFrom, to: newTo };
+      timeScale.setVisibleLogicalRange(targetRange);
+
+      if (store.chartVol) {
+        try {
+          store.chartVol.timeScale().setVisibleLogicalRange(targetRange);
+        } catch (_) { }
+      }
+
+      store.isUserZoomed = true;
+      store.savedZoomWidth = Math.round(newSpan);
+
+      isUserInteractingWithChart = true;
+      if (userInteractionTimeout) clearTimeout(userInteractionTimeout);
+      userInteractionTimeout = setTimeout(() => {
+        isUserInteractingWithChart = false;
+      }, 300);
+    };
+
     chartWrapper.addEventListener("mousedown", onUserInteract, { passive: true });
     chartWrapper.addEventListener("touchstart", onUserInteract, { passive: true });
-    chartWrapper.addEventListener("wheel", onUserInteract, { passive: true });
+    chartWrapper.addEventListener("wheel", handleFastChartWheel, { passive: false });
     window.addEventListener("mouseup", () => {
       if (userInteractionTimeout) clearTimeout(userInteractionTimeout);
       userInteractionTimeout = setTimeout(() => {
         isUserInteractingWithChart = false;
-      }, 400);
+      }, 300);
     }, { passive: true });
     window.addEventListener("touchend", () => {
       if (userInteractionTimeout) clearTimeout(userInteractionTimeout);
       userInteractionTimeout = setTimeout(() => {
         isUserInteractingWithChart = false;
-      }, 400);
+      }, 300);
     }, { passive: true });
   }
 
@@ -844,28 +928,7 @@ export async function initChart() {
 
         let timeStr = null;
         if (targetTime !== undefined && targetTime !== null) {
-          const isDay = !(store.currentTF || "1h").match(/[hm]/);
-          if (isDay && typeof targetTime === "string") {
-            timeStr = targetTime;
-          } else {
-            const dt = new Date(
-              (typeof targetTime === "string"
-                ? getUnixSeconds(targetTime)
-                : targetTime) * 1000,
-            );
-            if (!isNaN(dt.getTime())) {
-              const yyyy = dt.getUTCFullYear();
-              const mm = String(dt.getUTCMonth() + 1).padStart(2, "0");
-              const dd = String(dt.getUTCDate()).padStart(2, "0");
-              if (isDay) {
-                timeStr = `${yyyy}-${mm}-${dd}`;
-              } else {
-                const HH = String(dt.getHours()).padStart(2, "0");
-                const MM = String(dt.getMinutes()).padStart(2, "0");
-                timeStr = `${yyyy}-${mm}-${dd} ${HH}:${MM}`;
-              }
-            }
-          }
+          timeStr = formatChartTime(targetTime, store.currentTF);
         }
 
         // 🚀 타겟 차트 자체의 timeScale에서 논리적 인덱스로 1:1 도킹 좌표 계산
@@ -904,50 +967,66 @@ export async function initChart() {
 
   let lastWidthSyncTime = 0;
   let widthSyncPending = false;
+
+  const performSyncPriceScaleWidths = (force = false) => {
+    const c1 = store.chart;
+    const c2 = store.chartVol;
+    if (!c1 && !c2) return;
+
+    if (force) {
+      currentMaxRight = 0;
+      currentMaxLeft = 0;
+    }
+
+    let maxRight = 0;
+    let maxLeft = 0;
+
+    if (c1) {
+      let rWidth = c1.priceScale("right").width();
+      if (store.isLogMode) rWidth = Math.min(rWidth, 80);
+      if (rWidth > maxRight) maxRight = rWidth;
+      const lWidth = c1.priceScale("left").width();
+      if (lWidth > maxLeft) maxLeft = lWidth;
+    }
+    if (c2) {
+      let rWidth = c2.priceScale("right").width();
+      if (store.isLogMode) rWidth = Math.min(rWidth, 80);
+      if (rWidth > maxRight) maxRight = rWidth;
+      const lWidth = c2.priceScale("left").width();
+      if (lWidth > maxLeft) maxLeft = lWidth;
+    }
+
+    // 🚀 [원자적 동기화] 너비가 변경되었거나 force=true인 경우 0ms 즉각 일치 적용!
+    if (maxRight > 0 && (force || maxRight !== currentMaxRight)) {
+      currentMaxRight = maxRight;
+      store.savedPriceScaleWidth = maxRight;
+      if (c1) c1.priceScale("right").applyOptions({ minimumWidth: maxRight });
+      if (c2) c2.priceScale("right").applyOptions({ minimumWidth: maxRight });
+    }
+    if (maxLeft > 0 && (force || maxLeft !== currentMaxLeft)) {
+      currentMaxLeft = maxLeft;
+      if (c1) c1.priceScale("left").applyOptions({ minimumWidth: maxLeft });
+      if (c2) c2.priceScale("left").applyOptions({ minimumWidth: maxLeft });
+    }
+  };
+
   window.syncPriceScaleWidths = (force = false) => {
-    if (window.isResettingWidth) return; // 🚨 리셋 피팅(fitContent) 중에는 라이브러리 과거 너비 조회를 원천 차단!
+    if (window.isResettingWidth) return;
+    if (force) {
+      // 🚀 [원자적 즉시 동기화] 코인/TF 전환 시 rAF 지연 없이 단일 프레임 내에서 즉시 동기 실행
+      performSyncPriceScaleWidths(true);
+      return;
+    }
+
     if (widthSyncPending) return;
     const now = performance.now();
-    if (!force && now - lastWidthSyncTime < 100) return;
+    if (now - lastWidthSyncTime < 100) return;
     widthSyncPending = true;
 
     requestAnimationFrame(() => {
       widthSyncPending = false;
       lastWidthSyncTime = performance.now();
-      const c1 = store.chart;
-      const c2 = store.chartVol;
-      if (!c1 && !c2) return;
-
-      let maxRight = 0;
-      let maxLeft = 0;
-
-      if (c1) {
-        let rWidth = c1.priceScale("right").width();
-        if (store.isLogMode) rWidth = Math.min(rWidth, 80);
-        if (rWidth > maxRight) maxRight = rWidth;
-        const lWidth = c1.priceScale("left").width();
-        if (lWidth > maxLeft) maxLeft = lWidth;
-      }
-      if (c2) {
-        let rWidth = c2.priceScale("right").width();
-        if (store.isLogMode) rWidth = Math.min(rWidth, 80);
-        if (rWidth > maxRight) maxRight = rWidth;
-        const lWidth = c2.priceScale("left").width();
-        if (lWidth > maxLeft) maxLeft = lWidth;
-      }
-
-      // 🚀 [초고속 캐시 방어벽] 너비가 실제 변경된 경우에만 applyOptions 호출하여 60fps 렌더링 성능 100% 보장!
-      if (maxRight > 0 && maxRight !== currentMaxRight) {
-        currentMaxRight = maxRight;
-        store.savedPriceScaleWidth = maxRight; // 🚀 [UX 개선] 우측 가격 축의 실시간 너비를 전역 store에 실시간 동기화 저장
-        if (c1) c1.priceScale("right").applyOptions({ minimumWidth: maxRight });
-        if (c2) c2.priceScale("right").applyOptions({ minimumWidth: maxRight });
-      }
-      if (maxLeft > 0 && maxLeft !== currentMaxLeft) {
-        currentMaxLeft = maxLeft;
-        if (c1) c1.priceScale("left").applyOptions({ minimumWidth: maxLeft });
-        if (c2) c2.priceScale("left").applyOptions({ minimumWidth: maxLeft });
-      }
+      performSyncPriceScaleWidths(false);
     });
   };
 
@@ -1005,6 +1084,7 @@ export async function initChart() {
 
   // 🚀 [추가] 차트 가격 스케일별 트레이딩뷰 스타일 A / L 모드 버튼 오버레이 생성
   setupScaleModeButtons();
+  mountTimezoneButton();
 
   // 🚀 차트 스케일 리셋(더블클릭) 시 이전 넓이의 저주를 풀고 즉시 0으로 리셋 후 재계산 연동!
   [elMain, elVol].forEach((el) => {

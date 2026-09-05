@@ -151,6 +151,11 @@ export function applyChartLayout() {
       kimchiSwitcher.style.display = "none";
     }
   }
+
+  // 🚀 [추가] 활성 차트 패널에 맞춘 타임존 버튼 동기화
+  if (typeof window.mountTimezoneButton === "function") {
+    window.mountTimezoneButton();
+  }
 }
 
 // 🚀 2. 드래그 엔진 초기화
