@@ -7,31 +7,33 @@ import { saveControlPanelSession } from "./table_filter.js";
 
 // 🚀 커스텀 로그 스케일 필터 범위 변환 함수
 export function sliderToMcap(v) {
-  if (v <= 0) return 0;
-  if (v <= 1) return v * 1000000;
-  return Math.pow(10, v + 5);
+  const num = parseFloat(v);
+  if (isNaN(num) || num <= 0) return 0;
+  if (num <= 1) return num * 1000000;
+  return Math.pow(10, num + 5);
 }
 
 export function mcapToSlider(m) {
-  if (m <= 0) return 0;
+  if (typeof m !== "number" || isNaN(m) || m <= 0) return 0;
   if (m <= 1000000) return m / 1000000;
-  return Math.log10(m) - 5;
+  return Math.min(8, Math.max(0, Math.log10(m) - 5));
 }
 
 export function sliderToVol(v) {
-  if (v <= 0) return 0;
-  if (v <= 1) return v * 100000;
-  return Math.pow(10, v + 4);
+  const num = parseFloat(v);
+  if (isNaN(num) || num <= 0) return 0;
+  if (num <= 1) return num * 100000;
+  return Math.pow(10, num + 4);
 }
 
 export function volToSlider(vol) {
-  if (vol <= 0) return 0;
+  if (typeof vol !== "number" || isNaN(vol) || vol <= 0) return 0;
   if (vol <= 100000) return vol / 100000;
-  return Math.log10(vol) - 4;
+  return Math.min(7, Math.max(0, Math.log10(vol) - 4));
 }
 
 export function formatFilterValue(val, isMcap) {
-  if (val <= 0) return "0";
+  if (typeof val !== "number" || isNaN(val) || val <= 0) return "0";
   if (isMcap) {
     if (val >= 1e12) return (val / 1e12).toFixed(2) + "T";
     if (val >= 1e9) return (val / 1e9).toFixed(2) + "B";
@@ -46,6 +48,7 @@ export function formatFilterValue(val, isMcap) {
 }
 
 export function formatKoreanMoney(usdVal) {
+  if (typeof usdVal !== "number" || isNaN(usdVal) || usdVal <= 0) return "0원";
   const rate = store.marketDataMap?.krw_usd_rate || 1;
   const krwVal = usdVal * rate;
   if (krwVal <= 0) return "0원";
@@ -72,7 +75,8 @@ export function syncCustomFilterBtnUI() {
     (store.customMcapMin && store.customMcapMin > 0) ||
     (store.customMcapMax && store.customMcapMax < 10000000000000) ||
     (store.customVolMin && store.customVolMin > 0) ||
-    (store.customVolMax && store.customVolMax < 100000000000);
+    (store.customVolMax && store.customVolMax < 100000000000) ||
+    (store.customVolSource && store.customVolSource !== "BINANCE");
 
   if (isCustomActive) {
     btnCustom.classList.remove("opacity-50");
@@ -81,6 +85,7 @@ export function syncCustomFilterBtnUI() {
       "border-theme-accent",
       "text-theme-accent",
       "opacity-100",
+      "active-custom-filter",
     );
   } else {
     btnCustom.classList.remove(
@@ -88,6 +93,7 @@ export function syncCustomFilterBtnUI() {
       "border-theme-accent",
       "text-theme-accent",
       "opacity-100",
+      "active-custom-filter",
     );
     btnCustom.classList.add("opacity-50");
   }
@@ -164,6 +170,29 @@ export function updateCustomFilterUI() {
   }
 }
 
+// 🚀 커스텀 필터 팝업 위치 동적 계산 (recent-search-chips와 동일한 fixed 오버레이 방식)
+export function positionCustomFilterDropdown(dropdown) {
+  const btn = document.getElementById("btn-custom-filter");
+  if (!btn || !dropdown) return;
+
+  // 부모의 overflow-hidden 클리핑 및 쌓임 맥락(Stacking Context)을 원천 차단하기 위해 body 직속으로 마운트
+  if (dropdown.parentElement !== document.body) {
+    document.body.appendChild(dropdown);
+  }
+
+  const rect = btn.getBoundingClientRect();
+  const dropdownWidth = Math.min(340, window.innerWidth - 16);
+
+  dropdown.style.position = "fixed";
+  dropdown.style.zIndex = "250";
+  dropdown.style.top = `${rect.bottom + 6}px`;
+  dropdown.style.left = `${Math.max(8, Math.min(rect.right - dropdownWidth, window.innerWidth - dropdownWidth - 8))}px`;
+  dropdown.style.width = `${dropdownWidth}px`;
+  dropdown.style.maxWidth = "calc(100vw - 16px)";
+  dropdown.style.maxHeight = "calc(100dvh - 120px)";
+  dropdown.style.overflowY = "auto";
+}
+
 // 🚀 커스텀 필터 팝업 열기/닫기 토글
 export function toggleCustomFilter(event) {
   if (event) event.stopPropagation();
@@ -182,21 +211,21 @@ export function toggleCustomFilter(event) {
 
   if (isHidden) {
     // 열 때 현재 커밋된 필터 값을 임시 변수로 동기화하고 UI 슬라이더에 반영
-    store.tempMcapMin = store.customMcapMin;
-    store.tempMcapMax = store.customMcapMax;
-    store.tempVolMin = store.customVolMin;
-    store.tempVolMax = store.customVolMax;
-    store.tempVolSource = store.customVolSource;
+    store.tempMcapMin = typeof store.customMcapMin === "number" ? store.customMcapMin : 0;
+    store.tempMcapMax = typeof store.customMcapMax === "number" ? store.customMcapMax : 10000000000000;
+    store.tempVolMin = typeof store.customVolMin === "number" ? store.customVolMin : 0;
+    store.tempVolMax = typeof store.customVolMax === "number" ? store.customVolMax : 100000000000;
+    store.tempVolSource = store.customVolSource || "BINANCE";
 
     const minMcapEl = document.getElementById("mcap-min");
     const maxMcapEl = document.getElementById("mcap-max");
     const minVolEl = document.getElementById("vol-min");
     const maxVolEl = document.getElementById("vol-max");
 
-    if (minMcapEl) minMcapEl.value = mcapToSlider(store.customMcapMin);
-    if (maxMcapEl) maxMcapEl.value = mcapToSlider(store.customMcapMax);
-    if (minVolEl) minVolEl.value = volToSlider(store.customVolMin);
-    if (maxVolEl) maxVolEl.value = volToSlider(store.customVolMax);
+    if (minMcapEl) minMcapEl.value = mcapToSlider(store.tempMcapMin);
+    if (maxMcapEl) maxMcapEl.value = mcapToSlider(store.tempMcapMax);
+    if (minVolEl) minVolEl.value = volToSlider(store.tempVolMin);
+    if (maxVolEl) maxVolEl.value = volToSlider(store.tempVolMax);
 
     // 볼륨 소스 버튼 UI 복구
     const btnBinance = document.getElementById("vol-source-binance");
@@ -218,6 +247,13 @@ export function toggleCustomFilter(event) {
     }
 
     updateCustomFilterUI();
+    if (typeof window.updateExchFilterUI === "function") {
+      window.updateExchFilterUI();
+    }
+    if (typeof window.restoreControlPanelUI === "function") {
+      window.restoreControlPanelUI();
+    }
+    positionCustomFilterDropdown(dropdown);
 
     if (chevron) chevron.classList.add("rotate-180");
 
@@ -411,19 +447,27 @@ function handleOutsideCustomFilterClick(e) {
   const dropdown = document.getElementById("custom-filter-dropdown");
   if (!dropdown || dropdown.classList.contains("hidden")) return;
 
-  const btn =
-    document.getElementById("btn-custom-filter") ||
-    (e.target.closest && e.target.closest("#btn-custom-filter, button[onclick*='toggleCustomFilter']"));
-
-  if (btn && (btn === e.target || btn.contains(e.target))) return;
-  if (!dropdown.contains(e.target)) {
-    toggleCustomFilter();
+  if (
+    e.target &&
+    e.target.closest &&
+    (e.target.closest("#btn-custom-filter") ||
+      e.target.closest("#custom-filter-dropdown") ||
+      e.target.closest("button[onclick*='toggleCustomFilter']"))
+  ) {
+    return;
   }
+
+  toggleCustomFilter();
 }
 
 document.addEventListener("pointerdown", handleOutsideCustomFilterClick, true);
-document.addEventListener("touchstart", handleOutsideCustomFilterClick, { capture: true, passive: true });
-document.addEventListener("click", handleOutsideCustomFilterClick, true);
+
+window.addEventListener("resize", () => {
+  const dropdown = document.getElementById("custom-filter-dropdown");
+  if (dropdown && !dropdown.classList.contains("hidden")) {
+    positionCustomFilterDropdown(dropdown);
+  }
+});
 
 // 글로벌 window 바인딩
 if (typeof window !== "undefined") {
@@ -434,4 +478,6 @@ if (typeof window !== "undefined") {
   window.resetCustomFilter = resetCustomFilter;
   window.syncCustomFilterBtnUI = syncCustomFilterBtnUI;
   window.updateCustomFilterUI = updateCustomFilterUI;
+  window.positionCustomFilterDropdown = positionCustomFilterDropdown;
 }
+

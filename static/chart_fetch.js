@@ -562,8 +562,9 @@ export async function fetchHistory(
         });
 
         // 🚀 [자릿수 축소 공백 제거] 이전 10자리(0.0000000001) 코인의 minimumWidth 잔상을 해제하여 1달러 코인 전환 시 우측 여백 공백 제거
-        if (store.chart) store.chart.priceScale("right").applyOptions({ minimumWidth: 0 });
-        if (store.chartVol) store.chartVol.priceScale("right").applyOptions({ minimumWidth: 0 });
+        store.savedPriceScaleWidth = null;
+        if (store.chart) store.chart.priceScale("right").applyOptions({ minimumWidth: 0, autoScale: true });
+        if (store.chartVol) store.chartVol.priceScale("right").applyOptions({ minimumWidth: 0, autoScale: true });
 
         if (store.candleSeries && !isSubSwitch) {
           store.candleSeries.setData(sanitizeChartData(store.mainData));

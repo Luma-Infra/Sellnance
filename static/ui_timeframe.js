@@ -2,6 +2,7 @@
 // ⏱️ [차트 타임프레임(주기) 및 스케일 제어 전담 모듈]
 import { store } from "./_store.js";
 import { fetchHistory } from "./chart_data.js";
+import { showConfirm } from "./ui_dialog.js";
 
 export const timeframes = [
   { label: "1분", value: "1m" },
@@ -46,30 +47,53 @@ export function renderTimeframeButtons(currentTF = "1d") {
 
   const visibleVals = getVisibleTfs();
 
-  timeframes
-    .slice()
-    .reverse()
-    .forEach((tf) => {
-      if (!visibleVals.includes(tf.value)) return;
-      const btn = document.createElement("button");
-      const activeClass =
-        tf.value === currentTF
-          ? "active !opacity-100 border-theme-accent"
-          : "border-transparent";
-      btn.className = `tf-btn px-2.5 py-1 text-[11px] font-medium bg-transparent text-theme-text opacity-50 border rounded hover:bg-theme-border/50 hover:opacity-100 transition-all ${activeClass}`;
-      btn.innerText = tf.label;
-      btn.onclick = () => {
-        setTF(tf.value);
-        renderTimeframeButtons(tf.value);
-      };
+    timeframes
+      .slice()
+      .reverse()
+      .forEach((tf) => {
+        if (!visibleVals.includes(tf.value)) return;
+        const btn = document.createElement("button");
+        const activeClass =
+          tf.value === currentTF
+            ? "active !opacity-100 border-theme-accent font-bold"
+            : "border-transparent";
+        btn.className = `tf-btn px-2.5 py-1 text-[11px] font-medium bg-transparent text-theme-text opacity-50 border rounded hover:bg-theme-border/50 hover:opacity-100 transition-all ${activeClass}`;
+        btn.dataset.tf = tf.value;
+        btn.innerText = tf.label;
+        btn.onclick = () => {
+          setTF(tf.value);
+        };
 
-      container.prepend(btn);
-    });
+        container.prepend(btn);
+      });
 
   if (typeof window.updateElementScrollMask === "function") {
     requestAnimationFrame(() => window.updateElementScrollMask(container));
   }
+
+  // 🚀 [모바일 UX 혁신] 선택된 활성 봉(1d, 3d, 1w 등)이 화면 밖으로 가려지지 않고 즉시 보이도록 스크롤 자동 정렬!
+  requestAnimationFrame(() => {
+    scrollActiveTfIntoView(true);
+  });
 }
+
+export function scrollActiveTfIntoView(smooth = true) {
+  const container = document.getElementById("tf-container");
+  if (!container) return;
+  const activeBtn = container.querySelector(".tf-btn.active");
+  if (!activeBtn) return;
+
+  const scrollOffset =
+    activeBtn.offsetLeft -
+    container.clientWidth / 2 +
+    activeBtn.clientWidth / 2;
+
+  container.scrollTo({
+    left: Math.max(0, scrollOffset),
+    behavior: smooth ? "smooth" : "instant",
+  });
+}
+window.scrollActiveTfIntoView = scrollActiveTfIntoView;
 
 let pendingTfSettings = null;
 
@@ -189,19 +213,17 @@ export function setTF(tf) {
   const isSimMode = btnSim ? btnSim.classList.contains("active") : false;
 
   if (isSimMode) {
-    window.Swal.fire({
+    showConfirm({
       title: "초기화 경고!",
       text: "타임프레임을 변경하면 현재 그려둔 가상 차트가 모두 날아갑니다. 바꿀까요?",
       icon: "warning",
+      confirmText: "네, 변경할게요 🚀",
+      cancelText: "아니요, 취소",
+      confirmColor: "var(--up)",
+      cancelColor: "transparent",
       showCancelButton: true,
-      confirmButtonColor: "var(--up)",
-      cancelButtonColor: "var(--border)",
-      confirmButtonText: "네, 변경할게요 🚀",
-      cancelButtonText: "아니요, 취소",
-      background: "var(--panel)",
-      color: "var(--text)",
-    }).then((result) => {
-      if (result.isConfirmed) executeSetTF(tf);
+    }).then((confirmed) => {
+      if (confirmed) executeSetTF(tf);
     });
   } else {
     executeSetTF(tf);
@@ -213,18 +235,19 @@ export function executeSetTF(tf) {
   try {
     localStorage.setItem("sellnance_last_tf", tf);
   } catch (e) { }
-  document.querySelectorAll(".tf-btn").forEach((b) => {
-    const onClickAttr = b.getAttribute("onclick") || "";
-    const isMatch = onClickAttr.includes(`'${tf}'`);
 
+  // 🚀 [0ms 즉시 피드백] DOM 전체를 파괴하고 다시 만들지 않고, 활성 클래스만 0ms 즉각 전환
+  document.querySelectorAll(".tf-btn").forEach((b) => {
+    const isMatch = b.dataset.tf === tf;
     b.classList.toggle("active", isMatch);
-    b.classList.toggle("opacity-100", isMatch);
+    b.classList.toggle("!opacity-100", isMatch);
+    b.classList.toggle("border-theme-accent", isMatch);
+    b.classList.toggle("font-bold", isMatch);
     b.classList.toggle("opacity-50", !isMatch);
+    b.classList.toggle("border-transparent", !isMatch);
   });
 
-  if (typeof window.renderTimeframeButtons === "function") {
-    window.renderTimeframeButtons(tf);
-  }
+  scrollActiveTfIntoView(true);
 
   if (typeof fetchHistory === "function")
     fetchHistory(store.currentAsset, true);

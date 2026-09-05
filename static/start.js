@@ -2,6 +2,8 @@
 // 🚀 스타트뷰 엔진: 실시간 키 마스킹 + env 연동 + 유효성 검사
 // 🚀 4대장 코인(BTC, ETH, XRP, SOL) 실시간 퀵뷰 프리뷰 쇼케이스 엔진
 
+import { showToast } from "./ui_dialog.js";
+
 // ===================================================================================
 // 🧭 [3D 퀵뷰 프리뷰 8방위 시선 각도 & 황금비율(Golden Ratio) 설정소]
 // 💡 [공식 기술 용어 레퍼런스]
@@ -26,6 +28,7 @@ const START_3D_CONFIG = {
   tiltAngle: [5, 5, -5, -5], // 📐 단계별 틸트 각도 (시계 방향으로 균일하게 매끄럽게 회전)
   scale: 1.0, // 기본 스케일 배율
   perspective: 1200, // 3D 원근 깊이 (px)
+  exitDurationMs: 200, // 🚪 스타트 스크린 퇴장 트랜지션 시간 (ms)
 
   // 🌟 [3D 바닥 앰비언트 오라 / 백라이트 커스텀 설정소]
   auraInset: "0px", // 덱 외곽 확장 폭 (예: -20px ~ -60px)
@@ -97,6 +100,8 @@ function getStartScreenHTML() {
         font-family: var(--font-sans);
         perspective: ${START_3D_CONFIG.perspective}px;
         overflow: hidden;
+        transition: opacity ${START_3D_CONFIG.exitDurationMs}ms cubic-bezier(0.16, 1, 0.3, 1), transform ${START_3D_CONFIG.exitDurationMs}ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+        will-change: opacity, transform;
       }
 
       /* 🚀 [기존 코드 주석 보존] PixiJS WebGL 캔버스 스타일
@@ -120,6 +125,13 @@ function getStartScreenHTML() {
         pointer-events: none;
         overflow: visible !important;
         margin: auto;
+      }
+
+      @media (max-width: 767px) {
+        #start-qv-preview-container,
+        .start-qv-preview-wrapper {
+          display: none !important;
+        }
       }
       
       /* 🚀 3D 투영 완전 일치: 3차원 글래스 평면 내부에 직접 렌더링되는 테두리 프로그레스 */
@@ -286,13 +298,13 @@ function getStartScreenHTML() {
     </style>
 
     <div
-      id="start-screen" style="${localStorage.getItem('sellnance_skip_start') === 'true' ? 'display: none;' : 'display: flex;'}"
-      class="fixed inset-0 z-[1000] flex items-center justify-center transition-opacity duration-500 overflow-hidden p-4 md:p-8 bg-theme-bg text-theme-text"
+      id="start-screen" style="${localStorage.getItem('sellnance_skip_start') === 'true' && (localStorage.getItem('CMC_API_KEY') || '').trim().length === 32 ? 'display: none;' : 'display: flex;'}"
+      class="fixed inset-0 z-[80] flex items-center justify-center overflow-hidden p-4 md:p-8 bg-theme-bg text-theme-text"
     >
       <div class="w-full max-w-6xl h-full max-h-[820px] flex flex-col md:flex-row items-center justify-center md:justify-between gap-4 sm:gap-5 md:gap-8 relative z-10">
         
-        <!-- 🚀 [좌측 (58% 비중)]: 3D 아이소메트릭 쿼터뷰 4대장 차트 덱 -->
-        <div class="w-full md:w-[58%] h-auto md:h-[75vh] max-h-[240px] md:max-h-none relative flex items-center justify-center overflow-visible mb-2 md:mb-0">
+        <!-- 🚀 [좌측 (58% 비중)]: 3D 아이소메트릭 쿼터뷰 4대장 차트 덱 (PC 전용, 모바일 숨김) -->
+        <div class="start-qv-preview-wrapper hidden md:flex w-full md:w-[58%] h-auto md:h-[75vh] max-h-[240px] md:max-h-none relative items-center justify-center overflow-visible mb-2 md:mb-0">
           <div id="start-qv-preview-container" class="w-full relative overflow-visible pointer-events-none opacity-90 my-auto">
             <!-- 🚀 3D 덱 하단 바닥 투영 앰비언트 섀도우 (800px 황금비 직사각형 덱 전용) -->
             <div class="start-qv-floor-shadow"></div>
@@ -327,8 +339,8 @@ function getStartScreenHTML() {
           </div>
         </div>
 
-        <!-- 🚀 [우측 (42% 비중)]: CMC 로그인 & 메인 대시보드 진입 패널 -->
-        <div class="w-full md:w-[42%] max-w-md flex flex-col justify-center">
+        <!-- 🚀 [우측 (42% 비중)]: CMC 로그인 & 메인 대시보드 진입 패널 (모바일 중앙 상단 언저리 배치) -->
+        <div class="w-full md:w-[42%] max-w-md flex flex-col justify-center my-auto -translate-y-5 sm:-translate-y-8 md:translate-y-0 md:my-0">
           <div class="start-main-card relative p-4 sm:p-6 md:p-8 w-full flex flex-col gap-3.5 md:gap-5 text-center">
             <!-- 🚀 우측 상단 다크/라이트 모드 토글 버튼 -->
             <button
@@ -338,7 +350,7 @@ function getStartScreenHTML() {
               class="absolute top-3 sm:top-4 right-3 sm:right-4 w-8 h-8 rounded-xl flex items-center justify-center text-sm bg-theme-bg/60 hover:bg-theme-bg border border-theme-border text-theme-text active:scale-90 cursor-pointer shadow-sm z-30 select-none transition-transform"
               title="다크 / 라이트 테마 전환"
             >
-              ${(document.documentElement.classList.contains('theme-upbit') || document.body?.classList.contains('theme-upbit') || localStorage.getItem('sellnance_theme') === 'upbit') ? '🌙' : '☀️'}
+              ${(document.documentElement.classList.contains('theme-upbit') || document.body?.classList.contains('theme-upbit') || localStorage.getItem('sellnance_theme') === 'upbit') ? '☀️' : '🌙'}
             </button>
             <div>
               <h1 class="text-2xl md:text-4xl font-extrabold text-theme-accent uppercase tracking-widest mb-1">
@@ -374,7 +386,7 @@ function getStartScreenHTML() {
                   id="cmc-api-input"
                   placeholder="Loading..."
                   disabled
-                  class="w-full bg-theme-bg text-theme-text border-2 border-theme-border pl-4 pr-11 py-2.5 md:py-3.5 rounded-xl text-center font-tempTestDss text-sm focus:outline-none focus:border-theme-accent shadow-inner opacity-50 cursor-not-allowed"
+                  class="w-full bg-theme-bg text-theme-text border-2 border-theme-border pl-4 pr-11 py-2.5 md:py-3.5 rounded-xl text-center font-medium text-sm focus:outline-none focus:border-theme-accent shadow-inner opacity-50 cursor-not-allowed"
                   autocomplete="off"
                   spellcheck="false"
                 />
@@ -382,7 +394,7 @@ function getStartScreenHTML() {
                 <button
                   type="button"
                   id="btn-clear-cmc-key"
-                  class="absolute right-3 w-6 h-6 rounded-full flex items-center justify-center bg-theme-panel hover:bg-theme-border border border-theme-border text-theme-text/60 hover:text-theme-accent active:scale-90 transition-transform opacity-0 pointer-events-none scale-75"
+                  class="absolute right-3 z-10 w-6 h-6 rounded-full flex items-center justify-center bg-theme-panel hover:bg-theme-border border border-theme-border text-theme-text/60 hover:text-theme-accent active:scale-90 transition-transform opacity-0 pointer-events-none scale-75 cursor-pointer"
                   title="입력 내용 지우기"
                 >
                   <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -543,7 +555,7 @@ async function initStartQuickViewPreview() {
         <img src="${asset.icon}" class="w-3.5 h-3.5 rounded-full object-cover shadow-sm flex-shrink-0" alt="${asset.ticker}" />
         <span class="text-xs font-bold" style="color: ${asset.color}">${asset.ticker}</span>
         <span id="start-qv-spread-tf-${idx}" class="text-[9px] px-1 py-0.2 font-mono font-bold rounded bg-theme-accent/20 border border-theme-accent/40 text-theme-accent">15M</span>
-        <span id="start-qv-spread-price-${idx}" class="text-[10px] text-white/80 font-tempTestDss ml-1">Loading...</span>
+        <span id="start-qv-spread-price-${idx}" class="text-[10px] text-white/80 font-medium ml-1">Loading...</span>
       </div>
       <div class="start-qv-canvas" id="start-qv-spread-canvas-${idx}"></div>
     `;
@@ -609,7 +621,7 @@ async function initStartQuickViewPreview() {
           <div class="start-qv-legend-item flex items-center gap-1 cursor-pointer px-1.5 py-0.5" data-idx="${i}">
             <img src="${a.icon}" class="w-3 h-3 rounded-full object-cover flex-shrink-0" alt="${a.ticker}" />
             <span style="color: ${a.color}">${a.ticker}</span>
-            <span id="start-qv-overlap-price-${i}" class="text-[10px] text-white/70 font-tempTestDss">...</span>
+            <span id="start-qv-overlap-price-${i}" class="text-[10px] text-white/70 font-medium">...</span>
           </div>`,
   ).join("")}
       </div>
@@ -1059,32 +1071,45 @@ async function initStartScreen() {
   // ============== 기존 비즈니스 로직 철통 보존 (단 1줄도 안건드림) ==============
   // 1. 서버 환경변수(env)에서 키 가져오기 (확실히 올 때까지 기다림)
   try {
-    // Xconsole.log("📡 서버에서 env 키 조회 중...");
     const res = await fetch("/api/get-env-key");
     const data = await res.json();
 
+    const envKey = data && data.key ? String(data.key).trim() : "";
+    const localKey = (localStorage.getItem("CMC_API_KEY") || "").trim();
+
+    if (envKey) {
+      rawCmcKey = envKey;
+      localStorage.setItem("CMC_API_KEY", envKey);
+    } else if (localKey) {
+      rawCmcKey = localKey;
+    } else {
+      rawCmcKey = "";
+    }
+
     const isAutoSkipEnabled =
       localStorage.getItem("sellnance_skip_start") === "true";
-    rawCmcKey = localStorage.getItem("CMC_API_KEY") || "";
 
     const hasDirectSymbol =
       window.location.pathname &&
       window.location.pathname !== "/" &&
       window.location.pathname !== "";
 
-    // 🚀 다이렉트 심볼 접근(/BTC 등) 또는 스킵 설정 시 즉시 대시보드로 진입!
-    if (isAutoSkipEnabled || hasDirectSymbol) {
+    // 🚀 [동시 조건] 자동 스킵: 체크박스가 켜져 있으면서 "동시에 32자 유효 키가 존재할 때" 또는 다이렉트 심볼 접근 시에만 통과!
+    const hasValidKey = rawCmcKey.length === 32;
+    if ((isAutoSkipEnabled && hasValidKey) || hasDirectSymbol) {
       hideStartScreen();
       return;
     }
   } catch (e) {
-    // Xconsole.error("🚨 서버 통신 실패, 로컬 스토리지로 대체합니다.");
-    rawCmcKey = localStorage.getItem("CMC_API_KEY") || "";
+    const localKey = (localStorage.getItem("CMC_API_KEY") || "").trim();
+    rawCmcKey = localKey;
+    const isAutoSkipEnabled =
+      localStorage.getItem("sellnance_skip_start") === "true";
     const hasDirectSymbol =
       window.location.pathname &&
       window.location.pathname !== "/" &&
       window.location.pathname !== "";
-    if (localStorage.getItem("sellnance_skip_start") === "true" || hasDirectSymbol) {
+    if ((isAutoSkipEnabled && rawCmcKey.length === 32) || hasDirectSymbol) {
       hideStartScreen();
       return;
     }
@@ -1252,23 +1277,11 @@ function saveAndStart() {
       input.focus();
     }
 
-    if (window.Swal) {
-      Swal.fire({
-        toast: true,
-        position: "top",
-        icon: "warning",
-        title: `CMC API 키는 32자여야 합니다 (${keyToSave.length}/32자)`,
-        showConfirmButton: false,
-        timer: 2500,
-        timerProgressBar: true,
-        background: "rgba(18, 21, 28, 0.95)",
-        color: "#ffffff",
-        customClass: {
-          popup:
-            "border border-amber-500/30 rounded-xl shadow-2xl backdrop-blur-md text-xs",
-        },
-      });
-    }
+    showToast(
+      `CMC API 키는 32자여야 합니다 (${keyToSave.length}/32자)`,
+      "warning",
+      2500,
+    );
     return;
   }
 
@@ -1349,17 +1362,16 @@ function hideStartScreen() {
 
   const screen = document.getElementById("start-screen");
   if (screen) {
-    // 🚀 빨려 들어가는 듯한 스피디한 퇴장 이펙트 (blur는 무거우므로 부드럽게만 적용)
-    screen.style.transform = "scale(1.2) translateZ(100px)";
+    // 🚀 [초고속 쾌적 모션] 지정된 exitDurationMs 만에 살짝 가라앉으며 매끄럽게 페이드아웃 (렉 제로 + 0ms 체감 속도)
+    screen.style.transform = "scale(0.98) translateY(6px)";
     screen.style.opacity = "0";
-    // screen.style.filter = "blur(8px)"; // backdrop-filter와 충돌 및 성능 저하 우려로 주석처리
 
     setTimeout(() => {
       screen.style.display = "none";
       if (typeof window.showOnboardingModal === "function") {
         window.showOnboardingModal();
       }
-    }, 500);
+    }, START_3D_CONFIG.exitDurationMs);
   } else {
     if (typeof window.showOnboardingModal === "function") {
       window.showOnboardingModal();
@@ -1385,6 +1397,22 @@ export async function showStartScreen() {
     btnSkip.style.pointerEvents = "auto";
   }
 
+  const input = document.getElementById("cmc-api-input");
+  const btnClearKey = document.getElementById("btn-clear-cmc-key");
+  rawCmcKey = (localStorage.getItem("CMC_API_KEY") || "").trim();
+  if (input) {
+    input.value = maskApiKey(rawCmcKey);
+  }
+  if (btnClearKey) {
+    if (rawCmcKey || (input && input.value)) {
+      btnClearKey.classList.remove("opacity-0", "pointer-events-none", "scale-75");
+      btnClearKey.classList.add("opacity-100", "pointer-events-auto", "scale-100");
+    } else {
+      btnClearKey.classList.remove("opacity-100", "pointer-events-auto", "scale-100");
+      btnClearKey.classList.add("opacity-0", "pointer-events-none", "scale-75");
+    }
+  }
+
   const chk = document.getElementById("chk-auto-skip");
   if (chk) {
     chk.checked = localStorage.getItem("sellnance_skip_start") === "true";
@@ -1393,7 +1421,7 @@ export async function showStartScreen() {
   const themeBtn = document.getElementById("start-theme-toggle-btn");
   if (themeBtn) {
     const isUpbit = document.body.classList.contains("theme-upbit") || localStorage.getItem("sellnance_theme") === "upbit";
-    themeBtn.innerHTML = isUpbit ? "🌙" : "☀️";
+    themeBtn.innerHTML = isUpbit ? "☀️" : "🌙";
   }
 
   // 🚀 [쇼케이스 0초 및 1단계 완전 리셋]
@@ -1453,7 +1481,7 @@ export async function showStartScreen() {
   screen.style.display = "flex";
   screen.style.pointerEvents = "auto";
   requestAnimationFrame(() => {
-    screen.style.transform = "scale(1) translateZ(0px)";
+    screen.style.transform = "scale(1) translateY(0px)";
     screen.style.opacity = "1";
     resizeStartQuickViewCharts();
   });

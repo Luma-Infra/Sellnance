@@ -9,6 +9,7 @@ import {
 } from "./ui_control.js";
 
 // 하위 서브시스템 등록
+import "./ui_dialog.js";
 import "./_market_rules.js";
 import "./chart_layout.js";
 import "./chart_timezone.js";

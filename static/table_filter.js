@@ -352,15 +352,17 @@ export function saveControlPanelSession() {
 
 export function restoreControlPanelUI() {
   // 1. hideSmallCap 버튼 스타일 복원
-  const btnSmallCap = document.getElementById("btn-small-cap");
-  if (btnSmallCap) {
+  const smallCapButtons = document.querySelectorAll(
+    "#btn-small-cap, #btn-small-cap-custom",
+  );
+  smallCapButtons.forEach((btn) => {
     if (store.hideSmallCap) {
-      btnSmallCap.classList.remove(
+      btn.classList.remove(
         "text-theme-text",
         "opacity-50",
         "border-theme-border",
       );
-      btnSmallCap.classList.add(
+      btn.classList.add(
         "bg-theme-accent",
         "text-white",
         "border-theme-accent",
@@ -368,21 +370,21 @@ export function restoreControlPanelUI() {
         "opacity-100",
       );
     } else {
-      btnSmallCap.classList.remove(
+      btn.classList.remove(
         "bg-theme-accent",
         "text-white",
         "border-theme-accent",
         "shadow-md",
         "opacity-100",
       );
-      btnSmallCap.classList.add(
+      btn.classList.add(
         "text-theme-text",
         "opacity-50",
         "border-theme-border",
       );
     }
-    btnSmallCap.innerHTML = `<svg class="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg><span>Mcap &lt; 1M</span>`;
-  }
+    btn.innerHTML = `<svg class="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg><span>Mcap &lt; 1M</span>`;
+  });
 
   // 2. 카테고리 탭 버튼 복원
   const catTabs = document.querySelectorAll(
@@ -620,8 +622,10 @@ export function toggleCurrency() {
 export function toggleSmallCap() {
   store.hideSmallCap = !store.hideSmallCap;
 
-  const btn = document.getElementById("btn-small-cap");
-  if (btn) {
+  const smallCapButtons = document.querySelectorAll(
+    "#btn-small-cap, #btn-small-cap-custom",
+  );
+  smallCapButtons.forEach((btn) => {
     const btnHtml = `<svg class="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg><span>Mcap &lt; 1M</span>`;
 
     if (store.hideSmallCap) {
@@ -649,7 +653,7 @@ export function toggleSmallCap() {
       );
       btn.innerHTML = btnHtml;
     }
-  }
+  });
 
   store.currentRenderLimit = 1000;
   renderTable();
@@ -676,7 +680,7 @@ export function updateFavoritesCount() {
   const f2 = f2Set.size;
   const tabFav = document.getElementById("tab-fav");
   const tabFav2 = document.getElementById("tab-fav2");
-  if (tabFav) tabFav.innerHTML = `<span style="color: #e3b30a; margin-right: 2px">★</span>` + (f1 > 0 ? `FAV (${f1})` : "FAV");
+  if (tabFav) tabFav.innerHTML = `<span style="color: #e3b30a; margin-right: 2px">★</span>` + (f1 > 0 ? `FAV 1 (${f1})` : "FAV 1");
   if (tabFav2) tabFav2.innerHTML = `<span style="color: #3b82f6; margin-right: 2px">★</span>` + (f2 > 0 ? `FAV 2 (${f2})` : "FAV 2");
 }
 

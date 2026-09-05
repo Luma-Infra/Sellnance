@@ -298,7 +298,7 @@ async function rebuildQuickViewCharts() {
         </div>
         <span class="text-xs text-theme-text font-bold">${asset.Ticker}</span>
       </div>
-      <div class="flex items-center gap-2 font-tempTestDss">
+      <div class="flex items-center gap-2 font-medium">
         <span id="qv-change-${idx}" class="text-[10px] font-bold ${chgColor}">${chgText}</span>
       </div>
     `;
@@ -357,7 +357,7 @@ async function rebuildQuickViewCharts() {
                 from: targetFrom,
                 to: targetTo,
               });
-            } catch (e) {}
+            } catch (e) { }
           }
         });
 
@@ -480,7 +480,7 @@ async function initSingleQuickViewChart(container, asset, idx) {
           `https://api.upbit.com/v1/candles/${upbitInterval}?market=KRW-${cleanSym}&count=100`,
         );
         if (res.ok) raw = await res.json();
-      } catch (e) {}
+      } catch (e) { }
 
       if (!raw) {
         try {
@@ -488,7 +488,7 @@ async function initSingleQuickViewChart(container, asset, idx) {
             `/api/candles?exchange=upbit&symbol=KRW-${cleanSym}&interval=${upbitInterval}&limit=100`,
           );
           if (res.ok) raw = await res.json();
-        } catch (e) {}
+        } catch (e) { }
       }
 
       if (Array.isArray(raw)) {
@@ -664,7 +664,7 @@ function renderOverlapLegend() {
     item.innerHTML = `
       <span class="qv-legend-color-dot" style="background-color: ${color}; box-shadow: 0 0 6px ${color}"></span>
       <span class="text-[10px] text-theme-text font-bold">${asset.Ticker}</span>
-      <span class="ml-auto font-tempTestDss text-[9px] ${chgColor}">${chgText}</span>
+      <span class="ml-auto font-medium text-[9px] ${chgColor}">${chgText}</span>
     `;
 
     // 범례 호버 시 해당 차트 포커스
@@ -954,7 +954,7 @@ function connectQuickViewSockets() {
                 ? asset.Change_Today_Raw || 0
                 : asset.Change_24h_Raw || 0;
             updateLiveHeaderPrice(idx, newPrice, chgValue.toString(), true);
-          } catch (err) {}
+          } catch (err) { }
         });
       } catch (err) {
         console.error("퀵뷰 빗썸 소켓 파싱 에러:", err);
@@ -971,7 +971,7 @@ function disconnectQuickViewSockets() {
     qvState.binanceWs.onclose = null;
     try {
       qvState.binanceWs.close(1000, "Normal Closure");
-    } catch (e) {}
+    } catch (e) { }
     qvState.binanceWs = null;
   }
   if (qvState.binanceFuturesWs) {
@@ -980,7 +980,7 @@ function disconnectQuickViewSockets() {
     qvState.binanceFuturesWs.onclose = null;
     try {
       qvState.binanceFuturesWs.close(1000, "Normal Closure");
-    } catch (e) {}
+    } catch (e) { }
     qvState.binanceFuturesWs = null;
   }
   if (qvState.upbitWs) {
@@ -989,7 +989,7 @@ function disconnectQuickViewSockets() {
     qvState.upbitWs.onclose = null;
     try {
       qvState.upbitWs.close(1000, "Normal Closure");
-    } catch (e) {}
+    } catch (e) { }
     qvState.upbitWs = null;
   }
   if (qvState.bithumbWs) {
@@ -998,7 +998,7 @@ function disconnectQuickViewSockets() {
     qvState.bithumbWs.onclose = null;
     try {
       qvState.bithumbWs.close(1000, "Normal Closure");
-    } catch (e) {}
+    } catch (e) { }
     qvState.bithumbWs = null;
   }
 }
@@ -1045,7 +1045,7 @@ function updateLiveHeaderPrice(idx, price, changePct, isFlash = false) {
     const chgSpan = legendItem.querySelector("span:last-child");
     if (chgSpan) {
       chgSpan.innerText = `${numericChg > 0 ? "+" : ""}${numericChg.toFixed(2)}%`;
-      chgSpan.className = `ml-auto font-tempTestDss text-[9px] ${numericChg > 0 ? "text-theme-up" : numericChg < 0 ? "text-theme-down" : ""}`;
+      chgSpan.className = `ml-auto font-medium text-[9px] ${numericChg > 0 ? "text-theme-up" : numericChg < 0 ? "text-theme-down" : ""}`;
     }
   }
 }
@@ -1218,10 +1218,14 @@ export function changeQuickViewTF(tf) {
   initQuickView();
 }
 
-// 📄 페이지 이동
+// 📄 페이지 이동 (단일 페이지 이동 및 +-10 빨리감기 지원)
 export function changeQuickViewPage(dir) {
-  const targetPage = qvState.page + dir;
-  if (targetPage < 1 || targetPage > qvState.maxPage) return; // 범위 강제
+  if (!qvState.maxPage) qvState.maxPage = 1;
+  let targetPage = qvState.page + dir;
+  if (targetPage < 1) targetPage = 1;
+  if (targetPage > qvState.maxPage) targetPage = qvState.maxPage;
+
+  if (targetPage === qvState.page) return; // 이미 시작/끝이면 불필요한 재렌더링 방어
 
   qvState.page = targetPage;
 
@@ -1255,7 +1259,7 @@ export function alignQuickViewChartsToEnd(span = 70) {
     const from = to - span;
     try {
       chart.timeScale().setVisibleLogicalRange({ from, to });
-    } catch (e) {}
+    } catch (e) { }
   });
 }
 

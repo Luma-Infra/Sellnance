@@ -144,7 +144,7 @@ function createPwaModalDOM() {
 
   const modalHtml = `
     <div id="pwa-install-modal"
-      class="fixed inset-0 z-[9999] hidden items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-300 opacity-0 select-none">
+      class="fixed inset-0 z-[500] hidden items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-300 opacity-0 select-none">
       <div id="pwa-install-content"
         class="relative w-full max-w-[340px] sm:max-w-[360px] bg-theme-panel border border-theme-border rounded-2xl shadow-2xl p-5 flex flex-col gap-4 transform scale-95 translate-y-4 transition-all duration-300">
         

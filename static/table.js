@@ -105,10 +105,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (
           window.innerWidth <= CONFIG.SCREEN_WIDTH &&
-          isTouch &&
-          typeof window.showMobileChart === "function"
+          isTouch
         ) {
-          window.showMobileChart();
+          if (typeof window.switchMobileTab === "function") {
+            window.switchMobileTab("chart");
+          } else if (typeof window.showMobileChart === "function") {
+            window.showMobileChart();
+          }
         }
       }
     });

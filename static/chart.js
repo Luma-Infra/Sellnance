@@ -976,24 +976,44 @@ export async function initChart() {
     if (force) {
       currentMaxRight = 0;
       currentMaxLeft = 0;
+      store.savedPriceScaleWidth = null; // 🚀 [뚱뚱 상태 원천 차단] 새 코인/TF 전환 시 이전 코인의 넓은 너비 잔상 즉시 초기화!
+      if (c1) c1.priceScale("right").applyOptions({ minimumWidth: 0, autoScale: true });
+      if (c2) c2.priceScale("right").applyOptions({ minimumWidth: 0, autoScale: true });
     }
 
     let maxRight = 0;
     let maxLeft = 0;
 
+    const isSmallMobile = typeof window !== "undefined" && window.innerWidth < 768;
+    const isKimchiVisible = !!store.paneConfig?.kimchi && !store.isKimchiDisabled;
+
     if (c1) {
       let rWidth = c1.priceScale("right").width();
       if (store.isLogMode) rWidth = Math.min(rWidth, 80);
       if (rWidth > maxRight) maxRight = rWidth;
-      const lWidth = c1.priceScale("left").width();
-      if (lWidth > maxLeft) maxLeft = lWidth;
+      if (!isSmallMobile && isKimchiVisible) {
+        const lWidth = c1.priceScale("left").width();
+        if (lWidth > maxLeft) maxLeft = lWidth;
+      }
     }
     if (c2) {
       let rWidth = c2.priceScale("right").width();
       if (store.isLogMode) rWidth = Math.min(rWidth, 80);
       if (rWidth > maxRight) maxRight = rWidth;
-      const lWidth = c2.priceScale("left").width();
-      if (lWidth > maxLeft) maxLeft = lWidth;
+      if (!isSmallMobile && isKimchiVisible) {
+        const lWidth = c2.priceScale("left").width();
+        if (lWidth > maxLeft) maxLeft = lWidth;
+      }
+    }
+
+    // 🚀 [모바일/김프OFF 방어] 모바일(768px 미만)이거나 김프 OFF 시 좌측 여백을 0px로 확정하여 가로 너비 덜컹거림/버벅임 완벽 차단!
+    if (isSmallMobile || !isKimchiVisible) {
+      maxLeft = 0;
+    }
+
+    // 🚀 [안정적 우측 가격축 유지] force(새 코인 전환)가 아닐 때만 팝업/타임존 토글 시 가격축 덜컹거림 방지
+    if (!force && !window.isResettingWidth && store.savedPriceScaleWidth && store.savedPriceScaleWidth > 0) {
+      maxRight = Math.max(maxRight, store.savedPriceScaleWidth);
     }
 
     // 🚀 [원자적 동기화] 너비가 변경되었거나 force=true인 경우 0ms 즉각 일치 적용!
@@ -1003,10 +1023,14 @@ export async function initChart() {
       if (c1) c1.priceScale("right").applyOptions({ minimumWidth: maxRight });
       if (c2) c2.priceScale("right").applyOptions({ minimumWidth: maxRight });
     }
-    if (maxLeft > 0 && (force || maxLeft !== currentMaxLeft)) {
+    if (force || maxLeft !== currentMaxLeft) {
       currentMaxLeft = maxLeft;
-      if (c1) c1.priceScale("left").applyOptions({ minimumWidth: maxLeft });
-      if (c2) c2.priceScale("left").applyOptions({ minimumWidth: maxLeft });
+      const lOpts = {
+        minimumWidth: maxLeft,
+        visible: maxLeft > 0,
+      };
+      if (c1) c1.priceScale("left").applyOptions(lOpts);
+      if (c2) c2.priceScale("left").applyOptions(lOpts);
     }
   };
 
@@ -1147,60 +1171,30 @@ export function updateChartTheme() {
     });
   }
 
-  // 🚀 3. 볼륨 시리즈 색상 업데이트 (테마 전환 시 setData 전체 재그리기 제거 → applyOptions만으로 처리)
-  if (store.volumeSeries && store.volumeData && store.mainData) {
+  // 🚀 3. 볼륨 시리즈 색상 원자적 동기화 (requestIdleCallback 지연 제거 → 동일 틱 즉각 렌더링)
+  if (store.volumeSeries && store.volumeData && store.volumeData.length > 0 && store.mainData) {
     const upColorVol = upColor + "80"; // 50% 투명도
     const downColorVol = downColor + "80";
 
-    // 볼륨 기본 색상만 즉시 업데이트 (전체 재그리기 없음)
     store.volumeSeries.applyOptions({ color: upColorVol });
 
-    // 메모리 캐시 색상 업데이트 (다음 실시간 갱신 시 자동 반영)
-    store.volumeData.forEach((volItem, index) => {
-      const candle = store.mainData[index];
+    const len = Math.min(store.volumeData.length, store.mainData.length);
+    for (let i = 0; i < len; i++) {
+      const candle = store.mainData[i];
       if (candle) {
-        volItem.color = candle.close >= candle.open ? upColorVol : downColorVol;
+        store.volumeData[i].color =
+          candle.close >= candle.open ? upColorVol : downColorVol;
       }
-    });
+    }
 
-    // 🚀 [성능 최적화] 무거운 setData 전체 재렌더링은 requestIdleCallback으로 유휴 시간에 처리
-    // 테마 전환 직후 즉각적인 UI 반응을 보장하고, 볼륨 막대 색 동기화는 백그라운드에서 처리
-    const _idleFn = () => {
-      if (!store.volumeSeries || !store.volumeData) return;
-      const isDayUnit = !(store.currentTF || "1h").match(/[hm]/);
-      const mapTime = (d) => {
-        if (isDayUnit) {
-          if (typeof d.time === "string" && d.time.includes("-")) return d;
-          const numTime = Number(d.time);
-          if (isNaN(numTime)) return d;
-          const dt = new Date(numTime * 1000);
-          return {
-            ...d,
-            time: `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, "0")}-${String(dt.getUTCDate()).padStart(2, "0")}`,
-          };
-        } else {
-          if (typeof d.time === "string" && d.time.includes("-")) {
-            const parsedUnix = Math.floor(new Date(d.time).getTime() / 1000);
-            return { ...d, time: isNaN(parsedUnix) ? d.time : parsedUnix };
-          }
-          return d;
-        }
-      };
-      try {
-        const mappedVol = store.volumeData.map(mapTime);
-        store.volumeSeries.setData(
-          window.sanitizeChartData
-            ? window.sanitizeChartData(mappedVol, true)
-            : mappedVol,
-        );
-      } catch (volThemeErr) {
-        console.warn("🚨 volumeSeries.setData in updateChartTheme 예외 우회 완료:", volThemeErr);
-      }
-    };
-    if (typeof requestIdleCallback !== "undefined") {
-      requestIdleCallback(_idleFn, { timeout: 500 });
-    } else {
-      setTimeout(_idleFn, 0);
+    try {
+      store.volumeSeries.setData(
+        window.sanitizeChartData
+          ? window.sanitizeChartData(store.volumeData, true)
+          : store.volumeData,
+      );
+    } catch (volThemeErr) {
+      console.warn("🚨 volumeSeries.setData in updateChartTheme 예외 우회 완료:", volThemeErr);
     }
   }
 
@@ -1212,6 +1206,14 @@ export function setupScaleModeButtons() {
   const mainL = document.getElementById("main-scale-l-btn");
   const volA = document.getElementById("vol-scale-a-btn");
   const volL = document.getElementById("vol-scale-l-btn");
+
+  [mainA, mainL, volA, volL].forEach((btn) => {
+    if (btn) {
+      ["pointerdown", "mousedown", "touchstart", "dblclick"].forEach((evt) => {
+        btn.addEventListener(evt, (e) => e.stopPropagation());
+      });
+    }
+  });
 
   if (mainA) {
     mainA.onclick = (e) => {

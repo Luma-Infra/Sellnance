@@ -10,6 +10,7 @@ export function selectSymbol(
   forceMarket = null,
   targetUid = null,
   isRowClick = false,
+  shouldScroll = false,
 ) {
   const allSourceData =
     store.originalTableData && store.originalTableData.length > 0
@@ -134,8 +135,19 @@ export function selectSymbol(
 
   const uniqueTicker = rowInfo ? rowInfo.Ticker : parsedSymbol;
 
-  // 🚀 [신규 가드] 이미 선택된 코인을 클릭했거나, 이미 선택된 활성 거래소 뱃지를 클릭한 경우 조기 리턴하여 불필요한 차트 초기화 및 리로드 차단
+  // 🚀 [신규 가드] 이미 선택된 코인을 클릭했거나, 이미 선택된 활성 거래소 뱃지를 클릭한 경우
   if (isRowClick && store.currentAsset === uniqueTicker) {
+    // 🚀 [모바일 대응] 이미 선택된 코인이더라도 모바일에서는 네비게이션 및 오버레이를 '차트'로 확실히 전환
+    const isTouch = typeof window.isTouchDevice === "function"
+      ? window.isTouchDevice()
+      : ((window.matchMedia && window.matchMedia("(pointer: coarse)").matches) || ("ontouchstart" in window) || (typeof navigator !== "undefined" && navigator.maxTouchPoints > 0));
+    if (window.innerWidth < 1200 && isTouch) {
+      if (typeof window.switchMobileTab === "function") {
+        window.switchMobileTab("chart");
+      } else if (typeof window.showMobileChart === "function") {
+        window.showMobileChart();
+      }
+    }
     return;
   }
   if (
@@ -431,27 +443,33 @@ export function selectSymbol(
         }
       }
 
-      // 리스트 스크롤 이동
-      const sortedList = store.currentTableData;
+      // 리스트 스크롤 이동 및 가상 렌더 리밋 확장 (555등, 777등 등 깊은 순위 대응)
+      const sortedList = store.currentTableData || [];
       const targetIdx = sortedList.findIndex(
         (item) =>
-          item.DisplayTicker === uniqueTicker || item.Ticker === uniqueTicker,
+          item.DisplayTicker === uniqueTicker ||
+          item.Ticker === uniqueTicker ||
+          (rowInfo && item.UID === rowInfo.UID),
       );
 
       if (targetIdx !== -1) {
         if (targetIdx >= store.currentRenderLimit) {
-          store.currentRenderLimit = targetIdx + 1;
+          store.currentRenderLimit = Math.max(store.currentRenderLimit, targetIdx + 30);
           if (typeof renderTable === "function") renderTable();
         }
         setTimeout(() => {
           store.currentSelectedSymbol = uniqueTicker;
-          const targetRow = document.querySelector(
-            `#coin-list-body > div[data-sym="${uniqueTicker}"]`,
-          );
-          if (targetRow) {
-            // targetRow.scrollIntoView({ block: "center", behavior: "smooth" });
-            if (typeof applySelectedHighlight === "function")
-              applySelectedHighlight();
+          if (typeof applySelectedHighlight === "function") {
+            applySelectedHighlight();
+          }
+          if (shouldScroll) {
+            const targetRow =
+              document.querySelector(`#coin-list-body > div[data-sym="${uniqueTicker}"]`) ||
+              (rowInfo?.UID ? document.querySelector(`#coin-list-body > div[data-uid="${rowInfo.UID}"]`) : null) ||
+              (store.rowDomMap ? store.rowDomMap.get(uniqueTicker) || (rowInfo?.UID ? store.rowDomMap.get(String(rowInfo.UID)) : null) : null);
+            if (targetRow && targetRow.style.display !== "none") {
+              targetRow.scrollIntoView({ block: "center", behavior: "smooth" });
+            }
           }
         }, 50);
       }
@@ -481,7 +499,9 @@ export function selectSymbol(
           try {
             sessionStorage.setItem("sellnance_active_mobile_tab", "chart");
           } catch (e) { }
-          if (typeof window.showMobileChart === "function") {
+          if (typeof window.switchMobileTab === "function") {
+            window.switchMobileTab("chart");
+          } else if (typeof window.showMobileChart === "function") {
             window.showMobileChart();
           }
           window.dispatchEvent(
@@ -508,72 +528,93 @@ export function updateExchangeBadges(s, targetUid = null) {
   if (rowInfo) {
     const list = [
       {
-        id: "B-FUT",
-        cmcId: 270,
-        market: "FUTURES",
-        condition: rowInfo.Listed_Exchanges?.includes("BINANCE_FUTURES"),
-      },
-      {
         id: "B-SPOT",
+        name: "바이낸스 현물",
         cmcId: 270,
         market: "SPOT",
-        condition: rowInfo.Listed_Exchanges?.includes("BINANCE_SPOT"),
+        type: "SPOT",
+        condition: Boolean(rowInfo.Listed_Exchanges?.includes("BINANCE_SPOT")),
       },
       {
-        id: "BYBIT-FUT",
-        cmcId: 521,
-        market: "BYBIT_FUTURES",
-        condition: rowInfo.Listed_Exchanges?.includes("BYBIT_FUTURES"),
-      },
-      {
-        id: "BYBIT-SPOT",
-        cmcId: 521,
-        market: "BYBIT",
-        condition: rowInfo.Listed_Exchanges?.includes("BYBIT_SPOT"),
+        id: "B-FUT",
+        name: "바이낸스 선물",
+        cmcId: 270,
+        market: "FUTURES",
+        type: "FUTURE",
+        condition: Boolean(rowInfo.Listed_Exchanges?.includes("BINANCE_FUTURES")),
       },
       {
         id: "UPBIT",
+        name: "업비트",
         cmcId: 351,
         market: "UPBIT",
-        condition: rowInfo.Listed_Exchanges?.includes("UPBIT"),
+        type: null,
+        condition: Boolean(rowInfo.Listed_Exchanges?.includes("UPBIT")),
       },
       {
         id: "BITHUMB",
+        name: "빗썸",
         cmcId: 200,
         market: "BITHUMB",
-        condition: rowInfo.Listed_Exchanges?.includes("BITHUMB"),
+        type: null,
+        condition: Boolean(rowInfo.Listed_Exchanges?.includes("BITHUMB")),
       },
       {
-        id: "GATE-FUT",
+        id: "BYBIT-SPOT",
+        name: "바이비트 현물",
+        cmcId: 521,
+        market: "BYBIT",
+        type: "SPOT",
+        condition: Boolean(rowInfo.Listed_Exchanges?.includes("BYBIT_SPOT")),
+      },
+      {
+        id: "BYBIT-FUT",
+        name: "바이비트 선물",
+        cmcId: 521,
+        market: "BYBIT_FUTURES",
+        type: "FUTURE",
+        condition: Boolean(rowInfo.Listed_Exchanges?.includes("BYBIT_FUTURES")),
+      },
+      {
+        id: "GATE-SPOT",
+        name: "Gate.io 현물",
         cmcId: 302,
-        market: "GATE_FUTURES",
+        market: "GATE_SPOT",
+        type: "SPOT",
         condition: ["BTC", "ETH", "XRP"].includes(rowInfo.Symbol?.toUpperCase()),
         isBeta: true,
       },
       {
-        id: "GATE-SPOT",
+        id: "GATE-FUT",
+        name: "Gate.io 선물",
         cmcId: 302,
-        market: "GATE_SPOT",
+        market: "GATE_FUTURES",
+        type: "FUTURE",
         condition: ["BTC", "ETH", "XRP"].includes(rowInfo.Symbol?.toUpperCase()),
         isBeta: true,
       },
     ];
 
-    list.forEach((item) => {
+    // 🚀 활성 거래소(좌측 우선) -> 비활성 거래소(우측 순차) 정렬
+    const sortedList = [
+      ...list.filter((item) => item.condition),
+      ...list.filter((item) => !item.condition),
+    ];
+
+    sortedList.forEach((item) => {
+      const imgUrl = `https://s2.coinmarketcap.com/static/img/exchanges/64x64/${item.cmcId}.png`;
+      const isCurrentActive = store.currentChartMarket === item.market;
+
       if (item.condition) {
-        // Highlight active market badge
-        const isActive = store.currentChartMarket === item.market;
-        const ringClass = isActive
-          ? "ring-2 ring-white scale-105 shadow-lg brightness-110"
-          : "opacity-50 hover:opacity-100 hover:scale-105";
+        // 🌟 활성 거래소 배지
+        const ringClass = isCurrentActive
+          ? "ring-2 ring-white scale-105 shadow-lg brightness-110 opacity-100"
+          : "opacity-60 hover:opacity-100 hover:scale-105";
 
-        const imgUrl = `https://s2.coinmarketcap.com/static/img/exchanges/64x64/${item.cmcId}.png`;
-
-        // 🚀 구분용 타입 배지 (우측 하단) - SPOT / FUTURE 텍스트 간격 및 가시성 최적화
         let typeBadge = "";
-        if (item.id === "B-SPOT" || item.id === "BYBIT-SPOT" || item.id === "GATE-SPOT") {
+        if (item.type === "SPOT") {
           typeBadge = `<div class="absolute -bottom-1 -right-1.5 bg-zinc-900 text-white text-[8px] px-1.5 py-0.5 rounded-[3px] border border-white/30 leading-none font-black shadow-[0_1px_3px_rgba(0,0,0,0.5)] whitespace-nowrap select-none tracking-tight">SPOT</div>`;
-        } else if (item.id === "B-FUT" || item.id === "BYBIT-FUT" || item.id === "GATE-FUT") {
+        } else if (item.type === "FUTURE") {
           typeBadge = `<div class="absolute -bottom-1 -right-1.5 bg-[#f0b90b] text-black text-[8px] px-1.5 py-0.5 rounded-[3px] leading-none font-black shadow-[0_1px_3px_rgba(0,0,0,0.5)] whitespace-nowrap select-none tracking-tight">FUTURE</div>`;
         }
 
@@ -584,10 +625,27 @@ export function updateExchangeBadges(s, targetUid = null) {
 
         badges += `
           <button onclick="selectSymbol('${rowInfo.Ticker}', '${item.market}', '${rowInfo.UID}')" 
-                  title="${item.id} (Beta)"
+                  title="${item.name}${item.isBeta ? ' (Beta)' : ''}"
                   class="relative flex items-center justify-center p-1 border border-theme-border/30 rounded-xl transition-all duration-200 w-8 h-8 min-w-[32px] min-h-[32px] shrink-0 flex-shrink-0 cursor-pointer select-none active:scale-95 ${ringClass}">
             <img src="${imgUrl}" alt="${item.id}" class="w-full h-full object-contain rounded" />
             ${betaBadge}
+            ${typeBadge}
+          </button>
+        `;
+      } else {
+        // 🔒 비활성 거래소 배지 (미상장/미지원) - 어둡게 + 클릭 금지 + 점선 테두리
+        let typeBadge = "";
+        if (item.type === "SPOT") {
+          typeBadge = `<div class="absolute -bottom-1 -right-1.5 bg-zinc-800 text-zinc-400 text-[8px] px-1.5 py-0.5 rounded-[3px] border border-zinc-700/50 leading-none font-black opacity-60 whitespace-nowrap select-none tracking-tight">SPOT</div>`;
+        } else if (item.type === "FUTURE") {
+          typeBadge = `<div class="absolute -bottom-1 -right-1.5 bg-zinc-800 text-zinc-400 text-[8px] px-1.5 py-0.5 rounded-[3px] border border-zinc-700/50 leading-none font-black opacity-60 whitespace-nowrap select-none tracking-tight">FUT</div>`;
+        }
+
+        badges += `
+          <button disabled
+                  title="${item.name} (미지원/미상장)"
+                  class="relative flex items-center justify-center p-1 border border-dashed border-theme-border/25 rounded-xl w-8 h-8 min-w-[32px] min-h-[32px] shrink-0 flex-shrink-0 opacity-20 grayscale brightness-50 cursor-not-allowed select-none pointer-events-none">
+            <img src="${imgUrl}" alt="${item.id}" class="w-full h-full object-contain rounded opacity-40" />
             ${typeBadge}
           </button>
         `;

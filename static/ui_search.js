@@ -7,6 +7,7 @@ import { renderTable } from "./table_render.js";
 export function toggleTabSearch(open) {
   const searchWrap = document.getElementById("tab-search-wrapper");
   const tabGroup = document.getElementById("tab-buttons-group");
+  const actionsGroup = document.getElementById("tab-actions-group");
   const toggleBtn = document.getElementById("btn-toggle-tab-search");
   const inputMobile = document.getElementById("symbol-input-mobile");
   if (!searchWrap) return;
@@ -21,6 +22,7 @@ export function toggleTabSearch(open) {
       "pointer-events-auto",
     );
     if (tabGroup) tabGroup.classList.add("opacity-0", "pointer-events-none");
+    if (actionsGroup) actionsGroup.classList.add("opacity-0", "pointer-events-none");
     if (toggleBtn) toggleBtn.classList.add("opacity-0", "pointer-events-none");
     if (inputMobile) {
       setTimeout(() => inputMobile.focus(), 30);
@@ -35,6 +37,7 @@ export function toggleTabSearch(open) {
       "pointer-events-auto",
     );
     if (tabGroup) tabGroup.classList.remove("opacity-0", "pointer-events-none");
+    if (actionsGroup) actionsGroup.classList.remove("opacity-0", "pointer-events-none");
     if (toggleBtn)
       toggleBtn.classList.remove("opacity-0", "pointer-events-none");
     if (inputMobile && inputMobile.value.trim() !== "") {
@@ -184,6 +187,20 @@ export function getActiveSearchInput() {
   return pcInput || mobileInput;
 }
 
+export function onRecentSearchChipClick(sym) {
+  hideRecentSearchChips();
+  if (typeof window.clearSearch === "function") {
+    window.clearSearch();
+  }
+  if (typeof window.toggleTabSearch === "function") {
+    window.toggleTabSearch(false);
+  }
+  if (typeof window.selectSymbol === "function") {
+    // 🚀 isRowClick=true (모바일 즉시 차트 탭 전환) + shouldScroll=true (테이블 555등/777등 해당 위치로 중앙 스크롤)
+    window.selectSymbol(sym, null, null, true, true);
+  }
+}
+
 export function showRecentSearchChips() {
   const input = getActiveSearchInput();
   if (!input || input.value.trim().length > 0) {
@@ -216,7 +233,7 @@ export function showRecentSearchChips() {
 
   visibleList.forEach((sym) => {
     html += `
-      <div onclick="if (typeof window.selectSymbol === 'function') { window.selectSymbol('${sym}'); window.hideRecentSearchChips(); }"
+      <div onclick="window.onRecentSearchChipClick('${sym}')"
         class="group/chip flex items-center gap-1 px-2.5 py-1 rounded-lg bg-theme-panel/90 hover:bg-theme-accent/20 border border-theme-border/60 hover:border-theme-accent/60 text-theme-text text-[10px] font-bold cursor-pointer transition-all shadow-sm">
         <span>${sym}</span>
         <button onclick="window.removeRecentSearch('${sym}', event)"
@@ -230,7 +247,7 @@ export function showRecentSearchChips() {
 
   dropdown.innerHTML = html;
   dropdown.className =
-    "fixed p-2.5 bg-theme-panel/98 backdrop-blur-2xl border border-theme-border/50 rounded-xl shadow-[0_10px_25px_rgba(0,0,0,0.35)] z-[9999999] flex flex-col gap-1.5 text-left select-none transition-opacity duration-150 opacity-100";
+    "fixed p-2.5 bg-theme-panel/98 backdrop-blur-2xl border border-theme-border/50 rounded-xl shadow-[0_10px_25px_rgba(0,0,0,0.35)] z-[250] flex flex-col gap-1.5 text-left select-none transition-opacity duration-150 opacity-100";
 
   // 🚀 정확한 좌표 계산 (모바일/PC 활성 검색창 input 바로 하단에 fixed 오버레이)
   const rect = input.getBoundingClientRect();
@@ -255,6 +272,7 @@ export function renderRecentSearchChips() {
   }
 }
 
+window.onRecentSearchChipClick = onRecentSearchChipClick;
 window.toggleTabSearch = toggleTabSearch;
 window.clearSearch = clearSearch;
 window.searchSymbols = searchSymbols;

@@ -252,9 +252,11 @@ load_dotenv()
 
 @app.get("/api/get-env-key")
 def get_env_cmc_key():
-    """서버 환경변수에 설정된 CMC_API_KEY의 존재 여부만 반환합니다 (보안 유출 방지)."""
-    env_key = os.environ.get("CMC_API_KEY", "")
-    return {"exists": env_key != ""}
+    """로컬 .env 및 서버 시스템 환경변수에 설정된 CMC_API_KEY 정보를 반환합니다."""
+    env_key = os.environ.get("CMC_API_KEY", "").strip()
+    if not env_key and hasattr(config, "CMC_API_KEY"):
+        env_key = (config.CMC_API_KEY or "").strip()
+    return {"exists": bool(env_key), "key": env_key}
 
 
 # 👥 초경량 접속자 세션 트래커 (서버 메모리 상에 상주)

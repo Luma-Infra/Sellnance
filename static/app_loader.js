@@ -3,7 +3,7 @@ const EngineUI = {
   init() {
     const loaderWrap = document.getElementById("app-loader");
     loaderWrap.innerHTML = `
-      <div id="loading-overlay" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-theme-bg transition-opacity duration-1000">
+      <div id="loading-overlay" class="fixed inset-0 z-[1000] flex flex-col items-center justify-center bg-theme-bg transition-opacity duration-1000">
         <div class="w-full max-w-md p-6 bg-theme-panel border border-theme-border rounded-xl shadow-2xl">
           <div class="text-center mb-8">
             <h1 class="text-2xl font-medium text-theme-accent tracking-tighter mb-2 italic">SELLNANCE DASHBOARD</h1>

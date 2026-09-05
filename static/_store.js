@@ -63,7 +63,7 @@ export const store = {
   tempVolMax: sessionControlPanel?.customVolMax ?? 100000000000,
   tempVolSource: sessionControlPanel?.customVolSource ?? "BINANCE",
   useFlip: true, // 🚀 플립 애니메이션 사용 여부
-  chartZoomSpeed: 1.2, // 🚀 캔버스 휠 스크롤 줌 가속 배속 (1.0: 기본 트뷰 속도, 2.0~2.5: 초고속 쾌적 줌, 3.5: 초광속)
+  chartZoomSpeed: 1.15, // 🚀 캔버스 휠 스크롤 줌 가속 배속 (1.0: 기본 트뷰 속도, 2.0~2.5: 초고속 쾌적 줌, 3.5: 초광속)
   hideSmallCap: sessionControlPanel?.hideSmallCap ?? false, // 🚀 시총 1M 미만 숨기기 여부
   currentTab: sessionControlPanel?.currentTab || "ALL", // 🚀 카테고리 탭 (ALL, FAV, FAV2)
   activePresetIndex: sessionControlPanel?.activePresetIndex, // 🚀 활성 프리셋 인덱스

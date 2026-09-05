@@ -175,18 +175,18 @@ function createTimezoneMenu() {
   const menu = document.createElement("div");
   menu.id = "chart-tz-dropdown-menu";
   menu.className =
-    "fixed z-[9999] hidden flex-col w-[260px] max-h-[340px] bg-theme-panel/95 backdrop-blur-md border border-theme-border/80 shadow-2xl rounded-lg overflow-hidden text-theme-text text-xs select-none transition-all duration-150 font-tempTestDss";
+    "fixed z-[250] hidden flex-col w-[280px] max-w-[calc(100vw-20px)] max-h-[calc(100dvh-40px)] bg-theme-panel/95 backdrop-blur-md border border-theme-border/80 shadow-2xl rounded-xl overflow-hidden text-theme-text text-xs select-none transition-all duration-150 font-medium";
 
   menu.innerHTML = `
-    <div class="p-2 border-b border-theme-border/40 flex items-center justify-between bg-theme-panel/80">
+    <div class="p-2.5 border-b border-theme-border/40 flex items-center justify-between bg-theme-panel/80 shrink-0">
       <span class="font-bold text-[11px] text-theme-accent flex items-center gap-1.5">
         <span>🌐</span> 시간대 선택 (Timezone)
       </span>
       <button id="chart-tz-menu-close" class="text-theme-text opacity-60 hover:opacity-100 px-1 py-0.5 rounded cursor-pointer">✕</button>
     </div>
-    <div class="p-1.5 border-b border-theme-border/30">
+    <div class="p-2 border-b border-theme-border/30 shrink-0">
       <input id="chart-tz-search-input" type="text" placeholder="검색 (예: 서울, UTC, 뉴욕, +9)..." 
-        class="w-full px-2 py-1 text-[11px] bg-theme-bg/80 border border-theme-border/50 rounded text-theme-text placeholder:text-theme-text/40 focus:outline-none focus:border-theme-accent/60" />
+        class="w-full px-2.5 py-1.5 text-[11px] bg-theme-bg/80 border border-theme-border/50 rounded-lg text-theme-text placeholder:text-theme-text/40 focus:outline-none focus:border-theme-accent/60" />
     </div>
     <div id="chart-tz-items-container" class="flex-1 overflow-y-auto py-1 custom-scrollbar">
       <!-- 동적 리스트 렌더링 -->
@@ -195,6 +195,13 @@ function createTimezoneMenu() {
 
   document.body.appendChild(menu);
   tzMenuElement = menu;
+
+  // 🚀 메뉴 내부 클릭/더블클릭이 차트 캔버스나 리사이저로 전파되는 것 원천 차단
+  ["pointerdown", "mousedown", "touchstart", "dblclick"].forEach((evt) => {
+    menu.addEventListener(evt, (e) => {
+      e.stopPropagation();
+    });
+  });
 
   // 닫기 버튼
   menu.querySelector("#chart-tz-menu-close").addEventListener("click", closeTimezoneMenu);
@@ -256,11 +263,10 @@ function renderTimezoneItems(filterText = "") {
     const item = document.createElement("button");
     item.type = "button";
     item.dataset.tzId = tz.id;
-    item.className = `w-full px-2.5 py-1.5 flex items-center justify-between text-left cursor-pointer transition-colors border-none text-[11px] ${
-      isSelected
-        ? "bg-theme-accent/20 text-theme-accent font-bold"
-        : "bg-transparent text-theme-text/80 hover:bg-theme-border/30 hover:text-theme-text"
-    }`;
+    item.className = `w-full px-2.5 py-1.5 flex items-center justify-between text-left cursor-pointer transition-colors border-none text-[11px] ${isSelected
+      ? "bg-theme-accent/20 text-theme-accent font-bold"
+      : "bg-transparent text-theme-text/80 hover:bg-theme-border/30 hover:text-theme-text"
+      }`;
 
     item.innerHTML = `
       <div class="flex flex-col min-w-0 pr-2">
@@ -294,6 +300,10 @@ function renderTimezoneItems(filterText = "") {
 
 export function openTimezoneMenu(anchorButton) {
   const menu = createTimezoneMenu();
+  if (menu && !menu.classList.contains("hidden")) {
+    closeTimezoneMenu();
+    return;
+  }
   const searchInput = menu.querySelector("#chart-tz-search-input");
   if (searchInput) searchInput.value = "";
 
@@ -304,18 +314,25 @@ export function openTimezoneMenu(anchorButton) {
   menu.classList.remove("hidden");
   menu.classList.add("flex");
 
-  const menuWidth = 260;
-  const menuHeight = Math.min(340, window.innerHeight - 20);
+  const menuWidth = Math.min(280, window.innerWidth - 16);
+  const targetHeight = Math.min(520, window.innerHeight - 30);
 
   let left = rect.right - menuWidth;
-  let top = rect.top - menuHeight - 6;
+  let top = rect.top - targetHeight - 6;
 
-  // 화면 경계 방어
-  if (left < 10) left = 10;
-  if (top < 10) top = rect.bottom + 6;
+  // 화면 경계 방어: 위쪽 공간이 부족할 경우 아래로 또는 최적 위치로 조정
+  if (top < 10) {
+    top = Math.max(10, Math.min(rect.bottom + 6, window.innerHeight - targetHeight - 10));
+  }
+  if (left < 8) left = 8;
+  if (left + menuWidth > window.innerWidth - 8) {
+    left = window.innerWidth - menuWidth - 8;
+  }
 
   menu.style.left = `${left}px`;
   menu.style.top = `${top}px`;
+  menu.style.width = `${menuWidth}px`;
+  menu.style.height = `${targetHeight}px`;
 
   if (searchInput) {
     setTimeout(() => searchInput.focus(), 50);
@@ -360,9 +377,13 @@ export function mountTimezoneButton() {
       btn.id = id;
       btn.type = "button";
       btn.className =
-        "chart-tz-btn absolute bottom-[4px] right-[4px] z-50 h-[20px] px-1.5 flex items-center justify-center font-tempTestDss text-[9px] font-bold rounded cursor-pointer select-none transition-all duration-150 bg-theme-panel/90 text-theme-text/80 hover:text-theme-accent hover:bg-theme-panel border border-theme-border/60 hover:border-theme-accent/50 shadow-sm";
+        "chart-tz-btn absolute bottom-[4px] right-[4px] z-50 h-[22px] min-w-[54px] px-2.5 flex items-center justify-center font-medium text-[10px] font-bold rounded cursor-pointer select-none transition-all duration-150 bg-theme-panel/90 text-theme-text/80 hover:text-theme-accent hover:bg-theme-panel border border-theme-border/60 hover:border-theme-accent/50 shadow-sm tracking-tight";
       btn.textContent = store.chartTimezone || "UTC+9";
       btn.title = `시간대 설정 (현재: ${store.chartTimezone || "UTC+9"})`;
+
+      ["pointerdown", "mousedown", "touchstart", "dblclick"].forEach((evt) => {
+        btn.addEventListener(evt, (e) => e.stopPropagation());
+      });
 
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -371,6 +392,8 @@ export function mountTimezoneButton() {
 
       el.appendChild(btn);
     } else {
+      btn.className =
+        "chart-tz-btn absolute bottom-[4px] right-[4px] z-50 h-[22px] min-w-[54px] px-2.5 flex items-center justify-center font-medium text-[10px] font-bold rounded cursor-pointer select-none transition-all duration-150 bg-theme-panel/90 text-theme-text/80 hover:text-theme-accent hover:bg-theme-panel border border-theme-border/60 hover:border-theme-accent/50 shadow-sm tracking-tight";
       btn.textContent = store.chartTimezone || "UTC+9";
     }
 

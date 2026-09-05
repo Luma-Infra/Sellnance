@@ -85,9 +85,15 @@ export function restoreSavedUserSettings() {
       localStorage.getItem("sellnance_panel_swapped") === "true";
     if (isPanelSwapped) {
       const container = document.getElementById("panel-split-container");
+      const leftPanel = document.getElementById("left-panel");
       if (container) {
-        container.classList.remove("md:flex-row");
-        container.classList.add("md:flex-row-reverse");
+        container.style.setProperty("flex-direction", "row-reverse", "important");
+        container.classList.remove("flex-row", "md:flex-row");
+        container.classList.add("panel-swapped", "flex-row-reverse");
+      }
+      if (leftPanel) {
+        leftPanel.style.borderRightWidth = "0px";
+        leftPanel.style.borderLeftWidth = "1px";
       }
     }
 
@@ -191,6 +197,10 @@ export function updateStatusBadge() {
     return;
   }
 
+  const iconTimer = `<svg class="inline-block w-3.5 h-3.5 -mt-0.5 mr-1 align-middle text-theme-text opacity-85" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`;
+  const iconRocket = `<svg class="inline-block w-3.5 h-3.5 -mt-0.5 ml-1 align-middle text-theme-text opacity-85" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"></path><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"></path></svg>`;
+  const iconInfo = `<svg class="inline-block w-3 h-3 -mt-0.5 mr-1 align-middle text-theme-text opacity-75" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
+
   if (hasKey) {
     const m = Math.floor(diff / 60);
     const s = diff % 60;
@@ -200,9 +210,9 @@ export function updateStatusBadge() {
       timerEl.title = "";
       timerEl.style.cursor = "default";
     }
-    if (tipTimerEl) tipTimerEl.innerText = `⏱ ${formattedTime} 남음 (15분 주기)`;
+    if (tipTimerEl) tipTimerEl.innerHTML = `${iconTimer}${formattedTime} 남음 (15분 주기)`;
     if (tipTextEl) {
-      tipTextEl.innerHTML = `개인 CMC API 키 연동 완료 🚀<br/>15분 주기로 시총이 자동 갱신됩니다.`;
+      tipTextEl.innerHTML = `개인 CMC API 키 연동 완료 ${iconRocket}<br/>15분 주기로 시총이 자동 갱신됩니다.`;
     }
     if (dot)
       dot.className =
@@ -213,11 +223,11 @@ export function updateStatusBadge() {
     const s = diff % 60;
     const formattedTime = `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
     if (timerEl) {
-      timerEl.innerText = `⚠️ ${formattedTime} (일일 캐시)`;
+      timerEl.innerHTML = `${iconInfo}${formattedTime} (일일 캐시)`;
       timerEl.title = "";
       timerEl.style.cursor = "default";
     }
-    if (tipTimerEl) tipTimerEl.innerText = `⚠️ ${formattedTime} (일일 캐시)`;
+    if (tipTimerEl) tipTimerEl.innerHTML = `${iconInfo}${formattedTime} (일일 캐시)`;
     if (tipTextEl) {
       tipTextEl.innerHTML = `개인 CMC API 키 미입력 상태에요.<br/>서버 일일 캐시 모드(24시간 주기)로 시총을 갱신할게요.`;
     }

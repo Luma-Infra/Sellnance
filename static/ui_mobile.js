@@ -2,6 +2,7 @@
 // 📱 [모바일 뷰 & 탭 & 바텀시트 오버레이 제어 모듈]
 import { store, CONFIG } from "./_store.js";
 import { fetchHistory } from "./chart_data.js";
+import { showConfirm } from "./ui_dialog.js";
 
 let _closeMobileChartTimer = null;
 
@@ -83,6 +84,11 @@ export function showMobileChart() {
     sessionStorage.setItem("sellnance_active_mobile_tab", "chart");
   } catch (e) { }
 
+  store._currentMobileTab = "chart";
+  window.dispatchEvent(
+    new CustomEvent("mobile-tab-changed", { detail: "chart" }),
+  );
+
   if (_closeMobileChartTimer) {
     clearTimeout(_closeMobileChartTimer);
     _closeMobileChartTimer = null;
@@ -125,16 +131,35 @@ export function showMobileChart() {
 
   requestAnimationFrame(() => {
     panel.classList.add("translate-y-0");
+    if (typeof window.applyChartLayout === "function") {
+      window.applyChartLayout();
+    }
+    if (typeof window.syncPriceScaleWidths === "function") {
+      window.syncPriceScaleWidths(true);
+    }
+    if (typeof window.autoFit === "function") {
+      window.autoFit(true);
+    }
+    if (typeof window.scrollActiveTfIntoView === "function") {
+      window.scrollActiveTfIntoView(false);
+    }
   });
 
   setTimeout(() => {
     if (typeof window.applyChartLayout === "function") {
       window.applyChartLayout();
     }
-    if (store.chart) {
-      store.chart.timeScale().fitContent();
+    if (typeof window.syncPriceScaleWidths === "function") {
+      window.syncPriceScaleWidths(true);
     }
-  }, 380);
+    // 🚀 [PC와 100% 동일한 우측 10봉 여백 & 상하 차트 동기화] fitContent 0여백 버그 제거하고 autoFit 연동
+    if (typeof window.autoFit === "function") {
+      window.autoFit(true);
+    }
+    if (typeof window.scrollActiveTfIntoView === "function") {
+      window.scrollActiveTfIntoView(false);
+    }
+  }, 320);
 }
 
 export function closeMobileChart() {
@@ -227,19 +252,17 @@ export function switchMobileTab(tab) {
 export function switchChartTab(mode) {
   const btnSim = document.getElementById("tab-btn-sim");
   if (mode === "chart" && btnSim && btnSim.classList.contains("active")) {
-    window.Swal.fire({
+    showConfirm({
       title: "시뮬레이션 종료 🚨",
       html: "그려둔 가상 캔들이 모두 초기화되고 실제 차트로 돌아가요<br/>진짜로 넘어갈까요?",
       icon: "warning",
+      confirmText: "네, 넘어갈게요",
+      cancelText: "아니요, 계속할게요",
+      confirmColor: "var(--down)",
+      cancelColor: "transparent",
       showCancelButton: true,
-      background: "var(--panel)",
-      color: "var(--text)",
-      confirmButtonColor: "var(--down)",
-      cancelButtonColor: "var(--border)",
-      confirmButtonText: "네, 넘어갈게요",
-      cancelButtonText: "아니요, 계속할게요",
-    }).then((result) => {
-      if (result.isConfirmed) {
+    }).then((confirmed) => {
+      if (confirmed) {
         executeTabSwitch(mode);
       } else {
         // 취소 시 슬라이더 활성 바를 시뮬레이터(index 1) 위치로 확실하게 유지/복원

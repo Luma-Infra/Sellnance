@@ -17,7 +17,7 @@ export function getOrCreateGlobalCautionTooltip() {
     globalCautionTooltip = document.createElement("div");
     globalCautionTooltip.id = "global-caution-tooltip";
     globalCautionTooltip.className =
-      "fixed pointer-events-none opacity-0 transition-opacity duration-150 p-2.5 bg-theme-panel/98 backdrop-blur-2xl border border-rose-500/50 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.25)] z-[9999999] flex flex-col gap-1.5 text-left font-sans min-w-[220px] max-w-[320px] text-theme-text";
+      "fixed pointer-events-none opacity-0 transition-opacity duration-150 p-2.5 bg-theme-panel/98 backdrop-blur-2xl border border-rose-500/50 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.25)] z-[250] flex flex-col gap-1.5 text-left font-sans min-w-[220px] max-w-[320px] text-theme-text";
     document.body.appendChild(globalCautionTooltip);
   }
   return globalCautionTooltip;
@@ -114,7 +114,7 @@ if (typeof window !== "undefined") {
       popoverEl.style.borderRadius = "6px";
       popoverEl.style.boxShadow = "0 20px 40px rgba(0, 0, 0, 0.85)";
       popoverEl.style.pointerEvents = "none"; // 호버 중복 간섭 및 깜빡임 방지
-      popoverEl.style.zIndex = "999999";
+      popoverEl.style.zIndex = "250";
       popoverEl.style.opacity = "0";
       popoverEl.style.transform = "scale(0.9)";
       popoverEl.style.transition = "opacity 0.15s ease, transform 0.15s ease";

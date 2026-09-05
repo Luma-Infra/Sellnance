@@ -82,6 +82,9 @@ export function switchViewMode(mode, saveToStorage = true) {
   }
 }
 
+let _panelSwapTimer = null;
+let _panelSwapLayoutTimer = null;
+
 // 🚀 좌우 패널 위치 스왑 (FLIP 애니메이션)
 export function togglePanelSwap() {
   const container = document.getElementById("panel-split-container");
@@ -89,23 +92,46 @@ export function togglePanelSwap() {
   const rightPanel = document.getElementById("right-panel");
   if (!container || !leftPanel || !rightPanel) return;
 
+  // 이전 진행 중인 애니메이션/타이머 즉시 정리
+  if (_panelSwapTimer) clearTimeout(_panelSwapTimer);
+  if (_panelSwapLayoutTimer) clearTimeout(_panelSwapLayoutTimer);
+  leftPanel.style.transition = "none";
+  rightPanel.style.transition = "none";
+  leftPanel.style.transform = "";
+  rightPanel.style.transform = "";
+
+  // 1. First (변환 전 위치 측정)
   const firstLeft = leftPanel.getBoundingClientRect();
   const firstRight = rightPanel.getBoundingClientRect();
 
-  const isReverse = container.classList.contains("md:flex-row-reverse");
-  if (isReverse) {
-    container.classList.remove("md:flex-row-reverse");
-    container.classList.add("md:flex-row");
+  // 2. State Toggle
+  const isCurrentlySwapped =
+    container.classList.contains("panel-swapped") ||
+    container.classList.contains("flex-row-reverse") ||
+    container.style.flexDirection === "row-reverse" ||
+    localStorage.getItem("sellnance_panel_swapped") === "true";
+
+  if (isCurrentlySwapped) {
+    container.style.setProperty("flex-direction", "row", "important");
+    container.classList.remove("panel-swapped", "flex-row-reverse", "md:flex-row-reverse");
+    container.classList.add("flex-row");
+    leftPanel.style.borderRightWidth = "";
+    leftPanel.style.borderLeftWidth = "";
     localStorage.setItem("sellnance_panel_swapped", "false");
   } else {
-    container.classList.remove("md:flex-row");
-    container.classList.add("md:flex-row-reverse");
+    container.style.setProperty("flex-direction", "row-reverse", "important");
+    container.classList.remove("flex-row", "md:flex-row");
+    container.classList.add("panel-swapped", "flex-row-reverse");
+    leftPanel.style.borderRightWidth = "0px";
+    leftPanel.style.borderLeftWidth = "1px";
     localStorage.setItem("sellnance_panel_swapped", "true");
   }
 
+  // 3. Last (변환 후 위치 측정)
   const lastLeft = leftPanel.getBoundingClientRect();
   const lastRight = rightPanel.getBoundingClientRect();
 
+  // 4. Invert (원래 위치로 순간 이동)
   const deltaLeft = firstLeft.left - lastLeft.left;
   const deltaRight = firstRight.left - lastRight.left;
 
@@ -114,30 +140,35 @@ export function togglePanelSwap() {
   leftPanel.style.transform = `translateX(${deltaLeft}px)`;
   rightPanel.style.transform = `translateX(${deltaRight}px)`;
 
-  leftPanel.getBoundingClientRect();
+  // 강제 Reflow 유도
+  void leftPanel.offsetWidth;
 
+  // 5. Play (목표 위치로 부드럽게 슬라이드 애니메이션)
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       leftPanel.style.transition =
-        "transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)";
+        "transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)";
       rightPanel.style.transition =
-        "transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)";
+        "transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)";
       leftPanel.style.transform = "translateX(0)";
       rightPanel.style.transform = "translateX(0)";
 
-      setTimeout(() => {
+      _panelSwapTimer = setTimeout(() => {
         leftPanel.style.transition = "";
         rightPanel.style.transition = "";
         leftPanel.style.transform = "";
         rightPanel.style.transform = "";
-      }, 600);
+        _panelSwapTimer = null;
+      }, 500);
     });
   });
 
-  setTimeout(() => {
-    if (typeof window.applyChartLayout === "function")
+  _panelSwapLayoutTimer = setTimeout(() => {
+    if (typeof window.applyChartLayout === "function") {
       window.applyChartLayout();
-  }, 620);
+    }
+    _panelSwapLayoutTimer = null;
+  }, 520);
 }
 
 export function showOnboardingModal(force = false) {
@@ -200,41 +231,35 @@ export function checkLayoutOverlap() {
     return;
   }
 
-  // 2. PC 데스크탑 환경 (마우스 포인터)
-  const overlay = document.getElementById("mobile-chart-overlay");
-  if (overlay && overlay.style.opacity === "1" && isTouch) return;
-
-  const containerWidth = document.body.clientWidth;
-
-  // PC에서 창 크기를 줄여서 < 1200px 이거나 가로 공간이 좁을 때:
-  // 우측 차트 패널을 자연스럽게 닫고, 좌측 테이블 패널이 100% 꽉 차도록 확장
-  if (window.innerWidth < 1200 || containerWidth < 1000) {
-    rightPanel.style.display = "none";
-    leftPanel.style.width = "100%";
-    leftPanel.style.flex = "1 1 100%";
-    leftPanel.style.maxWidth = "100%";
-  } else {
-    // PC 창이 충분히 넓을 때 (>= 1200px): 차트 복원 및 테이블 너비 기본값 복원
-    const wasHidden = rightPanel.style.display === "none";
+  // 2. PC 데스크탑 환경 (마우스 포인터): 창을 좁혀도 차트가 절대 사라지지 않고 2분할 유지!
+  if (rightPanel.style.display === "none") {
     rightPanel.style.display = "flex";
-    leftPanel.style.width = "";
-    leftPanel.style.flex = "";
-    leftPanel.style.maxWidth = "";
+  }
+  leftPanel.style.width = "";
+  leftPanel.style.flex = "";
+  leftPanel.style.maxWidth = "";
 
-    if (wasHidden && typeof window.applyChartLayout === "function") {
-      window.applyChartLayout();
-    }
+  if (typeof window.applyChartLayout === "function") {
+    window.applyChartLayout();
   }
 }
 
 export function adjustNoticeFontSizes() {
-  const isMobile = window.innerWidth < 1200;
+  const container = document.getElementById("header-notice-container");
   const slider = document.getElementById("notice-slider");
   if (!slider) return;
 
+  // 1000px 미만이면 공지사항 바 자체를 숨김 처리
+  if (window.innerWidth < 1000) {
+    if (container) container.style.display = "none";
+    return;
+  } else {
+    if (container) container.style.display = "";
+  }
+
   const items = slider.querySelectorAll("div");
   items.forEach((div) => {
-    if (!isMobile) {
+    if (window.innerWidth >= 1200) {
       div.style.fontSize = "";
       return;
     }
@@ -242,10 +267,11 @@ export function adjustNoticeFontSizes() {
     const text = div.innerText || "";
     const len = text.length;
 
-    const threshold = 30;
-    const baseRem = 0.72;
-    const minRem = 0.45;
-    const logMult = 0.45;
+    // 🚀 감쇄율 2배 완화(0.45 -> 0.22) & 하한선 상향(0.45 -> 0.65rem): 글자가 덜 깎이고 시인성 보장
+    const threshold = 40;
+    const baseRem = 0.75;
+    const minRem = 0.65;
+    const logMult = 0.22;
 
     let sizeRem = baseRem;
     if (len > threshold) {
@@ -255,8 +281,9 @@ export function adjustNoticeFontSizes() {
       );
     }
 
-    const scaleFactor = Math.min(1, window.innerWidth / 1200);
-    const finalRem = sizeRem * scaleFactor;
+    // 1000px ~ 1200px 구간에서도 과도한 축소 방지 (최소 0.9배 유지)
+    const scaleFactor = Math.max(0.9, Math.min(1, window.innerWidth / 1200));
+    const finalRem = Math.max(minRem, sizeRem * scaleFactor);
 
     div.style.fontSize = `${finalRem.toFixed(3)}rem`;
   });

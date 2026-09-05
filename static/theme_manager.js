@@ -13,15 +13,21 @@ let isThemeToggling = false; // 연타 방지 플래그
  * 🚀 CSS 변수에서 차트 캔들 전용 상승/하락 색상 읽기
  */
 export function getCandleThemeColors() {
-  const style = getComputedStyle(document.body);
+  const currentMode =
+    store.candleTheme ||
+    (typeof localStorage !== "undefined" &&
+      localStorage.getItem("sellnance_candle_theme")) ||
+    "kr";
+
+  const style = typeof document !== "undefined" ? getComputedStyle(document.body) : null;
   const up =
-    style.getPropertyValue("--candle-up").trim() ||
-    style.getPropertyValue("--up").trim() ||
-    "#26a69a";
+    style?.getPropertyValue("--candle-up")?.trim() ||
+    style?.getPropertyValue("--up")?.trim() ||
+    (currentMode === "kr" ? "#f7525f" : "#26a69a");
   const down =
-    style.getPropertyValue("--candle-down").trim() ||
-    style.getPropertyValue("--down").trim() ||
-    "#ef5350";
+    style?.getPropertyValue("--candle-down")?.trim() ||
+    style?.getPropertyValue("--down")?.trim() ||
+    (currentMode === "kr" ? "#3179f5" : "#ef5350");
   return { up, down };
 }
 
@@ -73,95 +79,22 @@ export function applyCandleTheme(theme) {
       "kr";
   }
 
-  // 1. 전역 CSS data-color-mode 주입 → CSS 변수(--up, --down, --candle-up, --flash-up 등) 즉시 0ms 전환!
-  //    (이를 통해 캔들뿐 아니라 24h 변동률, 김프 %, 호가창, 경주마 플래시까지 일괄 연동)
+  // 1. 전역 CSS data-color-mode 주입 → CSS 변수(--up, --down 등) 즉시 0ms 전환!
   document.documentElement.setAttribute("data-color-mode", store.candleTheme);
   document.body.setAttribute("data-color-mode", store.candleTheme);
 
-  // 2. CSS 변수에서 최신 색상 추출
-  const { up, down } = getCandleThemeColors();
-  store.upColorCache = up;
-  store.downColorCache = down;
+  // 2. 캔들, 그리드, 볼륨(vol) 차트 시리즈를 원자적으로 동기 갱신 (지연/딜레이 0ms)
+  updateChartTheme();
 
-  // 3. 메인 차트 캔들 시리즈 업데이트
-  if (store.candleSeries) {
-    store.candleSeries.applyOptions({
-      upColor: up,
-      downColor: down,
-      wickUpColor: up,
-      wickDownColor: down,
-    });
-  }
-
-  // 4. 가상 시뮬레이터 프리뷰 시리즈 업데이트
-  if (store.previewSeries) {
-    store.previewSeries.applyOptions({
-      upColor: up + "4D",
-      downColor: down + "4D",
-    });
-  }
-
-  // 5. 볼륨 시리즈 동기화
-  if (store.volumeSeries && store.volumeData && store.mainData) {
-    const upColorVol = up + "80";
-    const downColorVol = down + "80";
-
-    store.volumeSeries.applyOptions({ color: upColorVol });
-
-    store.volumeData.forEach((volItem, index) => {
-      const candle = store.mainData[index];
-      if (candle) {
-        volItem.color = candle.close >= candle.open ? upColorVol : downColorVol;
-      }
-    });
-
-    const _idleFn = () => {
-      if (!store.volumeSeries || !store.volumeData) return;
-      const isDayUnit = !(store.currentTF || "1h").match(/[hm]/);
-      const mapTime = (d) => {
-        if (isDayUnit) {
-          if (typeof d.time === "string" && d.time.includes("-")) return d;
-          const numTime = Number(d.time);
-          if (isNaN(numTime)) return d;
-          const dt = new Date(numTime * 1000);
-          return {
-            ...d,
-            time: `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, "0")}-${String(dt.getUTCDate()).padStart(2, "0")}`,
-          };
-        } else {
-          if (typeof d.time === "string" && d.time.includes("-")) {
-            const parsedUnix = Math.floor(new Date(d.time).getTime() / 1000);
-            return { ...d, time: isNaN(parsedUnix) ? d.time : parsedUnix };
-          }
-          return d;
-        }
-      };
-      try {
-        const mappedVol = store.volumeData.map(mapTime);
-        store.volumeSeries.setData(
-          window.sanitizeChartData
-            ? window.sanitizeChartData(mappedVol, true)
-            : mappedVol,
-        );
-      } catch (volThemeErr) { }
-    };
-
-    if (typeof requestIdleCallback !== "undefined") {
-      requestIdleCallback(_idleFn, { timeout: 500 });
-    } else {
-      setTimeout(_idleFn, 0);
-    }
-  }
-
-  // 6. 버튼 UI 갱신
+  // 3. 버튼 UI 갱신
   updateCandleThemeButtons();
 
-  // 7. 시뮬레이터 콩나물 대가리 색상 즉시 동기화
+  // 4. 시뮬레이터 콩나물 대가리 색상 즉시 동기화
   if (typeof window.changeDir === "function" && store.curDir) {
     window.changeDir(store.curDir);
   }
 
-  // 8. 🚀 퀵뷰(QuickView) 캔들 차트 색상 실시간 동기화
+  // 5. 🚀 퀵뷰(QuickView) 캔들 차트 색상 실시간 동기화
   if (typeof window.updateQuickViewTheme === "function") {
     window.updateQuickViewTheme();
   }
@@ -214,11 +147,15 @@ export function toggleTheme() {
     html.classList.remove("theme-transitioning");
   }, THEME_MS > 0 ? THEME_MS : 50);
 
-  const updateThemeButtons = (emoji) => {
+  const updateThemeButtons = (theme) => {
+    const isDark = theme === "binance";
+    const emoji = isDark ? "🌙" : "☀️";
+    const title = isDark ? "다크 모드" : "라이트 모드";
     document
       .querySelectorAll("#theme-toggle-btn, #start-theme-toggle-btn")
       .forEach((b) => {
         b.innerHTML = emoji;
+        b.title = title;
       });
   };
 
@@ -228,7 +165,7 @@ export function toggleTheme() {
     html.classList.remove("theme-binance");
     html.classList.add("theme-upbit");
     store.currentTheme = "upbit";
-    updateThemeButtons("🌙");
+    updateThemeButtons("upbit");
     if (faviconLink) faviconLink.href = staticPath + "luma-deer-svg-light.svg";
     if (mainLogoImg) mainLogoImg.src = staticPath + "luma-deer-svg-light.svg";
   } else {
@@ -237,7 +174,7 @@ export function toggleTheme() {
     html.classList.remove("theme-upbit");
     html.classList.add("theme-binance");
     store.currentTheme = "binance";
-    updateThemeButtons("☀️");
+    updateThemeButtons("binance");
     if (faviconLink) faviconLink.href = staticPath + "luma-deer-svg-dark.svg";
     if (mainLogoImg) mainLogoImg.src = staticPath + "luma-deer-svg-dark.svg";
   }
@@ -285,7 +222,10 @@ export function restoreThemeSettings() {
       html.classList.add("theme-upbit");
       store.currentTheme = "upbit";
       const btn = document.getElementById("theme-toggle-btn");
-      if (btn) btn.innerHTML = "🌙";
+      if (btn) {
+        btn.innerHTML = "☀️";
+        btn.title = "테마 변경 (현재: 라이트 모드)";
+      }
     } else {
       body.classList.remove("theme-upbit");
       body.classList.add("theme-binance");
@@ -293,7 +233,10 @@ export function restoreThemeSettings() {
       html.classList.add("theme-binance");
       store.currentTheme = "binance";
       const btn = document.getElementById("theme-toggle-btn");
-      if (btn) btn.innerHTML = "☀️";
+      if (btn) {
+        btn.innerHTML = "🌙";
+        btn.title = "테마 변경 (현재: 다크 모드)";
+      }
     }
 
     // 2. 캔들/텍스트 컬러 모드 복원
