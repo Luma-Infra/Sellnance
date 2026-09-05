@@ -1972,7 +1972,7 @@ body.theme-upbit #right-panel {
 /* 토스트 컨테이너 */
 #sellnance-toast-container {
   position: fixed;
-  z-index: 8333;
+  z-index: 822;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -2130,7 +2130,7 @@ body.theme-upbit #right-panel {
   background: rgba(0, 0, 0, 0.65);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  z-index: 1000;
+  z-index: 255;
   display: flex;
   align-items: center;
   justify-content: center;

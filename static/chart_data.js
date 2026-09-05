@@ -50,37 +50,6 @@ export async function fetchCandlesSmart(
     (window.location.hostname === "localhost" ||
       window.location.hostname === "127.0.0.1");
 
-  // 업비트는 toVal 있어도 브라우저 직접 fetch 지원 (초고속 다이렉트 호출)
-  if (!isGapRecovery && exchange === "upbit" && toVal && !startVal) {
-    try {
-      let fetchInterval = interval;
-      if (!interval.startsWith("minutes/")) {
-        const u = interval.replace(/[0-9]/g, "");
-        if (u === "d" || u === "w" || u === "M" || interval === "days" || interval === "weeks" || interval === "months") {
-          fetchInterval = u === "w" || interval === "weeks" ? "weeks" : u === "M" || interval === "months" ? "months" : "days";
-        } else {
-          const minMap = {
-            "1m": "minutes/1", "3m": "minutes/3", "5m": "minutes/5",
-            "15m": "minutes/15", "30m": "minutes/30", "1h": "minutes/60",
-            //  "2h": "minutes/120", 
-            "4h": "minutes/240"
-          };
-          fetchInterval = minMap[interval] || "minutes/1";
-        }
-      }
-      // 업비트 to 파라미터: ISO8601 형식 (예: 2025-12-07T00:00:00)
-      const toParam = `&to=${encodeURIComponent(toVal)}`;
-      const upbitUrl = `https://api.upbit.com/v1/candles/${fetchInterval}?market=${symbol}&count=200${toParam}`;
-      const res = await fetch(upbitUrl);
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data)) return data;
-      }
-    } catch (err) {
-      // console.warn(`⚠️ [UPBIT TO DIRECT FAIL] ${symbol} - ${toVal}, falling back:`, err);
-    }
-  }
-
   if (!isGapRecovery && !toVal && !startVal) {
     try {
       let directUrl = null;
@@ -88,39 +57,6 @@ export async function fetchCandlesSmart(
         directUrl = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
       } else if (exchange === "binance_futures") {
         directUrl = `https://fapi.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
-      } else if (exchange === "upbit") {
-        let fetchInterval = interval;
-        if (!interval.startsWith("minutes/")) {
-          const u = interval.replace(/[0-9]/g, "");
-          if (
-            u === "d" ||
-            u === "w" ||
-            u === "M" ||
-            interval === "days" ||
-            interval === "weeks" ||
-            interval === "months"
-          ) {
-            fetchInterval =
-              u === "w" || interval === "weeks"
-                ? "weeks"
-                : u === "M" || interval === "months"
-                  ? "months"
-                  : "days";
-          } else {
-            const minMap = {
-              "1m": "minutes/1",
-              "3m": "minutes/3",
-              "5m": "minutes/5",
-              "15m": "minutes/15",
-              "30m": "minutes/30",
-              "1h": "minutes/60",
-              // "2h": "minutes/120",
-              "4h": "minutes/240",
-            };
-            fetchInterval = minMap[interval] || "minutes/1";
-          }
-        }
-        directUrl = `https://api.upbit.com/v1/candles/${fetchInterval}?market=${symbol}&count=200`; // 업비트 최대 한도: 200개
       } else if (exchange === "bybit_spot" || exchange === "bybit_futures") {
         const category = exchange === "bybit_spot" ? "spot" : "linear";
         const bMap = {

@@ -1093,6 +1093,8 @@ async function initStartScreen() {
   }
 
   document.documentElement.classList.add("start-screen-active");
+  const dashboard = document.getElementById("main-dashboard-content");
+  if (dashboard) dashboard.style.display = "none";
   // 🚀 공백이든 값 없든 무조건 불러오기 작업 이후 활성화!
   if (input) {
     input.disabled = false;
@@ -1331,6 +1333,8 @@ function hideStartScreen() {
 
   // 🚀 [핵심] 사용자가 Start / Skip 버튼을 누른 바로 이 시점에 비로소 대시보드 데이터 및 실시간 엔진을 점화합니다!
   document.documentElement.classList.remove("start-screen-active");
+  const dashboard = document.getElementById("main-dashboard-content");
+  if (dashboard) dashboard.style.display = "flex";
   if (typeof window.initDashboardEngine === "function") {
     window.initDashboardEngine();
   }
@@ -1359,6 +1363,8 @@ function hideStartScreen() {
 
 export async function showStartScreen() {
   document.documentElement.classList.add("start-screen-active");
+  const dashboard = document.getElementById("main-dashboard-content");
+  if (dashboard) dashboard.style.display = "none";
   const screen = document.getElementById("start-screen");
   if (!screen) {
     await initStartScreen();

@@ -477,19 +477,10 @@ async function initSingleQuickViewChart(container, asset, idx) {
       try {
         if (idx > 0) await new Promise((r) => setTimeout(r, idx * 50));
         const res = await fetch(
-          `https://api.upbit.com/v1/candles/${upbitInterval}?market=KRW-${cleanSym}&count=100`,
+          `/api/candles?exchange=upbit&symbol=KRW-${cleanSym}&interval=${upbitInterval}&limit=100`,
         );
         if (res.ok) raw = await res.json();
       } catch (e) { }
-
-      if (!raw) {
-        try {
-          const res = await fetch(
-            `/api/candles?exchange=upbit&symbol=KRW-${cleanSym}&interval=${upbitInterval}&limit=100`,
-          );
-          if (res.ok) raw = await res.json();
-        } catch (e) { }
-      }
 
       if (Array.isArray(raw)) {
         candles = raw
