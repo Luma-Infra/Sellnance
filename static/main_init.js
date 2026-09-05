@@ -92,12 +92,15 @@ export function restoreSavedUserSettings() {
     }
 
     // 5. 테이블 상세/간편 뷰 모드 복원
-    const isMobile = window.innerWidth < 1200;
-    const savedViewMode = isMobile
-      ? "simple"
-      : localStorage.getItem("sellnance_table_view_mode") || "basic";
+    let savedViewMode = localStorage.getItem("sellnance_table_view_mode");
+    if (!savedViewMode || savedViewMode === "simple") {
+      savedViewMode = "basic";
+      try {
+        localStorage.setItem("sellnance_table_view_mode", "basic");
+      } catch (e) {}
+    }
     if (typeof switchViewMode === "function") {
-      switchViewMode(savedViewMode);
+      switchViewMode(savedViewMode, false);
     }
 
     // 6. 세션에 저장된 컨트롤 패널 UI 즉시 복원
@@ -158,13 +161,18 @@ window.initDashboardEngine = initDashboardEngine;
 export function updateStatusBadge() {
   const timerEl = document.getElementById("status-timer");
   const usersEl = document.getElementById("status-users");
-  if (!timerEl || !usersEl) return;
+  const tipTimerEl = document.getElementById("tooltip-timer");
+  const tipUsersEl = document.getElementById("tooltip-users");
+  const tipTextEl = document.getElementById("status-tooltip-text");
+  const dot = document.getElementById("status-timer-dot");
 
   const users = store.activeUsers || 1;
-  usersEl.innerText = `${users} Active`;
+  if (usersEl) usersEl.innerText = `${users} Active`;
+  if (tipUsersEl) tipUsersEl.innerText = `${users} Active`;
 
   if (!store.lastUpdatedRaw) {
-    timerEl.innerText = "--:--:-- 이후 시가총액 갱신";
+    if (timerEl) timerEl.innerText = "--:--:-- 이후 시가총액 갱신";
+    if (tipTimerEl) tipTimerEl.innerText = "--:--:--";
     return;
   }
 
@@ -177,40 +185,90 @@ export function updateStatusBadge() {
   let diff = Math.floor(nextUpdate - now);
 
   if (diff < 0) {
-    timerEl.innerText = hasKey
-      ? "수집 완료 대기 중..."
-      : "일일 수집 대기 중...";
+    const msg = hasKey ? "수집 완료 대기 중..." : "일일 수집 대기 중...";
+    if (timerEl) timerEl.innerText = msg;
+    if (tipTimerEl) tipTimerEl.innerText = msg;
     return;
   }
-
-  const tooltip = document.getElementById("status-cache-tooltip");
-  const dot = document.getElementById("status-timer-dot");
 
   if (hasKey) {
     const m = Math.floor(diff / 60);
     const s = diff % 60;
     const formattedTime = `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-    timerEl.innerText = `${formattedTime} 이후 시가총액 갱신`;
-    timerEl.title = "";
-    timerEl.style.cursor = "default";
+    if (timerEl) {
+      timerEl.innerText = `${formattedTime} 이후 시가총액 갱신`;
+      timerEl.title = "";
+      timerEl.style.cursor = "default";
+    }
+    if (tipTimerEl) tipTimerEl.innerText = `⏱ ${formattedTime} 남음 (15분 주기)`;
+    if (tipTextEl) {
+      tipTextEl.innerHTML = `개인 CMC API 키 연동 완료 🚀<br/>15분 주기로 시총이 자동 갱신됩니다.`;
+    }
     if (dot)
       dot.className =
-        "inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse";
-    if (tooltip) tooltip.style.display = "none";
+        "inline-block w-2 h-2 min-[1200px]:w-1.5 min-[1200px]:h-1.5 rounded-full bg-emerald-500 animate-pulse";
   } else {
     const h = Math.floor(diff / 3600);
     const m = Math.floor((diff % 3600) / 60);
     const s = diff % 60;
     const formattedTime = `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-    timerEl.innerText = `⚠️ ${formattedTime} (일일 캐시)`;
-    timerEl.title = "";
-    timerEl.style.cursor = "default";
+    if (timerEl) {
+      timerEl.innerText = `⚠️ ${formattedTime} (일일 캐시)`;
+      timerEl.title = "";
+      timerEl.style.cursor = "default";
+    }
+    if (tipTimerEl) tipTimerEl.innerText = `⚠️ ${formattedTime} (일일 캐시)`;
+    if (tipTextEl) {
+      tipTextEl.innerHTML = `개인 CMC API 키 미입력 상태에요.<br/>서버 일일 캐시 모드(24시간 주기)로 시총을 갱신할게요.`;
+    }
     if (dot)
       dot.className =
-        "inline-block w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse";
-    if (tooltip) tooltip.style.display = "block";
+        "inline-block w-2 h-2 min-[1200px]:w-1.5 min-[1200px]:h-1.5 rounded-full bg-amber-400 animate-pulse";
   }
 }
+
+export function toggleStatusTooltip(event) {
+  if (event) event.stopPropagation();
+
+  // 🚀 모바일 환경(width < 1200)에서 차트 보는 중이면 팝업 열지 않고 즉시 리턴
+  if (window.innerWidth < 1200) {
+    const overlay = document.getElementById("mobile-chart-overlay");
+    const isChartOpen =
+      (overlay && overlay.style.opacity === "1" && !overlay.classList.contains("hidden")) ||
+      (window.store && window.store._currentMobileTab === "chart");
+    if (isChartOpen) return;
+  }
+
+  const tooltip = document.getElementById("status-cache-tooltip");
+  if (!tooltip) return;
+  const isOpen = tooltip.classList.contains("opacity-100");
+  if (isOpen) {
+    tooltip.classList.remove("opacity-100", "pointer-events-auto", "translate-y-0");
+    tooltip.classList.add("opacity-0", "pointer-events-none", "translate-y-1");
+  } else {
+    updateStatusBadge();
+    tooltip.classList.remove("opacity-0", "pointer-events-none", "translate-y-1");
+    tooltip.classList.add("opacity-100", "pointer-events-auto", "translate-y-0");
+  }
+}
+
+// 모바일에서 팝업 바깥 터치 시 자동 닫기
+if (typeof document !== "undefined") {
+  document.addEventListener("click", (e) => {
+    if (window.innerWidth < 1200) {
+      const badge = document.getElementById("server-status-badge");
+      const tooltip = document.getElementById("status-cache-tooltip");
+      if (tooltip && tooltip.classList.contains("opacity-100")) {
+        if (!badge || !badge.contains(e.target)) {
+          tooltip.classList.remove("opacity-100", "pointer-events-auto", "translate-y-0");
+          tooltip.classList.add("opacity-0", "pointer-events-none", "translate-y-1");
+        }
+      }
+    }
+  });
+}
+
+window.toggleStatusTooltip = toggleStatusTooltip;
 window.updateStatusBadge = updateStatusBadge;
 
 // 🚀 [신규] 1초마다 성능 디버거 통계 수치 갱신
@@ -409,6 +467,13 @@ export function setupRouteAndHistory() {
     if (typeof selectSymbol === "function") {
       selectSymbol(initialRouteSym);
     }
+  } else if (window.innerWidth < 1200) {
+    try {
+      const activeTab = sessionStorage.getItem("sellnance_active_mobile_tab") || "list";
+      if (activeTab === "chart" && typeof switchMobileTab === "function") {
+        switchMobileTab("chart");
+      }
+    } catch (e) { }
   }
 
   const handleHistoryNavigation = () => {

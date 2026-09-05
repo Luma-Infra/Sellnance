@@ -7,7 +7,14 @@ import {
   updateRealtimeKimchiThrottled,
 } from "./stream_korea.js";
 import { renderRealtimeUpdate } from "./stream_render.js";
-import { getNormalizedTime, isTimeValid } from "./stream_utils.js";
+import {
+  isChartBusy,
+  isMatchingCurrentSymbol,
+  isValidPriceRatio,
+  applyTradeToCandle,
+  getNormalizedTime,
+  isTimeValid,
+} from "./stream_utils.js";
 
 export function startRealtimeCandle(
   symbol,
@@ -28,9 +35,16 @@ export function startRealtimeCandle(
 
   // 🚀 [해결] 실시간 김프 동적 연산을 위해, 현재 탭의 거래소뿐 아니라 김프 계산의 상대방(국내 ↔ 해외) 거래소 소켓도 활성화 상태로 유지합니다.
   const pureSymbol = getPureBase(symbol);
-  const row = store.currentTableData?.find(
-    (c) => getPureBase(c.Symbol) === pureSymbol || getPureBase(c.Ticker) === pureSymbol
-  );
+  const effUid = store.currentSelectedUid;
+  let row = null;
+  if (effUid && store.currentTableData) {
+    row = store.currentTableData.find((c) => String(c.UID) === String(effUid));
+  }
+  if (!row && store.currentTableData) {
+    row = store.currentTableData.find(
+      (c) => c.DisplayTicker === symbol || c.Ticker === symbol || getPureBase(c.Symbol) === pureSymbol || getPureBase(c.Ticker) === pureSymbol
+    );
+  }
 
   const hasUpbit = row ? (row.Upbit === "O" || row.Listed_Exchanges?.includes("UPBIT")) : true;
   const hasBithumb = row ? (row.Listed_Exchanges?.includes("BITHUMB")) : false;
@@ -60,8 +74,10 @@ export function startRealtimeCandle(
     store.bybitChartWs = null; store.currentBybitStream = null;
   }
 
-  const aggStream = `${symbol.toLowerCase()}usdt@aggTrade`;
-  const klineStream = `${symbol.toLowerCase()}usdt@kline_${interval}`;
+  const binanceIsFutures = isFutures || (store.currentChartMarket !== "SPOT" && store.currentChartMarket !== "BINANCE" && (row?.Exact_Futures || row?.Binance_Futures === "O"));
+  const binanceSym = (binanceIsFutures ? (row?.Exact_Futures || pureSymbol) : (row?.Exact_Spot || pureSymbol)).toLowerCase();
+  const aggStream = `${binanceSym}usdt@aggTrade`;
+  const klineStream = `${binanceSym}usdt@kline_${interval}`;
   const wsBase = isFutures
     ? "wss://fstream.binance.com/market/ws"
     : "wss://stream.binance.com:9443/ws";
@@ -77,6 +93,17 @@ export function startRealtimeCandle(
   let lastTitleUpdateTime = 0;
   let lastStatusUpdateTime = 0;
   let lastCountdownUpdateTime = 0;
+
+  // 🚀 코인 전환 시 대기 중인 틱 버퍼 및 타이머 즉시 초기화
+  window.flushRealtimeBuffers = () => {
+    latestActiveCandle = null;
+    latestSymbol = null;
+    realtimeUpdatePending = false;
+    if (realtimeUpdateTimer) {
+      clearTimeout(realtimeUpdateTimer);
+      realtimeUpdateTimer = null;
+    }
+  };
 
   // 2️⃣ 소켓 수신 데이터를 메인 루프에 분배하는 게이트웨이
   const broadcastCandleUpdate = (activeCandle, symbol, serverMs, marketType) => {
@@ -95,6 +122,7 @@ export function startRealtimeCandle(
 
     // 백그라운드 탭 타이틀 실시간 반영 (쓰로틀 적용으로 0ms DOM Reflow 차단)
     if (activeCandle) {
+      activeCandle.symbol = symbol; // 🚀 심볼 보존
       activeCandle.marketType = marketType; // 🚀 거래소 및 현/선물 성격 마크 주입
       if (now - lastTitleUpdateTime >= perfConfig.TITLE_UPDATE_THROTTLE_MS) {
         lastTitleUpdateTime = now;
@@ -119,6 +147,13 @@ export function startRealtimeCandle(
       lastChartRenderTime = performance.now();
       if (store.isFetchingChart || window.isFetchingChart || store.isLoadingMoreHistory || store.isRestoringTab) return;
 
+      // 🛡️ [Symbol Guard] rAF 실행 시점에 버퍼의 심볼이 현재 활성 코인(store.currentAsset)과 일치하지 않으면 즉시 폐기!
+      const currentActive = (store.currentSelectedSymbol || store.currentAsset || "").replace(/USDT$/i, "").replace(/^KRW-/, "").replace(/_KRW$/, "").toUpperCase();
+      const tickSym = (latestSymbol || "").replace(/USDT$/i, "").replace(/^KRW-/, "").replace(/_KRW$/, "").toUpperCase();
+      if (!currentActive || !tickSym || (currentActive !== tickSym && getPureBase(currentActive) !== getPureBase(tickSym))) {
+        return;
+      }
+
       const currentCandle = latestActiveCandle;
       if (!currentCandle) return;
 
@@ -127,7 +162,7 @@ export function startRealtimeCandle(
       if (!isTimeValid(chartTime)) return;
 
       // 🎯 분리된 차트 렌더링 코어에 데이터 주입 위임
-      renderRealtimeUpdate(chartTime, currentCandle);
+      renderRealtimeUpdate(chartTime, currentCandle, latestSymbol);
 
       const nowRaf = performance.now();
 
@@ -144,13 +179,10 @@ export function startRealtimeCandle(
         updateRealtimeKimchiThrottled(currentCandle, latestSymbol, chartTime);
       }
 
-      // OHLC 레전드 및 헤더 상태창 DOM 갱신 (쓰로틀 적용)
-      if (nowRaf - lastStatusUpdateTime >= perfConfig.STATUS_DOM_THROTTLE_MS) {
-        lastStatusUpdateTime = nowRaf;
-        const p = store.getPrecision(store.currentSelectedSymbol || latestSymbol);
-        if (typeof window.updateStatus === "function") {
-          window.updateStatus(currentCandle, p, true);
-        }
+      // OHLC 레전드 및 헤더 상태창 DOM 1:1 즉각 갱신 (캔들 움직임과 완벽 동기화)
+      const p = store.getPrecision(store.currentSelectedSymbol || latestSymbol);
+      if (typeof window.updateStatus === "function") {
+        window.updateStatus(currentCandle, p, true);
       }
 
       // 🚨 [병목 원천 제거] syncPriceScaleWidths는 매 틱마다 캔버스 너비를 강제 계산하여 극심한 렉을 유발하므로
@@ -165,18 +197,21 @@ export function startRealtimeCandle(
     if (btnSim && btnSim.classList.contains("active")) return;
     if (store.isFetchingChart || window.isFetchingChart || store.isLoadingMoreHistory) return;
     const isMsgFutures = e.target.url.includes("fstream");
-    const isActiveFutures = store.currentChartMarket === "FUTURES";
-    const isActiveSpot = store.currentChartMarket === "SPOT";
+    const isActiveFutures = store.currentChartMarket === "FUTURES" || store.currentChartMarket === "BINANCE_FUTURES";
+    const isActiveSpot = store.currentChartMarket === "SPOT" || store.currentChartMarket === "BINANCE";
+
+    const res = JSON.parse(e.data);
+    const tickSymbol = (res.s || res.k?.s || "").replace(/USDT$/i, "").toUpperCase();
+    if (!tickSymbol) return;
 
     if ((isActiveSpot && isMsgFutures) || (isActiveFutures && !isMsgFutures) || (!isActiveSpot && !isActiveFutures)) {
       // 🚀 현재 탭과 들어온 스트림 데이터의 현/선물 성격이 일치하지 않거나 바이낸스 탭이 아닌 경우,
       // 메인 차트 데이터(store.mainData)를 오염시키지 않고 오직 김프 계산을 위한 실시간 시세 버퍼 업데이트 및 김프 갱신만 수행합니다.
-      const res = JSON.parse(e.data);
-      if (res.e === "aggTrade") {
-        const tickSymbol = res.s.replace("USDT", "").toUpperCase();
-        const expectedGlobalSymbol = (store.currentSelectedSymbol || "").replace("USDT", "").replace("KRW-", "").replace("KRW", "").toUpperCase();
-        if (tickSymbol === symbol.toUpperCase() && tickSymbol === expectedGlobalSymbol) {
-          const newPrice = parseFloat(res.p);
+      if (res.e === "aggTrade" || res.e === "kline") {
+        const expectedGlobalSymbol = (store.currentSelectedSymbol || store.currentAsset || "").replace(/USDT$/i, "").replace(/^KRW-/, "").replace(/_KRW$/, "").toUpperCase();
+        const isMatch = getPureBase(tickSymbol) === getPureBase(expectedGlobalSymbol) || tickSymbol === expectedGlobalSymbol;
+        if (isMatch) {
+          const newPrice = res.e === "aggTrade" ? parseFloat(res.p) : parseFloat(res.k?.c);
           if (!isNaN(newPrice)) {
             const bufKey = isMsgFutures ? `${tickSymbol}USDT_FUTURES` : `${tickSymbol}USDT`;
             if (!store.tickerBuffer) store.tickerBuffer = {};
@@ -192,9 +227,11 @@ export function startRealtimeCandle(
       return;
     }
 
-    const res = JSON.parse(e.data);
+    if (isChartBusy()) return;
     if (!store.mainData || store.mainData.length === 0) return;
     const lastCandle = store.mainData[store.mainData.length - 1];
+
+    if (!isMatchingCurrentSymbol(tickSymbol)) return;
 
     let activeCandle = lastCandle;
     let chartUpdateNeeded = false;
@@ -204,39 +241,24 @@ export function startRealtimeCandle(
         store.lastServerMs = res.E;
         store.localTimeAtUpdate = performance.now();
 
-        const tickSymbol = res.s.replace("USDT", "").toUpperCase();
-        const expectedGlobalSymbol = (store.currentSelectedSymbol || "").replace("USDT", "").replace("KRW-", "").replace("KRW", "").toUpperCase();
-        if (tickSymbol !== symbol.toUpperCase() || tickSymbol !== expectedGlobalSymbol) return;
-
         const newPrice = parseFloat(res.p);
         const tradeQty = parseFloat(res.q) || 0;
         if (isNaN(newPrice)) return;
 
+        // 🛡️ [가격 이상치/코인 교차 오염 안전망]
+        if (!isValidPriceRatio(newPrice, lastCandle.close)) return;
+
         const nextBarTime = getNextBarTime(lastCandle.time, store.currentTF);
         const currentUnix = Math.floor(res.E / 1000);
 
-        if (currentUnix < nextBarTime) {
-          lastCandle.close = newPrice;
-          lastCandle.high = Math.max(lastCandle.high, newPrice);
-          lastCandle.low = Math.min(lastCandle.low, newPrice);
-          lastCandle.volume = (lastCandle.volume || 0) + tradeQty;
-          activeCandle = lastCandle;
-        } else {
-          const normTime = getNormalizedTime({ time: nextBarTime });
-          activeCandle = { time: normTime, open: newPrice, high: newPrice, low: newPrice, close: newPrice, volume: tradeQty };
-          store.mainData.push(activeCandle);
-          store.mainDataMap.set(getUnixSeconds(activeCandle.time), activeCandle);
-        }
+        const tradeResult = applyTradeToCandle(lastCandle, newPrice, tradeQty, currentUnix, nextBarTime);
+        activeCandle = tradeResult.activeCandle;
         chartUpdateNeeded = true;
       },
       kline: () => {
         if (res.k.i !== store.currentTF) return;
         store.lastServerMs = res.E;
         store.localTimeAtUpdate = performance.now();
-
-        const tickSymbol = res.k.s.replace("USDT", "").toUpperCase();
-        const expectedGlobalSymbol = (store.currentSelectedSymbol || "").replace("USDT", "").replace("KRW-", "").replace("KRW", "").toUpperCase();
-        if (tickSymbol !== symbol.toUpperCase() || tickSymbol !== expectedGlobalSymbol) return;
 
         const k = res.k;
         const kUnix = Math.floor(k.t / 1000);
@@ -263,11 +285,8 @@ export function startRealtimeCandle(
     CHART_DISPATCHER[res.e]?.();
 
     if (chartUpdateNeeded) {
-      if (store.isFetchingChart || window.isFetchingChart || store.isLoadingMoreHistory) return;
-      const currentExpected = (store.currentSelectedSymbol || "").replace("USDT", "").replace("KRW-", "").replace("KRW", "").toUpperCase();
-      if (symbol.toUpperCase() === currentExpected) {
-        broadcastCandleUpdate(activeCandle, symbol, store.lastServerMs, isFutures ? "FUTURES" : "SPOT");
-      }
+      if (isChartBusy()) return;
+      broadcastCandleUpdate(activeCandle, symbol, store.lastServerMs, isMsgFutures ? "FUTURES" : "SPOT");
     }
   };
 
@@ -276,40 +295,43 @@ export function startRealtimeCandle(
     if (e.target !== store.bybitChartWs) return;
     const btnSim = document.getElementById("tab-btn-sim");
     if (btnSim && btnSim.classList.contains("active")) return;
-    if (store.isFetchingChart || window.isFetchingChart || store.isLoadingMoreHistory) return;
+    if (isChartBusy()) return;
 
     const isMsgFutures = e.target.url.includes("linear");
     const isActiveFutures = store.currentChartMarket === "BYBIT_FUTURES";
-    const isActiveSpot = store.currentChartMarket === "BYBIT";
+    const isActiveSpot = store.currentChartMarket === "BYBIT" || store.currentChartMarket === "BYBIT_SPOT";
+
+    const res = JSON.parse(e.data);
+    if (!res.data || !res.topic?.startsWith("publicTrade.")) return;
+
+    const topicSymbol = res.topic.replace("publicTrade.", "").replace(/USDT$/i, "").toUpperCase();
 
     if ((isActiveSpot && isMsgFutures) || (isActiveFutures && !isMsgFutures) || (!isActiveSpot && !isActiveFutures)) {
       // 🚀 현재 탭과 들어온 스트림 데이터의 현/선물 성격이 일치하지 않거나 바이비트 탭이 아닌 경우,
       // 메인 차트 데이터(store.mainData)를 오염시키지 않고 오직 김프 계산을 위한 실시간 시세 버퍼 업데이트 및 김프 갱신만 수행합니다.
-      const res = JSON.parse(e.data);
-      if (res.data && res.topic.startsWith("publicTrade.")) {
-        if (res.data.length > 0) {
-          const lastTrade = res.data[res.data.length - 1];
-          const newPrice = parseFloat(lastTrade.p);
-          if (!isNaN(newPrice)) {
-            const tickSymbol = symbol.toUpperCase();
-            const bufKey = isMsgFutures ? `${tickSymbol}USDT_FUTURES` : `${tickSymbol}USDT`;
-            if (!store.tickerBuffer) store.tickerBuffer = {};
-            store.tickerBuffer[bufKey] = { c: newPrice };
+      if (res.data.length > 0) {
+        const lastTrade = res.data[res.data.length - 1];
+        const newPrice = parseFloat(lastTrade.p);
+        if (!isNaN(newPrice)) {
+          const tickSymbol = symbol.toUpperCase();
+          const bufKey = isMsgFutures ? `${tickSymbol}USDT_FUTURES` : `${tickSymbol}USDT`;
+          if (!store.tickerBuffer) store.tickerBuffer = {};
+          store.tickerBuffer[bufKey] = { c: newPrice };
 
-            if (store.mainData && store.mainData.length > 0) {
-              const lastCandle = store.mainData[store.mainData.length - 1];
-              updateRealtimeKimchiThrottled({ close: newPrice, marketType: isMsgFutures ? "BYBIT_FUTURES" : "BYBIT" }, symbol, lastCandle.time);
-            }
+          if (store.mainData && store.mainData.length > 0) {
+            const lastCandle = store.mainData[store.mainData.length - 1];
+            updateRealtimeKimchiThrottled({ close: newPrice, marketType: isMsgFutures ? "BYBIT_FUTURES" : "BYBIT" }, symbol, lastCandle.time);
           }
         }
       }
       return;
     }
 
-    const res = JSON.parse(e.data);
-    if (!res.data || !res.topic.startsWith("publicTrade.")) return;
+    if (isChartBusy()) return;
     if (!store.mainData || store.mainData.length === 0) return;
     const lastCandle = store.mainData[store.mainData.length - 1];
+
+    if (!isMatchingCurrentSymbol(topicSymbol)) return;
 
     let activeCandle = lastCandle;
     let chartUpdateNeeded = false;
@@ -320,33 +342,29 @@ export function startRealtimeCandle(
       const tradeQty = parseFloat(trade.v) || 0;
       if (isNaN(newPrice)) return;
 
+      // 🛡️ [가격 이상치/코인 교차 오염 안전망]
+      if (!isValidPriceRatio(newPrice, lastCandle.close)) return;
+
       const currentUnix = Math.floor(Number(trade.T) / 1000);
 
-      if (currentUnix < nextBarTime) {
-        lastCandle.close = newPrice;
-        lastCandle.high = Math.max(lastCandle.high, newPrice);
-        lastCandle.low = Math.min(lastCandle.low, newPrice);
-        lastCandle.volume = (lastCandle.volume || 0) + tradeQty;
-        activeCandle = lastCandle;
-        chartUpdateNeeded = true;
-      } else {
-        const normTime = getNormalizedTime({ time: nextBarTime });
-        activeCandle = { time: normTime, open: newPrice, high: newPrice, low: newPrice, close: newPrice, volume: tradeQty };
-        store.mainData.push(activeCandle);
-        store.mainDataMap.set(getUnixSeconds(activeCandle.time), activeCandle);
-        chartUpdateNeeded = true;
-      }
+      const tradeResult = applyTradeToCandle(lastCandle, newPrice, tradeQty, currentUnix, nextBarTime);
+      activeCandle = tradeResult.activeCandle;
+      chartUpdateNeeded = true;
     });
 
     if (chartUpdateNeeded) {
+      if (isChartBusy()) return;
+      broadcastCandleUpdate(activeCandle, symbol, Date.now(), isMsgFutures ? "BYBIT_FUTURES" : "BYBIT");
+    }
+
+    if (chartUpdateNeeded) {
       if (store.isFetchingChart || window.isFetchingChart || store.isLoadingMoreHistory) return;
-      broadcastCandleUpdate(activeCandle, symbol, res.ts || Date.now(), isBybitFutures ? "BYBIT_FUTURES" : "BYBIT");
+      broadcastCandleUpdate(activeCandle, symbol, res.ts || Date.now(), isMsgFutures ? "BYBIT_FUTURES" : "BYBIT");
     }
   };
 
   // 5️⃣ 거래소별 웹소켓 분기 커넥션 핸들러
   if (needBinance) {
-    const binanceIsFutures = isFutures || (store.currentChartMarket !== "SPOT" && store.currentChartMarket !== "FUTURES" && row?.Exact_Futures);
     const wsBasePartner = binanceIsFutures
       ? "wss://fstream.binance.com/market/ws"
       : "wss://stream.binance.com:9443/ws";
@@ -381,7 +399,8 @@ export function startRealtimeCandle(
   }
 
   if (needUpbit) {
-    const upbitCode = `KRW-${symbol}`.toUpperCase();
+    const upbitSym = (row?.Upbit_Symbol || row?.Symbol || pureSymbol).toUpperCase();
+    const upbitCode = `KRW-${upbitSym}`;
     const isConnectingOrOpen = store.upbitChartWs && (store.upbitChartWs.readyState === WebSocket.CONNECTING || store.upbitChartWs.readyState === WebSocket.OPEN);
 
     if (!isConnectingOrOpen) {
@@ -406,7 +425,8 @@ export function startRealtimeCandle(
   }
 
   if (needBithumb) {
-    const bithumbCode = `${symbol}_KRW`.toUpperCase();
+    const bithumbSym = (row?.Bithumb_Symbol || pureSymbol).toUpperCase();
+    const bithumbCode = `${bithumbSym}_KRW`;
     const isBithumbConnectingOrOpen = store.bithumbChartWs &&
       (store.bithumbChartWs.readyState === WebSocket.CONNECTING || store.bithumbChartWs.readyState === WebSocket.OPEN);
 
@@ -430,8 +450,9 @@ export function startRealtimeCandle(
   }
 
   if (needBybit) {
-    const bybitCode = `${symbol}USDT`.toUpperCase();
-    const bybitIsFutures = isBybitFutures || (store.currentChartMarket !== "BYBIT" && store.currentChartMarket !== "BYBIT_FUTURES" && row?.Exact_Futures);
+    const bybitIsFutures = isBybitFutures || (store.currentChartMarket !== "BYBIT" && store.currentChartMarket !== "BYBIT_SPOT" && (row?.Exact_Futures || row?.Bybit_Futures === "O"));
+    const bybitSym = (row?.Bybit_Symbol || (bybitIsFutures ? (row?.Exact_Futures || pureSymbol) : (row?.Exact_Spot || pureSymbol))).toUpperCase();
+    const bybitCode = `${bybitSym}USDT`;
     const wsUrlPartner = bybitIsFutures ? "wss://stream.bybit.com/v5/public/linear" : "wss://stream.bybit.com/v5/public/spot";
     const isBybitConnectingOrOpen = store.bybitChartWs &&
       (store.bybitChartWs.readyState === WebSocket.CONNECTING || store.bybitChartWs.readyState === WebSocket.OPEN) &&

@@ -526,6 +526,40 @@ export function initInfiniteScroll() {
   );
 }
 
+export function updateHeaderStar(uid) {
+  const headStarBtn = document.querySelector("#head-asset-name .star-btn");
+  if (!headStarBtn) return;
+  const curUid = String(store.currentSelectedUid || "");
+  const targetUid = String(uid || "");
+  if (curUid && targetUid && curUid !== targetUid) {
+    const curSym = String(store.currentAsset || "").toUpperCase();
+    const row = store.tickerRowMap?.get(targetUid);
+    if (row && row.Ticker?.toUpperCase() !== curSym && row.Symbol?.toUpperCase() !== curSym) {
+      return;
+    }
+  }
+  const favs = JSON.parse(localStorage.getItem("sellnance_favs") || "[]");
+  const favs2 = JSON.parse(localStorage.getItem("sellnance_favs2") || "[]");
+  const isFav = favs.includes(uid) || (curUid && favs.includes(curUid));
+  const isFav2 = favs2.includes(uid) || (curUid && favs2.includes(curUid));
+
+  let starText = "☆";
+  let starColor = "gray";
+  let starClass = "";
+  if (isFav) {
+    starText = "★";
+    starColor = "#e3b30a";
+    starClass = "active";
+  } else if (isFav2) {
+    starText = "★";
+    starColor = "#3b82f6";
+    starClass = "active-blue";
+  }
+  headStarBtn.innerText = starText;
+  headStarBtn.style.color = starColor;
+  headStarBtn.className = `star-btn text-[16px] transition-all hover:scale-125 flex-shrink-0 ${starClass}`;
+}
+
 export function toggleFavorite(uid, event, forceImmediate = false) {
   event.stopPropagation();
 
@@ -598,6 +632,7 @@ export function toggleFavorite(uid, event, forceImmediate = false) {
     if (typeof window.updateFavoritesCount === "function") {
       window.updateFavoritesCount();
     }
+    updateHeaderStar(uid);
     return;
   }
 
@@ -632,6 +667,8 @@ export function toggleFavorite(uid, event, forceImmediate = false) {
     }
   }
 
+  updateHeaderStar(uid);
+
   if (store.currentTab === "FAV" || store.currentTab === "FAV2") {
     setTimeout(() => renderTable(), 100);
   }
@@ -665,18 +702,7 @@ export function commitFavoriteChange(uid) {
   if (typeof window.updateFavoritesCount === "function") {
     window.updateFavoritesCount();
   }
-
-  const row = store.currentTableData.find((r) => r.UID === uid);
-  if (
-    row &&
-    store.currentSelectedSymbol &&
-    (store.currentSelectedSymbol === row.Ticker ||
-      store.currentSelectedSymbol.startsWith(row.Symbol + "/"))
-  ) {
-    if (typeof window.selectSymbol === "function") {
-      window.selectSymbol(store.currentSelectedSymbol);
-    }
-  }
+  updateHeaderStar(uid);
 }
 
 window.cancelFavoriteChange = function (uid, event) {

@@ -25,12 +25,16 @@ export function toggleSidebar() {
   );
 }
 
-export function switchViewMode(mode) {
+export function switchViewMode(mode, saveToStorage = true) {
   store.tableViewMode = mode;
   const panel = document.getElementById("left-panel");
   if (!panel) return;
 
-  localStorage.setItem("sellnance_table_view_mode", mode);
+  if (saveToStorage) {
+    try {
+      localStorage.setItem("sellnance_table_view_mode", mode);
+    } catch (e) { }
+  }
 
   panel.classList.remove(
     "view-mode-simple",
@@ -182,7 +186,12 @@ export function checkLayoutOverlap() {
   const rightPanel = document.getElementById("right-panel");
   if (!leftPanel || !rightPanel) return;
 
-  if (window.innerWidth < 1200) {
+  const isTouch = typeof window.isTouchDevice === "function"
+    ? window.isTouchDevice()
+    : ((window.matchMedia && window.matchMedia("(pointer: coarse)").matches) || ("ontouchstart" in window) || (typeof navigator !== "undefined" && navigator.maxTouchPoints > 0));
+
+  // 1. 진짜 모바일/F12 터치 기기일 때 (<1200px)
+  if (isTouch && window.innerWidth < 1200) {
     const overlay = document.getElementById("mobile-chart-overlay");
     const isOverlayOpen = overlay && overlay.style.opacity === "1";
     if (!isOverlayOpen) {
@@ -191,23 +200,29 @@ export function checkLayoutOverlap() {
     return;
   }
 
+  // 2. PC 데스크탑 환경 (마우스 포인터)
   const overlay = document.getElementById("mobile-chart-overlay");
-  if (overlay && overlay.style.opacity === "1") return;
-
-  if (rightPanel.style.display === "none") {
-    rightPanel.style.display = "";
-  }
+  if (overlay && overlay.style.opacity === "1" && isTouch) return;
 
   const containerWidth = document.body.clientWidth;
-  const leftWidth = leftPanel.offsetWidth;
 
-  if (containerWidth < leftWidth + 600) {
-    if (rightPanel.style.display !== "none") {
-      rightPanel.style.display = "none";
-    }
+  // PC에서 창 크기를 줄여서 < 1200px 이거나 가로 공간이 좁을 때:
+  // 우측 차트 패널을 자연스럽게 닫고, 좌측 테이블 패널이 100% 꽉 차도록 확장
+  if (window.innerWidth < 1200 || containerWidth < 1000) {
+    rightPanel.style.display = "none";
+    leftPanel.style.width = "100%";
+    leftPanel.style.flex = "1 1 100%";
+    leftPanel.style.maxWidth = "100%";
   } else {
-    if (rightPanel.style.display !== "flex") {
-      rightPanel.style.display = "flex";
+    // PC 창이 충분히 넓을 때 (>= 1200px): 차트 복원 및 테이블 너비 기본값 복원
+    const wasHidden = rightPanel.style.display === "none";
+    rightPanel.style.display = "flex";
+    leftPanel.style.width = "";
+    leftPanel.style.flex = "";
+    leftPanel.style.maxWidth = "";
+
+    if (wasHidden && typeof window.applyChartLayout === "function") {
+      window.applyChartLayout();
     }
   }
 }

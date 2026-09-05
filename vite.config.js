@@ -12,6 +12,12 @@ export default defineConfig({
   root: "templates",
   // 정적 자산(favicon, svg 등)이 들어있는 폴더
   publicDir: "../public",
+  resolve: {
+    alias: {
+      "/static": resolve(__dirname, "static"),
+      "../static": resolve(__dirname, "static"),
+    },
+  },
   build: {
     // 빌드 결과물을 프로젝트 루트의 dist 폴더로 전송
     outDir: "../dist",

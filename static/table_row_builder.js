@@ -328,9 +328,18 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
     if (!container) {
       container = priceCell.querySelector(".price-container");
       if (!container) {
+        // 🚀 최초 HTML 생성 시점에도 글자 수 기반 축소 스타일을 미리 주입
+        const initialLen = formattedPrice.length;
+        const initFs = CONFIG.FONT_SCALE;
+        const initThreshold = initFs?.PRICE_THRESHOLD || 8;
+        const initSizePx = initialLen > initThreshold
+          ? Math.max(initFs?.PRICE_MIN_SIZE || 11, (initFs?.PRICE_BASE_SIZE || 14) - (initialLen - initThreshold) * (initFs?.PRICE_REDUCE_STEP || 0.6))
+          : null;
+        const initStyleAttr = initSizePx ? `style="font-size: ${initSizePx}px;"` : "";
+
         priceCell.innerHTML = `
           <div class="price-container flex flex-col leading-tight min-w-0 gap-0.5">
-            <div id="price-${tId}" data-raw-price="0" class="font-medium text-[14px] text-theme-text price-cell tracking-tighter block flex items-center min-w-0">
+            <div id="price-${tId}" data-raw-price="0" ${initStyleAttr} class="font-medium text-[14px] text-theme-text price-cell tracking-tighter block flex items-center min-w-0">
               <span class="price-num whitespace-nowrap">${formattedPrice}</span>
             </div>
             <div class="flex items-center justify-between gap-1 text-[10px] font-medium text-left mt-0.5 w-full min-w-0">
@@ -359,21 +368,22 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
             window.applyPriceFlash(numEl, nPrice, oldPrice);
           }
           numEl.textContent = formattedPrice;
+        }
 
-          // 🚀 글자 수에 비례하여 폰트 크기 유동 축소
-          const len = formattedPrice.length;
-          const fs = CONFIG.FONT_SCALE;
-          const threshold = fs?.PRICE_THRESHOLD || 8;
-          if (len > threshold) {
-            const sizePx = Math.max(
-              fs?.PRICE_MIN_SIZE || 11,
-              (fs?.PRICE_BASE_SIZE || 14) - (len - threshold) * (fs?.PRICE_REDUCE_STEP || 0.6),
-            );
-            if (priceDiv.style.fontSize !== `${sizePx}px`)
-              priceDiv.style.fontSize = `${sizePx}px`;
-          } else {
-            if (priceDiv.style.fontSize !== "") priceDiv.style.fontSize = "";
-          }
+        // 🚀 글자 수에 비례하여 폰트 크기 유동 축소 (최초 로드 및 실시간 갱신 공통 적용)
+        const len = formattedPrice.length;
+        const fs = CONFIG.FONT_SCALE;
+        const threshold = fs?.PRICE_THRESHOLD || 8;
+        if (len > threshold) {
+          const sizePx = Math.max(
+            fs?.PRICE_MIN_SIZE || 11,
+            (fs?.PRICE_BASE_SIZE || 14) - (len - threshold) * (fs?.PRICE_REDUCE_STEP || 0.6),
+          );
+          const targetFont = `${sizePx}px`;
+          if (priceDiv.style.fontSize !== targetFont)
+            priceDiv.style.fontSize = targetFont;
+        } else {
+          if (priceDiv.style.fontSize !== "") priceDiv.style.fontSize = "";
         }
       }
       priceDiv.setAttribute("data-raw-price", nPrice);
@@ -813,12 +823,14 @@ window.updateRowPriceDisplay = (target, row) => {
   const formattedPrice = window.formatSmartPrice(displayPrice, p, isKrw);
 
   const numEl = parentEl._numEl || (parentEl._numEl = parentEl.querySelector(".price-num"));
-  if (numEl && numEl.textContent !== formattedPrice) {
-    // 🚀 가격 변동 시 글자 번쩍임(Flash) 애니메이션 활성화
-    if (oldPrice > 0 && displayPrice > 0 && oldPrice !== displayPrice) {
-      applyPriceFlash(numEl, displayPrice, oldPrice);
+  if (numEl) {
+    if (numEl.textContent !== formattedPrice) {
+      // 🚀 가격 변동 시 글자 번쩍임(Flash) 애니메이션 활성화
+      if (oldPrice > 0 && displayPrice > 0 && oldPrice !== displayPrice) {
+        applyPriceFlash(numEl, displayPrice, oldPrice);
+      }
+      numEl.textContent = formattedPrice;
     }
-    numEl.textContent = formattedPrice;
 
     // 🚀 글자 수에 비례하여 폰트 크기 유동 축소
     const len = formattedPrice.length;
@@ -829,8 +841,9 @@ window.updateRowPriceDisplay = (target, row) => {
         fs?.PRICE_MIN_SIZE || 11,
         (fs?.PRICE_BASE_SIZE || 14) - (len - threshold) * (fs?.PRICE_REDUCE_STEP || 0.6),
       );
-      if (parentEl.style.fontSize !== `${sizePx}px`)
-        parentEl.style.fontSize = `${sizePx}px`;
+      const targetFont = `${sizePx}px`;
+      if (parentEl.style.fontSize !== targetFont)
+        parentEl.style.fontSize = targetFont;
     } else {
       if (parentEl.style.fontSize !== "") parentEl.style.fontSize = "";
     }

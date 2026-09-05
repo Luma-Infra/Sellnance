@@ -232,7 +232,8 @@
     "binance_listing": "2026-04-28"
   },
   "AKE": {
-    "binance_listing": "2025-09-22"
+    "binance_listing": "2025-09-22",
+    "bybit_listing": "2026-09-04"
   },
   "AKEUSDT": {
     "binance_listing": "2025-09-26"
@@ -882,7 +883,7 @@
     "binance_listing": "2026-06-04"
   },
   "BULLA": {
-    "binance_listing": "2025-07-04"
+    "binance_listing": "2025-06-30"
   },
   "BULLAUSDT": {
     "binance_listing": "2025-06-30"
@@ -1197,6 +1198,9 @@
   "DATAIP": {
     "binance_listing": "2026-06-29"
   },
+  "DCR": {
+    "binance_listing": "2026-09-04"
+  },
   "DCRUSDT": {
     "binance_listing": "2026-05-31"
   },
@@ -1314,6 +1318,10 @@
     "binance_listing": "2024-11-01",
     "upbit_listing": "2025-11-09",
     "bithumb_listing": "2026-05-23"
+  },
+  "DRV": {
+    "upbit_listing": "2026-07-14",
+    "bithumb_listing": "2026-07-21"
   },
   "DUSDT": {
     "binance_listing": "2025-01-01"
@@ -1561,7 +1569,10 @@
     "binance_listing": "2026-05-22"
   },
   "FLOCK": {
-    "binance_listing": "2025-09-09"
+    "binance_listing": "2025-09-09",
+    "bybit_listing": "2026-09-04",
+    "upbit_listing": "2026-02-17",
+    "bithumb_listing": "2026-03-21"
   },
   "FLOCKUSDT": {
     "binance_listing": "2025-09-08"
@@ -1669,6 +1680,9 @@
   "GENIUSUSDT": {
     "binance_listing": "2026-04-01"
   },
+  "GEOD": {
+    "upbit_listing": "2026-09-03"
+  },
   "GHST": {
     "binance_listing": "2024-09-23"
   },
@@ -1721,6 +1735,9 @@
   },
   "GOATUSDT": {
     "binance_listing": "2024-10-21"
+  },
+  "GPRO": {
+    "binance_listing": "2026-09-04"
   },
   "GPS": {
     "binance_listing": "2025-02-17"
@@ -1910,7 +1927,8 @@
     "bithumb_listing": "2026-05-29"
   },
   "HYPE": {
-    "binance_listing": "2025-05-26"
+    "binance_listing": "2025-05-26",
+    "bybit_listing": "2024-12-05"
   },
   "HYPER": {
     "binance_listing": "2025-04-22"
@@ -2368,7 +2386,8 @@
     "binance_listing": "2026-03-04"
   },
   "MARSCOIN": {
-    "binance_listing": "2026-09-01"
+    "binance_listing": "2026-08-31",
+    "bybit_listing": "2026-09-04"
   },
   "MASK": {
     "binance_listing": "2021-07-16"
@@ -2697,7 +2716,8 @@
     "binance_listing": "2026-06-01"
   },
   "NOM": {
-    "binance_listing": "2025-10-01"
+    "binance_listing": "2025-10-01",
+    "bybit_listing": "2026-09-04"
   },
   "NOMUSDT": {
     "binance_listing": "2025-09-29"
@@ -2860,7 +2880,7 @@
     "binance_listing": "2025-03-01"
   },
   "PAXG": {
-    "binance_listing": "2025-03-27"
+    "binance_listing": "2025-03-24"
   },
   "PAXGUSDT": {
     "binance_listing": "2025-03-27"
@@ -3356,7 +3376,7 @@
     "binance_listing": "2025-09-24"
   },
   "SATS": {
-    "binance_listing": "2025-04-19",
+    "binance_listing": "2023-12-11",
     "bybit_listing": "2024-01-08"
   },
   "SATSUSDT": {
@@ -3455,6 +3475,9 @@
   "SKRUSDT": {
     "binance_listing": "2026-01-22"
   },
+  "SKUU": {
+    "binance_listing": "2026-08-25"
+  },
   "SKY": {
     "binance_listing": "2025-09-09"
   },
@@ -3503,6 +3526,9 @@
   },
   "SNXUSDT": {
     "binance_listing": "2020-08-01"
+  },
+  "SNXXB": {
+    "binance_listing": "2026-08-25"
   },
   "SOL": {
     "binance_listing": "2019-09-25"
@@ -3885,7 +3911,8 @@
     "binance_listing": "2025-07-01"
   },
   "TRIA": {
-    "binance_listing": "2026-02-01"
+    "binance_listing": "2026-02-01",
+    "bybit_listing": "2026-07-24"
   },
   "TRIAUSDT": {
     "binance_listing": "2026-02-01"
@@ -4149,6 +4176,9 @@
   },
   "WAXPUSDT": {
     "binance_listing": "2026-04-28"
+  },
+  "WBETH": {
+    "binance_listing": "2026-09-04"
   },
   "WCT": {
     "binance_listing": "2025-04-15"
@@ -4445,7 +4475,7 @@
     "binance_listing": "2026-08-30"
   },
   "龙虾": {
-    "binance_listing": "2026-03-11"
+    "binance_listing": "2026-03-01"
   },
   "龙虾USDT": {
     "binance_listing": "2026-03-01"

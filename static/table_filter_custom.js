@@ -171,10 +171,11 @@ export function toggleCustomFilter(event) {
   if (!dropdown) return;
 
   const isHidden = dropdown.classList.contains("hidden");
+  const chevron = document.getElementById("custom-filter-chevron");
 
   // 타임프레임 드롭다운이 열려 있다면 닫음
   const tfDropdown = document.getElementById("tf-settings-dropdown");
-  if (tfDropdown) {
+  if (tfDropdown && !tfDropdown.classList.contains("hidden")) {
     tfDropdown.classList.add("hidden", "opacity-0", "translate-y-[-10px]");
     tfDropdown.classList.remove("flex");
   }
@@ -218,32 +219,37 @@ export function toggleCustomFilter(event) {
 
     updateCustomFilterUI();
 
-    const btn = document.getElementById("btn-custom-filter");
-    if (btn) {
-      const parent = document.getElementById("control-panel-parent");
-      const parentRect = parent ? parent.getBoundingClientRect() : { top: 0 };
-      const btnRect = btn.getBoundingClientRect();
-      const relativeTop = btnRect.bottom - parentRect.top + 6;
-
-      dropdown.style.top = `${relativeTop}px`;
-      dropdown.style.left = "auto";
-      dropdown.style.right = "8px";
-    }
+    if (chevron) chevron.classList.add("rotate-180");
 
     dropdown.classList.remove("hidden");
     dropdown.classList.add("flex");
-    setTimeout(() => {
-      dropdown.classList.remove("opacity-0", "translate-y-[-10px]");
-      dropdown.classList.add("opacity-100", "translate-y-0");
-    }, 10);
+    void dropdown.offsetWidth; // 강제 리플로우 (차트 tf 설정과 동일)
+    dropdown.classList.remove("opacity-0", "translate-y-[-10px]");
+    dropdown.classList.add("opacity-100", "translate-y-0");
   } else {
-    dropdown.classList.add("opacity-0", "translate-y-[-10px]");
+    if (chevron) chevron.classList.remove("rotate-180");
+
     dropdown.classList.remove("opacity-100", "translate-y-0");
+    dropdown.classList.add("opacity-0", "translate-y-[-10px]");
     setTimeout(() => {
-      dropdown.classList.add("hidden");
       dropdown.classList.remove("flex");
+      dropdown.classList.add("hidden");
     }, 200);
   }
+}
+
+// 🚀 커스텀 드롭다운 내부 퀵 프리셋: Mcap < 1M 적용
+export function toggleSmallCapFromCustom(event) {
+  if (event) event.stopPropagation();
+  const minMcapEl = document.getElementById("mcap-min");
+  const maxMcapEl = document.getElementById("mcap-max");
+
+  // Mcap 슬라이더를 0 ~ 1M (값 1)로 설정
+  if (minMcapEl) minMcapEl.value = 0;
+  if (maxMcapEl) maxMcapEl.value = 1;
+
+  updateCustomFilterUI();
+  applyCustomFilter();
 }
 
 // 🚀 거래량 소스(바낸/업비트) 선택
@@ -399,33 +405,30 @@ export function initCustomFilterEvents() {
   };
 
   setupTrackClick("mcap-slider-container", "mcap-min", "mcap-max", 8);
-  setupTrackClick("vol-slider-container", "vol-min", "vol-max", 7);
-
-  // 외부 영역 클릭 시 드롭다운 닫기
-  document.addEventListener("click", (e) => {
-    const dropdown = document.getElementById("custom-filter-dropdown");
-    const btn = document.getElementById("btn-custom-filter");
-    if (
-      dropdown &&
-      btn &&
-      !dropdown.contains(e.target) &&
-      !btn.contains(e.target)
-    ) {
-      if (!dropdown.classList.contains("hidden")) {
-        dropdown.classList.add("opacity-0", "translate-y-[-10px]");
-        dropdown.classList.remove("opacity-100", "translate-y-0");
-        setTimeout(() => {
-          dropdown.classList.add("hidden");
-          dropdown.classList.remove("flex");
-        }, 200);
-      }
-    }
-  });
 }
+
+function handleOutsideCustomFilterClick(e) {
+  const dropdown = document.getElementById("custom-filter-dropdown");
+  if (!dropdown || dropdown.classList.contains("hidden")) return;
+
+  const btn =
+    document.getElementById("btn-custom-filter") ||
+    (e.target.closest && e.target.closest("#btn-custom-filter, button[onclick*='toggleCustomFilter']"));
+
+  if (btn && (btn === e.target || btn.contains(e.target))) return;
+  if (!dropdown.contains(e.target)) {
+    toggleCustomFilter();
+  }
+}
+
+document.addEventListener("pointerdown", handleOutsideCustomFilterClick, true);
+document.addEventListener("touchstart", handleOutsideCustomFilterClick, { capture: true, passive: true });
+document.addEventListener("click", handleOutsideCustomFilterClick, true);
 
 // 글로벌 window 바인딩
 if (typeof window !== "undefined") {
   window.toggleCustomFilter = toggleCustomFilter;
+  window.toggleSmallCapFromCustom = toggleSmallCapFromCustom;
   window.setVolSource = setVolSource;
   window.applyCustomFilter = applyCustomFilter;
   window.resetCustomFilter = resetCustomFilter;

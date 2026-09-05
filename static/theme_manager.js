@@ -160,6 +160,11 @@ export function applyCandleTheme(theme) {
   if (typeof window.changeDir === "function" && store.curDir) {
     window.changeDir(store.curDir);
   }
+
+  // 8. 🚀 퀵뷰(QuickView) 캔들 차트 색상 실시간 동기화
+  if (typeof window.updateQuickViewTheme === "function") {
+    window.updateQuickViewTheme();
+  }
 }
 
 /**
@@ -254,7 +259,7 @@ export function toggleTheme() {
     const fallbackSrc = "/static/" + targetSvg;
 
     document
-      .querySelectorAll('img[src*="luma-deer-svg"], img.fallback-logo')
+      .querySelectorAll('img[src*="luma-deer-svg"]:not(#onboarding-modal img), img.fallback-logo')
       .forEach((img) => {
         img.src = fallbackSrc;
         img.classList.add("fallback-logo");

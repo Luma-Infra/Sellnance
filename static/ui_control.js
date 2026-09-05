@@ -71,6 +71,7 @@ export {
   toggleTfSettings,
   renderTfCheckboxList,
   applyTfSettings,
+  syncChartControlsModalUI,
   setTF,
   executeSetTF,
   toggleLogScale,
@@ -191,7 +192,7 @@ setTimeout(() => {
         fullscreenBtn = document.createElement("button");
         fullscreenBtn.id = "chart-fullscreen-btn";
         fullscreenBtn.className =
-          "px-2.5 py-1 text-[11px] font-bold bg-transparent text-theme-text opacity-60 border border-theme-border/30 rounded hover:bg-theme-border/50 hover:opacity-100 transition-all ml-2 flex-shrink-0 cursor-pointer flex items-center gap-1";
+          "hidden min-[1200px]:flex px-2.5 py-1 text-[11px] font-bold bg-transparent text-theme-text opacity-60 border border-theme-border/30 rounded hover:bg-theme-border/50 hover:opacity-100 transition-all ml-2 flex-shrink-0 cursor-pointer items-center gap-1";
 
         // 동적 전체화면 CSS 스타일 주입
         if (!document.getElementById("fullscreen-tf-css")) {

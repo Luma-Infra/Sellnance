@@ -2,6 +2,7 @@
 import { store, tfSec } from "./_store.js";
 import { getRowExchangeMeta } from "./_market_rules.js";
 import { getPureBase } from "./chart_utils.js";
+import { getCandleThemeColors } from "./theme_manager.js";
 
 // ⚡ 퀵뷰 전용 상태 제어 장치
 const qvState = {
@@ -428,9 +429,10 @@ async function initSingleQuickViewChart(container, asset, idx) {
 
   const chart = LightweightCharts.createChart(container, chartOptions);
 
-  // 차트 테마별 캔들 컬러 셋업
-  const upColor = isDark ? "#26a69a" : "#c84a31";
-  const downColor = isDark ? "#ef5350" : "#1261c4";
+  // 차트 테마별 캔들 컬러 셋업 (바낸/업비트 캔들 테마 연동)
+  const { up: themeUp, down: themeDown } = getCandleThemeColors();
+  const upColor = themeUp || (isDark ? "#26a69a" : "#c84a31");
+  const downColor = themeDown || (isDark ? "#ef5350" : "#1261c4");
 
   // 겹치기 모드에서는 캔들이 가독성을 헤치므로 캔들 외에 자산 전용 라인 컬러도 추가해 둡니다.
   const assetColor = ASSET_COLORS[idx];
@@ -1416,8 +1418,9 @@ export function updateQuickViewTheme() {
     ? "rgba(42, 46, 57, 0.2)"
     : "rgba(213, 213, 213, 0.2)";
   const textColor = isDark ? "#8a8d97" : "#4a4a4a";
-  const upColor = isDark ? "#26a69a" : "#c84a31";
-  const downColor = isDark ? "#ef5350" : "#1261c4";
+  const { up: themeUp, down: themeDown } = getCandleThemeColors();
+  const upColor = themeUp || (isDark ? "#26a69a" : "#c84a31");
+  const downColor = themeDown || (isDark ? "#ef5350" : "#1261c4");
 
   // 테마 변경 시에도 레이아웃 슬라이더 위치 재보정
   updateLayoutToggleUI(qvState.layout);

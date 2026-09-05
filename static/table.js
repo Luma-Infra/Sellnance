@@ -99,8 +99,13 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         applySelectedHighlight();
 
+        const isTouch = typeof window.isTouchDevice === "function"
+          ? window.isTouchDevice()
+          : ((window.matchMedia && window.matchMedia("(pointer: coarse)").matches) || ("ontouchstart" in window) || (typeof navigator !== "undefined" && navigator.maxTouchPoints > 0));
+
         if (
           window.innerWidth <= CONFIG.SCREEN_WIDTH &&
+          isTouch &&
           typeof window.showMobileChart === "function"
         ) {
           window.showMobileChart();

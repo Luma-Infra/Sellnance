@@ -1,41 +1,19 @@
 // stream_render.js
 import { store } from "./_store.js";
-import { getUnixSeconds, rebuildVolumeDataMap } from "./chart_utils.js";
+import { getUnixSeconds, rebuildVolumeDataMap, getPureBase } from "./chart_utils.js";
+import { isChartBusy, isMatchingCurrentSymbol, isValidPriceRatio } from "./stream_utils.js";
 
-/**
- * 정제된 틱 데이터를 받아 메인 캔들과 거래량 시리즈에 안전하게 실시간 업데이트를 주입
- */
-export function renderRealtimeUpdate(normalizedTime, currentCandle) {
-    if (store.blockChartDom) {
-        const nowTime = Date.now();
-        if (!window._lastChartRenderTime) window._lastChartRenderTime = 0;
-        if (nowTime - window._lastChartRenderTime < 500) {
-            return;
-        }
-        window._lastChartRenderTime = nowTime;
-    }
+// 🚀 [1프레임 Coalescing 락] 초당 수백 개 틱이 쏟아져도 화면 주사율(16.6ms)에 맞춰 1회만 캔버스 렌더링
+let pendingUpdate = null;
+let renderTickRaf = null;
+
+function flushRealtimeRender() {
+    renderTickRaf = null;
+    if (!pendingUpdate) return;
+    const { normalizedTime, currentCandle } = pendingUpdate;
+    pendingUpdate = null;
+
     if (!store.candleSeries || !currentCandle || normalizedTime === null) return;
-
-    // 🚀 [프론트엔드 강제 필터링] 현재 탭과 들어온 스트림 데이터의 마켓 형식이 일치하지 않으면 렌더링 즉시 차단!
-    if (store.currentChartMarket !== currentCandle.marketType) {
-        return;
-    }
-
-    // 🚀 [방어 코드] 차트 캔들 데이터가 없거나 완전히 비어 있는 상태인 경우 실시간 업데이트 차단
-    const chartData = store.mainData || [];
-    if (chartData.length === 0) {
-        return;
-    }
-
-    // 🚀 [방어 코드] 실시간 캔들의 타임스탬프가 차트의 마지막 캔들보다 이전(과거)이면 업데이트를 스킵하여 시간 역행 예외 방지
-    const lastItem = chartData[chartData.length - 1];
-    if (lastItem) {
-        const lastTimeVal = typeof lastItem.time === "object" ? lastItem.time.time || 0 : lastItem.time;
-        const newTimeVal = typeof normalizedTime === "object" ? normalizedTime.time || 0 : normalizedTime;
-        if (newTimeVal < lastTimeVal) {
-            return;
-        }
-    }
 
     // 1️⃣ 메인 봉 차트 & 좌측 스케일 보조 라인 업데이트
     try {
@@ -54,11 +32,16 @@ export function renderRealtimeUpdate(normalizedTime, currentCandle) {
                 value: Number(currentCandle.close),
             });
         }
+
+        // 🚀 카운트다운 타이머 바 0ms 실시간 동기화
+        if (store.showCountdown && typeof window.updateRealtimeCountdown === "function") {
+            window.updateRealtimeCountdown(Date.now(), Number(currentCandle.close));
+        }
     } catch (candleUpdateErr) {
         console.warn("🚨 candleSeries.update 예외 우회 완료:", candleUpdateErr);
     }
 
-    // 2️⃣ 하단 거래량(Volume) 히스토그램 업데이트 (Value is null 원천 봉쇄 Zone)
+    // 2️⃣ 하단 거래량(Volume) 히스토그램 업데이트
     if (store.volumeSeries && currentCandle.volume !== undefined && currentCandle.volume !== null) {
         if (!store.upColorCache || !store.downColorCache) {
             const curStyle = getComputedStyle(document.body);
@@ -89,7 +72,6 @@ export function renderRealtimeUpdate(normalizedTime, currentCandle) {
             const lastSec = lastVolItem ? getUnixSeconds(lastVolItem.time) : -1;
 
             if (!lastVolItem || normSec >= lastSec) {
-                // console.log("VOLUME_UPDATE_DATA:", volObj);
                 store.volumeSeries.update(volObj);
                 if (store.volumeData && store.volumeData.length > 0) {
                     if (normSec > lastSec) {
@@ -105,10 +87,64 @@ export function renderRealtimeUpdate(normalizedTime, currentCandle) {
             restoreVolumeDataSterilized();
         }
     }
+}
 
-    // 🚀 [Fix 3] syncPriceScaleWidths는 broadcastCandleUpdate(stream_global.js)에서
-    // renderRealtimeUpdate 반환 후 명시적으로 호출되므로 여기서 중복 호출 제거.
-    // 김프 있을 때 이중 rAF 예약 → 이중 sync 발생하던 문제 해소.
+/**
+ * 정제된 틱 데이터를 받아 메인 캔들과 거래량 시리즈에 안전하게 실시간 업데이트를 주입
+ */
+export function renderRealtimeUpdate(normalizedTime, currentCandle, tickSymbol) {
+    // 🚀 [공허 그레이존 방어] 차트 로딩/패칭 중에는 모든 소켓 틱의 캔들 렌더링을 100% 즉시 차단
+    if (isChartBusy()) return;
+
+    // 🛡️ [Symbol Guard] 렌더 직전 현재 활성 코인(store.currentAsset)과 틱 심볼 엄격 검증
+    const symbolToCheck = tickSymbol || currentCandle?.symbol;
+    if (symbolToCheck && !isMatchingCurrentSymbol(symbolToCheck)) {
+        return;
+    }
+
+    if (store.blockChartDom) {
+        const nowTime = Date.now();
+        if (!window._lastChartRenderTime) window._lastChartRenderTime = 0;
+        if (nowTime - window._lastChartRenderTime < 500) {
+            return;
+        }
+        window._lastChartRenderTime = nowTime;
+    }
+    if (!store.candleSeries || !currentCandle || normalizedTime === null) return;
+
+    // 🚀 [프론트엔드 강제 필터링] 현재 탭과 들어온 스트림 데이터의 마켓 형식이 일치하지 않으면 렌더링 즉시 차단!
+    const normCurMarket = (store.currentChartMarket === "BINANCE_FUTURES" ? "FUTURES" : store.currentChartMarket === "BINANCE" ? "SPOT" : store.currentChartMarket === "BYBIT_SPOT" ? "BYBIT" : store.currentChartMarket);
+    const normCandleMarket = (currentCandle.marketType === "BINANCE_FUTURES" ? "FUTURES" : currentCandle.marketType === "BINANCE" ? "SPOT" : currentCandle.marketType === "BYBIT_SPOT" ? "BYBIT" : currentCandle.marketType);
+    if (normCurMarket !== normCandleMarket) {
+        return;
+    }
+
+    // 🚀 [방어 코드] 차트 캔들 데이터가 없거나 완전히 비어 있는 상태인 경우 실시간 업데이트 차단
+    const chartData = store.mainData || [];
+    if (chartData.length === 0) {
+        return;
+    }
+
+    // 🚀 [방어 코드] 실시간 캔들의 타임스탬프가 차트의 마지막 캔들보다 이전(과거)이면 업데이트를 스킵하여 시간 역행 예외 방지
+    const lastItem = chartData[chartData.length - 1];
+    if (lastItem) {
+        const lastTimeVal = typeof lastItem.time === "object" ? lastItem.time.time || 0 : lastItem.time;
+        const newTimeVal = typeof normalizedTime === "object" ? normalizedTime.time || 0 : normalizedTime;
+        if (newTimeVal < lastTimeVal) {
+            return;
+        }
+
+        // 🛡️ [가격 이상치/코인 교차 오염 안전망 (Sanity Guard)]
+        if (!isValidPriceRatio(Number(currentCandle.close), Number(lastItem.close))) {
+            return;
+        }
+    }
+
+    // 🚀 [초고속 1프레임 큐잉] 최신 틱 데이터를 메모리에 담고 다음 렌더링 프레임에 1회 실행
+    pendingUpdate = { normalizedTime, currentCandle };
+    if (!renderTickRaf) {
+        renderTickRaf = requestAnimationFrame(flushRealtimeRender);
+    }
 }
 
 // 볼륨 업데이트 실패 시 원본 배열 내부 오염물질(null/NaN)을 제거하고 차트 초기화 복구

@@ -15,28 +15,24 @@ export function toggleTabSearch(open) {
     searchWrap.classList.remove(
       "opacity-0",
       "pointer-events-none",
-      "translate-x-2",
     );
     searchWrap.classList.add(
       "opacity-100",
       "pointer-events-auto",
-      "translate-x-0",
     );
     if (tabGroup) tabGroup.classList.add("opacity-0", "pointer-events-none");
     if (toggleBtn) toggleBtn.classList.add("opacity-0", "pointer-events-none");
     if (inputMobile) {
-      setTimeout(() => inputMobile.focus(), 50);
+      setTimeout(() => inputMobile.focus(), 30);
     }
   } else {
     searchWrap.classList.add(
       "opacity-0",
       "pointer-events-none",
-      "translate-x-2",
     );
     searchWrap.classList.remove(
       "opacity-100",
       "pointer-events-auto",
-      "translate-x-0",
     );
     if (tabGroup) tabGroup.classList.remove("opacity-0", "pointer-events-none");
     if (toggleBtn)
@@ -203,7 +199,7 @@ export function showRecentSearchChips() {
 
   const dropdown = getOrCreateRecentSearchDropdown();
   const isMobile = window.innerWidth < 768;
-  const visibleList = isMobile ? list.slice(0, 5) : list.slice(0, 10);
+  const visibleList = list.slice(0, 10);
 
   let html = `
     <div class="flex items-center justify-between w-full pb-1.5 border-b border-theme-border/40 mb-1">

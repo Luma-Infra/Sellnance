@@ -1,7 +1,22 @@
 import os
 import sys
 import subprocess
-import time
+import socket
+
+
+def get_lan_ip():
+    """현재 활성화된 네트워크 인터페이스의 실제 로컬 LAN IP를 가져옵니다."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        try:
+            return socket.gethostbyname(socket.gethostname())
+        except Exception:
+            return "127.0.0.1"
 
 
 def clear_port(port):
@@ -26,12 +41,13 @@ def clear_port(port):
 def start_engine():
     port = 8000
     clear_port(port)
+    lan_ip = get_lan_ip()
 
     print("\n" + "=" * 50)
     print("      🚀 SELLNANCE ENGINE v1.2 - BOOTING...")
     print("=" * 50)
     print(f"📂 [PATH] {os.getcwd()}")
-    print(f"🌐 [HOST] http://127.0.0.1:{port}  |  📱 [LAN] http://192.168.0.6:{port}")
+    print(f"🌐 [HOST] http://127.0.0.1:{port}  |  📱 [LAN] http://{lan_ip}:{port}")
     print("-" * 50)
 
     # Uvicorn 가동 (modules/app.py의 app 객체 실행)

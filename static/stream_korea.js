@@ -1,7 +1,13 @@
 // stream_korea.js
 import { store, tfSec } from "./_store.js";
 import { getMultiplier, getPureBase, getUnixSeconds, getNextBarTime } from "./chart_utils.js";
-import { getNormalizedTime } from "./stream_utils.js";
+import {
+  isChartBusy,
+  isMatchingCurrentSymbol,
+  isValidPriceRatio,
+  applyTradeToCandle,
+  getNormalizedTime,
+} from "./stream_utils.js";
 
 // === DEBUG_PERF_TOGGLE ===
 const ENABLE_PERF_LOG = false; // Set to false to disable all performance logging instantly
@@ -374,11 +380,10 @@ export function getUpbitMessageHandler(symbol, broadcastCandleUpdate) {
     const tickSymbol = res.code.toUpperCase();
     const expectedCode = `KRW-${symbol}`.toUpperCase();
 
-    const expectedGlobalCode =
-      `KRW-${(store.currentSelectedSymbol || "").replace("USDT", "").replace("KRW-", "").replace("KRW", "")}`.toUpperCase();
-    if (tickSymbol !== expectedCode || tickSymbol !== expectedGlobalCode)
-      return;
+    // 🛡️ [Symbol Guard] 업비트 현재 활성 심볼 일치 여부 검증
+    if (!isMatchingCurrentSymbol(tickSymbol)) return;
 
+    if (isChartBusy()) return;
     if (!store.mainData || store.mainData.length === 0) return;
     const lastCandle = store.mainData[store.mainData.length - 1];
 
@@ -386,47 +391,25 @@ export function getUpbitMessageHandler(symbol, broadcastCandleUpdate) {
     const tradeQty = parseFloat(res.trade_volume) || 0;
     if (isNaN(newPrice)) return;
 
+    // 🛡️ [가격 이상치/코인 교차 오염 안전망]
+    if (!isValidPriceRatio(newPrice, lastCandle.close)) return;
+
     const nextBarTime = getNextBarTime(lastCandle.time, store.currentTF);
     const currentUnix = Math.floor(res.timestamp / 1000);
 
-    let activeCandle = lastCandle;
-    let chartUpdateNeeded = false;
-
-    if (currentUnix < nextBarTime) {
-      lastCandle.close = newPrice;
-      lastCandle.high = Math.max(lastCandle.high, newPrice);
-      lastCandle.low = Math.min(lastCandle.low, newPrice);
-      lastCandle.volume = (lastCandle.volume || 0) + tradeQty;
-      activeCandle = lastCandle;
-      chartUpdateNeeded = true;
-    } else {
-      const normTime = getNormalizedTime({ time: nextBarTime });
-      activeCandle = {
-        time: normTime,
-        open: newPrice,
-        high: newPrice,
-        low: newPrice,
-        close: newPrice,
-        volume: tradeQty,
-      };
-      store.mainData.push(activeCandle);
-      store.mainDataMap.set(getUnixSeconds(activeCandle.time), activeCandle);
-      chartUpdateNeeded = true;
-    }
+    const tradeResult = applyTradeToCandle(lastCandle, newPrice, tradeQty, currentUnix, nextBarTime);
+    const activeCandle = tradeResult.activeCandle;
+    const chartUpdateNeeded = true;
 
     if (chartUpdateNeeded) {
-      if (store.isFetchingChart || window.isFetchingChart || store.isLoadingMoreHistory || store.isRestoringTab) return;
+      if (isChartBusy()) return;
 
       if (res.timestamp) {
         store.lastServerMs = res.timestamp;
         store.localTimeAtUpdate = performance.now();
       }
 
-      const currentExpected =
-        `KRW-${(store.currentSelectedSymbol || "").replace("USDT", "").replace("KRW-", "").replace("KRW", "")}`.toUpperCase();
-      if (expectedCode === currentExpected) {
-        broadcastCandleUpdate(activeCandle, symbol, res.timestamp, "UPBIT");
-      }
+      broadcastCandleUpdate(activeCandle, symbol, res.timestamp, "UPBIT");
     }
   };
 }
@@ -437,7 +420,7 @@ export function getBithumbMessageHandler(symbol, broadcastCandleUpdate) {
     if (e.target !== store.bithumbChartWs) return;
     const btnSim = document.getElementById("tab-btn-sim");
     if (btnSim && btnSim.classList.contains("active")) return;
-    if (store.isFetchingChart || window.isFetchingChart || store.isLoadingMoreHistory || store.isRestoringTab) return;
+    if (isChartBusy()) return;
     if (store.currentChartMarket !== "BITHUMB") {
       // 🚀 현재 탭이 빗썸이 아닌 경우(예: 바이낸스/바이비트),
       // 메인 차트 데이터(store.mainData)를 오염시키지 않고 오직 김프 계산을 위한 실시간 시세 버퍼 업데이트 및 김프 갱신만 수행합니다.
@@ -463,6 +446,10 @@ export function getBithumbMessageHandler(symbol, broadcastCandleUpdate) {
     const res = JSON.parse(e.data);
     if (res.type !== "transaction" || !res.content?.list) return;
 
+    // 🛡️ [Symbol Guard] 빗썸 현재 활성 심볼 일치 여부 검증
+    if (!isMatchingCurrentSymbol(symbol)) return;
+
+    if (isChartBusy()) return;
     if (!store.mainData || store.mainData.length === 0) return;
     const lastCandle = store.mainData[store.mainData.length - 1];
 
@@ -476,35 +463,20 @@ export function getBithumbMessageHandler(symbol, broadcastCandleUpdate) {
       const tradeQty = parseFloat(trade.contQty) || 0;
       if (isNaN(newPrice)) return;
 
+      // 🛡️ [가격 이상치/코인 교차 오염 안전망]
+      if (!isValidPriceRatio(newPrice, lastCandle.close)) return;
+
       const dtStr = trade.contDtm.replace(" ", "T") + "+09:00";
       let currentUnix = Math.floor(new Date(dtStr).getTime() / 1000);
       if (isNaN(currentUnix)) currentUnix = Math.floor(Date.now() / 1000);
 
-      if (currentUnix < nextBarTime) {
-        lastCandle.close = newPrice;
-        lastCandle.high = Math.max(lastCandle.high, newPrice);
-        lastCandle.low = Math.min(lastCandle.low, newPrice);
-        lastCandle.volume = (lastCandle.volume || 0) + tradeQty;
-        activeCandle = lastCandle;
-        chartUpdateNeeded = true;
-      } else {
-        const normTime = getNormalizedTime({ time: nextBarTime });
-        activeCandle = {
-          time: normTime,
-          open: newPrice,
-          high: newPrice,
-          low: newPrice,
-          close: newPrice,
-          volume: tradeQty,
-        };
-        store.mainData.push(activeCandle);
-        store.mainDataMap.set(getUnixSeconds(activeCandle.time), activeCandle);
-        chartUpdateNeeded = true;
-      }
+      const tradeResult = applyTradeToCandle(lastCandle, newPrice, tradeQty, currentUnix, nextBarTime);
+      activeCandle = tradeResult.activeCandle;
+      chartUpdateNeeded = true;
     });
 
     if (chartUpdateNeeded) {
-      if (store.isFetchingChart || window.isFetchingChart || store.isLoadingMoreHistory || store.isRestoringTab) return;
+      if (isChartBusy()) return;
       broadcastCandleUpdate(activeCandle, symbol, Date.now(), "BITHUMB");
     }
   };

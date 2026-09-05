@@ -28,14 +28,13 @@ const START_3D_CONFIG = {
   perspective: 1200, // 3D 원근 깊이 (px)
 
   // 🌟 [3D 바닥 앰비언트 오라 / 백라이트 커스텀 설정소]
-  auraInset: "-24px", // 덱 외곽 확장 폭 (예: -20px ~ -60px)
-  auraBorderRadius: "24px", // 오라 모서리 둥글기 (px)
-  auraBlur: "24px", // 블러 번짐 반경 (px)
-  auraOpacity: 0.5, // 오라 투명도 (0.0 ~ 1.0)
+  auraInset: "0px", // 덱 외곽 확장 폭 (예: -20px ~ -60px)
+  auraBorderRadius: "20px", // 오라 모서리 둥글기 (px)
+  auraBlur: "14px", // 블러 번짐 반경 (px)
+  auraOpacity: 0.07, // 오라 투명도 (0.0 ~ 1.0)
   auraBackground:
-    "radial-gradient(ellipse at center, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.18) 45%, rgba(0, 209, 255, 0.12) 70%, transparent 90%)",
-  auraBoxShadow:
-    "0 0 45px rgba(255, 255, 255, 0.16), 0 0 75px rgba(0, 209, 255, 0.12)",
+    "radial-gradient(ellipse at center, var(--accent) 0%, transparent 60%)",
+  auraBoxShadow: "0 0 12px var(--accent)",
 };
 
 // ===================================================================================
@@ -174,10 +173,10 @@ function getStartScreenHTML() {
         position: absolute;
         inset: ${START_3D_CONFIG.auraInset};
         border-radius: ${START_3D_CONFIG.auraBorderRadius};
-        background: radial-gradient(ellipse at center, var(--accent) 0%, transparent 45%);
-        box-shadow: 0 0 25px var(--accent);
+        background: ${START_3D_CONFIG.auraBackground};
+        box-shadow: ${START_3D_CONFIG.auraBoxShadow};
         filter: blur(${START_3D_CONFIG.auraBlur});
-        opacity: 0.2;
+        opacity: ${START_3D_CONFIG.auraOpacity};
         pointer-events: none;
         z-index: 0;
         transform-origin: center center;
@@ -287,7 +286,7 @@ function getStartScreenHTML() {
     </style>
 
     <div
-      id="start-screen" style="display: none;"
+      id="start-screen" style="${localStorage.getItem('sellnance_skip_start') === 'true' ? 'display: none;' : 'display: flex;'}"
       class="fixed inset-0 z-[1000] flex items-center justify-center transition-opacity duration-500 overflow-hidden p-4 md:p-8 bg-theme-bg text-theme-text"
     >
       <div class="w-full max-w-6xl h-full max-h-[820px] flex flex-col md:flex-row items-center justify-center md:justify-between gap-4 sm:gap-5 md:gap-8 relative z-10">
@@ -363,7 +362,7 @@ function getStartScreenHTML() {
                   </a>
                 </div>
                 <p class="text-[10px] text-theme-text opacity-50 border-t border-theme-border/30 pt-1.5 leading-tight text-center w-full">
-                  💡 기본 1.5만 크레딧 제공! (1회 약 3크레딧 소모 / 하루 100회 조회도 넉넉해요)
+                  💡 기본 1.5만 크레딧 (1회 약 3크레딧 소모 / 하루 100회 조회도 넉넉해요)
                 </p>
               </div>
             </div>
@@ -404,25 +403,17 @@ function getStartScreenHTML() {
             </div>
 
             <div class="flex flex-col gap-2 mt-0.5">
-              <!-- 🚀 Start Dashboard 버튼 + 우측 자동 시작 토글 뱃지 나란히 배치 -->
-              <div class="flex items-center gap-2 w-full">
-                <button
-                  id="btn-start-engine"
-                  disabled
-                  onclick="saveAndStart()"
-                  class="flex-1 py-3 md:py-3.5 bg-theme-accent text-white font-bold rounded-xl shadow-sm hover:brightness-105 active:scale-[0.98] transition-transform tracking-widest uppercase cursor-not-allowed pointer-events-none text-xs md:text-sm"
-                >
-                  불러오는 중.. 📡
-                </button>
+              <!-- 1. 키 저장 및 대시보드 시작 (메인 액션) -->
+              <button
+                id="btn-start-engine"
+                disabled
+                onclick="saveAndStart()"
+                class="w-full py-3 md:py-3.5 bg-theme-accent text-white font-bold rounded-xl shadow-sm hover:brightness-105 active:scale-[0.98] transition-transform tracking-widest uppercase cursor-not-allowed pointer-events-none text-xs md:text-sm"
+              >
+                불러오는 중.. 📡
+              </button>
 
-                <label
-                  class="h-[42px] md:h-[48px] px-3 bg-theme-bg/60 hover:bg-theme-panel border border-theme-border hover:border-theme-accent rounded-xl flex items-center gap-1.5 cursor-pointer select-none group"
-                >
-                  <input type="checkbox" id="chk-auto-skip" class="accent-theme-accent w-3.5 h-3.5 rounded cursor-pointer" />
-                  <span class="text-[11px] text-theme-text/80 group-hover:text-theme-text whitespace-nowrap font-medium transition-colors">Skip</span>
-                </label>
-              </div>
-
+              <!-- 2. 바로 이동 (서브 액션) -->
               <button
                 id="btn-skip-start"
                 disabled
@@ -431,6 +422,16 @@ function getStartScreenHTML() {
               >
                 불러오는 중...
               </button>
+
+              <!-- 3. 🚀 시작 화면 자동 건너뛰기 공통 설정 (두 버튼 모두에 대응) -->
+              <div class="flex items-center justify-center pt-1">
+                <label
+                  class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-theme-border/20 cursor-pointer select-none group transition-all"
+                >
+                  <input type="checkbox" id="chk-auto-skip" class="accent-theme-accent w-3.5 h-3.5 rounded cursor-pointer" />
+                  <span class="text-[11px] text-theme-text/70 group-hover:text-theme-text font-medium transition-colors">다음부터 시작 화면 건너뛰기</span>
+                </label>
+              </div>
             </div>
           </div>
         </div>
@@ -1066,15 +1067,24 @@ async function initStartScreen() {
       localStorage.getItem("sellnance_skip_start") === "true";
     rawCmcKey = localStorage.getItem("CMC_API_KEY") || "";
 
-    // 🚀 유료(키 등록 유저) & 무료(캐시 모드 유저) 모두 스킵 설정 시 즉시 대시보드로 진입!
-    if (isAutoSkipEnabled) {
+    const hasDirectSymbol =
+      window.location.pathname &&
+      window.location.pathname !== "/" &&
+      window.location.pathname !== "";
+
+    // 🚀 다이렉트 심볼 접근(/BTC 등) 또는 스킵 설정 시 즉시 대시보드로 진입!
+    if (isAutoSkipEnabled || hasDirectSymbol) {
       hideStartScreen();
       return;
     }
   } catch (e) {
     // Xconsole.error("🚨 서버 통신 실패, 로컬 스토리지로 대체합니다.");
     rawCmcKey = localStorage.getItem("CMC_API_KEY") || "";
-    if (localStorage.getItem("sellnance_skip_start") === "true") {
+    const hasDirectSymbol =
+      window.location.pathname &&
+      window.location.pathname !== "/" &&
+      window.location.pathname !== "";
+    if (localStorage.getItem("sellnance_skip_start") === "true" || hasDirectSymbol) {
       hideStartScreen();
       return;
     }
@@ -1329,6 +1339,7 @@ function hideStartScreen() {
   destroyStartQuickViewPreview();
 
   // 🚀 [핵심] 사용자가 Start / Skip 버튼을 누른 바로 이 시점에 비로소 대시보드 데이터 및 실시간 엔진을 점화합니다!
+  document.documentElement.classList.remove("start-screen-active");
   if (typeof window.initDashboardEngine === "function") {
     window.initDashboardEngine();
   }

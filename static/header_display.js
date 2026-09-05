@@ -135,15 +135,14 @@ export const realUpdateHeaderDisplay = (
       bithumbP = newPrice;
       row.Bithumb_Price = newPrice;
     } else if (activeMarket === "BYBIT" || activeMarket === "BYBIT_FUTURES") {
-      bybitP = (newPrice / (chartSymbolMult || ovsFutMult || 1)) * (storeMult || 1);
+      bybitP = newPrice;
+      if (activeMarket === "BYBIT_FUTURES") {
+        row.Bybit_Price_Futures = newPrice;
+      } else {
+        row.Bybit_Price_Spot = newPrice;
+      }
     } else {
-      const activeExchangeMult = isFuturesMode
-        ? ovsFutMult
-        : ovsFutMult > 1 && !row.Binance_Price_Spot
-          ? ovsFutMult
-          : ovsSpotMult;
-      const srcMult = chartSymbolMult > 1 ? chartSymbolMult : activeExchangeMult;
-      binanceP = (newPrice / (srcMult || 1)) * (storeMult || 1);
+      binanceP = newPrice;
       if (isFuturesMode) {
         row.Binance_Price_Futures = newPrice;
       } else if (isSpotMode) {
@@ -221,30 +220,32 @@ export const realUpdateHeaderDisplay = (
     }
   }
 
-  const topEl = document.getElementById("head-price-main");
-  const bottomEl = document.getElementById("head-price-sub");
+  const topEls = document.querySelectorAll("#head-price-main, .head-price-main-sync");
+  const bottomEls = document.querySelectorAll("#head-price-sub, .head-price-sub-sync");
 
-  if (topEl) {
-    if (isMainKrw) {
-      const krwP = getKrwPrecision(displayPrice);
-      topEl.innerText = `${Number(displayPrice).toLocaleString(undefined, { maximumFractionDigits: krwP })} 원`;
+  const formattedMainPrice = isMainKrw
+    ? `${Number(displayPrice).toLocaleString(undefined, { maximumFractionDigits: getKrwPrecision(displayPrice) })} 원`
+    : (window.formatSmartPrice ? window.formatSmartPrice(displayPrice, pNormalized) : formatSmartPrice(displayPrice, pNormalized));
+
+  topEls.forEach((el) => {
+    el.innerText = formattedMainPrice;
+  });
+
+  const hasSubPrice = subPrice !== null && subPrice > 0;
+  const formattedSubPrice = hasSubPrice
+    ? (isMainKrw
+      ? `≈ $ ${window.formatSmartPrice ? window.formatSmartPrice(subPrice, pNormalized) : formatSmartPrice(subPrice, pNormalized)}`
+      : `≈ ${Number(subPrice).toLocaleString(undefined, { maximumFractionDigits: getKrwPrecision(subPrice) })} ₩`)
+    : "";
+
+  bottomEls.forEach((el) => {
+    if (hasSubPrice) {
+      el.innerText = formattedSubPrice;
+      el.classList.remove("hidden");
     } else {
-      topEl.innerText = window.formatSmartPrice ? window.formatSmartPrice(displayPrice, pNormalized) : formatSmartPrice(displayPrice, pNormalized);
+      el.classList.add("hidden");
     }
-  }
-  if (bottomEl) {
-    if (subPrice !== null && subPrice > 0) {
-      if (isMainKrw) {
-        bottomEl.innerText = `$ ${window.formatSmartPrice ? window.formatSmartPrice(subPrice, pNormalized) : formatSmartPrice(subPrice, pNormalized)}`;
-      } else {
-        const krwP = getKrwPrecision(subPrice);
-        bottomEl.innerText = `${Number(subPrice).toLocaleString(undefined, { maximumFractionDigits: krwP })} ₩`;
-      }
-      bottomEl.classList.remove("hidden");
-    } else {
-      bottomEl.classList.add("hidden");
-    }
-  }
+  });
 
   // 🚀 최종 대표 등락률(Raw) 값을 다이렉트로 매핑하여 좌측 테이블과 우측 전광판의 싱크를 완전히 일치시킵니다.
   let n24 = 0;
@@ -299,26 +300,34 @@ export const realUpdateHeaderDisplay = (
     }
   }
 
-  if (headChg24h) {
-    const c24 =
-      n24 > 0
-        ? "text-theme-up"
-        : n24 < 0
-          ? "text-theme-down"
-          : "text-theme-text";
-    headChg24h.className = `text-[12px] md:text-[13px] font-tempTestDss mt-0.5 ${c24}`;
-    headChg24h.innerText = `${n24 > 0 ? "+" : ""}${Number(n24).toFixed(2)}%`;
-  }
-  if (headChgDay) {
-    const cDay =
-      nDay > 0
-        ? "text-theme-up"
-        : nDay < 0
-          ? "text-theme-down"
-          : "text-theme-text";
-    headChgDay.className = `text-[12px] md:text-[13px] font-tempTestDss mt-0.5 ${cDay}`;
-    headChgDay.innerText = `${nDay > 0 ? "+" : ""}${Number(nDay).toFixed(2)}%`;
-  }
+  const headChg24hEls = document.querySelectorAll("#head-chg-24h, .head-chg-24h-sync");
+  const headChgDayEls = document.querySelectorAll("#head-chg-day, .head-chg-day-sync");
+
+  const c24 =
+    n24 > 0
+      ? "text-theme-up"
+      : n24 < 0
+        ? "text-theme-down"
+        : "text-theme-text";
+  const text24 = `${n24 > 0 ? "+" : ""}${Number(n24).toFixed(2)}%`;
+
+  headChg24hEls.forEach((el) => {
+    el.className = `text-[12px] md:text-[13px] min-[1200px]:text-[16px] font-sans mt-0.5 text-right font-normal ${c24} ${el.classList.contains("head-chg-24h-sync") ? "head-chg-24h-sync" : ""}`;
+    el.innerText = text24;
+  });
+
+  const cDay =
+    nDay > 0
+      ? "text-theme-up"
+      : nDay < 0
+        ? "text-theme-down"
+        : "text-theme-text";
+  const textDay = `${nDay > 0 ? "+" : ""}${Number(nDay).toFixed(2)}%`;
+
+  headChgDayEls.forEach((el) => {
+    el.className = `text-[12px] md:text-[13px] min-[1200px]:text-[16px] font-sans mt-0.5 text-right font-normal ${cDay} ${el.classList.contains("head-chg-day-sync") ? "head-chg-day-sync" : ""}`;
+    el.innerText = textDay;
+  });
 
   // 🚀 가격과 등락폭은 항상 갱신하고, 볼륨/시총 등 정적 지표만 조기 리턴하여 보존
   if (newPrice !== undefined || isRealtimeStream) {

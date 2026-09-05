@@ -65,9 +65,41 @@ export function renderTimeframeButtons(currentTF = "1d") {
 
       container.prepend(btn);
     });
+
+  if (typeof window.updateElementScrollMask === "function") {
+    requestAnimationFrame(() => window.updateElementScrollMask(container));
+  }
 }
 
 let pendingTfSettings = null;
+
+export function syncChartControlsModalUI() {
+  const updateBtn = (id, isActive, activeText, inactiveText) => {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    const textSpan = btn.querySelector("span") || btn;
+    if (activeText && inactiveText) {
+      textSpan.innerText = isActive ? activeText : inactiveText;
+    }
+    if (isActive) {
+      btn.className =
+        "px-2 py-1.5 text-[11px] font-bold rounded border transition-all flex items-center justify-center gap-1.5 cursor-pointer bg-theme-accent text-white border-theme-accent shadow-sm";
+    } else {
+      btn.className =
+        "px-2 py-1.5 text-[11px] font-medium rounded border transition-all flex items-center justify-center gap-1.5 cursor-pointer bg-theme-panel/50 text-theme-text opacity-50 border-theme-border/50 hover:opacity-100 hover:border-theme-border";
+    }
+  };
+
+  const isOhlc = localStorage.getItem("sellnance_ohlc_hidden") !== "true";
+  const isPct = store.showCrosshairPct !== false;
+  const isCountdown = !!store.showCountdown;
+  const isKimchi = !store.isKimchiDisabled;
+
+  updateBtn("modal-ctrl-ohlc", isOhlc, "OHLC 정보 ON", "OHLC 정보 OFF");
+  updateBtn("modal-ctrl-pct", isPct, "우측 % 켜짐", "우측 % 꺼짐");
+  updateBtn("modal-ctrl-countdown", isCountdown, "카운트다운 ON", "카운트다운 OFF");
+  updateBtn("modal-ctrl-kimchi", isKimchi, "김프 비교 ON", "김프 비교 OFF");
+}
 
 export function toggleTfSettings() {
   const dropdown = document.getElementById("tf-settings-dropdown");
@@ -75,6 +107,7 @@ export function toggleTfSettings() {
   if (dropdown.classList.contains("hidden")) {
     pendingTfSettings = [...getVisibleTfs()];
     renderTfCheckboxList();
+    syncChartControlsModalUI();
     dropdown.classList.remove("hidden");
     dropdown.classList.add("flex");
     void dropdown.offsetWidth;
@@ -305,17 +338,22 @@ window.toggleLogScale = toggleLogScale;
 window.renderTimeframeButtons = renderTimeframeButtons;
 window.toggleTfSettings = toggleTfSettings;
 window.applyTfSettings = applyTfSettings;
+window.syncChartControlsModalUI = syncChartControlsModalUI;
 
-document.addEventListener("click", (e) => {
+function handleOutsideTfClick(e) {
   const dropdown = document.getElementById("tf-settings-dropdown");
-  const btn = e.target.closest("button[onclick='toggleTfSettings()']");
+  if (!dropdown || dropdown.classList.contains("hidden")) return;
 
-  if (
-    !btn &&
-    dropdown &&
-    !dropdown.contains(e.target) &&
-    !dropdown.classList.contains("hidden")
-  ) {
+  const btn =
+    document.getElementById("tf-settings-toggle-btn") ||
+    (e.target.closest && e.target.closest("button[onclick*='toggleTfSettings']"));
+
+  if (btn && (btn === e.target || btn.contains(e.target))) return;
+  if (!dropdown.contains(e.target)) {
     toggleTfSettings();
   }
-});
+}
+
+document.addEventListener("pointerdown", handleOutsideTfClick, true);
+document.addEventListener("touchstart", handleOutsideTfClick, { capture: true, passive: true });
+document.addEventListener("click", handleOutsideTfClick, true);

@@ -146,9 +146,12 @@ export function selectSymbol(
     return;
   }
 
-  // 🚀 [INP 최적화 Phase 1] 클릭 즉시 최소한의 상태만 변경하고 즉각 시각적 피드백 제공 (Next Paint 0~16ms 달성!)
-  store.isFetchingChart = false;
-  window.isFetchingChart = false;
+  // 🚀 [INP 최적화 Phase 1] 클릭 즉시 실시간 버퍼 플러시 및 차트 잠금 활성화
+  if (typeof window.flushRealtimeBuffers === "function") {
+    window.flushRealtimeBuffers();
+  }
+  store.isFetchingChart = true;
+  window.isFetchingChart = true;
   store.isUserZoomed = false;
   store.currentAsset = uniqueTicker;
   store.currentSelectedSymbol = uniqueTicker;
@@ -246,9 +249,10 @@ export function selectSymbol(
       store.currentChartMarket = tempMarket || getChartDefaultMarket(rowInfo);
 
       const p = store.getPrecision(uniqueTicker);
-      const headAssetName = document.getElementById("head-asset-name");
+      const headAssetNames = document.querySelectorAll("#head-asset-name, #head-asset-name-pc");
 
-      if (headAssetName) {
+      if (headAssetNames.length > 0) {
+        let contentHtml = "";
         if (rowInfo) {
           const favorites = JSON.parse(
             localStorage.getItem("sellnance_favs") || "[]",
@@ -277,7 +281,8 @@ export function selectSymbol(
           const pureSym = getPureBase(
             rowInfo.Symbol || rowInfo.DisplayTicker || rowInfo.Ticker,
           );
-          const fullText = `${pureSym} (${rowInfo.Name || ""})`;
+          const nameStr = (store.lang === "KR" ? rowInfo.Name_KR || rowInfo.Name : rowInfo.Name) || "";
+          const fullText = nameStr ? `${pureSym} (${nameStr})` : pureSym;
           const len = fullText.length;
           // 수학적 로그 방식 적용: 10글자 초과 시 길이에 반비례하여 부드럽게 폰트 크기 축소 (기본 1.125rem, 최소 0.65rem)
           let fontSizeStyle = "";
@@ -294,26 +299,36 @@ export function selectSymbol(
             fontSizeStyle = `style="white-space: nowrap;"`;
           }
 
-          headAssetName.innerHTML = `
+          contentHtml = `
             <div class="flex items-center gap-2">
-              <button onclick="window.toggleFavorite('${rowInfo.UID}', event, true); setTimeout(() => window.selectSymbol('${uniqueTicker}'), 50);" class="star-btn text-[16px] transition-all hover:scale-125 flex-shrink-0 ${starClass}" style="color: ${starColor}">
+              <button onclick="window.toggleFavorite('${rowInfo.UID}', event, true);" class="star-btn text-[16px] transition-all hover:scale-125 flex-shrink-0 ${starClass}" style="color: ${starColor}">
                 ${starText}
               </button>
               <div class="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-white/5 rounded-full overflow-hidden">
                 ${logoHtml}
               </div>
-              <span ${fontSizeStyle}>${fullText}</span>
+              <!-- 🚀 PC 전용 (>=1200px): 기존 1줄 표기 100% 원본 유지 -->
+              <span class="hidden min-[1200px]:inline" ${fontSizeStyle}>${fullText}</span>
+              <!-- 🚀 모바일 전용 (<1200px): 코인 이름을 무조건 아랫줄 2단으로 정렬 -->
+              <div class="flex flex-col min-[1200px]:hidden leading-none min-w-0">
+                <span class="text-sm sm:text-base font-extrabold tracking-wide truncate leading-tight text-theme-accent">${pureSym}</span>
+                ${nameStr ? `<span class="text-[10px] text-theme-text/60 font-medium tracking-tight truncate leading-tight mt-0.5">${nameStr}</span>` : ""}
+              </div>
             </div>
           `;
         } else {
           // 🚀 [신규] rowInfo 로드 대기 중(직접 URL 진입 등)에도 기본 깔끔한 심볼 표기
           const pureSym = getPureBase(uniqueTicker || parsedSymbol);
-          headAssetName.innerHTML = `
+          contentHtml = `
             <div class="flex items-center gap-2">
               <span style="white-space: nowrap;">${pureSym}</span>
             </div>
           `;
         }
+
+        headAssetNames.forEach((el) => {
+          el.innerHTML = contentHtml;
+        });
 
         if (typeof window.updateHeaderDisplay === "function") {
           window.updateHeaderDisplay(rowInfo, undefined, p);
@@ -336,7 +351,10 @@ export function selectSymbol(
           fetch(`/api/coin-info/${encodeURIComponent(querySym)}`)
             .then((res) => res.json())
             .then((infoData) => {
-              if (headAssetName && infoData.name) {
+              const headAssetElements = document.querySelectorAll(
+                "#head-asset-name, #head-asset-name-pc",
+              );
+              if (headAssetElements.length > 0 && infoData && infoData.name) {
                 const displaySym = getPureBase(
                   infoData.symbol ||
                   (rowInfo ? rowInfo.Symbol : querySym.split("(")[0]),
@@ -371,7 +389,8 @@ export function selectSymbol(
                   (rowInfo && rowInfo.Logo)
                     ? rowInfo.Logo
                     : `<img src="${document.body?.classList.contains('theme-upbit') ? '/static/luma-deer-svg-light.svg' : '/static/luma-deer-svg-dark.svg'}" class="fallback-logo" loading="lazy" style="width: 24px; height: 24px; vertical-align: middle; border-radius: 50%;">`;
-                const fullText2 = `${displaySym} (${infoData.name})`;
+                const nameStr2 = infoData.name || "";
+                const fullText2 = nameStr2 ? `${displaySym} (${nameStr2})` : displaySym;
                 const len2 = fullText2.length;
                 let fontSizeStyle2 = "";
                 if (len2 > 10) {
@@ -384,17 +403,26 @@ export function selectSymbol(
                   fontSizeStyle2 = `style="white-space: nowrap;"`;
                 }
 
-                headAssetName.innerHTML = `
+                const updateHtml2 = `
                   <div class="flex items-center gap-2">
-                    <button onclick="window.toggleFavorite('${rowInfo ? rowInfo.UID : uniqueTicker}', event, true); setTimeout(() => window.selectSymbol('${uniqueTicker}'), 50);" class="star-btn text-[16px] transition-all hover:scale-125 flex-shrink-0 ${starClass}" style="color: ${starColor}">
+                    <button onclick="window.toggleFavorite('${rowInfo ? rowInfo.UID : uniqueTicker}', event, true);" class="star-btn text-[16px] transition-all hover:scale-125 flex-shrink-0 ${starClass}" style="color: ${starColor}">
                       ${starText}
                     </button>
                     <div class="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-white/5 rounded-full overflow-hidden">
                       ${logoHtml}
                     </div>
-                    <span ${fontSizeStyle2}>${fullText2}</span>
+                    <!-- 🚀 PC 전용 (>=1200px): 기존 1줄 표기 100% 원본 유지 -->
+                    <span class="hidden min-[1200px]:inline" ${fontSizeStyle2}>${fullText2}</span>
+                    <!-- 🚀 모바일 전용 (<1200px): 코인 이름을 무조건 아랫줄 2단으로 정렬 -->
+                    <div class="flex flex-col min-[1200px]:hidden leading-none min-w-0">
+                      <span class="text-sm sm:text-base font-extrabold tracking-wide truncate leading-tight text-theme-accent">${displaySym}</span>
+                      ${nameStr2 ? `<span class="text-[10px] text-theme-text/60 font-medium tracking-tight truncate leading-tight mt-0.5">${nameStr2}</span>` : ""}
+                    </div>
                   </div>
                 `;
+                headAssetElements.forEach((el) => {
+                  el.innerHTML = updateHtml2;
+                });
               }
             })
             .catch((e) => console.error("이름 로드 실패", e));
@@ -438,18 +466,28 @@ export function selectSymbol(
         window.applyRealtimeSort();
       }
 
-      // 🚀 모바일 환경(1200px 미만)일 경우 차트 패널 열기 + 네비탭 차트 활성화
-      if (typeof window.showMobileChart === "function") {
-        window.showMobileChart();
-      }
-      if (
-        typeof window.switchMobileTab === "function" &&
-        window.innerWidth < 1200
-      ) {
-        // Alpine.js에 탭 변경 이벤트 전파하여 버튼 하이라이트 상태를 선언적으로 처리
-        window.dispatchEvent(
-          new CustomEvent("mobile-tab-changed", { detail: "chart" }),
-        );
+      // 🚀 모바일 터치 환경(1200px 미만 & 터치 기기)일 경우: 행 직접 터치(isRowClick) 또는 차트 탭 활성 상태일 때만 차트 오버레이 열기
+      const isTouch = typeof window.isTouchDevice === "function"
+        ? window.isTouchDevice()
+        : ((window.matchMedia && window.matchMedia("(pointer: coarse)").matches) || ("ontouchstart" in window) || (typeof navigator !== "undefined" && navigator.maxTouchPoints > 0));
+
+      if (window.innerWidth < 1200 && isTouch) {
+        let activeTab = "list";
+        try {
+          activeTab = sessionStorage.getItem("sellnance_active_mobile_tab") || "list";
+        } catch (e) { }
+
+        if (isRowClick || activeTab === "chart") {
+          try {
+            sessionStorage.setItem("sellnance_active_mobile_tab", "chart");
+          } catch (e) { }
+          if (typeof window.showMobileChart === "function") {
+            window.showMobileChart();
+          }
+          window.dispatchEvent(
+            new CustomEvent("mobile-tab-changed", { detail: "chart" }),
+          );
+        }
       }
     }, 0);
   });
@@ -531,23 +569,23 @@ export function updateExchangeBadges(s, targetUid = null) {
 
         const imgUrl = `https://s2.coinmarketcap.com/static/img/exchanges/64x64/${item.cmcId}.png`;
 
-        // 🚀 구분용 타입 배지 (우측 하단) - SPOT / FUTURE 텍스트 적용 (가시성 개선)
+        // 🚀 구분용 타입 배지 (우측 하단) - SPOT / FUTURE 텍스트 간격 및 가시성 최적화
         let typeBadge = "";
         if (item.id === "B-SPOT" || item.id === "BYBIT-SPOT" || item.id === "GATE-SPOT") {
-          typeBadge = `<div class="absolute -bottom-1.5 -right-2 bg-zinc-900 text-white text-[9px] px-1.5 py-0.5 rounded border border-white/30 leading-none font-black shadow-md whitespace-nowrap select-none">SPOT</div>`;
+          typeBadge = `<div class="absolute -bottom-1 -right-1.5 bg-zinc-900 text-white text-[8px] px-1.5 py-0.5 rounded-[3px] border border-white/30 leading-none font-black shadow-[0_1px_3px_rgba(0,0,0,0.5)] whitespace-nowrap select-none tracking-tight">SPOT</div>`;
         } else if (item.id === "B-FUT" || item.id === "BYBIT-FUT" || item.id === "GATE-FUT") {
-          typeBadge = `<div class="absolute -bottom-1.5 -right-2 bg-[#f0b90b] text-black text-[9px] px-1.5 py-0.5 rounded leading-none font-black shadow-md whitespace-nowrap select-none">FUTURE</div>`;
+          typeBadge = `<div class="absolute -bottom-1 -right-1.5 bg-[#f0b90b] text-black text-[8px] px-1.5 py-0.5 rounded-[3px] leading-none font-black shadow-[0_1px_3px_rgba(0,0,0,0.5)] whitespace-nowrap select-none tracking-tight">FUTURE</div>`;
         }
 
         let betaBadge = "";
         if (item.isBeta) {
-          betaBadge = `<div style="position: absolute; top: -7px; right: -5px; min-width: 26px; height: 14px; font-size: 8.5px;" class="bg-blue-600 text-white px-1.5 rounded-full flex items-center justify-center font-bold leading-none shadow-md select-none z-10 border border-blue-400/50 whitespace-nowrap">beta</div>`;
+          betaBadge = `<div class="absolute -top-1.5 -right-1.5 bg-blue-600 text-white text-[8px] px-1.5 py-0.5 rounded-full flex items-center justify-center font-bold leading-none shadow-[0_1px_3px_rgba(0,0,0,0.5)] select-none z-10 border border-blue-400/50 whitespace-nowrap">beta</div>`;
         }
 
         badges += `
           <button onclick="selectSymbol('${rowInfo.Ticker}', '${item.market}', '${rowInfo.UID}')" 
                   title="${item.id} (Beta)"
-                  class="relative flex items-center justify-center p-1 border border-theme-border/30 rounded-xl transition-all duration-200 w-8 h-8 cursor-pointer select-none active:scale-95 ml-1.5 first:ml-0 ${ringClass}">
+                  class="relative flex items-center justify-center p-1 border border-theme-border/30 rounded-xl transition-all duration-200 w-8 h-8 min-w-[32px] min-h-[32px] shrink-0 flex-shrink-0 cursor-pointer select-none active:scale-95 ${ringClass}">
             <img src="${imgUrl}" alt="${item.id}" class="w-full h-full object-contain rounded" />
             ${betaBadge}
             ${typeBadge}
@@ -558,7 +596,12 @@ export function updateExchangeBadges(s, targetUid = null) {
   }
 
   const badgeContainer = document.getElementById("exchange-badges");
-  if (badgeContainer) badgeContainer.innerHTML = badges;
+  if (badgeContainer) {
+    badgeContainer.innerHTML = badges;
+    if (typeof window.updateElementScrollMask === "function") {
+      requestAnimationFrame(() => window.updateElementScrollMask(badgeContainer));
+    }
+  }
 }
 
 window.selectSymbol = selectSymbol;
