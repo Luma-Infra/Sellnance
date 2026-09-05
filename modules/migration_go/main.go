@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"os"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -31,15 +30,9 @@ func main() {
 	// 4. 정적 파일 및 템플릿 서빙
 	app.Static("/static", "./static")
 
-	// 🚀 [이식 1] 뼈대 HTML 렌더링
+	// 🚀 [이식] 뼈대 HTML 렌더링
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendFile("./templates/index.html")
-	})
-
-	// 🚀 [이식 2] 환경변수 API 키 안전 전달 (보안: 실제 키 노출 방지, 존재 여부만 반환)
-	app.Get("/api/get-env-key", func(c *fiber.Ctx) error {
-		key := os.Getenv("CMC_API_KEY")
-		return c.JSON(fiber.Map{"exists": key != ""})
 	})
 
 	// 5. API 라우터 (JS가 찌르는 주소들)

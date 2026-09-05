@@ -34,6 +34,26 @@
   }
 }
 
+/* 스타트 스크린 전역 오버레이 */
+#start-screen {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  background-color: var(--bg);
+  z-index: 500;
+  pointer-events: auto;
+}
+
+/* 스타트 스크린 활성화 상태에서 메인 대시보드 & 글로벌 헤더 100% 완전 은닉 */
+html.start-screen-active #main-dashboard-content,
+html.start-screen-active #main-global-header,
+html.start-screen-active #loading-modal {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 :root {
   /* 🚀 [테마 전환 속도 전역 제어] 이 값 하나만 바꾸면 CSS + JS 전체 동기화 */
   --theme-transition-ms: 0;

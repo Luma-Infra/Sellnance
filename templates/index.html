@@ -52,7 +52,7 @@
     })();
   </script>
 
-  <!-- 🚀 [초기 init 테마 즉시 복원] 새로고침/화면이동 시 잔상(FOUC) 차단해요-->
+  <!-- 🚀 [초기 init 테마 즉시 복원] 새로고침/화면이동 시 잔상(FOUC) 차단 -->
   <script>
     (function () {
       try {
@@ -151,24 +151,6 @@
 </head>
 
 <body class="text-theme-text font-sans h-screen w-screen overflow-hidden flex justify-center">
-  <script>
-    (function () {
-      try {
-        var tgX = localStorage.getItem("sellnance_theme") || "binance";
-        document.body.classList.add(tgX === "upbit" ? "theme-upbit" : "theme-binance");
-        var isSkip = localStorage.getItem("sellnance_skip_start") === "true";
-        var hasDirectSymbol = window.location.pathname && window.location.pathname !== "/" && window.location.pathname !== "";
-        if (!isSkip && !hasDirectSymbol) {
-          document.documentElement.classList.add("start-screen-active");
-        }
-      } catch (e) { }
-    })();
-  </script>
-  <style>
-    html.start-screen-active #main-dashboard-content {
-      display: none !important;
-    }
-  </style>
   <div id="app-loader"></div>
 
   <!-- 🚀 온보딩 모달 (첫 방문 안내) -->
@@ -763,9 +745,9 @@
                   class="text-theme-text opacity-50 hover:opacity-100 text-xs px-1">✕</button>
               </div>
 
-              <!-- 🚀 [1] Mcap < 1M 초소형 코인 가리기 토글 버튼 -->
+              <!-- 🚀 [1] Mcap < 1M 초소형 코인 가리기 토글 버튼 (모바일 전용) -->
               <div id="quick-smallcap-section"
-                class="flex items-center justify-between bg-theme-bg/60 border border-theme-border/40 rounded-xl p-2.5">
+                class="flex min-[1200px]:hidden items-center justify-between bg-theme-bg/60 border border-theme-border/40 rounded-xl p-2.5">
                 <div class="flex items-center gap-1.5 text-[11px] font-bold text-theme-text">
                   <span>초소형 코인 제외</span>
                 </div>
@@ -780,8 +762,8 @@
                 </button>
               </div>
 
-              <!-- 🚀 [2] 거래소 다중 필터 (바낸~거래소별 버튼 + AND/OR/ONLY + 리셋) -->
-              <div id="custom-exchange-section" class="flex flex-col gap-1.5 border-t border-theme-border/30 pt-2.5">
+              <!-- 🚀 [2] 거래소 다중 필터 (바낸~거래소별 버튼 + AND/OR/ONLY + 리셋) (모바일 전용) -->
+              <div id="custom-exchange-section" class="flex min-[1200px]:hidden flex-col gap-1.5 border-t border-theme-border/30 pt-2.5">
                 <div class="flex items-center justify-between text-[12px] md:text-[13px]">
                   <span class="font-bold text-theme-text opacity-80">거래소 필터 (다중/제외)</span>
                 </div>

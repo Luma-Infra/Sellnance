@@ -97,10 +97,15 @@ function getStartScreenHTML() {
   return `
     <style>
       #start-screen {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100dvh;
+        background-color: var(--bg);
         font-family: var(--font-sans);
         perspective: ${START_3D_CONFIG.perspective}px;
         overflow: hidden;
-        transition: opacity ${START_3D_CONFIG.exitDurationMs}ms cubic-bezier(0.16, 1, 0.3, 1), transform ${START_3D_CONFIG.exitDurationMs}ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+        transition: opacity ${START_3D_CONFIG.exitDurationMs}ms cubic-bezier(0.16, 1, 0.3, 1), transform ${START_3D_CONFIG.exitDurationMs}ms cubic-bezier(0.16, 1, 0.3, 1);
         will-change: opacity, transform;
       }
 
@@ -299,7 +304,7 @@ function getStartScreenHTML() {
 
     <div
       id="start-screen" style="${localStorage.getItem('sellnance_skip_start') === 'true' && (localStorage.getItem('CMC_API_KEY') || '').trim().length === 32 ? 'display: none;' : 'display: flex;'}"
-      class="fixed inset-0 z-[80] flex items-center justify-center overflow-hidden p-4 md:p-8 bg-theme-bg text-theme-text"
+      class="fixed inset-0 z-[500] flex items-center justify-center overflow-hidden p-4 md:p-8 bg-theme-bg text-theme-text"
     >
       <div class="w-full max-w-6xl h-full max-h-[820px] flex flex-col md:flex-row items-center justify-center md:justify-between gap-4 sm:gap-5 md:gap-8 relative z-10">
         
@@ -1086,26 +1091,28 @@ async function initStartScreen() {
     hideStartScreen();
     return;
   }
-    // 🚀 공백이든 값 없든 무조건 불러오기 작업 이후 활성화!
-    if (input) {
-      input.disabled = false;
-      input.placeholder = "Paste your CMC API Key...";
-      input.classList.remove("opacity-50", "cursor-not-allowed");
-    }
 
-    if (btnStart) {
-      btnStart.disabled = false;
-      btnStart.innerText = "Start Dashboard";
-      btnStart.className =
-        "flex-1 py-3.5 bg-theme-accent text-white font-semibold rounded-xl shadow-sm hover:brightness-105 active:scale-[0.98] transition-transform tracking-widest uppercase cursor-pointer pointer-events-auto border border-theme-accent/40";
-    }
+  document.documentElement.classList.add("start-screen-active");
+  // 🚀 공백이든 값 없든 무조건 불러오기 작업 이후 활성화!
+  if (input) {
+    input.disabled = false;
+    input.placeholder = "Paste your CMC API Key...";
+    input.classList.remove("opacity-50", "cursor-not-allowed");
+  }
 
-    if (btnSkip) {
-      btnSkip.disabled = false;
-      btnSkip.innerText = "바로 이동 (서버 캐시 모드, 느린 갱신)";
-      btnSkip.className =
-        "w-full py-3 bg-theme-bg/40 text-theme-text border border-theme-border font-medium rounded-xl hover:bg-theme-panel active:scale-[0.98] transition-transform tracking-wide opacity-70 hover:opacity-100 cursor-pointer pointer-events-auto";
-    }
+  if (btnStart) {
+    btnStart.disabled = false;
+    btnStart.innerText = "Start Dashboard";
+    btnStart.className =
+      "flex-1 py-3.5 bg-theme-accent text-white font-semibold rounded-xl shadow-sm hover:brightness-105 active:scale-[0.98] transition-transform tracking-widest uppercase cursor-pointer pointer-events-auto border border-theme-accent/40";
+  }
+
+  if (btnSkip) {
+    btnSkip.disabled = false;
+    btnSkip.innerText = "바로 이동 (서버 캐시 모드, 느린 갱신)";
+    btnSkip.className =
+      "w-full py-3 bg-theme-bg/40 text-theme-text border border-theme-border font-medium rounded-xl hover:bg-theme-panel active:scale-[0.98] transition-transform tracking-wide opacity-70 hover:opacity-100 cursor-pointer pointer-events-auto";
+  }
 
   // 2. 가져온 키가 있다면 "즉시" 인풋 박스에 마스킹해서 보여줌
   if (rawCmcKey && input) {
@@ -1265,10 +1272,10 @@ function saveAndStart() {
   }
 
   // 🚀 [INP 최적화 1] 클릭 즉시 시각적 피드백 제공 (Next Paint 가속)
-  const btn = document.querySelector("#start-screen button");
-  if (btn) {
-    btn.innerText = "STARTING DASHBOARD... 🚀";
-    btn.style.pointerEvents = "none";
+  const btnStart = document.getElementById("btn-start-engine");
+  if (btnStart) {
+    btnStart.innerText = "STARTING DASHBOARD... 🚀";
+    btnStart.style.pointerEvents = "none";
   }
 
   // 🚀 [INP 최적화 2] 브라우저가 화면을 즉시 페인트할 수 있도록 메인 스레드 양보 (Yielding to Main Thread)
@@ -1293,10 +1300,10 @@ function skipAndStart() {
   }
 
   // 🚀 [INP 최적화 1] 클릭 즉시 시각적 피드백 제공
-  const buttons = document.querySelectorAll("#start-screen button");
-  if (buttons.length > 1 && buttons[1]) {
-    buttons[1].innerText = "ENTERING CACHE MODE...";
-    buttons[1].style.pointerEvents = "none";
+  const btnSkip = document.getElementById("btn-skip-start");
+  if (btnSkip) {
+    btnSkip.innerText = "ENTERING CACHE MODE...";
+    btnSkip.style.pointerEvents = "none";
   }
 
   // 🚀 [INP 최적화 2] 메인 스레드 양보 (Yielding)로 클릭 지연 시간(INP)을 0ms 수준으로 단축!
@@ -1351,6 +1358,7 @@ function hideStartScreen() {
 }
 
 export async function showStartScreen() {
+  document.documentElement.classList.add("start-screen-active");
   const screen = document.getElementById("start-screen");
   if (!screen) {
     await initStartScreen();
