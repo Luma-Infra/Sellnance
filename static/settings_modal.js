@@ -23,22 +23,20 @@ export async function openSettingsModal() {
   try {
     const res = await fetch("/api/settings");
     const data = await res.json();
-    store.settings = data;
-    const currentKey = data.CMC_API_KEY || localStorage.getItem("CMC_API_KEY") || "";
-    if (!data.CMC_API_KEY && currentKey) {
-      data.CMC_API_KEY = currentKey;
-    }
-    const input = document.getElementById("setting-cmc-key");
-    const btn = input ? input.nextElementSibling : null;
-    if (input) {
-      input.type = "text";
-      input.value = maskApiKey(currentKey);
-      input.dataset.masked = "true";
-    }
-    if (btn) btn.innerText = "🙈";
+    store.settings = data || {};
   } catch (e) {
     console.error("Failed to load settings:", e);
   }
+
+  const currentKey = localStorage.getItem("CMC_API_KEY") || "";
+  const input = document.getElementById("setting-cmc-key");
+  const btn = input ? input.nextElementSibling : null;
+  if (input) {
+    input.type = "text";
+    input.value = maskApiKey(currentKey);
+    input.dataset.masked = "true";
+  }
+  if (btn) btn.innerText = "🙈";
 }
 
 export function closeSettingsModal() {
@@ -53,24 +51,24 @@ export async function saveSettings() {
   if (!input) return;
   let newKey = input.value.trim();
 
-  if (newKey.includes("*") && store.settings) {
-    newKey = store.settings.CMC_API_KEY || localStorage.getItem("CMC_API_KEY") || "";
+  if (newKey.includes("*")) {
+    newKey = localStorage.getItem("CMC_API_KEY") || "";
   }
 
   try {
-    const res = await fetch("/api/settings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ CMC_API_KEY: newKey }),
-    });
+    if (newKey) {
+      await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ CMC_API_KEY: newKey }),
+      });
+    }
 
-    if (res.ok) {
-      localStorage.setItem("CMC_API_KEY", newKey);
-      alert("Settings saved successfully! Restarting data fetch...");
-      closeSettingsModal();
-      if (typeof loadTableData === "function") {
-        loadTableData(true);
-      }
+    localStorage.setItem("CMC_API_KEY", newKey);
+    alert("Settings saved successfully! Restarting data fetch...");
+    closeSettingsModal();
+    if (typeof loadTableData === "function") {
+      loadTableData(true);
     }
   } catch (e) {
     alert("Failed to save settings.");
@@ -81,8 +79,7 @@ export function togglePasswordVisibility(id) {
   const input = document.getElementById(id);
   if (!input) return;
   const btn = input.nextElementSibling;
-  if (!store.settings) return;
-  const raw = store.settings.CMC_API_KEY || localStorage.getItem("CMC_API_KEY") || "";
+  const raw = localStorage.getItem("CMC_API_KEY") || "";
 
   if (input.dataset.masked === "true") {
     input.value = raw;
@@ -102,6 +99,7 @@ export function clearCmcKey() {
     input.dataset.masked = "false";
     input.focus();
   }
+  localStorage.removeItem("CMC_API_KEY");
 }
 
 // ESC 키로 모달 닫기 이벤트 리스너 등록

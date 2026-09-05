@@ -93,20 +93,38 @@ app = FastAPI(title="Blueprint Terminal", lifespan=lifespan)
 # 🚀 유저 동시 접속 대비 10배 네트워크 압축 (2.5MB -> 250KB)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # 🚀 모든 도메인(폰 포함) 허용!
-    allow_credentials=True,
-    allow_methods=["*"],  # 🚀 GET, POST 등 모든 방식 허용!
-    allow_headers=["*"],  # 🚀 모든 헤더 허용!
-)
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # 🚀 Vite 빌드본(dist/) 우선 서빙 및 개발 모드 폴백 하이브리드 엔진
 DIST_DIR = BASE_DIR / "dist"
 IS_PRODUCTION = bool(
     os.environ.get("RAILWAY_STATIC_URL") or os.environ.get("RAILWAY_ENVIRONMENT")
+)
+
+# 🚀 CORS 환경변수 분리 (ALLOWED_ORIGINS 우선 -> 배포/로컬 분리)
+allowed_origins_env = os.environ.get("ALLOWED_ORIGINS", "").strip()
+if allowed_origins_env:
+    cors_origins = [
+        orig.strip() for orig in allowed_origins_env.split(",") if orig.strip()
+    ]
+elif IS_PRODUCTION:
+    cors_origins = [
+        "https://sellnance.site",
+    ]
+else:
+    cors_origins = [
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 if IS_PRODUCTION and DIST_DIR.exists():
@@ -248,15 +266,6 @@ async def home(request: Request):
 
 
 load_dotenv()
-
-
-@app.get("/api/get-env-key")
-def get_env_cmc_key():
-    """로컬 .env 및 서버 시스템 환경변수에 설정된 CMC_API_KEY 정보를 반환합니다."""
-    env_key = os.environ.get("CMC_API_KEY", "").strip()
-    if not env_key and hasattr(config, "CMC_API_KEY"):
-        env_key = (config.CMC_API_KEY or "").strip()
-    return {"exists": bool(env_key), "key": env_key}
 
 
 # 👥 초경량 접속자 세션 트래커 (서버 메모리 상에 상주)
@@ -611,7 +620,11 @@ def get_usdkrw_history():
 
 @app.get("/api/settings")
 def get_settings():
-    return {"CMC_API_KEY": config.CMC_API_KEY, "THEME": "BINANCE"}  # 기본값
+    return {
+        "has_cmc_key": bool(config.CMC_API_KEY),
+        "CMC_API_KEY": "",  # 보안 격리: 브라우저로 서버 평문 키 노출 금지
+        "THEME": "BINANCE",
+    }  # 기본값
 
 
 @app.post("/api/settings")

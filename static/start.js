@@ -1068,52 +1068,24 @@ async function initStartScreen() {
   const btnStart = document.getElementById("btn-start-engine");
   const btnSkip = document.getElementById("btn-skip-start");
 
-  // ============== 기존 비즈니스 로직 철통 보존 (단 1줄도 안건드림) ==============
-  // 1. 서버 환경변수(env)에서 키 가져오기 (확실히 올 때까지 기다림)
-  try {
-    const res = await fetch("/api/get-env-key");
-    const data = await res.json();
+  // ============== 프론트엔드 키 격리: LocalStorage 전용 ==============
+  const localKey = (localStorage.getItem("CMC_API_KEY") || "").trim();
+  rawCmcKey = localKey;
 
-    const envKey = data && data.key ? String(data.key).trim() : "";
-    const localKey = (localStorage.getItem("CMC_API_KEY") || "").trim();
+  const isAutoSkipEnabled =
+    localStorage.getItem("sellnance_skip_start") === "true";
 
-    if (envKey) {
-      rawCmcKey = envKey;
-      localStorage.setItem("CMC_API_KEY", envKey);
-    } else if (localKey) {
-      rawCmcKey = localKey;
-    } else {
-      rawCmcKey = "";
-    }
+  const hasDirectSymbol =
+    window.location.pathname &&
+    window.location.pathname !== "/" &&
+    window.location.pathname !== "";
 
-    const isAutoSkipEnabled =
-      localStorage.getItem("sellnance_skip_start") === "true";
-
-    const hasDirectSymbol =
-      window.location.pathname &&
-      window.location.pathname !== "/" &&
-      window.location.pathname !== "";
-
-    // 🚀 [동시 조건] 자동 스킵: 체크박스가 켜져 있으면서 "동시에 32자 유효 키가 존재할 때" 또는 다이렉트 심볼 접근 시에만 통과!
-    const hasValidKey = rawCmcKey.length === 32;
-    if ((isAutoSkipEnabled && hasValidKey) || hasDirectSymbol) {
-      hideStartScreen();
-      return;
-    }
-  } catch (e) {
-    const localKey = (localStorage.getItem("CMC_API_KEY") || "").trim();
-    rawCmcKey = localKey;
-    const isAutoSkipEnabled =
-      localStorage.getItem("sellnance_skip_start") === "true";
-    const hasDirectSymbol =
-      window.location.pathname &&
-      window.location.pathname !== "/" &&
-      window.location.pathname !== "";
-    if ((isAutoSkipEnabled && rawCmcKey.length === 32) || hasDirectSymbol) {
-      hideStartScreen();
-      return;
-    }
-  } finally {
+  // 🚀 [동시 조건] 자동 스킵: 체크박스가 켜져 있으면서 "동시에 32자 유효 키가 존재할 때" 또는 다이렉트 심볼 접근 시에만 통과!
+  const hasValidKey = rawCmcKey.length === 32;
+  if ((isAutoSkipEnabled && hasValidKey) || hasDirectSymbol) {
+    hideStartScreen();
+    return;
+  }
     // 🚀 공백이든 값 없든 무조건 불러오기 작업 이후 활성화!
     if (input) {
       input.disabled = false;
@@ -1134,7 +1106,6 @@ async function initStartScreen() {
       btnSkip.className =
         "w-full py-3 bg-theme-bg/40 text-theme-text border border-theme-border font-medium rounded-xl hover:bg-theme-panel active:scale-[0.98] transition-transform tracking-wide opacity-70 hover:opacity-100 cursor-pointer pointer-events-auto";
     }
-  }
 
   // 2. 가져온 키가 있다면 "즉시" 인풋 박스에 마스킹해서 보여줌
   if (rawCmcKey && input) {

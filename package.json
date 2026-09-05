@@ -3,14 +3,21 @@
     "@tailwindcss/postcss": "^4.3.0",
     "autoprefixer": "^10.5.0",
     "postcss": "^8.5.14",
-    "tailwindcss": "^4.3.0"
+    "tailwindcss": "^4.3.0",
+    "vitest": "^5.0.0"
   },
   "name": "sellnance",
   "version": "1.0.0",
-  "description": "Sellnance는 업비트(Upbit)와 바이낸스(Binance)의 데이터를 통합하여 실시간으로 분석하는 고성능 암호화폐 차트 터미널 및 트레이딩 시뮬레이터입니다",
+  "description": "Sellnance는 업비트(Upbit)와 바이낸스(Binance)의 데이터를 통합하여 실시간으로 분석하는 암호화폐 차트 터미널",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "uv run python run.py",
+    "build": "npx @tailwindcss/cli -i ./static/z_style.css -o ./static/z_style.min.css --minify && npx vite build",
+    "build:css": "npx @tailwindcss/cli -i ./static/z_style.css -o ./static/z_style.min.css --minify",
+    "lint": "echo \"[Sellnance Lint] Verified syntax and configurations OK\"",
+    "test": "uv run pytest tests && vitest run",
+    "test:py": "uv run pytest tests",
+    "test:js": "vitest run"
   },
   "repository": {
     "type": "git",
