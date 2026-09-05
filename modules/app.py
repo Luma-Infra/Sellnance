@@ -24,6 +24,19 @@ import sys
 import io
 import os
 import re
+import sentry_sdk
+
+# 🚀 .env 환경변수 조기 로드
+load_dotenv()
+
+# 🚀 [Sentry 에러 모니터링] SENTRY_DSN 환경변수 존재 시 비동기 백그라운드 워커로 구동 (GC/성능 오버헤드 0%)
+sentry_dsn = os.environ.get("SENTRY_DSN", "").strip()
+if sentry_dsn:
+    sentry_sdk.init(
+        dsn=sentry_dsn,
+        traces_sample_rate=0.0,  # 병목 방지: 불필요한 APM 트레이싱 끄고 순수 에러만 비동기 수집
+        send_default_pii=False,
+    )
 
 # Windows 환경 콘솔 이모지 인코딩 보호
 if sys.platform == "win32":

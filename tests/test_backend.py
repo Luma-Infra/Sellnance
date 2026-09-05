@@ -88,11 +88,12 @@ def test_security_cmc_key_isolation_and_endpoints():
     """5. 보안: CMC 키 클라이언트 노출 차단 및 설정 엔드포인트 검증"""
     client = TestClient(app)
 
-    # 1) /api/settings 호출 시 평문 CMC_API_KEY가 노출되지 않는지 확인
+    # 1) /api/settings 호출 시 평문 CMC_API_KEY 및 SENTRY_DSN이 노출되지 않는지 확인
     res = client.get("/api/settings")
     assert res.status_code == 200
     data = res.json()
     assert data.get("CMC_API_KEY") == ""
+    assert "SENTRY_DSN" not in data
     assert "has_cmc_key" in data
 
     # 2) 제거된 /api/get-env-key 호출 시 404 확인 (키 평문 반환 차단)

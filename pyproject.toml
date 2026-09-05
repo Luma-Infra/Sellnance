@@ -13,6 +13,7 @@ dependencies = [
     "python-binance>=1.0.36",
     "python-dotenv>=1.2.2",
     "requests>=2.34.2",
+    "sentry-sdk>=2.68.1",
     "tradingview-datafeed>=2.1.1",
     "uvicorn>=0.47.0",
     "websockets>=16.0",
