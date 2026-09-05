@@ -24,19 +24,23 @@ import sys
 import io
 import os
 import re
-import sentry_sdk
 
-# 🚀 .env 환경변수 조기 로드
+# .env 환경변수 조기 로드
 load_dotenv()
 
-# 🚀 [Sentry 에러 모니터링] SENTRY_DSN 환경변수 존재 시 비동기 백그라운드 워커로 구동 (GC/성능 오버헤드 0%)
-sentry_dsn = os.environ.get("SENTRY_DSN", "").strip()
-if sentry_dsn:
-    sentry_sdk.init(
-        dsn=sentry_dsn,
-        traces_sample_rate=0.0,  # 병목 방지: 불필요한 APM 트레이싱 끄고 순수 에러만 비동기 수집
-        send_default_pii=False,
-    )
+# [Sentry 에러 모니터링] SENTRY_DSN 환경변수 존재 시 비동기 백그라운드 워커로 구동 (GC/성능 오버헤드 0%)
+try:
+    import sentry_sdk
+
+    sentry_dsn = os.environ.get("SENTRY_DSN", "").strip()
+    if sentry_dsn:
+        sentry_sdk.init(
+            dsn=sentry_dsn,
+            traces_sample_rate=0.0,  # 병목 방지: 불필요한 APM 트레이싱 끄고 순수 에러만 비동기 수집
+            send_default_pii=False,
+        )
+except ImportError:
+    pass
 
 # Windows 환경 콘솔 이모지 인코딩 보호
 if sys.platform == "win32":
@@ -48,7 +52,7 @@ if sys.platform == "win32":
     except Exception:
         pass
 
-import config  # 🚀 설정 모듈 임포트
+import config  # 설정 모듈 임포트
 
 # 🚀 [표준 로깅 시스템] KST 타임스탬프 로거 및 안전한 print 브릿지
 import builtins
@@ -88,10 +92,10 @@ async def lifespan(app: FastAPI):
     # ⧆️ 데이터 긁어오기 (이건 배포든 로칼이든 필수!)
     threading.Thread(target=api_manager.get_cached_data, args=(True,)).start()
 
-    # 🚀 상장일 데이터 시스템 초기화 (LISTING_DATES 메모리 로드 + 바이낸스 API 콜)
+    # 상장일 데이터 시스템 초기화 (LISTING_DATES 메모리 로드 + 바이낸스 API 콜)
     threading.Thread(target=_init_listing_dates, daemon=True).start()
 
-    # 🚀 로칼(127.0.0.1) 환경이고, 아직 브라우저 안 열었을 때만 실행
+    # 로컬(127.0.0.1) 환경이고, 아직 브라우저 안 열었을 때만 실행
     if not os.environ.get("RAILWAY_STATIC_URL") and not os.environ.get(
         "BROWSER_OPENED"
     ):
@@ -103,18 +107,18 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Blueprint Terminal", lifespan=lifespan)
 
-# 🚀 유저 동시 접속 대비 10배 네트워크 압축 (2.5MB -> 250KB)
+# 유저 동시 접속 대비 10배 네트워크 압축 (2.5MB -> 250KB)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# 🚀 Vite 빌드본(dist/) 우선 서빙 및 개발 모드 폴백 하이브리드 엔진
+# Vite 빌드본(dist/) 우선 서빙 및 개발 모드 폴백 하이브리드 엔진
 DIST_DIR = BASE_DIR / "dist"
 IS_PRODUCTION = bool(
     os.environ.get("RAILWAY_STATIC_URL") or os.environ.get("RAILWAY_ENVIRONMENT")
 )
 
-# 🚀 CORS 환경변수 분리 (ALLOWED_ORIGINS 우선 -> 배포/로컬 분리)
+# CORS 환경변수 분리 (ALLOWED_ORIGINS 우선 -> 배포/로컬 분리)
 allowed_origins_env = os.environ.get("ALLOWED_ORIGINS", "").strip()
 if allowed_origins_env:
     cors_origins = [
@@ -154,7 +158,7 @@ else:
 
 
 # =================================================
-# 📅 상장일(Listing Date) 데이터 시스템 — listing.json 독립 파일 운용
+# 상장일(Listing Date) 데이터 시스템 — listing.json 독립 파일 운용
 # =================================================
 LISTING_FILE = BASE_DIR / "listing.json"
 LISTING_DATES: dict = {}
@@ -193,7 +197,7 @@ def _init_listing_dates():
         LISTING_DATES.update(saved)
     print(f"📅 [LISTING] listing.json에서 {len(saved)}개 상장일 로드")
 
-    # 🚀 [비활성화] 요금 절감 및 기동 시간 최적화를 위해 바이낸스 API 호출 주석 처리
+    # [비활성화] 요금 절감 및 기동 시간 최적화를 위해 바이낸스 API 호출 주석 처리
     # try:
     #     res = requests.get("https://fapi.binance.com/fapi/v1/exchangeInfo", timeout=10)
     #     res.raise_for_status()
@@ -281,7 +285,7 @@ async def home(request: Request):
 load_dotenv()
 
 
-# 👥 초경량 접속자 세션 트래커 (서버 메모리 상에 상주)
+# 초경량 접속자 세션 트래커 (서버 메모리 상에 상주)
 ACTIVE_SESSIONS = {}  # { "ip_address": timestamp }
 SESSION_LOCK = threading.Lock()
 
@@ -305,11 +309,11 @@ def track_user_session(request: Request):
         return len(ACTIVE_SESSIONS)
 
 
-# ⭐️ async 삭제됨!
+# async 삭제됨
 @app.get("/api/market-data")
 def get_market_data(request: Request, force: bool = False):
     """프론트엔드의 표(Table)를 그리기 위한 데이터를 JSON으로 반환합니다."""
-    # 🚀 [CMC API 키 Stateless 동기화] 클라이언트 헤더에 전달된 키가 있으면 메모리에 반영
+    # [CMC API 키 Stateless 동기화] 클라이언트 헤더에 전달된 키가 있으면 메모리에 반영
     cmc_key = request.headers.get("X-CMC-API-KEY")
 
     user_count = track_user_session(request)
@@ -325,7 +329,7 @@ def get_market_data(request: Request, force: bool = False):
     else:
         cache_timestamp = api_manager.GLOBAL_CACHE.get("timestamp", datetime.min)
 
-    # 🚀 [FIX] datetime.min일 때 mktime 오버플로우 방지 가드
+    # [FIX] datetime.min일 때 mktime 오버플로우 방지 가드
     if cache_timestamp == datetime.min:
         raw_ts = 0.0
     else:
@@ -345,7 +349,7 @@ def get_market_data(request: Request, force: bool = False):
 
 @app.get("/api/market-data-silent")
 def get_market_data_silent(request: Request):
-    """🚀 [캐시 즉시 반환] 유저 요청 시 수집 없이 GLOBAL_CACHE만 뿌림.
+    """[캐시 즉시 반환] 유저 요청 시 수집 없이 GLOBAL_CACHE만 뿌림.
     수집은 서버 자체 15분 백그라운드 스케줄러가 전담 (유저 500명 와도 수집 0번).
     """
     cmc_key = request.headers.get("X-CMC-API-KEY")
@@ -364,7 +368,7 @@ def get_market_data_silent(request: Request):
         last_updated = api_manager.GLOBAL_CACHE.get("last_updated_str", "")
         cache_timestamp = api_manager.GLOBAL_CACHE.get("timestamp", datetime.min)
 
-    # 🚀 [FIX] datetime.min일 때 mktime 오버플로우 방지 가드
+    # [FIX] datetime.min일 때 mktime 오버플로우 방지 가드
     if cache_timestamp == datetime.min:
         raw_ts = 0.0
     else:
@@ -386,7 +390,7 @@ def get_market_data_silent(request: Request):
 # app.py 내부 라우터 교체
 @app.get("/api/market-map")
 def get_market_map():
-    """🚨 생짜 API 호출 삭제! 중앙 캐시에서 0.01초 만에 뽑아옵니다."""
+    """Raw API 호출 삭제! 중앙 캐시에서 0.01초 만에 뽑아옵니다."""
     try:
         # 중앙 통제소에서 데이터 가져오기 (force=False 라서 크레딧 소모 0)
         cached_data, _ = api_manager.get_cached_data(force_reload=False)
@@ -444,12 +448,12 @@ def get_market_map():
         return {"error": str(e)}
 
 
-# ⭐️ async 삭제됨!
+# async 삭제됨
 @app.get("/api/coin-info/{asset}")
 def get_coin_info(asset: str):
     """캐시된 데이터에서 코인 정보를 찾아 반환합니다. (CMC 호출 안 함 = 크레딧 0원)"""
     try:
-        # 🚀 접두사(BINANCE: 등) 및 접미사(_FUTURES, _SPOT 등) 정규화
+        # 접두사(BINANCE: 등) 및 접미사(_FUTURES, _SPOT 등) 정규화
         clean_asset = (
             asset.split(":")[-1]
             .replace("_FUTURES", "")
@@ -512,7 +516,7 @@ async def get_proxy_candles(
     return await fetch_candles_guarded(exchange, symbol, interval, limit, to, start)
 
 
-# 🚀 메모리 캐시 변수 추가
+# 메모리 캐시 변수 추가
 app.state.tv_gap_cache = {}
 app.state.usdkrw_cache = None
 
@@ -601,7 +605,7 @@ def get_usdkrw_history():
         if not history_map:
             return {"error": "환율 데이터를 수집하지 못했습니다."}
 
-        # 4. 🚀 [하이브리드 결합] 오늘 실시간 최신 환율을 마지막 타임라인에 덧붙임
+        # 4. [하이브리드 결합] 오늘 실시간 최신 환율을 마지막 타임라인에 덧붙임
         try:
             cached_data = api_manager.GLOBAL_CACHE.get("data", [])
             fallback_rate = (
@@ -694,7 +698,7 @@ async def progress_stream():
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
-# 🚀 [SPA HTML5 History 라우트] /BTC, /SKRUSDT 등 깔끔한 URL 직접 접근 지원
+# [SPA HTML5 History 라우트] /BTC, /BTCUSDT 등 깔끔한 URL 직접 접근 지원
 @app.get("/{symbol_path}")
 async def dynamic_symbol_route(request: Request, symbol_path: str):
     # 정적 디렉토리 및 예약어 제외
