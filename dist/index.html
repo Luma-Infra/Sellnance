@@ -134,11 +134,6 @@
       s1.src = "/static/lightweight-charts.standalone.production.js";
       s1.async = false;
       document.head.appendChild(s1);
-
-      var s2 = document.createElement("script");
-      s2.src = "/static/sweetalert2@11.js";
-      s2.async = false;
-      document.head.appendChild(s2);
     })();
   </script>
   <!-- 🚀 차트 병목 유발용 디버그 트래커 비활성화 (렉 개선 완료) -->
@@ -438,9 +433,9 @@
           <span id="status-users" class="hidden min-[1200px]:inline-block pl-2 opacity-60 text-[9px] font-medium">1
             Active</span>
 
-          <!-- 💎 테마 연동 툴팁 팝업 (PC: 마우스 호버 / 모바일: 탭 토글, z-[999]로 잘림 방지) -->
+          <!-- 💎 테마 연동 툴팁 팝업 (PC: 마우스 호버 / 모바일: 탭 토글, z-[250]로 통일) -->
           <div id="status-cache-tooltip"
-            class="absolute top-full left-0 mt-2 z-[999] w-64 max-w-[calc(100vw-32px)] p-3 bg-theme-panel border border-theme-border/60 rounded-xl shadow-lg opacity-0 pointer-events-none min-[1200px]:group-hover:opacity-100 min-[1200px]:group-hover:pointer-events-auto transition-all duration-150 transform translate-y-1 min-[1200px]:group-hover:translate-y-0 text-left">
+            class="absolute top-full left-0 mt-2 z-[250] w-64 max-w-[calc(100vw-32px)] p-3 bg-theme-panel border border-theme-border/60 rounded-xl shadow-lg opacity-0 pointer-events-none min-[1200px]:group-hover:opacity-100 min-[1200px]:group-hover:pointer-events-auto transition-all duration-150 transform translate-y-1 min-[1200px]:group-hover:translate-y-0 text-left">
             <div class="flex items-center justify-between pb-1.5 mb-1.5 border-b border-theme-border/60">
               <span class="text-[11px] font-bold text-theme-accent">시가총액 갱신 상태</span>
               <span id="tooltip-users" class="text-[9.5px] text-emerald-500 font-bold">1 Active</span>
@@ -453,9 +448,9 @@
         </div>
       </div>
 
-      <!-- 📢 중앙 롤링 공지사항 바 (배경 & 테두리선 제거) -->
-      <div
-        class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[28px] w-[280px] sm:w-[800px] overflow-hidden pointer-events-none">
+      <!-- 📢 중앙 롤링 공지사항 바 (1000px 미만 시 숨김 처리) -->
+      <div id="header-notice-container"
+        class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[28px] w-[280px] sm:w-[800px] overflow-hidden pointer-events-none max-[999px]:!hidden">
         <style>
           @keyframes noticeRoll {
 
@@ -545,7 +540,7 @@
         <button id="theme-toggle-btn" onclick="toggleTheme()"
           class="w-7 h-7 flex items-center justify-center bg-theme-border/20 border border-theme-border/30 text-theme-text rounded-md cursor-pointer text-xs hover:bg-theme-accent hover:text-white transition-all shadow-sm leading-none"
           title="테마 변경">
-          <span>☀️</span>
+          <span>🌙</span>
         </button>
 
         <button id="candle-theme-btn" onclick="toggleCandleTheme()"
@@ -565,7 +560,7 @@
         </button>
 
         <button onclick="togglePanelSwap()"
-          class="hidden md:flex items-center justify-center w-7 h-7 rounded-md bg-theme-border/20 border border-theme-border/30 hover:bg-theme-accent group transition-all duration-300"
+          class="hidden min-[600px]:flex items-center justify-center w-7 h-7 rounded-md bg-theme-border/20 border border-theme-border/30 hover:bg-theme-accent group transition-all duration-300"
           title="좌우 패널 위치 바꾸기">
           <span
             class="text-xs text-theme-text group-hover:text-white transition-transform group-hover:rotate-180 duration-500 leading-none flex items-center justify-center h-full">⇄</span>
@@ -609,19 +604,19 @@
     </header>
 
     <!-- 🚀 내부 패널 분할 컨테이너 -->
-    <div id="panel-split-container" class="flex flex-col min-[1200px]:flex-row flex-1 overflow-hidden w-full relative">
+    <div id="panel-split-container" class="flex flex-row flex-1 overflow-hidden w-full relative">
       <div
-        class="flex flex-col w-full flex-1 max-[1199px]:w-full min-[1200px]:flex-none min-[1200px]:h-full min-[1200px]:w-[560px] border-r border-theme-border bg-theme-bg transition-all duration-300 shrink-0 overflow-hidden pb-0"
+        class="flex flex-col flex-none h-full w-[560px] max-w-[50vw] min-w-[360px] border-r border-theme-border bg-theme-bg transition-all duration-300 shrink-0 overflow-hidden pb-0"
         id="left-panel">
         <!-- [연결 상태 일시 주석 처리] -->
 
         <!-- 🚀 탭/검색창과 제어 패널을 통틀어 감싸는 좌측 최상단 공통 부모 요소 -->
         <div id="left-top-zone"
-          class="flex flex-col w-full shrink-0 border-b border-theme-border h-auto max-[1199px]:!h-auto min-[1200px]:h-[224px] min-[1200px]:max-h-[224px]">
+          class="flex flex-col w-full shrink-0 border-b border-theme-border h-auto min-[1200px]:h-[224px] min-[1200px]:max-h-[224px] relative z-30">
 
-          <!-- 🚀 [PC 전용 (>=1200px)] 기존 정통 상단 독립 검색창 (100% 원본 유지) -->
+          <!-- 🚀 상단 독립 검색창 -->
           <div id="search-input-wrapper"
-            class="hidden min-[1200px]:flex w-[calc(100%-16px)] shrink-0 bg-theme-panel/10 p-2 items-center mt-1 mx-2">
+            class="flex w-[calc(100%-16px)] shrink-0 bg-theme-panel/10 p-2 items-center mt-1 mx-2">
             <!-- 🚀 내부 검색 바 (우측 탭 컨테이너와 동일한 36px 높이 부여) -->
             <div id="search-bar-inner"
               class="relative flex flex-1 h-[36px] bg-theme-panel border border-theme-border rounded-md items-center z-0 overflow-hidden px-3 shadow-inner w-full focus-within:border-theme-accent transition-all">
@@ -647,13 +642,13 @@
 
             <!-- 🚀 [신규 추가] 거래소 다중 체크 AND 필터바 -->
             <div id="exchange-filter-container"
-              class="flex items-center gap-1.5 overflow-x-auto overflow-y-hidden scrollbar-hide px-1 py-1 max-[1199px]:py-0.5 shrink-0">
+              class="flex items-center gap-1 min-[1300px]:gap-1.5 justify-between overflow-x-auto min-[1200px]:overflow-visible scrollbar-hide px-1 py-1 max-[1199px]:py-0.5 shrink-0 w-full">
               <!-- 동적으로 table_filter.js::updateExchFilterUI()가 버튼들을 그립니다 -->
             </div>
 
             <!-- 🚀 [신규 추가] 거래소 필터 프리셋 제어바 -->
             <div id="exchange-presets-container"
-              class="flex items-center justify-between px-1 py-0.5 mt-0.5 max-[1199px]:mt-0 max-[1199px]:py-0 text-[10px] select-none shrink-0">
+              class="flex items-center justify-start gap-2 px-1 py-0.5 mt-0.5 max-[1199px]:mt-0 max-[1199px]:py-0 text-[10px] select-none shrink-0">
               <!-- 동적으로 table_filter.js::updateExchFilterUI()가 프리셋 라인을 그립니다 -->
             </div>
 
@@ -662,7 +657,7 @@
               class="relative flex items-center gap-1 px-1 mt-1 mb-0.5 max-[1199px]:mt-0 max-[1199px]:mb-0 min-h-[36px] overflow-hidden">
               <!-- 탭 버튼 목록 -->
               <div id="tab-buttons-group"
-                class="flex items-center gap-1 flex-1 min-w-0 overflow-x-auto scrollbar-hide transition-opacity duration-200 min-[1200px]:w-full h-full py-0.5 max-[1199px]:py-0">
+                class="flex items-center gap-1 flex-1 min-w-0 overflow-x-auto scrollbar-hide transition-opacity duration-200 h-full py-0.5 max-[1199px]:py-0">
                 <button onclick="switchTab('ALL')" id="tab-all"
                   class="tab-btn px-3.5 min-[1200px]:px-4.5 py-2.5 min-[1200px]:py-2 text-[10.5px] font-semibold rounded-full transition-all bg-theme-accent text-white border border-theme-accent shadow-md whitespace-nowrap inline-flex items-center justify-center leading-none">
                   ALL
@@ -670,7 +665,7 @@
                 <button onclick="switchTab('FAV')" id="tab-fav"
                   class="tab-btn px-3.5 min-[1200px]:px-4.5 py-2.5 min-[1200px]:py-2 text-[10.5px] font-semibold rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap inline-flex items-center justify-center leading-none">
                   <span style="color: #e3b30a; margin-right: 2px">★</span>
-                  FAV
+                  FAV 1
                 </button>
                 <button onclick="switchTab('FAV2')" id="tab-fav2"
                   class="tab-btn px-3.5 min-[1200px]:px-4.5 py-2.5 min-[1200px]:py-2 text-[10.5px] font-semibold rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap inline-flex items-center justify-center leading-none">
@@ -678,7 +673,8 @@
                   FAV 2
                 </button>
 
-                <div id="category-tab-separator" class="w-px h-5 bg-theme-border/30 mx-1 shrink-0 min-[1200px]:ml-auto">
+                <div id="category-tab-separator"
+                  class="w-px h-5 bg-theme-border/30 mx-1 shrink-0 ml-auto hidden min-[1200px]:block">
                 </div>
 
                 <button onclick="toggleSmallCap()" id="btn-small-cap"
@@ -690,8 +686,12 @@
                   </svg>
                   <span>Mcap &lt; 1M</span>
                 </button>
-                <button onclick="window.toggleCustomFilter(event)" id="btn-custom-filter"
-                  class="tab-btn px-3.5 min-[1200px]:px-4.5 py-2.5 min-[1200px]:py-2 text-[10.5px] font-semibold rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap inline-flex items-center justify-center gap-1 cursor-pointer leading-none">
+              </div>
+
+              <!-- 🚀 우측 액션 버튼 영역 (Custom 필터 + 모바일 전용 돋보기 검색) -->
+              <div id="tab-actions-group" class="flex items-center gap-1 shrink-0 transition-opacity duration-200">
+                <button type="button" onclick="window.toggleCustomFilter(event)" id="btn-custom-filter"
+                  class="tab-btn px-3.5 min-[1200px]:px-4.5 py-2.5 min-[1200px]:py-2 text-[10.5px] font-semibold rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap inline-flex items-center justify-center gap-1 cursor-pointer leading-none shrink-0 touch-manipulation select-none">
                   <svg class="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
                     stroke-linecap="round" stroke-linejoin="round">
                     <line x1="4" y1="21" x2="4" y2="14"></line>
@@ -712,18 +712,17 @@
                     <path d="m6 9 6 6 6-6" />
                   </svg>
                 </button>
-              </div>
 
-              <!-- 🚀 [모바일 전용 (<1200px)] 우측 돋보기 토글 버튼 -->
-              <button id="btn-toggle-tab-search" onclick="window.toggleTabSearch(true)"
-                class="min-[1200px]:hidden w-8 h-8 rounded-full bg-theme-panel border border-theme-border/60 flex items-center justify-center text-theme-text opacity-60 hover:opacity-100 hover:text-theme-accent hover:border-theme-accent transition-all shrink-0 ml-1 cursor-pointer"
-                title="코인 검색">
-                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="11" cy="11" r="8"></circle>
-                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                </svg>
-              </button>
+                <!-- 🚀 [모바일 전용 (<1200px)] 우측 돋보기 토글 버튼 -->
+                <button id="btn-toggle-tab-search" onclick="window.toggleTabSearch(true)"
+                  class="min-[1200px]:hidden w-8 h-8 rounded-full bg-theme-panel border border-theme-border/60 flex items-center justify-center text-theme-text opacity-60 hover:opacity-100 hover:text-theme-accent hover:border-theme-accent transition-all shrink-0 cursor-pointer">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                </button>
+              </div>
 
               <!-- 🚀 [모바일 전용 (<1200px)] 검색창 (돋보기 클릭 시 제자리에서 부드럽게 표시) -->
               <div id="tab-search-wrapper"
@@ -763,16 +762,37 @@
                   class="text-theme-text opacity-50 hover:opacity-100 text-xs px-1">✕</button>
               </div>
 
-              <!-- 🚀 [퀵 프리셋] Mcap < 1M 칩 -->
+              <!-- 🚀 [1] Mcap < 1M 초소형 코인 가리기 토글 버튼 -->
               <div id="quick-smallcap-section"
-                class="flex items-center justify-between bg-theme-bg/60 border border-theme-border/40 rounded-lg p-2">
-                <div class="flex items-center gap-1.5 text-[11px] font-semibold text-theme-text">
-                  <span>⚡ 초소형 코인 (Mcap &lt; 1M)</span>
+                class="flex items-center justify-between bg-theme-bg/60 border border-theme-border/40 rounded-xl p-2.5">
+                <div class="flex items-center gap-1.5 text-[11px] font-bold text-theme-text">
+                  <span>초소형 코인 제외</span>
                 </div>
-                <button id="custom-quick-smallcap-btn" onclick="window.toggleSmallCapFromCustom(event)"
-                  class="px-2.5 py-1 rounded-md text-[10px] font-bold border border-theme-border/60 text-theme-text opacity-70 hover:opacity-100 transition-all cursor-pointer">
-                  적용하기
+                <button onclick="window.toggleSmallCap()" id="btn-small-cap-custom"
+                  class="tab-btn px-3.5 py-1.5 text-[10.5px] font-semibold rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap inline-flex items-center justify-center gap-1 cursor-pointer leading-none">
+                  <svg class="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                  </svg>
+                  <span>Mcap &lt; 1M</span>
                 </button>
+              </div>
+
+              <!-- 🚀 [2] 거래소 다중 필터 (바낸~거래소별 버튼 + AND/OR/ONLY + 리셋) -->
+              <div id="custom-exchange-section" class="flex flex-col gap-1.5 border-t border-theme-border/30 pt-2.5">
+                <div class="flex items-center justify-between text-[12px] md:text-[13px]">
+                  <span class="font-bold text-theme-text opacity-80">거래소 필터 (다중/제외)</span>
+                </div>
+                <div id="custom-exchange-filter-container"
+                  class="grid grid-cols-7 gap-1.5 py-1 min-[1200px]:flex min-[1200px]:items-center min-[1200px]:gap-1.5 min-[1200px]:overflow-x-auto min-[1200px]:scrollbar-hide">
+                  <!-- 동적으로 table_filter_exch.js::updateExchFilterUI()가 렌더링 -->
+                </div>
+                <!-- 🚀 거래소 프리셋 제어바 (P1~P5, 저장, 삭제) -->
+                <div id="custom-exchange-presets-container"
+                  class="flex items-center justify-between py-0.5 text-[10px] select-none">
+                  <!-- 동적으로 table_filter_exch.js::updateExchFilterUI()가 렌더링 -->
+                </div>
               </div>
 
               <!-- Volume Filter -->
@@ -983,14 +1003,13 @@
         </div>
       </div>
 
-      <div
-        class="hidden min-[1200px]:flex flex-1 flex-col min-w-[450px] overflow-hidden bg-theme-bg relative transition-all duration-300"
+      <div class="flex flex-1 flex-col min-w-[320px] overflow-hidden bg-theme-bg relative transition-all duration-300"
         id="right-panel">
         <div id="chart-top-zone"
-          class="flex flex-col w-full shrink-0 border-b border-theme-border h-auto max-[1199px]:!h-auto min-[1200px]:h-[224px] min-[1200px]:max-h-[224px]">
+          class="flex flex-col w-full shrink-0 border-b border-theme-border h-auto min-[1200px]:h-[224px] min-[1200px]:max-h-[224px]">
           <!-- 🚀 2단: 차트 탭 컨테이너 -->
           <div id="chart-tab-wrapper"
-            class="max-[1199px]:hidden flex w-full shrink-0 bg-theme-panel/10 border-b border-theme-border p-2 items-center mt-1">
+            class="flex w-full shrink-0 bg-theme-panel/10 border-b border-theme-border p-2 items-center mt-1">
             <div id="chart-tab-container"
               class="relative flex flex-1 h-[36px] bg-theme-panel border border-theme-border rounded-md items-stretch z-0 overflow-hidden gap-1.5 p-0.5 shadow-inner">
               <div id="tab-sliding-bg"
@@ -1069,7 +1088,7 @@
 
               <!-- 거래소 뱃지: 모바일에서는 1층 전체 / PC에서는 우측(order-2)에 스크롤 없이 보기 좋게 배치 -->
               <div id="exchange-badges"
-                class="flex items-center gap-3.5 min-[1200px]:gap-3 overflow-x-auto min-[1200px]:overflow-visible min-[1200px]:flex-wrap max-[1199px]:scrollbar-hide max-[1199px]:w-full max-[1199px]:py-2 max-[1199px]:px-1 max-[1199px]:pr-4 min-[1200px]:order-2 min-[1200px]:ml-auto min-[1200px]:justify-end">
+                class="flex items-center gap-3.5 sm:gap-4 min-[1200px]:gap-2.5 overflow-x-auto min-[1200px]:overflow-visible min-[1200px]:flex-wrap max-[1199px]:scrollbar-hide max-[1199px]:w-full max-[1199px]:py-2 max-[1199px]:px-1 max-[1199px]:pr-4 min-[1200px]:order-2 min-[1200px]:ml-auto min-[1200px]:justify-end">
               </div>
             </div>
 
@@ -1078,7 +1097,7 @@
               class="flex items-center justify-between min-[1200px]:justify-start min-[1200px]:gap-10 w-full pt-1 px-2.5 sm:px-3 pb-1.5 min-[1200px]:py-0.5 border-t border-theme-border/20 min-[1200px]:border-none">
 
               <!-- 🚀 좌측 그룹: 모바일 코인명 + 실시간 가격 전광판 (티커 바로 옆에 가격 배치) -->
-              <div class="flex items-center gap-2 sm:gap-2.5 shrink min-w-0">
+              <div class="flex items-center gap-3.5 sm:gap-4.5 shrink min-w-0">
                 <!-- 모바일 전용 코인명 (<1200px) -->
                 <div class="flex min-[1200px]:hidden items-center shrink min-w-0">
                   <h3 id="head-asset-name"
@@ -1088,15 +1107,17 @@
                 </div>
 
                 <!-- 🚀 1. 실시간 가격 전광판 (PC: 굵기 뺀 2.5배 42px 슬림 대형 타이포 + 하단 소형 보조가격 우측 정렬) -->
-                <div id="head-price-container" class="flex flex-col text-xs text-left min-w-fit shrink-0">
+                <div id="head-price-container"
+                  class="flex flex-col text-xs text-left min-w-fit shrink-0 justify-center">
                   <span id="head-price-label"
-                    class="opacity-50 text-[10px] min-[1200px]:text-[11px] uppercase font-medium tracking-wider text-left">Price</span>
-                  <div class="flex flex-col min-w-0 leading-none mt-0.5 gap-0.5 min-[1200px]:gap-1 w-full">
-                    <div id="head-price-active" class="flex flex-col gap-0.5 w-full">
+                    class="hidden min-[1200px]:block opacity-50 text-[10px] min-[1200px]:text-[11px] uppercase font-medium tracking-wider text-left">Price</span>
+                  <div
+                    class="flex flex-col min-w-0 leading-none min-[1200px]:mt-0.5 gap-0.5 min-[1200px]:gap-1 w-full justify-center">
+                    <div id="head-price-active" class="flex flex-col gap-0.5 w-full justify-center">
                       <span id="head-price-main"
-                        class="text-[18px] min-[1200px]:text-[36px] font-sans tabular-nums text-theme-accent truncate leading-none font-medium tracking-tight text-left">-</span>
+                        class="text-sm sm:text-base min-[1200px]:text-[36px] font-sans tabular-nums text-theme-accent truncate leading-tight font-bold tracking-tight text-left">-</span>
                       <span id="head-price-sub"
-                        class="text-[11px] min-[1200px]:text-[12px] font-sans tabular-nums text-theme-text opacity-60 truncate leading-tight hidden font-normal text-right self-end ml-auto"></span>
+                        class="text-[10px] sm:text-[11px] min-[1200px]:text-[12px] font-sans tabular-nums text-theme-text opacity-60 truncate leading-tight hidden font-normal text-left min-[1200px]:text-right min-[1200px]:self-end min-[1200px]:ml-auto mt-0.5"></span>
                     </div>
                   </div>
                 </div>
@@ -1228,7 +1249,7 @@
         </div>
 
         <header id="chart-header" class="flex flex-col w-full shrink-0 bg-theme-bg">
-          <div class="flex items-center bg-black/5 px-5 h-9  relative">
+          <div class="flex items-center bg-black/5 px-2 sm:px-2.5 min-[1200px]:px-5 h-9 relative">
             <div id="tf-container"
               class="flex items-center gap-1.5 w-full overflow-x-auto whitespace-nowrap min-[1200px]:scrollbar-hide pb-0.5">
             </div>
@@ -1404,7 +1425,7 @@
               </div>
 
               <div id="ohlc-legend"
-                class="absolute top-1.5 md:top-2.5 left-[10px] z-[50] font-tempTestDss text-[9px] md:text-[11px] flex flex-row md:flex-col items-center md:items-start flex-wrap gap-x-2 md:gap-x-0 gap-y-0.5 px-2 py-1 md:pt-1.5 md:pb-2 text-theme-text backdrop-blur-sm border border-theme-border/50 rounded pointer-events-none shadow-sm w-fit max-w-[calc(100%-75px)] md:max-w-none"
+                class="absolute top-1.5 md:top-2.5 left-[10px] z-[50] font-medium text-[9px] md:text-[11px] flex flex-row md:flex-col items-center md:items-start flex-wrap gap-x-2 md:gap-x-0 gap-y-0.5 px-2 py-1 md:pt-1.5 md:pb-2 text-theme-text backdrop-blur-sm border border-theme-border/50 rounded pointer-events-none shadow-sm w-fit max-w-[calc(100%-75px)] md:max-w-none"
                 style="
                     background-color: color-mix(
                       in srgb,
@@ -1476,7 +1497,7 @@
               <span class="text-[11px] font-medium text-theme-text opacity-80">Orderbook</span>
               <div class="flex items-center">
                 <span id="orderbook-precision-label"
-                  class="text-[10px] font-tempTestDss font-medium text-theme-accent px-2 min-w-[60px] text-right whitespace-nowrap flex-shrink-0">Auto</span>
+                  class="text-[10px] font-medium font-medium text-theme-accent px-2 min-w-[60px] text-right whitespace-nowrap flex-shrink-0">Auto</span>
                 <div class="flex items-center bg-theme-border/20 rounded border border-theme-border/30 ml-1">
                   <button
                     class="w-6 h-5 flex items-center justify-center text-[10px] font-medium text-theme-text opacity-70 hover:opacity-100 hover:bg-theme-border/50 transition-colors rounded-l border-r border-theme-border/30"
@@ -1514,8 +1535,7 @@
             <!-- Spread / Current Price -->
             <div
               class="flex items-center justify-center py-1.5 border-y border-theme-border/50 bg-theme-bg/40 shrink-0 backdrop-blur-sm">
-              <span id="orderbook-current-price"
-                class="text-[13px] font-tempTestDss font-medium text-theme-text">--</span>
+              <span id="orderbook-current-price" class="text-[13px] font-medium font-medium text-theme-text">--</span>
             </div>
 
             <!-- Bids (매수) -->
@@ -1564,7 +1584,7 @@
                 <input type="range" id="input-body"
                   class="flex-1 cursor-ew-resize h-1.5 bg-theme-border rounded appearance-none shadow-inner min-w-0"
                   style="accent-color: var(--sim-color, var(--up));" min="0" max="200" value="10" step="1" />
-                <b id="val-body" class="text-xs font-tempTestDss shrink-0 w-[30px] text-right"
+                <b id="val-body" class="text-xs font-medium shrink-0 w-[30px] text-right"
                   style="color: var(--sim-color, var(--up));">10%</b>
               </div>
 
@@ -1574,7 +1594,7 @@
                 <input type="range" id="input-top"
                   class="flex-1 cursor-ew-resize h-1.5 bg-theme-border rounded appearance-none shadow-inner min-w-0"
                   style="accent-color: var(--sim-color, var(--up));" min="0" max="100" value="5" step="1" />
-                <b id="val-top" class="text-xs font-tempTestDss shrink-0 w-[24px] text-right"
+                <b id="val-top" class="text-xs font-medium shrink-0 w-[24px] text-right"
                   style="color: var(--sim-color, var(--up));">5%</b>
               </div>
 
@@ -1584,7 +1604,7 @@
                 <input type="range" id="input-bottom"
                   class="flex-1 cursor-ew-resize h-1.5 bg-theme-border rounded appearance-none shadow-inner min-w-0"
                   style="accent-color: var(--sim-color, var(--up));" min="0" max="100" value="5" step="1" />
-                <b id="val-bottom" class="text-xs font-tempTestDss shrink-0 w-[24px] text-right"
+                <b id="val-bottom" class="text-xs font-medium shrink-0 w-[24px] text-right"
                   style="color: var(--sim-color, var(--up));">5%</b>
               </div>
             </div>
@@ -1644,7 +1664,7 @@
               <label class="text-[10px] font-medium opacity-40 uppercase tracking-widest">CoinMarketCap API KEY</label>
               <div class="relative">
                 <input id="setting-cmc-key" type="password" autocomplete="new-password"
-                  class="w-full bg-theme-bg border border-theme-border py-3 pl-3 pr-16 rounded-xl text-xs text-theme-text outline-none focus:border-theme-accent transition-all font-tempTestDss"
+                  class="w-full bg-theme-bg border border-theme-border py-3 pl-3 pr-16 rounded-xl text-xs text-theme-text outline-none focus:border-theme-accent transition-all font-medium"
                   placeholder="Paste your API key here..." />
                 <button type="button" onclick="togglePasswordVisibility('setting-cmc-key')"
                   class="absolute right-8 top-1/2 -translate-y-1/2 text-theme-text opacity-30 hover:opacity-100 transition-all">
@@ -1758,20 +1778,31 @@
 
           <!-- 중앙: 페이지 네비게이션 & 레이아웃 세그먼트 버튼 & 유니크 캔들 토글 -->
           <div class="flex items-center gap-4">
-            <!-- 페이지 네비게이션 -->
-            <div class="flex items-center gap-2 bg-theme-border/10 p-0.5 rounded-lg border border-theme-border/20">
+            <!-- 페이지 네비게이션 (+-10 페이지 빨리감기 & 이전/다음) -->
+            <div class="flex items-center gap-1 bg-theme-border/10 p-0.5 rounded-lg border border-theme-border/20">
               <button
-                class="px-2.5 py-1.5 text-[10px] font-bold rounded border border-theme-border bg-theme-border/10 hover:bg-theme-border/30 text-theme-text transition-all"
-                onclick="changeQuickViewPage(-1)">
+                class="px-2 py-1 text-[10px] font-bold rounded border border-theme-border/40 bg-theme-border/10 hover:bg-theme-border/30 text-theme-text transition-all cursor-pointer active:scale-95 flex items-center justify-center min-w-[26px]"
+                onclick="changeQuickViewPage(-10)" title="10페이지 이전 (또는 맨 처음)">
+                ◀◀
+              </button>
+              <button
+                class="px-2 py-1 text-[10px] font-bold rounded border border-theme-border/40 bg-theme-border/10 hover:bg-theme-border/30 text-theme-text transition-all cursor-pointer active:scale-95 flex items-center justify-center min-w-[24px]"
+                onclick="changeQuickViewPage(-1)" title="이전 페이지">
                 ◀
               </button>
               <span id="qv-page-indicator"
-                class="text-xs font-tempTestDss font-bold tracking-tight min-w-[70px] text-center px-2">PAGE 1 /
-                4</span>
+                class="text-xs font-bold tracking-tight min-w-[76px] text-center px-2 text-theme-text select-none">
+                PAGE 1 / 4
+              </span>
               <button
-                class="px-2.5 py-1.5 text-[10px] font-bold rounded border border-theme-border bg-theme-border/10 hover:bg-theme-border/30 text-theme-text transition-all"
-                onclick="changeQuickViewPage(1)">
+                class="px-2 py-1 text-[10px] font-bold rounded border border-theme-border/40 bg-theme-border/10 hover:bg-theme-border/30 text-theme-text transition-all cursor-pointer active:scale-95 flex items-center justify-center min-w-[24px]"
+                onclick="changeQuickViewPage(1)" title="다음 페이지">
                 ▶
+              </button>
+              <button
+                class="px-2 py-1 text-[10px] font-bold rounded border border-theme-border/40 bg-theme-border/10 hover:bg-theme-border/30 text-theme-text transition-all cursor-pointer active:scale-95 flex items-center justify-center min-w-[26px]"
+                onclick="changeQuickViewPage(10)" title="10페이지 다음 (또는 맨 끝)">
+                ▶▶
               </button>
             </div>
 
@@ -1843,7 +1874,7 @@
 
           <!-- 겹쳤을 때 표시될 종합 floating 범례판 -->
           <div id="qv-overlap-legend"
-            class="absolute top-16 right-8 z-[99] hidden font-tempTestDss text-[9px] flex flex-col gap-1.5 px-3 py-2.5 backdrop-blur-md rounded-xl max-w-[200px] pointer-events-auto shadow-2xl">
+            class="absolute top-16 right-8 z-[99] hidden font-medium text-[9px] flex flex-col gap-1.5 px-3 py-2.5 backdrop-blur-md rounded-xl max-w-[200px] pointer-events-auto shadow-2xl">
             <!-- 8개 자산 정보가 색상과 함께 세로로 동적 렌더링됩니다 -->
           </div>
         </div>
@@ -1957,7 +1988,7 @@
 
       <!-- 🚀 모바일 전용 프리미엄 플로팅 글래스 알약(Pill) 네비게이션 탭 바 (미끄러지는 쫀득한 슬라이딩 글라이더 적용) -->
       <div id="mobile-nav-bar"
-        class="hidden items-center justify-between z-[800] fixed bottom-5 left-1/2 -translate-x-1/2 w-[224px] h-[48px] p-1 bg-theme-panel/85 backdrop-blur-2xl border border-theme-border/70 rounded-full select-none relative overflow-hidden">
+        class="hidden items-center justify-between z-[400] fixed bottom-5 left-1/2 -translate-x-1/2 w-[224px] h-[48px] p-1 bg-theme-panel/85 backdrop-blur-2xl border border-theme-border/70 rounded-full select-none relative overflow-hidden">
 
         <!-- 🌟 쫀득하게 미끄러지는 액티브 글라이더 알약 (Elastic Spring Sliding Motion) -->
         <div id="mobile-nav-slider"
