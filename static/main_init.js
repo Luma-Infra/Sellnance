@@ -97,7 +97,7 @@ export function restoreSavedUserSettings() {
       savedViewMode = "basic";
       try {
         localStorage.setItem("sellnance_table_view_mode", "basic");
-      } catch (e) {}
+      } catch (e) { }
     }
     if (typeof switchViewMode === "function") {
       switchViewMode(savedViewMode, false);
@@ -171,7 +171,7 @@ export function updateStatusBadge() {
   if (tipUsersEl) tipUsersEl.innerText = `${users} Active`;
 
   if (!store.lastUpdatedRaw) {
-    if (timerEl) timerEl.innerText = "--:--:-- 이후 시가총액 갱신";
+    if (timerEl) timerEl.innerText = "--:--:-- 이후 갱신";
     if (tipTimerEl) tipTimerEl.innerText = "--:--:--";
     return;
   }
@@ -196,7 +196,7 @@ export function updateStatusBadge() {
     const s = diff % 60;
     const formattedTime = `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
     if (timerEl) {
-      timerEl.innerText = `${formattedTime} 이후 시가총액 갱신`;
+      timerEl.innerText = `${formattedTime} 이후 갱신`;
       timerEl.title = "";
       timerEl.style.cursor = "default";
     }

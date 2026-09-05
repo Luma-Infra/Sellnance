@@ -361,17 +361,17 @@ export function restoreControlPanelUI() {
         "border-theme-border",
       );
       btnSmallCap.classList.add(
-        "bg-theme-down",
+        "bg-theme-accent",
         "text-white",
-        "border-theme-down",
+        "border-theme-accent",
         "shadow-md",
         "opacity-100",
       );
     } else {
       btnSmallCap.classList.remove(
-        "bg-theme-down",
+        "bg-theme-accent",
         "text-white",
-        "border-theme-down",
+        "border-theme-accent",
         "shadow-md",
         "opacity-100",
       );
@@ -631,9 +631,9 @@ export function toggleSmallCap() {
         "border-theme-border",
       );
       btn.classList.add(
-        "bg-theme-down",
+        "bg-theme-accent",
         "text-white",
-        "border-theme-down",
+        "border-theme-accent",
         "shadow-md",
         "opacity-100",
       );
@@ -641,9 +641,9 @@ export function toggleSmallCap() {
     } else {
       btn.classList.add("text-theme-text", "opacity-50", "border-theme-border");
       btn.classList.remove(
-        "bg-theme-down",
+        "bg-theme-accent",
         "text-white",
-        "border-theme-down",
+        "border-theme-accent",
         "shadow-md",
         "opacity-100",
       );

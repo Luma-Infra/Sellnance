@@ -132,6 +132,7 @@ export function initGlobalEventListeners() {
   });
 
   // 정렬 순서 퀵 서칭 탐색 및 타임프레임 변경 엔진 (방향키 이벤트)
+  let lastArrowKeyTime = 0;
   document.addEventListener("keydown", (e) => {
     if (document.activeElement.tagName === "INPUT") return;
 
@@ -139,6 +140,16 @@ export function initGlobalEventListeners() {
     const down = e.key === "ArrowDown";
     const left = e.key === "ArrowLeft";
     const right = e.key === "ArrowRight";
+
+    if (!up && !down && !left && !right) return;
+
+    // 🚀 [초고속 연타 & 꾹 누름 방어] 쓰로틀링 적용 (첫 타 즉시 반응 + 리미트)
+    const now = Date.now();
+    if (now - lastArrowKeyTime < 150) {
+      e.preventDefault();
+      return;
+    }
+    lastArrowKeyTime = now;
 
     // 1. 좌우 방향키: 타임프레임(TF) 퀵 스위칭
     if (left || right) {

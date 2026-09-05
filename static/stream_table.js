@@ -660,8 +660,8 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
     const isFocus = store.currentSortCol !== "Change_Today";
     const themeClass = change24h > 0 ? "text-theme-up" : change24h < 0 ? "text-theme-down" : "text-theme-text";
     const chgText = `${change24h > 0 ? "+" : ""}${Number(change24h).toFixed(2)}%`;
-    const chgFontSize = chgText.length > 7 ? "text-[8px]" : "text-[10px]";
-    changeCell.className = `${themeClass} font-medium whitespace-nowrap flex-shrink-0 ${isFocus ? "opacity-100" : "opacity-40"} ${chgFontSize}`;
+    const chgFontSize = chgText.length > 8 ? "text-[9px]" : "text-[10px]";
+    changeCell.className = `${themeClass} font-medium flex-1 min-w-0 text-left tracking-tighter whitespace-nowrap ${isFocus ? "opacity-100" : "opacity-40"} ${chgFontSize}`;
     changeCell.textContent = chgText;
   }
 
@@ -671,8 +671,8 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
     const tThemeClass = todayChange > 0 ? "text-theme-up" : todayChange < 0 ? "text-theme-down" : "text-theme-text";
     const safeChange = todayChange < -99.9 ? -99.9 : todayChange;
     const todayText = `${safeChange > 0 ? "+" : ""}${Number(safeChange).toFixed(2)}%`;
-    const todayFontSize = todayText.length > 7 ? "text-[8px]" : "text-[10px]";
-    todayCell.className = `${tThemeClass} font-medium whitespace-nowrap flex-shrink-0 ${isFocus ? "opacity-100" : "opacity-40"} ${todayFontSize}`;
+    const todayFontSize = todayText.length > 8 ? "text-[9px]" : "text-[10px]";
+    todayCell.className = `${tThemeClass} font-medium flex-1 min-w-0 text-left tracking-tighter whitespace-nowrap ${isFocus ? "opacity-100" : "opacity-40"} ${todayFontSize}`;
     todayCell.textContent = todayText;
   }
 }

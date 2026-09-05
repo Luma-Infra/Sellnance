@@ -149,9 +149,9 @@ export function updateRowStaticHTML(rowEl, row) {
   <div class="p-2 col-price overflow-hidden price-placeholder text-theme-text font-medium text-[14px]">
     <div class="flex flex-col leading-tight min-w-0 gap-0.5">
       <div class="font-medium text-[14px] tracking-tighter truncate block flex items-center">-</div>
-      <div class="flex items-center justify-between gap-2 text-[10px] font-medium text-left mt-0.5 w-full min-w-0 opacity-0">
-        <span class="flex-1">-</span>
-        <span class="flex-1">-</span>
+      <div class="flex items-center gap-1.5 text-[10px] font-medium text-left mt-0.5 w-full min-w-0 opacity-0">
+        <span class="flex-1 min-w-0 text-left tracking-tighter whitespace-nowrap">-</span>
+        <span class="flex-1 min-w-0 text-left tracking-tighter whitespace-nowrap">-</span>
       </div>
     </div>
   </div>
@@ -342,9 +342,9 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
             <div id="price-${tId}" data-raw-price="0" ${initStyleAttr} class="font-medium text-[14px] text-theme-text price-cell tracking-tighter block flex items-center min-w-0">
               <span class="price-num whitespace-nowrap">${formattedPrice}</span>
             </div>
-            <div class="flex items-center justify-between gap-1 text-[10px] font-medium text-left mt-0.5 w-full min-w-0">
-              <span id="change-${tId}" class="whitespace-nowrap flex-shrink-0">-</span>
-              <span id="today-${tId}" class="whitespace-nowrap flex-shrink-0">-</span>
+            <div class="flex items-center gap-1.5 text-[10px] font-medium text-left mt-0.5 w-full min-w-0">
+              <span id="change-${tId}" class="flex-1 min-w-0 text-left tracking-tighter whitespace-nowrap">-</span>
+              <span id="today-${tId}" class="flex-1 min-w-0 text-left tracking-tighter whitespace-nowrap">-</span>
             </div>
           </div>
         `;
@@ -356,7 +356,7 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
     // 🚀 가격 수치 및 data-raw-price 실시간 갱신 (플래시 애니메이션 및 폰트 축소 연동)
     const priceDiv =
       container._priceDiv ||
-      (container._priceDiv = container.querySelector(`#price-${tId}`));
+      (container._priceDiv = container.querySelector(".price-cell") || document.getElementById(`price-${tId}`));
     if (priceDiv) {
       const numEl =
         priceDiv._numEl ||
@@ -396,18 +396,18 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
 
     const changeEl =
       container._changeEl ||
-      (container._changeEl = container.querySelector(`#change-${tId}`));
+      (container._changeEl = container.querySelector('[id^="change-"]') || document.getElementById(`change-${tId}`));
     if (changeEl) {
       changeEl.textContent = chgText;
-      changeEl.className = `${color24h} ${chgText.length > 7 ? "text-[9px]" : "text-[10px]"} whitespace-nowrap flex-shrink-0`;
+      changeEl.className = `${color24h} ${chgText.length > 8 ? "text-[9px]" : "text-[10px]"} flex-1 min-w-0 text-left tracking-tighter whitespace-nowrap`;
     }
 
     const todayEl =
       container._todayEl ||
-      (container._todayEl = container.querySelector(`#today-${tId}`));
+      (container._todayEl = container.querySelector('[id^="today-"]') || document.getElementById(`today-${tId}`));
     if (todayEl) {
       todayEl.textContent = todayText;
-      todayEl.className = `${colorDay} ${todayText.length > 7 ? "text-[9px]" : "text-[10px]"} whitespace-nowrap flex-shrink-0`;
+      todayEl.className = `${colorDay} ${todayText.length > 8 ? "text-[9px]" : "text-[10px]"} flex-1 min-w-0 text-left tracking-tighter whitespace-nowrap`;
     }
   }
 
@@ -452,7 +452,7 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
 
     const volBEl =
       container._volBEl ||
-      (container._volBEl = container.querySelector(`#vol-binance-${tId}`));
+      (container._volBEl = container.querySelector('[id^="vol-binance-"]') || document.getElementById(`vol-binance-${tId}`));
     if (volBEl && volBEl.textContent !== volBText) {
       volBEl.textContent = volBText;
       const fs = CONFIG.FONT_SCALE;
@@ -471,7 +471,7 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
 
     const mcapEl =
       container._mcapEl ||
-      (container._mcapEl = container.querySelector(`#mcap-${tId}`));
+      (container._mcapEl = container.querySelector('[id^="mcap-"]') || document.getElementById(`mcap-${tId}`));
     if (mcapEl) {
       mcapEl.textContent = mcapText;
       if (row.isDelisted) {
@@ -529,7 +529,7 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
 
     const volUEl =
       container._volUEl ||
-      (container._volUEl = container.querySelector(`#vol-upbit-${tId}`));
+      (container._volUEl = container.querySelector('[id^="vol-upbit-"]') || document.getElementById(`vol-upbit-${tId}`));
     if (volUEl && volUEl.textContent !== volUText) {
       volUEl.textContent = volUText;
         const fs = CONFIG.FONT_SCALE;
@@ -547,7 +547,7 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
 
     const vmcEl =
       container._vmcEl ||
-      (container._vmcEl = container.querySelector(`#vmc-${tId}`));
+      (container._vmcEl = container.querySelector('[id^="vmc-"]') || document.getElementById(`vmc-${tId}`));
     if (vmcEl && vmcEl.textContent !== vmcText) {
       vmcEl.textContent = vmcText;
       const fs = CONFIG.FONT_SCALE;
@@ -807,7 +807,7 @@ window.updateRowPriceDisplay = (target, row) => {
 
   const tId = row.Ticker || row.Symbol;
   const parentEl =
-    rowEl._priceEl || (rowEl._priceEl = rowEl.querySelector(`#price-${tId}`));
+    rowEl._priceEl || (rowEl._priceEl = rowEl.querySelector(".price-cell") || document.getElementById(`price-${tId}`));
   if (!parentEl) return;
 
   const rate = store.marketDataMap?.krw_usd_rate || 0;
