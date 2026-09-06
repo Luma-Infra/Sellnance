@@ -318,9 +318,18 @@ export function getFilteredData() {
     });
   }
 
-  return delistedRows.length > 0
+  let finalResult = delistedRows.length > 0
     ? [...filteredData, ...delistedRows]
     : filteredData;
+
+  // 테스트 코인은 항상 테이블 맨 위에 고정
+  const testRowIdx = finalResult.findIndex((r) => r.Ticker === "SELLNANCE" || r._isTestRow);
+  if (testRowIdx > 0) {
+    const [testRow] = finalResult.splice(testRowIdx, 1);
+    finalResult.unshift(testRow);
+  }
+
+  return finalResult;
 }
 
 // ==========================================

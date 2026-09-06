@@ -3522,7 +3522,8 @@
     "upbit_listing": "2026-05-22"
   },
   "SNX": {
-    "binance_listing": "2019-09-25"
+    "binance_listing": "2019-09-25",
+    "bithumb_listing": "2023-12-11"
   },
   "SNXUSDT": {
     "binance_listing": "2020-08-01"
@@ -3675,7 +3676,8 @@
   },
   "STORJ": {
     "binance_listing": "2019-09-25",
-    "upbit_listing": "2026-02-13"
+    "upbit_listing": "2026-02-13",
+    "bybit_listing": "2023-12-12"
   },
   "STORJUSDT": {
     "binance_listing": "2020-09-14"

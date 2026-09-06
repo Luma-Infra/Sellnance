@@ -395,11 +395,15 @@
     </p>
   </div>
 
+  <!-- 🧪 PC 전용 화면 우측 하단 바깥 테스트 텍스트 -->
+  <!-- <span class="hidden min-[1200px]:block fixed bottom-1 right-2 text-[8px] opacity-40 text-theme-text select-none pointer-events-none z-50">test</span> -->
+
   <!-- hidden -->
   <div id="main-dashboard-content"
     x-data="{ currentMobileTab: (function(){ try { return sessionStorage.getItem('sellnance_active_mobile_tab') || 'list'; } catch(e){ return 'list'; } })() }"
     @mobile-tab-changed.window="currentMobileTab = $event.detail"
     class="flex flex-col h-[100dvh] min-[1200px]:h-[98dvh] max-h-[100dvh] min-[1200px]:max-h-[880px] w-full max-w-[1440px] bg-theme-bg relative overflow-hidden shrink-0 mx-auto min-[1200px]:mb-[2dvh] rounded-none min-[1200px]:rounded-md">
+
     <!-- 🚀 글로벌 통합 탑 헤더 (모든 패널 위에 위치) -->
     <header id="main-global-header"
       class="relative flex w-full shrink-0 h-11 bg-theme-panel border-b border-theme-border/50 px-4 items-center justify-between z-[100] shadow-sm">
@@ -594,7 +598,7 @@
     <!-- 🚀 내부 패널 분할 컨테이너 -->
     <div id="panel-split-container" class="flex flex-row flex-1 overflow-hidden w-full relative">
       <div
-        class="flex flex-col flex-none h-full w-[560px] max-w-[50vw] min-w-[360px] border-r border-theme-border bg-theme-bg transition-all duration-300 shrink-0 overflow-hidden pb-0"
+        class="flex flex-col flex-none h-full w-full max-[1199px]:w-full max-[1199px]:max-w-none max-[1199px]:min-w-0 min-[1200px]:w-[560px] min-[1200px]:max-w-[50vw] min-[1200px]:min-w-[360px] border-r max-[1199px]:border-r-0 border-theme-border bg-theme-bg transition-all duration-300 shrink-0 overflow-hidden pb-0"
         id="left-panel">
         <!-- [연결 상태 일시 주석 처리] -->
 
@@ -604,7 +608,7 @@
 
           <!-- 🚀 상단 독립 검색창 -->
           <div id="search-input-wrapper"
-            class="flex w-[calc(100%-16px)] shrink-0 bg-theme-panel/10 p-2 items-center mt-1 mx-2">
+            class="hidden min-[1200px]:flex w-[calc(100%-16px)] shrink-0 bg-theme-panel/10 p-2 items-center mt-1 mx-2">
             <!-- 🚀 내부 검색 바 (우측 탭 컨테이너와 동일한 36px 높이 부여) -->
             <div id="search-bar-inner"
               class="relative flex flex-1 h-[36px] bg-theme-panel border border-theme-border rounded-md items-center z-0 overflow-hidden px-3 shadow-inner w-full focus-within:border-theme-accent transition-all">
@@ -992,13 +996,14 @@
         </div>
       </div>
 
-      <div class="flex flex-1 flex-col min-w-[320px] overflow-hidden bg-theme-bg relative transition-all duration-300"
+      <div
+        class="hidden min-[1200px]:flex flex-1 flex-col min-w-[320px] overflow-hidden bg-theme-bg relative transition-all duration-300"
         id="right-panel">
         <div id="chart-top-zone"
           class="flex flex-col w-full shrink-0 border-b border-theme-border h-auto min-[1200px]:h-[188px] min-[1200px]:max-h-[188px]">
           <!-- 🚀 2단: 차트 탭 컨테이너 -->
           <div id="chart-tab-wrapper"
-            class="flex w-full shrink-0 bg-theme-panel/10 border-b border-theme-border p-2 min-[1200px]:py-1.5 min-[1200px]:px-3 items-center min-[1200px]:mt-0">
+            class="hidden min-[1200px]:flex w-full shrink-0 bg-theme-panel/10 border-b border-theme-border p-2 min-[1200px]:py-1.5 min-[1200px]:px-3 items-center min-[1200px]:mt-0">
             <div id="chart-tab-container"
               class="relative flex flex-1 h-[36px] min-[1200px]:h-[32px] bg-theme-panel border border-theme-border rounded-md items-stretch z-0 overflow-hidden gap-1.5 p-0.5 shadow-inner">
               <div id="tab-sliding-bg"
@@ -1067,7 +1072,7 @@
             class="flex flex-col w-full bg-theme-bg min-[1200px]:flex-1 min-[1200px]:justify-between min-[1200px]:min-h-0">
             <!-- 1층 (PC: [ASSET (좌측) + BADGES (우측)] / 모바일: [BADGES ONLY]) -->
             <div id="head-asset-row"
-              class="flex flex-col min-[1200px]:flex-row min-[1200px]:justify-between min-[1200px]:items-center p-2 min-[1200px]:py-1.5 min-[1200px]:px-3 gap-2 min-[1200px]:gap-3 w-full">
+              class="flex flex-col min-[1200px]:flex-row min-[1200px]:justify-between min-[1200px]:items-center p-2 min-[1200px]:pt-2.5 min-[1200px]:pb-1 min-[1200px]:px-3 gap-2 min-[1200px]:gap-3 w-full">
               <!-- PC 전용 코인명 (>=1200px에서 좌측에 노출) -->
               <div class="hidden min-[1200px]:flex items-center gap-4 min-w-0 min-[1200px]:order-1">
                 <h3 id="head-asset-name-pc"
@@ -1164,7 +1169,7 @@
             </div>
             <!-- 3층: 컨트롤 패널 (리니어/로그, 카운트다운, 스케일 리셋, 호가창) - PC 전용 노출 (모바일은 설정 모달로 통합) -->
             <div id="head-controls-row"
-              class="hidden min-[1200px]:flex items-center justify-between w-full pt-0.5 min-[1200px]:mt-0 px-3 min-[1200px]:pt-0 min-[1200px]:pb-0.5">
+              class="hidden min-[1200px]:flex items-center justify-between w-full pt-0.5 min-[1200px]:mt-0 px-3 min-[1200px]:pt-0.5 min-[1200px]:pb-1">
               <!-- Right: 리니어/로그 토글, 카운트다운, 차트 리셋, 호가창 열기 (우측 정렬) -->
               <div id="head-control-buttons" class="flex items-center gap-2 ml-auto">
                 <!-- 🚀 그리기 도구 삭제, 자(Ruler) 단독 분리 -->
@@ -1612,52 +1617,51 @@
         </div>
         <!-- 🚀 #right-panel 닫기 -->
       </div>
+      <!-- 🚀 #panel-split-container 닫기 -->
+    </div>
 
+    <!-- ⚙️ 전문가용 설정 모달 (모바일 바텀시트) -->
+    <div id="settings-modal" style="display: none;" onclick="if (event.target === this) closeSettingsModal()"
+      class="fixed inset-0 z-[300] items-center justify-center bg-black/60 backdrop-blur-sm cursor-pointer">
+      <form onsubmit="event.preventDefault()" onclick="event.stopPropagation()"
+        class="bg-theme-panel border border-theme-border p-6 rounded-2xl shadow-2xl w-[calc(100%-32px)] max-w-[400px] max-h-[85dvh] flex flex-col gap-5 overflow-y-auto cursor-default">
+        <div class="flex justify-between items-center border-b border-theme-border pb-3">
+          <h3 class="text-lg font-medium text-theme-accent uppercase tracking-tighter">
+            Settings
+          </h3>
+          <button type="button" onclick="closeSettingsModal()"
+            class="text-theme-text opacity-50 hover:opacity-100 text-xl">
+            ×
+          </button>
+        </div>
 
-      <!-- 🚀 #main-dashboard-content 닫기 -->
-
-      <!-- ⚙️ 전문가용 설정 모달 (모바일 바텀시트) -->
-      <div id="settings-modal" style="display: none;" onclick="if (event.target === this) closeSettingsModal()"
-        class="fixed inset-0 z-[300] items-center justify-center bg-black/60 backdrop-blur-sm cursor-pointer">
-        <form onsubmit="event.preventDefault()" onclick="event.stopPropagation()"
-          class="bg-theme-panel border border-theme-border p-6 rounded-2xl shadow-2xl w-[calc(100%-32px)] max-w-[400px] max-h-[85dvh] flex flex-col gap-5 overflow-y-auto cursor-default">
-          <div class="flex justify-between items-center border-b border-theme-border pb-3">
-            <h3 class="text-lg font-medium text-theme-accent uppercase tracking-tighter">
-              Settings
-            </h3>
-            <button type="button" onclick="closeSettingsModal()"
-              class="text-theme-text opacity-50 hover:opacity-100 text-xl">
-              ×
-            </button>
+        <div class="flex flex-col gap-4">
+          <!-- CMC API 키 -->
+          <div class="flex flex-col gap-1.5">
+            <label class="text-[10px] font-medium opacity-40 uppercase tracking-widest">CoinMarketCap API KEY</label>
+            <div class="relative">
+              <input id="setting-cmc-key" type="text" autocomplete="off" spellcheck="false"
+                class="w-full bg-theme-bg border border-theme-border py-3 pl-3 pr-16 rounded-xl text-xs text-theme-text outline-none focus:border-theme-accent transition-all font-medium font-mono"
+                placeholder="Paste your API key here..." />
+              <button id="btn-toggle-setting-cmc-key" type="button"
+                onclick="togglePasswordVisibility('setting-cmc-key')"
+                class="absolute right-8 top-1/2 -translate-y-1/2 text-theme-text opacity-50 hover:opacity-100 transition-all text-xs"
+                title="키 표시/숨김">
+                🙈
+              </button>
+              <button id="btn-clear-setting-cmc-key" type="button" onclick="clearCmcKey()"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-theme-text opacity-0 pointer-events-none hover:opacity-100 transition-all text-xs"
+                title="키 지우기">
+                ✕
+              </button>
+            </div>
+            <p class="text-[9px] opacity-30 mt-1 italic">
+              API key is required to fetch real-time MarketCap
+            </p>
           </div>
 
-          <div class="flex flex-col gap-4">
-            <!-- CMC API 키 -->
-            <div class="flex flex-col gap-1.5">
-              <label class="text-[10px] font-medium opacity-40 uppercase tracking-widest">CoinMarketCap API KEY</label>
-              <div class="relative">
-                <input id="setting-cmc-key" type="text" autocomplete="off" spellcheck="false"
-                  class="w-full bg-theme-bg border border-theme-border py-3 pl-3 pr-16 rounded-xl text-xs text-theme-text outline-none focus:border-theme-accent transition-all font-medium font-mono"
-                  placeholder="Paste your API key here..." />
-                <button id="btn-toggle-setting-cmc-key" type="button"
-                  onclick="togglePasswordVisibility('setting-cmc-key')"
-                  class="absolute right-8 top-1/2 -translate-y-1/2 text-theme-text opacity-50 hover:opacity-100 transition-all text-xs"
-                  title="키 표시/숨김">
-                  🙈
-                </button>
-                <button id="btn-clear-setting-cmc-key" type="button" onclick="clearCmcKey()"
-                  class="absolute right-3 top-1/2 -translate-y-1/2 text-theme-text opacity-0 pointer-events-none hover:opacity-100 transition-all text-xs"
-                  title="키 지우기">
-                  ✕
-                </button>
-              </div>
-              <p class="text-[9px] opacity-30 mt-1 italic">
-                API key is required to fetch real-time MarketCap
-              </p>
-            </div>
-
-            <!-- ✨ 애니메이션 끄기/켜기 -->
-            <!-- <div class="flex items-center justify-between border-t border-theme-border/50 pt-4 mt-2">
+          <!-- ✨ 애니메이션 끄기/켜기 -->
+          <!-- <div class="flex items-center justify-between border-t border-theme-border/50 pt-4 mt-2">
             <div class="flex flex-col">
               <span class="text-xs font-medium text-theme-text">Disable All Animations</span>
               <span class="text-[9px] opacity-40 italic">성능을 위해 모든 애니메이션 끄기</span>
@@ -1671,337 +1675,333 @@
             </label>
           </div> -->
 
-            <!-- 온보딩 다시 보기 -->
-            <div class="flex items-center justify-between border-t border-theme-border/50 pt-4 mt-2">
-              <div class="flex flex-col">
-                <span class="text-xs font-medium text-theme-text">Show Welcome Guide</span>
-                <span class="text-[9px] opacity-40 italic">첫 화면 가이드(온보딩 모달) 다시 보기</span>
-              </div>
-              <button type="button" onclick="
+          <!-- 온보딩 다시 보기 -->
+          <div class="flex items-center justify-between border-t border-theme-border/50 pt-4 mt-2">
+            <div class="flex flex-col">
+              <span class="text-xs font-medium text-theme-text">Show Welcome Guide</span>
+              <span class="text-[9px] opacity-40 italic">첫 화면 가이드(온보딩 모달) 다시 보기</span>
+            </div>
+            <button type="button" onclick="
                   window.showOnboardingModal(true);
                   closeSettingsModal();
                 "
-                class="px-3 py-1.5 bg-theme-border/20 text-theme-text text-xs font-medium rounded-lg hover:bg-theme-accent hover:text-white transition-all">
-                열기
-              </button>
-            </div>
+              class="px-3 py-1.5 bg-theme-border/20 text-theme-text text-xs font-medium rounded-lg hover:bg-theme-accent hover:text-white transition-all">
+              열기
+            </button>
+          </div>
 
-            <!-- 처음 시작 화면(3D 인트로) 다시 보기 -->
-            <div class="flex items-center justify-between border-t border-theme-border/50 pt-4 mt-2">
-              <div class="flex flex-col">
-                <span class="text-xs font-medium text-theme-text">Return to Start Screen</span>
-                <span class="text-[9px] opacity-40 italic">인트로(처음 화면)로 돌아가기</span>
-              </div>
-              <button type="button" onclick="
+          <!-- 처음 시작 화면(3D 인트로) 다시 보기 -->
+          <div class="flex items-center justify-between border-t border-theme-border/50 pt-4 mt-2">
+            <div class="flex flex-col">
+              <span class="text-xs font-medium text-theme-text">Return to Start Screen</span>
+              <span class="text-[9px] opacity-40 italic">인트로(처음 화면)로 돌아가기</span>
+            </div>
+            <button type="button" onclick="
                   if (typeof window.showStartScreen === 'function') window.showStartScreen();
                   closeSettingsModal();
                 "
-                class="px-3 py-1.5 bg-theme-border/20 text-theme-text text-xs font-medium rounded-lg hover:bg-theme-accent hover:text-white transition-all">
-                이동하기
-              </button>
-            </div>
-          </div>
-
-          <div class="flex gap-2 mt-2">
-            <button id="btn-save-settings" type="button" onclick="saveSettings()"
-              class="flex-1 bg-theme-accent text-white py-3 rounded-xl font-medium text-sm shadow-lg hover:brightness-110 active:scale-95 transition-all">
-              SAVE & APPLY
-            </button>
-            <button type="button" onclick="closeSettingsModal()"
-              class="flex-1 bg-theme-border/20 text-theme-text py-3 rounded-xl font-medium text-sm hover:bg-theme-border/40 transition-all">
-              CANCEL
-            </button>
-          </div>
-        </form>
-      </div>
-      <!-- ⚡ 퀵뷰 메인 컨테이너 -->
-      <div id="quickview-container" style="display: none"
-        class="hidden flex-1 flex-col overflow-hidden m-2 w-[calc(100%-16px)] gap-2 relative">
-        <!-- 1) 퀵뷰 헤더 제어 영역 -->
-        <div
-          class="flex items-center justify-between p-3 bg-theme-panel/40 border border-theme-border/30 rounded-2xl backdrop-blur-md shrink-0 flex-wrap gap-3">
-          <!-- 좌측: 타임프레임 필터 -->
-          <div class="flex items-center gap-4">
-            <!-- 타임프레임 필터 -->
-            <div class="flex items-center gap-1 bg-theme-border/10 p-0.5 rounded-lg border border-theme-border/20">
-              <button id="qv-tf-1m"
-                class="px-2.5 py-1.5 text-[10px] font-bold rounded-md transition-all qv-tf-btn text-theme-text opacity-50 hover:opacity-100"
-                onclick="changeQuickViewTF('1m')">
-                1M
-              </button>
-              <button id="qv-tf-15m"
-                class="px-2.5 py-1.5 text-[10px] font-bold rounded-md transition-all qv-tf-btn text-theme-text opacity-50 hover:opacity-100"
-                onclick="changeQuickViewTF('15m')">
-                15M
-              </button>
-              <button id="qv-tf-1h"
-                class="px-2.5 py-1.5 text-[10px] font-bold rounded-md transition-all qv-tf-btn text-theme-text opacity-50 hover:opacity-100"
-                onclick="changeQuickViewTF('1h')">
-                1H
-              </button>
-              <button id="qv-tf-4h"
-                class="px-2.5 py-1.5 text-[10px] font-bold rounded-md transition-all qv-tf-btn text-theme-text opacity-50 hover:opacity-100"
-                onclick="changeQuickViewTF('4h')">
-                4H
-              </button>
-              <button id="qv-tf-1d"
-                class="px-2.5 py-1.5 text-[10px] font-bold rounded-md transition-all qv-tf-btn text-theme-text opacity-50 hover:opacity-100"
-                onclick="changeQuickViewTF('1d')">
-                1D
-              </button>
-            </div>
-          </div>
-
-          <!-- 중앙: 페이지 네비게이션 & 레이아웃 세그먼트 버튼 & 유니크 캔들 토글 -->
-          <div class="flex items-center gap-4">
-            <!-- 페이지 네비게이션 (+-10 페이지 빨리감기 & 이전/다음) -->
-            <div class="flex items-center gap-1 bg-theme-border/10 p-0.5 rounded-lg border border-theme-border/20">
-              <button
-                class="px-2 py-1 text-[10px] font-bold rounded border border-theme-border/40 bg-theme-border/10 hover:bg-theme-border/30 text-theme-text transition-all cursor-pointer active:scale-95 flex items-center justify-center min-w-[26px]"
-                onclick="changeQuickViewPage(-10)" title="10페이지 이전 (또는 맨 처음)">
-                ◀◀
-              </button>
-              <button
-                class="px-2 py-1 text-[10px] font-bold rounded border border-theme-border/40 bg-theme-border/10 hover:bg-theme-border/30 text-theme-text transition-all cursor-pointer active:scale-95 flex items-center justify-center min-w-[24px]"
-                onclick="changeQuickViewPage(-1)" title="이전 페이지">
-                ◀
-              </button>
-              <span id="qv-page-indicator"
-                class="text-xs font-bold tracking-tight min-w-[76px] text-center px-2 text-theme-text select-none">
-                PAGE 1 / 4
-              </span>
-              <button
-                class="px-2 py-1 text-[10px] font-bold rounded border border-theme-border/40 bg-theme-border/10 hover:bg-theme-border/30 text-theme-text transition-all cursor-pointer active:scale-95 flex items-center justify-center min-w-[24px]"
-                onclick="changeQuickViewPage(1)" title="다음 페이지">
-                ▶
-              </button>
-              <button
-                class="px-2 py-1 text-[10px] font-bold rounded border border-theme-border/40 bg-theme-border/10 hover:bg-theme-border/30 text-theme-text transition-all cursor-pointer active:scale-95 flex items-center justify-center min-w-[26px]"
-                onclick="changeQuickViewPage(10)" title="10페이지 다음 (또는 맨 끝)">
-                ▶▶
-              </button>
-            </div>
-
-            <!-- 레이아웃 세그먼트 버튼 (스프레드 / 겹치기) -->
-            <div
-              class="relative flex items-center bg-theme-border/10 p-0.5 rounded-lg border border-theme-border/20 overflow-hidden">
-              <!-- 슬라이딩 배경 백드롭 -->
-              <div id="qv-layout-slider"
-                class="absolute top-0.5 bottom-0.5 left-0.5 w-[calc(50%-4px)] bg-theme-accent rounded-md transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] z-0"
-                style="transform: translateX(0)"></div>
-              <button id="qv-layout-spread"
-                class="relative z-10 px-4 py-2 text-xs font-bold rounded-md transition-all text-white cursor-pointer"
-                onclick="setQuickViewLayout('spread')">
-                🎛️ Spread (4x2)
-              </button>
-              <button id="qv-layout-overlap"
-                class="relative z-10 px-4 py-2 text-xs font-bold rounded-md transition-all text-theme-text opacity-60 hover:opacity-100 cursor-pointer"
-                onclick="setQuickViewLayout('overlap')">
-                🃏 Overlap (겹치기)
-              </button>
-            </div>
-
-            <!-- 🎨 캔들 색상 토글 버튼 -->
-            <button id="qv-color-toggle-btn"
-              class="px-3 py-1.5 text-[10px] font-bold rounded-lg border border-theme-border/50 hover:border-theme-accent text-theme-text hover:text-theme-accent bg-transparent transition-all flex items-center gap-1.5 cursor-pointer"
-              onclick="toggleQuickViewCandleColor()">
-              <span>🎨</span>
-              <span>유니크 캔들 색상 적용하기</span>
-            </button>
-          </div>
-
-          <!-- 우측: 리셋 버튼 & 닫기 버튼 -->
-          <div class="flex items-center gap-4">
-            <!-- 초기화 버튼 -->
-            <!-- 스케일 초기화 버튼 -->
-            <button id="qv-scale-reset-btn"
-              class="px-3 py-1.5 text-[10px] font-bold rounded-lg border border-theme-border/50 hover:border-theme-accent text-theme-text hover:text-theme-accent bg-transparent transition-all flex items-center gap-1.5 cursor-pointer"
-              onclick="resetQuickViewChartsScale()">
-              <span>🔍</span>
-              <span>스케일 초기화</span>
-            </button>
-            <!-- 처음으로 버튼 -->
-            <button id="qv-reset-btn"
-              class="px-3 py-1.5 text-[10px] font-bold rounded-lg border border-theme-border/50 hover:border-theme-accent text-theme-text hover:text-theme-accent bg-transparent transition-all flex items-center gap-1.5 cursor-pointer"
-              onclick="resetQuickView()">
-              <span>⟳</span>
-              <span>처음으로</span>
-            </button>
-            <!-- 구분선 -->
-            <div class="w-px h-5 bg-theme-border/30"></div>
-            <!-- 닫기 버튼 -->
-            <button id="qv-close-btn"
-              class="px-3 py-1.5 text-[10px] font-bold rounded-lg border border-theme-down/50 hover:border-theme-down text-theme-down hover:bg-theme-down/10 bg-transparent transition-all flex items-center gap-1.5 cursor-pointer"
-              onclick="closeQuickViewModal()">
-              <span>✕</span>
-              <span>Close</span>
+              class="px-3 py-1.5 bg-theme-border/20 text-theme-text text-xs font-medium rounded-lg hover:bg-theme-accent hover:text-white transition-all">
+              이동하기
             </button>
           </div>
         </div>
 
-        <!-- 2) 퀵뷰 차트 본문 영역 -->
-        <div id="quickview-body"
-          class="flex-1 relative overflow-hidden bg-theme-panel/20 border border-theme-border/30 rounded-2xl p-2 transition-all duration-300">
-          <!-- 8개 차트 카드가 동적으로 꽂힐 그리드/겹치기 래퍼 -->
-          <div id="qv-charts-wrapper" class="qv-spread-mode w-full h-full relative">
-            <!-- JS가 8개의 차트 카드를 여기에 생성합니다.
-               Spread 모드일 때는 CSS Grid가 작동하고, Overlap 모드일 때는 Absolute 겹치기가 작동합니다. -->
-          </div>
-
-          <!-- 겹쳤을 때 표시될 종합 floating 범례판 -->
-          <div id="qv-overlap-legend"
-            class="absolute top-16 right-8 z-[99] hidden font-medium text-[9px] flex flex-col gap-1.5 px-3 py-2.5 backdrop-blur-md rounded-xl max-w-[200px] pointer-events-auto shadow-2xl">
-            <!-- 8개 자산 정보가 색상과 함께 세로로 동적 렌더링됩니다 -->
-          </div>
-        </div>
-
-        <!-- 3) 퀵뷰 초기 정렬 기준 오버레이 (Glassmorphic) -->
-        <div id="quickview-init-overlay"
-          class="absolute inset-0 backdrop-blur-xl z-[150] flex flex-col justify-center items-center gap-6 rounded-2xl transition-all duration-500 ease-out">
-          <!-- 🚀 우측 상단 닫기(X) 버튼 -->
-          <button type="button" id="qv-init-close-btn" onclick="closeQuickViewModal()"
-            class="absolute top-4 right-4 md:top-5 md:right-5 w-9 h-9 rounded-xl flex items-center justify-center text-theme-text/60 hover:text-theme-text hover:bg-theme-border/30 border border-theme-border/40 hover:border-theme-border transition-all active:scale-95 cursor-pointer shadow-sm group"
-            title="닫기">
-            <svg class="w-4 h-4 transition-transform group-hover:rotate-90 duration-200" fill="none"
-              stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
+        <div class="flex gap-2 mt-2">
+          <button id="btn-save-settings" type="button" onclick="saveSettings()"
+            class="flex-1 bg-theme-accent text-white py-3 rounded-xl font-medium text-sm shadow-lg hover:brightness-110 active:scale-95 transition-all">
+            SAVE & APPLY
           </button>
-
-          <div class="text-center flex flex-col gap-2">
-            <h2 class="m-0 text-theme-accent text-3xl font-bold tracking-widest uppercase">
-              ⚡ Muntiple Quick View
-            </h2>
-            <p class="text-xs text-theme-text opacity-40 max-w-[500px] leading-relaxed mx-auto">
-              퀵뷰 엔진으로 무제한으로 실시간 차트를 한눈에 정밀
-              모니터링할게요<br />
-              대상 범위와 분석을 원하시는 정렬 기준을 선택해주세요
-            </p>
-          </div>
-
-          <!-- 🚀 [추가] 모니터링 대상 범위 선택 (전체 vs 즐겨찾기) -->
-          <div id="qv-base-selector"
-            class="flex flex-nowrap items-center gap-1.5 bg-theme-border/10 p-1 rounded-xl border border-theme-border/20 whitespace-nowrap shrink-0 max-w-full overflow-x-auto scrollbar-hide">
-            <button id="qv-base-all"
-              class="px-3.5 sm:px-4 py-2 text-xs font-bold rounded-lg transition-all text-white bg-theme-accent cursor-pointer inline-flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0"
-              onclick="setQuickViewBase('ALL')">
-              <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="2" y1="12" x2="22" y2="12"></line>
-                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z">
-                </path>
-              </svg>
-              <span class="whitespace-nowrap">전체 코인 기준</span>
-            </button>
-            <button id="qv-base-fav"
-              class="px-3.5 sm:px-4 py-2 text-xs font-bold rounded-lg transition-all text-theme-text opacity-50 hover:opacity-100 cursor-pointer inline-flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0"
-              onclick="setQuickViewBase('FAV')">
-              <svg class="w-3.5 h-3.5 shrink-0 text-[#e3b30a]" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-                <polygon
-                  points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
-                </polygon>
-              </svg>
-              <span class="whitespace-nowrap">FAV1 기준</span>
-            </button>
-            <button id="qv-base-fav2"
-              class="px-3.5 sm:px-4 py-2 text-xs font-bold rounded-lg transition-all text-theme-text opacity-50 hover:opacity-100 cursor-pointer inline-flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0"
-              onclick="setQuickViewBase('FAV2')">
-              <svg class="w-3.5 h-3.5 shrink-0 text-[#3b82f6]" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-                <polygon
-                  points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
-                </polygon>
-              </svg>
-              <span class="whitespace-nowrap">FAV2 기준</span>
-            </button>
-          </div>
-
-          <div class="flex gap-5 flex-wrap justify-center mt-1">
-            <div
-              class="qv-init-card flex flex-col items-center justify-center p-6 bg-theme-panel border border-theme-border/40 hover:border-theme-accent rounded-2xl w-[150px] h-[150px] gap-3 transition-all duration-300 cursor-pointer shadow-lg hover:-translate-y-1.5 active:scale-[0.97]"
-              onclick="selectQuickViewInitSort('24h')">
-              <span class="text-3xl filter drop-shadow-[0_4px_6px_rgba(239,83,80,0.3)]">🔥</span>
-              <span class="text-[11px] font-bold text-theme-text">24H 변동률</span>
-            </div>
-            <div
-              class="qv-init-card flex flex-col items-center justify-center p-6 bg-theme-panel border border-theme-border/40 hover:border-theme-accent rounded-2xl w-[150px] h-[150px] gap-3 transition-all duration-300 cursor-pointer shadow-lg hover:-translate-y-1.5 active:scale-[0.97]"
-              onclick="selectQuickViewInitSort('day')">
-              <span class="text-3xl filter drop-shadow-[0_4px_6px_rgba(38,166,154,0.3)]">☀️</span>
-              <span class="text-[11px] font-bold text-theme-text">오늘 (Day) 변동률</span>
-            </div>
-            <div
-              class="qv-init-card flex flex-col items-center justify-center p-6 bg-theme-panel border border-theme-border/40 hover:border-theme-accent rounded-2xl w-[150px] h-[150px] gap-3 transition-all duration-300 cursor-pointer shadow-lg hover:-translate-y-1.5 active:scale-[0.97]"
-              onclick="selectQuickViewInitSort('mcap')">
-              <span class="text-3xl filter drop-shadow-[0_4px_6px_rgba(240,185,11,0.3)]">💎</span>
-              <span class="text-[11px] font-bold text-theme-text">시가총액</span>
-            </div>
-          </div>
-          <!-- 돌아가기 (취소) 버튼 -->
-          <button type="button" onclick="closeQuickViewModal()"
-            class="mt-4 px-6 py-2.5 rounded-xl border border-theme-border text-theme-text/60 hover:text-theme-text hover:bg-theme-border/30 transition-all font-bold text-xs cursor-pointer shadow-md">
-            돌아가기 (Cancel)
+          <button type="button" onclick="closeSettingsModal()"
+            class="flex-1 bg-theme-border/20 text-theme-text py-3 rounded-xl font-medium text-sm hover:bg-theme-border/40 transition-all">
+            CANCEL
           </button>
         </div>
-      </div>
+      </form>
+    </div>
+    <!-- ⚡ 퀵뷰 메인 컨테이너 -->
+    <div id="quickview-container" style="display: none"
+      class="hidden flex-1 flex-col overflow-hidden m-2 w-[calc(100%-16px)] gap-2 relative">
+      <!-- 1) 퀵뷰 헤더 제어 영역 -->
+      <div
+        class="flex items-center justify-between p-3 bg-theme-panel/40 border border-theme-border/30 rounded-2xl backdrop-blur-md shrink-0 flex-wrap gap-3">
+        <!-- 좌측: 타임프레임 필터 -->
+        <div class="flex items-center gap-4">
+          <!-- 타임프레임 필터 -->
+          <div class="flex items-center gap-1 bg-theme-border/10 p-0.5 rounded-lg border border-theme-border/20">
+            <button id="qv-tf-1m"
+              class="px-2.5 py-1.5 text-[10px] font-bold rounded-md transition-all qv-tf-btn text-theme-text opacity-50 hover:opacity-100"
+              onclick="changeQuickViewTF('1m')">
+              1M
+            </button>
+            <button id="qv-tf-15m"
+              class="px-2.5 py-1.5 text-[10px] font-bold rounded-md transition-all qv-tf-btn text-theme-text opacity-50 hover:opacity-100"
+              onclick="changeQuickViewTF('15m')">
+              15M
+            </button>
+            <button id="qv-tf-1h"
+              class="px-2.5 py-1.5 text-[10px] font-bold rounded-md transition-all qv-tf-btn text-theme-text opacity-50 hover:opacity-100"
+              onclick="changeQuickViewTF('1h')">
+              1H
+            </button>
+            <button id="qv-tf-4h"
+              class="px-2.5 py-1.5 text-[10px] font-bold rounded-md transition-all qv-tf-btn text-theme-text opacity-50 hover:opacity-100"
+              onclick="changeQuickViewTF('4h')">
+              4H
+            </button>
+            <button id="qv-tf-1d"
+              class="px-2.5 py-1.5 text-[10px] font-bold rounded-md transition-all qv-tf-btn text-theme-text opacity-50 hover:opacity-100"
+              onclick="changeQuickViewTF('1d')">
+              1D
+            </button>
+          </div>
+        </div>
 
-      <!-- Debugging -->
+        <!-- 중앙: 페이지 네비게이션 & 레이아웃 세그먼트 버튼 & 유니크 캔들 토글 -->
+        <div class="flex items-center gap-4">
+          <!-- 페이지 네비게이션 (+-10 페이지 빨리감기 & 이전/다음) -->
+          <div class="flex items-center gap-1 bg-theme-border/10 p-0.5 rounded-lg border border-theme-border/20">
+            <button
+              class="px-2 py-1 text-[10px] font-bold rounded border border-theme-border/40 bg-theme-border/10 hover:bg-theme-border/30 text-theme-text transition-all cursor-pointer active:scale-95 flex items-center justify-center min-w-[26px]"
+              onclick="changeQuickViewPage(-10)" title="10페이지 이전 (또는 맨 처음)">
+              ◀◀
+            </button>
+            <button
+              class="px-2 py-1 text-[10px] font-bold rounded border border-theme-border/40 bg-theme-border/10 hover:bg-theme-border/30 text-theme-text transition-all cursor-pointer active:scale-95 flex items-center justify-center min-w-[24px]"
+              onclick="changeQuickViewPage(-1)" title="이전 페이지">
+              ◀
+            </button>
+            <span id="qv-page-indicator"
+              class="text-xs font-bold tracking-tight min-w-[76px] text-center px-2 text-theme-text select-none">
+              PAGE 1 / 4
+            </span>
+            <button
+              class="px-2 py-1 text-[10px] font-bold rounded border border-theme-border/40 bg-theme-border/10 hover:bg-theme-border/30 text-theme-text transition-all cursor-pointer active:scale-95 flex items-center justify-center min-w-[24px]"
+              onclick="changeQuickViewPage(1)" title="다음 페이지">
+              ▶
+            </button>
+            <button
+              class="px-2 py-1 text-[10px] font-bold rounded border border-theme-border/40 bg-theme-border/10 hover:bg-theme-border/30 text-theme-text transition-all cursor-pointer active:scale-95 flex items-center justify-center min-w-[26px]"
+              onclick="changeQuickViewPage(10)" title="10페이지 다음 (또는 맨 끝)">
+              ▶▶
+            </button>
+          </div>
 
-      <!-- 🚀 모바일 차트 전체화면 오버레이 -->
-      <div id="mobile-chart-overlay" class="hidden fixed inset-x-0 top-11 bottom-0 z-[100] pointer-events-none"
-        style="opacity:0; top: 44px; bottom: 0px;">
-        <div id="mobile-chart-panel"
-          class="absolute inset-0 flex flex-col bg-theme-bg translate-y-full pointer-events-auto pb-[calc(72px+env(safe-area-inset-bottom,0px))]">
-          <!-- transition-transform duration-300 ease-out 제거 -->
-          <!-- right-panel이 JS에 의해 여기로 이동됩니다 -->
-          <div id="mobile-chart-content" class="flex-1 flex flex-col min-h-0 overflow-hidden"></div>
+          <!-- 레이아웃 세그먼트 버튼 (스프레드 / 겹치기) -->
+          <div
+            class="relative flex items-center bg-theme-border/10 p-0.5 rounded-lg border border-theme-border/20 overflow-hidden">
+            <!-- 슬라이딩 배경 백드롭 -->
+            <div id="qv-layout-slider"
+              class="absolute top-0.5 bottom-0.5 left-0.5 w-[calc(50%-4px)] bg-theme-accent rounded-md transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] z-0"
+              style="transform: translateX(0)"></div>
+            <button id="qv-layout-spread"
+              class="relative z-10 px-4 py-2 text-xs font-bold rounded-md transition-all text-white cursor-pointer"
+              onclick="setQuickViewLayout('spread')">
+              🎛️ Spread (4x2)
+            </button>
+            <button id="qv-layout-overlap"
+              class="relative z-10 px-4 py-2 text-xs font-bold rounded-md transition-all text-theme-text opacity-60 hover:opacity-100 cursor-pointer"
+              onclick="setQuickViewLayout('overlap')">
+              🃏 Overlap (겹치기)
+            </button>
+          </div>
+
+          <!-- 🎨 캔들 색상 토글 버튼 -->
+          <button id="qv-color-toggle-btn"
+            class="px-3 py-1.5 text-[10px] font-bold rounded-lg border border-theme-border/50 hover:border-theme-accent text-theme-text hover:text-theme-accent bg-transparent transition-all flex items-center gap-1.5 cursor-pointer"
+            onclick="toggleQuickViewCandleColor()">
+            <span>🎨</span>
+            <span>유니크 캔들 색상 적용하기</span>
+          </button>
+        </div>
+
+        <!-- 우측: 리셋 버튼 & 닫기 버튼 -->
+        <div class="flex items-center gap-4">
+          <!-- 초기화 버튼 -->
+          <!-- 스케일 초기화 버튼 -->
+          <button id="qv-scale-reset-btn"
+            class="px-3 py-1.5 text-[10px] font-bold rounded-lg border border-theme-border/50 hover:border-theme-accent text-theme-text hover:text-theme-accent bg-transparent transition-all flex items-center gap-1.5 cursor-pointer"
+            onclick="resetQuickViewChartsScale()">
+            <span>🔍</span>
+            <span>스케일 초기화</span>
+          </button>
+          <!-- 처음으로 버튼 -->
+          <button id="qv-reset-btn"
+            class="px-3 py-1.5 text-[10px] font-bold rounded-lg border border-theme-border/50 hover:border-theme-accent text-theme-text hover:text-theme-accent bg-transparent transition-all flex items-center gap-1.5 cursor-pointer"
+            onclick="resetQuickView()">
+            <span>⟳</span>
+            <span>처음으로</span>
+          </button>
+          <!-- 구분선 -->
+          <div class="w-px h-5 bg-theme-border/30"></div>
           <!-- 닫기 버튼 -->
-          <button onclick="window.switchMobileTab('list')"
-            class="absolute top-2 right-2 z-[110] w-8 h-8 flex items-center justify-center rounded-full bg-theme-panel/80 border border-theme-border/50 text-theme-text opacity-70 hover:opacity-100 transition-all text-sm">
-            ✕
+          <button id="qv-close-btn"
+            class="px-3 py-1.5 text-[10px] font-bold rounded-lg border border-theme-down/50 hover:border-theme-down text-theme-down hover:bg-theme-down/10 bg-transparent transition-all flex items-center gap-1.5 cursor-pointer"
+            onclick="closeQuickViewModal()">
+            <span>✕</span>
+            <span>Close</span>
           </button>
         </div>
       </div>
 
-      <!-- 🚀 모바일 전용 프리미엄 플로팅 글래스 알약(Pill) 네비게이션 탭 바 (미끄러지는 쫀득한 슬라이딩 글라이더 적용) -->
-      <div id="mobile-nav-bar"
-        class="hidden items-center justify-between z-[400] fixed bottom-5 left-1/2 -translate-x-1/2 w-[224px] h-[48px] p-1 bg-theme-panel/85 backdrop-blur-2xl border border-theme-border/70 rounded-full select-none relative overflow-hidden">
-
-        <!-- 🌟 쫀득하게 미끄러지는 액티브 글라이더 알약 (Elastic Spring Sliding Motion) -->
-        <div id="mobile-nav-slider"
-          class="absolute top-1 bottom-1 left-1 w-[108px] rounded-full bg-theme-accent transition-transform duration-300 ease-[cubic-bezier(0.175,0.885,0.32,1.15)] pointer-events-none"
-          :class="currentMobileTab === 'chart' ? 'translate-x-[108px]' : 'translate-x-0'">
+      <!-- 2) 퀵뷰 차트 본문 영역 -->
+      <div id="quickview-body"
+        class="flex-1 relative overflow-hidden bg-theme-panel/20 border border-theme-border/30 rounded-2xl p-2 transition-all duration-300">
+        <!-- 8개 차트 카드가 동적으로 꽂힐 그리드/겹치기 래퍼 -->
+        <div id="qv-charts-wrapper" class="qv-spread-mode w-full h-full relative">
+          <!-- JS가 8개의 차트 카드를 여기에 생성합니다.
+               Spread 모드일 때는 CSS Grid가 작동하고, Overlap 모드일 때는 Absolute 겹치기가 작동합니다. -->
         </div>
 
-        <button id="mobile-tab-list" onclick="window.switchMobileTab('list')"
-          :class="currentMobileTab === 'list' ? 'text-white font-bold' : 'text-theme-text/65 hover:text-theme-text font-medium'"
-          class="relative z-10 flex-1 h-full rounded-full flex items-center justify-center gap-1.5 px-3 transition-colors duration-200 cursor-pointer whitespace-nowrap select-none active:scale-95">
-          <svg class="w-4 h-4 shrink-0 transition-transform duration-200"
-            :class="currentMobileTab === 'list' ? 'scale-110' : 'scale-100'" fill="none" viewBox="0 0 24 24"
-            stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="8" y1="6" x2="21" y2="6"></line>
-            <line x1="8" y1="12" x2="21" y2="12"></line>
-            <line x1="8" y1="18" x2="21" y2="18"></line>
-            <line x1="3" y1="6" x2="3.01" y2="6"></line>
-            <line x1="3" y1="12" x2="3.01" y2="12"></line>
-            <line x1="3" y1="18" x2="3.01" y2="18"></line>
+        <!-- 겹쳤을 때 표시될 종합 floating 범례판 -->
+        <div id="qv-overlap-legend"
+          class="absolute top-16 right-8 z-[99] hidden font-medium text-[9px] flex flex-col gap-1.5 px-3 py-2.5 backdrop-blur-md rounded-xl max-w-[200px] pointer-events-auto shadow-2xl">
+          <!-- 8개 자산 정보가 색상과 함께 세로로 동적 렌더링됩니다 -->
+        </div>
+      </div>
+
+      <!-- 3) 퀵뷰 초기 정렬 기준 오버레이 (Glassmorphic) -->
+      <div id="quickview-init-overlay"
+        class="absolute inset-0 backdrop-blur-xl z-[150] flex flex-col justify-center items-center gap-6 rounded-2xl transition-all duration-500 ease-out">
+        <!-- 🚀 우측 상단 닫기(X) 버튼 -->
+        <button type="button" id="qv-init-close-btn" onclick="closeQuickViewModal()"
+          class="absolute top-4 right-4 md:top-5 md:right-5 w-9 h-9 rounded-xl flex items-center justify-center text-theme-text/60 hover:text-theme-text hover:bg-theme-border/30 border border-theme-border/40 hover:border-theme-border transition-all active:scale-95 cursor-pointer shadow-sm group"
+          title="닫기">
+          <svg class="w-4 h-4 transition-transform group-hover:rotate-90 duration-200" fill="none" stroke="currentColor"
+            viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
           </svg>
-          <span class="text-xs font-semibold tracking-tight whitespace-nowrap shrink-0 leading-none">리스트</span>
         </button>
 
-        <button id="mobile-tab-chart" onclick="window.switchMobileTab('chart')"
-          :class="currentMobileTab === 'chart' ? 'text-white font-bold' : 'text-theme-text/65 hover:text-theme-text font-medium'"
-          class="relative z-10 flex-1 h-full rounded-full flex items-center justify-center gap-1.5 px-3 transition-colors duration-200 cursor-pointer whitespace-nowrap select-none active:scale-95">
-          <svg class="w-4 h-4 shrink-0 transition-transform duration-200"
-            :class="currentMobileTab === 'chart' ? 'scale-110' : 'scale-100'" fill="none" viewBox="0 0 24 24"
-            stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="20" x2="18" y2="10"></line>
-            <line x1="12" y1="20" x2="12" y2="4"></line>
-            <line x1="6" y1="20" x2="6" y2="14"></line>
-          </svg>
-          <span class="text-xs font-semibold tracking-tight whitespace-nowrap shrink-0 leading-none">차트</span>
+        <div class="text-center flex flex-col gap-2">
+          <h2 class="m-0 text-theme-accent text-3xl font-bold tracking-widest uppercase">
+            ⚡ Muntiple Quick View
+          </h2>
+          <p class="text-xs text-theme-text opacity-40 max-w-[500px] leading-relaxed mx-auto">
+            퀵뷰 엔진으로 무제한으로 실시간 차트를 한눈에 정밀
+            모니터링할게요<br />
+            대상 범위와 분석을 원하시는 정렬 기준을 선택해주세요
+          </p>
+        </div>
+
+        <!-- 🚀 [추가] 모니터링 대상 범위 선택 (전체 vs 즐겨찾기) -->
+        <div id="qv-base-selector"
+          class="flex flex-nowrap items-center gap-1.5 bg-theme-border/10 p-1 rounded-xl border border-theme-border/20 whitespace-nowrap shrink-0 max-w-full overflow-x-auto scrollbar-hide">
+          <button id="qv-base-all"
+            class="px-3.5 sm:px-4 py-2 text-xs font-bold rounded-lg transition-all text-white bg-theme-accent cursor-pointer inline-flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0"
+            onclick="setQuickViewBase('ALL')">
+            <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="2" y1="12" x2="22" y2="12"></line>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z">
+              </path>
+            </svg>
+            <span class="whitespace-nowrap">전체 코인 기준</span>
+          </button>
+          <button id="qv-base-fav"
+            class="px-3.5 sm:px-4 py-2 text-xs font-bold rounded-lg transition-all text-theme-text opacity-50 hover:opacity-100 cursor-pointer inline-flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0"
+            onclick="setQuickViewBase('FAV')">
+            <svg class="w-3.5 h-3.5 shrink-0 text-[#e3b30a]" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+              <polygon
+                points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+              </polygon>
+            </svg>
+            <span class="whitespace-nowrap">FAV1 기준</span>
+          </button>
+          <button id="qv-base-fav2"
+            class="px-3.5 sm:px-4 py-2 text-xs font-bold rounded-lg transition-all text-theme-text opacity-50 hover:opacity-100 cursor-pointer inline-flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0"
+            onclick="setQuickViewBase('FAV2')">
+            <svg class="w-3.5 h-3.5 shrink-0 text-[#3b82f6]" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+              <polygon
+                points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+              </polygon>
+            </svg>
+            <span class="whitespace-nowrap">FAV2 기준</span>
+          </button>
+        </div>
+
+        <div class="flex gap-5 flex-wrap justify-center mt-1">
+          <div
+            class="qv-init-card flex flex-col items-center justify-center p-6 bg-theme-panel border border-theme-border/40 hover:border-theme-accent rounded-2xl w-[150px] h-[150px] gap-3 transition-all duration-300 cursor-pointer shadow-lg hover:-translate-y-1.5 active:scale-[0.97]"
+            onclick="selectQuickViewInitSort('24h')">
+            <span class="text-3xl filter drop-shadow-[0_4px_6px_rgba(239,83,80,0.3)]">🔥</span>
+            <span class="text-[11px] font-bold text-theme-text">24H 변동률</span>
+          </div>
+          <div
+            class="qv-init-card flex flex-col items-center justify-center p-6 bg-theme-panel border border-theme-border/40 hover:border-theme-accent rounded-2xl w-[150px] h-[150px] gap-3 transition-all duration-300 cursor-pointer shadow-lg hover:-translate-y-1.5 active:scale-[0.97]"
+            onclick="selectQuickViewInitSort('day')">
+            <span class="text-3xl filter drop-shadow-[0_4px_6px_rgba(38,166,154,0.3)]">☀️</span>
+            <span class="text-[11px] font-bold text-theme-text">오늘 (Day) 변동률</span>
+          </div>
+          <div
+            class="qv-init-card flex flex-col items-center justify-center p-6 bg-theme-panel border border-theme-border/40 hover:border-theme-accent rounded-2xl w-[150px] h-[150px] gap-3 transition-all duration-300 cursor-pointer shadow-lg hover:-translate-y-1.5 active:scale-[0.97]"
+            onclick="selectQuickViewInitSort('mcap')">
+            <span class="text-3xl filter drop-shadow-[0_4px_6px_rgba(240,185,11,0.3)]">💎</span>
+            <span class="text-[11px] font-bold text-theme-text">시가총액</span>
+          </div>
+        </div>
+        <!-- 돌아가기 (취소) 버튼 -->
+        <button type="button" onclick="closeQuickViewModal()"
+          class="mt-4 px-6 py-2.5 rounded-xl border border-theme-border text-theme-text/60 hover:text-theme-text hover:bg-theme-border/30 transition-all font-bold text-xs cursor-pointer shadow-md">
+          돌아가기 (Cancel)
         </button>
       </div>
     </div>
+
+    <!-- Debugging -->
+
+    <!-- 🚀 모바일 차트 전체화면 오버레이 -->
+    <div id="mobile-chart-overlay" class="hidden fixed inset-x-0 top-11 bottom-0 z-[100] pointer-events-none"
+      style="opacity:0; top: 44px; bottom: 0px;">
+      <div id="mobile-chart-panel"
+        class="absolute inset-0 flex flex-col bg-theme-bg translate-y-full pointer-events-auto pb-[calc(72px+env(safe-area-inset-bottom,0px))]">
+        <!-- transition-transform duration-300 ease-out 제거 -->
+        <!-- right-panel이 JS에 의해 여기로 이동됩니다 -->
+        <div id="mobile-chart-content" class="flex-1 flex flex-col min-h-0 overflow-hidden"></div>
+        <!-- 닫기 버튼 -->
+        <button onclick="window.switchMobileTab('list')"
+          class="absolute top-2 right-2 z-[110] w-8 h-8 flex items-center justify-center rounded-full bg-theme-panel/80 border border-theme-border/50 text-theme-text opacity-70 hover:opacity-100 transition-all text-sm">
+          ✕
+        </button>
+      </div>
+    </div>
+
+    <!-- 🚀 모바일 전용 프리미엄 플로팅 글래스 알약(Pill) 네비게이션 탭 바 (미끄러지는 쫀득한 슬라이딩 글라이더 적용) -->
+    <div id="mobile-nav-bar"
+      class="hidden z-[400] fixed bottom-5 left-1/2 -translate-x-1/2 w-[224px] h-[48px] p-1 bg-theme-panel/85 backdrop-blur-2xl border border-theme-border/70 rounded-full select-none overflow-hidden items-center justify-between shadow-2xl">
+
+      <!-- 🌟 쫀득하게 미끄러지는 액티브 글라이더 알약 (Elastic Spring Sliding Motion) -->
+      <div id="mobile-nav-slider"
+        class="absolute top-1 bottom-1 left-1 w-[108px] rounded-full bg-theme-accent transition-transform duration-300 ease-[cubic-bezier(0.175,0.885,0.32,1.15)] pointer-events-none"
+        style="transform: translateX(0px);">
+      </div>
+
+      <button id="mobile-tab-list" onclick="window.switchMobileTab('list')"
+        class="relative z-10 flex-1 h-full rounded-full flex items-center justify-center gap-1.5 px-3 transition-colors duration-200 cursor-pointer whitespace-nowrap select-none active:scale-95 text-white font-bold">
+        <svg class="w-4 h-4 shrink-0 transition-transform duration-200 scale-110" fill="none" viewBox="0 0 24 24"
+          stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="8" y1="6" x2="21" y2="6"></line>
+          <line x1="8" y1="12" x2="21" y2="12"></line>
+          <line x1="8" y1="18" x2="21" y2="18"></line>
+          <line x1="3" y1="6" x2="3.01" y2="6"></line>
+          <line x1="3" y1="12" x2="3.01" y2="12"></line>
+          <line x1="3" y1="18" x2="3.01" y2="18"></line>
+        </svg>
+        <span class="text-xs font-semibold tracking-tight whitespace-nowrap shrink-0 leading-none">리스트</span>
+      </button>
+
+      <button id="mobile-tab-chart" onclick="window.switchMobileTab('chart')"
+        class="relative z-10 flex-1 h-full rounded-full flex items-center justify-center gap-1.5 px-3 transition-colors duration-200 cursor-pointer whitespace-nowrap select-none active:scale-95 text-theme-text/65 hover:text-theme-text font-medium">
+        <svg class="w-4 h-4 shrink-0 transition-transform duration-200 scale-100" fill="none" viewBox="0 0 24 24"
+          stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="20" x2="18" y2="10"></line>
+          <line x1="12" y1="20" x2="12" y2="4"></line>
+          <line x1="6" y1="20" x2="6" y2="14"></line>
+        </svg>
+        <span class="text-xs font-semibold tracking-tight whitespace-nowrap shrink-0 leading-none">차트</span>
+      </button>
+    </div>
+    <!-- 🚀 #main-dashboard-content 닫기 -->
   </div>
 </body>
 

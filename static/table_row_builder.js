@@ -149,7 +149,7 @@ export function updateRowStaticHTML(rowEl, row) {
   <div class="p-2 col-price overflow-hidden price-placeholder text-theme-text font-medium text-[14px]">
     <div class="flex flex-col leading-tight min-w-0 gap-0.5">
       <div class="font-medium text-[14px] tracking-tighter truncate block flex items-center">-</div>
-      <div class="flex items-center gap-1.5 text-[10px] font-medium text-left mt-0.5 w-full min-w-0 opacity-0">
+      <div class="flex items-center gap-1.5 text-[10.5px] font-medium text-left mt-0.5 w-full min-w-0 opacity-0">
         <span class="flex-1 min-w-0 text-left tracking-tighter whitespace-nowrap">-</span>
         <span class="flex-1 min-w-0 text-left tracking-tighter whitespace-nowrap">-</span>
       </div>
@@ -342,7 +342,7 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
             <div id="price-${tId}" data-raw-price="0" ${initStyleAttr} class="font-medium text-[14px] text-theme-text price-cell tracking-tighter block flex items-center min-w-0">
               <span class="price-num whitespace-nowrap">${formattedPrice}</span>
             </div>
-            <div class="flex items-center gap-1.5 text-[10px] font-medium text-left mt-0.5 w-full min-w-0">
+            <div class="flex items-center gap-1.5 text-[10.5px] font-medium text-left mt-0.5 w-full min-w-0">
               <span id="change-${tId}" class="flex-1 min-w-0 text-left tracking-tighter whitespace-nowrap">-</span>
               <span id="today-${tId}" class="flex-1 min-w-0 text-left tracking-tighter whitespace-nowrap">-</span>
             </div>
@@ -399,7 +399,7 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
       (container._changeEl = container.querySelector('[id^="change-"]') || document.getElementById(`change-${tId}`));
     if (changeEl) {
       changeEl.textContent = chgText;
-      changeEl.className = `${color24h} ${chgText.length > 8 ? "text-[9px]" : "text-[10px]"} flex-1 min-w-0 text-left tracking-tighter whitespace-nowrap`;
+      changeEl.className = `${color24h} ${chgText.length > 8 ? "text-[9.5px]" : "text-[10.5px]"} flex-1 min-w-0 text-left tracking-tighter whitespace-nowrap`;
     }
 
     const todayEl =
@@ -407,7 +407,7 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
       (container._todayEl = container.querySelector('[id^="today-"]') || document.getElementById(`today-${tId}`));
     if (todayEl) {
       todayEl.textContent = todayText;
-      todayEl.className = `${colorDay} ${todayText.length > 8 ? "text-[9px]" : "text-[10px]"} flex-1 min-w-0 text-left tracking-tighter whitespace-nowrap`;
+      todayEl.className = `${colorDay} ${todayText.length > 8 ? "text-[9.5px]" : "text-[10.5px]"} flex-1 min-w-0 text-left tracking-tighter whitespace-nowrap`;
     }
   }
 

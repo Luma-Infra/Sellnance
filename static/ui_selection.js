@@ -237,7 +237,12 @@ export function selectSymbol(
     }
   }
 
-  // 1. 검색창 닫기 및 입력값 동기화 (가벼운 DOM 조작 즉시 실행)
+  // 1. 이전 코인의 잔여 쓰로틀 큐 즉시 초기화 (원자성 보장 & 덮어쓰기 방지)
+  if (typeof window.clearHeaderThrottle === "function") {
+    window.clearHeaderThrottle();
+  }
+
+  // 검색창 닫기 및 입력값 동기화 (가벼운 DOM 조작 즉시 실행)
   const symInput = document.getElementById("symbol-input");
   // if (symInput) {
   //   symInput.value = rowInfo ? rowInfo.Symbol : s;
@@ -350,8 +355,9 @@ export function selectSymbol(
       updateExchangeBadges(uniqueTicker, rowInfo ? rowInfo.UID : null);
 
       // 🚀 호가창(Orderbook) 업데이트 (호가창 패널이 열려 있을 경우 자동 재연결)
+      const chartTargetSym = (rowInfo && rowInfo._chartTargetSymbol) ? rowInfo._chartTargetSymbol : uniqueTicker;
       if (typeof window.startOrderbookStream === "function") {
-        window.startOrderbookStream(uniqueTicker, store.currentChartMarket);
+        window.startOrderbookStream(chartTargetSym, store.currentChartMarket);
       }
 
       // 코인 상세 이름 비동기 패치 (메모리에 이름이 없을 때만 보조 패치)
@@ -476,7 +482,7 @@ export function selectSymbol(
 
       // 🚀 [핵심] 차트 데이터 패치 실행 (메인 스레드 경합 완벽 해소)
       if (typeof fetchHistory === "function") {
-        fetchHistory(uniqueTicker, false, false, false, rowInfo?.UID);
+        fetchHistory(chartTargetSym, false, false, false, rowInfo?.UID);
       }
 
       // 🚀 [추가] 코인 선택 시 실시간 정렬 엔진 강제 점화 및 즉시 적용

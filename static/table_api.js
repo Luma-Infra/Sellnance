@@ -1,14 +1,23 @@
 // table_api.js
 import { store } from "./_store.js";
 import { getPureBase } from "./chart_utils.js";
+import { showToast } from "./ui_dialog.js";
+
+import { injectSellnanceTestRow, ENABLE_SELLNANCE_TEST_ROW } from "./test_mock_coin.js";
+export { ENABLE_SELLNANCE_TEST_ROW };
 
 // 1. 데이터 파싱 및 가상 맵/테이블 구성 헬퍼 함수
 export function processTableData(result) {
   if (!result || !result.data) return;
 
   // 🚀 [초고속 0ms 복제] JSON 문자열 직렬화 2연타 제거 및 얕은 매핑으로 CPU 블로킹 0 달성
-  store.originalTableData = result.data.map((r) => ({ ...r }));
-  store.currentTableData = result.data.map((r) => ({ ...r }));
+  let rawList = result.data.map((r) => ({ ...r }));
+  if (ENABLE_SELLNANCE_TEST_ROW) {
+    rawList = injectSellnanceTestRow(rawList);
+  }
+
+  store.originalTableData = rawList;
+  store.currentTableData = rawList.map((r) => ({ ...r }));
 
   // 🚀 [신규] 상태 데이터 동기화
   if (result.active_users !== undefined) {
@@ -275,7 +284,7 @@ export async function loadTableData(force = false, silent = false) {
   } catch (error) {
     console.error("데이터 로드 에러:", error);
     if (!hasCache) {
-      alert("서버에서 데이터를 가져오지 못했습니다.");
+      showToast("서버에서 데이터를 가져오지 못했습니다.", "error");
     }
     if (updateTimeSpan) updateTimeSpan.innerText = "업데이트 실패";
   } finally {

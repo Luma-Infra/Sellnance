@@ -197,6 +197,52 @@ export function closeMobileChart() {
   }, 320);
 }
 
+export function updateMobileNavUI(tab = store._currentMobileTab || "list") {
+  const slider = document.getElementById("mobile-nav-slider");
+  const btnList = document.getElementById("mobile-tab-list");
+  const btnChart = document.getElementById("mobile-tab-chart");
+
+  if (!slider || !btnList || !btnChart) return;
+
+  const isChart = tab === "chart";
+
+  if (isChart) {
+    slider.style.transform = "translateX(108px)";
+    btnChart.classList.remove("text-theme-text/65", "font-medium");
+    btnChart.classList.add("text-white", "font-bold");
+    const svgChart = btnChart.querySelector("svg");
+    if (svgChart) {
+      svgChart.classList.remove("scale-100");
+      svgChart.classList.add("scale-110");
+    }
+
+    btnList.classList.remove("text-white", "font-bold");
+    btnList.classList.add("text-theme-text/65", "font-medium");
+    const svgList = btnList.querySelector("svg");
+    if (svgList) {
+      svgList.classList.remove("scale-110");
+      svgList.classList.add("scale-100");
+    }
+  } else {
+    slider.style.transform = "translateX(0px)";
+    btnList.classList.remove("text-theme-text/65", "font-medium");
+    btnList.classList.add("text-white", "font-bold");
+    const svgList = btnList.querySelector("svg");
+    if (svgList) {
+      svgList.classList.remove("scale-100");
+      svgList.classList.add("scale-110");
+    }
+
+    btnChart.classList.remove("text-white", "font-bold");
+    btnChart.classList.add("text-theme-text/65", "font-medium");
+    const svgChart = btnChart.querySelector("svg");
+    if (svgChart) {
+      svgChart.classList.remove("scale-110");
+      svgChart.classList.add("scale-100");
+    }
+  }
+}
+
 export function switchMobileTab(tab) {
   if (window.innerWidth >= CONFIG.SCREEN_WIDTH || !isTouchDevice()) return;
 
@@ -206,6 +252,9 @@ export function switchMobileTab(tab) {
 
   const leftPanel = document.getElementById("left-panel");
   const settingsModal = document.getElementById("settings-modal");
+
+  store._currentMobileTab = tab;
+  updateMobileNavUI(tab);
 
   window.dispatchEvent(
     new CustomEvent("mobile-tab-changed", { detail: tab }),
@@ -245,8 +294,6 @@ export function switchMobileTab(tab) {
       window.openSettingsModal();
     }
   }
-
-  store._currentMobileTab = tab;
 }
 
 export function switchChartTab(mode) {
@@ -528,12 +575,16 @@ if (typeof document !== "undefined") {
     syncTouchDeviceClass();
     initMobileRubberBandScroll();
     initMobileScrollMaskIndicators();
+    updateMobileNavUI(store._currentMobileTab || "list");
   };
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initAllMobileUX);
   } else {
     initAllMobileUX();
   }
+  window.addEventListener("mobile-tab-changed", (e) => {
+    updateMobileNavUI(e.detail);
+  });
   window.addEventListener("resize", () => {
     syncTouchDeviceClass();
     ["exchange-badges", "tf-container"].forEach((id) => {
@@ -550,6 +601,7 @@ window.switchMobileView = switchMobileView;
 window.showMobileChart = showMobileChart;
 window.closeMobileChart = closeMobileChart;
 window.switchMobileTab = switchMobileTab;
+window.updateMobileNavUI = updateMobileNavUI;
 window.switchChartTab = switchChartTab;
 window.executeTabSwitch = executeTabSwitch;
 window.initMobileRubberBandScroll = initMobileRubberBandScroll;

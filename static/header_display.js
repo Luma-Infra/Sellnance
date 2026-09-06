@@ -17,6 +17,51 @@ window.getKrwPrecision = getKrwPrecision;
 
 let headerThrottleTimeout = null;
 
+// Zero-GC DOM Element Cache Registry
+const domCache = {
+  headChg24h: null,
+  headChgDay: null,
+  headMcap: null,
+  headVolB: null,
+  headVolU: null,
+  headCallerEl: null,
+  headCaller24hEl: null,
+  headCallerPriceEl: null,
+  topEls: null,
+  bottomEls: null,
+  headChg24hEls: null,
+  headChgDayEls: null,
+};
+
+export function invalidateHeaderDomCache() {
+  domCache.headChg24h = null;
+  domCache.topEls = null;
+  domCache.bottomEls = null;
+  domCache.headChg24hEls = null;
+  domCache.headChgDayEls = null;
+}
+if (typeof window !== "undefined") {
+  window.invalidateHeaderDomCache = invalidateHeaderDomCache;
+}
+
+function getHeaderDom() {
+  if (!domCache.headChg24h || !domCache.headChg24h.isConnected) {
+    domCache.headChg24h = document.getElementById("head-chg-24h");
+    domCache.headChgDay = document.getElementById("head-chg-day");
+    domCache.headMcap = document.getElementById("head-mcap");
+    domCache.headVolB = document.getElementById("head-vol-binance");
+    domCache.headVolU = document.getElementById("head-vol-upbit");
+    domCache.headCallerEl = document.getElementById("head-caller-id");
+    domCache.headCaller24hEl = document.getElementById("head-caller-id-24h");
+    domCache.headCallerPriceEl = document.getElementById("head-caller-id-price");
+    domCache.topEls = Array.from(document.querySelectorAll("#head-price-main, .head-price-main-sync"));
+    domCache.bottomEls = Array.from(document.querySelectorAll("#head-price-sub, .head-price-sub-sync"));
+    domCache.headChg24hEls = Array.from(document.querySelectorAll("#head-chg-24h, .head-chg-24h-sync"));
+    domCache.headChgDayEls = Array.from(document.querySelectorAll("#head-chg-day, .head-chg-day-sync"));
+  }
+  return domCache;
+}
+
 export const realUpdateHeaderDisplay = (
   row,
   newPrice,
@@ -24,23 +69,16 @@ export const realUpdateHeaderDisplay = (
   isRealtimeStream = false,
   callerId = "UNKNOWN",
 ) => {
-  const headChg24h = document.getElementById("head-chg-24h");
-  const headChgDay = document.getElementById("head-chg-day");
-  const headMcap = document.getElementById("head-mcap");
-  const headVolB = document.getElementById("head-vol-binance");
-  const headVolU = document.getElementById("head-vol-upbit");
+  const dom = getHeaderDom();
 
-  const headCallerEl = document.getElementById("head-caller-id");
-  if (headCallerEl) {
-    headCallerEl.innerText = ` [${callerId}]`;
+  if (dom.headCallerEl && dom.headCallerEl.textContent !== ` [${callerId}]`) {
+    dom.headCallerEl.textContent = ` [${callerId}]`;
   }
-  const headCaller24hEl = document.getElementById("head-caller-id-24h");
-  if (headCaller24hEl) {
-    headCaller24hEl.innerText = ` [${callerId}]`;
+  if (dom.headCaller24hEl && dom.headCaller24hEl.textContent !== ` [${callerId}]`) {
+    dom.headCaller24hEl.textContent = ` [${callerId}]`;
   }
-  const headCallerPriceEl = document.getElementById("head-caller-id-price");
-  if (headCallerPriceEl) {
-    headCallerPriceEl.innerText = ` [${callerId}]`;
+  if (dom.headCallerPriceEl && dom.headCallerPriceEl.textContent !== ` [${callerId}]`) {
+    dom.headCallerPriceEl.textContent = ` [${callerId}]`;
   }
 
   const rate = store.marketDataMap?.krw_usd_rate || 0;
@@ -220,16 +258,15 @@ export const realUpdateHeaderDisplay = (
     }
   }
 
-  const topEls = document.querySelectorAll("#head-price-main, .head-price-main-sync");
-  const bottomEls = document.querySelectorAll("#head-price-sub, .head-price-sub-sync");
-
   const formattedMainPrice = isMainKrw
     ? `${Number(displayPrice).toLocaleString(undefined, { maximumFractionDigits: getKrwPrecision(displayPrice) })} ₩`
     : (window.formatSmartPrice ? window.formatSmartPrice(displayPrice, pNormalized) : formatSmartPrice(displayPrice, pNormalized));
 
-  topEls.forEach((el) => {
-    el.innerText = formattedMainPrice;
-  });
+  if (dom.topEls) {
+    dom.topEls.forEach((el) => {
+      if (el.textContent !== formattedMainPrice) el.textContent = formattedMainPrice;
+    });
+  }
 
   const hasSubPrice = subPrice !== null && subPrice > 0;
   const formattedSubPrice = hasSubPrice
@@ -238,14 +275,16 @@ export const realUpdateHeaderDisplay = (
       : `≈ ${Number(subPrice).toLocaleString(undefined, { maximumFractionDigits: getKrwPrecision(subPrice) })} ₩`)
     : "";
 
-  bottomEls.forEach((el) => {
-    if (hasSubPrice) {
-      el.innerText = formattedSubPrice;
-      el.classList.remove("hidden");
-    } else {
-      el.classList.add("hidden");
-    }
-  });
+  if (dom.bottomEls) {
+    dom.bottomEls.forEach((el) => {
+      if (hasSubPrice) {
+        if (el.textContent !== formattedSubPrice) el.textContent = formattedSubPrice;
+        el.classList.remove("hidden");
+      } else {
+        el.classList.add("hidden");
+      }
+    });
+  }
 
   // 🚀 최종 대표 등락률(Raw) 값을 다이렉트로 매핑하여 좌측 테이블과 우측 전광판의 싱크를 완전히 일치시킵니다.
   let n24 = 0;
@@ -300,9 +339,6 @@ export const realUpdateHeaderDisplay = (
     }
   }
 
-  const headChg24hEls = document.querySelectorAll("#head-chg-24h, .head-chg-24h-sync");
-  const headChgDayEls = document.querySelectorAll("#head-chg-day, .head-chg-day-sync");
-
   const c24 =
     n24 > 0
       ? "text-theme-up"
@@ -311,10 +347,13 @@ export const realUpdateHeaderDisplay = (
         : "text-theme-text";
   const text24 = `${n24 > 0 ? "+" : ""}${Number(n24).toFixed(2)}%`;
 
-  headChg24hEls.forEach((el) => {
-    el.className = `text-[12px] md:text-[13px] min-[1200px]:text-[16px] font-sans mt-0.5 text-right font-normal ${c24} ${el.classList.contains("head-chg-24h-sync") ? "head-chg-24h-sync" : ""}`;
-    el.innerText = text24;
-  });
+  if (dom.headChg24hEls) {
+    dom.headChg24hEls.forEach((el) => {
+      const cls = `text-[12px] md:text-[13px] min-[1200px]:text-[16px] font-sans mt-0.5 text-right font-normal ${c24} ${el.classList.contains("head-chg-24h-sync") ? "head-chg-24h-sync" : ""}`;
+      if (el.className !== cls) el.className = cls;
+      if (el.textContent !== text24) el.textContent = text24;
+    });
+  }
 
   const cDay =
     nDay > 0
@@ -324,10 +363,13 @@ export const realUpdateHeaderDisplay = (
         : "text-theme-text";
   const textDay = `${nDay > 0 ? "+" : ""}${Number(nDay).toFixed(2)}%`;
 
-  headChgDayEls.forEach((el) => {
-    el.className = `text-[12px] md:text-[13px] min-[1200px]:text-[16px] font-sans mt-0.5 text-right font-normal ${cDay} ${el.classList.contains("head-chg-day-sync") ? "head-chg-day-sync" : ""}`;
-    el.innerText = textDay;
-  });
+  if (dom.headChgDayEls) {
+    dom.headChgDayEls.forEach((el) => {
+      const cls = `text-[12px] md:text-[13px] min-[1200px]:text-[16px] font-sans mt-0.5 text-right font-normal ${cDay} ${el.classList.contains("head-chg-day-sync") ? "head-chg-day-sync" : ""}`;
+      if (el.className !== cls) el.className = cls;
+      if (el.textContent !== textDay) el.textContent = textDay;
+    });
+  }
 
   // 🚀 가격과 등락폭은 항상 갱신하고, 볼륨/시총 등 정적 지표만 조기 리턴하여 보존
   if (newPrice !== undefined || isRealtimeStream) {
@@ -347,97 +389,97 @@ export const realUpdateHeaderDisplay = (
     else displayMcap = liveMcap.toFixed(2);
   }
 
-  if (headMcap) headMcap.innerText = displayMcap;
+  if (dom.headMcap && dom.headMcap.textContent !== displayMcap) {
+    dom.headMcap.textContent = displayMcap;
+  }
   const hasBinance =
     row.Binance === "O" ||
     row.Binance_Futures === "O" ||
     (row.Listed_Exchanges &&
       (row.Listed_Exchanges.includes("BINANCE") ||
         row.Listed_Exchanges.includes("BINANCE_FUTURES")));
-  if (headVolB)
-    headVolB.innerText =
-      hasBinance &&
-        row.Volume_Formatted &&
-        row.Volume_Formatted !== "-" &&
-        row.Volume_Formatted !== "0"
-        ? row.Volume_Formatted
-        : "-";
-  if (headVolU) headVolU.innerText = row.Upbit_Vol_Formatted || "-";
+  const volBText =
+    hasBinance &&
+      row.Volume_Formatted &&
+      row.Volume_Formatted !== "-" &&
+      row.Volume_Formatted !== "0"
+      ? row.Volume_Formatted
+      : "-";
+  if (dom.headVolB && dom.headVolB.textContent !== volBText) {
+    dom.headVolB.textContent = volBText;
+  }
+  const volUText = row.Upbit_Vol_Formatted || "-";
+  if (dom.headVolU && dom.headVolU.textContent !== volUText) {
+    dom.headVolU.textContent = volUText;
+  }
 };
 
-if (!window.headerThrottleMap) {
-  window.headerThrottleMap = new Map();
+const pooledStateMap = window.headerThrottleMap || new Map();
+window.headerThrottleMap = pooledStateMap;
+
+export function clearHeaderThrottle() {
+  if (headerThrottleTimeout) {
+    clearTimeout(headerThrottleTimeout);
+    headerThrottleTimeout = null;
+  }
+  if (pooledStateMap) pooledStateMap.clear();
 }
+window.clearHeaderThrottle = clearHeaderThrottle;
 
 export const updateHeaderDisplay = (row, newPrice, p, isRealtimeStream = false) => {
   if (!row || !row.Ticker) return;
   const tKey = row.Ticker;
 
-  let autoCaller = "UNKNOWN";
-  if (store.traceRowCaller) {
-    const err = new Error();
-    const stack = err.stack || "";
-    if (
-      stack.includes("stream.js") ||
-      stack.includes("stream-") ||
-      stack.includes("updateStatus") ||
-      isRealtimeStream === true ||
-      isRealtimeStream === "STREAM"
-    ) {
-      autoCaller = "1 (Stream)";
-    } else if (
-      stack.includes("chart_utils.js") ||
-      stack.includes("chart_utils") ||
-      stack.includes("table_render")
-    ) {
-      autoCaller = "2 (Chart)";
-    } else if (
-      stack.includes("ui_control") ||
-      stack.includes("table_filter") ||
-      stack.includes("main")
-    ) {
-      autoCaller = "3 (UI/Filter)";
-    } else {
-      if (isRealtimeStream === true || isRealtimeStream === "STREAM") {
-        autoCaller = "1 (Stream)";
-      } else if (newPrice !== undefined && newPrice !== null) {
-        autoCaller = "2 (Chart)";
-      } else {
-        autoCaller = "3 (UI/Filter)";
-      }
-    }
-  } else {
-    if (isRealtimeStream === true || isRealtimeStream === "STREAM") {
-      autoCaller = "1 (Stream)";
-    } else if (newPrice !== undefined && newPrice !== null) {
-      autoCaller = "2 (Chart)";
-    } else {
-      autoCaller = "3 (UI/Filter)";
-    }
+  // 🚀 [원자성 가드] 현재 활성 선택된 코인이 아니면 불필요한 헤더 연산 및 큐 오염 차단
+  const curSymbol = store.currentSelectedSymbol;
+  const curAsset = store.currentAsset;
+  if (
+    curSymbol &&
+    row.Ticker !== curSymbol &&
+    row.Symbol !== curAsset &&
+    row.Ticker !== curAsset &&
+    row.Exact_Futures !== curSymbol &&
+    row.Exact_Spot !== curSymbol
+  ) {
+    return;
   }
 
-  const existing = window.headerThrottleMap.get(tKey) || {};
-  window.headerThrottleMap.set(tKey, {
-    row: row,
-    price: newPrice !== undefined ? newPrice : existing.price,
-    p: p,
-    isRealtimeStream: isRealtimeStream,
-    caller: autoCaller,
-  });
+  let state = pooledStateMap.get(tKey);
+  if (!state) {
+    state = { row: null, price: undefined, p: undefined, isRealtimeStream: false, caller: "STREAM" };
+    pooledStateMap.set(tKey, state);
+  }
+
+  state.row = row;
+  if (newPrice !== undefined) state.price = newPrice;
+  state.p = p;
+  state.isRealtimeStream = isRealtimeStream;
 
   if (!headerThrottleTimeout) {
     headerThrottleTimeout = setTimeout(() => {
       headerThrottleTimeout = null;
-      window.headerThrottleMap.forEach((state) => {
-        realUpdateHeaderDisplay(
-          state.row,
-          state.price,
-          state.p,
-          state.isRealtimeStream,
-          state.caller,
-        );
+      pooledStateMap.forEach((s) => {
+        // 🚀 실행 시점에도 현재 선택 코인과 일치하는지 최종 검증 (경쟁 상태/코인 전환 덮어쓰기 완전 방지)
+        const checkSym = store.currentSelectedSymbol;
+        const checkAst = store.currentAsset;
+        if (
+          !checkSym ||
+          s.row.Ticker === checkSym ||
+          s.row.Symbol === checkAst ||
+          s.row.Ticker === checkAst ||
+          s.row.Exact_Futures === checkSym ||
+          s.row.Exact_Spot === checkSym
+        ) {
+          realUpdateHeaderDisplay(
+            s.row,
+            s.price,
+            s.p,
+            s.isRealtimeStream,
+            s.caller,
+          );
+        }
       });
-      window.headerThrottleMap.clear();
+      pooledStateMap.clear();
     }, 100);
   }
 };
