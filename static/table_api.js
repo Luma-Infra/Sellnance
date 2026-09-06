@@ -124,7 +124,10 @@ export function processTableData(result) {
     typeof window.getInitialRouteSymbol === "function"
       ? window.getInitialRouteSymbol()
       : null;
-  const targetSym = activeRoute || store.currentSelectedSymbol;
+  const targetSym =
+    store.currentSelectedSymbol ||
+    activeRoute ||
+    localStorage.getItem("sellnance_last_symbol");
 
   if (targetSym) {
     const raw = String(targetSym)
@@ -480,5 +483,18 @@ export async function loadTableDataSilent() {
   }
 }
 
-// 5분
-setInterval(loadTableDataSilent, 300000);
+// 🚀 [5분 동기화] 브라우저 최초 로드 후 다음 :00, :05, :10, :15... 정각에 첫 실행 후 5분마다 반복
+function initWallClockSilentRefresh() {
+  const now = new Date();
+  const currentSec = now.getSeconds();
+  const currentMin = now.getMinutes();
+  const nextMin = (Math.floor(currentMin / 5) + 1) * 5;
+  const msUntilNext5Min =
+    ((nextMin - currentMin) * 60 - currentSec) * 1000 - now.getMilliseconds();
+
+  setTimeout(() => {
+    loadTableDataSilent();
+    setInterval(loadTableDataSilent, 300000);
+  }, Math.max(1000, msUntilNext5Min));
+}
+initWallClockSilentRefresh();

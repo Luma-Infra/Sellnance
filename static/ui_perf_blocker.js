@@ -179,7 +179,7 @@ export function toggleSortBlock(checked) {
 }
 
 export function toggleKimchiBlock(checked) {
-  console.log(`⚡ [DEBUG] 김프 실시간 연산 차단 모드: ${checked ? "ON" : "OFF"}`);
+  // Xconsole.log(`⚡ [DEBUG] 김프 실시간 연산 차단 모드: ${checked ? "ON" : "OFF"}`);
 
   const childRadar = document.getElementById("block-radardatabatch-toggle");
   const containerRadar = document.getElementById("child-radardatabatch-container");

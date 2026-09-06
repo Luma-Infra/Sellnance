@@ -3,6 +3,7 @@
 
 import { store } from "./_store.js";
 import { loadSymbols } from "./chart_api.js";
+import { loadTableData } from "./table_api.js";
 import { selectSymbol, switchViewMode } from "./ui_control.js";
 import { initChart } from "./chart.js";
 import { initSniperSocket } from "./stream_table.js";
@@ -83,6 +84,7 @@ export function restoreSavedUserSettings() {
     // 4. 좌우 패널 스왑 상태 복원
     const isPanelSwapped =
       localStorage.getItem("sellnance_panel_swapped") === "true";
+    document.documentElement.classList.toggle("panel-swapped-mode", isPanelSwapped);
     if (isPanelSwapped) {
       const container = document.getElementById("panel-split-container");
       const leftPanel = document.getElementById("left-panel");
@@ -121,45 +123,48 @@ export function restoreSavedUserSettings() {
   } catch (e) { }
 }
 
-let _isDashboardEngineStarted = false;
+let _dashboardEnginePromise = null;
 
-export async function initDashboardEngine() {
-  if (_isDashboardEngineStarted) return;
-  _isDashboardEngineStarted = true;
+export function initDashboardEngine() {
+  if (_dashboardEnginePromise) return _dashboardEnginePromise;
 
-  restoreSavedUserSettings();
-  if (typeof window.restoreControlPanelUI === "function") {
-    window.restoreControlPanelUI();
-  }
-  if (typeof initOrderbookDOM === "function") initOrderbookDOM();
-
-  try {
-    // 1️⃣ [차트 선제 점화]
-    if (typeof window.initChart === "function") await window.initChart();
-    else if (typeof initChart === "function") await initChart();
-
-    // 2️⃣ [병렬 데이터 로드]
-    await Promise.all([
-      loadSymbols(),
-      typeof window.loadTableData === "function" ? window.loadTableData() : Promise.resolve(),
-    ]);
-
-    // 3️⃣ [엔진 준비]
-    if (store.currentTableData && store.currentTableData.length > 0) {
-      initMeasureEvents();
-      initDrawingEvents();
-      initDrawingToolbar();
-      if (typeof window.initInfiniteScroll === "function") window.initInfiniteScroll();
-      if (typeof window.initAllExchangeFeeds === "function") {
-        window.initAllExchangeFeeds();
-      }
-
-      store.isEngineStarted = true;
-      initSniperSocket();
+  _dashboardEnginePromise = (async () => {
+    restoreSavedUserSettings();
+    if (typeof window.restoreControlPanelUI === "function") {
+      window.restoreControlPanelUI();
     }
-  } catch (err) {
-    console.error("Dashboard engine init error:", err);
-  }
+    if (typeof initOrderbookDOM === "function") initOrderbookDOM();
+
+    try {
+      // 1️⃣ [차트 선제 점화]
+      if (typeof window.initChart === "function") await window.initChart();
+      else if (typeof initChart === "function") await initChart();
+
+      // 2️⃣ [병렬 데이터 로드]
+      await Promise.all([
+        loadSymbols(),
+        loadTableData(),
+      ]);
+
+      // 3️⃣ [엔진 준비]
+      if (store.currentTableData && store.currentTableData.length > 0) {
+        initMeasureEvents();
+        initDrawingEvents();
+        initDrawingToolbar();
+        if (typeof window.initInfiniteScroll === "function") window.initInfiniteScroll();
+        if (typeof window.initAllExchangeFeeds === "function") {
+          window.initAllExchangeFeeds();
+        }
+
+        store.isEngineStarted = true;
+        initSniperSocket();
+      }
+    } catch (err) {
+      console.error("Dashboard engine init error:", err);
+    }
+  })();
+
+  return _dashboardEnginePromise;
 }
 window.initDashboardEngine = initDashboardEngine;
 
@@ -473,7 +478,7 @@ export function setupRouteAndHistory() {
   } catch (e) { }
 
   const initialRouteSym = getInitialRouteSymbol();
-  if (initialRouteSym) {
+  if (initialRouteSym && store.isEngineStarted) {
     if (typeof selectSymbol === "function") {
       selectSymbol(initialRouteSym);
     }
@@ -488,7 +493,7 @@ export function setupRouteAndHistory() {
 
   const handleHistoryNavigation = () => {
     const routeSym = getInitialRouteSymbol();
-    if (routeSym && typeof selectSymbol === "function") {
+    if (routeSym && store.isEngineStarted && typeof selectSymbol === "function") {
       selectSymbol(routeSym);
     }
   };

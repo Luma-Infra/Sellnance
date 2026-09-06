@@ -112,6 +112,7 @@ export function togglePanelSwap() {
     localStorage.getItem("sellnance_panel_swapped") === "true";
 
   if (isCurrentlySwapped) {
+    document.documentElement.classList.remove("panel-swapped-mode");
     container.style.setProperty("flex-direction", "row", "important");
     container.classList.remove("panel-swapped", "flex-row-reverse", "md:flex-row-reverse");
     container.classList.add("flex-row");
@@ -119,6 +120,7 @@ export function togglePanelSwap() {
     leftPanel.style.borderLeftWidth = "";
     localStorage.setItem("sellnance_panel_swapped", "false");
   } else {
+    document.documentElement.classList.add("panel-swapped-mode");
     container.style.setProperty("flex-direction", "row-reverse", "important");
     container.classList.remove("flex-row", "md:flex-row");
     container.classList.add("panel-swapped", "flex-row-reverse");
@@ -180,6 +182,7 @@ export function showOnboardingModal(force = false) {
   const content = document.getElementById("onboarding-modal-content");
   if (!modal || !content) return;
 
+  modal.style.display = "";
   modal.classList.remove("hidden");
   modal.classList.add("flex");
 
@@ -209,6 +212,7 @@ export function closeOnboardingModal() {
   setTimeout(() => {
     modal.classList.remove("flex");
     modal.classList.add("hidden");
+    modal.style.display = "";
   }, 300);
 }
 

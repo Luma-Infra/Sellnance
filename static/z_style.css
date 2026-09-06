@@ -54,6 +54,16 @@ html.start-screen-active #loading-modal {
   pointer-events: none !important;
 }
 
+/* 좌우 패널 스왑 즉시 렌더링 가드 (새로고침 시 FOUC 잔상 차단) */
+html.panel-swapped-mode #panel-split-container {
+  flex-direction: row-reverse !important;
+}
+
+html.panel-swapped-mode #left-panel {
+  border-right-width: 0px !important;
+  border-left-width: 1px !important;
+}
+
 :root {
   /* 🚀 [테마 전환 속도 전역 제어] 이 값 하나만 바꾸면 CSS + JS 전체 동기화 */
   --theme-transition-ms: 0;
@@ -537,10 +547,6 @@ body.theme-binance .text-upbit-color {
   color: var(--binance-gold, #f0b90b) !important;
 }
 
-body.theme-binance {
-  background-color: #0b0e11;
-}
-
 .spinner {
   width: 60px;
   height: 60px;
@@ -933,7 +939,7 @@ body.theme-upbit:not(.resizing-active) #right-panel {
       border: none !important; */
     }
 
-    #left-top-zone {
+    #table-top-zone {
       height: auto !important;
       max-height: none !important;
     }
@@ -1866,7 +1872,7 @@ body.theme-upbit #search-input-wrapper {
   background-color: transparent !important;
 }
 
-body.theme-upbit #left-top-zone {
+body.theme-upbit #table-top-zone {
   background-color: #ffffff !important;
   /* border-bottom: 1px solid #e2e8f0 !important; */
 }

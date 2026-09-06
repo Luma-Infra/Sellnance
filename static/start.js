@@ -2,7 +2,10 @@
 // 🚀 스타트뷰 엔진: 실시간 키 마스킹 + env 연동 + 유효성 검사
 // 🚀 4대장 코인(BTC, ETH, XRP, SOL) 실시간 퀵뷰 프리뷰 쇼케이스 엔진
 
+import { store } from "./_store.js";
+import { loadTableData } from "./table_api.js";
 import { showToast } from "./ui_dialog.js";
+import { initDashboardEngine } from "./main_init.js";
 
 // ===================================================================================
 // 🧭 [3D 퀵뷰 프리뷰 8방위 시선 각도 & 황금비율(Golden Ratio) 설정소]
@@ -303,16 +306,16 @@ function getStartScreenHTML() {
     </style>
 
     <div
-      id="start-screen" style="${localStorage.getItem('sellnance_skip_start') === 'true' && (localStorage.getItem('CMC_API_KEY') || '').trim().length === 32 ? 'display: none;' : 'display: flex;'}"
+      id="start-screen" style="${localStorage.getItem('sellnance_skip_start') === 'true' ? 'display: none;' : 'display: flex;'}"
       class="fixed inset-0 z-[500] flex items-center justify-center overflow-hidden p-4 md:p-8 bg-theme-bg text-theme-text"
     >
       <div class="w-full max-w-6xl h-full max-h-[820px] flex flex-col md:flex-row items-center justify-center md:justify-between gap-4 sm:gap-5 md:gap-8 relative z-10">
         
-        <!-- 🚀 [좌측 (58% 비중)]: 3D 아이소메트릭 쿼터뷰 4대장 차트 덱 (PC 전용, 모바일 숨김) -->
-        <div class="start-qv-preview-wrapper hidden md:flex w-full md:w-[58%] h-auto md:h-[75vh] max-h-[240px] md:max-h-none relative items-center justify-center overflow-visible mb-2 md:mb-0">
+        <!-- 🚀 [좌측 (58% 비중)]: 3D 아이소메트릭 쿼터뷰 4대장 차트 덱 (PC 전용, 모바일 숨김, 순수 전시용으로 클릭 간섭 0% 차단) -->
+        <div class="start-qv-preview-wrapper hidden md:flex w-full md:w-[58%] h-auto md:h-[75vh] max-h-[240px] md:max-h-none relative items-center justify-center overflow-visible mb-2 md:mb-0 pointer-events-none select-none">
           <div id="start-qv-preview-container" class="w-full relative overflow-visible pointer-events-none opacity-90 my-auto">
             <!-- 🚀 3D 덱 하단 바닥 투영 앰비언트 섀도우 (800px 황금비 직사각형 덱 전용) -->
-            <div class="start-qv-floor-shadow"></div>
+            <div class="start-qv-floor-shadow pointer-events-none"></div>
 
             <!-- 🚀 글로벌 그라데이션 SVG 정의 -->
             <svg width="0" height="0" class="absolute pointer-events-none">
@@ -325,18 +328,18 @@ function getStartScreenHTML() {
             </svg>
 
             <!-- 1. Spread 3D 레이어 (4개 덱 전체를 아우르는 단일 외곽 프로그레스) -->
-            <div id="start-qv-spread-view">
+            <div id="start-qv-spread-view" class="pointer-events-none">
               <!-- 🚀 4개 카드 전체 둘레를 감싸는 단 1개의 3D 외곽 프로그레스 바 -->
               <svg class="start-qv-inner-progress pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
                 <rect x="0.5" y="0.5" width="99" height="99" rx="3.5" ry="3.5" fill="none" stroke="var(--border)" stroke-width="0.7" />
                 <rect class="start-qv-progress-rect" x="0.5" y="0.5" width="99" height="99" rx="3.5" ry="3.5" fill="none" stroke="url(#startProgressGlow)" stroke-width="1.2" stroke-linecap="round" pathLength="100" stroke-dasharray="100.2 100.2" stroke-dashoffset="100.2" />
               </svg>
-              <div id="start-qv-cards-grid"></div>
+              <div id="start-qv-cards-grid" class="pointer-events-none"></div>
             </div>
 
             <!-- 2. Overlap 3D 레이어 (내부 직접 3D 투영 프로그레스) -->
-            <div id="start-qv-overlap-view">
-              <svg class="start-qv-inner-progress" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <div id="start-qv-overlap-view" class="pointer-events-none">
+              <svg class="start-qv-inner-progress pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
                 <rect x="0.5" y="0.5" width="99" height="99" rx="3.5" ry="3.5" fill="none" stroke="var(--border)" stroke-width="0.7" />
                 <rect class="start-qv-progress-rect" x="0.5" y="0.5" width="99" height="99" rx="3.5" ry="3.5" fill="none" stroke="url(#startProgressGlow)" stroke-width="1.2" stroke-linecap="round" pathLength="100" stroke-dasharray="100.2 100.2" stroke-dashoffset="100.2" />
               </svg>
@@ -344,9 +347,9 @@ function getStartScreenHTML() {
           </div>
         </div>
 
-        <!-- 🚀 [우측 (42% 비중)]: CMC 로그인 & 메인 대시보드 진입 패널 (모바일 중앙 상단 언저리 배치) -->
-        <div class="w-full md:w-[42%] max-w-md flex flex-col justify-center my-auto -translate-y-5 sm:-translate-y-8 md:translate-y-0 md:my-0">
-          <div class="start-main-card relative p-4 sm:p-6 md:p-8 w-full flex flex-col gap-3.5 md:gap-5 text-center">
+        <!-- 🚀 [우측 (42% 비중)]: CMC 로그인 & 메인 대시보드 진입 패널 (최상위 z-50 및 pointer-events-auto 보장) -->
+        <div class="w-full md:w-[42%] max-w-md flex flex-col justify-center my-auto -translate-y-5 sm:-translate-y-8 md:translate-y-0 md:my-0 relative z-50 pointer-events-auto">
+          <div class="start-main-card relative z-50 pointer-events-auto p-4 sm:p-6 md:p-8 w-full flex flex-col gap-3.5 md:gap-5 text-center">
             <!-- 🚀 우측 상단 다크/라이트 모드 토글 버튼 -->
             <button
               type="button"
@@ -389,9 +392,8 @@ function getStartScreenHTML() {
                 <input
                   type="text"
                   id="cmc-api-input"
-                  placeholder="Loading..."
-                  disabled
-                  class="w-full bg-theme-bg text-theme-text border-2 border-theme-border pl-4 pr-11 py-2.5 md:py-3.5 rounded-xl text-center font-medium text-sm focus:outline-none focus:border-theme-accent shadow-inner opacity-50 cursor-not-allowed"
+                  placeholder="Paste or enter CMC API Key (32-digit)..."
+                  class="w-full bg-theme-bg text-theme-text border-2 border-theme-border pl-4 pr-11 py-2.5 md:py-3.5 rounded-xl text-center font-medium text-sm focus:outline-none focus:border-theme-accent shadow-inner transition-colors cursor-text"
                   autocomplete="off"
                   spellcheck="false"
                 />
@@ -423,27 +425,25 @@ function getStartScreenHTML() {
               <!-- 1. 키 저장 및 대시보드 시작 (메인 액션) -->
               <button
                 id="btn-start-engine"
-                disabled
                 onclick="saveAndStart()"
-                class="w-full py-3 md:py-3.5 bg-theme-accent text-white font-bold rounded-xl shadow-sm hover:brightness-105 active:scale-[0.98] transition-transform tracking-widest uppercase cursor-not-allowed pointer-events-none text-xs md:text-sm"
+                class="w-full py-3 md:py-3.5 bg-theme-accent text-white font-bold rounded-xl shadow-sm hover:brightness-105 active:scale-[0.98] transition-transform tracking-widest uppercase cursor-pointer pointer-events-auto text-xs md:text-sm"
               >
-                불러오는 중.. 📡
+                Start Dashboard
               </button>
 
               <!-- 2. 바로 이동 (서브 액션) -->
               <button
                 id="btn-skip-start"
-                disabled
                 onclick="skipAndStart()"
-                class="w-full py-2.5 md:py-3 bg-theme-bg/40 text-theme-text border border-theme-border font-medium rounded-xl hover:bg-theme-panel active:scale-[0.98] transition-transform tracking-wide opacity-70 hover:opacity-100 cursor-not-allowed pointer-events-none text-xs"
+                class="w-full py-2.5 md:py-3 bg-theme-bg/40 text-theme-text border border-theme-border font-medium rounded-xl hover:bg-theme-panel active:scale-[0.98] transition-transform tracking-wide opacity-70 hover:opacity-100 cursor-pointer pointer-events-auto text-xs"
               >
-                불러오는 중...
+                바로 이동 (서버 캐시 모드, 느린 갱신)
               </button>
 
               <!-- 3. 🚀 시작 화면 자동 건너뛰기 공통 설정 (두 버튼 모두에 대응) -->
               <div class="flex items-center justify-center pt-1">
                 <label
-                  class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-theme-border/20 cursor-pointer select-none group transition-all"
+                  class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-theme-border/20 cursor-pointer select-none group transition-all pointer-events-auto"
                 >
                   <input type="checkbox" id="chk-auto-skip" class="accent-theme-accent w-3.5 h-3.5 rounded cursor-pointer" />
                   <span class="text-[11px] text-theme-text/70 group-hover:text-theme-text font-medium transition-colors">다음부터 시작 화면 건너뛰기</span>
@@ -967,7 +967,7 @@ function toggleStartQuickViewLayout() {
     // 🚀 모였다가 4개 모서리 제자리로 스르륵 퍼짐 (설정된 3D 각도 연동)
     spreadView.style.opacity = "1";
     spreadView.style.transform = get3DTransform(1);
-    spreadView.style.pointerEvents = "auto";
+    spreadView.style.pointerEvents = "none";
     if (card0) card0.style.transform = "translate(0, 0)";
     if (card1) card1.style.transform = "translate(0, 0)";
     if (card2) card2.style.transform = "translate(0, 0)";
@@ -988,7 +988,7 @@ function toggleStartQuickViewLayout() {
 
     overlapView.style.opacity = "1";
     overlapView.style.transform = get3DTransform(1);
-    overlapView.style.pointerEvents = "auto";
+    overlapView.style.pointerEvents = "none";
   }
 
   // ⏱️ 3D 투영 일치 프로그레스 바 애니메이션 0%부터 정밀 재시작
@@ -1077,45 +1077,6 @@ async function initStartScreen() {
   const localKey = (localStorage.getItem("CMC_API_KEY") || "").trim();
   rawCmcKey = localKey;
 
-  const isAutoSkipEnabled =
-    localStorage.getItem("sellnance_skip_start") === "true";
-
-  const hasDirectSymbol =
-    window.location.pathname &&
-    window.location.pathname !== "/" &&
-    window.location.pathname !== "";
-
-  // 🚀 [동시 조건] 자동 스킵: 체크박스가 켜져 있으면서 "동시에 32자 유효 키가 존재할 때" 또는 다이렉트 심볼 접근 시에만 통과!
-  const hasValidKey = rawCmcKey.length === 32;
-  if ((isAutoSkipEnabled && hasValidKey) || hasDirectSymbol) {
-    hideStartScreen();
-    return;
-  }
-
-  document.documentElement.classList.add("start-screen-active");
-  const dashboard = document.getElementById("main-dashboard-content");
-  if (dashboard) dashboard.style.display = "none";
-  // 🚀 공백이든 값 없든 무조건 불러오기 작업 이후 활성화!
-  if (input) {
-    input.disabled = false;
-    input.placeholder = "Paste your CMC API Key...";
-    input.classList.remove("opacity-50", "cursor-not-allowed");
-  }
-
-  if (btnStart) {
-    btnStart.disabled = false;
-    btnStart.innerText = "Start Dashboard";
-    btnStart.className =
-      "flex-1 py-3.5 bg-theme-accent text-white font-semibold rounded-xl shadow-sm hover:brightness-105 active:scale-[0.98] transition-transform tracking-widest uppercase cursor-pointer pointer-events-auto border border-theme-accent/40";
-  }
-
-  if (btnSkip) {
-    btnSkip.disabled = false;
-    btnSkip.innerText = "바로 이동 (서버 캐시 모드, 느린 갱신)";
-    btnSkip.className =
-      "w-full py-3 bg-theme-bg/40 text-theme-text border border-theme-border font-medium rounded-xl hover:bg-theme-panel active:scale-[0.98] transition-transform tracking-wide opacity-70 hover:opacity-100 cursor-pointer pointer-events-auto";
-  }
-
   // 2. 가져온 키가 있다면 "즉시" 인풋 박스에 마스킹해서 보여줌
   if (rawCmcKey && input) {
     input.value = maskApiKey(rawCmcKey);
@@ -1179,70 +1140,84 @@ async function initStartScreen() {
     });
   }
 
-  // 🚀 [선택한 해결방안 적용]: 자동 스킵되지 않고 화면을 실제로 노출해야 하는 상태
-  // 이 단계에 도달했다는 것은 서버 env에 키가 없음을 뜻하므로 화면을 노출하고 PixiJS 엔진을 기동합니다.
+  // 🚀 키보드 타이핑, 붙여넣기, 마스킹 및 클리어 버튼 연동 핸들러
+  if (input) {
+    // 포커스 시: 실제 키 평문 노출하여 자유롭게 수정/선택/삭제 가능
+    input.addEventListener("focus", () => {
+      input.value = rawCmcKey;
+      updateClearBtnVisibility();
+    });
+
+    // 입력/붙여넣기 시: 영문 및 숫자만 허용하고 rawCmcKey 실시간 동기화
+    input.addEventListener("input", (e) => {
+      rawCmcKey = input.value.replace(/[^a-zA-Z0-9]/g, "");
+      input.value = rawCmcKey;
+      updateClearBtnVisibility();
+    });
+
+    // 블러(포커스 해제) 시: 안전하게 마스킹 처리
+    input.addEventListener("blur", () => {
+      input.value = maskApiKey(rawCmcKey);
+      updateClearBtnVisibility();
+    });
+  }
+
+  const isAutoSkipEnabled =
+    localStorage.getItem("sellnance_skip_start") === "true";
+
+  // 🚀 자동 스킵: 오직 사용자가 sellnance_skip_start(자동 스킵)를 켰을 때만 자동 진입!
+  if (isAutoSkipEnabled) {
+    hideStartScreen();
+    return;
+  }
+
+  // 🚀 [문제 1 방어] 시작 화면 표시 중에는 주소창에 특정 코인 경로가 노출되지 않도록 깔끔하게 '/'로 마스킹
+  if (window.history && window.history.replaceState && (window.location.pathname !== "/" || window.location.hash)) {
+    window.history.replaceState(null, null, "/");
+  }
+
+  document.documentElement.classList.add("start-screen-active");
+  const dashboard = document.getElementById("main-dashboard-content");
+  if (dashboard) dashboard.style.display = "none";
+  // 🚀 공백이든 값 없든 무조건 불러오기 작업 이후 활성화!
+  if (input) {
+    input.disabled = false;
+    input.placeholder = "Paste your CMC API Key...";
+    input.classList.remove("opacity-50", "cursor-not-allowed");
+  }
+
+  if (btnStart) {
+    btnStart.disabled = false;
+    btnStart.innerText = "Start Dashboard";
+    btnStart.className =
+      "flex-1 py-3.5 bg-theme-accent text-white font-semibold rounded-xl shadow-sm hover:brightness-105 active:scale-[0.98] transition-transform tracking-widest uppercase cursor-pointer pointer-events-auto border border-theme-accent/40";
+  }
+
+  if (btnSkip) {
+    btnSkip.disabled = false;
+    btnSkip.innerText = "바로 이동 (서버 캐시 모드, 느린 갱신)";
+    btnSkip.className =
+      "w-full py-3 bg-theme-bg/40 text-theme-text border border-theme-border font-medium rounded-xl hover:bg-theme-panel active:scale-[0.98] transition-transform tracking-wide opacity-70 hover:opacity-100 cursor-pointer pointer-events-auto";
+  }
+
   const startScreen = document.getElementById("start-screen");
   if (startScreen) {
     startScreen.style.display = "flex";
   }
-  /* [기존 코드 주석 보존]
-  await initPixiBackground();
-  */
+
   await initStartQuickViewPreview();
-
-  // 🚀 수정된 부분: beforeinput 이벤트 핸들러
-  input.addEventListener("beforeinput", (e) => {
-    // 1. 글자 추가 시 (e.data가 존재할 때)
-    if (e.data) {
-      // 💡 [핵심] 영어와 숫자만 허용하는 정규식 검사
-      const isAlphaNumeric = /^[a-zA-Z0-9]+$/.test(e.data);
-
-      if (isAlphaNumeric) {
-        rawCmcKey += e.data;
-      } else {
-        // 영어/숫자가 아니면 입력을 무시하고 튕겨냄
-        e.preventDefault();
-        return;
-      }
-    }
-    // 2. 백스페이스(삭제) 시
-    else if (e.inputType === "deleteContentBackward") {
-      rawCmcKey = rawCmcKey.slice(0, -1);
-    }
-    updateClearBtnVisibility();
-  });
-
-  // 🚀 붙여넣기(Paste) 시에도 필터링하고 싶다면 input 이벤트 수정
-  input.addEventListener("input", (e) => {
-    const val = e.target.value;
-
-    // 붙여넣기 대응: 마스킹 별표가 없는 경우 (통째로 새로 들어온 경우)
-    if (!val.includes("*") && val !== "") {
-      // 영어와 숫자만 남기고 나머지(한글, 특수문자 등) 싹 제거
-      rawCmcKey = val.replace(/[^a-zA-Z0-9]/g, "");
-    }
-
-    // 화면에는 마스킹된 결과만 출력
-    input.value = maskApiKey(rawCmcKey);
-    updateClearBtnVisibility();
-  });
-
-  // 포커스/블러 시 마스킹 상태 및 X 버튼 가시성 유지
-  input.addEventListener("focus", () => {
-    updateClearBtnVisibility();
-  });
-
-  input.addEventListener("blur", () => {
-    input.value = maskApiKey(rawCmcKey);
-    updateClearBtnVisibility();
-  });
 }
 
 function saveAndStart() {
-  const keyToSave = rawCmcKey.trim();
+  const isEngineActive = !!(store && store.isEngineStarted);
+  const input = document.getElementById("cmc-api-input");
+  if (input && !input.value.includes("*")) {
+    rawCmcKey = input.value.replace(/[^a-zA-Z0-9]/g, "").trim();
+  }
+  const keyToSave = (rawCmcKey || "").trim();
+
   // 🚨 32글자 유효성 검사 (확인/취소 버튼 없는 세련된 상단 토스트 알림)
   if (keyToSave.length !== 32) {
-    const input = document.getElementById("cmc-api-input");
     if (input) {
       input.classList.add(
         "!border-red-500/80",
@@ -1273,10 +1248,13 @@ function saveAndStart() {
     localStorage.removeItem("sellnance_skip_start");
   }
 
+  const oldKey = localStorage.getItem("CMC_API_KEY") || "";
+  const isKeyChanged = oldKey !== keyToSave;
+
   // 🚀 [INP 최적화 1] 클릭 즉시 시각적 피드백 제공 (Next Paint 가속)
   const btnStart = document.getElementById("btn-start-engine");
   if (btnStart) {
-    btnStart.innerText = "STARTING DASHBOARD... 🚀";
+    btnStart.innerText = isEngineActive ? "SAVING KEY..." : "STARTING DASHBOARD...";
     btnStart.style.pointerEvents = "none";
   }
 
@@ -1285,13 +1263,18 @@ function saveAndStart() {
     setTimeout(() => {
       localStorage.setItem("CMC_API_KEY", keyToSave);
       hideStartScreen();
+
+      // 이미 대시보드가 가동 중이고 키가 변경되었을 때만 시총 장부 사일런트 갱신
+      if (isEngineActive && isKeyChanged && typeof loadTableData === "function") {
+        loadTableData(true, true);
+      }
     }, 0);
   });
 }
 
-// 🚀 Skip (일일캐시 모드 진입)
+// 🚀 Skip (일일캐시 모드 진입 / 대시보드로 복귀)
 function skipAndStart() {
-  // Xconsole.log("⏭️ [스킵] 일일캐시 데이터로 진입합니다.");
+  const isEngineActive = !!(store && store.isEngineStarted);
 
   // 🚀 건너뛰기 체크박스 상태 저장
   const chk = document.getElementById("chk-auto-skip");
@@ -1304,7 +1287,7 @@ function skipAndStart() {
   // 🚀 [INP 최적화 1] 클릭 즉시 시각적 피드백 제공
   const btnSkip = document.getElementById("btn-skip-start");
   if (btnSkip) {
-    btnSkip.innerText = "ENTERING CACHE MODE...";
+    btnSkip.innerText = isEngineActive ? "CLOSING..." : "ENTERING CACHE MODE...";
     btnSkip.style.pointerEvents = "none";
   }
 
@@ -1331,15 +1314,29 @@ function hideStartScreen() {
   // 🚀 스타트 스크린 퇴장 시 4대장 퀵뷰 프리뷰 엔진 및 소켓 자원 소각
   destroyStartQuickViewPreview();
 
-  // 🚀 [핵심] 사용자가 Start / Skip 버튼을 누른 바로 이 시점에 비로소 대시보드 데이터 및 실시간 엔진을 점화합니다!
+  // 🚀 [핵심 분기] 맨 처음 시작일 때만 initDashboardEngine()으로 전체 엔진을 점화합니다!
   document.documentElement.classList.remove("start-screen-active");
   const dashboard = document.getElementById("main-dashboard-content");
   if (dashboard) dashboard.style.display = "flex";
-  if (typeof window.initDashboardEngine === "function") {
-    window.initDashboardEngine();
+
+  if (!store.isEngineStarted) {
+    if (typeof initDashboardEngine === "function") {
+      initDashboardEngine();
+    } else if (typeof window.initDashboardEngine === "function") {
+      window.initDashboardEngine();
+    }
   }
   if (typeof window.restoreControlPanelUI === "function") {
     window.restoreControlPanelUI();
+  }
+
+  // 대시보드로 돌아갈 때 현재 선택된 코인(currentSelectedSymbol)으로 주소창 즉시 복원
+  if (store.isEngineStarted && store.currentSelectedSymbol && window.history && window.history.replaceState) {
+    const sym = store.currentSelectedSymbol;
+    const path = sym.startsWith("/") ? sym : `/${sym}`;
+    if (window.location.pathname !== path && !window.location.hash) {
+      window.history.replaceState(null, null, path);
+    }
   }
 
   const screen = document.getElementById("start-screen");
@@ -1362,6 +1359,7 @@ function hideStartScreen() {
 }
 
 export async function showStartScreen() {
+  const isEngineActive = !!(store && store.isEngineStarted);
   document.documentElement.classList.add("start-screen-active");
   const dashboard = document.getElementById("main-dashboard-content");
   if (dashboard) dashboard.style.display = "none";
@@ -1374,11 +1372,11 @@ export async function showStartScreen() {
   const btnStart = document.getElementById("btn-start-engine");
   const btnSkip = document.getElementById("btn-skip-start");
   if (btnStart) {
-    btnStart.innerText = "Start Dashboard";
+    btnStart.innerText = isEngineActive ? "Save & Apply Key" : "Start Dashboard";
     btnStart.style.pointerEvents = "auto";
   }
   if (btnSkip) {
-    btnSkip.innerText = "바로 이동 (서버 캐시 모드, 느린 갱신)";
+    btnSkip.innerText = isEngineActive ? "대시보드로 돌아가기" : "바로 이동 (서버 캐시 모드, 느린 갱신)";
     btnSkip.style.pointerEvents = "auto";
   }
 
@@ -1445,7 +1443,7 @@ export async function showStartScreen() {
   if (spreadView && overlapView) {
     spreadView.style.opacity = "1";
     spreadView.style.transform = get3DTransform(1);
-    spreadView.style.pointerEvents = "auto";
+    spreadView.style.pointerEvents = "none";
     if (card0) card0.style.transform = "translate(0, 0)";
     if (card1) card1.style.transform = "translate(0, 0)";
     if (card2) card2.style.transform = "translate(0, 0)";

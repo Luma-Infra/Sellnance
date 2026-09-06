@@ -52,21 +52,28 @@
     })();
   </script>
 
-  <!-- 🚀 [초기 init 테마 즉시 복원] 새로고침/화면이동 시 잔상(FOUC) 차단 -->
+  <!-- 🚀 [초기 init 테마 및 패널 스왑 즉시 복원] 새로고침/화면이동 시 잔상(FOUC) 차단 -->
   <script>
     (function () {
       try {
         var savedTheme = localStorage.getItem("sellnance_theme") || "binance";
         var isUpbit = savedTheme === "upbit";
-        document.documentElement.classList.add(isUpbit ? "theme-upbit" : "theme-binance");
+        var themeClass = isUpbit ? "theme-upbit" : "theme-binance";
+        var bgCol = isUpbit ? "#f4f5f8" : "#131722";
+        document.documentElement.classList.add(themeClass);
         document.documentElement.classList.remove(isUpbit ? "theme-binance" : "theme-upbit");
+        document.documentElement.style.backgroundColor = bgCol;
+
+        if (localStorage.getItem("sellnance_panel_swapped") === "true") {
+          document.documentElement.classList.add("panel-swapped-mode");
+        }
       } catch (e) { }
     })();
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <!-- 📱 PWA 매니페스트 및 홈 화면 추가 설정 -->
   <link rel="manifest" href="/static/manifest.json" />
-  <meta name="theme-color" content="#131313" />
+  <meta name="theme-color" content="#131722" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -147,11 +154,11 @@
   <link rel="stylesheet" crossorigin href="/assets/main.css">
 </head>
 
-<body class="text-theme-text font-sans h-screen w-screen overflow-hidden flex justify-center">
+<body class="bg-theme-bg text-theme-text font-sans h-screen w-screen overflow-hidden flex justify-center">
   <div id="app-loader"></div>
 
   <!-- 🚀 온보딩 모달 (첫 방문 안내) -->
-  <div id="onboarding-modal" onclick="if (event.target === this) window.closeOnboardingModal()" style="display: none;"
+  <div id="onboarding-modal" onclick="if (event.target === this) window.closeOnboardingModal()"
     class="fixed z-[300] inset-0 bg-black/60 hidden backdrop-blur-sm flex-col justify-center items-center p-4 transition-opacity duration-300 opacity-0 cursor-pointer">
     <div
       class="bg-theme-panel border border-theme-border/50 rounded-2xl w-full max-w-2xl max-h-[60dvh] max-h-[60vh] md:max-h-none shadow-2xl overflow-hidden flex flex-col transform scale-95 transition-transform duration-300 cursor-default"
@@ -591,8 +598,8 @@
         <!-- [연결 상태 일시 주석 처리] -->
 
         <!-- 🚀 탭/검색창과 제어 패널을 통틀어 감싸는 좌측 최상단 공통 부모 요소 -->
-        <div id="left-top-zone"
-          class="flex flex-col w-full shrink-0 border-b border-theme-border h-auto min-[1200px]:h-[224px] min-[1200px]:max-h-[224px] relative z-30">
+        <div id="table-top-zone"
+          class="flex flex-col w-full shrink-0 border-b border-theme-border h-auto min-[1200px]:h-[188px] min-[1200px]:max-h-[188px] relative z-30">
 
           <!-- 🚀 상단 독립 검색창 -->
           <div id="search-input-wrapper"
@@ -622,7 +629,7 @@
 
             <!-- 🚀 [신규 추가] 거래소 다중 체크 AND 필터바 -->
             <div id="exchange-filter-container"
-              class="flex items-center gap-1 min-[1300px]:gap-1.5 justify-between overflow-x-auto min-[1200px]:overflow-visible scrollbar-hide px-1 py-1 max-[1199px]:py-0.5 shrink-0 w-full">
+              class="flex items-center gap-1 min-[1200px]:gap-1.5 justify-between overflow-x-auto min-[1200px]:overflow-visible scrollbar-hide px-1 py-1 max-[1199px]:py-0.5 shrink-0 w-full">
               <!-- 동적으로 table_filter.js::updateExchFilterUI()가 버튼들을 그립니다 -->
             </div>
 
@@ -1644,20 +1651,23 @@
             <div class="flex flex-col gap-1.5">
               <label class="text-[10px] font-medium opacity-40 uppercase tracking-widest">CoinMarketCap API KEY</label>
               <div class="relative">
-                <input id="setting-cmc-key" type="password" autocomplete="new-password"
-                  class="w-full bg-theme-bg border border-theme-border py-3 pl-3 pr-16 rounded-xl text-xs text-theme-text outline-none focus:border-theme-accent transition-all font-medium"
+                <input id="setting-cmc-key" type="text" autocomplete="off" spellcheck="false"
+                  class="w-full bg-theme-bg border border-theme-border py-3 pl-3 pr-16 rounded-xl text-xs text-theme-text outline-none focus:border-theme-accent transition-all font-medium font-mono"
                   placeholder="Paste your API key here..." />
-                <button type="button" onclick="togglePasswordVisibility('setting-cmc-key')"
-                  class="absolute right-8 top-1/2 -translate-y-1/2 text-theme-text opacity-30 hover:opacity-100 transition-all">
-                  👁️
+                <button id="btn-toggle-setting-cmc-key" type="button"
+                  onclick="togglePasswordVisibility('setting-cmc-key')"
+                  class="absolute right-8 top-1/2 -translate-y-1/2 text-theme-text opacity-50 hover:opacity-100 transition-all text-xs"
+                  title="키 표시/숨김">
+                  🙈
                 </button>
-                <button type="button" onclick="clearCmcKey()"
-                  class="absolute right-3 top-1/2 -translate-y-1/2 text-theme-text opacity-30 hover:opacity-100 transition-all text-xs">
+                <button id="btn-clear-setting-cmc-key" type="button" onclick="clearCmcKey()"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-theme-text opacity-0 pointer-events-none hover:opacity-100 transition-all text-xs"
+                  title="키 지우기">
                   ✕
                 </button>
               </div>
               <p class="text-[9px] opacity-30 mt-1 italic">
-                API key is required to fetch real-time MarketCap and Rank data.
+                API key is required to fetch real-time MarketCap
               </p>
             </div>
 
@@ -1708,7 +1718,7 @@
           </div>
 
           <div class="flex gap-2 mt-2">
-            <button type="button" onclick="saveSettings()"
+            <button id="btn-save-settings" type="button" onclick="saveSettings()"
               class="flex-1 bg-theme-accent text-white py-3 rounded-xl font-medium text-sm shadow-lg hover:brightness-110 active:scale-95 transition-all">
               SAVE & APPLY
             </button>
