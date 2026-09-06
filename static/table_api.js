@@ -100,12 +100,44 @@ export function processTableData(result) {
       }
     }
 
+    // 3. 심볼 및 거래소별 별칭 광속 색인 (현/선물 및 국내 마켓 O(1) 탐색 보장)
+    const registerAlias = (aliasKey) => {
+      if (!aliasKey) return;
+      const uk = String(aliasKey).toUpperCase();
+      const exist = store.tickerRowMap.get(uk);
+      if (!exist || String(exist.UID) === String(row.UID)) {
+        store.tickerRowMap.set(uk, row);
+      }
+    };
+
+    if (row.Symbol) registerAlias(row.Symbol);
+    if (row.Exact_Spot) {
+      registerAlias(row.Exact_Spot);
+      registerAlias(`${row.Exact_Spot}USDT`);
+    }
+    if (row.Exact_Futures) {
+      registerAlias(row.Exact_Futures);
+      registerAlias(`${row.Exact_Futures}USDT`);
+      registerAlias(`${row.Exact_Futures}USDT_FUTURES`);
+    }
+    if (row.Upbit_Symbol) {
+      registerAlias(row.Upbit_Symbol);
+      registerAlias(`KRW-${row.Upbit_Symbol}`);
+      registerAlias(`${row.Upbit_Symbol}KRW`);
+    }
+    if (row.Bithumb_Symbol) {
+      registerAlias(row.Bithumb_Symbol);
+      registerAlias(`${row.Bithumb_Symbol}_KRW`);
+    }
+
     if (row.precision !== undefined && row.precision !== null) {
       const p = Number(row.precision);
       if (row.Ticker) store.precisionMap.set(row.Ticker.toUpperCase(), p);
       if (row.DisplayTicker)
         store.precisionMap.set(row.DisplayTicker.toUpperCase(), p);
       if (row.Symbol) store.precisionMap.set(row.Symbol.toUpperCase(), p);
+      if (row.Exact_Spot) store.precisionMap.set(row.Exact_Spot.toUpperCase(), p);
+      if (row.Exact_Futures) store.precisionMap.set(row.Exact_Futures.toUpperCase(), p);
     }
   });
 
@@ -159,14 +191,20 @@ export function processTableData(result) {
       const dt = (r.DisplayTicker || "").toUpperCase();
       const t = (r.Ticker || "").toUpperCase();
       const uid = (r.UID || "").toUpperCase();
+      const ef = (r.Exact_Futures || "").toUpperCase();
+      const es = (r.Exact_Spot || "").toUpperCase();
       return (
         sym === clean ||
         dt === clean ||
         t === clean ||
         uid === clean ||
+        ef === clean ||
+        es === clean ||
         sym === raw ||
         dt === raw ||
-        t === raw
+        t === raw ||
+        ef === raw ||
+        es === raw
       );
     });
 

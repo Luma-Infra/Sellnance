@@ -57,25 +57,75 @@ export function isChartBusy() {
  */
 export function isMatchingCurrentSymbol(tickSymbol) {
   if (!tickSymbol) return false;
-  const currentExpected = (store.currentSelectedSymbol || store.currentAsset || "")
+  let currentExpected = String(store.currentSelectedSymbol || store.currentAsset || "");
+  if (currentExpected.includes(":")) {
+    currentExpected = currentExpected.split(":").pop();
+  }
+  currentExpected = currentExpected
+    .replace(/_FUTURES$/i, "")
+    .replace(/_SPOT$/i, "")
+    .replace(/_UPBIT$/i, "")
+    .replace(/_BITHUMB$/i, "")
     .replace(/USDT$/i, "")
     .replace(/^KRW-/, "")
     .replace(/_KRW$/, "")
-    .toUpperCase();
+    .toUpperCase()
+    .trim();
 
   if (!currentExpected) return false;
 
-  const cleanTick = String(tickSymbol)
+  let cleanTick = String(tickSymbol);
+  if (cleanTick.includes(":")) {
+    cleanTick = cleanTick.split(":").pop();
+  }
+  cleanTick = cleanTick
+    .replace(/_FUTURES$/i, "")
+    .replace(/_SPOT$/i, "")
+    .replace(/_UPBIT$/i, "")
+    .replace(/_BITHUMB$/i, "")
     .replace(/USDT$/i, "")
     .replace(/^KRW-/, "")
     .replace(/_KRW$/, "")
-    .toUpperCase();
+    .toUpperCase()
+    .trim();
 
-  return (
+  if (
     cleanTick === currentExpected ||
     getPureBase(cleanTick) === getPureBase(currentExpected) ||
     getPureBase(tickSymbol) === getPureBase(currentExpected)
-  );
+  ) {
+    return true;
+  }
+
+  const effUid = store.currentSelectedUid;
+  let row = null;
+  if (effUid && store.tickerRowMap) {
+    row = store.tickerRowMap.get(effUid);
+  }
+  if (!row && store.tickerRowMap) {
+    row = store.tickerRowMap.get(currentExpected);
+  }
+  if (!row && store.currentTableData) {
+    row = store.currentTableData.find(
+      (c) =>
+        String(c.UID) === String(effUid) ||
+        (c.Symbol && c.Symbol.toUpperCase() === currentExpected) ||
+        (c.Ticker && c.Ticker.toUpperCase() === currentExpected) ||
+        (c.DisplayTicker && c.DisplayTicker.toUpperCase() === currentExpected) ||
+        (c.Exact_Spot && c.Exact_Spot.toUpperCase() === currentExpected) ||
+        (c.Exact_Futures && c.Exact_Futures.toUpperCase() === currentExpected)
+    );
+  }
+  if (row) {
+    if (row.Exact_Spot && row.Exact_Spot.toUpperCase() === cleanTick) return true;
+    if (row.Exact_Futures && row.Exact_Futures.toUpperCase() === cleanTick) return true;
+    if (row.Symbol && row.Symbol.toUpperCase() === cleanTick) return true;
+    if (row.DisplayTicker && row.DisplayTicker.toUpperCase() === cleanTick) return true;
+    if (row.Ticker && row.Ticker.toUpperCase().replace(/USDT$/i, "") === cleanTick) return true;
+    if (row.UID && row.UID.toUpperCase() === cleanTick) return true;
+  }
+
+  return false;
 }
 
 /**
@@ -111,7 +161,12 @@ export function applyTradeToCandle(lastCandle, newPrice, tradeQty, currentUnix, 
     lastCandle.volume = (lastCandle.volume || 0) + (tradeQty || 0);
     return { isNewCandle: false, activeCandle: lastCandle };
   } else {
-    const normTime = getNormalizedTime({ time: nextBarTime });
+    const tfSeconds = tfSec[store.currentTF] || 60;
+    let barStartTime = nextBarTime;
+    if (typeof store.currentTF === "string" && store.currentTF.match(/[hm]/)) {
+      barStartTime = Math.floor(currentUnix / tfSeconds) * tfSeconds;
+    }
+    const normTime = getNormalizedTime({ time: barStartTime });
     const activeCandle = {
       time: normTime,
       open: newPrice,

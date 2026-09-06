@@ -112,10 +112,13 @@ def _aggregate_binance_for_upbit(base, display_name, binance_data, REVERSE_LOOKU
         b_base = utils.get_pure_base_asset(b_tick.replace("USDT", "")).upper()
         if b_base == base:
             alias_binance_raw = str(
-                REVERSE_LOOKUP.get(f"{b_base}_BINANCE", b_base) or b_base
+                REVERSE_LOOKUP.get(f"{b_base}_BINANCE")
+                or REVERSE_LOOKUP.get(f"{b_base}_BINANCE_SPOT")
+                or REVERSE_LOOKUP.get(f"{b_base}_BINANCE_FUTURES")
+                or b_base
             )
             alias_binance_clean = re.sub(
-                r"_(binance|upbit|bithumb)$", "", alias_binance_raw, flags=re.IGNORECASE
+                r"_(binance|upbit|bithumb|bybit|binance_stock|binance_futures|binance_spot)$", "", alias_binance_raw, flags=re.IGNORECASE
             )
             if alias_binance_clean == display_name:
                 if b_inf.get("is_spot"):

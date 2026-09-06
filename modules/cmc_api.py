@@ -57,12 +57,22 @@ def build_cmc_lookup_lists(binance_data, upbit_krw_set, MAPPING_DATA):
     for k, v in DUPLICATED_LIST.items():
         if len(v) >= 4:
             ex = v[3].upper()
-            REVERSE_LOOKUP[f"{k.split('(')[0].upper()}_{ex}"] = k
+            virtual_key = k.split('(')[0].upper()
+            REVERSE_LOOKUP[f"{virtual_key}_{ex}"] = k
+            if ex.startswith("BINANCE"):
+                REVERSE_LOOKUP.setdefault(f"{virtual_key}_BINANCE", k)
+            if ex.startswith("BYBIT"):
+                REVERSE_LOOKUP.setdefault(f"{virtual_key}_BYBIT", k)
     # 2단계: 실제 거래소 심볼 키 등록 (우선순위 높음, 덮어쓰기)
     for k, v in DUPLICATED_LIST.items():
         if len(v) >= 4:
             ex = v[3].upper()
-            REVERSE_LOOKUP[f"{v[2].upper()}_{ex}"] = k
+            sym_key = v[2].upper()
+            REVERSE_LOOKUP[f"{sym_key}_{ex}"] = k
+            if ex.startswith("BINANCE"):
+                REVERSE_LOOKUP[f"{sym_key}_BINANCE"] = k
+            if ex.startswith("BYBIT"):
+                REVERSE_LOOKUP[f"{sym_key}_BYBIT"] = k
 
     # 🚀 공통 처리기 (귀빈 대접 버전)
     def process_asset(a, exchange_tag):

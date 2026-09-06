@@ -194,7 +194,7 @@ export const store = {
   candleTheme:
     (typeof localStorage !== "undefined" &&
       localStorage.getItem("sellnance_candle_theme")) ||
-    "kr",
+    "binance",
   isCollapsed: false,
   isSidebarOpen: true,
   countdownTimerId: null,

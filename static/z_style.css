@@ -67,6 +67,18 @@ html.panel-swapped-mode #left-panel {
   border-left-width: 1px !important;
 }
 
+/* 🚀 타임프레임 버튼 포커스 잔상 및 외곽선 박멸 */
+.tf-btn {
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-tap-highlight-color: transparent;
+}
+.tf-btn:focus,
+.tf-btn:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 :root {
   /* 🚀 [테마 전환 속도 전역 제어] 이 값 하나만 바꾸면 CSS + JS 전체 동기화 */
   --theme-transition-ms: 0;
@@ -203,26 +215,30 @@ body {
 /* ==========================================================================
    🎨 SELLNANCE THEME & COLOR PALETTE SYSTEM (테마 및 상승/하락 색상 집중 관리소)
    - 라이트/다크 배경 테마: theme-upbit (라이트), theme-binance (다크)
-   - 상승/하락 컬러 모드: data-color-mode="kr" (업비트 빨/파), "global" (바이낸스 초/빨)
+   - 상승/하락 컬러 모드: data-color-mode="binance" (초/빨), "upbit" (빨/파)
    - 캔들, 24h/Day 변동률, 김프, 호가창, 경주마 플래시까지 일괄 & 세밀 제어 지원
    ========================================================================== */
 
-/* 0. [상승/하락 컬러 모드] 한국식(KR 빨/파) ↔ 글로벌식(GLOBAL 초/빨) */
+/* 0. [상승/하락 컬러 모드] 바이낸스식(BINANCE 초/빨) ↔ 업비트식(UPBIT 빨/파) */
 :root,
-html[data-color-mode="kr"],
-body[data-color-mode="kr"] {
-  --up: #f7525f;
-  --down: #3179f5;
-  --candle-up: #f7525f;
-  --candle-down: #3179f5;
-}
-
+html[data-color-mode="binance"],
+body[data-color-mode="binance"],
 html[data-color-mode="global"],
 body[data-color-mode="global"] {
   --up: #26a69a;
   --down: #ef5350;
   --candle-up: #26a69a;
   --candle-down: #ef5350;
+}
+
+html[data-color-mode="upbit"],
+body[data-color-mode="upbit"],
+html[data-color-mode="kr"],
+body[data-color-mode="kr"] {
+  --up: #f7525f;
+  --down: #3179f5;
+  --candle-up: #f7525f;
+  --candle-down: #3179f5;
 }
 
 /* 1. [배경 & 레이아웃 테마] 라이트/다크 모드 기본 토큰 */
@@ -530,36 +546,10 @@ html.is-touch-device #coin-list-body {
 }
 
 /* 2. [상승 / 하락 컬러 시스템] */
-/* [모드 A] 한국식 (업비트: 상승 빨강, 하락 파랑) - 라이트모드 */
+/* [모드 B] 바이낸스식 (상승 초록, 하락 빨강) - 라이트모드 기본 */
 :root,
-html[data-color-mode="kr"],
-body[data-color-mode="kr"] {
-  --up: #c84a31;
-  --down: #1261c4;
-  --candle-up: var(--up);
-  --candle-down: var(--down);
-  --text-up: var(--up);
-  --text-down: var(--down);
-  --flash-up: rgba(200, 74, 49, 0.2);
-  --flash-down: rgba(18, 97, 196, 0.2);
-}
-
-/* [모드 A-다크] 한국식 (업비트: 상승 빨강, 하락 파랑) - 다크모드 (선명한 대비) */
-html.theme-binance[data-color-mode="kr"],
-body.theme-binance[data-color-mode="kr"],
-html.theme-binance:not([data-color-mode="global"]),
-body.theme-binance:not([data-color-mode="global"]) {
-  --up: #f7525f;
-  --down: #3179f5;
-  --candle-up: var(--up);
-  --candle-down: var(--down);
-  --text-up: var(--up);
-  --text-down: var(--down);
-  --flash-up: rgba(247, 82, 95, 0.25);
-  --flash-down: rgba(49, 121, 245, 0.25);
-}
-
-/* [모드 B] 글로벌식 (바이낸스: 상승 초록, 하락 빨강) - 라이트모드 */
+html[data-color-mode="binance"],
+body[data-color-mode="binance"],
 html[data-color-mode="global"],
 body[data-color-mode="global"] {
   --up: #00a068;
@@ -572,7 +562,11 @@ body[data-color-mode="global"] {
   --flash-down: rgba(220, 38, 38, 0.2);
 }
 
-/* [모드 B-다크] 글로벌식 (바이낸스: 상승 초록, 하락 빨강) - 다크모드 */
+/* [모드 B-다크] 바이낸스식 (상승 초록, 하락 빨강) - 다크모드 기본 */
+html.theme-binance,
+body.theme-binance,
+html.theme-binance[data-color-mode="binance"],
+body.theme-binance[data-color-mode="binance"],
 html.theme-binance[data-color-mode="global"],
 body.theme-binance[data-color-mode="global"] {
   --up: #26a69a;
@@ -583,6 +577,36 @@ body.theme-binance[data-color-mode="global"] {
   --text-down: var(--down);
   --flash-up: rgba(38, 166, 154, 0.2);
   --flash-down: rgba(239, 83, 80, 0.2);
+}
+
+/* [모드 A] 업비트식 (상승 빨강, 하락 파랑) - 라이트모드 */
+html[data-color-mode="upbit"],
+body[data-color-mode="upbit"],
+html[data-color-mode="kr"],
+body[data-color-mode="kr"] {
+  --up: #c84a31;
+  --down: #1261c4;
+  --candle-up: var(--up);
+  --candle-down: var(--down);
+  --text-up: var(--up);
+  --text-down: var(--down);
+  --flash-up: rgba(200, 74, 49, 0.2);
+  --flash-down: rgba(18, 97, 196, 0.2);
+}
+
+/* [모드 A-다크] 업비트식 (상승 빨강, 하락 파랑) - 다크모드 */
+html.theme-binance[data-color-mode="upbit"],
+body.theme-binance[data-color-mode="upbit"],
+html.theme-binance[data-color-mode="kr"],
+body.theme-binance[data-color-mode="kr"] {
+  --up: #f7525f;
+  --down: #3179f5;
+  --candle-up: var(--up);
+  --candle-down: var(--down);
+  --text-up: var(--up);
+  --text-down: var(--down);
+  --flash-up: rgba(247, 82, 95, 0.25);
+  --flash-down: rgba(49, 121, 245, 0.25);
 }
 
 body {

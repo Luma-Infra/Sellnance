@@ -32,9 +32,19 @@ def _resolve_base_and_stock_type(ticker, b_info, binance_data):
 
 def _resolve_display_name(is_stock, raw_symbol, base, REVERSE_LOOKUP):
     suffix = "BINANCE_STOCK" if is_stock else "BINANCE"
-    raw_key = str(REVERSE_LOOKUP.get(f"{raw_symbol.upper()}_{suffix}", base) or base)
+    raw_key = str(
+        REVERSE_LOOKUP.get(f"{raw_symbol.upper()}_{suffix}")
+        or REVERSE_LOOKUP.get(f"{raw_symbol.upper()}_BINANCE_SPOT")
+        or REVERSE_LOOKUP.get(f"{raw_symbol.upper()}_BINANCE_FUTURES")
+        or REVERSE_LOOKUP.get(f"{raw_symbol.upper()}_BINANCE")
+        or REVERSE_LOOKUP.get(f"{base.upper()}_{suffix}")
+        or REVERSE_LOOKUP.get(f"{base.upper()}_BINANCE_SPOT")
+        or REVERSE_LOOKUP.get(f"{base.upper()}_BINANCE_FUTURES")
+        or REVERSE_LOOKUP.get(f"{base.upper()}_BINANCE")
+        or base
+    )
     display_name = re.sub(
-        r"_(binance|upbit|bithumb|bybit|binance_stock)$",
+        r"_(binance|upbit|bithumb|bybit|binance_stock|binance_futures|binance_spot)$",
         "",
         raw_key,
         flags=re.IGNORECASE,
@@ -59,7 +69,10 @@ def _determine_final_ucid_and_info(
     existing_uid = (
         ticker_info[0] if isinstance(ticker_info, list) and len(ticker_info) > 0 else ""
     )
-    hardcoded_id = str(SYMBOL_TO_ID_MAP.get(base, ""))
+    hardcoded_id = str(
+        SYMBOL_TO_ID_MAP.get(base, "")
+        or SYMBOL_TO_ID_MAP.get(raw_symbol, "")
+    )
     final_ucid = (
         existing_uid or hardcoded_id or str(SYMBOL_TO_ID_MAP.get(display_name, ""))
     )
@@ -119,7 +132,7 @@ def _determine_final_ucid_and_info(
     return final_ucid, info
 
 
-def _aggregate_binance_market(base, is_stock, binance_data, listed_on):
+def _aggregate_binance_market(base, is_stock, binance_data, listed_on, final_ucid="", DUPLICATED_LIST=None):
     total_vol_futures = 0.0
     total_vol_spot = 0.0
     binance_spot_price = 0.0
@@ -133,6 +146,12 @@ def _aggregate_binance_market(base, is_stock, binance_data, listed_on):
     exact_futures_ticker = ""
     spot_utc0 = 0.0
     futures_utc0 = 0.0
+
+    target_bases = {base.upper()}
+    if DUPLICATED_LIST and final_ucid:
+        for k, v in DUPLICATED_LIST.items():
+            if len(v) >= 4 and str(v[0]) == str(final_ucid) and "binance" in v[3].lower():
+                target_bases.add(v[2].upper())
 
     for b_tick, b_inf in binance_data.items():
         b_base = utils.get_pure_base_asset(b_tick.replace("USDT", "")).upper()
@@ -157,7 +176,7 @@ def _aggregate_binance_market(base, is_stock, binance_data, listed_on):
                     if b_spot_cand in binance_data:
                         b_base = f"{b_base}B"
 
-        if b_base == base:
+        if b_base in target_bases:
             b_u_type = str(b_inf.get("underlying_type", "")) if isinstance(b_inf, dict) else ""
             b_c_type = str(b_inf.get("contract_type", "")) if isinstance(b_inf, dict) else ""
             b_is_stock = ("EQUITY" in b_u_type) or (b_c_type == "TRADIFI_PERPETUAL")
@@ -337,7 +356,7 @@ def build_binance_row(
     mcap = info.get("market_cap", 0) if info else 0
     listed_on = set(global_listings.get(base, set()))
 
-    agg = _aggregate_binance_market(base, is_stock, binance_data, listed_on)
+    agg = _aggregate_binance_market(base, is_stock, binance_data, listed_on, final_ucid=final_ucid, DUPLICATED_LIST=DUPLICATED_LIST)
     total_vol_futures = agg["total_vol_futures"]
     total_vol_spot = agg["total_vol_spot"]
     binance_spot_price = agg["binance_spot_price"]
@@ -351,6 +370,11 @@ def build_binance_row(
     exact_futures_ticker = agg["exact_futures_ticker"]
     spot_utc0 = agg["spot_utc0"]
     futures_utc0 = agg["futures_utc0"]
+
+    if exact_spot_ticker and exact_spot_ticker != raw_symbol:
+        spot_disp, _ = _resolve_display_name(is_stock, exact_spot_ticker, exact_spot_ticker, REVERSE_LOOKUP)
+        if spot_disp and "(" in spot_disp:
+            display_name = spot_disp
 
     upbit_aliases = [
         v[2] for v in DUPLICATED_LIST.values()
@@ -479,9 +503,9 @@ def build_binance_row(
 
     row = {
         "UID": final_ucid,
-        "Symbol": raw_symbol,
+        "Symbol": exact_spot_ticker or raw_symbol,
         "DisplayTicker": display_name,
-        "Ticker": ticker,
+        "Ticker": f"{exact_spot_ticker}USDT" if exact_spot_ticker else ticker,
         "Logo": logo,
         "Name": coin_name,
         "Chain": chain,

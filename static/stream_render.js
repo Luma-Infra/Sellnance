@@ -128,8 +128,8 @@ export function renderRealtimeUpdate(normalizedTime, currentCandle, tickSymbol) 
     // 🚀 [방어 코드] 실시간 캔들의 타임스탬프가 차트의 마지막 캔들보다 이전(과거)이면 업데이트를 스킵하여 시간 역행 예외 방지
     const lastItem = chartData[chartData.length - 1];
     if (lastItem) {
-        const lastTimeVal = typeof lastItem.time === "object" ? lastItem.time.time || 0 : lastItem.time;
-        const newTimeVal = typeof normalizedTime === "object" ? normalizedTime.time || 0 : normalizedTime;
+        const lastTimeVal = getUnixSeconds(lastItem.time);
+        const newTimeVal = getUnixSeconds(normalizedTime);
         if (newTimeVal < lastTimeVal) {
             return;
         }

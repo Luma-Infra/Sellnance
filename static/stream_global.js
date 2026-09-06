@@ -74,11 +74,15 @@ export function startRealtimeCandle(
     store.bybitChartWs = null; store.currentBybitStream = null;
   }
 
-  const binanceIsFutures = isFutures || (store.currentChartMarket !== "SPOT" && store.currentChartMarket !== "BINANCE" && (row?.Exact_Futures || row?.Binance_Futures === "O"));
+  const binanceIsFutures = isFutures
+    ? true
+    : isSpot
+      ? false
+      : Boolean(store.currentChartMarket !== "SPOT" && store.currentChartMarket !== "BINANCE" && (row?.Exact_Futures || row?.Binance_Futures === "O"));
   const binanceSym = (binanceIsFutures ? (row?.Exact_Futures || pureSymbol) : (row?.Exact_Spot || pureSymbol)).toLowerCase();
   const aggStream = `${binanceSym}usdt@aggTrade`;
   const klineStream = `${binanceSym}usdt@kline_${interval}`;
-  const wsBase = isFutures
+  const wsBase = binanceIsFutures
     ? "wss://fstream.binance.com/market/ws"
     : "wss://stream.binance.com:9443/ws";
 
@@ -148,9 +152,7 @@ export function startRealtimeCandle(
       if (store.isFetchingChart || window.isFetchingChart || store.isLoadingMoreHistory || store.isRestoringTab) return;
 
       // 🛡️ [Symbol Guard] rAF 실행 시점에 버퍼의 심볼이 현재 활성 코인(store.currentAsset)과 일치하지 않으면 즉시 폐기!
-      const currentActive = (store.currentSelectedSymbol || store.currentAsset || "").replace(/USDT$/i, "").replace(/^KRW-/, "").replace(/_KRW$/, "").toUpperCase();
-      const tickSym = (latestSymbol || "").replace(/USDT$/i, "").replace(/^KRW-/, "").replace(/_KRW$/, "").toUpperCase();
-      if (!currentActive || !tickSym || (currentActive !== tickSym && getPureBase(currentActive) !== getPureBase(tickSym))) {
+      if (latestSymbol && !isMatchingCurrentSymbol(latestSymbol)) {
         return;
       }
 
@@ -208,8 +210,7 @@ export function startRealtimeCandle(
       // 🚀 현재 탭과 들어온 스트림 데이터의 현/선물 성격이 일치하지 않거나 바이낸스 탭이 아닌 경우,
       // 메인 차트 데이터(store.mainData)를 오염시키지 않고 오직 김프 계산을 위한 실시간 시세 버퍼 업데이트 및 김프 갱신만 수행합니다.
       if (res.e === "aggTrade" || res.e === "kline") {
-        const expectedGlobalSymbol = (store.currentSelectedSymbol || store.currentAsset || "").replace(/USDT$/i, "").replace(/^KRW-/, "").replace(/_KRW$/, "").toUpperCase();
-        const isMatch = getPureBase(tickSymbol) === getPureBase(expectedGlobalSymbol) || tickSymbol === expectedGlobalSymbol;
+        const isMatch = isMatchingCurrentSymbol(tickSymbol);
         if (isMatch) {
           const newPrice = res.e === "aggTrade" ? parseFloat(res.p) : parseFloat(res.k?.c);
           if (!isNaN(newPrice)) {
@@ -369,33 +370,65 @@ export function startRealtimeCandle(
       ? "wss://fstream.binance.com/market/ws"
       : "wss://stream.binance.com:9443/ws";
 
+    const isCurrentWsFutures = Boolean(store.binanceChartWs?.url?.includes("fstream"));
     const isBinanceConnectingOrOpen = store.binanceChartWs &&
       (store.binanceChartWs.readyState === WebSocket.CONNECTING || store.binanceChartWs.readyState === WebSocket.OPEN) &&
-      store.binanceChartWs.url.includes(binanceIsFutures ? "fstream" : "stream.binance.com");
+      (binanceIsFutures === isCurrentWsFutures);
 
     const desiredKlineStream = `${aggStream}/${klineStream}`;
 
     if (!isBinanceConnectingOrOpen) {
-      if (store.binanceChartWs) { try { store.binanceChartWs.close(); } catch (e) { } }
-      store.currentKlineStream = desiredKlineStream;
-      store.binanceChartWs = new WebSocket(wsBasePartner);
-      store.binanceChartWs.onopen = () => {
-        const streamToSub = store.currentKlineStream || desiredKlineStream;
-        store.binanceChartWs.send(JSON.stringify({ method: "SUBSCRIBE", params: streamToSub.split("/"), id: getWsId() }));
-      };
-    } else if (store.currentKlineStream !== desiredKlineStream) {
-      const oldStream = store.currentKlineStream;
-      store.currentKlineStream = desiredKlineStream;
-      if (store.binanceChartWs.readyState === WebSocket.OPEN) {
+      if (store.binanceChartWs) {
         try {
-          if (oldStream) {
-            store.binanceChartWs.send(JSON.stringify({ method: "UNSUBSCRIBE", params: oldStream.split("/"), id: getWsId() }));
-          }
-          store.binanceChartWs.send(JSON.stringify({ method: "SUBSCRIBE", params: desiredKlineStream.split("/"), id: getWsId() }));
+          store.binanceChartWs.onopen = null;
+          store.binanceChartWs.onmessage = null;
+          store.binanceChartWs.onerror = null;
+          store.binanceChartWs.onclose = null;
+          store.binanceChartWs.close();
         } catch (e) { }
       }
+      store.currentKlineStream = desiredKlineStream;
+      const ws = new WebSocket(wsBasePartner);
+      store.binanceChartWs = ws;
+      ws.onopen = () => {
+        if (store.binanceChartWs !== ws) return;
+        const streamToSub = store.currentKlineStream || desiredKlineStream;
+        try {
+          ws.send(JSON.stringify({ method: "SUBSCRIBE", params: streamToSub.split("/"), id: getWsId() }));
+        } catch (e) { }
+      };
+      ws.onmessage = handleBinanceMessage;
+      ws.onerror = (err) => {
+        console.warn("🚨 Binance WS error:", err);
+      };
+      ws.onclose = () => {
+        if (store.binanceChartWs === ws) {
+          store.binanceChartWs = null;
+          store.currentKlineStream = null;
+        }
+      };
+    } else if (store.currentKlineStream !== desiredKlineStream) {
+      const oldStreams = (store.currentKlineStream || "").split("/").filter(Boolean);
+      const newStreams = (desiredKlineStream || "").split("/").filter(Boolean);
+      store.currentKlineStream = desiredKlineStream;
+
+      const toUnsub = oldStreams.filter((s) => !newStreams.includes(s));
+      const toSub = newStreams.filter((s) => !oldStreams.includes(s));
+
+      if (store.binanceChartWs.readyState === WebSocket.OPEN) {
+        try {
+          if (toUnsub.length > 0) {
+            store.binanceChartWs.send(JSON.stringify({ method: "UNSUBSCRIBE", params: toUnsub, id: getWsId() }));
+          }
+          if (toSub.length > 0) {
+            store.binanceChartWs.send(JSON.stringify({ method: "SUBSCRIBE", params: toSub, id: getWsId() }));
+          }
+        } catch (e) { }
+      }
+      store.binanceChartWs.onmessage = handleBinanceMessage;
+    } else {
+      store.binanceChartWs.onmessage = handleBinanceMessage;
     }
-    store.binanceChartWs.onmessage = handleBinanceMessage;
   }
 
   if (needUpbit) {
@@ -454,9 +487,10 @@ export function startRealtimeCandle(
     const bybitSym = (row?.Bybit_Symbol || (bybitIsFutures ? (row?.Exact_Futures || pureSymbol) : (row?.Exact_Spot || pureSymbol))).toUpperCase();
     const bybitCode = `${bybitSym}USDT`;
     const wsUrlPartner = bybitIsFutures ? "wss://stream.bybit.com/v5/public/linear" : "wss://stream.bybit.com/v5/public/spot";
+    const isCurrentBybitFutures = Boolean(store.bybitChartWs?.url?.includes("linear"));
     const isBybitConnectingOrOpen = store.bybitChartWs &&
       (store.bybitChartWs.readyState === WebSocket.CONNECTING || store.bybitChartWs.readyState === WebSocket.OPEN) &&
-      store.bybitChartWs.url.includes(bybitIsFutures ? "linear" : "spot");
+      (bybitIsFutures === isCurrentBybitFutures);
 
     if (!isBybitConnectingOrOpen) {
       if (store.bybitChartWs) { try { store.bybitChartWs.close(); } catch (e) { } }

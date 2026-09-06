@@ -629,7 +629,12 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
 
   if (
     row.Ticker === store.currentSelectedSymbol ||
-    row.UID === store.currentSelectedSymbol
+    row.UID === store.currentSelectedSymbol ||
+    row.Symbol === store.currentSelectedSymbol ||
+    row.DisplayTicker === store.currentSelectedSymbol ||
+    row.Exact_Spot === store.currentSelectedSymbol ||
+    row.Exact_Futures === store.currentSelectedSymbol ||
+    (store.currentSelectedUid && String(row.UID) === String(store.currentSelectedUid))
   ) {
     if (typeof window.updateHeaderDisplay === "function") {
       const pPrecision =

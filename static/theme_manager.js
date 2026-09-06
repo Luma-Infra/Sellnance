@@ -1,7 +1,7 @@
 // theme_manager.js
 // 🎨 [스타일 & 컬러 테마 전담 지휘소]
 // - 배경 테마 (라이트: theme-upbit ↔ 다크: theme-binance)
-// - 상승/하락 컬러 모드 (한국식 빨/파 ↔ 글로벌식 초/빨)
+// - 상승/하락 컬러 모드 (바이낸스 초/빨 ↔ 업비트 빨/파)
 // - 캔들, 거래량, 테이블(24h/Day 등락률, 김프), 호가창, 경주마 플래시까지 전역 CSS 변수 일괄 제어
 
 import { store } from "./_store.js";
@@ -17,17 +17,18 @@ export function getCandleThemeColors() {
     store.candleTheme ||
     (typeof localStorage !== "undefined" &&
       localStorage.getItem("sellnance_candle_theme")) ||
-    "kr";
+    "binance";
 
+  const isUpbit = currentMode === "upbit" || currentMode === "kr";
   const style = typeof document !== "undefined" ? getComputedStyle(document.body) : null;
   const up =
     style?.getPropertyValue("--candle-up")?.trim() ||
     style?.getPropertyValue("--up")?.trim() ||
-    (currentMode === "kr" ? "#f7525f" : "#26a69a");
+    (isUpbit ? "#f7525f" : "#26a69a");
   const down =
     style?.getPropertyValue("--candle-down")?.trim() ||
     style?.getPropertyValue("--down")?.trim() ||
-    (currentMode === "kr" ? "#3179f5" : "#ef5350");
+    (isUpbit ? "#3179f5" : "#ef5350");
   return { up, down };
 }
 
@@ -48,12 +49,13 @@ export function updateCandleThemeButtons() {
     store.candleTheme ||
     (typeof localStorage !== "undefined" &&
       localStorage.getItem("sellnance_candle_theme")) ||
-    "kr";
+    "binance";
   const btn = document.getElementById("candle-theme-btn");
   const icon = document.getElementById("candle-theme-icon");
   if (!btn || !icon) return;
 
-  if (currentMode === "kr") {
+  const isUpbit = currentMode === "upbit" || currentMode === "kr";
+  if (isUpbit) {
     icon.innerHTML = getCandleSvgIcon("#f7525f", "#3179f5");
     btn.title = "차트 캔들 업비트";
   } else {
@@ -63,7 +65,7 @@ export function updateCandleThemeButtons() {
 }
 
 /**
- * 🚀 캔들 및 전역 텍스트/경주마 상승하락 컬러 모드 적용 (KR vs GLOBAL)
+ * 🚀 캔들 및 전역 텍스트/경주마 상승하락 컬러 모드 적용 (UPBIT vs BINANCE)
  */
 export function applyCandleTheme(theme) {
   if (theme) {
@@ -76,7 +78,7 @@ export function applyCandleTheme(theme) {
       store.candleTheme ||
       (typeof localStorage !== "undefined" &&
         localStorage.getItem("sellnance_candle_theme")) ||
-      "kr";
+      "binance";
   }
 
   // 1. 전역 CSS data-color-mode 주입 → CSS 변수(--up, --down 등) 즉시 0ms 전환!
@@ -101,15 +103,16 @@ export function applyCandleTheme(theme) {
 }
 
 /**
- * 🚀 캔들/텍스트 컬러 모드 토글 (한국식 ↔ 글로벌식)
+ * 🚀 캔들/텍스트 컬러 모드 토글 (업비트 ↔ 바이낸스)
  */
 export function toggleCandleTheme() {
   const currentMode =
     store.candleTheme ||
     (typeof localStorage !== "undefined" &&
       localStorage.getItem("sellnance_candle_theme")) ||
-    "kr";
-  const newMode = currentMode === "kr" ? "global" : "kr";
+    "binance";
+  const isUpbit = currentMode === "upbit" || currentMode === "kr";
+  const newMode = isUpbit ? "binance" : "upbit";
   applyCandleTheme(newMode);
 }
 
@@ -180,7 +183,7 @@ export function toggleTheme() {
   }
 
   // 🚀 캔들, 볼륨(vol), 프리뷰 차트 색상 일괄 동기화
-  applyCandleTheme(store.candleTheme || "kr");
+  applyCandleTheme(store.candleTheme || "binance");
 
   // 🚀 [딜레이 제거] 차트 그리드선/경계선/배경색을 RAF로 미루지 않고 동기적으로 즉시 실행하여 0초 동시 전환
   updateChartTheme();
@@ -240,7 +243,7 @@ export function restoreThemeSettings() {
     }
 
     // 2. 캔들/텍스트 컬러 모드 복원
-    const savedColorMode = localStorage.getItem("sellnance_candle_theme") || "kr";
+    const savedColorMode = localStorage.getItem("sellnance_candle_theme") || "binance";
     applyCandleTheme(savedColorMode);
   } catch (e) { }
 }
@@ -251,3 +254,5 @@ window.toggleCandleTheme = toggleCandleTheme;
 window.updateCandleThemeButtons = updateCandleThemeButtons;
 window.applyCandleTheme = applyCandleTheme;
 window.getCandleThemeColors = getCandleThemeColors;
+
+

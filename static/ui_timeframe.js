@@ -57,10 +57,11 @@ export function renderTimeframeButtons(currentTF = "1d") {
           tf.value === currentTF
             ? "active !opacity-100 border-theme-accent font-bold"
             : "border-transparent";
-        btn.className = `tf-btn px-2.5 py-1 text-[11px] font-medium bg-transparent text-theme-text opacity-50 border rounded hover:bg-theme-border/50 hover:opacity-100 transition-all ${activeClass}`;
+        btn.className = `tf-btn outline-none focus:outline-none focus:ring-0 focus-visible:outline-none px-2.5 py-1 text-[11px] font-medium bg-transparent text-theme-text opacity-50 border rounded hover:bg-theme-border/50 hover:opacity-100 transition-all select-none cursor-pointer ${activeClass}`;
         btn.dataset.tf = tf.value;
         btn.innerText = tf.label;
         btn.onclick = () => {
+          btn.blur();
           setTF(tf.value);
         };
 
@@ -237,6 +238,7 @@ export function executeSetTF(tf) {
   } catch (e) { }
 
   // 🚀 [0ms 즉시 피드백] DOM 전체를 파괴하고 다시 만들지 않고, 활성 클래스만 0ms 즉각 전환
+  let activeBtn = null;
   document.querySelectorAll(".tf-btn").forEach((b) => {
     const isMatch = b.dataset.tf === tf;
     b.classList.toggle("active", isMatch);
@@ -245,7 +247,12 @@ export function executeSetTF(tf) {
     b.classList.toggle("font-bold", isMatch);
     b.classList.toggle("opacity-50", !isMatch);
     b.classList.toggle("border-transparent", !isMatch);
+    if (isMatch) activeBtn = b;
   });
+
+  if (document.activeElement && document.activeElement.classList.contains("tf-btn")) {
+    document.activeElement.blur();
+  }
 
   scrollActiveTfIntoView(true);
 

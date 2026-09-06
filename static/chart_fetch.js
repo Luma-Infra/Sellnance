@@ -127,16 +127,16 @@ export async function fetchHistory(
           exactUpbit = v[2];
         } else if (exName === "BITHUMB") {
           exactBithumb = v[2];
-        } else if (exName === "BYBIT") {
+        } else if (exName === "BYBIT" || exName === "BYBIT_SPOT") {
           exactBybit = v[2];
+        } else if (exName === "BINANCE_SPOT") {
+          exactSpot = v[2].replace("USDT", "");
+        } else if (exName === "BINANCE_FUTURES") {
+          exactFutures = v[2].replace("USDT", "");
         } else if (exName === "BINANCE") {
-          if (v[2].endsWith("USDT")) {
-            exactSpot = v[2].replace("USDT", "");
-            exactFutures = v[2].replace("USDT", "");
-          } else {
-            exactSpot = v[2];
-            exactFutures = v[2];
-          }
+          const clean = v[2].replace("USDT", "");
+          exactSpot = clean;
+          exactFutures = clean;
         }
       }
     }
@@ -601,8 +601,10 @@ export async function fetchHistory(
         store.realtimeKimchi = null;
 
         if (typeof applyChartLayout === "function") applyChartLayout();
-        if (typeof autoFit === "function") autoFit(isTabRestore); // 🚀 [1차 선제 피팅] 캔들/볼륨 로드 직후 뷰포트 즉시 고정
-        if (typeof updateStatus === "function") updateStatus();
+        if (typeof autoFit === "function") autoFit(isTabRestore); // [1차 선제 피팅] 캔들/볼륨 로드 직후 뷰포트 즉시 고정
+        // [핵심] 캔들과 거래량이 차트에 안착한 즉시 Fetching 락 해제 (실시간 소켓 틱 드랍 방지)
+        window.isFetchingChart = false;
+        store.isFetchingChart = false;
 
         if (typeof startRealtimeCandle === "function") {
           startRealtimeCandle(
@@ -617,10 +619,6 @@ export async function fetchHistory(
 
         if (typeof window.syncPriceScaleWidths === "function")
           window.syncPriceScaleWidths(true);
-
-        // 🚀 [핵심] 캔들과 거래량이 차트에 안착한 즉시 Fetching 락 해제
-        window.isFetchingChart = false;
-        store.isFetchingChart = false;
       } catch (err) {
         //Xconsole.warn("🚨 시리즈 데이터 원자적 세팅 예외 우회:", err);
         window.isFetchingChart = false;

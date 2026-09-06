@@ -78,7 +78,9 @@ export function selectSymbol(
         c.UID === parsedSymbol ||
         c.Ticker === parsedSymbol ||
         c.DisplayTicker === parsedSymbol ||
-        c.Symbol === parsedSymbol,
+        c.Symbol === parsedSymbol ||
+        c.Exact_Futures === parsedSymbol ||
+        c.Exact_Spot === parsedSymbol,
     );
   }
   if (!rowInfo) {
@@ -105,10 +107,15 @@ export function selectSymbol(
           ? sym.slice(0, -4)
           : sym;
 
+      const ef = (c.Exact_Futures || "").toUpperCase();
+      const es = (c.Exact_Spot || "").toUpperCase();
+
       return (
         cleanT === parsedSymbol ||
         cleanDt === parsedSymbol ||
-        cleanSym === parsedSymbol
+        cleanSym === parsedSymbol ||
+        ef === parsedSymbol ||
+        es === parsedSymbol
       );
     });
   }
@@ -213,17 +220,24 @@ export function selectSymbol(
   }
 
   const symbolOnly = rowInfo ? rowInfo.Symbol : parsedSymbol;
+  const futuresSymbol = (rowInfo && rowInfo.Exact_Futures) ? rowInfo.Exact_Futures : symbolOnly;
+  const spotSymbol = (rowInfo && rowInfo.Exact_Spot) ? rowInfo.Exact_Spot : symbolOnly;
+
   let targetPath = "/" + symbolOnly;
-  if (tempMarket === "FUTURES") targetPath = `/BINANCE:${symbolOnly}_FUTURES`;
-  else if (tempMarket === "SPOT") targetPath = `/BINANCE:${symbolOnly}_SPOT`;
-  else if (tempMarket === "UPBIT") targetPath = `/UPBIT:${symbolOnly}`;
-  else if (tempMarket === "BITHUMB") targetPath = `/BITHUMB:${symbolOnly}`;
+  if (tempMarket === "FUTURES") targetPath = `/BINANCE:${futuresSymbol}_FUTURES`;
+  else if (tempMarket === "SPOT") targetPath = `/BINANCE:${spotSymbol}_SPOT`;
+  else if (tempMarket === "UPBIT") targetPath = `/UPBIT:${rowInfo?.Upbit_Symbol || symbolOnly}`;
+  else if (tempMarket === "BITHUMB") targetPath = `/BITHUMB:${rowInfo?.Bithumb_Symbol || symbolOnly}`;
   else if (tempMarket === "BYBIT_FUTURES")
-    targetPath = `/BYBIT:${symbolOnly}_FUTURES`;
-  else if (tempMarket === "BYBIT") targetPath = `/BYBIT:${symbolOnly}_SPOT`;
+    targetPath = `/BYBIT:${rowInfo?.Exact_Futures || rowInfo?.Bybit_Symbol || symbolOnly}_FUTURES`;
+  else if (tempMarket === "BYBIT") targetPath = `/BYBIT:${rowInfo?.Exact_Spot || rowInfo?.Bybit_Symbol || symbolOnly}_SPOT`;
   else if (tempMarket === "GATE_FUTURES")
     targetPath = `/GATEIO:${symbolOnly}_FUTURES`;
   else if (tempMarket === "GATE_SPOT") targetPath = `/GATEIO:${symbolOnly}_SPOT`;
+
+  const chartTargetSym = targetPath.replace(/^\//, "") || uniqueTicker;
+  store.currentAsset = chartTargetSym;
+  store.currentSelectedSymbol = chartTargetSym;
 
   if (window.history && window.history.pushState) {
     if (window.location.pathname !== targetPath && !window.location.hash) {

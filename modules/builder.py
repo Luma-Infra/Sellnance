@@ -87,14 +87,24 @@ def assemble_final_dashboard(
     for k, v in DUPLICATED_LIST.items():
         if len(v) >= 4:
             ex = v[3].upper()
-            REVERSE_LOOKUP[f"{k.split('(')[0].upper()}_{ex}"] = k
+            virtual_key = k.split('(')[0].upper()
+            REVERSE_LOOKUP[f"{virtual_key}_{ex}"] = k
+            if ex.startswith("BINANCE"):
+                REVERSE_LOOKUP.setdefault(f"{virtual_key}_BINANCE", k)
+            if ex.startswith("BYBIT"):
+                REVERSE_LOOKUP.setdefault(f"{virtual_key}_BYBIT", k)
             duplicated_bases.add(v[2].upper())
-            duplicated_bases.add(k.split("(")[0].upper())
+            duplicated_bases.add(virtual_key)
     # 2단계: 실제 거래소 심볼 키 등록 (우선순위 높음, 덮어쓰기)
     for k, v in DUPLICATED_LIST.items():
         if len(v) >= 4:
             ex = v[3].upper()
-            REVERSE_LOOKUP[f"{v[2].upper()}_{ex}"] = k
+            sym_key = v[2].upper()
+            REVERSE_LOOKUP[f"{sym_key}_{ex}"] = k
+            if ex.startswith("BINANCE"):
+                REVERSE_LOOKUP[f"{sym_key}_BINANCE"] = k
+            if ex.startswith("BYBIT"):
+                REVERSE_LOOKUP[f"{sym_key}_BYBIT"] = k
 
     # 🚀 법정 환율 (USD/KRW) 실시간 수집 (tvDatafeed 단일 연동)
     krw_usd_rate = float(mapping.get("DEFAULT_KRW_USD_RATE", 0.0))

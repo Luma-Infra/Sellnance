@@ -414,15 +414,15 @@
         <!-- 🚀 서버 갱신 상태 배지: PC는 풀 텍스트, 모바일은 펄스 불빛 점 (모바일 탭 시 팝업 토글) -->
         <div id="server-status-badge"
           onclick="if (window.innerWidth < 1200 && typeof window.toggleStatusTooltip === 'function') window.toggleStatusTooltip(event)"
-          class="relative group flex items-center justify-center p-1 min-[1200px]:px-1.5 min-[1200px]:py-0.5 select-none cursor-pointer min-[1200px]:cursor-default transition-opacity hover:opacity-80 ml-1"
+          class="relative group inline-flex items-center self-center justify-center p-1 min-[1200px]:px-1.5 min-[1200px]:py-0.5 select-none cursor-pointer min-[1200px]:cursor-default transition-opacity hover:opacity-80 ml-1"
           title="시가총액 갱신 상태">
-          <div class="flex items-center gap-1.5">
+          <div class="inline-flex items-center gap-1.5 leading-none">
             <span id="status-timer-dot"
-              class="inline-block w-2 h-2 min-[1200px]:w-1.5 min-[1200px]:h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              class="inline-block shrink-0 w-2 h-2 min-[1200px]:w-1.5 min-[1200px]:h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
             <span id="status-timer"
-              class="hidden min-[1200px]:inline-block text-[9.5px] font-bold text-theme-text/80">--:--:-- 이후 갱신</span>
+              class="hidden min-[1200px]:inline-flex items-center text-[9.5px] font-bold text-theme-text/80 leading-none">--:--:-- 이후 갱신</span>
           </div>
-          <span id="status-users" class="hidden min-[1200px]:inline-block pl-2 opacity-60 text-[9px] font-medium">1
+          <span id="status-users" class="hidden min-[1200px]:inline-flex items-center pl-2 opacity-60 text-[9px] font-medium leading-none">1
             Active</span>
 
           <!-- 💎 테마 연동 툴팁 팝업 (PC: 마우스 호버 / 모바일: 탭 토글, z-[250]로 통일) -->
@@ -483,7 +483,7 @@
               <path d="m3 11 18-5v12L3 14v-3z"></path>
               <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"></path>
             </svg>
-            (1/4) 서비스 초기 단계로 일부 성능 저하 또는 렉, 수치 오류 등 다소 미흡한 부분이 있으니 양해 바랍니다 (추후 개선 예정)
+            (1/4) 서비스 초기 단계로 일부 성능 저하 또는 렉, 수치 오류 등 다소 미흡한 부분이 있으니 양해 바랍니다 (상시 개선 예정)
           </div>
           <div
             class="h-[28px] shrink-0 flex items-center justify-center text-[11px] sm:text-[12px] text-theme-text font-medium text-center whitespace-nowrap px-3">

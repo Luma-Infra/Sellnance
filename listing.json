@@ -2123,7 +2123,8 @@
     "binance_listing": "2025-01-14"
   },
   "JUP": {
-    "binance_listing": "2024-01-31"
+    "binance_listing": "2024-01-31",
+    "bybit_listing": "2026-09-05"
   },
   "JUPUSDT": {
     "binance_listing": "2026-04-28"

@@ -37,7 +37,8 @@ export function findRowInfo(displayName, pureBase, exchangeFlags, targetUid = nu
       if (Array.isArray(v) && v.length >= 4) {
         const dupSym = (v[2] || "").toUpperCase();
         const dupEx = v[3].toUpperCase();
-        if (dupSym === pureBase && dupEx === exchangeTag) {
+        const isExMatch = dupEx === exchangeTag || dupEx.startsWith(exchangeTag);
+        if (dupSym === pureBase && isExMatch) {
           expectedUid = v[0];
           break;
         }
@@ -50,7 +51,8 @@ export function findRowInfo(displayName, pureBase, exchangeFlags, targetUid = nu
         if (Array.isArray(v) && v.length >= 4) {
           const dupBase = key.split("(")[0].toUpperCase();
           const dupEx = v[3].toUpperCase();
-          if (dupBase === pureBase && dupEx === exchangeTag) {
+          const isExMatch = dupEx === exchangeTag || dupEx.startsWith(exchangeTag);
+          if (dupBase === pureBase && isExMatch) {
             expectedUid = v[0];
             break;
           }

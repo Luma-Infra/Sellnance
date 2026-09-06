@@ -522,12 +522,22 @@ function updateStatus(d, p) {
   // 가격 업데이트
   const asset = store.currentAsset || store.currentSelectedSymbol;
   const allSource = store.currentTableData || store.originalTableData || [];
-  const row =
-    store.tickerRowMap.get(asset) ||
-    allSource.find(
-      (r) =>
-        r.DisplayTicker === asset || r.Ticker === asset || r.Symbol === asset,
-    );
+  const effUid = store.currentSelectedUid;
+  let row = null;
+  if (effUid && store.tickerRowMap) {
+    row = store.tickerRowMap.get(String(effUid));
+  }
+  if (!row) {
+    row =
+      store.tickerRowMap.get(asset) ||
+      allSource.find(
+        (r) =>
+          r.DisplayTicker === asset ||
+          r.Ticker === asset ||
+          r.Symbol === asset ||
+          (effUid && String(r.UID) === String(effUid)),
+      );
+  }
   if (row && typeof window.updateHeaderDisplay === "function") {
     const btnSim = document.getElementById("tab-btn-sim");
     const isSimMode = btnSim ? btnSim.classList.contains("active") : false;
@@ -652,11 +662,14 @@ function autoFit(isTabRestore = false) {
 }
 
 // _main.js 에서 기존 함수를 이걸로 교체
-function calculateTimeRemaining(tf, serverMs) {
+function calculateTimeRemaining(tf, serverMs, lastCandleTime) {
   const now = new Date(serverMs);
   let nextClose;
 
-  if (tfSec[tf] && tfSec[tf] <= 43200) {
+  if (lastCandleTime) {
+    const nextBarUnix = getNextBarTime(lastCandleTime, tf);
+    nextClose = nextBarUnix * 1000;
+  } else if (tfSec[tf] && tfSec[tf] <= 43200) {
     const ms = tfSec[tf] * 1000;
 
     // 🚨 0.1초 오차 방지를 위해 1ms 더해서 올림 처리
@@ -695,7 +708,7 @@ function calculateTimeRemaining(tf, serverMs) {
     }
   }
 
-  // 3. 남은 시간 계산 및 포맷팅
+  // 3. 남은 시간 계산 및 포맷팅 (0초 도달 시 59초로 튀지 않고 00:00 고정)
   const diff = Math.max(0, nextClose - serverMs);
   if (diff <= 0) return "00:00";
 
@@ -867,6 +880,7 @@ export function updateRealtimeCountdown(serverMs, overridePrice) {
     store.localTimeAtUpdate = performance.now();
   }
 
+  const lastCandle = store.mainData[store.mainData.length - 1];
   const interpolatedMs =
     store.lastServerMs + (performance.now() - store.localTimeAtUpdate);
 
@@ -874,6 +888,7 @@ export function updateRealtimeCountdown(serverMs, overridePrice) {
     displayTime = window.calculateTimeRemaining(
       store.currentTF,
       interpolatedMs,
+      lastCandle?.time,
     );
   }
 
@@ -882,7 +897,6 @@ export function updateRealtimeCountdown(serverMs, overridePrice) {
   const isSimActive = btnSim && btnSim.classList.contains("active");
   const showTitle = store.showCountdown && !isSimActive;
 
-  const lastCandle = store.mainData[store.mainData.length - 1];
   const currentClose = (overridePrice !== undefined && overridePrice !== null && !isNaN(overridePrice))
     ? Number(overridePrice)
     : Number(lastCandle.close);
