@@ -1571,8 +1571,8 @@
   "FLOCK": {
     "binance_listing": "2025-09-01",
     "bybit_listing": "2026-09-04",
-    "upbit_listing": "2026-02-17",
-    "bithumb_listing": "2026-03-21"
+    "upbit_listing": "2025-09-09",
+    "bithumb_listing": "2025-05-30"
   },
   "FLOCKUSDT": {
     "binance_listing": "2025-09-08"

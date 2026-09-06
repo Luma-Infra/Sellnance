@@ -1,7 +1,10 @@
 /* z_style.css */
 /* css-disable unknownAtRules */
 @import "tailwindcss";
+@source "../templates";
 @source "../templates/**/*.html";
+@source "../index.html";
+@source "./";
 @source "./**/*.js";
 
 @theme {
@@ -17,7 +20,7 @@
   --color-theme-row: var(--row-bg);
   --color-theme-row-hover: var(--row-hover-bg);
 
-  /* 🚀 메인 폰트 (Pretendard) */
+  /* 메인 폰트 (Pretendard) */
   --font-sans:
     "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
     system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo",
@@ -27,7 +30,7 @@
 
 @layer base {
   body {
-    /* 🚀 기본적으로 프리텐다드 적용 및 금융 필수 옵션(숫자 고정폭) 강제 활성화 */
+    /* 기본적으로 프리텐다드 적용 및 금융 필수 옵션(숫자 고정폭) 강제 활성화 */
     font-family: var(--font-sans);
     font-variant-numeric: tabular-nums;
     background-color: var(--bg);
@@ -340,36 +343,113 @@ body.theme-binance {
 }
 
 @media (min-width: 1200px) {
+  #chart-top-zone {
+    height: 188px !important;
+    max-height: 188px !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  #chart-header-main {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    min-height: 0 !important;
+  }
+
   #head-asset-row {
-    padding: 10px 12px 6px 12px !important;
+    padding: 6px 12px 4px 12px !important;
   }
 
   #head-info-row {
+    margin-top: auto !important;
+    margin-bottom: auto !important;
     padding-top: 2px !important;
-    padding-bottom: 4px !important;
+    padding-bottom: 2px !important;
+    gap: 24px !important;
   }
 
   #head-controls-row {
-    margin-top: 4px !important;
-    padding-top: 4px !important;
-    padding-bottom: 8px !important;
+    margin-top: 0 !important;
+    padding-top: 0px !important;
+    padding-bottom: 2px !important;
+  }
+
+  #head-control-buttons button {
+    padding: 2px 8px !important;
+    font-size: 10.5px !important;
+  }
+
+  #head-price-container {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  #head-price-label {
+    font-size: 9.5px !important;
+    line-height: 1 !important;
+    margin-bottom: 0px !important;
+    align-self: flex-start !important;
+  }
+
+  #head-price-container>div,
+  #head-price-active {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    gap: 1px !important;
   }
 
   #head-price-main {
     font-size: 36px !important;
     font-weight: 500 !important;
-    line-height: 0.95 !important;
-    letter-spacing: -0.03em;
+    line-height: 1 !important;
+    letter-spacing: -0.02em;
   }
 
   #head-price-sub {
-    font-size: 12px !important;
-    opacity: 0.7;
-    margin-top: 2px;
+    font-size: 10px !important;
+    opacity: 0.65;
+    margin-top: 0.5px;
     align-self: flex-end;
     text-align: right;
     margin-left: auto;
     line-height: 1 !important;
+  }
+
+  #head-metrics-container {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 24px !important;
+  }
+
+  #head-metrics-container>div {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-end !important;
+    justify-content: flex-start !important;
+  }
+
+  #head-metrics-container span {
+    font-size: 9.5px !important;
+    line-height: 1 !important;
+    opacity: 0.5;
+    text-transform: uppercase;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+
+  #head-metrics-container b {
+    font-size: 13px !important;
+    line-height: 1.2 !important;
+    margin-top: 3px !important;
+    font-weight: 400 !important;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
   }
 }
 

@@ -224,7 +224,7 @@ export const realUpdateHeaderDisplay = (
   const bottomEls = document.querySelectorAll("#head-price-sub, .head-price-sub-sync");
 
   const formattedMainPrice = isMainKrw
-    ? `${Number(displayPrice).toLocaleString(undefined, { maximumFractionDigits: getKrwPrecision(displayPrice) })} 원`
+    ? `${Number(displayPrice).toLocaleString(undefined, { maximumFractionDigits: getKrwPrecision(displayPrice) })} ₩`
     : (window.formatSmartPrice ? window.formatSmartPrice(displayPrice, pNormalized) : formatSmartPrice(displayPrice, pNormalized));
 
   topEls.forEach((el) => {
@@ -465,8 +465,8 @@ export function toggleHeaderTop() {
       btn.innerText = "▲ 헤더 접기";
       localStorage.setItem("sellnance_header_collapsed", "false");
       if (topZone) {
-        topZone.style.height = "224px";
-        topZone.style.maxHeight = "224px";
+        topZone.style.height = "188px";
+        topZone.style.maxHeight = "188px";
       }
     } else {
       elements.forEach((el) => {
