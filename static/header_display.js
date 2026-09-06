@@ -92,7 +92,7 @@ export const realUpdateHeaderDisplay = (
 
   const isFuturesMode =
     activeMarket === "FUTURES" || activeMarket === "BYBIT_FUTURES";
-  const isSpotMode = activeMarket === "SPOT" || activeMarket === "BYBIT";
+  const isSpotMode = activeMarket === "SPOT" || activeMarket === "BYBIT" || activeMarket === "BYBIT_SPOT";
 
   // 🚀 모든 코인 통용 공통: Ticker/Symbol 기준의 대표 배수 추출 (하드코딩 0%)
   const storeMult = getMultiplier(row.Symbol || row.Ticker);
@@ -299,17 +299,17 @@ export const realUpdateHeaderDisplay = (
   } else if (activeMarket === "FUTURES" || activeMarket === "BYBIT_FUTURES") {
     n24 = row.Change_24h_Futures ?? row.Change_24h_Raw ?? 0;
     nDay = row.Change_Today_Futures ?? row.Change_Today_Raw ?? 0;
-  } else if (activeMarket === "SPOT" || activeMarket === "BYBIT") {
+  } else if (activeMarket === "SPOT" || activeMarket === "BYBIT" || activeMarket === "BYBIT_SPOT") {
     n24 =
       (activeMarket === "SPOT"
         ? (row.Change_24h_Spot ?? row.Change_24h_Binance)
-        : row.Change_24h_Bybit) ??
+        : (row.Change_24h_Bybit || row.Change_24h_Spot || row.Change_24h_Binance || row.Change_24h_Raw)) ??
       row.Change_24h_Raw ??
       0;
     nDay =
       (activeMarket === "SPOT"
         ? (row.Change_Today_Spot ?? row.Change_Today_Binance)
-        : row.Change_Today_Bybit) ??
+        : (row.Change_Today_Bybit || row.Change_Today_Spot || row.Change_Today_Binance || row.Change_Today_Raw)) ??
       row.Change_Today_Raw ??
       0;
   } else {

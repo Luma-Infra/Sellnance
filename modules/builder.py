@@ -87,7 +87,7 @@ def assemble_final_dashboard(
     for k, v in DUPLICATED_LIST.items():
         if len(v) >= 4:
             ex = v[3].upper()
-            virtual_key = k.split('(')[0].upper()
+            virtual_key = k.split("(")[0].upper()
             REVERSE_LOOKUP[f"{virtual_key}_{ex}"] = k
             if ex.startswith("BINANCE"):
                 REVERSE_LOOKUP.setdefault(f"{virtual_key}_BINANCE", k)
@@ -339,9 +339,41 @@ def assemble_final_dashboard(
         if bit_warn:
             warnings["BITHUMB"] = bit_warn
 
-        bin_warn = EXCHANGE_WARNINGS.get("BINANCE", {}).get(
+        bin_warn_raw = EXCHANGE_WARNINGS.get("BINANCE", {}).get(
             pure_base
         ) or EXCHANGE_WARNINGS.get("BINANCE", {}).get(base_sym)
+        bin_warn: str | None = str(bin_warn_raw) if bin_warn_raw else None
+
+        # [오탐 무효화] 활성 선물(Binance_Price_Futures > 0 또는 Exact_Futures)이나 현물이 정상 거래 중이면 구 페어 정지 경고 제거
+        if bin_warn:
+            has_live_fut = bool(
+                row.get("Binance_Price_Futures")
+                or row.get("Exact_Futures")
+                or row.get("Binance_Futures") == "O"
+            )
+            has_live_spot = bool(
+                row.get("Binance_Price_Spot")
+                or row.get("Binance_Price")
+                or row.get("Exact_Spot")
+                or row.get("Binance") == "O"
+            )
+
+            if "거래 정지(선물)" in bin_warn and has_live_fut:
+                if bin_warn == "거래 정지(선물)":
+                    bin_warn = None
+                elif "거래 정지(현물)" in bin_warn and not has_live_spot:
+                    bin_warn = "거래 정지(현물)"
+                else:
+                    bin_warn = None
+
+            if bin_warn and "거래 정지(현물)" in bin_warn and has_live_spot:
+                if bin_warn == "거래 정지(현물)":
+                    bin_warn = None
+                elif "거래 정지(선물)" in bin_warn and not has_live_fut:
+                    bin_warn = "거래 정지(선물)"
+                else:
+                    bin_warn = None
+
         if bin_warn:
             warnings["BINANCE"] = bin_warn
 

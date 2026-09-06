@@ -438,21 +438,40 @@ export function startRealtimeCandle(
 
     if (!isConnectingOrOpen) {
       if (store.upbitChartWs) {
-        try { store.upbitChartWs.close(); } catch (e) { }
+        try {
+          store.upbitChartWs.onopen = null;
+          store.upbitChartWs.onmessage = null;
+          store.upbitChartWs.onerror = null;
+          store.upbitChartWs.onclose = null;
+          store.upbitChartWs.close();
+        } catch (e) { }
       }
-      store.upbitChartWs = new WebSocket("wss://api.upbit.com/websocket/v1");
       store.currentUpbitStream = upbitCode;
-      store.upbitChartWs.onopen = () => {
+      const ws = new WebSocket("wss://api.upbit.com/websocket/v1");
+      store.upbitChartWs = ws;
+      ws.onopen = () => {
+        if (store.upbitChartWs !== ws) return;
         const activeCode = store.currentUpbitStream || upbitCode;
-        store.upbitChartWs.send(JSON.stringify([{ ticket: "sellnance_chart_" + getWsId() }, { type: "ticker", codes: [activeCode] }]));
+        try {
+          ws.send(JSON.stringify([{ ticket: "sellnance_chart_" + getWsId() }, { type: "ticker", codes: [activeCode] }]));
+        } catch (e) { }
+      };
+      ws.onerror = (err) => {
+        console.warn("🚨 Upbit WS error:", err);
+      };
+      ws.onclose = () => {
+        if (store.upbitChartWs === ws) {
+          store.upbitChartWs = null;
+          store.currentUpbitStream = null;
+        }
       };
     } else if (store.currentUpbitStream !== upbitCode) {
+      store.currentUpbitStream = upbitCode;
       if (store.upbitChartWs.readyState === WebSocket.OPEN) {
         try {
           store.upbitChartWs.send(JSON.stringify([{ ticket: "sellnance_chart_" + getWsId() }, { type: "ticker", codes: [upbitCode] }]));
         } catch (e) { }
       }
-      store.currentUpbitStream = upbitCode;
     }
     store.upbitChartWs.onmessage = getUpbitMessageHandler(symbol, broadcastCandleUpdate);
   }
@@ -464,12 +483,33 @@ export function startRealtimeCandle(
       (store.bithumbChartWs.readyState === WebSocket.CONNECTING || store.bithumbChartWs.readyState === WebSocket.OPEN);
 
     if (!isBithumbConnectingOrOpen) {
-      if (store.bithumbChartWs) { try { store.bithumbChartWs.close(); } catch (e) { } }
+      if (store.bithumbChartWs) {
+        try {
+          store.bithumbChartWs.onopen = null;
+          store.bithumbChartWs.onmessage = null;
+          store.bithumbChartWs.onerror = null;
+          store.bithumbChartWs.onclose = null;
+          store.bithumbChartWs.close();
+        } catch (e) { }
+      }
       store.currentBithumbStream = bithumbCode;
-      store.bithumbChartWs = new WebSocket("wss://pubwss.bithumb.com/pub/ws");
-      store.bithumbChartWs.onopen = () => {
+      const ws = new WebSocket("wss://pubwss.bithumb.com/pub/ws");
+      store.bithumbChartWs = ws;
+      ws.onopen = () => {
+        if (store.bithumbChartWs !== ws) return;
         const activeBithumb = store.currentBithumbStream || bithumbCode;
-        store.bithumbChartWs.send(JSON.stringify({ type: "transaction", symbols: [activeBithumb] }));
+        try {
+          ws.send(JSON.stringify({ type: "transaction", symbols: [activeBithumb] }));
+        } catch (e) { }
+      };
+      ws.onerror = (err) => {
+        console.warn("🚨 Bithumb WS error:", err);
+      };
+      ws.onclose = () => {
+        if (store.bithumbChartWs === ws) {
+          store.bithumbChartWs = null;
+          store.currentBithumbStream = null;
+        }
       };
     } else if (store.currentBithumbStream !== bithumbCode) {
       store.currentBithumbStream = bithumbCode;

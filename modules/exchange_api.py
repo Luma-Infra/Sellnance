@@ -305,7 +305,7 @@ def fetch_exchange_market_data(mapping):
     for k, v in DUPLICATED_LIST.items():
         if len(v) >= 4:
             ex = v[3].upper()
-            virtual_key = k.split('(')[0].upper()
+            virtual_key = k.split("(")[0].upper()
             REVERSE_LOOKUP[f"{virtual_key}_{ex}"] = k
             if ex.startswith("BINANCE"):
                 REVERSE_LOOKUP.setdefault(f"{virtual_key}_BINANCE", k)
@@ -610,6 +610,17 @@ def fetch_binance_futures_spot(bybit_data=None):
         binance_spot_warn = {}
         binance_fut_warn = {}
 
+        active_s_bases = {
+            s.get("baseAsset", "").upper()
+            for s in info_s.get("symbols", [])
+            if s.get("status") == "TRADING" and s.get("quoteAsset") == "USDT"
+        }
+        active_f_bases = {
+            s.get("baseAsset", "").upper()
+            for s in info_f.get("symbols", [])
+            if s.get("status") == "TRADING" and s.get("quoteAsset") == "USDT"
+        }
+
         for s in info_s.get("symbols", []):
             if s.get("quoteAsset") == "USDT":
                 base_sym = s.get("baseAsset", "").upper()
@@ -617,7 +628,10 @@ def fetch_binance_futures_spot(bybit_data=None):
                 status = s.get("status", "")
                 if "Monitoring" in tags:
                     binance_spot_warn[base_sym] = "거래 주의(모니터링)"
-                elif status in ["BREAK", "HALT", "PENDING_TRADING"]:
+                elif (
+                    status in ["BREAK", "HALT", "PENDING_TRADING"]
+                    and base_sym not in active_s_bases
+                ):
                     binance_spot_warn[base_sym] = "거래 정지(현물)"
 
         for s in info_f.get("symbols", []):
@@ -629,7 +643,8 @@ def fetch_binance_futures_spot(bybit_data=None):
                 "DELIVERING",
             ]:
                 base_sym = s.get("baseAsset", "").upper()
-                binance_fut_warn[base_sym] = "거래 정지(선물)"
+                if base_sym not in active_f_bases:
+                    binance_fut_warn[base_sym] = "거래 정지(선물)"
 
         all_bin_bases = set(binance_spot_warn.keys()) | set(binance_fut_warn.keys())
         for b in all_bin_bases:
@@ -896,7 +911,7 @@ def fetch_bybit_prices():
                 if scale is not None:
                     b_precisions[sym.replace("USDT", "")] = int(scale)
 
-        # 5. 데이터 매핑 (티커별 spot/futures 가격 및 거래대금)
+        # 5. 데이터 매핑 (티커별 spot/futures 가격 및 거래대금, 24시간 변동률)
         for item in s_list:
             sym = item["symbol"]
             if sym.endswith("USDT") and is_valid_ticker(sym.replace("USDT", "")):
@@ -905,6 +920,9 @@ def fetch_bybit_prices():
                     bybit_data[base] = {"volume_24h": 0.0}
                 bybit_data[base]["spot_price"] = float(item.get("lastPrice", 0))
                 bybit_data[base]["volume_24h"] += float(item.get("turnover24h", 0))
+                chg_24 = float(item.get("price24hPcnt", 0.0)) * 100
+                bybit_data[base]["change_24h"] = chg_24
+                bybit_data[base]["spot_change_24h"] = chg_24
 
         for item in f_list:
             sym = item["symbol"]
@@ -915,6 +933,12 @@ def fetch_bybit_prices():
                 bybit_data[base]["futures_price"] = float(item.get("lastPrice", 0))
                 bybit_data[base]["volume_24h"] += float(item.get("turnover24h", 0))
                 bybit_data[base]["funding_rate"] = float(item.get("fundingRate", 0))
+                chg_24 = float(item.get("price24hPcnt", 0.0)) * 100
+                bybit_data[base]["futures_change_24h"] = chg_24
+                if "change_24h" not in bybit_data[base] or not bybit_data[base].get(
+                    "spot_price"
+                ):
+                    bybit_data[base]["change_24h"] = chg_24
                 if base in b_precisions:
                     bybit_data[base]["precision"] = b_precisions[base]
 

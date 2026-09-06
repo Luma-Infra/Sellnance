@@ -642,12 +642,17 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
       container._fundingEl ||
       (container._fundingEl = container.querySelector(".funding-val"));
     if (fundingEl) {
-      const fundVal = row.Funding_Formatted || "-";
-      if (fundingEl.textContent !== fundVal) fundingEl.textContent = fundVal;
-      if (fundVal === "-") {
-        fundingEl.className = "funding-val text-theme-accent opacity-30 truncate";
-      } else {
-        fundingEl.className = "funding-val text-theme-accent opacity-70 truncate";
+      const fundingEl =
+        container._fundingEl ||
+        (container._fundingEl = container.querySelector(".funding-val"));
+      if (fundingEl) {
+        const fundVal = row.Funding_Formatted || "-";
+        if (fundingEl.textContent !== fundVal) fundingEl.textContent = fundVal;
+        if (fundVal === "-") {
+          fundingEl.className = "funding-val text-theme-accent opacity-30 truncate";
+        } else {
+          fundingEl.className = "funding-val text-theme-accent opacity-70 truncate";
+        }
       }
     }
   }

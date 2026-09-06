@@ -616,6 +616,24 @@ export async function initChart() {
       isSyncingTimeScales = true;
       try {
         targetTs.setVisibleLogicalRange(range);
+
+        // [스크롤 0ms 동기화] 마우스 휠 스크롤/패닝 중에도 메인과 볼륨 차트 크로스헤어 세로선이 1frame 지연 없이 즉시 동시 스냅
+        if (store.lastMouseX !== null && store.lastMouseX !== undefined && store.isCrosshairActive) {
+          let magnetX = store.lastMouseX;
+          if (
+            sourceChart.timeScale &&
+            typeof sourceChart.timeScale().coordinateToLogical === "function" &&
+            typeof sourceChart.timeScale().logicalToCoordinate === "function"
+          ) {
+            const logical = sourceChart.timeScale().coordinateToLogical(store.lastMouseX);
+            if (logical !== null) {
+              const snappedX = sourceChart.timeScale().logicalToCoordinate(Math.round(logical));
+              if (snappedX !== null) magnetX = snappedX;
+            }
+          }
+          if (store._mainCrosshair) store._mainCrosshair.setX(magnetX);
+          if (store._volCrosshair) store._volCrosshair.setX(magnetX);
+        }
       } catch (syncErr) {
         // 동기화 실패 시 예외가 전파되어 멈추는 현상 완벽 방어
       } finally {
@@ -724,6 +742,7 @@ export async function initChart() {
           }
 
           // 🚀 2. 가로축(시간축) 방향 마그네틱(자석) 효과 적용
+          store.lastMouseX = param.point.x;
           let magnetX = param.point.x;
           let currentLogical = null;
           if (

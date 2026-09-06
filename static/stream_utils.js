@@ -1,5 +1,5 @@
 // stream_utils.js - 실시간 스트림 파이프라인 공통 가드 및 연산 유틸리티
-import { store } from "./_store.js";
+import { store, tfSec } from "./_store.js";
 import { getPureBase, getUnixSeconds } from "./chart_utils.js";
 import { mapTime } from "./chart_data.js";
 
@@ -89,10 +89,16 @@ export function isMatchingCurrentSymbol(tickSymbol) {
     .toUpperCase()
     .trim();
 
+  const baseExpected = currentExpected.split("(")[0].trim();
+  const baseTick = cleanTick.split("(")[0].trim();
+
   if (
     cleanTick === currentExpected ||
+    baseTick === baseExpected ||
     getPureBase(cleanTick) === getPureBase(currentExpected) ||
-    getPureBase(tickSymbol) === getPureBase(currentExpected)
+    getPureBase(baseTick) === getPureBase(baseExpected) ||
+    getPureBase(tickSymbol) === getPureBase(currentExpected) ||
+    getPureBase(tickSymbol) === getPureBase(baseExpected)
   ) {
     return true;
   }
@@ -103,25 +109,29 @@ export function isMatchingCurrentSymbol(tickSymbol) {
     row = store.tickerRowMap.get(effUid);
   }
   if (!row && store.tickerRowMap) {
-    row = store.tickerRowMap.get(currentExpected);
+    row = store.tickerRowMap.get(currentExpected) || store.tickerRowMap.get(baseExpected);
   }
   if (!row && store.currentTableData) {
     row = store.currentTableData.find(
       (c) =>
         String(c.UID) === String(effUid) ||
-        (c.Symbol && c.Symbol.toUpperCase() === currentExpected) ||
-        (c.Ticker && c.Ticker.toUpperCase() === currentExpected) ||
-        (c.DisplayTicker && c.DisplayTicker.toUpperCase() === currentExpected) ||
+        (c.Symbol && (c.Symbol.toUpperCase() === currentExpected || c.Symbol.toUpperCase().split("(")[0].trim() === baseExpected)) ||
+        (c.Ticker && (c.Ticker.toUpperCase() === currentExpected || c.Ticker.toUpperCase().split("(")[0].trim() === baseExpected)) ||
+        (c.DisplayTicker && (c.DisplayTicker.toUpperCase() === currentExpected || c.DisplayTicker.toUpperCase().split("(")[0].trim() === baseExpected)) ||
         (c.Exact_Spot && c.Exact_Spot.toUpperCase() === currentExpected) ||
-        (c.Exact_Futures && c.Exact_Futures.toUpperCase() === currentExpected)
+        (c.Exact_Futures && c.Exact_Futures.toUpperCase() === currentExpected) ||
+        (c.Upbit_Symbol && (c.Upbit_Symbol.toUpperCase() === currentExpected || c.Upbit_Symbol.toUpperCase().split("(")[0].trim() === baseExpected)) ||
+        (c.Bithumb_Symbol && (c.Bithumb_Symbol.toUpperCase() === currentExpected || c.Bithumb_Symbol.toUpperCase().split("(")[0].trim() === baseExpected))
     );
   }
   if (row) {
-    if (row.Exact_Spot && row.Exact_Spot.toUpperCase() === cleanTick) return true;
-    if (row.Exact_Futures && row.Exact_Futures.toUpperCase() === cleanTick) return true;
-    if (row.Symbol && row.Symbol.toUpperCase() === cleanTick) return true;
-    if (row.DisplayTicker && row.DisplayTicker.toUpperCase() === cleanTick) return true;
-    if (row.Ticker && row.Ticker.toUpperCase().replace(/USDT$/i, "") === cleanTick) return true;
+    if (row.Exact_Spot && (row.Exact_Spot.toUpperCase() === cleanTick || row.Exact_Spot.toUpperCase() === baseTick)) return true;
+    if (row.Exact_Futures && (row.Exact_Futures.toUpperCase() === cleanTick || row.Exact_Futures.toUpperCase() === baseTick)) return true;
+    if (row.Upbit_Symbol && (row.Upbit_Symbol.toUpperCase() === cleanTick || row.Upbit_Symbol.toUpperCase() === baseTick || row.Upbit_Symbol.toUpperCase().split("(")[0].trim() === baseTick)) return true;
+    if (row.Bithumb_Symbol && (row.Bithumb_Symbol.toUpperCase() === cleanTick || row.Bithumb_Symbol.toUpperCase() === baseTick || row.Bithumb_Symbol.toUpperCase().split("(")[0].trim() === baseTick)) return true;
+    if (row.Symbol && (row.Symbol.toUpperCase() === cleanTick || row.Symbol.toUpperCase().split("(")[0].trim() === baseTick)) return true;
+    if (row.DisplayTicker && (row.DisplayTicker.toUpperCase() === cleanTick || row.DisplayTicker.toUpperCase().split("(")[0].trim() === baseTick)) return true;
+    if (row.Ticker && row.Ticker.toUpperCase().replace(/USDT$/i, "").replace(/KRW$/i, "") === baseTick) return true;
     if (row.UID && row.UID.toUpperCase() === cleanTick) return true;
   }
 

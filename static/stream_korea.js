@@ -250,26 +250,27 @@ export function updateRealtimeKimchi(liveData, symbol, chartTime) {
               // 🚀 [Late Arrival Autofit] 새 바인데 이 함수의 직전 호출 이후 gap이 임계치 초과 시에만
               // custom len + right margin 보존 방식으로 chartVol timeScale 재조정
               // 판단 기준: 직전 함수 호출 시각 → 현재 호출 시각의 gap (쓰로틀 주기 455ms 기준, 훨씬 오래 안 불렸으면 늦음)
-              try {
-                const LATE_MS = 1000; // ← 이 값만 바꾸면 됨 (0.5s=500, 1s=1000, 1.5s=1500)
-                const isLateArrival = callGapMs > LATE_MS;
-                const debounceOk = !store._lastKimchiAutofit || (nowCallMs - store._lastKimchiAutofit > 2000);
 
-                if (isLateArrival && debounceOk && store.chartVol) {
-                  store._lastKimchiAutofit = nowCallMs;
-                  const rightMarginBars = store._kimchiAutofitRightMargin ?? 5;
-                  const visibleBars = store.currentRenderLimit || 200;
-                  const totalLen = store.kimchiData.length;
-                  requestAnimationFrame(() => {
-                    try {
-                      store.chartVol.timeScale().setVisibleLogicalRange({
-                        from: Math.max(0, totalLen - visibleBars),
-                        to: totalLen - 1 + rightMarginBars,
-                      });
-                    } catch (_e) { /* 무시 */ }
-                  });
-                }
-              } catch (_autofitErr) { /* 무시 */ }
+              // try {
+              //   const LATE_MS = 1000; // ← 이 값만 바꾸면 됨 (0.5s=500, 1s=1000, 1.5s=1500)
+              //   const isLateArrival = callGapMs > LATE_MS;
+              //   const debounceOk = !store._lastKimchiAutofit || (nowCallMs - store._lastKimchiAutofit > 2000);
+
+              //   if (isLateArrival && debounceOk && store.chartVol) {
+              //     store._lastKimchiAutofit = nowCallMs;
+              //     const rightMarginBars = store._kimchiAutofitRightMargin ?? 5;
+              //     const visibleBars = store.currentRenderLimit || 200;
+              //     const totalLen = store.kimchiData.length;
+              //     requestAnimationFrame(() => {
+              //       try {
+              //         store.chartVol.timeScale().setVisibleLogicalRange({
+              //           from: Math.max(0, totalLen - visibleBars),
+              //           to: totalLen - 1 + rightMarginBars,
+              //         });
+              //       } catch (_e) { /* 무시 */ }
+              //     });
+              //   }
+              // } catch (_autofitErr) { /* 무시 */ }
 
             } else if (chartTime === lastKimchiItem.time) {
               store.kimchiData[store.kimchiData.length - 1] = kimchiObj;
@@ -356,9 +357,7 @@ export function getUpbitMessageHandler(symbol, broadcastCandleUpdate) {
       if (!res.code) return;
 
       const tickSymbol = res.code.toUpperCase();
-      const expectedCode = `KRW-${symbol}`.toUpperCase();
-      const expectedGlobalCode = `KRW-${(store.currentSelectedSymbol || "").replace("USDT", "").replace("KRW-", "").replace("KRW", "").replace("KRW", "")}`.toUpperCase();
-      if (tickSymbol !== expectedCode || tickSymbol !== expectedGlobalCode) return;
+      if (!isMatchingCurrentSymbol(tickSymbol)) return;
 
       const newPrice = parseFloat(res.trade_price);
       if (isNaN(newPrice)) return;
@@ -378,7 +377,6 @@ export function getUpbitMessageHandler(symbol, broadcastCandleUpdate) {
     if (!res.code) return;
 
     const tickSymbol = res.code.toUpperCase();
-    const expectedCode = `KRW-${symbol}`.toUpperCase();
 
     // 🛡️ [Symbol Guard] 업비트 현재 활성 심볼 일치 여부 검증
     if (!isMatchingCurrentSymbol(tickSymbol)) return;
@@ -446,8 +444,11 @@ export function getBithumbMessageHandler(symbol, broadcastCandleUpdate) {
     const res = JSON.parse(e.data);
     if (res.type !== "transaction" || !res.content?.list) return;
 
+    const firstTrade = res.content.list[0];
+    const tradeSymbol = firstTrade?.symbol || symbol;
+
     // 🛡️ [Symbol Guard] 빗썸 현재 활성 심볼 일치 여부 검증
-    if (!isMatchingCurrentSymbol(symbol)) return;
+    if (!isMatchingCurrentSymbol(tradeSymbol) && !isMatchingCurrentSymbol(symbol)) return;
 
     if (isChartBusy()) return;
     if (!store.mainData || store.mainData.length === 0) return;

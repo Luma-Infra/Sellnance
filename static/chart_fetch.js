@@ -112,10 +112,10 @@ export async function fetchHistory(
   const uniqueTicker = rowInfo ? rowInfo.Ticker : displayName;
 
   let exactSpot = rowInfo?.Exact_Spot || pureBase;
-  let exactFutures = rowInfo?.Exact_Futures || pureBase;
+  let exactFutures = rowInfo?.Exact_Futures || (displayName.match(/^10+/i) ? displayName : pureBase);
   let exactUpbit = rowInfo?.Upbit_Symbol || rowInfo?.Symbol || pureBase;
   let exactBithumb = rowInfo?.Bithumb_Symbol || pureBase;
-  let exactBybit = rowInfo?.Bybit_Symbol || pureBase;
+  let exactBybit = rowInfo?.Bybit_Symbol || (isBybitFutures ? (rowInfo?.Exact_Futures || (displayName.match(/^10+/i) ? displayName : pureBase)) : (rowInfo?.Exact_Spot || pureBase));
 
   const dupList = store.marketDataMap?.duplicated_list;
   const uid = rowInfo?.UID;

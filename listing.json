@@ -1570,7 +1570,7 @@
   },
   "FLOCK": {
     "binance_listing": "2025-09-01",
-    "bybit_listing": "2026-09-04",
+    "bybit_listing": "2026-07-26",
     "upbit_listing": "2025-09-09",
     "bithumb_listing": "2025-05-30"
   },
@@ -2913,7 +2913,8 @@
   "PEPE": {
     "binance_listing": "2023-05-01",
     "upbit_listing": "2026-07-04",
-    "bithumb_listing": "2026-06-27"
+    "bithumb_listing": "2026-06-27",
+    "bybit_listing": "2026-09-05"
   },
   "PEPEUSDT": {
     "binance_listing": "2023-05-01"
@@ -3564,7 +3565,8 @@
     "binance_listing": "2025-05-19"
   },
   "SOPH": {
-    "binance_listing": "2025-05-28"
+    "binance_listing": "2025-05-28",
+    "upbit_listing": "2026-08-29"
   },
   "SOPHUSDT": {
     "binance_listing": "2025-05-28",
@@ -4243,7 +4245,8 @@
     "binance_listing": "2026-04-28"
   },
   "XAN": {
-    "binance_listing": "2025-09-29"
+    "binance_listing": "2025-09-29",
+    "bybit_listing": "2025-09-29"
   },
   "XANUSDT": {
     "binance_listing": "2025-09-29"
@@ -4364,7 +4367,8 @@
     "binance_listing": "2026-04-28"
   },
   "ZAMA": {
-    "binance_listing": "2026-01-09"
+    "binance_listing": "2026-01-09",
+    "upbit_listing": "2026-09-06"
   },
   "ZAMAUSDT": {
     "binance_listing": "2026-01-09"

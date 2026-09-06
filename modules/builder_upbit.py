@@ -300,8 +300,8 @@ def build_upbit_row(
     mcap = mcap_val if mcap_val is not None else 0
     vmc_raw = (total_vol / mcap * 100) if (mcap is not None and mcap > 0) else 0.0
 
-    by_spot_p = by_raw.get("spot_price", 0.0)
-    by_futures_p = by_raw.get("futures_price", 0.0)
+    by_spot_p = float(by_raw.get("spot_price") or 0.0)
+    by_futures_p = float(by_raw.get("futures_price") or 0.0)
 
     kimchi_label = "-"
     if up_price_krw > 0:
@@ -386,7 +386,14 @@ def build_upbit_row(
         "Change_24h_Binance": bin_agg["binance_spot_change_24h"],
         "Change_24h_Bybit": float(by_raw.get("change_24h", 0.0)),
         "Change_Today_Binance": bin_agg["binance_spot_change_today"],
-        "Change_Today_Bybit": float(by_raw.get("change_today", 0.0)),
+        "Change_Today_Bybit": float(
+            by_raw.get("change_today")
+            or (
+                utils.js_round(((by_spot_p if by_spot_p > 0 else by_futures_p) - utc0_open) / utc0_open * 100, 2)
+                if ((by_spot_p > 0 or by_futures_p > 0) and utc0_open > 0)
+                else 0.0
+            )
+        ),
         "Binance_Vol_Spot": bin_agg["binance_spot_vol"],
         "Exact_Spot": bin_agg["exact_spot_ticker"],
         "Upbit_Vol_Formatted": (

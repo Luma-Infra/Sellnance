@@ -548,10 +548,19 @@ def build_binance_row(
         "Bybit_Price_Spot": by_spot_p if by_spot_p > 0 else None,
         "Change_24h_Spot": binance_spot_change_24h,
         "Change_24h_Binance": binance_spot_change_24h,
-        "Change_24h_Bybit": float(bybit_data.get(raw_symbol, {}).get("change_24h", 0.0) or bybit_data.get(base, {}).get("change_24h", 0.0)),
+        "Change_24h_Bybit": float(bybit_data.get(raw_symbol, {}).get("change_24h") or bybit_data.get(base, {}).get("change_24h") or (bybit_data.get(target_up_base, {}).get("change_24h") if target_up_base else 0.0) or 0.0),
         "Change_Today_Spot": binance_spot_change_today,
         "Change_Today_Binance": binance_spot_change_today,
-        "Change_Today_Bybit": float(bybit_data.get(raw_symbol, {}).get("change_today", 0.0) or bybit_data.get(base, {}).get("change_today", 0.0)),
+        "Change_Today_Bybit": float(
+            bybit_data.get(raw_symbol, {}).get("change_today")
+            or bybit_data.get(base, {}).get("change_today")
+            or (bybit_data.get(target_up_base, {}).get("change_today") if target_up_base else None)
+            or (
+                utils.js_round(((by_spot_p if by_spot_p > 0 else by_futures_p) - (spot_utc0 or futures_utc0 or utc0_open)) / (spot_utc0 or futures_utc0 or utc0_open) * 100, 2)
+                if ((by_spot_p > 0 or by_futures_p > 0) and (spot_utc0 > 0 or futures_utc0 > 0 or utc0_open > 0))
+                else 0.0
+            )
+        ),
         "spot_utc0_open_Raw": spot_utc0 if spot_utc0 > 0 else None,
         "Binance_Vol_Spot": total_vol_spot,
         "Exact_Spot": exact_spot_ticker,

@@ -1033,43 +1033,7 @@ export function updateTabTitleManager(price, symbol, isKor) {
         c.DisplayTicker === symbol,
     );
     const targetSymbol = row?.Symbol || symbol;
-
-    const isFuturesMode =
-      activeMarket === "FUTURES" || activeMarket === "BYBIT_FUTURES";
-
-    const targetMult = getMultiplier(targetSymbol);
-
-    // 🚀 기준 가격 확인 (코인의 대표 배율 가격 추정)
-    const refRawPrice =
-      Number(row?.Price_Raw) ||
-      Number(row?.Binance_Price_Futures) ||
-      parseFloat(row?.Price) ||
-      0;
-
-    let scaledPrice = price;
-
-    if (targetMult > 1) {
-      // 심볼이 1000SATS, 1000PEPE, 1000SHIB 등 배율 심볼인 경우:
-      // 넘어온 price가 1단위 원본 가격(예: 0.0000037)인지 배율 가격(예: 0.0037)인지 판별하여
-      // 무조건 탭 표시줄에는 '배율 처리 가격'만 표출되도록 정규화
-      if (refRawPrice > 0 && price < refRawPrice / (targetMult / 10)) {
-        scaledPrice = price * targetMult;
-      } else if (isKor) {
-        const domMult = getMultiplier(row?.Upbit_Symbol || targetSymbol);
-        if (domMult === 1 && targetMult > 1) {
-          scaledPrice = price * targetMult;
-        }
-      }
-    } else {
-      const ovsMult = getMultiplier(
-        (isFuturesMode ? row?.Exact_Futures : row?.Exact_Spot) || targetSymbol,
-      );
-      const domMult = getMultiplier(row?.Upbit_Symbol || targetSymbol);
-      const activeExchangeMult = isKor ? domMult : ovsMult;
-      if (activeExchangeMult > 1) {
-        scaledPrice = price / activeExchangeMult;
-      }
-    }
+    const scaledPrice = price;
 
     const isMainKrw = store.currencyMode === "KRW" || isKor;
     let formatted = "";
