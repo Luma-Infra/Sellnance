@@ -30,7 +30,7 @@ MARKET_DATA_CACHE_FILE = os.path.join(
 OWNER_CACHE_FILE = os.path.join(
     os.path.dirname(__file__), "../static/cmc_owner_cache.json"
 )
-OWNER_CACHE_TIMEOUT = 86400  # 24시간
+OWNER_CACHE_TIMEOUT = 14400  # 4시간
 USER_CACHE_TIMEOUT = 900  # 15분
 
 USER_CMC_CACHES = {}
@@ -158,18 +158,33 @@ def start_kst_9am_scheduler():
     thread.start()
 
 
-# 🚀 [추가] 5분 주기 백그라운드 Silent 자동 갱신 스케줄러
-# 유저 요청과 완전히 분리 - 유저가 0명이든 500명이든 서버가 혼자 5분마다 수집
-SILENT_REFRESH_INTERVAL = 900  # 15분 (초)
+# 🚀 [추가] 15분 단위 벽시계 정각 동기화 백그라운드 Silent 자동 갱신 스케줄러
+# 유저 요청과 완전히 분리 - 서버가 :00, :15, :30, :45 정각에 정확히 수집
+def get_seconds_until_next_15min():
+    now = datetime.now(KST)
+    current_minute = now.minute
+    current_second = now.second
+    next_minute = ((current_minute // 15) + 1) * 15
+    if next_minute == 60:
+        seconds_left = (60 - current_minute) * 60 - current_second
+    else:
+        seconds_left = (next_minute - current_minute) * 60 - current_second
+    return max(1, seconds_left)
 
 
 def start_silent_background_scheduler():
     def run():
-        print("🔄 [SYSTEM] Silent 백그라운드 자동 갱신 스케줄러 가동 (5분 주기)...")
+        print(
+            "🔄 [SYSTEM] 정각 동기화 백그라운드 스케줄러 가동 (:00, :15, :30, :45)..."
+        )
         while True:
-            time.sleep(SILENT_REFRESH_INTERVAL)
+            sleep_sec = get_seconds_until_next_15min()
+            time.sleep(sleep_sec)
             try:
-                print("🔄 [BG SCHEDULER] 15분 주기 silent 갱신 시작...")
+                now = datetime.now(KST)
+                print(
+                    f"🔄 [BG SCHEDULER] {now.strftime('%H:%M:%S')} 정각 자동 갱신 시작..."
+                )
                 _fetch_and_process_data_and_cache(silent_mode=True)
             except Exception as e:
                 print(f"🚨 [BG SCHEDULER ERROR] {e}")
@@ -308,12 +323,15 @@ def _fetch_and_process_data(silent_mode=False, api_key=None):
                 f"📊 [2/3 CMC 유저 키 호출 완료] 장부 매칭 성공:{len(market_data_map)}개"
             )
     else:
-        # 서버 키 처리 (24시간 파일 캐시)
+        # 서버 키 처리 (4시간 정각 캐시: 01:00, 05:00, 09:00, 13:00, 17:00, 21:00)
         cmc_expired = False
         if GLOBAL_CMC_CACHE["timestamp"] != datetime.min:
-            cmc_expired = (
-                now_kst - GLOBAL_CMC_CACHE["timestamp"].astimezone(KST)
-            ).total_seconds() > OWNER_CACHE_TIMEOUT
+            last_ts = GLOBAL_CMC_CACHE["timestamp"].astimezone(KST)
+            seconds_diff = (now_kst - last_ts).total_seconds()
+            is_at_4h_mark = (now_kst.hour in [1, 5, 9, 13, 17, 21]) and (
+                last_ts.hour != now_kst.hour or last_ts.date() != now_kst.date()
+            )
+            cmc_expired = (seconds_diff >= OWNER_CACHE_TIMEOUT) or is_at_4h_mark
         else:
             cmc_expired = True
 
@@ -334,7 +352,7 @@ def _fetch_and_process_data(silent_mode=False, api_key=None):
             }
             _save_owner_cache_to_file()
             print(
-                f"📊 [2/3 CMC 서버 키 호출 완료 (API 호출)] 장부 매칭 성공:{len(market_data_map)}개"
+                f"📊 [2/3 CMC 서버 키 호출 완료 (4시간 정각 API 호출)] 장부 매칭 성공:{len(market_data_map)}개"
             )
 
     # 3. 조립 및 계산
