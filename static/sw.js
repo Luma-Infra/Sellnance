@@ -1,43 +1,52 @@
-const CACHE_NAME = "sellnance-v2";
-const STATIC_ASSETS = [
-  "/static/PretendardVariable.woff2",
-];
+const CACHE_NAME = "sellnance-v3";
+const STATIC_ASSETS = ["/static/PretendardVariable.woff2"];
 
 // 서비스 워커 설치 즉시 활성화
 self.addEventListener("install", (e) => {
   self.skipWaiting();
   e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS)),
   );
 });
 
 // 구버전 캐시 즉시 소각
 self.addEventListener("activate", (e) => {
   e.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys.map((k) => {
-          if (k !== CACHE_NAME) {
-            return caches.delete(k);
-          }
-        })
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(
+          keys.map((k) => {
+            if (k !== CACHE_NAME) {
+              return caches.delete(k);
+            }
+          }),
+        ),
       )
-    ).then(() => self.clients.claim())
+      .then(() => self.clients.claim()),
   );
 });
 
 // fetch 이벤트
 self.addEventListener("fetch", (e) => {
-  if (e.request.method !== "GET" || !e.request.url.startsWith(self.location.origin)) {
+  if (
+    e.request.method !== "GET" ||
+    !e.request.url.startsWith(self.location.origin)
+  ) {
     return;
   }
 
-  // 1. HTML 페이지 접속 및 API/웹소켓은 SW 캐싱 절대 금지 (항상 서버 최신 실시간 서빙)
+  // 1. HTML 페이지 접속 및 API/웹소켓/JS/CSS/JSON은 SW 캐싱 절대 금지 (항상 최신 실시간 서빙)
   if (
     e.request.mode === "navigate" ||
     e.request.destination === "document" ||
+    e.request.destination === "script" ||
+    e.request.destination === "style" ||
     e.request.url.includes("/api/") ||
-    e.request.url.includes("/ws")
+    e.request.url.includes("/ws") ||
+    e.request.url.endsWith(".js") ||
+    e.request.url.endsWith(".css") ||
+    e.request.url.endsWith(".json")
   ) {
     return;
   }
@@ -48,10 +57,12 @@ self.addEventListener("fetch", (e) => {
       .then((networkResponse) => {
         if (networkResponse && networkResponse.status === 200) {
           const resClone = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(e.request, resClone));
+          caches
+            .open(CACHE_NAME)
+            .then((cache) => cache.put(e.request, resClone));
         }
         return networkResponse;
       })
-      .catch(() => caches.match(e.request))
+      .catch(() => caches.match(e.request)),
   );
 });

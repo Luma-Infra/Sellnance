@@ -268,7 +268,17 @@ export async function fetchHistory(
         }));
       }
     } else if (isBithumb) {
-      const bData = await fetchCandlesSmart("bithumb", krwTicker, store.currentTF, 1000);
+      let bFetchTf = store.currentTF;
+      if (store.currentTF === "3d") {
+        bFetchTf = "1d";
+        mainStep = 3;
+      } else if (store.currentTF === "12h") {
+        bFetchTf = "4h";
+        mainStep = 3;
+      } else {
+        mainStep = 1;
+      }
+      const bData = await fetchCandlesSmart("bithumb", krwTicker, bFetchTf, 1000);
       const rawList = Array.isArray(bData?.data) ? bData.data : (Array.isArray(bData) ? bData : []);
       rawMain = rawList
         .map((d) => ({
@@ -280,7 +290,6 @@ export async function fetchHistory(
           vol: Number(d[5]),
         }))
         .sort((a, b) => a.time - b.time);
-      mainStep = 1;
     } else if (isGate) {
       const exName = isGateFutures ? "gateio_futures" : "gateio_spot";
       const gateSym = isGateFutures ? `${pureBase}USDT.P` : `${pureBase}USDT`;

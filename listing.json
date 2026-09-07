@@ -415,7 +415,8 @@
     "binance_listing": "2026-04-28"
   },
   "ARX": {
-    "binance_listing": "2026-06-23"
+    "binance_listing": "2026-06-01",
+    "bithumb_listing": "2026-06-01"
   },
   "ASR": {
     "binance_listing": "2025-05-06"
@@ -965,7 +966,9 @@
     "binance_listing": "2024-11-06"
   },
   "CFG": {
-    "binance_listing": "2026-03-16"
+    "binance_listing": "2026-03-01",
+    "upbit_listing": "2026-02-26",
+    "bithumb_listing": "2026-08-26"
   },
   "CFGUSDT": {
     "binance_listing": "2026-03-16"
@@ -1294,7 +1297,9 @@
     "binance_listing": "2025-05-01"
   },
   "DOOD": {
-    "binance_listing": "2025-05-09"
+    "binance_listing": "2025-05-01",
+    "upbit_listing": "2026-02-20",
+    "bithumb_listing": "2026-08-11"
   },
   "DOODUSDT": {
     "binance_listing": "2025-05-09"
@@ -1511,7 +1516,8 @@
     "binance_listing": "2025-01-14"
   },
   "FCT2": {
-    "upbit_listing": "2025-11-10"
+    "upbit_listing": "2025-11-10",
+    "bithumb_listing": "2023-12-12"
   },
   "FDUSDUSDT": {
     "binance_listing": "2023-07-26"
@@ -2851,7 +2857,8 @@
     "upbit_listing": "2025-11-17"
   },
   "ORCA": {
-    "binance_listing": "2024-12-06"
+    "binance_listing": "2024-12-01",
+    "upbit_listing": "2025-03-01"
   },
   "ORCAUSDT": {
     "binance_listing": "2025-01-14"
@@ -3866,7 +3873,8 @@
     "binance_listing": "2026-04-28"
   },
   "TOKAMAK": {
-    "upbit_listing": "2025-11-10"
+    "upbit_listing": "2025-11-10",
+    "bithumb_listing": "2024-11-01"
   },
   "TOKEN": {
     "binance_listing": "2023-11-03"
@@ -4005,7 +4013,7 @@
     "binance_listing": "2025-01-18"
   },
   "UAI": {
-    "binance_listing": "2025-11-06"
+    "binance_listing": "2025-11-01"
   },
   "UAIUSDT": {
     "binance_listing": "2025-11-03"
@@ -4035,8 +4043,8 @@
     "binance_listing": "2025-01-14"
   },
   "UP2": {
-    "upbit_listing": "2026-05-13",
-    "bithumb_listing": "2026-05-29"
+    "upbit_listing": "2026-05-01",
+    "bithumb_listing": "2026-05-13"
   },
   "US": {
     "binance_listing": "2025-12-12"

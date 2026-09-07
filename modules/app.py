@@ -490,6 +490,7 @@ def get_coin_info(asset: str):
                     "symbol": coin.get("Symbol", clean_base),
                     "name": coin.get("Name", clean_base),
                     "market_cap": coin.get("MarketCap_Formatted", "정보 없음"),
+                    "logo": coin.get("Logo", ""),
                 }
 
         # 캐시에 없으면 (신규 상장 등)
@@ -498,9 +499,10 @@ def get_coin_info(asset: str):
             "symbol": clean_base.split("(")[0],
             "name": clean_base,
             "market_cap": "정보 없음",
+            "logo": "",
         }
     except Exception as e:
-        return {"asset": asset, "name": asset, "market_cap": "조회 실패"}
+        return {"asset": asset, "name": asset, "market_cap": "조회 실패", "logo": ""}
 
 
 @app.get("/api/candles")

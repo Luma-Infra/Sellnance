@@ -42,9 +42,52 @@ window.addEventListener(
   true,
 );
 
+// [초기 캐시 선제 동기화] 새로고침 즉시 코인 로고와 심볼 매핑 복원
+export function preloadCachedMarketData() {
+  try {
+    if (store.originalTableData && store.originalTableData.length > 0) return;
+    const cachedDataStr = localStorage.getItem("sellnance_market_data_cache");
+    if (!cachedDataStr) return;
+    const cachedResult = JSON.parse(cachedDataStr);
+    if (
+      !cachedResult ||
+      !Array.isArray(cachedResult.data) ||
+      cachedResult.data.length === 0
+    )
+      return;
+
+    store.originalTableData = cachedResult.data;
+    if (!store.currentTableData || store.currentTableData.length === 0) {
+      store.currentTableData = cachedResult.data;
+    }
+    if (store.tickerRowMap) {
+      cachedResult.data.forEach((row) => {
+        if (!row) return;
+        const uid = row.UID ? String(row.UID) : null;
+        const sym = row.Symbol ? String(row.Symbol).toUpperCase() : null;
+        const dt = row.DisplayTicker
+          ? String(row.DisplayTicker).toUpperCase()
+          : null;
+        const t = row.Ticker ? String(row.Ticker).toUpperCase() : null;
+        if (uid) store.tickerRowMap.set(uid, row);
+        if (sym && !store.tickerRowMap.has(sym))
+          store.tickerRowMap.set(sym, row);
+        if (dt && !store.tickerRowMap.has(dt)) store.tickerRowMap.set(dt, row);
+        if (t && !store.tickerRowMap.has(t)) store.tickerRowMap.set(t, row);
+      });
+    }
+  } catch (e) {
+    console.warn("로컬 캐시 선제 동기화 실패:", e);
+  }
+}
+window.preloadCachedMarketData = preloadCachedMarketData;
+
 // 🚀 사용자의 테마, 사이드바, 테이블 뷰 모드 설정을 로컬 저장소로부터 복원하는 함수
 export function restoreSavedUserSettings() {
   try {
+    // 0. 로컬 캐시 즉시 복원 (코인 로고 0ms 표시 보장)
+    preloadCachedMarketData();
+
     // 1. 테마 및 컬러 모드 복원
     restoreThemeSettings();
 
@@ -84,12 +127,19 @@ export function restoreSavedUserSettings() {
     // 4. 좌우 패널 스왑 상태 복원
     const isPanelSwapped =
       localStorage.getItem("sellnance_panel_swapped") === "true";
-    document.documentElement.classList.toggle("panel-swapped-mode", isPanelSwapped);
+    document.documentElement.classList.toggle(
+      "panel-swapped-mode",
+      isPanelSwapped,
+    );
     if (isPanelSwapped) {
       const container = document.getElementById("panel-split-container");
       const leftPanel = document.getElementById("left-panel");
       if (container) {
-        container.style.setProperty("flex-direction", "row-reverse", "important");
+        container.style.setProperty(
+          "flex-direction",
+          "row-reverse",
+          "important",
+        );
         container.classList.remove("flex-row", "md:flex-row");
         container.classList.add("panel-swapped", "flex-row-reverse");
       }
@@ -105,7 +155,7 @@ export function restoreSavedUserSettings() {
       savedViewMode = "basic";
       try {
         localStorage.setItem("sellnance_table_view_mode", "basic");
-      } catch (e) { }
+      } catch (e) {}
     }
     if (typeof switchViewMode === "function") {
       switchViewMode(savedViewMode, false);
@@ -120,7 +170,7 @@ export function restoreSavedUserSettings() {
     if (typeof window.updateCandleThemeButtons === "function") {
       window.updateCandleThemeButtons();
     }
-  } catch (e) { }
+  } catch (e) {}
 }
 
 let _dashboardEnginePromise = null;
@@ -141,17 +191,15 @@ export function initDashboardEngine() {
       else if (typeof initChart === "function") await initChart();
 
       // 2️⃣ [병렬 데이터 로드]
-      await Promise.all([
-        loadSymbols(),
-        loadTableData(),
-      ]);
+      await Promise.all([loadSymbols(), loadTableData()]);
 
       // 3️⃣ [엔진 준비]
       if (store.currentTableData && store.currentTableData.length > 0) {
         initMeasureEvents();
         initDrawingEvents();
         initDrawingToolbar();
-        if (typeof window.initInfiniteScroll === "function") window.initInfiniteScroll();
+        if (typeof window.initInfiniteScroll === "function")
+          window.initInfiniteScroll();
         if (typeof window.initAllExchangeFeeds === "function") {
           window.initAllExchangeFeeds();
         }
@@ -215,7 +263,8 @@ export function updateStatusBadge() {
       timerEl.title = "";
       timerEl.style.cursor = "default";
     }
-    if (tipTimerEl) tipTimerEl.innerHTML = `${iconTimer}${formattedTime} 남음 (15분 주기)`;
+    if (tipTimerEl)
+      tipTimerEl.innerHTML = `${iconTimer}${formattedTime} 남음 (15분 주기)`;
     if (tipTextEl) {
       tipTextEl.innerHTML = `개인 CMC API 키 연동 완료 ${iconRocket}<br/>15분 주기로 시총이 자동 갱신됩니다.`;
     }
@@ -232,7 +281,8 @@ export function updateStatusBadge() {
       timerEl.title = "";
       timerEl.style.cursor = "default";
     }
-    if (tipTimerEl) tipTimerEl.innerHTML = `${iconInfo}${formattedTime} (일일 캐시)`;
+    if (tipTimerEl)
+      tipTimerEl.innerHTML = `${iconInfo}${formattedTime} (일일 캐시)`;
     if (tipTextEl) {
       tipTextEl.innerHTML = `개인 CMC API 키 미입력 상태에요<br/>서버 일일 캐시 모드(24시간 주기)로 시총을 갱신할게요`;
     }
@@ -249,7 +299,9 @@ export function toggleStatusTooltip(event) {
   if (window.innerWidth < 1200) {
     const overlay = document.getElementById("mobile-chart-overlay");
     const isChartOpen =
-      (overlay && overlay.style.opacity === "1" && !overlay.classList.contains("hidden")) ||
+      (overlay &&
+        overlay.style.opacity === "1" &&
+        !overlay.classList.contains("hidden")) ||
       (window.store && window.store._currentMobileTab === "chart");
     if (isChartOpen) return;
   }
@@ -258,12 +310,24 @@ export function toggleStatusTooltip(event) {
   if (!tooltip) return;
   const isOpen = tooltip.classList.contains("opacity-100");
   if (isOpen) {
-    tooltip.classList.remove("opacity-100", "pointer-events-auto", "translate-y-0");
+    tooltip.classList.remove(
+      "opacity-100",
+      "pointer-events-auto",
+      "translate-y-0",
+    );
     tooltip.classList.add("opacity-0", "pointer-events-none", "translate-y-1");
   } else {
     updateStatusBadge();
-    tooltip.classList.remove("opacity-0", "pointer-events-none", "translate-y-1");
-    tooltip.classList.add("opacity-100", "pointer-events-auto", "translate-y-0");
+    tooltip.classList.remove(
+      "opacity-0",
+      "pointer-events-none",
+      "translate-y-1",
+    );
+    tooltip.classList.add(
+      "opacity-100",
+      "pointer-events-auto",
+      "translate-y-0",
+    );
   }
 }
 
@@ -275,8 +339,16 @@ if (typeof document !== "undefined") {
       const tooltip = document.getElementById("status-cache-tooltip");
       if (tooltip && tooltip.classList.contains("opacity-100")) {
         if (!badge || !badge.contains(e.target)) {
-          tooltip.classList.remove("opacity-100", "pointer-events-auto", "translate-y-0");
-          tooltip.classList.add("opacity-0", "pointer-events-none", "translate-y-1");
+          tooltip.classList.remove(
+            "opacity-100",
+            "pointer-events-auto",
+            "translate-y-0",
+          );
+          tooltip.classList.add(
+            "opacity-0",
+            "pointer-events-none",
+            "translate-y-1",
+          );
         }
       }
     }
@@ -414,13 +486,14 @@ export function scheduleDailyReset() {
     if (store.currentTableData && Array.isArray(store.currentTableData)) {
       store.currentTableData.forEach((row) => {
         if (row.Binance_Price_Futures || row.Price_Raw) {
-          row.futures_utc0_open_Raw = row.Binance_Price_Futures || row.Price_Raw;
+          row.futures_utc0_open_Raw =
+            row.Binance_Price_Futures || row.Price_Raw;
         }
         if (row.Binance_Price_Spot || row.Price_Raw) {
           row.spot_utc0_open_Raw = row.Binance_Price_Spot || row.Price_Raw;
         }
         if (row.Price_KRW || (row.Price_Raw && rate > 0)) {
-          row.utc0_open_KRW = row.Price_KRW || (row.Price_Raw * rate);
+          row.utc0_open_KRW = row.Price_KRW || row.Price_Raw * rate;
         }
         if (row.Price_Raw) {
           row.utc0_open_Raw = row.Price_Raw;
@@ -475,7 +548,7 @@ export function setupRouteAndHistory() {
     ) {
       store.currentTF = lastTF;
     }
-  } catch (e) { }
+  } catch (e) {}
 
   const initialRouteSym = getInitialRouteSymbol();
   if (initialRouteSym && store.isEngineStarted) {
@@ -484,16 +557,21 @@ export function setupRouteAndHistory() {
     }
   } else if (window.innerWidth < 1200) {
     try {
-      const activeTab = sessionStorage.getItem("sellnance_active_mobile_tab") || "list";
+      const activeTab =
+        sessionStorage.getItem("sellnance_active_mobile_tab") || "list";
       if (activeTab === "chart" && typeof switchMobileTab === "function") {
         switchMobileTab("chart");
       }
-    } catch (e) { }
+    } catch (e) {}
   }
 
   const handleHistoryNavigation = () => {
     const routeSym = getInitialRouteSymbol();
-    if (routeSym && store.isEngineStarted && typeof selectSymbol === "function") {
+    if (
+      routeSym &&
+      store.isEngineStarted &&
+      typeof selectSymbol === "function"
+    ) {
       selectSymbol(routeSym);
     }
   };

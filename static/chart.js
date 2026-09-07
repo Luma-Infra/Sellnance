@@ -51,7 +51,7 @@ class CanvasCrosshairPrimitive {
     if (this._requestUpdate) {
       try {
         this._requestUpdate();
-      } catch (e) { }
+      } catch (e) {}
     }
   }
 }
@@ -174,7 +174,10 @@ export async function initChart() {
   // 🚀 CSS에 정의된 다크/라이트 모드 테마 변수 가져오기
   const style = getComputedStyle(document.body);
   const textColor = style.getPropertyValue("--text").trim() || "#d1d4dc";
-  const gridColor = style.getPropertyValue("--grid").trim() || style.getPropertyValue("--border").trim() || "#2a2a22";
+  const gridColor =
+    style.getPropertyValue("--grid").trim() ||
+    style.getPropertyValue("--border").trim() ||
+    "#2a2a22";
   const { up: upColor, down: downColor } = getCandleThemeColors();
   store.upColorCache = upColor;
   store.downColorCache = downColor;
@@ -219,8 +222,7 @@ export async function initChart() {
     },
     localization: {
       locale: navigator.language,
-      timeFormatter: (tick) =>
-        formatChartTime(tick, store.currentTF),
+      timeFormatter: (tick) => formatChartTime(tick, store.currentTF),
     },
   };
 
@@ -237,7 +239,8 @@ export async function initChart() {
     leftPriceScale: {
       autoScale: true,
       visible: typeof window !== "undefined" && window.innerWidth >= 768,
-      minimumWidth: typeof window !== "undefined" && window.innerWidth < 768 ? 0 : 60,
+      minimumWidth:
+        typeof window !== "undefined" && window.innerWidth < 768 ? 0 : 60,
       borderColor: "transparent",
       // entireTextOnly: true,
     },
@@ -267,7 +270,8 @@ export async function initChart() {
     leftPriceScale: {
       autoScale: true,
       visible: typeof window !== "undefined" && window.innerWidth >= 768,
-      minimumWidth: typeof window !== "undefined" && window.innerWidth < 768 ? 0 : 60,
+      minimumWidth:
+        typeof window !== "undefined" && window.innerWidth < 768 ? 0 : 60,
       borderColor: "transparent", // 🚀 [좌측 테두리 박멸] 메인 차트와 동일하게 좌측 테두리 선 투명화
       scaleMargins: { top: 0.1, bottom: 0.1 },
     },
@@ -333,7 +337,8 @@ export async function initChart() {
     };
 
     const handleFastChartWheel = (e) => {
-      if (!store.chart || !store.mainData || store.mainData.length === 0) return;
+      if (!store.chart || !store.mainData || store.mainData.length === 0)
+        return;
       if (Math.abs(e.deltaY) < 1) return;
 
       e.preventDefault();
@@ -347,66 +352,66 @@ export async function initChart() {
 
       const len = store.mainData.length;
       const margin = store.savedRightMargin ?? 10;
-      const MIN_SPAN = 6;
-      const MAX_SPAN = Math.min(len + margin + 15, 1500);
-      const maxTo = len - 1 + margin + 2;
+      const MIN_SPAN = 10; // 🚀 최대 확대 한계: 최소 10개 봉 (캔들 과팽창 방지)
+      const MAX_SPAN = Math.min(Math.max(len + margin, 50), 500); // 🚀 최대 축소 한계: 최대 300개 봉 (무한 바늘 현상 방지)
+      const maxTo = len - 1 + margin;
 
-      // 🛑 [한계점 즉시 감지 & 0ms 조기 탈출 (위/아래 스크롤 한계 시 1px 밀림 완벽 차단)]
-      if (e.deltaY > 0) {
-        // 최대 축소 상태 도달 시 즉각 종료
-        if (currentSpan >= MAX_SPAN - 0.5 || (range.from <= -1 && range.to >= maxTo - 0.5)) {
-          return;
-        }
-      } else if (e.deltaY < 0) {
-        // 최대 확대(6개 봉) 도달 시 즉각 종료
-        if (currentSpan <= MIN_SPAN + 0.1) {
-          return;
-        }
-      }
+      // 🛑 [한계점 즉시 감지 & 0ms 조기 탈출]
+      if (e.deltaY > 0 && currentSpan >= MAX_SPAN - 0.5) return;
+      if (e.deltaY < 0 && currentSpan <= MIN_SPAN + 0.1) return;
 
-      // 🚀 [크로스헤어 정밀 앵커] 트레이딩뷰 네이티브 API로 십자선 아래의 정확한 봉 인덱스 추출
+      // 🚀 [크로스헤어 정밀 앵커]
       const rect = elMain.getBoundingClientRect();
       const cursorX = e.clientX - rect.left;
-      const width = rect.width || 1;
-      const ratio = Math.max(0.02, Math.min(0.98, cursorX / width));
-
       let cursorLogical = timeScale.coordinateToLogical(cursorX);
+
       if (cursorLogical === null || isNaN(cursorLogical)) {
+        const width = rect.width || 1;
+        const ratio = Math.max(0, Math.min(1, cursorX / width));
         cursorLogical = range.from + currentSpan * ratio;
       }
 
-      // 🚀 스토어 배속 변수 (기본 1.5~2.5배속, 언제든 변경 가능)
-      const zoomMultiplier = store.chartZoomSpeed ?? 2.0;
-      const normalizedDelta = Math.sign(e.deltaY) * Math.min(Math.abs(e.deltaY) / 100, 1.5);
-      const zoomFactor = normalizedDelta * 0.12 * zoomMultiplier;
+      // 🎯 마우스 커서 위치 기준 100% 정밀 앵커 비율 (0.0 ~ 1.0)
+      const anchorRatio = Math.max(
+        0,
+        Math.min(1, (cursorLogical - range.from) / currentSpan),
+      );
+
+      // 🚀 스토어 배속 변수 (부드럽고 쾌적한 줌 가속)
+      const zoomMultiplier = store.chartZoomSpeed ?? 1.6;
+      const normalizedDelta =
+        Math.sign(e.deltaY) * Math.min(Math.abs(e.deltaY) / 100, 1.2);
+      const zoomFactor = normalizedDelta * 0.1 * zoomMultiplier;
 
       let newSpan;
       if (e.deltaY < 0) {
-        newSpan = currentSpan * (1 - Math.abs(zoomFactor));
+        newSpan = currentSpan * (1 - Math.abs(zoomFactor)); // 확대 (Zoom In)
       } else {
-        newSpan = currentSpan * (1 + Math.abs(zoomFactor));
+        newSpan = currentSpan * (1 + Math.abs(zoomFactor)); // 축소 (Zoom Out)
       }
 
       newSpan = Math.max(MIN_SPAN, Math.min(MAX_SPAN, newSpan));
 
-      let newFrom = cursorLogical - newSpan * ratio;
-      let newTo = cursorLogical + newSpan * (1 - ratio);
+      let newFrom = cursorLogical - newSpan * anchorRatio;
+      let newTo = cursorLogical + newSpan * (1 - anchorRatio);
 
-      // 🚀 [스마트 앵커링] 줌아웃 시 우측 여백 초과 팽창으로 인한 강제 좌측 밀림 100% 차단
+      // 🚀 [우측 마진 바운더리 보호 - 좌측 강제 밀림 버그 원천 차단]
       if (newTo > maxTo) {
-        const overflow = newTo - maxTo;
         newTo = maxTo;
-        newFrom = Math.max(-2, newFrom - overflow);
+        newFrom = newTo - newSpan;
       }
 
-      // 🚀 좌측 끝 안전 바운더리
-      if (newFrom < -2) {
-        newTo = Math.min(maxTo, -2 + newSpan);
-        newFrom = -2;
+      // 🚀 [좌측 바운더리 보호]
+      if (newFrom < -margin) {
+        newFrom = -margin;
+        newTo = newFrom + newSpan;
       }
 
-      // 🚀 미세 변화 무시 (0.05px 이하 불필요한 차트 렌더링 호출 스킵)
-      if (Math.hypot(newFrom - range.from, newTo - range.to) < 0.05) {
+      // 🚀 미세 변화 무시 (불필요한 렌더링 스킵)
+      if (
+        Math.abs(newFrom - range.from) < 0.05 &&
+        Math.abs(newTo - range.to) < 0.05
+      ) {
         return;
       }
 
@@ -416,7 +421,7 @@ export async function initChart() {
       if (store.chartVol) {
         try {
           store.chartVol.timeScale().setVisibleLogicalRange(targetRange);
-        } catch (_) { }
+        } catch (_) {}
       }
 
       store.isUserZoomed = true;
@@ -429,21 +434,35 @@ export async function initChart() {
       }, 300);
     };
 
-    chartWrapper.addEventListener("mousedown", onUserInteract, { passive: true });
-    chartWrapper.addEventListener("touchstart", onUserInteract, { passive: true });
-    chartWrapper.addEventListener("wheel", handleFastChartWheel, { passive: false });
-    window.addEventListener("mouseup", () => {
-      if (userInteractionTimeout) clearTimeout(userInteractionTimeout);
-      userInteractionTimeout = setTimeout(() => {
-        isUserInteractingWithChart = false;
-      }, 300);
-    }, { passive: true });
-    window.addEventListener("touchend", () => {
-      if (userInteractionTimeout) clearTimeout(userInteractionTimeout);
-      userInteractionTimeout = setTimeout(() => {
-        isUserInteractingWithChart = false;
-      }, 300);
-    }, { passive: true });
+    chartWrapper.addEventListener("mousedown", onUserInteract, {
+      passive: true,
+    });
+    chartWrapper.addEventListener("touchstart", onUserInteract, {
+      passive: true,
+    });
+    chartWrapper.addEventListener("wheel", handleFastChartWheel, {
+      passive: false,
+    });
+    window.addEventListener(
+      "mouseup",
+      () => {
+        if (userInteractionTimeout) clearTimeout(userInteractionTimeout);
+        userInteractionTimeout = setTimeout(() => {
+          isUserInteractingWithChart = false;
+        }, 300);
+      },
+      { passive: true },
+    );
+    window.addEventListener(
+      "touchend",
+      () => {
+        if (userInteractionTimeout) clearTimeout(userInteractionTimeout);
+        userInteractionTimeout = setTimeout(() => {
+          isUserInteractingWithChart = false;
+        }, 300);
+      },
+      { passive: true },
+    );
   }
 
   // 🚀 DOM 이벤트 기반 activeChart 제어 제거 (라이브러리 내부 이벤트로 100% 통합 제어)
@@ -515,33 +534,50 @@ export async function initChart() {
   // 🚀 [고차원 프록시 가로채기] 볼륨 시리즈 원천 방어막 주입
   // ========================================================
   if (store.volumeSeries) {
-    const rawVolumeSetData = store.volumeSeries.setData.bind(store.volumeSeries);
+    const rawVolumeSetData = store.volumeSeries.setData.bind(
+      store.volumeSeries,
+    );
     const rawVolumeUpdate = store.volumeSeries.update.bind(store.volumeSeries);
 
     // .setData() 통로 가로채기 및 완전 소독
     store.volumeSeries.setData = (dataArr) => {
       if (!Array.isArray(dataArr)) return rawVolumeSetData([]);
 
-      const sterilized = dataArr.map(d => {
-        if (!d) return null;
-        const safeVal = (d.value === null || d.value === undefined || isNaN(Number(d.value))) ? 0 : Number(d.value);
-        return { ...d, value: safeVal };
-      }).filter(Boolean);
+      const sterilized = dataArr
+        .map((d) => {
+          if (!d) return null;
+          const safeVal =
+            d.value === null || d.value === undefined || isNaN(Number(d.value))
+              ? 0
+              : Number(d.value);
+          return { ...d, value: safeVal };
+        })
+        .filter(Boolean);
 
       // 시간 정제 및 중복 정렬은 기존 엔진(sanitizeChartData)을 거치되, value 필드 안전 장치가 완전히 끝난 배열 전달
-      rawVolumeSetData(window.sanitizeChartData ? window.sanitizeChartData(sterilized, true) : sterilized);
+      rawVolumeSetData(
+        window.sanitizeChartData
+          ? window.sanitizeChartData(sterilized, true)
+          : sterilized,
+      );
     };
 
     // .update() 통로 가로채기 및 완전 소독
     store.volumeSeries.update = (dataObj) => {
-      if (!dataObj || dataObj.time === undefined || dataObj.time === null) return;
+      if (!dataObj || dataObj.time === undefined || dataObj.time === null)
+        return;
 
       // value 강제 변환 및 오염 박멸 (기존 d.color 등 메타데이터 100% 계승)
-      const safeVal = (dataObj.value === null || dataObj.value === undefined || isNaN(Number(dataObj.value))) ? 0 : Number(dataObj.value);
+      const safeVal =
+        dataObj.value === null ||
+        dataObj.value === undefined ||
+        isNaN(Number(dataObj.value))
+          ? 0
+          : Number(dataObj.value);
 
       const sterileObj = {
         ...dataObj,
-        value: safeVal
+        value: safeVal,
       };
 
       rawVolumeUpdate(sterileObj);
@@ -570,26 +606,43 @@ export async function initChart() {
   // 🚀 [고차원 프록시] 김프 시리즈 원천 방어막 주입
   // ========================================================
   if (store.kimchiSeries) {
-    const rawKimchiSetData = store.kimchiSeries.setData.bind(store.kimchiSeries);
+    const rawKimchiSetData = store.kimchiSeries.setData.bind(
+      store.kimchiSeries,
+    );
     const rawKimchiUpdate = store.kimchiSeries.update.bind(store.kimchiSeries);
 
     store.kimchiSeries.setData = (dataArr) => {
       if (!Array.isArray(dataArr)) return rawKimchiSetData([]);
-      const sterilized = dataArr.map(d => {
-        if (!d) return null;
-        const safeVal = (d.value === null || d.value === undefined || isNaN(Number(d.value))) ? 0 : Number(d.value);
-        return { ...d, value: safeVal };
-      }).filter(Boolean);
-      rawKimchiSetData(window.sanitizeChartData ? window.sanitizeChartData(sterilized, true) : sterilized);
+      const sterilized = dataArr
+        .map((d) => {
+          if (!d) return null;
+          const safeVal =
+            d.value === null || d.value === undefined || isNaN(Number(d.value))
+              ? 0
+              : Number(d.value);
+          return { ...d, value: safeVal };
+        })
+        .filter(Boolean);
+      rawKimchiSetData(
+        window.sanitizeChartData
+          ? window.sanitizeChartData(sterilized, true)
+          : sterilized,
+      );
     };
 
     store.kimchiSeries.update = (dataObj) => {
       if (store.isKimchiDisabled) return;
-      if (!dataObj || dataObj.time === undefined || dataObj.time === null) return;
-      const safeVal = (dataObj.value === null || dataObj.value === undefined || isNaN(Number(dataObj.value))) ? 0 : Number(dataObj.value);
+      if (!dataObj || dataObj.time === undefined || dataObj.time === null)
+        return;
+      const safeVal =
+        dataObj.value === null ||
+        dataObj.value === undefined ||
+        isNaN(Number(dataObj.value))
+          ? 0
+          : Number(dataObj.value);
       try {
         rawKimchiUpdate({ ...dataObj, value: safeVal });
-      } catch (e) { }
+      } catch (e) {}
     };
   }
 
@@ -618,16 +671,24 @@ export async function initChart() {
         targetTs.setVisibleLogicalRange(range);
 
         // [스크롤 0ms 동기화] 마우스 휠 스크롤/패닝 중에도 메인과 볼륨 차트 크로스헤어 세로선이 1frame 지연 없이 즉시 동시 스냅
-        if (store.lastMouseX !== null && store.lastMouseX !== undefined && store.isCrosshairActive) {
+        if (
+          store.lastMouseX !== null &&
+          store.lastMouseX !== undefined &&
+          store.isCrosshairActive
+        ) {
           let magnetX = store.lastMouseX;
           if (
             sourceChart.timeScale &&
             typeof sourceChart.timeScale().coordinateToLogical === "function" &&
             typeof sourceChart.timeScale().logicalToCoordinate === "function"
           ) {
-            const logical = sourceChart.timeScale().coordinateToLogical(store.lastMouseX);
+            const logical = sourceChart
+              .timeScale()
+              .coordinateToLogical(store.lastMouseX);
             if (logical !== null) {
-              const snappedX = sourceChart.timeScale().logicalToCoordinate(Math.round(logical));
+              const snappedX = sourceChart
+                .timeScale()
+                .logicalToCoordinate(Math.round(logical));
               if (snappedX !== null) magnetX = snappedX;
             }
           }
@@ -657,10 +718,10 @@ export async function initChart() {
           if (store._volCrosshair) store._volCrosshair.setX(null);
           try {
             sourceChart.clearCrosshairPosition();
-            targetCharts.forEach(tObj => {
+            targetCharts.forEach((tObj) => {
               if (tObj && tObj.chart) tObj.chart.clearCrosshairPosition();
             });
-          } catch (e) { }
+          } catch (e) {}
           return;
         }
 
@@ -736,7 +797,10 @@ export async function initChart() {
                   }
                 }, 50);
               } catch (applyErr) {
-                console.warn("🚨 차트 간 applyOptions 레이아웃 동기화 예외 방어 완료:", applyErr);
+                console.warn(
+                  "🚨 차트 간 applyOptions 레이아웃 동기화 예외 방어 완료:",
+                  applyErr,
+                );
               }
             });
           }
@@ -822,7 +886,13 @@ export async function initChart() {
             }
           }
 
-          renderTargetCharts(targetCharts, normalizedTime, targetTime, magnetX, currentLogical);
+          renderTargetCharts(
+            targetCharts,
+            normalizedTime,
+            targetTime,
+            magnetX,
+            currentLogical,
+          );
 
           // 🚀 5. 레전드 업데이트 등 기존 로직 유지
           if (
@@ -920,7 +990,7 @@ export async function initChart() {
             }, 50);
           }
         }
-      } catch (err) { }
+      } catch (err) {}
       const totalPerf = performance.now() - perfStart;
       if (ENABLE_PERF_LOG && totalPerf > 1.5) {
         console.warn(`[Perf] syncCrosshair took ${totalPerf.toFixed(2)}ms`);
@@ -929,7 +999,13 @@ export async function initChart() {
   };
 
   // Helper function to render target charts and keep the subscribe handler flat
-  function renderTargetCharts(targetCharts, normalizedTime, targetTime, magnetX, logical = null) {
+  function renderTargetCharts(
+    targetCharts,
+    normalizedTime,
+    targetTime,
+    magnetX,
+    logical = null,
+  ) {
     targetCharts.forEach((targetObj) => {
       try {
         const { chart: tChart, series: tSeries } = targetObj;
@@ -942,7 +1018,7 @@ export async function initChart() {
         ) {
           try {
             tChart.clearCrosshairPosition();
-          } catch (e) { }
+          } catch (e) {}
         }
 
         let timeStr = null;
@@ -957,7 +1033,9 @@ export async function initChart() {
           tChart.timeScale &&
           typeof tChart.timeScale().logicalToCoordinate === "function"
         ) {
-          const snappedTarget = tChart.timeScale().logicalToCoordinate(Math.round(logical));
+          const snappedTarget = tChart
+            .timeScale()
+            .logicalToCoordinate(Math.round(logical));
           if (snappedTarget !== null) {
             targetX = snappedTarget;
           }
@@ -968,7 +1046,9 @@ export async function initChart() {
         } else if (tChart === store.chart && store._mainCrosshair) {
           store._mainCrosshair.setX(targetX, timeStr);
         }
-      } catch (e) { /* suppress lightweight-charts internal null value errors */ }
+      } catch (e) {
+        /* suppress lightweight-charts internal null value errors */
+      }
     });
   }
 
@@ -996,15 +1076,25 @@ export async function initChart() {
       currentMaxRight = 0;
       currentMaxLeft = 0;
       store.savedPriceScaleWidth = null; // 🚀 [뚱뚱 상태 원천 차단] 새 코인/TF 전환 시 이전 코인의 넓은 너비 잔상 즉시 초기화!
-      if (c1) c1.priceScale("right").applyOptions({ minimumWidth: 0, autoScale: true });
-      if (c2) c2.priceScale("right").applyOptions({ minimumWidth: 0, autoScale: true });
+      if (c1)
+        c1.priceScale("right").applyOptions({
+          minimumWidth: 0,
+          autoScale: true,
+        });
+      if (c2)
+        c2.priceScale("right").applyOptions({
+          minimumWidth: 0,
+          autoScale: true,
+        });
     }
 
     let maxRight = 0;
     let maxLeft = 0;
 
-    const isSmallMobile = typeof window !== "undefined" && window.innerWidth < 768;
-    const isKimchiVisible = !!store.paneConfig?.kimchi && !store.isKimchiDisabled;
+    const isSmallMobile =
+      typeof window !== "undefined" && window.innerWidth < 768;
+    const isKimchiVisible =
+      !!store.paneConfig?.kimchi && !store.isKimchiDisabled;
 
     if (c1) {
       let rWidth = c1.priceScale("right").width();
@@ -1031,7 +1121,12 @@ export async function initChart() {
     }
 
     // 🚀 [안정적 우측 가격축 유지] force(새 코인 전환)가 아닐 때만 팝업/타임존 토글 시 가격축 덜컹거림 방지
-    if (!force && !window.isResettingWidth && store.savedPriceScaleWidth && store.savedPriceScaleWidth > 0) {
+    if (
+      !force &&
+      !window.isResettingWidth &&
+      store.savedPriceScaleWidth &&
+      store.savedPriceScaleWidth > 0
+    ) {
       maxRight = Math.max(maxRight, store.savedPriceScaleWidth);
     }
 
@@ -1141,7 +1236,11 @@ export async function initChart() {
   setTimeout(() => {
     if (typeof window.setupMeasureTool === "function")
       window.setupMeasureTool();
-    if (store.candleSeries && !store._drawingPrimitive && typeof window.DrawingPrimitive === "function") {
+    if (
+      store.candleSeries &&
+      !store._drawingPrimitive &&
+      typeof window.DrawingPrimitive === "function"
+    ) {
       store._drawingPrimitive = new window.DrawingPrimitive();
       store.candleSeries.attachPrimitive(store._drawingPrimitive);
     }
@@ -1154,7 +1253,10 @@ export function updateChartTheme() {
 
   const style = getComputedStyle(document.body);
   const textColor = style.getPropertyValue("--text").trim() || "#d1d4dc";
-  const gridColor = style.getPropertyValue("--grid").trim() || style.getPropertyValue("--border").trim() || "#2a2a22";
+  const gridColor =
+    style.getPropertyValue("--grid").trim() ||
+    style.getPropertyValue("--border").trim() ||
+    "#2a2a22";
   const { up: upColor, down: downColor } = getCandleThemeColors();
 
   // Update caches
@@ -1191,7 +1293,12 @@ export function updateChartTheme() {
   }
 
   // 🚀 3. 볼륨 시리즈 색상 원자적 동기화 (requestIdleCallback 지연 제거 → 동일 틱 즉각 렌더링)
-  if (store.volumeSeries && store.volumeData && store.volumeData.length > 0 && store.mainData) {
+  if (
+    store.volumeSeries &&
+    store.volumeData &&
+    store.volumeData.length > 0 &&
+    store.mainData
+  ) {
     const upColorVol = upColor + "80"; // 50% 투명도
     const downColorVol = downColor + "80";
 
@@ -1213,7 +1320,10 @@ export function updateChartTheme() {
           : store.volumeData,
       );
     } catch (volThemeErr) {
-      console.warn("🚨 volumeSeries.setData in updateChartTheme 예외 우회 완료:", volThemeErr);
+      console.warn(
+        "🚨 volumeSeries.setData in updateChartTheme 예외 우회 완료:",
+        volThemeErr,
+      );
     }
   }
 
@@ -1252,9 +1362,11 @@ export function setupScaleModeButtons() {
 
     // 초기 L 버튼 활성화 스타일 세팅
     if (store.isLogMode) {
-      mainL.className = "w-5 h-5 flex items-center justify-center text-[9px] font-medium rounded cursor-pointer transition-colors bg-theme-accent text-white shadow-sm border border-theme-accent";
+      mainL.className =
+        "w-5 h-5 flex items-center justify-center text-[9px] font-medium rounded cursor-pointer transition-colors bg-theme-accent text-white shadow-sm border border-theme-accent";
     } else {
-      mainL.className = "w-5 h-5 flex items-center justify-center text-[9px] font-medium rounded cursor-pointer transition-colors bg-theme-border/20 text-theme-text hover:bg-theme-border/40 border border-theme-border/30";
+      mainL.className =
+        "w-5 h-5 flex items-center justify-center text-[9px] font-medium rounded cursor-pointer transition-colors bg-theme-border/20 text-theme-text hover:bg-theme-border/40 border border-theme-border/30";
     }
   }
 
@@ -1279,13 +1391,14 @@ export function setupScaleModeButtons() {
 
     // 초기 L 버튼 활성화 스타일 세팅
     if (store.isLogMode) {
-      volL.className = "w-5 h-5 flex items-center justify-center text-[9px] font-medium rounded cursor-pointer transition-colors bg-theme-accent text-white shadow-sm border border-theme-accent";
+      volL.className =
+        "w-5 h-5 flex items-center justify-center text-[9px] font-medium rounded cursor-pointer transition-colors bg-theme-accent text-white shadow-sm border border-theme-accent";
     } else {
-      volL.className = "w-5 h-5 flex items-center justify-center text-[9px] font-medium rounded cursor-pointer transition-colors bg-theme-border/20 text-theme-text hover:bg-theme-border/40 border border-theme-border/30";
+      volL.className =
+        "w-5 h-5 flex items-center justify-center text-[9px] font-medium rounded cursor-pointer transition-colors bg-theme-border/20 text-theme-text hover:bg-theme-border/40 border border-theme-border/30";
     }
   }
 }
 
 window.setupScaleModeButtons = setupScaleModeButtons;
 window.updateChartTheme = updateChartTheme;
-
