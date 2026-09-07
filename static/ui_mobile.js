@@ -103,8 +103,12 @@ export function showMobileChart() {
   if (!overlay || !panel || !content || !rightPanel) return;
 
   if (!store.currentSelectedSymbol && !store.currentAsset) {
+    const defaultSym =
+      (typeof window.getInitialRouteSymbol === "function" ? window.getInitialRouteSymbol() : null) ||
+      localStorage.getItem("sellnance_last_symbol") ||
+      "BINANCE:BTC_FUTURES";
     if (typeof window.selectSymbol === "function") {
-      window.selectSymbol("BINANCE:BTC_FUTURES");
+      window.selectSymbol(defaultSym);
       return;
     }
   }
@@ -199,47 +203,13 @@ export function closeMobileChart() {
 
 export function updateMobileNavUI(tab = store._currentMobileTab || "list") {
   const slider = document.getElementById("mobile-nav-slider");
-  const btnList = document.getElementById("mobile-tab-list");
-  const btnChart = document.getElementById("mobile-tab-chart");
-
-  if (!slider || !btnList || !btnChart) return;
+  const sliderInner = document.getElementById("mobile-nav-slider-inner");
+  if (!slider) return;
 
   const isChart = tab === "chart";
-
-  if (isChart) {
-    slider.style.transform = "translateX(108px)";
-    btnChart.classList.remove("text-theme-text/65", "font-medium");
-    btnChart.classList.add("text-white", "font-bold");
-    const svgChart = btnChart.querySelector("svg");
-    if (svgChart) {
-      svgChart.classList.remove("scale-100");
-      svgChart.classList.add("scale-110");
-    }
-
-    btnList.classList.remove("text-white", "font-bold");
-    btnList.classList.add("text-theme-text/65", "font-medium");
-    const svgList = btnList.querySelector("svg");
-    if (svgList) {
-      svgList.classList.remove("scale-110");
-      svgList.classList.add("scale-100");
-    }
-  } else {
-    slider.style.transform = "translateX(0px)";
-    btnList.classList.remove("text-theme-text/65", "font-medium");
-    btnList.classList.add("text-white", "font-bold");
-    const svgList = btnList.querySelector("svg");
-    if (svgList) {
-      svgList.classList.remove("scale-100");
-      svgList.classList.add("scale-110");
-    }
-
-    btnChart.classList.remove("text-white", "font-bold");
-    btnChart.classList.add("text-theme-text/65", "font-medium");
-    const svgChart = btnChart.querySelector("svg");
-    if (svgChart) {
-      svgChart.classList.remove("scale-110");
-      svgChart.classList.add("scale-100");
-    }
+  slider.style.transform = isChart ? "translateX(108px)" : "translateX(0px)";
+  if (sliderInner) {
+    sliderInner.style.transform = isChart ? "translateX(-108px)" : "translateX(0px)";
   }
 }
 
@@ -278,15 +248,21 @@ export function switchMobileTab(tab) {
       window.destroyQuickView();
     }
 
-    if (store.currentSelectedSymbol) {
-      if (typeof window.showMobileChart === "function") {
-        window.showMobileChart();
-      }
-    } else {
-      // 🚀 [모바일 전용] 선택된 코인이 없을 때 테이블 최상단(변동률 1위 등 개잡코) 대신 항상 비트코인(BTC)을 기본 로드
+    const targetSym =
+      store.currentSelectedSymbol ||
+      store.currentAsset ||
+      (typeof window.getInitialRouteSymbol === "function" ? window.getInitialRouteSymbol() : null) ||
+      localStorage.getItem("sellnance_last_symbol") ||
+      "BINANCE:BTC_FUTURES";
+
+    if (!store.currentSelectedSymbol && !store.currentAsset) {
       if (typeof window.selectSymbol === "function") {
-        window.selectSymbol("BINANCE:BTC_FUTURES");
+        window.selectSymbol(targetSym);
       }
+    }
+
+    if (typeof window.showMobileChart === "function") {
+      window.showMobileChart();
     }
   } else if (tab === "settings") {
     closeMobileChart();
@@ -569,9 +545,34 @@ export function initMobileScrollMaskIndicators() {
   });
 }
 
+// [모바일 전용] 새로고침 시 잔류 줌/확대 배율을 100%(1.0)로 안전하게 리셋
+export function resetMobileViewportScale() {
+  if (typeof window === "undefined" || typeof document === "undefined") return;
+  // PC(>=1200px)는 100% 제외
+  if (window.innerWidth >= 1200 && !isTouchDevice()) return;
+
+  try {
+    const meta = document.querySelector('meta[name="viewport"]');
+    if (!meta) return;
+
+    const normalContent = "width=device-width, initial-scale=1.0";
+    const resetContent = "width=device-width, initial-scale=1.0, maximum-scale=1.0";
+
+    meta.setAttribute("content", resetContent);
+    window.scrollTo(0, 0);
+
+    setTimeout(() => {
+      try {
+        meta.setAttribute("content", normalContent);
+      } catch (e) { }
+    }, 100);
+  } catch (e) { }
+}
+
 // 자동 초기화
 if (typeof document !== "undefined") {
   const initAllMobileUX = () => {
+    resetMobileViewportScale();
     syncTouchDeviceClass();
     initMobileRubberBandScroll();
     initMobileScrollMaskIndicators();
@@ -594,7 +595,7 @@ if (typeof document !== "undefined") {
   });
 }
 
-// 🚀 전역 노출
+// 전역 노출
 window.isTouchDevice = isTouchDevice;
 window.syncTouchDeviceClass = syncTouchDeviceClass;
 window.switchMobileView = switchMobileView;
@@ -607,4 +608,5 @@ window.executeTabSwitch = executeTabSwitch;
 window.initMobileRubberBandScroll = initMobileRubberBandScroll;
 window.updateElementScrollMask = updateElementScrollMask;
 window.initMobileScrollMaskIndicators = initMobileScrollMaskIndicators;
+window.resetMobileViewportScale = resetMobileViewportScale;
 

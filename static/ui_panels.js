@@ -182,6 +182,13 @@ export function showOnboardingModal(force = false) {
   const content = document.getElementById("onboarding-modal-content");
   if (!modal || !content) return;
 
+  // 로컬 저장소 상태를 읽어 체크박스 동기화
+  const isNeverShow = localStorage.getItem("sellnance_onboarding_shown") === "true";
+  const neverShowChk = document.getElementById("onboarding-never-show");
+  if (neverShowChk) {
+    neverShowChk.checked = isNeverShow;
+  }
+
   modal.style.display = "";
   modal.classList.remove("hidden");
   modal.classList.add("flex");
@@ -200,8 +207,12 @@ export function closeOnboardingModal() {
   if (!modal || !content) return;
 
   const neverShowChk = document.getElementById("onboarding-never-show");
-  if (neverShowChk && neverShowChk.checked) {
-    localStorage.setItem("sellnance_onboarding_shown", "true");
+  if (neverShowChk) {
+    if (neverShowChk.checked) {
+      localStorage.setItem("sellnance_onboarding_shown", "true");
+    } else {
+      localStorage.removeItem("sellnance_onboarding_shown");
+    }
   }
 
   modal.classList.remove("opacity-100");
@@ -235,13 +246,32 @@ export function checkLayoutOverlap() {
     return;
   }
 
-  // 2. PC 데스크탑 환경 (마우스 포인터): 창을 좁혀도 차트가 절대 사라지지 않고 2분할 유지!
-  if (rightPanel.style.display === "none") {
-    rightPanel.style.display = "flex";
+  // 2. PC 데스크탑 환경: F12 모바일 모달 강제 정리 & right-panel 원래 자리로 즉시 복원
+  const mainContainer = document.getElementById("panel-split-container");
+  const overlay = document.getElementById("mobile-chart-overlay");
+
+  if (overlay && (!overlay.classList.contains("hidden") || overlay.style.opacity === "1")) {
+    overlay.style.cssText = "";
+    overlay.classList.add("hidden");
   }
+
+  if (mainContainer && rightPanel && !mainContainer.contains(rightPanel)) {
+    mainContainer.appendChild(rightPanel);
+  }
+
+  rightPanel.style.cssText = "";
+  rightPanel.style.display = "flex";
+  rightPanel.classList.remove("hidden");
+  rightPanel.classList.add("min-[1200px]:flex");
+
+  leftPanel.style.pointerEvents = "";
   leftPanel.style.width = "";
   leftPanel.style.flex = "";
   leftPanel.style.maxWidth = "";
+
+  if (typeof window.syncTouchDeviceClass === "function") {
+    window.syncTouchDeviceClass();
+  }
 
   if (typeof window.applyChartLayout === "function") {
     window.applyChartLayout();

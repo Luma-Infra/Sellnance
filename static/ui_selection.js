@@ -12,10 +12,27 @@ export function selectSymbol(
   isRowClick = false,
   shouldScroll = false,
 ) {
-  const allSourceData =
+  let allSourceData =
     store.originalTableData && store.originalTableData.length > 0
       ? store.originalTableData
       : (store.currentTableData || []);
+
+  // [신규] 새로고침 0초 진입 시 스토어 메모리가 비어있으면 로컬 캐시에서 즉시 복원
+  if (allSourceData.length === 0) {
+    try {
+      const cachedStr = localStorage.getItem("sellnance_market_data_cache");
+      if (cachedStr) {
+        const parsed = JSON.parse(cachedStr);
+        if (parsed && Array.isArray(parsed.data) && parsed.data.length > 0) {
+          allSourceData = parsed.data;
+          store.originalTableData = parsed.data;
+          if (!store.currentTableData || store.currentTableData.length === 0) {
+            store.currentTableData = parsed.data;
+          }
+        }
+      }
+    } catch (e) { }
+  }
   // 1. suffix 및 트레이딩뷰 스타일(EXCHANGE:SYMBOL_MARKET) 파싱
   const originalSym = String(s).trim();
   let parsedSymbol = originalSym.toUpperCase();
@@ -342,7 +359,7 @@ export function selectSymbol(
               <span class="hidden min-[1200px]:inline" ${fontSizeStyle}>${fullText}</span>
               <!-- 🚀 모바일 전용 (<1200px): 코인 이름을 무조건 아랫줄 2단으로 정렬 -->
               <div class="flex flex-col min-[1200px]:hidden leading-none min-w-0">
-                <span class="text-sm sm:text-base font-extrabold tracking-wide truncate leading-tight text-theme-accent">${pureSym}</span>
+                <span class="text-base sm:text-lg font-extrabold tracking-wide truncate leading-tight text-theme-accent">${pureSym}</span>
                 ${nameStr ? `<span class="text-[10px] text-theme-text/60 font-medium tracking-tight truncate leading-tight mt-0.5">${nameStr}</span>` : ""}
               </div>
             </div>
@@ -447,7 +464,7 @@ export function selectSymbol(
                     <span class="hidden min-[1200px]:inline" ${fontSizeStyle2}>${fullText2}</span>
                     <!-- 🚀 모바일 전용 (<1200px): 코인 이름을 무조건 아랫줄 2단으로 정렬 -->
                     <div class="flex flex-col min-[1200px]:hidden leading-none min-w-0">
-                      <span class="text-sm sm:text-base font-extrabold tracking-wide truncate leading-tight text-theme-accent">${displaySym}</span>
+                      <span class="text-base sm:text-lg font-extrabold tracking-wide truncate leading-tight text-theme-accent">${displaySym}</span>
                       ${nameStr2 ? `<span class="text-[10px] text-theme-text/60 font-medium tracking-tight truncate leading-tight mt-0.5">${nameStr2}</span>` : ""}
                     </div>
                   </div>
