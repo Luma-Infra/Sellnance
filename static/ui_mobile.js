@@ -1,8 +1,6 @@
 // ui_mobile.js
 // 📱 [모바일 뷰 & 탭 & 바텀시트 오버레이 제어 모듈]
 import { store, CONFIG } from "./_store.js";
-import { fetchHistory } from "./chart_data.js";
-import { showConfirm } from "./ui_dialog.js";
 
 let _closeMobileChartTimer = null;
 
@@ -272,115 +270,6 @@ export function switchMobileTab(tab) {
   }
 }
 
-export function switchChartTab(mode) {
-  const btnSim = document.getElementById("tab-btn-sim");
-  if (mode === "chart" && btnSim && btnSim.classList.contains("active")) {
-    showConfirm({
-      title: "시뮬레이션 종료 🚨",
-      html: "그려둔 가상 캔들이 모두 초기화되고 실제 차트로 돌아가요<br/>진짜로 넘어갈까요?",
-      icon: "warning",
-      confirmText: "네, 넘어갈게요",
-      cancelText: "아니요, 계속할게요",
-      confirmColor: "var(--down)",
-      cancelColor: "transparent",
-      showCancelButton: true,
-    }).then((confirmed) => {
-      if (confirmed) {
-        executeTabSwitch(mode);
-      } else {
-        // 취소 시 슬라이더 활성 바를 시뮬레이터(index 1) 위치로 확실하게 유지/복원
-        if (typeof window.moveTabSlider === "function") {
-          window.moveTabSlider(1);
-        }
-      }
-    });
-  } else {
-    executeTabSwitch(mode);
-  }
-}
-
-export function executeTabSwitch(mode) {
-  const btnChart = document.getElementById("tab-btn-chart"),
-    btnSim = document.getElementById("tab-btn-sim"),
-    btnQuick = document.getElementById("tab-btn-quickview"),
-    controls = document.getElementById("sim-controls");
-
-  if (mode === "chart") {
-    if (typeof window.moveTabSlider === "function") window.moveTabSlider(0);
-    if (btnChart) btnChart.classList.add("active");
-    if (btnSim) btnSim.classList.remove("active");
-    if (btnQuick) btnQuick.classList.remove("active");
-    if (controls) controls.style.display = "none";
-
-    const qvContainer = document.getElementById("quickview-container");
-    if (qvContainer) {
-      qvContainer.classList.add("hidden");
-      qvContainer.style.display = "none";
-    }
-    if (typeof window.destroyQuickView === "function") {
-      window.destroyQuickView();
-    }
-
-    if (typeof fetchHistory === "function")
-      fetchHistory(undefined, false, true);
-
-    requestAnimationFrame(() => {
-      if (typeof window.applyChartLayout === "function") {
-        window.applyChartLayout();
-      }
-    });
-  } else if (mode === "sim") {
-    if (typeof window.moveTabSlider === "function") window.moveTabSlider(1);
-    if (btnSim) btnSim.classList.add("active");
-    if (btnChart) btnChart.classList.remove("active");
-    if (btnQuick) btnQuick.classList.remove("active");
-    if (controls) controls.style.display = "flex";
-
-    const qvContainer = document.getElementById("quickview-container");
-    if (qvContainer) {
-      qvContainer.classList.add("hidden");
-      qvContainer.style.display = "none";
-    }
-    if (typeof window.destroyQuickView === "function") {
-      window.destroyQuickView();
-    }
-
-    [store.binanceChartWs, store.upbitChartWs].forEach((ws) => {
-      if (ws) {
-        ws.onmessage = null;
-        ws.close();
-      }
-    });
-    store.binanceChartWs = null;
-    store.upbitChartWs = null;
-
-    const statusDot = document.getElementById("status-dot");
-    if (statusDot) statusDot.style.background = "gray";
-    const statusText = document.getElementById("status-text");
-    if (statusText) statusText.innerText = "SIMULATION";
-
-    if (typeof window.changeDir === "function") {
-      window.changeDir(store.curDir || "bull");
-    }
-
-    requestAnimationFrame(() => {
-      if (typeof window.applyChartLayout === "function") {
-        window.applyChartLayout();
-      }
-    });
-  } else if (mode === "quickview") {
-    if (typeof window.moveTabSlider === "function") window.moveTabSlider(2);
-    if (btnQuick) btnQuick.classList.add("active");
-    if (btnChart) btnChart.classList.remove("active");
-    if (btnSim) btnSim.classList.remove("active");
-    if (controls) controls.style.display = "none";
-
-    if (typeof window.initQuickView === "function") {
-      window.initQuickView();
-    }
-  }
-}
-
 // 📱 모바일/패드 전용 탄성 고무줄(Rubber-Band Elastic Overscroll) 풀업 UX
 export function initMobileRubberBandScroll() {
   const listBody = document.getElementById("coin-list-body");
@@ -603,8 +492,6 @@ window.showMobileChart = showMobileChart;
 window.closeMobileChart = closeMobileChart;
 window.switchMobileTab = switchMobileTab;
 window.updateMobileNavUI = updateMobileNavUI;
-window.switchChartTab = switchChartTab;
-window.executeTabSwitch = executeTabSwitch;
 window.initMobileRubberBandScroll = initMobileRubberBandScroll;
 window.updateElementScrollMask = updateElementScrollMask;
 window.initMobileScrollMaskIndicators = initMobileScrollMaskIndicators;

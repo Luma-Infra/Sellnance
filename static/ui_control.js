@@ -98,9 +98,12 @@ export {
   switchMobileTab,
   showMobileChart,
   closeMobileChart,
+} from "./ui_mobile.js";
+
+export {
   executeTabSwitch,
   switchChartTab,
-} from "./ui_mobile.js";
+} from "./ui_panels.js";
 
 // ==========================================
 // 7. 심볼 선택 및 거래소 뱃지 (ui_selection.js)

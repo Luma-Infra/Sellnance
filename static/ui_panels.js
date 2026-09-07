@@ -1,6 +1,8 @@
 // ui_panels.js
 // 🖥️ [사이드바, 패널 스왑, 뷰 모드, 온보딩 모달 제어 모듈]
 import { store } from "./_store.js";
+import { fetchHistory } from "./chart_data.js";
+import { showConfirm } from "./ui_dialog.js";
 
 // 데스크탑: 좌측 패널 접기/펴기
 export function toggleSidebar() {
@@ -362,6 +364,122 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
+// ==========================================
+// 차트 탭 전환 (chart / sim / quickview) - PC 전용
+// ==========================================
+export function switchChartTab(mode) {
+  const btnSim = document.getElementById("tab-btn-sim");
+  if (mode === "chart" && btnSim && btnSim.classList.contains("active")) {
+    showConfirm({
+      title: "시뮬레이션 종료 🚨",
+      html: "그려둔 가상 캔들이 모두 초기화되고 실제 차트로 돌아가요<br/>진짜로 넘어갈까요?",
+      icon: "warning",
+      confirmText: "네, 넘어갈게요",
+      cancelText: "아니요, 계속할게요",
+      confirmColor: "var(--down)",
+      cancelColor: "transparent",
+      showCancelButton: true,
+    }).then((confirmed) => {
+      if (confirmed) {
+        executeTabSwitch(mode);
+      } else {
+        if (typeof window.moveTabSlider === "function") {
+          window.moveTabSlider(1);
+        }
+      }
+    });
+  } else {
+    executeTabSwitch(mode);
+  }
+}
+
+export function executeTabSwitch(mode) {
+  const btnChart = document.getElementById("tab-btn-chart"),
+    btnSim = document.getElementById("tab-btn-sim"),
+    btnQuick = document.getElementById("tab-btn-quickview"),
+    controls = document.getElementById("sim-controls");
+
+  if (mode === "chart") {
+    if (typeof window.moveTabSlider === "function") window.moveTabSlider(0);
+    if (btnChart) btnChart.classList.add("active");
+    if (btnSim) btnSim.classList.remove("active");
+    if (btnQuick) btnQuick.classList.remove("active");
+    if (controls) controls.style.display = "none";
+
+    const qvContainer = document.getElementById("quickview-container");
+    if (qvContainer) {
+      qvContainer.classList.add("hidden");
+      qvContainer.style.display = "none";
+    }
+    if (typeof window.destroyQuickView === "function") {
+      window.destroyQuickView();
+    }
+
+    // 가격 축 너비를 fetchHistory 전에 완전 초기화 (시뮬 가격 기준 잔상 제거)
+    if (typeof window.resetPriceScaleWidthSync === "function") {
+      window.resetPriceScaleWidthSync();
+    }
+
+    if (typeof fetchHistory === "function")
+      fetchHistory(undefined, false, true);
+
+    requestAnimationFrame(() => {
+      if (typeof window.applyChartLayout === "function") {
+        window.applyChartLayout();
+      }
+    });
+  } else if (mode === "sim") {
+    if (typeof window.moveTabSlider === "function") window.moveTabSlider(1);
+    if (btnSim) btnSim.classList.add("active");
+    if (btnChart) btnChart.classList.remove("active");
+    if (btnQuick) btnQuick.classList.remove("active");
+    if (controls) controls.style.display = "flex";
+
+    const qvContainer = document.getElementById("quickview-container");
+    if (qvContainer) {
+      qvContainer.classList.add("hidden");
+      qvContainer.style.display = "none";
+    }
+    if (typeof window.destroyQuickView === "function") {
+      window.destroyQuickView();
+    }
+
+    [store.binanceChartWs, store.upbitChartWs].forEach((ws) => {
+      if (ws) {
+        ws.onmessage = null;
+        ws.close();
+      }
+    });
+    store.binanceChartWs = null;
+    store.upbitChartWs = null;
+
+    const statusDot = document.getElementById("status-dot");
+    if (statusDot) statusDot.style.background = "gray";
+    const statusText = document.getElementById("status-text");
+    if (statusText) statusText.innerText = "SIMULATION";
+
+    if (typeof window.changeDir === "function") {
+      window.changeDir(store.curDir || "bull");
+    }
+
+    requestAnimationFrame(() => {
+      if (typeof window.applyChartLayout === "function") {
+        window.applyChartLayout();
+      }
+    });
+  } else if (mode === "quickview") {
+    if (typeof window.moveTabSlider === "function") window.moveTabSlider(2);
+    if (btnQuick) btnQuick.classList.add("active");
+    if (btnChart) btnChart.classList.remove("active");
+    if (btnSim) btnSim.classList.remove("active");
+    if (controls) controls.style.display = "none";
+
+    if (typeof window.initQuickView === "function") {
+      window.initQuickView();
+    }
+  }
+}
+
 // 🚀 전역 노출
 window.toggleSidebar = toggleSidebar;
 window.switchViewMode = switchViewMode;
@@ -370,4 +488,6 @@ window.showOnboardingModal = showOnboardingModal;
 window.closeOnboardingModal = closeOnboardingModal;
 window.checkLayoutOverlap = checkLayoutOverlap;
 window.adjustNoticeFontSizes = adjustNoticeFontSizes;
+window.switchChartTab = switchChartTab;
+window.executeTabSwitch = executeTabSwitch;
 
