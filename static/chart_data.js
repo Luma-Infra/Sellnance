@@ -580,8 +580,7 @@ export async function loadMoreHistory() {
         );
       } else if (params.subExchange === "bithumb") {
         let bInterval = params.tf;
-        if (params.tf === "12h") bInterval = "4h";
-        else if (params.tf === "3d") bInterval = "1d";
+        if (params.tf === "3d") bInterval = "1d";
         subToVal = Math.floor(currentSubOldest * 1000) - 1;
         fetchedSub = await fetchCandlesSmart(
           params.subExchange,

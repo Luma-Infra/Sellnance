@@ -31,6 +31,16 @@ load_dotenv()
 # [Sentry 에러 모니터링] SENTRY_DSN 환경변수 존재 시 비동기 백그라운드 워커로 구동 (GC/성능 오버헤드 0%)
 try:
     import sentry_sdk
+    import logging
+
+    # tvDatafeed 외부 라이브러리의 일시적 웹소켓 타임아웃 노이즈 레벨 하향
+    logging.getLogger("tvDatafeed").setLevel(logging.CRITICAL)
+
+    def sentry_before_send(event, hint):
+        logger_name = event.get("logger") or ""
+        if "tvDatafeed" in logger_name:
+            return None
+        return event
 
     sentry_dsn = os.environ.get("SENTRY_DSN", "").strip()
     if sentry_dsn:
@@ -38,6 +48,7 @@ try:
             dsn=sentry_dsn,
             traces_sample_rate=0.0,  # 병목 방지: 불필요한 APM 트레이싱 끄고 순수 에러만 비동기 수집
             send_default_pii=False,
+            before_send=sentry_before_send,
         )
 except ImportError:
     pass

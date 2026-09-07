@@ -1,9 +1,7 @@
 // modules/migration_go/builder.go
 // ============================================================================
-// Go Migration Engine: 100% Pure 0-For & 0-If Branchless SoA Engine
-// - 파일 전체 for 루프 0개 (Zero-Loop Architecture)
-// - 파일 전체 if 분기문 0개 (Zero-Branch Architecture)
-// - 1-Clock Direct Memory Slot Indexing & Direct Structural Unmarshaling
+// Go Migration Engine: Pure Branchless SoA Engine
+// Direct Memory Slot Indexing & Direct Structural Unmarshaling
 // ============================================================================
 
 package main

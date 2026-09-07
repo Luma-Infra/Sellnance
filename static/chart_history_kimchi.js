@@ -476,8 +476,7 @@ export async function lazyRenderKimchiData(params) {
         );
       } else if (subExchange === "bithumb") {
         let bInterval = store.currentTF;
-        if (store.currentTF === "12h") bInterval = "4h";
-        else if (store.currentTF === "3d") bInterval = "1d";
+        if (store.currentTF === "3d") bInterval = "1d";
 
         const bData = await fetchCandlesSmart("bithumb", subSymbol, bInterval, Math.min(2000, initialSubLimit));
         const rawList = Array.isArray(bData?.data) ? bData.data : (Array.isArray(bData) ? bData : []);

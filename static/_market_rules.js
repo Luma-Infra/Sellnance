@@ -182,21 +182,33 @@ export function getRowDisplayMetrics(row, isKrwMode = null, rate = null) {
   let nDay = 0;
 
   if (isFutures) {
-    n24h = row.Change_24h_Futures ?? (row.Exact_Futures ? row.Change_24h_Raw : 0);
-    nDay = row.Change_Today_Futures ?? (row.Exact_Futures ? row.Change_Today_Raw : 0);
+    n24h =
+      row.Change_24h_Futures ||
+      row.Change_24h_Bybit_Futures ||
+      row.Change_24h_Bybit ||
+      row.Change_24h_Raw ||
+      row.Change_24h ||
+      0;
+    nDay =
+      row.Change_Today_Futures ||
+      row.Change_Today_Bybit_Futures ||
+      row.Change_Today_Bybit ||
+      row.Change_Today_Raw ||
+      row.Change_Today ||
+      0;
   } else {
     if (activeExchange === "upbit") {
-      n24h = row.Change_24h_Upbit ?? row.Change_24h_Raw ?? 0;
-      nDay = row.Change_Today_Upbit ?? row.Change_Today_Raw ?? 0;
+      n24h = row.Change_24h_Upbit || row.Change_24h_Raw || 0;
+      nDay = row.Change_Today_Upbit || row.Change_Today_Raw || 0;
     } else if (activeExchange === "bithumb") {
-      n24h = row.Change_24h_Bithumb ?? row.Change_24h_Raw ?? 0;
-      nDay = row.Change_Today_Bithumb ?? row.Change_Today_Raw ?? 0;
+      n24h = row.Change_24h_Bithumb || row.Change_24h_Raw || 0;
+      nDay = row.Change_Today_Bithumb || row.Change_Today_Raw || 0;
     } else if (activeExchange === "bybit") {
-      n24h = row.Change_24h_Bybit ?? row.Change_24h_Raw ?? 0;
-      nDay = row.Change_Today_Bybit ?? row.Change_Today_Raw ?? 0;
+      n24h = row.Change_24h_Bybit || row.Change_24h_Raw || 0;
+      nDay = row.Change_Today_Bybit || row.Change_Today_Raw || 0;
     } else {
-      n24h = row.Change_24h_Spot ?? row.Change_24h_Binance ?? row.Change_24h_Raw ?? 0;
-      nDay = row.Change_Today_Spot ?? row.Change_Today_Binance ?? row.Change_Today_Raw ?? 0;
+      n24h = (row.Change_24h_Spot ?? row.Change_24h_Binance) || row.Change_24h_Raw || 0;
+      nDay = (row.Change_Today_Spot ?? row.Change_Today_Binance) || row.Change_Today_Raw || 0;
     }
   }
 
@@ -236,6 +248,24 @@ export function getChartDefaultMarket(row) {
   return "FUTURES";
 }
 
+/**
+ * 7. 거래소별 네이티브 타임프레임(캔들 봉) 지원 여부 판별 (3D/12H 등 리샘플링 여부 결정)
+ */
+export const NATIVE_TF_MAP = {
+  binance: new Set(["1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h", "1d", "3d", "1w", "1M"]),
+  bybit: new Set(["1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "12h", "1d", "1w", "1M"]), // 3d는 1d 3개 리샘플링
+  upbit: new Set(["1m", "3m", "5m", "10m", "15m", "30m", "1h", "4h", "1d", "1w", "1M"]), // 12h, 3d 리샘플링
+  bithumb: new Set(["1m", "3m", "5m", "10m", "30m", "1h", "6h", "12h", "1d"]), // 3d 리샘플링
+  gate: new Set(["1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h", "1d", "1w", "1M"]),
+  gateio: new Set(["1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h", "1d", "1w", "1M"]),
+};
+
+export function isExchangeNativeTF(exchange, tf) {
+  if (!exchange || !tf) return false;
+  const exKey = exchange.toLowerCase().replace(/_spot|_futures/g, "");
+  return NATIVE_TF_MAP[exKey]?.has(tf) ?? false;
+}
+
 // 전역 window 등록 (HTML 인라인 및 레거시 스크립트 호환)
 window.MarketRules = {
   isFuturesCoin,
@@ -244,4 +274,6 @@ window.MarketRules = {
   getRowDisplayMetrics,
   getDisplayTickerHtml,
   getChartDefaultMarket,
+  isExchangeNativeTF,
+  NATIVE_TF_MAP,
 };

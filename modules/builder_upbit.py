@@ -2,7 +2,15 @@
 from modules import utils, config_manager
 import re
 
-def _resolve_names_and_ucid(base, REVERSE_LOOKUP, TICKER_DATA, SYMBOL_TO_ID_MAP, market_data_map, asset_to_lookup_key):
+
+def _resolve_names_and_ucid(
+    base,
+    REVERSE_LOOKUP,
+    TICKER_DATA,
+    SYMBOL_TO_ID_MAP,
+    market_data_map,
+    asset_to_lookup_key,
+):
     lookup_id = asset_to_lookup_key.get(f"{base.upper()}_UPBIT")
     info = market_data_map.get(lookup_id)
     raw_key = str(REVERSE_LOOKUP.get(f"{base}_UPBIT", base) or base)
@@ -36,7 +44,16 @@ def _resolve_names_and_ucid(base, REVERSE_LOOKUP, TICKER_DATA, SYMBOL_TO_ID_MAP,
     if not final_ucid:
         final_ucid = base
 
-    return raw_key, display_name, explicit_name, ticker_info, saved_chain, final_ucid, info
+    return (
+        raw_key,
+        display_name,
+        explicit_name,
+        ticker_info,
+        saved_chain,
+        final_ucid,
+        info,
+    )
+
 
 def _calculate_upbit_prices(up_info, krw_usd_rate):
     up_price_krw = float(up_info.get("price") or 0.0)
@@ -54,10 +71,13 @@ def _calculate_upbit_prices(up_info, krw_usd_rate):
 
     if utc0_open > 0:
         change_today = utils.js_round(((current_p - utc0_open) / utc0_open * 100), 2)
-        
+
     return up_price_krw, up_open_krw, up_change_24h, current_p, utc0_open, change_today
 
-def _determine_precision(base, p, final_ucid, DUPLICATED_LIST, bybit_data, binance_data):
+
+def _determine_precision(
+    base, p, final_ucid, DUPLICATED_LIST, bybit_data, binance_data
+):
     up_precision = (
         0 if p >= 100 else 1 if p >= 10 else 2 if p >= 1 else 3 if p >= 0.1 else 4
     )
@@ -92,10 +112,13 @@ def _determine_precision(base, p, final_ucid, DUPLICATED_LIST, bybit_data, binan
                 if bn_prec is not None:
                     up_precision = int(bn_prec)
                 break
-                
+
     return up_precision, by_raw, duplicated_bases
 
-def _aggregate_binance_for_upbit(base, display_name, binance_data, REVERSE_LOOKUP, listed_on):
+
+def _aggregate_binance_for_upbit(
+    base, display_name, binance_data, REVERSE_LOOKUP, listed_on
+):
     exact_spot_ticker = ""
     exact_futures_ticker = ""
     binance_spot_price = 0.0
@@ -118,7 +141,10 @@ def _aggregate_binance_for_upbit(base, display_name, binance_data, REVERSE_LOOKU
                 or b_base
             )
             alias_binance_clean = re.sub(
-                r"_(binance|upbit|bithumb|bybit|binance_stock|binance_futures|binance_spot)$", "", alias_binance_raw, flags=re.IGNORECASE
+                r"_(binance|upbit|bithumb|bybit|binance_stock|binance_futures|binance_spot)$",
+                "",
+                alias_binance_raw,
+                flags=re.IGNORECASE,
             )
             if alias_binance_clean == display_name:
                 if b_inf.get("is_spot"):
@@ -161,8 +187,9 @@ def _aggregate_binance_for_upbit(base, display_name, binance_data, REVERSE_LOOKU
         "binance_futures_change_today": binance_futures_change_today,
         "binance_futures_vol": binance_futures_vol,
         "binance_spot_vol": binance_spot_vol,
-        "has_binance_futures": has_binance_futures
+        "has_binance_futures": has_binance_futures,
     }
+
 
 def build_upbit_row(
     base,
@@ -197,11 +224,20 @@ def build_upbit_row(
     if up_info is None:
         return None, False
 
-    raw_key, display_name, explicit_name, ticker_info, saved_chain, final_ucid, info = _resolve_names_and_ucid(
-        base, REVERSE_LOOKUP, TICKER_DATA, SYMBOL_TO_ID_MAP, market_data_map, asset_to_lookup_key
+    raw_key, display_name, explicit_name, ticker_info, saved_chain, final_ucid, info = (
+        _resolve_names_and_ucid(
+            base,
+            REVERSE_LOOKUP,
+            TICKER_DATA,
+            SYMBOL_TO_ID_MAP,
+            market_data_map,
+            asset_to_lookup_key,
+        )
     )
 
-    up_price_krw, up_open_krw, up_change_24h, current_p, utc0_open, change_today = _calculate_upbit_prices(up_info, krw_usd_rate)
+    up_price_krw, up_open_krw, up_change_24h, current_p, utc0_open, change_today = (
+        _calculate_upbit_prices(up_info, krw_usd_rate)
+    )
 
     if final_ucid and final_ucid in processed_uids and raw_key not in DUPLICATED_LIST:
         return None, False
@@ -255,7 +291,9 @@ def build_upbit_row(
             f"✅ [족보 세탁] {display_name} UID 및 타입 복구 완료: {final_ucid} (COIN)"
         )
 
-    up_precision, by_raw, duplicated_bases = _determine_precision(base, current_p, final_ucid, DUPLICATED_LIST, bybit_data, binance_data)
+    up_precision, by_raw, duplicated_bases = _determine_precision(
+        base, current_p, final_ucid, DUPLICATED_LIST, bybit_data, binance_data
+    )
 
     listed_on = set()
     if base not in duplicated_bases:
@@ -273,8 +311,10 @@ def build_upbit_row(
                 elif ex_name == "BINANCE_FUTURES":
                     listed_on.add("BINANCE_FUTURES")
 
-    bin_agg = _aggregate_binance_for_upbit(base, display_name, binance_data, REVERSE_LOOKUP, listed_on)
-    
+    bin_agg = _aggregate_binance_for_upbit(
+        base, display_name, binance_data, REVERSE_LOOKUP, listed_on
+    )
+
     if base in upbit_krw_set:
         listed_on.add("UPBIT")
 
@@ -286,7 +326,11 @@ def build_upbit_row(
     if base in bithumb_krw_set or any(a in bithumb_krw_set for a in bithumb_aliases):
         listed_on.add("BITHUMB")
 
-    binance_vol = bin_agg["binance_futures_vol"] if bin_agg["has_binance_futures"] else bin_agg["binance_spot_vol"]
+    binance_vol = (
+        bin_agg["binance_futures_vol"]
+        if bin_agg["has_binance_futures"]
+        else bin_agg["binance_spot_vol"]
+    )
 
     up_vol_24h = (
         float(upbit_data[base].get("volume_24h") or 0.0) / krw_usd_rate
@@ -332,7 +376,9 @@ def build_upbit_row(
         up_open_krw if up_open_krw > 0 else (bithumb_open if bithumb_open > 0 else 0.0)
     )
     has_binance_listing = (
-        bin_agg["binance_spot_price"] > 0 or bin_agg["binance_futures_price"] > 0 or binance_vol > 0
+        bin_agg["binance_spot_price"] > 0
+        or bin_agg["binance_futures_price"] > 0
+        or binance_vol > 0
     )
 
     row = {
@@ -352,7 +398,10 @@ def build_upbit_row(
         "Price_KRW": up_price_krw if up_price_krw > 0 else None,
         "Binance_Price": (
             (bin_agg["binance_spot_price"] or bin_agg["binance_futures_price"])
-            if (bin_agg["binance_spot_price"] > 0 or bin_agg["binance_futures_price"] > 0)
+            if (
+                bin_agg["binance_spot_price"] > 0
+                or bin_agg["binance_futures_price"] > 0
+            )
             else None
         ),
         "Bybit_Price": (
@@ -363,8 +412,12 @@ def build_upbit_row(
         "Change_24h": utils.format_change(up_change_24h),
         "Change_Today": utils.format_change(change_today),
         "Volume_Formatted": (
-            utils.format_volume_string(binance_vol)
-            if (has_binance_listing and binance_vol > 0)
+            utils.format_volume_string(
+                binance_vol
+                if (has_binance_listing and binance_vol > 0)
+                else by_raw.get("volume_24h", 0.0)
+            )
+            if (binance_vol > 0 or by_raw.get("volume_24h", 0.0) > 0)
             else "-"
         ),
         "Kimchi_Formatted": "-",
@@ -374,25 +427,33 @@ def build_upbit_row(
         "Price_Raw": current_p,
         "Change_24h_Raw": up_change_24h,
         "Change_Today_Raw": change_today,
-        "Volume_Raw": binance_vol if has_binance_listing else 0.0,
+        "Volume_Raw": (
+            binance_vol if has_binance_listing else by_raw.get("volume_24h", 0.0)
+        ),
         "MarketCap_Raw": mcap,
         "VMC_Raw": vmc_raw,
         "Kimchi_Raw": None,
         "utc0_open_Raw": utc0_open,
         "utc0_open_KRW": final_open_krw if final_open_krw > 0 else None,
         "Listed_Exchanges": list(listed_on),
-        "Binance_Price_Spot": bin_agg["binance_spot_price"] if bin_agg["binance_spot_price"] > 0 else None,
+        "Binance_Price_Spot": (
+            bin_agg["binance_spot_price"] if bin_agg["binance_spot_price"] > 0 else None
+        ),
         "Bybit_Price_Spot": by_spot_p if by_spot_p > 0 else None,
         "Change_24h_Binance": bin_agg["binance_spot_change_24h"],
         "Change_24h_Bybit": float(by_raw.get("change_24h", 0.0)),
-        "Change_Today_Binance": bin_agg["binance_spot_change_today"],
+        "Change_24h_Bybit_Futures": float(
+            by_raw.get("futures_change_24h", 0.0) or by_raw.get("change_24h", 0.0)
+        ),
         "Change_Today_Bybit": float(
             by_raw.get("change_today")
-            or (
-                utils.js_round(((by_spot_p if by_spot_p > 0 else by_futures_p) - utc0_open) / utc0_open * 100, 2)
-                if ((by_spot_p > 0 or by_futures_p > 0) and utc0_open > 0)
-                else 0.0
-            )
+            if by_raw.get("change_today") is not None
+            else (by_raw.get("change_24h") or 0.0)
+        ),
+        "Change_Today_Bybit_Futures": float(
+            by_raw.get("futures_change_today")
+            if by_raw.get("futures_change_today") is not None
+            else (by_raw.get("futures_change_24h") or by_raw.get("change_24h") or 0.0)
         ),
         "Binance_Vol_Spot": bin_agg["binance_spot_vol"],
         "Exact_Spot": bin_agg["exact_spot_ticker"],
@@ -404,8 +465,16 @@ def build_upbit_row(
             else "-"
         ),
         "Upbit_Vol": up_info.get("acc_trade_price_24h", 0.0),
+        "Bybit_Vol_Formatted": (
+            utils.format_volume_string(by_raw.get("volume_24h", 0.0))
+            if by_raw.get("volume_24h", 0.0) > 0
+            else "-"
+        ),
+        "Bybit_Vol": by_raw.get("volume_24h", 0.0),
         "Binance_Price_Futures": (
-            bin_agg["binance_futures_price"] if bin_agg["binance_futures_price"] > 0 else None
+            bin_agg["binance_futures_price"]
+            if bin_agg["binance_futures_price"] > 0
+            else None
         ),
         "Bybit_Price_Futures": by_futures_p if by_futures_p > 0 else None,
         "Change_24h_Futures": bin_agg["binance_futures_change_24h"],

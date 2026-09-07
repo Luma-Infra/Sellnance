@@ -51,7 +51,7 @@ class CanvasCrosshairPrimitive {
     if (this._requestUpdate) {
       try {
         this._requestUpdate();
-      } catch (e) {}
+      } catch (e) { }
     }
   }
 }
@@ -353,7 +353,8 @@ export async function initChart() {
       const len = store.mainData.length;
       const margin = store.savedRightMargin ?? 10;
       const MIN_SPAN = 10; // 🚀 최대 확대 한계: 최소 10개 봉 (캔들 과팽창 방지)
-      const MAX_SPAN = Math.min(Math.max(len + margin, 50), 500); // 🚀 최대 축소 한계: 최대 300개 봉 (무한 바늘 현상 방지)
+      const MAX_SPAN = Math.min(Math.max(len + margin, 50), 800);
+      // 최대 축소 한계: (캔들 뭉개짐, 과압축, Hairline 방지)
       const maxTo = len - 1 + margin;
 
       // 🛑 [한계점 즉시 감지 & 0ms 조기 탈출]
@@ -421,7 +422,7 @@ export async function initChart() {
       if (store.chartVol) {
         try {
           store.chartVol.timeScale().setVisibleLogicalRange(targetRange);
-        } catch (_) {}
+        } catch (_) { }
       }
 
       store.isUserZoomed = true;
@@ -570,8 +571,8 @@ export async function initChart() {
       // value 강제 변환 및 오염 박멸 (기존 d.color 등 메타데이터 100% 계승)
       const safeVal =
         dataObj.value === null ||
-        dataObj.value === undefined ||
-        isNaN(Number(dataObj.value))
+          dataObj.value === undefined ||
+          isNaN(Number(dataObj.value))
           ? 0
           : Number(dataObj.value);
 
@@ -636,13 +637,13 @@ export async function initChart() {
         return;
       const safeVal =
         dataObj.value === null ||
-        dataObj.value === undefined ||
-        isNaN(Number(dataObj.value))
+          dataObj.value === undefined ||
+          isNaN(Number(dataObj.value))
           ? 0
           : Number(dataObj.value);
       try {
         rawKimchiUpdate({ ...dataObj, value: safeVal });
-      } catch (e) {}
+      } catch (e) { }
     };
   }
 
@@ -721,7 +722,7 @@ export async function initChart() {
             targetCharts.forEach((tObj) => {
               if (tObj && tObj.chart) tObj.chart.clearCrosshairPosition();
             });
-          } catch (e) {}
+          } catch (e) { }
           return;
         }
 
@@ -990,7 +991,7 @@ export async function initChart() {
             }, 50);
           }
         }
-      } catch (err) {}
+      } catch (err) { }
       const totalPerf = performance.now() - perfStart;
       if (ENABLE_PERF_LOG && totalPerf > 1.5) {
         console.warn(`[Perf] syncCrosshair took ${totalPerf.toFixed(2)}ms`);
@@ -1018,7 +1019,7 @@ export async function initChart() {
         ) {
           try {
             tChart.clearCrosshairPosition();
-          } catch (e) {}
+          } catch (e) { }
         }
 
         let timeStr = null;

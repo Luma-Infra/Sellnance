@@ -1,5 +1,6 @@
 import { store, tfSec } from "./_store.js";
 import { ensureSafeUnixSeconds } from "./chart_utils.js";
+import { isValidPriceRatio } from "./stream_utils.js";
 
 // 🚀 [12h / 3d 서브 캔들 에포크 정밀 합성 엔진]
 export function resampleSubCandles(subCandles, targetTF, subExchange) {
@@ -100,6 +101,7 @@ export function calculateKimchiData(mainData, subRaw, params) {
 
     // 🚀 서브 데이터를 타임스탬프 기준 시간 오름차순으로 완벽 정렬 (12h/3d 에포크 합성본 사용)
     const sortedSub = [...processedSubRaw].sort((a, b) => getSubTime(a) - getSubTime(b));
+    const firstSubTime = sortedSub.length > 0 ? getSubTime(sortedSub[0]) : 0;
 
     let subIndex = 0;
     let rateIndex = 0;
@@ -110,6 +112,12 @@ export function calculateKimchiData(mainData, subRaw, params) {
 
     mainData.forEach((candle, index) => {
       const candleTimeSec = ensureSafeUnixSeconds(candle.time);
+
+      // [서브 거래소 상장 이전 구간 가드] 서브 캔들이 존재하지 않는 과거 구간은 김프 계산 스킵 (대폭락 갭 원천 차단)
+      if (firstSubTime > 0 && candleTimeSec < firstSubTime - intervalSec * 1.5) {
+        return;
+      }
+
       const nextCandleTime =
         index + 1 < mainData.length
           ? ensureSafeUnixSeconds(mainData[index + 1].time)
@@ -129,7 +137,7 @@ export function calculateKimchiData(mainData, subRaw, params) {
       while (
         subIndex < sortedSub.length - 1 &&
         Math.abs(getSubTime(sortedSub[subIndex + 1]) - candleTimeSec) <
-          Math.abs(getSubTime(sortedSub[subIndex]) - candleTimeSec)
+        Math.abs(getSubTime(sortedSub[subIndex]) - candleTimeSec)
       ) {
         subIndex++;
       }
@@ -155,37 +163,22 @@ export function calculateKimchiData(mainData, subRaw, params) {
         const unitKorPrice = rawKorPrice / (isKor ? mainMulti : subMulti);
         const unitGlbPrice = rawGlbPrice / (isKor ? subMulti : mainMulti);
 
-        if (unitGlbPrice > 0 && lastKnownRate > 0) {
-          const kimchiPct =
-            (unitKorPrice / (unitGlbPrice * lastKnownRate) - 1) * 100;
+        if (unitGlbPrice > 0 && lastKnownRate > 0 && unitKorPrice > 0) {
+          const overseasKrw = unitGlbPrice * lastKnownRate;
 
-          // 🚨 [김프 이상 탐지 전용 애널리틱스 코드]
-          // 역프가 -4% 이하로 떨어지는 비정상 구간 발견 시 상세 데이터를 콘솔에 추적 로그로 남깁니다.
-          // if (kimchiPct <= -4) {
-          //   const dt = new Date(candleTimeSec * 1000).toLocaleString("ko-KR", {
-          //     timeZone: "Asia/Seoul",
-          //   });
-          //   console.warn(`🚨 [역프 이상 탐지] 시간: ${dt}`, {
-          //     kimchiPct: kimchiPct.toFixed(2) + "%",
-          //     unitKorPrice: unitKorPrice.toFixed(4),
-          //     unitGlbPrice: unitGlbPrice.toFixed(4),
-          //     appliedRate: lastKnownRate,
-          //     rawKorPrice,
-          //     rawGlbPrice,
-          //     mainMulti,
-          //     subMulti,
-          //   });
-          // }
-
-          if (isFinite(kimchiPct)) {
-            newKimchiData.push({
-              time: candle.time,
-              value: kimchiPct,
-              color:
-                typeof window.getKimchiColor === "function"
-                  ? window.getKimchiColor(kimchiPct)
-                  : "#57a4fc",
-            });
+          // isValidPriceRatio 재사용: 99% 폭락(0.01) 및 10배 폭등(10.0) 이상치 완벽 방어]
+          if (isValidPriceRatio(unitKorPrice, overseasKrw)) {
+            const kimchiPct = (unitKorPrice / overseasKrw - 1) * 100;
+            if (isFinite(kimchiPct)) {
+              newKimchiData.push({
+                time: candle.time,
+                value: kimchiPct,
+                color:
+                  typeof window.getKimchiColor === "function"
+                    ? window.getKimchiColor(kimchiPct)
+                    : "#57a4fc",
+              });
+            }
           }
         }
       }

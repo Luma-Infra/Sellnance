@@ -11,6 +11,7 @@ import { findRowInfo, determineListingDate } from "./chart_history_helper.js";
 import { updateExchangeBadges } from "./ui_control.js";
 import { applyChartLayout } from "./chart_layout.js";
 import { fetchCandlesSmart, clearChartData, mapTime } from "./chart_data.js";
+import { isExchangeNativeTF } from "./_market_rules.js";
 
 export async function fetchHistory(
   symbol,
@@ -450,7 +451,24 @@ export async function fetchHistory(
       newVolumeData = [];
     }
 
-    if (isFutures || isSpot || isBybit) {
+    const currentExchange = isFutures
+      ? "binance_futures"
+      : isBybitFutures
+        ? "bybit_futures"
+        : isBybit
+          ? "bybit_spot"
+          : isSpot
+            ? "binance_spot"
+            : isUpbit
+              ? "upbit"
+              : isBithumb
+                ? "bithumb"
+                : isGate
+                  ? "gateio"
+                  : "binance_futures";
+
+    const isNativeDirectCandle = isExchangeNativeTF(currentExchange, store.currentTF);
+    if (isNativeDirectCandle && mainStep === 1) {
       rawMain.forEach((d) => {
         const safeVol = Number(d.vol) || 0;
         newMainData.push({
@@ -468,26 +486,53 @@ export async function fetchHistory(
         });
       });
     } else {
-      let startIdx = 0;
-      for (let i = startIdx; i < rawMain.length; i += mainStep) {
-        const chunk = rawMain.slice(i, i + mainStep);
-        if (chunk.length > 0) {
-          const time = chunk[0].time;
-          const open = chunk[0].open;
-          const close = chunk[chunk.length - 1].close;
-          const high = Math.max(...chunk.map((c) => c.high));
-          const low = Math.min(...chunk.map((c) => c.low));
-          const totalVol = chunk.reduce(
-            (sum, c) => sum + (Number(c.vol) || 0),
-            0,
-          );
-          newMainData.push({ time, open, high, low, close, volume: totalVol });
-          newVolumeData.push({
-            time,
-            value: totalVol,
-            color: close >= open ? upColorVol : downColorVol,
-          });
+      const bucketMap = new Map();
+      for (const d of rawMain) {
+        const t = Number(d.time);
+        if (!t) continue;
+        let bucket;
+        if (store.currentTF === "12h") {
+          bucket = Math.floor(t / 43200) * 43200;
+        } else if (store.currentTF === "3d") {
+          bucket = Math.floor((t - 86400) / 259200) * 259200 + 86400;
+        } else {
+          const stepSec = tfSec[store.currentTF] || (mainStep * 60);
+          bucket = Math.floor(t / stepSec) * stepSec;
         }
+
+        if (!bucketMap.has(bucket)) {
+          bucketMap.set(bucket, {
+            time: bucket,
+            open: Number(d.open) || 0,
+            high: Number(d.high) || 0,
+            low: Number(d.low) || 0,
+            close: Number(d.close) || 0,
+            volume: Number(d.vol) || 0,
+          });
+        } else {
+          const existing = bucketMap.get(bucket);
+          existing.high = Math.max(existing.high, Number(d.high) || 0);
+          existing.low = Math.min(existing.low, Number(d.low) || 0);
+          existing.close = Number(d.close) || 0;
+          existing.volume += Number(d.vol) || 0;
+        }
+      }
+
+      const aggregated = Array.from(bucketMap.values()).sort((a, b) => a.time - b.time);
+      for (const c of aggregated) {
+        newMainData.push({
+          time: c.time,
+          open: c.open,
+          high: c.high,
+          low: c.low,
+          close: c.close,
+          volume: c.volume,
+        });
+        newVolumeData.push({
+          time: c.time,
+          value: c.volume,
+          color: c.close >= c.open ? upColorVol : downColorVol,
+        });
       }
     }
 

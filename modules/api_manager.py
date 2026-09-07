@@ -506,7 +506,7 @@ def get_cached_data(force_reload=False, silent_mode=False, user_api_key=None):
         else:
             is_expired = True
 
-        # 🚀 [쌀먹 핵심] silent_mode일 때는 만료와 무관하게 무조건 펀비/시세만 새로 긁어와 캐시 갱신!
+        # 🚀 [핵심] silent_mode일 때는 만료와 무관하게 무조건 펀비/시세만 새로 긁어와 캐시 갱신!
         if force_reload or needs_reset or is_expired or silent_mode:
             try:
                 raw_data = _fetch_and_process_data(
