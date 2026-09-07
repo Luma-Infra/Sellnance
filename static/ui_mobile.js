@@ -211,7 +211,26 @@ export function updateMobileNavUI(tab = store._currentMobileTab || "list") {
   }
 }
 
-export function switchMobileTab(tab) {
+export function preventMobileNavClickThrough() {
+  const navBar = document.getElementById("mobile-nav-bar");
+  if (!navBar) return;
+  ["pointerdown", "mousedown", "touchstart", "dblclick"].forEach((evt) => {
+    navBar.addEventListener(
+      evt,
+      (e) => {
+        e.stopPropagation();
+      },
+      { passive: false },
+    );
+  });
+}
+
+export function switchMobileTab(tab, event) {
+  if (event) {
+    try {
+      event.stopPropagation();
+    } catch (e) { }
+  }
   if (window.innerWidth >= CONFIG.SCREEN_WIDTH || !isTouchDevice()) return;
 
   try {
@@ -465,6 +484,7 @@ if (typeof document !== "undefined") {
     syncTouchDeviceClass();
     initMobileRubberBandScroll();
     initMobileScrollMaskIndicators();
+    preventMobileNavClickThrough();
     updateMobileNavUI(store._currentMobileTab || "list");
   };
   if (document.readyState === "loading") {

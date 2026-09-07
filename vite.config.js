@@ -23,6 +23,7 @@ export default defineConfig({
     outDir: "../dist",
     emptyOutDir: true,
     sourcemap: false,
+    chunkSizeWarningLimit: 800,
     rollupOptions: {
       input: {
         // 엔트리 포인트 경로 설정

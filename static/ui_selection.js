@@ -203,12 +203,27 @@ export function selectSymbol(
   // 🚀 선택된 코인은 화면 가시 영역(30위 바깥)과 상관없이 무조건 실시간 시세 구독에 강제 등록
   if (store.visibleSymbols) {
     store.visibleSymbols.add(uniqueTicker);
+    if (rowInfo?.Ticker) store.visibleSymbols.add(rowInfo.Ticker);
+    if (rowInfo?.DisplayTicker) store.visibleSymbols.add(rowInfo.DisplayTicker);
+    if (rowInfo?.Symbol) store.visibleSymbols.add(rowInfo.Symbol);
     if (typeof window.syncSniperSubscriptions === "function") {
       window.syncSniperSubscriptions();
     }
   }
 
-  // 🚀 주소창 해시 연동 (쌀먹 라우팅 최적화)
+  // 🚀 테이블 행이 DOM에 이미 생성되어 있고 마켓 스위칭이 아닐 때만 즉시 동적 지표(Day/24h) 동기화
+  const isMarketSwitchOnly = forceMarket !== null && (store.currentSelectedSymbol === uniqueTicker || (rowInfo && String(store.currentSelectedUid) === String(rowInfo.UID)));
+  // if (!isMarketSwitchOnly) {
+  //   const rowEl =
+  //     store.rowDomMap?.get(uniqueTicker) ||
+  //     (rowInfo?.Ticker ? store.rowDomMap?.get(rowInfo.Ticker) : null) ||
+  //     (rowInfo?.DisplayTicker ? store.rowDomMap?.get(rowInfo.DisplayTicker) : null);
+  //   if (rowEl && rowInfo && typeof window.updateRowDynamicHTML === "function") {
+  //     window.updateRowDynamicHTML(rowEl, rowInfo, false);
+  //   }
+  // }
+
+  // 🚀 주소창 해시 연동 (라우팅 최적화)
   let tempMarket = forceMarket || parsedMarket;
   if (tempMarket === "BINANCE") tempMarket = "SPOT";
   if (tempMarket === "BINANCE_FUTURES") tempMarket = "FUTURES";
@@ -254,7 +269,8 @@ export function selectSymbol(
 
   const chartTargetSym = targetPath.replace(/^\//, "") || uniqueTicker;
   store.currentAsset = chartTargetSym;
-  store.currentSelectedSymbol = chartTargetSym;
+  // store.currentSelectedSymbol = chartTargetSym;
+  store.currentSelectedSymbol = uniqueTicker;
 
   if (window.history && window.history.pushState) {
     if (window.location.pathname !== targetPath && !window.location.hash) {
@@ -480,35 +496,37 @@ export function selectSymbol(
         }
       }
 
-      // 리스트 스크롤 이동 및 가상 렌더 리밋 확장 (555등, 777등 등 깊은 순위 대응)
-      const sortedList = store.currentTableData || [];
-      const targetIdx = sortedList.findIndex(
-        (item) =>
-          item.DisplayTicker === uniqueTicker ||
-          item.Ticker === uniqueTicker ||
-          (rowInfo && item.UID === rowInfo.UID),
-      );
+      // 리스트 스크롤 이동 및 가상 렌더 리밋 확장 (마켓 스위칭이 아닐 때만 실행)
+      if (!isMarketSwitchOnly) {
+        const sortedList = store.currentTableData || [];
+        const targetIdx = sortedList.findIndex(
+          (item) =>
+            item.DisplayTicker === uniqueTicker ||
+            item.Ticker === uniqueTicker ||
+            (rowInfo && item.UID === rowInfo.UID),
+        );
 
-      if (targetIdx !== -1) {
-        if (targetIdx >= store.currentRenderLimit) {
-          store.currentRenderLimit = Math.max(store.currentRenderLimit, targetIdx + 30);
-          if (typeof renderTable === "function") renderTable();
-        }
-        setTimeout(() => {
-          store.currentSelectedSymbol = uniqueTicker;
-          if (typeof applySelectedHighlight === "function") {
-            applySelectedHighlight();
+        if (targetIdx !== -1) {
+          if (targetIdx >= store.currentRenderLimit) {
+            store.currentRenderLimit = Math.max(store.currentRenderLimit, targetIdx + 30);
+            if (typeof renderTable === "function") renderTable();
           }
-          if (shouldScroll) {
-            const targetRow =
-              document.querySelector(`#coin-list-body > div[data-sym="${uniqueTicker}"]`) ||
-              (rowInfo?.UID ? document.querySelector(`#coin-list-body > div[data-uid="${rowInfo.UID}"]`) : null) ||
-              (store.rowDomMap ? store.rowDomMap.get(uniqueTicker) || (rowInfo?.UID ? store.rowDomMap.get(String(rowInfo.UID)) : null) : null);
-            if (targetRow && targetRow.style.display !== "none") {
-              targetRow.scrollIntoView({ block: "center", behavior: "smooth" });
+          setTimeout(() => {
+            store.currentSelectedSymbol = uniqueTicker;
+            if (typeof applySelectedHighlight === "function") {
+              applySelectedHighlight();
             }
-          }
-        }, 50);
+            if (shouldScroll) {
+              const targetRow =
+                document.querySelector(`#coin-list-body > div[data-sym="${uniqueTicker}"]`) ||
+                (rowInfo?.UID ? document.querySelector(`#coin-list-body > div[data-uid="${rowInfo.UID}"]`) : null) ||
+                (store.rowDomMap ? store.rowDomMap.get(uniqueTicker) || (rowInfo?.UID ? store.rowDomMap.get(String(rowInfo.UID)) : null) : null);
+              if (targetRow && targetRow.style.display !== "none") {
+                targetRow.scrollIntoView({ block: "center", behavior: "smooth" });
+              }
+            }
+          }, 50);
+        }
       }
 
       // 🚀 [핵심] 차트 데이터 패치 실행 (메인 스레드 경합 완벽 해소)
@@ -516,8 +534,8 @@ export function selectSymbol(
         fetchHistory(chartTargetSym, false, false, false, rowInfo?.UID);
       }
 
-      // 🚀 [추가] 코인 선택 시 실시간 정렬 엔진 강제 점화 및 즉시 적용
-      if (typeof window.applyRealtimeSort === "function") {
+      // 🚀 [추가] 코인 신규 선택 시 실시간 정렬 엔진 강제 점화 및 즉시 적용 (마켓 스위칭 시에는 테이블 정렬 스킵)
+      if (!isMarketSwitchOnly && typeof window.applyRealtimeSort === "function") {
         window.applyRealtimeSort();
       }
 

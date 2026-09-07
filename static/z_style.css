@@ -67,16 +67,49 @@ html.panel-swapped-mode #left-panel {
   border-left-width: 1px !important;
 }
 
-/* 🚀 타임프레임 버튼 포커스 잔상 및 외곽선 박멸 */
-.tf-btn {
+/* 🚀 타임프레임 및 헤더 버튼 포커스/터치 잔상 및 외곽선 박멸 */
+.tf-btn,
+#main-global-header-actions button {
   outline: none !important;
   box-shadow: none !important;
   -webkit-tap-highlight-color: transparent;
 }
+
 .tf-btn:focus,
-.tf-btn:focus-visible {
+.tf-btn:focus-visible,
+#main-global-header-actions button:focus,
+#main-global-header-actions button:focus-visible {
   outline: none !important;
   box-shadow: none !important;
+}
+
+/* 🚀 모바일/터치 기기 전용: 탭 시 노란색 1초 유지 후 자연스러운 원복 애니메이션 */
+@keyframes touchFeedbackKeep1s {
+
+  0%,
+  70% {
+    background-color: var(--accent) !important;
+    color: #ffffff !important;
+  }
+
+  100% {
+    background-color: color-mix(in srgb, var(--border) 20%, transparent) !important;
+    color: var(--text) !important;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+
+  #main-global-header-actions button:hover,
+  #main-global-header-actions button:focus {
+    animation: touchFeedbackKeep1s 1s ease-out forwards;
+  }
+
+  #main-global-header-actions button:active {
+    background-color: var(--accent) !important;
+    color: #ffffff !important;
+    transform: scale(0.94);
+  }
 }
 
 :root {
@@ -100,10 +133,7 @@ html.panel-swapped-mode #left-panel {
   /* 7열: 상장일    */
 
   /* 💡 자동 합산 및 퍼센트 변환 엔진 (절대 건드리지 마세요!) */
-  --ratio-total: calc(
-    var(--ratio-asset) + var(--ratio-price) + var(--ratio-vol-b) +
-      var(--ratio-vol-u) + var(--ratio-kimch) + var(--ratio-exch)
-  );
+  --ratio-total: calc(var(--ratio-asset) + var(--ratio-price) + var(--ratio-vol-b) + var(--ratio-vol-u) + var(--ratio-kimch) + var(--ratio-exch));
 }
 
 @keyframes indeterminateBar {
@@ -419,7 +449,7 @@ body.theme-binance {
     align-self: flex-start !important;
   }
 
-  #head-price-container > div,
+  #head-price-container>div,
   #head-price-active {
     display: flex !important;
     flex-direction: column !important;
@@ -450,7 +480,7 @@ body.theme-binance {
     gap: 24px !important;
   }
 
-  #head-metrics-container > div {
+  #head-metrics-container>div {
     display: flex !important;
     flex-direction: column !important;
     align-items: flex-end !important;
@@ -478,17 +508,26 @@ body.theme-binance {
 }
 
 /* ============================================================
-   📱 [모바일 vs PC 창 분할 리사이즈 뷰 완벽 분리]
-   - 진짜 모바일 터치 기기 / F12 모바일 모드: 하단 알약 네비바, 터치 오버레이 활성화
-   - PC 데스크탑 (마우스 포인터 / 창 크기 축소 시): 하단 탭바 숨김, 차트 패널 자연스러운 닫힘 및 테이블 100% 확장
+   📱 [모바일 vs PC 레이아웃 완벽 격리]
+   - PC 데스크탑 (>= 1200px): 하단 탭바, 모바일 오버레이 절대 숨김! 검색창/차트탭 100% 정상 노출
+   - 모바일 / 태블릿 (< 1200px): 하단 플로팅 알약 탭바 및 모바일 바텀시트 활성화
    ============================================================ */
 
-/* 1. 하단 플로팅 알약 네비게이션 바: 1200px 미만(모바일/태블릿) 활성화, 1200px 이상(데스크탑) 숨김 */
+/* 1. 하단 플로팅 알약 네비게이션 바: 기본 완전 숨김 */
 #mobile-nav-bar {
   display: none !important;
   box-shadow: var(--mobile-nav-shadow);
 }
 
+#mobile-chart-overlay {
+  display: none;
+}
+
+#coin-list-bottom-fade {
+  display: none !important;
+}
+
+/* 📱 모바일 / 태블릿 (< 1200px) 전용 스타일 */
 @media (max-width: 1199px) {
   #mobile-nav-bar {
     display: flex !important;
@@ -513,28 +552,7 @@ body.theme-binance {
     min-width: 0 !important;
     border-right-width: 0 !important;
   }
-}
 
-html.is-touch-device #mobile-nav-bar {
-  display: flex !important;
-}
-
-@media (min-width: 1200px) {
-  #mobile-nav-bar {
-    display: none !important;
-  }
-}
-
-#mobile-nav-slider {
-  box-shadow: var(--mobile-nav-pill-shadow);
-}
-
-/* 2. 테이블 하단 여백 및 페이드 오버레이 (모바일 알약 바 높이 고려) */
-#coin-list-bottom-fade {
-  display: none !important;
-}
-
-@media (max-width: 1199px) {
   #coin-list-bottom-fade {
     display: block !important;
   }
@@ -544,13 +562,46 @@ html.is-touch-device #mobile-nav-bar {
   }
 }
 
-html.is-touch-device #coin-list-bottom-fade {
-  display: block !important;
+/* 💻 PC 데스크탑 (>= 1200px) 전용 스타일: 어떠한 터치 클래스가 붙어도 모바일 요소 100% 강제 숨김 */
+@media (min-width: 1200px) {
+
+  #mobile-nav-bar,
+  html.is-touch-device #mobile-nav-bar {
+    display: none !important;
+  }
+
+  #mobile-chart-overlay,
+  html.is-touch-device #mobile-chart-overlay {
+    display: none !important;
+  }
+
+  #coin-list-bottom-fade,
+  html.is-touch-device #coin-list-bottom-fade {
+    display: none !important;
+  }
+
+  #btn-toggle-tab-search,
+  #tab-search-wrapper {
+    display: none !important;
+  }
+
+  #search-input-wrapper {
+    display: flex !important;
+  }
+
+  #chart-tab-wrapper {
+    display: flex !important;
+  }
+
+  #coin-list-body {
+    padding-bottom: 0 !important;
+  }
 }
 
-html.is-touch-device #coin-list-body {
-  padding-bottom: 96px !important;
+#mobile-nav-slider {
+  box-shadow: var(--mobile-nav-pill-shadow);
 }
+
 
 /* 2. [상승 / 하락 컬러 시스템] */
 /* [모드 B] 바이낸스식 (상승 초록, 하락 빨강) - 라이트모드 기본 */
@@ -761,7 +812,7 @@ body.theme-upbit:not(.resizing-active) #right-panel {
   content: none;
 }
 
-#coin-list-body .coin-row > div {
+#coin-list-body .coin-row>div {
   display: flex !important;
   align-items: center !important;
   padding: 4px 8px;
@@ -770,11 +821,11 @@ body.theme-upbit:not(.resizing-active) #right-panel {
   overflow: hidden;
 }
 
-#coin-list-body .coin-row > div.col-exch {
+#coin-list-body .coin-row>div.col-exch {
   overflow: visible !important;
 }
 
-#coin-list-body .coin-row:hover > div {
+#coin-list-body .coin-row:hover>div {
   background: rgba(var(--accent-rgb), 0.05) !important;
 }
 
@@ -832,7 +883,7 @@ body.theme-upbit:not(.resizing-active) #right-panel {
 
 .tv-lightweight-charts td,
 .tv-lightweight-charts th,
-.tv-lightweight-charts td > div {
+.tv-lightweight-charts td>div {
   padding: 0 !important;
   border: none !important;
   background: transparent !important;
@@ -970,6 +1021,7 @@ body.theme-upbit:not(.resizing-active) #right-panel {
 
 /* ✅ 모바일/태블릿 반응형 통합 최적화 (< 1200px) */
 @media (max-width: 1199px) {
+
   /* 가로 스크롤 완전 차단 */
   body,
   html {
@@ -993,11 +1045,11 @@ body.theme-upbit:not(.resizing-active) #right-panel {
     transform-origin: left center;
   }
 
-  header > div.absolute {
+  header>div.absolute {
     width: clamp(260px, 60vw, 900px) !important;
   }
 
-  header > div.absolute span {
+  header>div.absolute span {
     white-space: nowrap !important;
   }
 
@@ -1029,8 +1081,9 @@ body.theme-upbit:not(.resizing-active) #right-panel {
 
   /* 🚀 1000px 미만 화면 대응: 상단 롤링 공지사항 바 완전 숨김 처리 */
   @media (max-width: 999px) {
+
     #header-notice-container,
-    header > div.absolute {
+    header>div.absolute {
       display: none !important;
     }
   }
@@ -1038,10 +1091,7 @@ body.theme-upbit:not(.resizing-active) #right-panel {
   /* 🚀 500px 미만 초소형 모바일 기기 대응: 김프/거래소 열 숨김 처리 */
   @media (max-width: 499px) {
     :root {
-      --ratio-total: calc(
-        var(--ratio-asset) + var(--ratio-price) + var(--ratio-vol-b) +
-          var(--ratio-vol-u)
-      );
+      --ratio-total: calc(var(--ratio-asset) + var(--ratio-price) + var(--ratio-vol-b) + var(--ratio-vol-u));
     }
 
     .col-kimch,
@@ -1049,7 +1099,7 @@ body.theme-upbit:not(.resizing-active) #right-panel {
       display: none !important;
     }
 
-    #control-panel-parent > *:not(#category-tab-container) {
+    #control-panel-parent>*:not(#category-tab-container) {
       display: none !important;
     }
 
@@ -1196,14 +1246,15 @@ body.theme-upbit #coin-list-body.table-loading {
 }
 
 @media (max-width: 1199px) {
+
   #exchange-filter-container,
   #exchange-presets-container {
     display: none !important;
   }
 
   /* [only 모바일] 마켓 테이블 2단 헤더 높이 균등(25px) 및 컴팩트 타이트 패딩 */
-  #market-table-header > div:first-child,
-  #market-table-header > div:last-child {
+  #market-table-header>div:first-child,
+  #market-table-header>div:last-child {
     height: 25px !important;
     min-height: 25px !important;
   }
@@ -1258,8 +1309,7 @@ body.theme-upbit #coin-list-body.table-loading {
     -webkit-overflow-scrolling: touch;
     touch-action: pan-x;
     scrollbar-width: thin;
-    scrollbar-color: color-mix(in srgb, var(--accent) 70%, transparent)
-      transparent;
+    scrollbar-color: color-mix(in srgb, var(--accent) 70%, transparent) transparent;
   }
 
   #exchange-badges::-webkit-scrollbar,
@@ -1275,11 +1325,9 @@ body.theme-upbit #coin-list-body.table-loading {
 
   #exchange-badges::-webkit-scrollbar-thumb,
   #tf-container::-webkit-scrollbar-thumb {
-    background: color-mix(
-      in srgb,
-      var(--accent) 75%,
-      var(--text) 25%
-    ) !important;
+    background: color-mix(in srgb,
+        var(--accent) 75%,
+        var(--text) 25%) !important;
     border-radius: 9999px !important;
   }
 
@@ -1288,7 +1336,7 @@ body.theme-upbit #coin-list-body.table-loading {
     background: var(--accent) !important;
   }
 
-  #exchange-badges > button {
+  #exchange-badges>button {
     flex-shrink: 0 !important;
     min-width: 32px !important;
     min-height: 32px !important;
@@ -1299,85 +1347,67 @@ body.theme-upbit #coin-list-body.table-loading {
   /* 🚀 [모바일 전용] 가로 스크롤 끝단 블러/페이드 UX 마스크 효과 (양 끝 사이드 존재 시 선명한 시각 안내) */
   #exchange-badges.scroll-mask-right,
   #tf-container.scroll-mask-right {
-    -webkit-mask-image: linear-gradient(
-      to right,
-      #000 0%,
-      #000 calc(100% - 44px),
-      rgba(0, 0, 0, 0.45) calc(100% - 16px),
-      rgba(0, 0, 0, 0) 100%
-    );
-    mask-image: linear-gradient(
-      to right,
-      #000 0%,
-      #000 calc(100% - 44px),
-      rgba(0, 0, 0, 0.45) calc(100% - 16px),
-      rgba(0, 0, 0, 0) 100%
-    );
+    -webkit-mask-image: linear-gradient(to right,
+        #000 0%,
+        #000 calc(100% - 44px),
+        rgba(0, 0, 0, 0.45) calc(100% - 16px),
+        rgba(0, 0, 0, 0) 100%);
+    mask-image: linear-gradient(to right,
+        #000 0%,
+        #000 calc(100% - 44px),
+        rgba(0, 0, 0, 0.45) calc(100% - 16px),
+        rgba(0, 0, 0, 0) 100%);
   }
 
   #exchange-badges.scroll-mask-left,
   #tf-container.scroll-mask-left {
-    -webkit-mask-image: linear-gradient(
-      to right,
-      rgba(0, 0, 0, 0) 0%,
-      rgba(0, 0, 0, 0.45) 16px,
-      #000 44px,
-      #000 100%
-    );
-    mask-image: linear-gradient(
-      to right,
-      rgba(0, 0, 0, 0) 0%,
-      rgba(0, 0, 0, 0.45) 16px,
-      #000 44px,
-      #000 100%
-    );
+    -webkit-mask-image: linear-gradient(to right,
+        rgba(0, 0, 0, 0) 0%,
+        rgba(0, 0, 0, 0.45) 16px,
+        #000 44px,
+        #000 100%);
+    mask-image: linear-gradient(to right,
+        rgba(0, 0, 0, 0) 0%,
+        rgba(0, 0, 0, 0.45) 16px,
+        #000 44px,
+        #000 100%);
   }
 
   #exchange-badges.scroll-mask-both,
   #tf-container.scroll-mask-both {
-    -webkit-mask-image: linear-gradient(
-      to right,
-      rgba(0, 0, 0, 0) 0%,
-      rgba(0, 0, 0, 0.45) 16px,
-      #000 44px,
-      #000 calc(100% - 44px),
-      rgba(0, 0, 0, 0.45) calc(100% - 16px),
-      rgba(0, 0, 0, 0) 100%
-    );
-    mask-image: linear-gradient(
-      to right,
-      rgba(0, 0, 0, 0) 0%,
-      rgba(0, 0, 0, 0.45) 16px,
-      #000 44px,
-      #000 calc(100% - 44px),
-      rgba(0, 0, 0, 0.45) calc(100% - 16px),
-      rgba(0, 0, 0, 0) 100%
-    );
+    -webkit-mask-image: linear-gradient(to right,
+        rgba(0, 0, 0, 0) 0%,
+        rgba(0, 0, 0, 0.45) 16px,
+        #000 44px,
+        #000 calc(100% - 44px),
+        rgba(0, 0, 0, 0.45) calc(100% - 16px),
+        rgba(0, 0, 0, 0) 100%);
+    mask-image: linear-gradient(to right,
+        rgba(0, 0, 0, 0) 0%,
+        rgba(0, 0, 0, 0.45) 16px,
+        #000 44px,
+        #000 calc(100% - 44px),
+        rgba(0, 0, 0, 0.45) calc(100% - 16px),
+        rgba(0, 0, 0, 0) 100%);
   }
 
   #coin-list-bottom-fade {
     height: 84px;
-    background: linear-gradient(
-      to top,
-      var(--bg) 0%,
-      color-mix(in srgb, var(--bg) 80%, transparent) 40%,
-      color-mix(in srgb, var(--bg) 25%, transparent) 75%,
-      transparent 100%
-    );
-    -webkit-mask-image: linear-gradient(
-      to top,
-      rgba(0, 0, 0, 1) 0%,
-      rgba(0, 0, 0, 0.8) 35%,
-      rgba(0, 0, 0, 0.2) 75%,
-      rgba(0, 0, 0, 0) 100%
-    );
-    mask-image: linear-gradient(
-      to top,
-      rgba(0, 0, 0, 1) 0%,
-      rgba(0, 0, 0, 0.8) 35%,
-      rgba(0, 0, 0, 0.2) 75%,
-      rgba(0, 0, 0, 0) 100%
-    );
+    background: linear-gradient(to top,
+        var(--bg) 0%,
+        color-mix(in srgb, var(--bg) 80%, transparent) 40%,
+        color-mix(in srgb, var(--bg) 25%, transparent) 75%,
+        transparent 100%);
+    -webkit-mask-image: linear-gradient(to top,
+        rgba(0, 0, 0, 1) 0%,
+        rgba(0, 0, 0, 0.8) 35%,
+        rgba(0, 0, 0, 0.2) 75%,
+        rgba(0, 0, 0, 0) 100%);
+    mask-image: linear-gradient(to top,
+        rgba(0, 0, 0, 1) 0%,
+        rgba(0, 0, 0, 0.8) 35%,
+        rgba(0, 0, 0, 0.2) 75%,
+        rgba(0, 0, 0, 0) 100%);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
   }
@@ -1885,13 +1915,12 @@ button[data-name="hide-all"].draw-tool-btn--active button {
 
 /* 좌측 그리기 도구 바: 모바일에서 하단 가로 바로 표시 (미디어쿼리에서 처리) */
 
-#mobile-chart-content
-  .flex-1.flex.flex-col.relative.min-w-0.h-full.overflow-hidden {
+#mobile-chart-content .flex-1.flex.flex-col.relative.min-w-0.h-full.overflow-hidden {
   padding-left: 0 !important;
 }
 
 /* 시총/거래대금 등 하단 숫자들 숨김 (Price, 24H Chg, Day Chg만 남기기) */
-#mobile-chart-content #head-info-row > div:nth-child(n + 4) {
+#mobile-chart-content #head-info-row>div:nth-child(n + 4) {
   display: none !important;
 }
 
@@ -1901,13 +1930,13 @@ button[data-name="hide-all"].draw-tool-btn--active button {
   gap: 14px !important;
 }
 
-#mobile-chart-content #head-info-row > div:nth-child(2) {
+#mobile-chart-content #head-info-row>div:nth-child(2) {
   margin-left: auto !important;
   text-align: right !important;
   align-items: flex-end !important;
 }
 
-#mobile-chart-content #head-info-row > div:nth-child(3) {
+#mobile-chart-content #head-info-row>div:nth-child(3) {
   text-align: right !important;
   align-items: flex-end !important;
   padding-right: 4px !important;
@@ -2074,7 +2103,7 @@ body.theme-upbit #control-panel-parent {
 }
 
 /* 3. 타임프레임 바 (bg-black/5 오버라이드) */
-body.theme-upbit #chart-header > div {
+body.theme-upbit #chart-header>div {
   background-color: #f8fafc !important;
   border-bottom: 1px solid #e2e8f0 !important;
 }
@@ -2509,6 +2538,7 @@ body.theme-upbit #right-panel {
 
 /* 🚀 PC 데스크탑 환경 (>=1200px): 최소 가로 800px x 세로 600px 하한선 절대 보장 (레이아웃 붕괴/0px 축소 방지) */
 @media (min-width: 1200px) and (pointer: fine) {
+
   html,
   body {
     min-width: 800px !important;
@@ -2524,6 +2554,7 @@ body.theme-upbit #right-panel {
 }
 
 @media (pointer: coarse) {
+
   html,
   body,
   #main-dashboard-content {

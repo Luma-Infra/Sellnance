@@ -563,7 +563,8 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
       }
     }
 
-    const activeM = store.currentChartMarket || store.currentMarket || "ALL";
+    // const activeM = store.currentChartMarket || store.currentMarket || "ALL";
+    const activeM = store.currentMarket || "ALL";
     const currentVolModeIsFutures = (activeM === "FUTURES" || activeM === "BYBIT_FUTURES") && row.Spot_Only !== "O";
     const activeVol = currentVolModeIsFutures ? row.Binance_Vol_Futures : row.Binance_Vol_Spot;
 
@@ -577,7 +578,15 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
     }
   }
 
+  const isSelected =
+    row.Ticker === store.currentSelectedSymbol ||
+    row.UID === store.currentSelectedUid ||
+    (store.currentSelectedSymbol &&
+      (row.DisplayTicker === store.currentSelectedSymbol ||
+        row.Symbol === store.currentSelectedSymbol));
+
   const isVisible =
+    isSelected ||
     store.visibleSymbols.has(row.Ticker) ||
     store.visibleSymbols.has(row.Ticker.toUpperCase()) ||
     store.visibleSymbols.has(row.Ticker.toLowerCase()) ||
@@ -609,9 +618,12 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
   const priceCell = document.getElementById(`price-${row.Ticker}`);
   const oldPrice = priceCell ? parseFloat(priceCell.getAttribute("data-raw-price")) || 0 : 0;
 
-  const rowEl = store.rowDomMap?.get(row.Ticker);
+  const rowEl =
+    store.rowDomMap?.get(row.Ticker) ||
+    (row.UID ? store.rowDomMap?.get(String(row.UID)) : null) ||
+    (row.DisplayTicker ? store.rowDomMap?.get(row.DisplayTicker) : null);
   if (rowEl && typeof window.updateRowDynamicHTML === "function") {
-    window.updateRowDynamicHTML(rowEl, row, true);
+    window.updateRowDynamicHTML(rowEl, row, !isSelected);
   }
 
   if (priceCell) {

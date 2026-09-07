@@ -700,10 +700,10 @@ async function initStartQuickViewPreview() {
     startQvOverlapSeries.push(series);
   });
 
-  // 3️⃣ 바이낸스 데이터 최초 로드
-  await loadStartPreviewKlines(startQvCurrentTF);
+  // 3️⃣ 바이낸스 데이터 백그라운드 비동기 로드 (UI 렌더링 블로킹 완전 제거 -> 0ms 즉각 페인트)
+  loadStartPreviewKlines(startQvCurrentTF);
 
-  // 4️⃣ 바이낸스 실시간 멀티 웹소켓 가동
+  // 4️⃣ 바이낸스 실시간 멀티 웹소켓 즉시 가동
   startStartPreviewWebSocket(startQvCurrentTF);
 
   // 5️⃣ cycleIntervalMs 주기 4-State 크로스페이드 루프 및 프로그레스 바 정밀 동기화 가동
@@ -717,9 +717,9 @@ async function initStartQuickViewPreview() {
   window.removeEventListener("resize", resizeStartQuickViewCharts);
   window.addEventListener("resize", resizeStartQuickViewCharts);
 
-  setTimeout(() => {
+  requestAnimationFrame(() => {
     resizeStartQuickViewCharts();
-  }, 100);
+  });
 }
 
 // 🎯 겹치기 모드 범례 호버 시 특정 코인 강조 & 나머지 반투명 디밍

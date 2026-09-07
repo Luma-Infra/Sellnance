@@ -184,17 +184,11 @@ export function renderTable(isRealtime = false) {
                 rowEl.dataset.renderedLang = store.lang;
               }
 
-              // 🚀 동적 지표 레이어 갱신 체크 (지연 로딩 및 화폐 설정 동기화)
-              const needsDynamic =
-                rowEl.dataset.metricsRendered !== "true" ||
-                rowEl.dataset.renderedCurrency !== store.currencyMode ||
-                rowEl.dataset.renderedLang !== store.lang;
-
-              if (needsDynamic) {
-                updateRowDynamicHTML(rowEl, rowData);
-                rowEl.dataset.renderedCurrency = store.currencyMode;
-                rowEl.dataset.renderedLang = store.lang;
-              }
+              // 🚀 동적 지표 레이어 갱신 (화면에 들어왔을 때 최신 가격/등락률 즉시 동기화)
+              updateRowDynamicHTML(rowEl, rowData);
+              rowEl.dataset.metricsRendered = "true";
+              rowEl.dataset.renderedCurrency = store.currencyMode;
+              rowEl.dataset.renderedLang = store.lang;
             }
           } else {
             if (rowData) {
@@ -202,8 +196,15 @@ export function renderTable(isRealtime = false) {
                 store.intersectingSymbols.delete(rowData.Ticker);
               }
               if (store.visibleSymbols.has(rowData.Ticker)) {
-                store.visibleSymbols.delete(rowData.Ticker);
-                changed = true;
+                // 선택된 코인은 화면 밖으로 나가더라도 구독/갱신 유지
+                if (
+                  rowData.Ticker !== store.currentSelectedSymbol &&
+                  rowData.DisplayTicker !== store.currentSelectedSymbol &&
+                  rowData.Symbol !== store.currentSelectedSymbol
+                ) {
+                  store.visibleSymbols.delete(rowData.Ticker);
+                  changed = true;
+                }
               }
             }
           }
@@ -244,6 +245,15 @@ export function renderTable(isRealtime = false) {
         if (rowData.UID) store.rowDomMap.set(String(rowData.UID), rowEl);
         if (rowData.DisplayTicker)
           store.rowDomMap.set(rowData.DisplayTicker, rowEl);
+        if (rowData.Symbol) store.rowDomMap.set(rowData.Symbol, rowEl);
+        if (rowData.Exact_Futures)
+          store.rowDomMap.set(rowData.Exact_Futures, rowEl);
+        if (rowData.Exact_Spot)
+          store.rowDomMap.set(rowData.Exact_Spot, rowEl);
+        if (rowData.Ticker && rowData.Ticker.endsWith("KRW")) {
+          store.rowDomMap.set(rowData.Ticker.replace("KRW", "USDT"), rowEl);
+          store.rowDomMap.set(rowData.Ticker.replace("KRW", ""), rowEl);
+        }
 
         if (i < INITIAL_SYNC_ROWS) {
           // 🚀 상위 50개는 즉시 정적 레이어 주입
@@ -472,25 +482,29 @@ export function updateVisibleSymbols() {
 
 export function applySelectedHighlight() {
   const selectedSymbol = store.currentSelectedSymbol;
-  if (!selectedSymbol) return;
+  const selectedUid = store.currentSelectedUid;
+  if (!selectedSymbol && !selectedUid) return;
 
   // 1. 기존 선택된 행 하이라이트 클래스 제거
-  const prevSelected = document.querySelector(
+  const prevSelected = document.querySelectorAll(
     "#coin-list-body .coin-row.selected-highlight",
   );
-  if (prevSelected) {
-    prevSelected.classList.remove("selected-highlight");
-  }
+  prevSelected.forEach((el) => el.classList.remove("selected-highlight"));
 
-  // 2. 현재 선택된 행에 하이라이트 클래스 적용
-  const targetRow = store.rowDomMap
-    ? store.rowDomMap.get(selectedSymbol)
-    : null;
-  const actualRow =
-    targetRow ||
-    document.querySelector(
-      `#coin-list-body .coin-row[data-sym="${selectedSymbol}"]`,
-    );
+  // 2. 현재 선택된 행에 하이라이트 클래스 적용 (UID 및 티커 별칭 우선 매핑)
+  const targetRow =
+    (selectedUid && store.rowDomMap
+      ? store.rowDomMap.get(String(selectedUid))
+      : null) ||
+    (selectedSymbol && store.rowDomMap
+      ? store.rowDomMap.get(selectedSymbol)
+      : null) ||
+    (selectedSymbol && store.rowDomMap
+      ? store.rowDomMap.get(
+        selectedSymbol.split(":")[1]?.replace(/_FUTURES|_SPOT/g, "") || "",) : null);
+
+  const actualRow = targetRow ||
+    (selectedSymbol ? document.querySelector(`#coin-list-body .coin-row[data-sym="${selectedSymbol}"]`,) : null);
   if (actualRow) {
     actualRow.classList.add("selected-highlight");
   }

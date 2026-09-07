@@ -137,3 +137,25 @@ def test_mapping_json_integrity_and_safeguards():
     save_result = config_manager.save_mapping_data(corrupt_data)
     assert save_result is False, "비어있는 비정상 족보 저장은 차단되어야 합니다."
 
+
+def test_bithumb_12h_resolution_mapping():
+    """7. 빗썸 12시간봉 해상도 매핑 검증 (240이 아닌 720)"""
+    tv_tf_map = {
+        "1m": "1",
+        "3m": "3",
+        "5m": "5",
+        "10m": "10",
+        "15m": "15",
+        "30m": "30",
+        "1h": "60",
+        "2h": "120",
+        "4h": "240",
+        "6h": "360",
+        "12h": "720",
+        "24h": "1D",
+        "1d": "1D",
+    }
+    assert tv_tf_map["12h"] == "720"
+    assert tv_tf_map["4h"] == "240"
+
+

@@ -333,10 +333,6 @@ export function openTimezoneMenu(anchorButton) {
   menu.style.top = `${top}px`;
   menu.style.width = `${menuWidth}px`;
   menu.style.height = `${targetHeight}px`;
-
-  if (searchInput) {
-    setTimeout(() => searchInput.focus(), 50);
-  }
 }
 
 export function closeTimezoneMenu() {

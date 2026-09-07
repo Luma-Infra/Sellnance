@@ -297,8 +297,18 @@ export const realUpdateHeaderDisplay = (
     n24 = row.Change_24h_Bithumb ?? row.Change_24h_Raw ?? 0;
     nDay = row.Change_Today_Bithumb ?? row.Change_Today_Raw ?? 0;
   } else if (activeMarket === "FUTURES" || activeMarket === "BYBIT_FUTURES") {
-    n24 = row.Change_24h_Futures ?? row.Change_24h_Raw ?? 0;
-    nDay = row.Change_Today_Futures ?? row.Change_Today_Raw ?? 0;
+    n24 =
+      (activeMarket === "BYBIT_FUTURES"
+        ? (row.Change_24h_Bybit_Futures || row.Change_24h_Bybit || row.Change_24h_Futures)
+        : (row.Change_24h_Futures || row.Change_24h_Bybit_Futures || row.Change_24h_Bybit)) ||
+      row.Change_24h_Raw ||
+      0;
+    nDay =
+      (activeMarket === "BYBIT_FUTURES"
+        ? (row.Change_Today_Bybit_Futures || row.Change_Today_Bybit || row.Change_Today_Futures)
+        : (row.Change_Today_Futures || row.Change_Today_Bybit_Futures || row.Change_Today_Bybit)) ||
+      row.Change_Today_Raw ||
+      0;
   } else if (activeMarket === "SPOT" || activeMarket === "BYBIT" || activeMarket === "BYBIT_SPOT") {
     n24 =
       (activeMarket === "SPOT"
@@ -320,20 +330,22 @@ export const realUpdateHeaderDisplay = (
     const hasSpot =
       row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE");
     if (hasFutures) {
-      n24 = row.Change_24h_Futures ?? row.Change_24h_Raw ?? 0;
-      nDay = row.Change_Today_Futures ?? row.Change_Today_Raw ?? 0;
+      n24 = row.Change_24h_Futures || row.Change_24h_Bybit_Futures || row.Change_24h_Bybit || row.Change_24h_Raw || 0;
+      nDay = row.Change_Today_Futures || row.Change_Today_Bybit_Futures || row.Change_Today_Bybit || row.Change_Today_Raw || 0;
     } else if (hasSpot) {
-      n24 = (row.Change_24h_Spot ?? row.Change_24h_Binance) ?? row.Change_24h_Raw ?? 0;
-      nDay = (row.Change_Today_Spot ?? row.Change_Today_Binance) ?? row.Change_Today_Raw ?? 0;
+      n24 = (row.Change_24h_Spot ?? row.Change_24h_Binance) ?? row.Change_24h_Bybit ?? row.Change_24h_Raw ?? 0;
+      nDay = (row.Change_Today_Spot ?? row.Change_Today_Binance) ?? row.Change_Today_Bybit ?? row.Change_Today_Raw ?? 0;
     } else {
       n24 =
         row.Change_24h_Upbit ??
         row.Change_24h_Bithumb ??
+        row.Change_24h_Bybit ??
         row.Change_24h_Raw ??
         0;
       nDay =
         row.Change_Today_Upbit ??
         row.Change_Today_Bithumb ??
+        row.Change_Today_Bybit ??
         row.Change_Today_Raw ??
         0;
     }
@@ -398,17 +410,45 @@ export const realUpdateHeaderDisplay = (
     (row.Listed_Exchanges &&
       (row.Listed_Exchanges.includes("BINANCE") ||
         row.Listed_Exchanges.includes("BINANCE_FUTURES")));
+  const hasGlobalVol =
+    hasBinance ||
+    row.Bybit === "O" ||
+    row.Bybit_Futures === "O" ||
+    (row.Listed_Exchanges &&
+      (row.Listed_Exchanges.includes("BYBIT") ||
+        row.Listed_Exchanges.includes("BYBIT_FUTURES") ||
+        row.Listed_Exchanges.includes("BYBIT_SPOT")));
+
   const volBText =
-    hasBinance &&
+    (hasGlobalVol &&
       row.Volume_Formatted &&
       row.Volume_Formatted !== "-" &&
       row.Volume_Formatted !== "0"
       ? row.Volume_Formatted
-      : "-";
+      : null) ||
+    (row.Bybit_Vol_Formatted &&
+      row.Bybit_Vol_Formatted !== "-" &&
+      row.Bybit_Vol_Formatted !== "0"
+      ? row.Bybit_Vol_Formatted
+      : null) ||
+    "-";
   if (dom.headVolB && dom.headVolB.textContent !== volBText) {
     dom.headVolB.textContent = volBText;
   }
-  const volUText = row.Upbit_Vol_Formatted || "-";
+
+  let volUText = "-";
+  if (
+    row.Upbit_Vol_Formatted &&
+    row.Upbit_Vol_Formatted !== "-" &&
+    row.Upbit_Vol_Formatted !== "0"
+  ) {
+    volUText = row.Upbit_Vol_Formatted;
+  } else if (row.Upbit_Vol && Number(row.Upbit_Vol) > 0) {
+    volUText =
+      typeof window.formatVolumeKRW === "function"
+        ? window.formatVolumeKRW(row.Upbit_Vol)
+        : Number(row.Upbit_Vol).toLocaleString();
+  }
   if (dom.headVolU && dom.headVolU.textContent !== volUText) {
     dom.headVolU.textContent = volUText;
   }

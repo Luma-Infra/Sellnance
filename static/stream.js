@@ -358,8 +358,9 @@ store.radarIntervalId = setInterval(() => {
       if (snapshot[futuresKey] && snapshot[futuresKey].q) {
         row.Binance_Vol_Futures = parseFloat(snapshot[futuresKey].q);
       }
-
-      const activeM = store.currentChartMarket || store.currentMarket || "ALL";
+        
+      // const activeM = store.currentChartMarket || store.currentMarket || "ALL";
+      const activeM = store.currentMarket || "ALL";
       const currentVolModeIsFutures = (activeM === "FUTURES" || activeM === "BYBIT_FUTURES") && row.Spot_Only !== "O";
       const activeVol = currentVolModeIsFutures ? row.Binance_Vol_Futures : row.Binance_Vol_Spot;
 
