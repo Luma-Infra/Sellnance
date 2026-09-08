@@ -68,8 +68,8 @@ export function getRowExchangeMeta(row) {
 }
 
 /**
- * 3. 김프 해외 기준 단가 산출 규칙
- * [우선순위] 1.바낸 현물 ➔ 2.바이빗 현물 ➔ 3.바낸 선물 ➔ 4.바이빗 선물 ➔ fallback
+ * 3. 김프 해외 기준 단가 산출 규칙 (순수 현물 100% 매칭)
+ * [철학] 국내(업비트 ➔ 빗썸) ↔ 해외(바낸 현물 ➔ 바이빗 현물) 오직 현물만 비교 (선물 폴백 일체 제거)
  */
 export function getRowKimchiGlobalPrice(row) {
   if (!row) return { rawGlb: 0, ovsMult: 1 };
@@ -83,21 +83,6 @@ export function getRowKimchiGlobalPrice(row) {
   } else if (row.Bybit_Price_Spot && row.Bybit_Price_Spot > 0) {
     rawGlb = row.Bybit_Price_Spot;
     ovsMult = getMultiplier(row.Exact_Spot || row.Ticker || row.Symbol);
-  } else if (row.Binance_Price_Futures && row.Binance_Price_Futures > 0) {
-    rawGlb = row.Binance_Price_Futures;
-    ovsMult = getMultiplier(row.Exact_Futures || row.Ticker || row.Symbol);
-  } else if (row.Bybit_Price_Futures && row.Bybit_Price_Futures > 0) {
-    rawGlb = row.Bybit_Price_Futures;
-    ovsMult = getMultiplier(row.Exact_Futures || row.Ticker || row.Symbol);
-  } else if (row.Binance_Price && row.Binance_Price > 0) {
-    rawGlb = row.Binance_Price;
-    ovsMult = getMultiplier(row.Exact_Futures || row.Exact_Spot || row.Ticker || row.Symbol);
-  } else if (row.Bybit_Price && row.Bybit_Price > 0) {
-    rawGlb = row.Bybit_Price;
-    ovsMult = getMultiplier(row.Exact_Futures || row.Exact_Spot || row.Ticker || row.Symbol);
-  } else if (row.Price_Raw && row.Price_Raw > 0 && !row.Ticker?.endsWith("KRW")) {
-    rawGlb = row.Price_Raw;
-    ovsMult = getMultiplier(row.Ticker || row.Symbol);
   }
 
   return { rawGlb, ovsMult };
@@ -105,8 +90,9 @@ export function getRowKimchiGlobalPrice(row) {
 
 /**
  * 4. 행(Row)의 대표 수치 및 가격 추출 (1코인 1행 단일 규칙)
- * - 선물이 있으면: 선물 단가, 선물 24h, 선물 당일 등락률, .P 표기
- * - 현물만 있으면: 현물 단가, 현물 24h, 현물 당일 등락률
+ * [철학] 테이블 대표 시세 및 등락률은 오직 바이낸스(선물/현물)와 업비트만 영향
+ * - 달러 모드: 바이낸스(선물/현물) ➔ 업비트 환산가
+ * - 원화 모드: 업비트 ➔ 바이낸스(선물/현물) 환산가
  */
 export function getRowDisplayMetrics(row, isKrwMode = null, rate = null) {
   if (!row) {
@@ -128,15 +114,17 @@ export function getRowDisplayMetrics(row, isKrwMode = null, rate = null) {
 
   const isFutures = isFuturesCoin(row);
 
-  // 🚀 [엄격한 현/선 분리] 선물 코인은 오직 선물가만, 현물 코인은 오직 현물가만 참조 (상호 침범 폴백 100% 차단)
-  const binanceP = isFutures
-    ? (row.Binance_Price_Futures || (row.Exact_Futures ? row.Price_Raw : null))
-    : (row.Binance_Price_Spot || (row.Exact_Spot ? row.Price_Raw : null));
-  const bybitP = isFutures
-    ? (row.Bybit_Price_Futures || null)
-    : (row.Bybit_Price_Spot || null);
+  // 🚀 [테이블 4단 분리: 1.바낸 선물 ➔ 2.업비트 현물 ➔ 3.바낸 현물 ➔ 4.바이빗 현물]
+  const binanceFuturesP =
+    row.Binance_Price_Futures ||
+    (isFutures ? row.Price_Raw : null);
   const upbitP = row.Upbit_Price ?? (row.Upbit === "O" ? row.Price_KRW : null);
-  const bithumbP = row.Bithumb_Price ?? null;
+  const binanceSpotP =
+    row.Binance_Price_Spot ||
+    (!isFutures && (row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE_SPOT") || row.Listed_Exchanges?.includes("BINANCE")) ? row.Price_Raw : null);
+  const bybitSpotP =
+    row.Bybit_Price_Spot ||
+    (!isFutures && (row.Bybit === "O" || row.Listed_Exchanges?.includes("BYBIT_SPOT") || row.Listed_Exchanges?.includes("BYBIT")) ? row.Price_Raw : null);
 
   let activeExchange = "binance";
   let displayPrice = 0;
@@ -145,50 +133,48 @@ export function getRowDisplayMetrics(row, isKrwMode = null, rate = null) {
     if (upbitP !== null && upbitP > 0) {
       activeExchange = "upbit";
       displayPrice = upbitP;
-    } else if (bithumbP !== null && bithumbP > 0) {
-      activeExchange = "bithumb";
-      displayPrice = bithumbP;
-    } else if (binanceP !== null && binanceP > 0) {
+    } else if (binanceFuturesP !== null && binanceFuturesP > 0) {
       activeExchange = "binance";
-      displayPrice = binanceP * rate;
-    } else if (bybitP !== null && bybitP > 0) {
+      displayPrice = binanceFuturesP * rate;
+    } else if (binanceSpotP !== null && binanceSpotP > 0) {
+      activeExchange = "binance";
+      displayPrice = binanceSpotP * rate;
+    } else if (bybitSpotP !== null && bybitSpotP > 0) {
       activeExchange = "bybit";
-      displayPrice = bybitP * rate;
+      displayPrice = bybitSpotP * rate;
     } else {
       activeExchange = row.Price_KRW ? "upbit" : "binance";
       displayPrice = row.Price_KRW || (row.Price_Raw || 0) * rate;
     }
   } else {
-    if (binanceP !== null && binanceP > 0) {
+    // 🚀 [USD 모드: 1.바낸 선물 ➔ 2.업비트 현물 ➔ 3.바낸 현물 ➔ 4.바이빗 현물]
+    if (binanceFuturesP !== null && binanceFuturesP > 0) {
       activeExchange = "binance";
-      displayPrice = binanceP;
+      displayPrice = binanceFuturesP;
     } else if (upbitP !== null && upbitP > 0) {
       activeExchange = "upbit";
       displayPrice = rate > 0 ? upbitP / rate : upbitP;
-    } else if (bithumbP !== null && bithumbP > 0) {
-      activeExchange = "bithumb";
-      displayPrice = rate > 0 ? bithumbP / rate : bithumbP;
-    } else if (bybitP !== null && bybitP > 0) {
+    } else if (binanceSpotP !== null && binanceSpotP > 0) {
+      activeExchange = "binance";
+      displayPrice = binanceSpotP;
+    } else if (bybitSpotP !== null && bybitSpotP > 0) {
       activeExchange = "bybit";
-      displayPrice = bybitP;
+      displayPrice = bybitSpotP;
     } else {
       activeExchange = "binance";
       displayPrice = row.Price_Raw || 0;
     }
   }
 
-  // 🚀 [등락률 엄격 분리] activeExchange 기준으로 해당 거래소의 등락률을 1:1 매핑
+  // 🚀 [등락률 1:1 매핑] activeExchange 및 선택된 단가 기준 1:1 동기화
   let n24h = 0;
   let nDay = 0;
 
   if (activeExchange === "upbit") {
     n24h = row.Change_24h_Upbit || row.Change_24h_Raw || 0;
     nDay = row.Change_Today_Upbit || row.Change_Today_Raw || 0;
-  } else if (activeExchange === "bithumb") {
-    n24h = row.Change_24h_Bithumb || row.Change_24h_Raw || 0;
-    nDay = row.Change_Today_Bithumb || row.Change_Today_Raw || 0;
   } else if (activeExchange === "binance") {
-    if (isFutures) {
+    if (binanceFuturesP !== null && binanceFuturesP > 0) {
       n24h = row.Change_24h_Futures || row.Change_24h_Raw || 0;
       nDay = row.Change_Today_Futures || row.Change_Today_Raw || 0;
     } else {
@@ -196,8 +182,8 @@ export function getRowDisplayMetrics(row, isKrwMode = null, rate = null) {
       nDay = (row.Change_Today_Spot ?? row.Change_Today_Binance) || row.Change_Today_Raw || 0;
     }
   } else if (activeExchange === "bybit") {
-    n24h = row.Change_24h_Bybit_Futures || row.Change_24h_Bybit || row.Change_24h_Raw || 0;
-    nDay = row.Change_Today_Bybit_Futures || row.Change_Today_Bybit || row.Change_Today_Raw || 0;
+    n24h = row.Change_24h_Bybit || row.Change_24h_Raw || 0;
+    nDay = row.Change_Today_Bybit || row.Change_Today_Raw || 0;
   } else {
     n24h = row.Change_24h_Raw || 0;
     nDay = row.Change_Today_Raw || 0;
@@ -271,12 +257,13 @@ export function getRowDisplayVolume(
   const isBinanceFutures =
     normGlobal.includes("BINANCE_FUTURES") ||
     normGlobal === "FUTURES" ||
-    normGlobal === "B_FUT";
+    normGlobal === "B_FUT" ||
+    (normGlobal === "BINANCE" && isFutures);
   const isBinanceSpot =
     normGlobal.includes("BINANCE_SPOT") ||
     normGlobal === "SPOT" ||
-    normGlobal === "BINANCE" ||
-    normGlobal === "B_SPOT";
+    normGlobal === "B_SPOT" ||
+    (normGlobal === "BINANCE" && !isFutures);
 
   if (isBybit) {
     volBColorClass = "text-[#f7a600]";
@@ -287,18 +274,30 @@ export function getRowDisplayVolume(
     }
   } else if (isBinanceFutures) {
     volBColorClass = "text-[#f0b90b]";
-    volBRaw = row.Binance_Vol_Futures || 0;
+    volBRaw =
+      row.Binance_Vol_Futures > 0
+        ? row.Binance_Vol_Futures
+        : row.Binance_Vol_Spot || 0;
   } else if (isBinanceSpot) {
     volBColorClass = "text-[#f0b90b]";
-    volBRaw = row.Binance_Vol_Spot || 0;
+    volBRaw =
+      row.Binance_Vol_Spot > 0
+        ? row.Binance_Vol_Spot
+        : row.Binance_Vol_Futures || 0;
   } else {
     // ALL 등 기본 탭
     if (isFutures) {
       volBColorClass = "text-[#f0b90b]";
-      volBRaw = row.Binance_Vol_Futures || row.Binance_Vol_Spot || 0;
+      volBRaw =
+        row.Binance_Vol_Futures > 0
+          ? row.Binance_Vol_Futures
+          : row.Binance_Vol_Spot || 0;
     } else if (row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE")) {
       volBColorClass = "text-[#f0b90b]";
-      volBRaw = row.Binance_Vol_Spot || row.Binance_Vol_Futures || 0;
+      volBRaw =
+        row.Binance_Vol_Spot > 0
+          ? row.Binance_Vol_Spot
+          : row.Binance_Vol_Futures || 0;
     } else if (row.Bybit_Futures === "O") {
       volBColorClass = "text-[#f7a600]";
       volBRaw = row.Bybit_Vol_Futures || row.Bybit_Vol || 0;

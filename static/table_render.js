@@ -541,8 +541,10 @@ export function initInfiniteScroll() {
 }
 
 export function updateHeaderStar(uid) {
-  const headStarBtn = document.querySelector("#head-asset-name .star-btn");
-  if (!headStarBtn) return;
+  const headStarBtns = document.querySelectorAll(
+    "#head-asset-name .star-btn, #head-asset-name-pc .star-btn",
+  );
+  if (!headStarBtns || headStarBtns.length === 0) return;
   const curUid = String(store.currentSelectedUid || "");
   const targetUid = String(uid || "");
   if (curUid && targetUid && curUid !== targetUid) {
@@ -569,9 +571,11 @@ export function updateHeaderStar(uid) {
     starColor = "#3b82f6";
     starClass = "active-blue";
   }
-  headStarBtn.innerText = starText;
-  headStarBtn.style.color = starColor;
-  headStarBtn.className = `star-btn text-[16px] transition-all hover:scale-125 flex-shrink-0 ${starClass}`;
+  headStarBtns.forEach((btn) => {
+    btn.innerText = starText;
+    btn.style.color = starColor;
+    btn.className = `star-btn text-[16px] transition-all hover:scale-125 flex-shrink-0 ${starClass}`;
+  });
 }
 
 export function toggleFavorite(uid, event, forceImmediate = false) {

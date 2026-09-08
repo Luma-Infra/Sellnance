@@ -11,6 +11,7 @@ import {
   toggleFavorite,
   applyPriceFlash,
   updateVisibleSymbols,
+  updateHeaderStar,
 } from "./table_render.js";
 import { sortTable, applyRealtimeSort } from "./table_sort.js";
 import {
@@ -148,12 +149,14 @@ setInterval(() => {
 
 // ⭐️ 4. 전역(window) 수출 구간 (HTML onclick 및 외부 모듈 연동용) ⭐️
 window.loadTableData = loadTableData;
+window.loadTableDataSilent = loadTableDataSilent;
 window.sortTable = sortTable;
 window.renderTable = renderTable;
 window.applyRealtimeSort = applyRealtimeSort;
 window.applySelectedHighlight = applySelectedHighlight;
 window.initInfiniteScroll = initInfiniteScroll;
 window.toggleFavorite = toggleFavorite;
+window.updateHeaderStar = updateHeaderStar;
 window.applyPriceFlash = applyPriceFlash;
 window.switchTab = switchTab;
 window.switchFilter = switchFilter;

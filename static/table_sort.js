@@ -36,14 +36,10 @@ export function sortTable(colKey) {
   try {
     localStorage.setItem("sellnance_last_sort_col", store.currentSortCol);
     localStorage.setItem("sellnance_last_sort_state", store.sortState);
-  } catch (e) {}
+  } catch (e) { }
 
-  // 모든 화살표 초기화 후 현재 선택된 헤더 옆에만 방향 표식 표시 (▲: asc, ▼: desc)
-  document.querySelectorAll(".sort-arrow").forEach((el) => (el.innerText = ""));
-  const arrowEl = document.getElementById(`sort-${colKey}`);
-  if (arrowEl) {
-    arrowEl.innerText = store.sortState === "asc" ? "▲" : "▼";
-  }
+  // 🚀 [UI 갱신] 활성 정렬 화살표 및 버튼 강조 효과 동기화
+  updateSortUI(store.currentSortCol, store.sortState);
 
   // 🚀 [INP 해결] 즉시 동기 실행하여 렌더링 스케줄 대기를 완전히 없앱니다.
   const scrollContainer = document.querySelector(
@@ -241,3 +237,33 @@ export function applyRealtimeSort() {
   simpleSortData();
   renderTable(true);
 }
+
+// [UI 동기화] 활성 정렬 화살표 및 버튼 하이라이트 복원 함수
+export function updateSortUI(colKey = store.currentSortCol, sortState = store.sortState) {
+  if (!colKey) return;
+
+  // 1. 모든 화살표 초기화
+  document.querySelectorAll(".sort-arrow").forEach((el) => {
+    el.innerText = "";
+    el.classList.remove("text-theme-accent", "font-bold");
+  });
+
+  // 2. 모든 정렬 헤더 버튼의 활성 하이라이트 제거
+  document.querySelectorAll("#market-table-header [onclick*='sortTable']").forEach((btn) => {
+    btn.classList.remove("text-theme-accent", "font-bold", "opacity-100");
+  });
+
+  // 3. 현재 정렬된 컬럼 화살표 및 버튼 하이라이트 부여
+  const arrowEl = document.getElementById(`sort-${colKey}`);
+  if (arrowEl) {
+    arrowEl.innerText = sortState === "asc" ? "▲" : "▼";
+    arrowEl.classList.add("text-theme-accent", "font-bold");
+
+    const parentBtn = arrowEl.closest("[onclick*='sortTable']");
+    if (parentBtn) {
+      parentBtn.classList.add("text-theme-accent", "font-bold", "opacity-100");
+    }
+  }
+}
+window.updateSortUI = updateSortUI;
+

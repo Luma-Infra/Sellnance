@@ -163,6 +163,11 @@ export function processTableData(result) {
     window.restoreControlPanelUI();
   }
 
+  // 🚀 [신규] 마지막 정렬 기준 화살표 및 버튼 강조 상태 복원
+  if (typeof window.updateSortUI === "function") {
+    window.updateSortUI(store.currentSortCol, store.sortState);
+  }
+
   // 🚀 [초기 경로/해시/선택 코인 즉시 렌더 및 쓰레기 URL 방어]
   const activeRoute =
     typeof window.getInitialRouteSymbol === "function"

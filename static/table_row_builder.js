@@ -10,6 +10,7 @@ import {
   getRowDisplayMetrics,
   getDisplayTickerHtml,
   getRowExchangeMeta,
+  getRowDisplayVolume,
 } from "./_market_rules.js";
 import { getWarningBadgeHtml, getListingDate, formatListingDateWithExchange } from "./table_badges.js";
 
@@ -432,20 +433,13 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
       volBCell._container = container;
     }
 
-    const hasBinance =
-      row.Binance === "O" ||
-      row.Binance_Futures === "O" ||
-      (row.Listed_Exchanges &&
-        (row.Listed_Exchanges.includes("BINANCE_SPOT") ||
-          row.Listed_Exchanges.includes("BINANCE") ||
-          row.Listed_Exchanges.includes("BINANCE_FUTURES")));
+    const displayVol = getRowDisplayVolume(row);
     const volBText =
-      hasBinance &&
-        row.Volume_Formatted &&
-        row.Volume_Formatted !== "-" &&
-        row.Volume_Formatted !== "0"
-        ? row.Volume_Formatted
-        : "-";
+      displayVol.volBFormatted &&
+        displayVol.volBFormatted !== "-" &&
+        displayVol.volBFormatted !== "0"
+        ? displayVol.volBFormatted
+        : (row.Volume_Formatted && row.Volume_Formatted !== "0" ? row.Volume_Formatted : "-");
     const mcapText = row.isDelisted
       ? `uid : ${row.UID || "-"}`
       : row.MarketCap_Formatted || "-";
@@ -455,6 +449,9 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
       (container._volBEl = container.querySelector('[id^="vol-binance-"]') || document.getElementById(`vol-binance-${tId}`));
     if (volBEl && volBEl.textContent !== volBText) {
       volBEl.textContent = volBText;
+      if (displayVol.volBColorClass) {
+        volBEl.className = `${displayVol.volBColorClass} text-[11px] font-medium font-bold truncate`;
+      }
       const fs = CONFIG.FONT_SCALE;
       if (fs && volBText.length > fs.VOL_THRESHOLD) {
         const size = Math.max(

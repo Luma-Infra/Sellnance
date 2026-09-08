@@ -149,24 +149,16 @@ export function calculateRowKimchi(r, rate) {
   const exList = (r.Listed_Exchanges || []).map((e) => e.toUpperCase());
   const hasUpbit = r.Upbit === "O" || exList.includes("UPBIT") || !!r.Upbit_Symbol;
   const hasBithumb = exList.includes("BITHUMB") || !!r.Bithumb_Symbol;
-  const hasGlobal =
+  const hasGlobalSpot =
     r.Binance === "O" ||
-    r.Binance_Futures === "O" ||
     exList.includes("BINANCE_SPOT") ||
     exList.includes("BINANCE") ||
-    exList.includes("BINANCE_FUTURES") ||
     exList.includes("BYBIT_SPOT") ||
     exList.includes("BYBIT") ||
-    exList.includes("BYBIT_FUTURES") ||
     r.Binance_Price_Spot > 0 ||
-    r.Binance_Price_Futures > 0 ||
-    r.Bybit_Price_Spot > 0 ||
-    r.Bybit_Price_Futures > 0 ||
-    r.Binance_Price > 0 ||
-    r.Bybit_Price > 0 ||
-    !!r.Price_Raw;
+    r.Bybit_Price_Spot > 0;
 
-  if (!hasGlobal || (!hasUpbit && !hasBithumb)) {
+  if (!hasGlobalSpot || (!hasUpbit && !hasBithumb)) {
     r.Kimchi_Raw = null;
     r.Kimchi_Label = "-";
     r.Kimchi_Formatted = "-";
@@ -428,8 +420,19 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
       }
     }
   } else {
-    const hasFutures = row.Binance_Futures === "O" || row.Listed_Exchanges?.includes("BINANCE_FUTURES") || !!row.Exact_Futures;
-    const hasSpot = row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE_SPOT") || row.Listed_Exchanges?.includes("BINANCE") || !!row.Exact_Spot;
+    const hasFutures =
+      row.Binance_Futures === "O" ||
+      row.Listed_Exchanges?.includes("BINANCE_FUTURES") ||
+      row.Bybit_Futures === "O" ||
+      row.Listed_Exchanges?.includes("BYBIT_FUTURES") ||
+      !!row.Exact_Futures;
+    const hasSpot =
+      row.Binance === "O" ||
+      row.Listed_Exchanges?.includes("BINANCE_SPOT") ||
+      row.Listed_Exchanges?.includes("BINANCE") ||
+      row.Bybit === "O" ||
+      row.Listed_Exchanges?.includes("BYBIT_SPOT") ||
+      !!row.Exact_Spot;
     const isFuturesOnly = hasFutures && !hasSpot;
     const isSpotOnly = hasSpot && !hasFutures;
 
@@ -449,6 +452,9 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
     } else {
       if (isFutures) {
         row.Change_24h_Futures = chg;
+        if (row.Bybit_Futures === "O" || row.Listed_Exchanges?.includes("BYBIT_FUTURES")) {
+          row.Change_24h_Bybit_Futures = chg;
+        }
       } else if (
         row.Listed_Exchanges?.includes("BINANCE") ||
         row.Exact_Spot ||
@@ -504,10 +510,16 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
         else if (normOpenPrice > normNewPrice * 10) normOpenPrice /= ovsMult;
       }
       const todayUsd = ((normNewPrice - normOpenPrice) / normOpenPrice) * 100;
-      if (isFutures) row.Change_Today_Futures = todayUsd;
-      else if (row.Listed_Exchanges?.includes("BINANCE") || row.Exact_Spot)
+      if (isFutures) {
+        row.Change_Today_Futures = todayUsd;
+        if (row.Bybit_Futures === "O" || row.Listed_Exchanges?.includes("BYBIT_FUTURES")) {
+          row.Change_Today_Bybit_Futures = todayUsd;
+        }
+      } else if (row.Listed_Exchanges?.includes("BINANCE") || row.Exact_Spot) {
         row.Change_Today_Binance = todayUsd;
-      else row.Change_Today_Bybit = todayUsd;
+      } else {
+        row.Change_Today_Bybit = todayUsd;
+      }
 
       if (shouldUpdateChg) {
         row.Change_Today_Raw = todayUsd;
@@ -555,39 +567,62 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
       }
     }
   } else {
-    if (data.e === "24hrMiniTicker") {
-      if (isFutures) {
-        row.Binance_Vol_Futures = parseFloat(data.q);
-      } else {
-        row.Binance_Vol_Spot = parseFloat(data.q);
+    if (data.e === "24hrMiniTicker" || data.e === "24hrTicker" || (!data.e && data.q !== undefined)) {
+      if (data.e !== "aggTrade" && data.e !== "trade") {
+        if (isFutures) {
+          row.Binance_Vol_Futures = parseFloat(data.q);
+        } else {
+          row.Binance_Vol_Spot = parseFloat(data.q);
+        }
       }
     }
 
     // const activeM = store.currentChartMarket || store.currentMarket || "ALL";
-    const activeM = store.currentMarket || "ALL";
     // const currentVolModeIsFutures = (activeM === "FUTURES" || activeM === "BYBIT_FUTURES") && row.Spot_Only !== "O";
     // const activeVol = currentVolModeIsFutures ? row.Binance_Vol_Futures : row.Binance_Vol_Spot;
+
+    const activeM = store.currentMarket || "ALL";
     const isFuturesCoin =
       (row.Binance_Futures === "O" ||
         row.Listed_Exchanges?.includes("BINANCE_FUTURES") ||
+        row.Listed_Exchanges?.includes("BYBIT_FUTURES") ||
+        row.Bybit_Futures === "O" ||
         !!row.Exact_Futures) &&
       row.Spot_Only !== "O";
-    const isFuturesTab = activeM === "FUTURES" || activeM === "BYBIT_FUTURES";
-    const isSpotTab = activeM === "SPOT" || activeM === "BINANCE" || activeM === "BYBIT_SPOT";
+    const isFuturesTab =
+      activeM === "FUTURES" ||
+      activeM === "BYBIT_FUTURES" ||
+      (activeM === "BINANCE" && isFuturesCoin);
+    const isSpotTab =
+      activeM === "SPOT" ||
+      activeM === "BINANCE_SPOT" ||
+      activeM === "BYBIT_SPOT" ||
+      (activeM === "BINANCE" && !isFuturesCoin);
 
     let activeVol = 0;
     if (isSpotTab) {
-      activeVol = row.Binance_Vol_Spot || 0;
+      activeVol =
+        row.Binance_Vol_Spot > 0
+          ? row.Binance_Vol_Spot
+          : row.Binance_Vol_Futures || 0;
     } else if (isFuturesTab) {
-      activeVol = row.Binance_Vol_Futures || 0;
+      activeVol =
+        row.Binance_Vol_Futures > 0
+          ? row.Binance_Vol_Futures
+          : row.Binance_Vol_Spot || 0;
     } else {
       // ALL, KIMCHI 등 기본 탭: 선물 코인은 선물 거래량(Futures Vol), 현물 코인은 현물 거래량(Spot Vol) 우선
       activeVol = isFuturesCoin
-        ? row.Binance_Vol_Futures || row.Binance_Vol_Spot || 0
-        : row.Binance_Vol_Spot || row.Binance_Vol_Futures || 0;
+        ? (row.Binance_Vol_Futures > 0
+          ? row.Binance_Vol_Futures
+          : row.Binance_Vol_Spot || 0)
+        : (row.Binance_Vol_Spot > 0
+          ? row.Binance_Vol_Spot
+          : row.Binance_Vol_Futures || 0);
     }
 
-    if (activeVol) {
+    if (activeVol > 0) {
+      row.Volume_Raw = activeVol;
       if (store.currencyMode === "KRW" && typeof window.formatVolumeKRW === "function") {
         const rate = store.marketDataMap?.krw_usd_rate || 1;
         row.Volume_Formatted = window.formatVolumeKRW(activeVol * rate);

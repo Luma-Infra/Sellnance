@@ -243,7 +243,10 @@ store.radarIntervalId = setInterval(() => {
     } else {
       const hasFutures =
         row.Binance_Futures === "O" ||
-        row.Listed_Exchanges?.includes("BINANCE_FUTURES");
+        row.Listed_Exchanges?.includes("BINANCE_FUTURES") ||
+        row.Bybit_Futures === "O" ||
+        row.Listed_Exchanges?.includes("BYBIT_FUTURES") ||
+        !!row.Exact_Futures;
       const isAllMode =
         store.currentMarket === "ALL" ||
         store.currentMarket === "KIMCHI" ||
@@ -357,8 +360,29 @@ store.radarIntervalId = setInterval(() => {
         
       // const activeM = store.currentChartMarket || store.currentMarket || "ALL";
       const activeM = store.currentMarket || "ALL";
-      const currentVolModeIsFutures = (activeM === "FUTURES" || activeM === "BYBIT_FUTURES") && row.Spot_Only !== "O";
-      const activeVol = currentVolModeIsFutures ? row.Binance_Vol_Futures : row.Binance_Vol_Spot;
+      const isFuturesCoin =
+        (row.Binance_Futures === "O" ||
+          row.Listed_Exchanges?.includes("BINANCE_FUTURES") ||
+          !!row.Exact_Futures) &&
+        row.Spot_Only !== "O";
+      const isFuturesTab = activeM === "FUTURES" || activeM === "BYBIT_FUTURES";
+      const isSpotTab = activeM === "SPOT" || activeM === "BINANCE" || activeM === "BYBIT_SPOT";
+
+      let activeVol = 0;
+      if (isSpotTab) {
+        activeVol = row.Binance_Vol_Spot || 0;
+      } else if (isFuturesTab) {
+        activeVol = row.Binance_Vol_Futures || 0;
+      } else {
+        // ALL, KIMCHI 등 기본 탭: 선물 코인은 선물 거래량(Futures Vol), 현물 전용은 현물 거래량(Spot Vol) 우선!
+        activeVol = isFuturesCoin
+          ? (row.Binance_Vol_Futures || row.Binance_Vol_Spot || 0)
+          : (row.Binance_Vol_Spot || row.Binance_Vol_Futures || 0);
+      }
+
+      if (activeVol > 0) {
+        row.Volume_Raw = activeVol;
+      }
 
       const binanceVolCell = document.getElementById(`vol-binance-${row.Ticker}`);
       if (binanceVolCell && activeVol) {
