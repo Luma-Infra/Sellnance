@@ -285,9 +285,9 @@ def _fetch_and_process_data(silent_mode=False, api_key=None):
 
     # 2. 정보 수집 (CMC 크레딧 철벽 방어!)
     now_kst = datetime.now(KST)
-    is_user_key = api_key is not None and api_key.strip() != ""
+    is_user_key = bool(api_key and isinstance(api_key, str) and api_key.strip() != "")
 
-    if is_user_key:
+    if is_user_key and api_key:
         # 유저 개별 키 처리 (15분 주기 메모리 캐시)
         key_hash = hashlib.sha256(api_key.strip().encode()).hexdigest()
         with user_cache_lock:
@@ -446,7 +446,7 @@ def get_cached_data(force_reload=False, silent_mode=False, user_api_key=None):
     now_kst = datetime.now(kst)
 
     # 🚀 유저 개별 API 키가 주입된 경우: 15분 동안 조립된 장부(assembled_data)를 메모리 캐시하여 새로고침 시 0초 즉시 반환!
-    if user_api_key and user_api_key.strip() != "":
+    if user_api_key and isinstance(user_api_key, str) and user_api_key.strip() != "":
         key_hash = hashlib.sha256(user_api_key.strip().encode()).hexdigest()
         with user_cache_lock:
             user_cache = USER_CMC_CACHES.setdefault(

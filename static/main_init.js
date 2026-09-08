@@ -155,7 +155,7 @@ export function restoreSavedUserSettings() {
       savedViewMode = "basic";
       try {
         localStorage.setItem("sellnance_table_view_mode", "basic");
-      } catch (e) {}
+      } catch (e) { }
     }
     if (typeof switchViewMode === "function") {
       switchViewMode(savedViewMode, false);
@@ -170,7 +170,7 @@ export function restoreSavedUserSettings() {
     if (typeof window.updateCandleThemeButtons === "function") {
       window.updateCandleThemeButtons();
     }
-  } catch (e) {}
+  } catch (e) { }
 }
 
 let _dashboardEnginePromise = null;
@@ -229,9 +229,9 @@ export function updateStatusBadge() {
   if (usersEl) usersEl.innerText = `${users} Active`;
   if (tipUsersEl) tipUsersEl.innerText = `${users} Active`;
 
-  if (!store.lastUpdatedRaw) {
-    if (timerEl) timerEl.innerText = "--:--:-- 이후 갱신";
-    if (tipTimerEl) tipTimerEl.innerText = "--:--:--";
+  if (!store.lastUpdatedRaw && !store.nextUpdateRaw) {
+    if (timerEl) timerEl.innerText = "--:-- 이후 갱신";
+    if (tipTimerEl) tipTimerEl.innerText = "--:--";
     return;
   }
 
@@ -239,12 +239,22 @@ export function updateStatusBadge() {
   const hasKey =
     localStorage.getItem("CMC_API_KEY") &&
     localStorage.getItem("CMC_API_KEY").trim() !== "";
-  const interval = hasKey ? 900 : 86400;
-  const nextUpdate = Math.floor(store.lastUpdatedRaw) + interval;
-  let diff = Math.floor(nextUpdate - now);
+
+  let diff = 0;
+  if (store.nextUpdateRaw) {
+    diff = Math.floor(store.nextUpdateRaw - now);
+  } else if (store.lastUpdatedRaw) {
+    const interval = hasKey ? 900 : 14400;
+    const nextUpdate = Math.floor(store.lastUpdatedRaw) + interval;
+    diff = Math.floor(nextUpdate - now);
+  } else {
+    if (timerEl) timerEl.innerText = "--:-- 이후 갱신";
+    if (tipTimerEl) tipTimerEl.innerText = "--:--";
+    return;
+  }
 
   if (diff < 0) {
-    const msg = hasKey ? "수집 완료 대기 중..." : "일일 수집 대기 중...";
+    const msg = hasKey ? "수집 완료 대기 중..." : "정기 수집 대기 중...";
     if (timerEl) timerEl.innerText = msg;
     if (tipTimerEl) tipTimerEl.innerText = msg;
     return;
@@ -254,10 +264,11 @@ export function updateStatusBadge() {
   const iconRocket = `<svg class="inline-block w-3.5 h-3.5 ml-1 align-middle text-theme-text opacity-85" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"></path><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"></path></svg>`;
   const iconInfo = `<svg class="inline-block w-3 h-3 mr-1 align-middle text-theme-text opacity-75" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
 
+  const h = Math.floor(diff / 3600);
+  const m = Math.floor((diff % 3600) / 60);
+  const formattedTime = `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
+
   if (hasKey) {
-    const m = Math.floor(diff / 60);
-    const s = diff % 60;
-    const formattedTime = `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
     if (timerEl) {
       timerEl.innerText = `${formattedTime} 이후 갱신`;
       timerEl.title = "";
@@ -272,19 +283,15 @@ export function updateStatusBadge() {
       dot.className =
         "inline-block w-2 h-2 min-[1200px]:w-1.5 min-[1200px]:h-1.5 rounded-full bg-emerald-500 animate-pulse";
   } else {
-    const h = Math.floor(diff / 3600);
-    const m = Math.floor((diff % 3600) / 60);
-    const s = diff % 60;
-    const formattedTime = `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
     if (timerEl) {
-      timerEl.innerHTML = `${iconInfo}${formattedTime} (일일 캐시)`;
+      timerEl.innerHTML = `${iconInfo}${formattedTime} (정기 캐시)`;
       timerEl.title = "";
       timerEl.style.cursor = "default";
     }
     if (tipTimerEl)
-      tipTimerEl.innerHTML = `${iconInfo}${formattedTime} (일일 캐시)`;
+      tipTimerEl.innerHTML = `${iconInfo}${formattedTime} (정기 캐시)`;
     if (tipTextEl) {
-      tipTextEl.innerHTML = `개인 CMC API 키 미입력 상태에요<br/>서버 일일 캐시 모드(24시간 주기)로 시총을 갱신할게요`;
+      tipTextEl.innerHTML = `개인 CMC API 키 미입력 상태에요<br/>서버 정기 캐시 모드(4시간 주기)로 시총을 갱신할게요`;
     }
     if (dot)
       dot.className =
@@ -548,7 +555,7 @@ export function setupRouteAndHistory() {
     ) {
       store.currentTF = lastTF;
     }
-  } catch (e) {}
+  } catch (e) { }
 
   const initialRouteSym = getInitialRouteSymbol();
   if (initialRouteSym && store.isEngineStarted) {
@@ -562,7 +569,7 @@ export function setupRouteAndHistory() {
       if (activeTab === "chart" && typeof switchMobileTab === "function") {
         switchMobileTab("chart");
       }
-    } catch (e) {}
+    } catch (e) { }
   }
 
   const handleHistoryNavigation = () => {

@@ -28,6 +28,9 @@ export function processTableData(result) {
   if (result.last_updated_raw !== undefined) {
     store.lastUpdatedRaw = result.last_updated_raw;
   }
+  if (result.next_update_raw !== undefined) {
+    store.nextUpdateRaw = result.next_update_raw;
+  }
 
   store.tickerRowMap.clear();
   store.uidToKrwRowMap = new Map();
@@ -519,6 +522,9 @@ export async function loadTableDataSilent() {
       }
       if (result.last_updated_raw !== undefined) {
         store.lastUpdatedRaw = result.last_updated_raw;
+      }
+      if (result.next_update_raw !== undefined) {
+        store.nextUpdateRaw = result.next_update_raw;
       }
 
       const updateTimeSpan = document.getElementById("update-time");

@@ -44,6 +44,8 @@ export const store = {
   intersectingSymbols: new Set(),
   btcRateCache: {}, // 🚀 합성 환율 전용 메모리 캐시 엔진 추가
   tickerRowMap: new Map(), // 🚀 [단일 진실 공급원] 전역 테이블 행 O(1) 광속 탐색 맵
+  lastUpdatedRaw: null,
+  nextUpdateRaw: null,
 
   currentAsset: null,
   currentSelectedSymbol: null,

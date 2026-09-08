@@ -205,7 +205,7 @@ def execute_cmc_requests(id_lookup, sym_lookup, api_key=None):
         )
 
     # 심볼 묶음 생성 (200개씩 청크)
-    sym_list = [s.strip() for s in sym_lookup if s]
+    sym_list = [str(s).strip() for s in sym_lookup if s]
     for i in range(0, len(sym_list), 200):
         chunk = sym_list[i : i + 200]
         if chunk:

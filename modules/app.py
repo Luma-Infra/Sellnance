@@ -1,5 +1,6 @@
 # app.py
 from starlette.middleware.gzip import GZipMiddleware
+from datetime import datetime, timezone, timedelta
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from fastapi.templating import Jinja2Templates
@@ -7,7 +8,6 @@ from fastapi.staticfiles import StaticFiles
 from tvDatafeed import TvDatafeed, Interval
 from fastapi import FastAPI, Request, Body
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
 from dotenv import load_dotenv
 from pathlib import Path
 import pandas as pd
@@ -252,9 +252,9 @@ def update_listing_date(data: dict = Body(...)):
     body: { symbol: "BTC", exchange_key: "upbit_listing", date: "2017-10-15" }
     - 더 오래된 날짜만 덮어쓰기.
     """
-    symbol = data.get("symbol", "").upper().strip()
-    exchange_key = data.get("exchange_key", "").strip()
-    new_date = data.get("date", "").strip()
+    symbol = str(data.get("symbol") or "").upper().strip()
+    exchange_key = str(data.get("exchange_key") or "").strip()
+    new_date = str(data.get("date") or "").strip()
 
     if not symbol or not exchange_key or not new_date:
         return {"status": "error", "msg": "symbol, exchange_key, date 필수"}
@@ -320,12 +320,39 @@ def track_user_session(request: Request):
         return len(ACTIVE_SESSIONS)
 
 
+def get_next_update_timestamp(is_user_key: bool = False, last_raw_ts: float = 0.0) -> float:
+    """KST 기준 다음 시총 갱신 예정 시각(유닉스 타임스탬프)을 정밀 계산합니다."""
+    kst = pytz.timezone("Asia/Seoul")
+    now_kst = datetime.now(kst)
+    if is_user_key:
+        return (last_raw_ts + 900.0) if last_raw_ts > 0 else (now_kst.timestamp() + 900.0)
+
+    # 서버 정기 4시간 정각 스케줄: 01:00, 05:00, 09:00, 13:00, 17:00, 21:00 (KST)
+    schedule_hours = [1, 5, 9, 13, 17, 21]
+    cur_hour = now_kst.hour
+
+    next_hour = None
+    for h in schedule_hours:
+        if h > cur_hour:
+            next_hour = h
+            break
+
+    if next_hour is not None:
+        target_dt = now_kst.replace(hour=next_hour, minute=0, second=0, microsecond=0)
+    else:
+        tomorrow = now_kst + timedelta(days=1)
+        target_dt = tomorrow.replace(hour=1, minute=0, second=0, microsecond=0)
+
+    return target_dt.timestamp()
+
+
 # async 삭제됨
 @app.get("/api/market-data")
 def get_market_data(request: Request, force: bool = False):
     """프론트엔드의 표(Table)를 그리기 위한 데이터를 JSON으로 반환합니다."""
     # [CMC API 키 Stateless 동기화] 클라이언트 헤더에 전달된 키가 있으면 메모리에 반영
     cmc_key = request.headers.get("X-CMC-API-KEY")
+    is_user_key = bool(cmc_key and isinstance(cmc_key, str) and cmc_key.strip() != "")
 
     user_count = track_user_session(request)
     data, last_updated = api_manager.get_cached_data(
@@ -333,7 +360,7 @@ def get_market_data(request: Request, force: bool = False):
     )
 
     # 쿨타임 타이머용 raw 타임스탬프 획득
-    if cmc_key and cmc_key.strip() != "":
+    if is_user_key and cmc_key:
         key_hash = hashlib.sha256(cmc_key.strip().encode()).hexdigest()
         user_cache = api_manager.USER_CMC_CACHES.get(key_hash, {})
         cache_timestamp = user_cache.get("timestamp", datetime.min)
@@ -354,6 +381,7 @@ def get_market_data(request: Request, force: bool = False):
         "data": data,
         "last_updated": last_updated,
         "last_updated_raw": raw_ts,
+        "next_update_raw": get_next_update_timestamp(is_user_key=is_user_key, last_raw_ts=raw_ts),
         "active_users": user_count,
     }
 
@@ -364,9 +392,10 @@ def get_market_data_silent(request: Request):
     수집은 서버 자체 15분 백그라운드 스케줄러가 전담 (유저 500명 와도 수집 0번).
     """
     cmc_key = request.headers.get("X-CMC-API-KEY")
+    is_user_key = bool(cmc_key and isinstance(cmc_key, str) and cmc_key.strip() != "")
     user_count = track_user_session(request)
 
-    if cmc_key and cmc_key.strip() != "":
+    if is_user_key and cmc_key:
         # 유저 키가 있는 경우 유저 개별 캐싱 데이터를 15분 쿨타임에 맞춰 반환
         data, last_updated = api_manager.get_cached_data(
             force_reload=False, silent_mode=True, user_api_key=cmc_key
@@ -394,6 +423,7 @@ def get_market_data_silent(request: Request):
         "data": data,
         "last_updated": last_updated,
         "last_updated_raw": raw_ts,
+        "next_update_raw": get_next_update_timestamp(is_user_key=is_user_key, last_raw_ts=raw_ts),
         "active_users": user_count,
     }
 
@@ -674,9 +704,13 @@ def auto_reset_scheduler():
         kst = pytz.timezone("Asia/Seoul")
         now_kst = datetime.now(kst)
 
-        # 9시 0분 0초 ~ 30초 사이에만 한 번 트리거
-        if now_kst.hour == 9 and now_kst.minute == 0 and now_kst.second < 30:
-            print("⏰ 스케줄러: 9시 정각입니다. 캐시를 갱신합니다.")
+        # 4시간 정각(01, 05, 09, 13, 17, 21시) 0초 ~ 30초 사이에 갱신 트리거
+        if (
+            now_kst.hour in [1, 5, 9, 13, 17, 21]
+            and now_kst.minute == 0
+            and now_kst.second < 30
+        ):
+            print(f"⏰ 스케줄러: {now_kst.hour}시 정각입니다. 캐시를 갱신합니다.")
             api_manager.get_cached_data(force_reload=True)
             time.sleep(30)  # 중복 실행 방지용 휴식
 

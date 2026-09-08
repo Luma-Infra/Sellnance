@@ -31,10 +31,11 @@ def draw_dashboard():
     completed_count = 0
     for i, msg in enumerate(PHASES):
         status = status_list[i]
+        s_text = str(status or "").strip()
         icon = (
             "⏳"
-            if status.strip() == "대기중"
-            else "🏃" if status.strip() == "진행중..." else "✅"
+            if s_text == "대기중"
+            else "🏃" if s_text == "진행중..." else "✅"
         )
 
         # 🚀 1. 앞부분 출력
@@ -48,7 +49,7 @@ def draw_dashboard():
         # 🚀 3. 상태 출력
         print(f"{status}")
 
-        if status.strip() == "완료!!":
+        if s_text == "완료!!":
             completed_count += 1
 
     # 📊 하단 프로그레스 바 계산

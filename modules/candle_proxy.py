@@ -36,7 +36,7 @@ def get_candle_ttl(interval: str, to: str = "") -> float:
     if to:
         return 600.0
 
-    inv = str(interval).strip()
+    inv = interval.strip()
     inv_lower = inv.lower()
 
     # 1. 일봉 / 주봉 / 월봉 (대문자 M은 월봉, 소문자 m은 1m/15m 분봉)
@@ -108,7 +108,9 @@ class PersistentTVClient:
         self.session = None
         self.ws = None
         self.connect_lock = asyncio.Lock()
-        self.semaphore = asyncio.Semaphore(20)  # 트레이딩뷰 밴 방지용 동시 세션 캡 (동시 20개 스윗 스팟)
+        self.semaphore = asyncio.Semaphore(
+            20
+        )  # 트레이딩뷰 밴 방지용 동시 세션 캡 (동시 20개 스윗 스팟)
         self.pending_futures = {}  # session_id -> asyncio.Future
         self.reader_task = None
         self._seq = 0
@@ -260,9 +262,7 @@ class PersistentTVClient:
 PERSISTENT_TV_CLIENT = PersistentTVClient()
 
 
-async def get_tv_candles_aiohttp(
-    symbol="BINANCE:AIAUSDT", timeframe="1D", n_bars=2000
-):
+async def get_tv_candles_aiohttp(symbol="BINANCE:AIAUSDT", timeframe="1D", n_bars=2000):
     url = "wss://data.tradingview.com/socket.io/websocket"
     headers = {
         "Origin": "https://www.tradingview.com",
