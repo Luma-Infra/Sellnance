@@ -615,7 +615,8 @@ function autoFit(isTabRestore = false) {
         const range = timeScale.getVisibleLogicalRange();
         if (range && store.mainData && store.mainData.length) {
           const len = store.mainData.length;
-          const width = range.to - range.from;
+          const maxFittingSpan = Math.max(len + margin + 5, 20);
+          const width = Math.min(range.to - range.from, maxFittingSpan);
           timeScale.setVisibleLogicalRange({
             from: len - 1 - width + margin,
             to: len - 1 + margin,
@@ -630,7 +631,8 @@ function autoFit(isTabRestore = false) {
         const rangeVol = timeScaleVol.getVisibleLogicalRange();
         if (rangeVol && store.mainData && store.mainData.length) {
           const len = store.mainData.length;
-          const width = rangeVol.to - rangeVol.from;
+          const maxFittingSpan = Math.max(len + margin + 5, 20);
+          const width = Math.min(rangeVol.to - rangeVol.from, maxFittingSpan);
           timeScaleVol.setVisibleLogicalRange({
             from: len - 1 - width + margin,
             to: len - 1 + margin,
@@ -648,8 +650,10 @@ function autoFit(isTabRestore = false) {
   }
   if (store.chart && store.mainData.length) {
     const len = store.mainData.length;
-    // 🚀 [UX 개선] 저장된 가로폭(줌) 정보가 있다면 해당 값을 적용하고, 없으면 CONFIG.CHART_CONFIG.VISIBLE_COUNT를 사용합니다.
-    const zoomWidth = store.savedZoomWidth || defaultZoom;
+    // 🚀 [UX 개선] 캔들 개수(len)가 적은 코인/타임프레임(예: 일봉 5개) 전환 시 이전 800봉 줌 크기가 적용되어 캔들이 극단적으로 쪼그라드는 현상 방지
+    const rawZoomWidth = store.savedZoomWidth || defaultZoom;
+    const maxFittingSpan = Math.max(len + margin + 5, 20);
+    const zoomWidth = Math.min(rawZoomWidth, maxFittingSpan);
     const logicalRange = {
       from: len - 1 - zoomWidth + margin,
       to: len - 1 + margin,
@@ -1054,17 +1058,7 @@ export function updateTabTitleManager(price, symbol, isKor) {
         const rate = store.marketDataMap?.krw_usd_rate || 0;
         if (rate > 0) krwPrice = scaledPrice * rate;
       }
-      // 업비트/빗썸 KRW 마켓 호가 단위 정밀도 자동 계산
-      const getLocalKrwPrecision = (pr) => {
-        if (!pr || isNaN(pr)) return 0;
-        if (pr >= 100000) return 0;
-        if (pr >= 10000) return 1;
-        if (pr >= 100) return 2;
-        if (pr >= 1) return 3;
-        return 4;
-      };
-      const krwP = getLocalKrwPrecision(krwPrice);
-      formatted = `${Number(krwPrice).toLocaleString(undefined, { maximumFractionDigits: krwP })}`;
+      formatted = formatKrwPrice(krwPrice, isKor ? (store.currentChartMarket || "upbit") : "upbit");
     } else {
       // 바이낸스/바이빗 USDT 마켓 정밀도 참조
       const p = store.getPrecision(store.currentSelectedSymbol || symbol);

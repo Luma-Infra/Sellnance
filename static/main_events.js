@@ -239,4 +239,25 @@ export function initGlobalEventListeners() {
       }
     }
   });
+
+  // [다중 탭 0ms 실시간 동기화] 즐겨찾기(FAV/FAV2) 변경 시 다른 모든 탭 즉시 갱신
+  window.addEventListener("storage", (e) => {
+    if (
+      e.key === "sellnance_favs" ||
+      e.key === "sellnance_favs2" ||
+      e.key === "sellnance_fav_meta"
+    ) {
+      if (typeof window.renderTable === "function") {
+        window.renderTable();
+      }
+      if (typeof window.updateFavoritesCount === "function") {
+        window.updateFavoritesCount();
+      }
+      const curSym =
+        store.currentSelectedSymbol || store.selectedSymbol || store.selectedTicker;
+      if (curSym && typeof window.updateHeaderStar === "function") {
+        window.updateHeaderStar(curSym);
+      }
+    }
+  });
 }

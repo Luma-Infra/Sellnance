@@ -170,6 +170,11 @@ export function restoreSavedUserSettings() {
     if (typeof window.updateCandleThemeButtons === "function") {
       window.updateCandleThemeButtons();
     }
+
+    // 8. 마지막 정렬 기준 화살표 및 버튼 강조 상태 복원
+    if (typeof window.updateSortUI === "function") {
+      window.updateSortUI(store.currentSortCol, store.sortState);
+    }
   } catch (e) { }
 }
 
@@ -253,10 +258,19 @@ export function updateStatusBadge() {
     return;
   }
 
-  if (diff < 0) {
-    const msg = hasKey ? "수집 완료 대기 중..." : "정기 수집 대기 중...";
+  if (diff <= 0) {
+    const msg = "대기 중...";
     if (timerEl) timerEl.innerText = msg;
     if (tipTimerEl) tipTimerEl.innerText = msg;
+
+    // 🚀 [사일런트 갱신 트리거] 카운트다운 만료 시 10초 쿨다운을 두고 즉시 사일런트 갱신 트리거
+    const nowMs = Date.now();
+    if (!store._lastAutoSilentFetch || nowMs - store._lastAutoSilentFetch > 10000) {
+      store._lastAutoSilentFetch = nowMs;
+      if (typeof window.loadTableDataSilent === "function") {
+        window.loadTableDataSilent();
+      }
+    }
     return;
   }
 

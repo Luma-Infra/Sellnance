@@ -434,7 +434,7 @@ export async function lazyRenderKimchiData(params) {
           .join("");
       } else {
         const s = availableSubs[0];
-        buttonsHtml = `<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-theme-panel/90 border border-theme-border/60 opacity-70 pointer-events-none shadow-sm" style="color: ${s.color};">vs ${s.name}</span>`;
+        buttonsHtml = `<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-theme-panel/90 border border-theme-border/60 opacity-70 pointer-events-none shadow-sm" style="color: ${s.color};">${s.name}</span>`;
       }
 
       switcherContainer.innerHTML = `

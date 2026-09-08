@@ -353,7 +353,7 @@ export async function initChart() {
       const len = store.mainData.length;
       const margin = store.savedRightMargin ?? 10;
       const MIN_SPAN = 10; // 🚀 최대 확대 한계: 최소 10개 봉 (캔들 과팽창 방지)
-      const MAX_SPAN = Math.min(Math.max(len + margin, 50), 800);
+      const MAX_SPAN = Math.min(Math.max(len + margin + 5, 25), 800);
       // 최대 축소 한계: (캔들 뭉개짐, 과압축, Hairline 방지)
       const maxTo = len - 1 + margin;
 

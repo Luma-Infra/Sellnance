@@ -541,8 +541,9 @@ export function toggleHeaderTop() {
       btn.innerText = "▼ 헤더 펼치기";
       localStorage.setItem("sellnance_header_collapsed", "true");
       if (topZone) {
-        topZone.style.height = "";
-        topZone.style.maxHeight = "";
+        // 값 0 이면 접히기
+        topZone.style.height = "188px";
+        topZone.style.maxHeight = "188px";
       }
     }
     if (typeof window.resetChartScale === "function") {

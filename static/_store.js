@@ -22,7 +22,17 @@ try {
   }
 } catch (e) { }
 
-// 🚀 [신규] control-panel-parent 세션 스토리지 복원
+// [신규] 마지막 정렬 기준 로컬 스토리지 복원
+let initialSortCol = "Volume";
+let initialSortState = "desc";
+try {
+  const savedSortCol = localStorage.getItem("sellnance_last_sort_col");
+  if (savedSortCol) initialSortCol = savedSortCol;
+  const savedSortState = localStorage.getItem("sellnance_last_sort_state");
+  if (savedSortState) initialSortState = savedSortState;
+} catch (e) { }
+
+// [신규] control-panel-parent 세션 스토리지 복원
 let sessionControlPanel = null;
 try {
   const savedCP =
@@ -34,6 +44,8 @@ try {
 } catch (e) { }
 
 export const store = {
+  currentSortCol: initialSortCol,
+  sortState: initialSortState,
   marketDataMap: { upbit: [], spot: [], futures: [], krw_usd_rate: 0.0 },
   allSymbols: [],
   originalTableData: [],
