@@ -18,6 +18,7 @@ import "./stream.js";
 import "./table.js";
 import "./start.js";
 import "./quickview.js";
+import { toggleFeedbackModal, submitFeedback } from "./feedback_modal.js";
 
 // 분리된 3대 모듈
 import {
@@ -51,6 +52,8 @@ window.selectSymbol = selectSymbol;
 window.getKrwPrecision = getKrwPrecision;
 window.updateHeaderDisplay = updateHeaderDisplay;
 window.toggleHeaderTop = toggleHeaderTop;
+window.toggleFeedbackModal = toggleFeedbackModal;
+window.submitFeedback = submitFeedback;
 
 // 🚀 DOM 로드 완료 시 사용자 설정 복원
 if (document.readyState === "loading") {

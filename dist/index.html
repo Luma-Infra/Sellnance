@@ -149,7 +149,7 @@
   <!-- <script src="../static/lwc_error_tracker.js"></script> -->
 
   <!-- 🚀 추천 폰트 최우선 프리로드 & 로드 (초기 렌더링 깜빡임/지연 원천 차단) -->
-  <link rel="preload" href="/assets/PretendardVariable.woff2" as="font" type="font/woff2" crossorigin="anonymous" />
+  <link rel="preload" href="/static/PretendardVariable.woff2" as="font" type="font/woff2" crossorigin="anonymous" />
 
   <!-- 🚀 Vite 호환: 단일 Entry Point(ES Module) 사용 -->
   <!-- _main.js 내부에서 필요한 모든 모듈을 import 하도록 묶습니다. -->
@@ -1742,6 +1742,24 @@
               이동하기
             </button>
           </div>
+
+          <!-- 💬 [모바일 전용 (<1200px)] 고객센터 / 피드백 문의 -->
+          <div class="flex min-[1200px]:hidden items-center justify-between border-t border-theme-border/50 pt-4 mt-2">
+            <div class="flex flex-col">
+              <span class="text-xs font-medium text-theme-text flex items-center gap-1.5">
+                <span>Feedback</span>
+              </span>
+              <span class="text-[9px] opacity-40 italic">피드백</span>
+            </div>
+            <button type="button" onclick="
+                  closeSettingsModal();
+                  if (typeof window.toggleFeedbackModal === 'function')
+                    window.toggleFeedbackModal(true);
+                "
+              class="px-3 py-1.5 bg-theme-accent/15 text-theme-accent border border-theme-accent/30 text-xs font-bold rounded-lg hover:bg-theme-accent hover:text-white transition-all cursor-pointer">
+              문의하기
+            </button>
+          </div>
         </div>
 
         <div class="flex gap-2 mt-2">
@@ -2067,6 +2085,60 @@
       </div>
     </div>
     <!-- 🚀 #main-dashboard-content 닫기 -->
+  </div>
+
+  <!-- 🎧 PC 전용(1200px 이상) 고객센터 / 피드백 플로팅 원형 버튼 -->
+  <button id="feedback-floating-btn" onclick="window.toggleFeedbackModal(true)" title="피드백 / 문의"
+    class="floating-support-btn w-9 h-9 rounded-full bg-theme-panel/90 hover:bg-theme-panel border border-theme-border/80 hover:border-theme-accent text-theme-text/70 hover:text-theme-accent shadow-lg shadow-black/30 items-center justify-center hover:scale-110 active:scale-95 transition-all duration-200 cursor-pointer backdrop-blur-md group"
+    aria-label="피드백 및 문의">
+    <svg class="w-4 h-4 transition-transform duration-200 group-hover:rotate-6" fill="none" viewBox="0 0 24 24"
+      stroke="currentColor" stroke-width="2.2">
+      <path stroke-linecap="round" stroke-linejoin="round"
+        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+    </svg>
+  </button>
+
+  <!-- 💬 라이트/다크 테마 100% 실시간 연동 피드백 모달 -->
+  <div id="feedback-modal"
+    class="fixed inset-0 z-[550] hidden items-center justify-center bg-black/60 backdrop-blur-sm opacity-0 transition-opacity duration-200"
+    onclick="if(event.target === this) window.toggleFeedbackModal(false)">
+    <div id="feedback-modal-card"
+      class="relative w-[380px] max-w-[92vw] p-5 rounded-2xl bg-theme-panel border border-theme-border shadow-2xl flex flex-col gap-3.5 transform scale-95 transition-transform duration-200 text-theme-text font-sans">
+      <!-- 모달 헤더 -->
+      <div class="flex items-center justify-between pb-2 border-b border-theme-border/50">
+        <div class="flex items-center gap-2">
+          <div
+            class="w-6 h-6 rounded-full bg-theme-accent/15 flex items-center justify-center text-theme-accent text-xs">
+            💬</div>
+          <h3 class="font-bold text-sm tracking-tight text-theme-text">피드백 / 문의</h3>
+        </div>
+        <button type="button" onclick="window.toggleFeedbackModal(false)"
+          class="w-6 h-6 flex items-center justify-center rounded-lg text-theme-text/60 hover:text-theme-text hover:bg-theme-row-hover transition-colors text-xs cursor-pointer">✕</button>
+      </div>
+
+      <!-- 모달 본문 폼 -->
+      <form id="feedback-form" onsubmit="window.submitFeedback(event)" class="flex flex-col gap-2.5">
+        <div>
+          <input type="email" id="feedback-email" placeholder="이메일 (선택사항)" autocomplete="email"
+            class="w-full h-8 px-3 rounded-xl bg-theme-bg/60 border border-theme-border/80 focus:border-theme-accent focus:outline-none text-xs text-theme-text placeholder:text-theme-text/40 transition-colors" />
+        </div>
+        <div>
+          <textarea id="feedback-content" required rows="4" placeholder="피드백이나 문의 내용을 자유롭게 적어주세요."
+            class="w-full p-3 rounded-xl bg-theme-bg/60 border border-theme-border/80 focus:border-theme-accent focus:outline-none text-xs text-theme-text placeholder:text-theme-text/40 resize-none transition-colors leading-relaxed"></textarea>
+          <p class="text-[11px] text-theme-text/40 tracking-tight mt-1">
+            ※ 개선을 위해 일부 환경 정보 (선택 코인, 기기, 해상도)를 함께 보낼게요
+          </p>
+        </div>
+
+        <button type="submit" id="feedback-submit-btn"
+          class="w-full h-9 rounded-xl bg-theme-accent hover:brightness-110 active:scale-[0.98] text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md shadow-theme-accent/20 cursor-pointer">
+          <span>동의 및 전송하기</span>
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+          </svg>
+        </button>
+      </form>
+    </div>
   </div>
 </body>
 

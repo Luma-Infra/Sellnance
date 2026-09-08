@@ -163,6 +163,8 @@ if IS_PRODUCTION and DIST_DIR.exists():
     templates = Jinja2Templates(directory=str(DIST_DIR))
 else:
     print("🛠️ [ENV] Local Dev - Serving raw templates/ and static/")
+    if (DIST_DIR / "assets").exists():
+        app.mount("/assets", StaticFiles(directory=str(DIST_DIR / "assets")), name="assets")
     STATIC_DIR = BASE_DIR / "static"
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
     templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
@@ -320,12 +322,16 @@ def track_user_session(request: Request):
         return len(ACTIVE_SESSIONS)
 
 
-def get_next_update_timestamp(is_user_key: bool = False, last_raw_ts: float = 0.0) -> float:
+def get_next_update_timestamp(
+    is_user_key: bool = False, last_raw_ts: float = 0.0
+) -> float:
     """KST 기준 다음 시총 갱신 예정 시각(유닉스 타임스탬프)을 정밀 계산합니다."""
     kst = pytz.timezone("Asia/Seoul")
     now_kst = datetime.now(kst)
     if is_user_key:
-        return (last_raw_ts + 900.0) if last_raw_ts > 0 else (now_kst.timestamp() + 900.0)
+        return (
+            (last_raw_ts + 900.0) if last_raw_ts > 0 else (now_kst.timestamp() + 900.0)
+        )
 
     # 서버 정기 4시간 정각 스케줄: 01:00, 05:00, 09:00, 13:00, 17:00, 21:00 (KST)
     schedule_hours = [1, 5, 9, 13, 17, 21]
@@ -381,7 +387,9 @@ def get_market_data(request: Request, force: bool = False):
         "data": data,
         "last_updated": last_updated,
         "last_updated_raw": raw_ts,
-        "next_update_raw": get_next_update_timestamp(is_user_key=is_user_key, last_raw_ts=raw_ts),
+        "next_update_raw": get_next_update_timestamp(
+            is_user_key=is_user_key, last_raw_ts=raw_ts
+        ),
         "active_users": user_count,
     }
 
@@ -423,7 +431,9 @@ def get_market_data_silent(request: Request):
         "data": data,
         "last_updated": last_updated,
         "last_updated_raw": raw_ts,
-        "next_update_raw": get_next_update_timestamp(is_user_key=is_user_key, last_raw_ts=raw_ts),
+        "next_update_raw": get_next_update_timestamp(
+            is_user_key=is_user_key, last_raw_ts=raw_ts
+        ),
         "active_users": user_count,
     }
 
@@ -691,6 +701,94 @@ def get_settings():
 def update_settings(data: dict = Body(...)):
     if "CMC_API_KEY" in data:
         config.set_cmc_api_key(data["CMC_API_KEY"])
+    return {"status": "success"}
+
+
+# 💬 [보안 격리] 디스코드 피드백 프록시 (도배 방지)
+_last_feedback_time = 0.0
+
+
+@app.post("/api/feedback")
+async def send_feedback(data: dict = Body(...)):
+    message = str(data.get("message", "")).strip()
+    if not message:
+        return {"status": "error", "message": "내용을 입력해 주세요."}
+
+    # 1. 도배 및 매크로 스팸 방지 (글로벌 쿨다운)
+    global _last_feedback_time
+    now = time.time()
+    if (now - _last_feedback_time) < 5.0:
+        return {"status": "error", "message": "잠시 후 다시 전송해 주세요."}
+    _last_feedback_time = now
+
+    # 2. .env 환경변수에서 디스코드 웹훅 로드
+    webhook_url = os.environ.get("DISCORD_FEEDBACK_WEBHOOK", "").strip()
+    if not webhook_url:
+        return {"status": "error", "message": "웹훅이 설정되지 않았습니다."}
+
+    symbol = str(data.get("symbol", "미선택")).strip()
+    uid = str(data.get("uid", "-")).strip()
+    email = str(data.get("email", "")).strip()
+    environment = str(data.get("environment", "알 수 없음")).strip()
+    resolution = str(data.get("resolution", "알 수 없음")).strip()
+
+    kst = pytz.timezone("Asia/Seoul")
+    now_kst_str = datetime.now(kst).strftime("%Y-%m-%d %H:%M:%S")
+
+    fields = []
+    if email:
+        fields.append({
+            "name": "✉️ 회신 이메일",
+            "value": f"`{email}`",
+            "inline": False,
+        })
+    fields.extend([
+        {
+            "name": "📍 보고 있던 코인",
+            "value": f"`{symbol}` (UID: `{uid}`)",
+            "inline": True,
+        },
+        {
+            "name": "💻 접속 환경",
+            "value": f"`{environment}`",
+            "inline": True,
+        },
+        {
+            "name": "📐 화면 크기",
+            "value": f"`{resolution}`",
+            "inline": True,
+        },
+    ])
+
+    payload = {
+        "username": "Sellnance Feedback",
+        "avatar_url": "https://sellnance.site/static/luma-deer-svg-dark.svg",
+        "embeds": [
+            {
+                "title": "💬 새로운 사용자 피드백 / 문의",
+                "description": message,
+                "color": 15776011,  # Sellnance Gold (#F0B90B)
+                "fields": fields,
+                "footer": {
+                    "text": f"Sellnance Web • {now_kst_str}",
+                },
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        ],
+    }
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                webhook_url,
+                json=payload,
+                timeout=aiohttp.ClientTimeout(total=4),
+            ) as resp:
+                if resp.status in [200, 204]:
+                    return {"status": "success"}
+    except Exception as e:
+        print(f"피드백 전송 예외: {e}")
+
     return {"status": "success"}
 
 
