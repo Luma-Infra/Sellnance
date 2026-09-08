@@ -50,7 +50,12 @@ export async function fetchCandlesSmart(
     (window.location.hostname === "localhost" ||
       window.location.hostname === "127.0.0.1");
 
-  if (!isGapRecovery && !toVal && !startVal) {
+  const isUpbitDirectBlocked =
+    exchange === "upbit" &&
+    store._upbitDirectBlockUntil &&
+    Date.now() < store._upbitDirectBlockUntil;
+
+  if (!isGapRecovery && !toVal && !startVal && !isUpbitDirectBlocked) {
     try {
       let directUrl = null;
       if (exchange === "binance_spot") {
@@ -103,7 +108,11 @@ export async function fetchCandlesSmart(
       }
 
       if (directUrl) {
-        const res = await fetch(directUrl);
+        const fetchSignal =
+          typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function"
+            ? AbortSignal.timeout(500)
+            : undefined;
+        const res = await fetch(directUrl, { signal: fetchSignal });
         if (res.ok) {
           const data = await res.json();
           if (
@@ -127,13 +136,19 @@ export async function fetchCandlesSmart(
             // Xconsole.log(`⚡ [DIRECT FETCH SUCCESS] ${exchange} - ${symbol}`);
             return data;
           }
+        } else if (res.status === 429) {
+          if (exchange === "upbit") {
+            store._upbitDirectBlockUntil = Date.now() + 30000;
+          }
         } else if (res.status === 404 || res.status === 400) {
           // 🚀 거래소 API에서 404/400 (심볼/마켓 없음) 반환 시 백엔드 프록시로 재요청하는 낭비/지연 원천 차단
           return [];
         }
       }
     } catch (err) {
-      // 직접 호출 실패 시 조용히 아래 서버 프록시(/api/candles)로 위임
+      if (exchange === "upbit") {
+        store._upbitDirectBlockUntil = Date.now() + 20000;
+      }
     }
   }
 

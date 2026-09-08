@@ -150,7 +150,8 @@
   <!-- 🚀 차트 병목 유발용 디버그 트래커 비활성화 (렉 개선 완료) -->
   <!-- <script src="../static/lwc_error_tracker.js"></script> -->
 
-  <!-- 🚀 추천 폰트 로드 (로컬 다운로드 완료) -->
+  <!-- 🚀 추천 폰트 최우선 프리로드 & 로드 (초기 렌더링 깜빡임/지연 원천 차단) -->
+  <link rel="preload" href="/static/PretendardVariable.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="/static/pretendard.css" />
   <link rel="stylesheet" href="/static/z_style.min.css" />
 
