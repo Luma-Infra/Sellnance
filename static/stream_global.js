@@ -473,17 +473,20 @@ export function startRealtimeCandle(
           } catch (e) { }
         };
         ws.onerror = (err) => {
-          store._upbitWsCooldownUntil = Date.now() + 1000;
+          store._upbitWsDelay = Math.min(30000, (store._upbitWsDelay || 5000) * 1.5);
+          store._upbitWsCooldownUntil = Date.now() + store._upbitWsDelay;
         };
         ws.onclose = () => {
           if (store.upbitChartWs === ws) {
             store.upbitChartWs = null;
             store.currentUpbitStream = null;
-            store._upbitWsCooldownUntil = Date.now() + 1000;
+            store._upbitWsDelay = Math.min(30000, (store._upbitWsDelay || 5000) * 1.5);
+            store._upbitWsCooldownUntil = Date.now() + store._upbitWsDelay;
           }
         };
       } catch (e) {
-        store._upbitWsCooldownUntil = Date.now() + 1000;
+        store._upbitWsDelay = Math.min(30000, (store._upbitWsDelay || 5000) * 1.5);
+        store._upbitWsCooldownUntil = Date.now() + store._upbitWsDelay;
       }
     } else if (isConnectingOrOpen && store.currentUpbitStream !== upbitCode) {
       store.currentUpbitStream = upbitCode;

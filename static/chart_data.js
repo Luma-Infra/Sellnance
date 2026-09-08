@@ -83,29 +83,34 @@ export async function fetchCandlesSmart(
         };
         const bInt = bMap[interval] || interval;
         directUrl = `https://api.bybit.com/v5/market/kline?category=${category}&symbol=${symbol}&interval=${bInt}&limit=1000`; // 바이빗 최대 한도: 1000개
-      } else if (exchange === "upbit") {
-        let uPath = "days";
-        if (interval.startsWith("minutes/")) {
-          uPath = interval;
-        } else if (interval.endsWith("m")) {
-          const mNum = interval.replace("m", "");
-          uPath = `minutes/${mNum}`;
-        } else if (interval.endsWith("h")) {
-          const hNum = Number(interval.replace("h", "")) * 60;
-          uPath = `minutes/${hNum}`;
-        } else if (interval === "weeks" || interval === "1w" || interval === "w") {
-          uPath = "weeks";
-        } else if (interval === "months" || interval === "1M" || interval === "M") {
-          uPath = "months";
-        } else {
-          uPath = "days";
-        }
-        const cleanSym = symbol.startsWith("KRW-")
-          ? symbol
-          : `KRW-${symbol.replace(/USDT|KRW|_KRW/gi, "")}`;
-        const toQuery = toVal ? `&to=${encodeURIComponent(toVal)}` : "";
-        directUrl = `https://api.upbit.com/v1/candles/${uPath}?market=${cleanSym}&count=${Math.min(limit || 200, 200)}${toQuery}`;
       }
+
+      // } else if (exchange === "upbit") {
+      //   let uPath = "days";
+      //   if (interval.startsWith("minutes/")) {
+      //     uPath = interval;
+      //   } else if (interval.endsWith("m")) {
+      //     const mNum = interval.replace("m", "");
+      //     uPath = `minutes/${mNum}`;
+      //   } else if (interval.endsWith("h")) {
+      //     const hNum = Number(interval.replace("h", "")) * 60;
+      //     uPath = `minutes/${hNum}`;
+      //   } else if (interval === "weeks" || interval === "1w" || interval === "w") {
+      //     uPath = "weeks";
+      //   } else if (interval === "months" || interval === "1M" || interval === "M") {
+      //     uPath = "months";
+      //   } else {
+      //     uPath = "days";
+      //   }
+      //   const cleanSym = symbol.startsWith("KRW-")
+      //     ? symbol
+      //     : `KRW-${symbol.replace(/USDT|KRW|_KRW/gi, "")}`;
+      //   const toQuery = toVal ? `&to=${encodeURIComponent(toVal)}` : "";
+      //   directUrl = `https://api.upbit.com/v1/candles/${uPath}?market=${cleanSym}&count=${Math.min(limit || 200, 200)}${toQuery}`;
+      // }
+
+      // Note: Upbit is excluded from direct browser fetch due to strict rate-limits (8 req/s)
+      // and lack of CORS headers on 429 responses. Upbit candles route through backend proxy.
 
       if (directUrl) {
         const fetchSignal =
