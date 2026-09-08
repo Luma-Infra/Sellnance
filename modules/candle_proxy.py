@@ -15,11 +15,27 @@ from . import api_manager
 
 CF_WORKER_PROXY_URL = os.getenv("CF_WORKER_PROXY_URL", "").strip()
 
-# 🚀 [500명 무지성 폭격 방어 엔진]
+# 🚀 [500명 방어 엔진]
 CANDLE_SEMAPHORE = asyncio.Semaphore(20)
+GLOBAL_AIO_SESSION = None
 IN_FLIGHT_CANDLE_REQUESTS = {}
 CANDLE_CACHE = {}
 TV_GAP_CACHE = {}
+
+
+async def get_aio_session() -> aiohttp.ClientSession:
+    global GLOBAL_AIO_SESSION
+    if GLOBAL_AIO_SESSION is None or GLOBAL_AIO_SESSION.closed:
+        timeout = aiohttp.ClientTimeout(total=5.0, connect=2.0)
+        connector = aiohttp.TCPConnector(
+            limit=50, ttl_dns_cache=300, enable_cleanup_closed=True
+        )
+        GLOBAL_AIO_SESSION = aiohttp.ClientSession(
+            timeout=timeout,
+            connector=connector,
+            headers={"Accept": "application/json", "Accept-Encoding": "gzip, deflate"},
+        )
+    return GLOBAL_AIO_SESSION
 
 
 def get_candle_ttl(interval: str, to: str = "") -> float:
@@ -514,60 +530,57 @@ async def _raw_fetch_candles(
         if exchange == "upbit":
             await UPBIT_RATE_LIMITER.wait()
 
-        # requests.get을 비동기 스레드풀에서 실행하여 이벤트 루프 블로킹 0% 보장
-        loop = asyncio.get_running_loop()
-
         fetch_url = url
         if CF_WORKER_PROXY_URL and exchange == "upbit":
             fetch_url = (
                 f"{CF_WORKER_PROXY_URL.rstrip('/')}/?url={urllib.parse.quote(url)}"
             )
 
-        def _do_get():
-            max_attempts = 3
-            current_target = fetch_url
-            for attempt in range(max_attempts):
-                try:
-                    r = requests.get(
-                        current_target,
-                        headers={"Accept": "application/json"},
-                        timeout=5,
-                    )
-                    if r.status_code == 429:
+        session = await get_aio_session()
+        data = None
+        current_target = fetch_url
+        for attempt in range(3):
+            try:
+                async with session.get(current_target) as resp:
+                    if resp.status == 429:
                         if exchange == "upbit":
                             UPBIT_RATE_LIMITER.trigger_cooldown(1.5)
-                        if attempt < max_attempts - 1:
-                            time.sleep(1.0 * (attempt + 1))
+                        if attempt < 2:
+                            await asyncio.sleep(1.0 * (attempt + 1))
                             continue
                         else:
-                            return []
-                    # Cloudflare Worker 이상 시 직통 URL로 1회 안전 폴백
-                    if r.status_code != 200 and current_target != url and attempt == 0:
+                            data = []
+                            break
+                    if resp.status != 200 and current_target != url and attempt == 0:
                         current_target = url
                         continue
-                    r.raise_for_status()
-                    return r.json()
-                except requests.exceptions.RequestException as re:
-                    if (
-                        hasattr(re, "response")
-                        and re.response is not None
-                        and re.response.status_code == 429
-                    ):
-                        if exchange == "upbit":
-                            UPBIT_RATE_LIMITER.trigger_cooldown(1.5)
-                        if attempt < max_attempts - 1:
-                            time.sleep(1.0 * (attempt + 1))
-                            continue
-                        return []
-                    if current_target != url and attempt == 0:
-                        current_target = url
-                        continue
-                    if attempt == max_attempts - 1:
-                        raise
-                    time.sleep(0.5)
-            return []
+                    if resp.status == 200:
+                        data = await resp.json()
+                        break
+                    else:
+                        data = []
+                        break
+            except Exception:
+                if current_target != url and attempt == 0:
+                    current_target = url
+                    continue
+                if attempt == 2:
+                    data = []
+                    break
+                await asyncio.sleep(0.5)
 
-        data = await loop.run_in_executor(None, _do_get)
+        if data is None:
+            data = []
+
+        # 빗썸 전체 캔들 반환 시 요청한 limit만큼 백엔드에서 즉시 슬라이싱하여 전송 속도 극대화
+        if (
+            exchange == "bithumb"
+            and isinstance(data, dict)
+            and data.get("status") == "0000"
+        ):
+            raw_list = data.get("data", [])
+            if isinstance(raw_list, list) and limit and len(raw_list) > int(limit):
+                data = {"status": "0000", "data": raw_list[-int(limit) :]}
 
         # 🚀 [설정 기반 단절 복구 엔진 (mapping.json 연동)]
         recovery_map = (

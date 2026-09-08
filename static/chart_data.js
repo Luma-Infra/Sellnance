@@ -176,11 +176,11 @@ export async function fetchPaginated(
   interval,
   totalLimit,
   startTo = "",
+  onFirstBatch = null,
 ) {
   let result = [];
   let lastTo = startTo;
   let remaining = totalLimit;
-  let retryCount = 0;
 
   while (remaining > 0) {
     const count = Math.min(remaining, 200);
@@ -197,9 +197,16 @@ export async function fetchPaginated(
     remaining -= data.length;
     lastTo = data[data.length - 1].candle_date_time_utc;
 
+    // [1차 즉시 렌더링]: 첫 1회차(최신 200개)가 들어오자마자 화면에 0.05초 만에 선행 표시!
+    if (onFirstBatch && result.length === data.length && remaining > 0) {
+      try {
+        onFirstBatch([...result]);
+      } catch (e) { }
+    }
+
     if (remaining > 0) {
       await new Promise((resolve) => setTimeout(resolve, 150));
-      // 🛡️ 업비트 초당 8회 이하 안전 간격 보장
+      // 🛡️ 업비트 초당 8회 이하 안전 간격 보장 (IP 차단 0%)
     }
   }
   return result;
@@ -269,6 +276,9 @@ export function clearChartData(isTfChange = false) {
 export { fetchHistory };
 
 window.switchKimchiSub = function (newSubId) {
+  if (store.isFetchingChart || window.isFetchingChart || store.isKimchiLoading) {
+    return; // 🚀 차트/김프 데이터 로딩 중에는 중복 클릭 및 교체 차단
+  }
   const currentSub =
     store.preferredKimchiSub || store.lastFetchParams?.subExchange;
   if (currentSub === newSubId) {
@@ -284,13 +294,38 @@ window.switchKimchiSub = function (newSubId) {
     btns.forEach((btn) => {
       const onclickAttr = btn.getAttribute("onclick") || "";
       if (onclickAttr.includes(`'${newSubId}'`)) {
-        btn.classList.add("ring-2", "ring-white/80", "scale-105", "opacity-100");
-        btn.classList.remove("opacity-40");
+        btn.classList.add("ring-1.5", "ring-theme-text/80", "scale-105", "opacity-100", "shadow-md", "brightness-110", "font-black");
+        btn.classList.remove("opacity-50", "font-bold");
       } else {
-        btn.classList.remove("ring-2", "ring-white/80", "scale-105", "opacity-100");
-        btn.classList.add("opacity-40");
+        btn.classList.remove("ring-1.5", "ring-theme-text/80", "scale-105", "opacity-100", "shadow-md", "brightness-110", "font-black");
+        btn.classList.add("opacity-50", "font-bold");
       }
     });
+  }
+
+  const cleanSym = String(store.currentAsset || store.currentSelectedSymbol || "")
+    .replace(/^.*:/, "")
+    .replace(/_FUTURES|_SPOT|_UPBIT|_BITHUMB/g, "")
+    .toUpperCase();
+  const row =
+    (store.currentSelectedUid && store.tickerRowMap?.get(store.currentSelectedUid)) ||
+    store.tickerRowMap?.get(cleanSym) ||
+    store.tickerRowMap?.get(store.currentSelectedSymbol) ||
+    store.currentTableData?.find(
+      (r) =>
+        (store.currentSelectedUid && String(r.UID) === String(store.currentSelectedUid)) ||
+        r.Symbol === cleanSym ||
+        r.Ticker === cleanSym ||
+        r.DisplayTicker === cleanSym ||
+        r.Exact_Futures === cleanSym ||
+        r.Exact_Spot === cleanSym
+    );
+  if (row) {
+    if (typeof window.realUpdateHeaderDisplay === "function") {
+      window.realUpdateHeaderDisplay(row, undefined, undefined, false, "KIMCHI_SWITCH");
+    } else if (typeof window.updateHeaderDisplay === "function") {
+      window.updateHeaderDisplay(row);
+    }
   }
   if (typeof fetchHistory === "function") {
     fetchHistory(store.currentAsset, false, false, true);

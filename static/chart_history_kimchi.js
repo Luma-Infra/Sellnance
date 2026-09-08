@@ -42,8 +42,13 @@ export function getExchangeLoadingTheme(exchId) {
 }
 
 export function showKimchiLoading(subExchange) {
+  store.isKimchiLoading = true;
   const switcher = document.getElementById("kimchi-switcher");
   let loadingBar = document.getElementById("kimchi-loading-bar");
+
+  if (switcher) {
+    switcher.classList.add("pointer-events-none", "opacity-75");
+  }
 
   if (!loadingBar && switcher) {
     loadingBar = document.createElement("div");
@@ -62,6 +67,12 @@ export function showKimchiLoading(subExchange) {
 }
 
 export function hideKimchiLoading() {
+  store.isKimchiLoading = false;
+  const switcher = document.getElementById("kimchi-switcher");
+  if (switcher) {
+    switcher.classList.remove("pointer-events-none", "opacity-75");
+  }
+
   const loadingBar = document.getElementById("kimchi-loading-bar");
   if (!loadingBar) return;
 
@@ -293,8 +304,7 @@ export async function lazyRenderKimchiData(params) {
         availableSubs.push({
           id: "binance_spot",
           name: "B-SPOT",
-          bg: "#444",
-          text: "#fff",
+          color: "#f0b90b",
           sym: `${exactSpot}USDT`,
           pureSym: exactSpot,
         });
@@ -303,18 +313,16 @@ export async function lazyRenderKimchiData(params) {
         availableSubs.push({
           id: "binance_futures",
           name: "B-FUT",
-          bg: "#f0b90b",
-          text: "#000",
+          color: "#f0b90b",
           sym: `${exactFutures}USDT`,
           pureSym: exactFutures,
         });
-      // 🚀 바이비트 현물 (BYBIT)
+      // 🚀 바이비트 현물 (BYB-S)
       if (listedEx.includes("BYBIT_SPOT") || listedEx.includes("BYBIT"))
         availableSubs.push({
           id: "bybit_spot",
-          name: "BYBIT",
-          bg: "#f7a600",
-          text: "#fff",
+          name: "BYB-S",
+          color: "#f7a600",
           sym: `${exactBybit}USDT`,
           pureSym: exactBybit,
         });
@@ -323,8 +331,7 @@ export async function lazyRenderKimchiData(params) {
         availableSubs.push({
           id: "bybit_futures",
           name: "BYB-F",
-          bg: "#f7a600",
-          text: "#000",
+          color: "#f7a600",
           sym: `${exactBybit}USDT`,
           pureSym: exactBybit,
         });
@@ -335,8 +342,7 @@ export async function lazyRenderKimchiData(params) {
         availableSubs.push({
           id: "upbit",
           name: "UPBIT",
-          bg: "#093687",
-          text: "#fff",
+          color: "#3875ff",
           sym: `KRW-${exactUpbit}`,
           pureSym: exactUpbit,
         });
@@ -344,8 +350,7 @@ export async function lazyRenderKimchiData(params) {
         availableSubs.push({
           id: "bithumb",
           name: "BITHUMB",
-          bg: "#ff8b00",
-          text: "#fff",
+          color: "#f37321",
           sym: `${exactBithumb}_KRW`,
           pureSym: exactBithumb,
         });
@@ -356,8 +361,7 @@ export async function lazyRenderKimchiData(params) {
         availableSubs.push({
           id: "upbit",
           name: "UPBIT",
-          bg: "#093687",
-          text: "#fff",
+          color: "#3875ff",
           sym: `KRW-${exactUpbit}`,
           pureSym: exactUpbit,
         });
@@ -365,8 +369,7 @@ export async function lazyRenderKimchiData(params) {
         availableSubs.push({
           id: "bithumb",
           name: "BITHUMB",
-          bg: "#ff8b00",
-          text: "#fff",
+          color: "#f37321",
           sym: `${exactBithumb}_KRW`,
           pureSym: exactBithumb,
         });
@@ -383,6 +386,14 @@ export async function lazyRenderKimchiData(params) {
       subSymbol = selected.sym;
       subMulti = getMultiplier(selected.sym);
       store.preferredKimchiSub = subExchange;
+
+      if (rowInfo) {
+        if (typeof window.realUpdateHeaderDisplay === "function") {
+          window.realUpdateHeaderDisplay(rowInfo, undefined, undefined, false, "KIMCHI_RESOLVED");
+        } else if (typeof window.updateHeaderDisplay === "function") {
+          window.updateHeaderDisplay(rowInfo);
+        }
+      }
 
       let loadingMessageContainer = document.getElementById("kimchi-loading-message");
       if (!loadingMessageContainer) {
@@ -415,15 +426,15 @@ export async function lazyRenderKimchiData(params) {
         buttonsHtml = availableSubs
           .map((s) => {
             const isActive = s.id === subExchange;
-            const opacity = isActive
-              ? "opacity-100 ring-2 ring-white/80 scale-105"
-              : "opacity-40 hover:opacity-80";
-            return `<button class="text-[10px] font-medium px-1.5 py-0.5 rounded shadow-sm transition-all ${opacity}" style="background-color: ${s.bg}; color: ${s.text};" onclick="switchKimchiSub('${s.id}')">${s.name}</button>`;
+            const ringClass = isActive
+              ? "opacity-100 ring-1.5 ring-theme-text/80 scale-105 shadow-md brightness-110 font-black"
+              : "opacity-50 hover:opacity-100 hover:scale-105 font-bold";
+            return `<button class="text-[10px] px-2 py-0.5 rounded-md bg-theme-panel/90 border border-theme-border/60 shadow-sm transition-all cursor-pointer select-none active:scale-95 ${ringClass}" style="color: ${s.color};" onclick="switchKimchiSub('${s.id}')">${s.name}</button>`;
           })
           .join("");
       } else {
         const s = availableSubs[0];
-        buttonsHtml = `<span class="text-[10px] font-medium px-1.5 py-0.5 rounded opacity-60 pointer-events-none" style="background-color: ${s.bg}; color: ${s.text};">vs ${s.name}</span>`;
+        buttonsHtml = `<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-theme-panel/90 border border-theme-border/60 opacity-70 pointer-events-none shadow-sm" style="color: ${s.color};">vs ${s.name}</span>`;
       }
 
       switcherContainer.innerHTML = `
@@ -459,52 +470,14 @@ export async function lazyRenderKimchiData(params) {
         upbitInterval = `minutes/${baseMin}`;
       }
 
-      showKimchiLoading(subExchange);
+      const subMult =
+        store.currentTF === "3d" || store.currentTF === "12h" ? 3 : 1;
+      const initialSubLimit = 500 * subMult;
 
       // 🚀 [1:N 기간 일치 보장] 메인이 3d/12h일 때 메인은 500개(=1,500일치/6,000시간치)를 가져오므로,
       // 서브 캔들도 3배(1,500개)를 가져와야 메인 전체 기간(4년치)의 김프가 공백 없이 100% 가득 참!
-      const subMult = (store.currentTF === "3d" || store.currentTF === "12h") ? 3 : 1;
-      const initialSubLimit = 500 * subMult;
 
-      let subRaw = [];
-      if (subExchange === "upbit") {
-        subRaw = await fetchPaginated(
-          subExchange,
-          subSymbol,
-          upbitInterval,
-          initialSubLimit,
-        );
-      } else if (subExchange === "bithumb") {
-        let bInterval = store.currentTF;
-        if (store.currentTF === "3d") bInterval = "1d";
-
-        const bData = await fetchCandlesSmart("bithumb", subSymbol, bInterval, Math.min(2000, initialSubLimit));
-        const rawList = Array.isArray(bData?.data) ? bData.data : (Array.isArray(bData) ? bData : []);
-        subRaw = rawList
-          .map((d) => ({
-            time: Math.floor(Number(d[0]) / 1000),
-            open: Number(d[1]),
-            close: Number(d[2]),
-            high: Number(d[3]),
-            low: Number(d[4]),
-            vol: Number(d[5]),
-          }))
-          .sort((a, b) => a.time - b.time);
-      } else {
-        const subJson = await fetchCandlesSmart(
-          subExchange,
-          subSymbol,
-          store.currentTF,
-          500,
-        );
-        if (subJson?.result?.list) {
-          subRaw = subJson.result.list.sort(
-            (a, b) => Number(a[0]) - Number(b[0]),
-          );
-        } else {
-          subRaw = subJson;
-        }
-      }
+      showKimchiLoading(subExchange);
 
       const rateCacheKey = `fiat_rate_only`;
       if (store.lastFetchParams) {
@@ -516,7 +489,6 @@ export async function lazyRenderKimchiData(params) {
           typeof upbitInterval !== "undefined" ? upbitInterval : null;
         store.lastFetchParams.rateCacheKey = rateCacheKey;
       }
-      store.subRawData = subRaw;
 
       if (!store.fiatRateCache) store.fiatRateCache = {};
       if (!store.fiatRateCache[rateCacheKey]) {
@@ -571,6 +543,107 @@ export async function lazyRenderKimchiData(params) {
           }
         }
       }
+
+      // [1차 즉시 렌더링 헬퍼]: 1회차(200개)가 들어오자마자 현재 화면에 먼저 표시!
+      const renderKimchiBatch = (rawBatch) => {
+        if (
+          store.currentAsset !== snapshotAsset ||
+          store.currentTF !== snapshotTF ||
+          !rawBatch ||
+          rawBatch.length === 0
+        ) {
+          return;
+        }
+        let batchKimchi = calculateKimchiData(
+          store.mainData,
+          rawBatch,
+          store.lastFetchParams,
+        );
+        if (batchKimchi && batchKimchi.length > 0) {
+          store.kimchiData = batchKimchi.map((d) => mapTime(d));
+          rebuildKimchiDataMap();
+          if (store.kimchiSeries) {
+            const lastK = store.kimchiData[store.kimchiData.length - 1];
+            if (wrapper && lastK) {
+              wrapper.style.setProperty("--kimchi-color", lastK.color);
+            }
+            try {
+              const currentRange = store.chart?.timeScale().getVisibleLogicalRange();
+              store.kimchiSeries.setData(sanitizeChartData(store.kimchiData, true));
+              if (currentRange) {
+                store.chart.timeScale().setVisibleLogicalRange(currentRange);
+              }
+              if (typeof applyChartLayout === "function") applyChartLayout();
+            } catch (err) { }
+          }
+        }
+      };
+
+      let subRaw = [];
+      if (subExchange === "upbit") {
+        subRaw = await fetchPaginated(
+          subExchange,
+          subSymbol,
+          upbitInterval,
+          initialSubLimit,
+          "",
+          renderKimchiBatch,
+        );
+      } else if (subExchange === "bithumb") {
+        let bInterval = store.currentTF;
+        if (store.currentTF === "3d") bInterval = "1d";
+
+        if (!store.bithumbSubCache) store.bithumbSubCache = {};
+        const bCacheKey = `${subSymbol}_${bInterval}`;
+        const cachedEntry = store.bithumbSubCache[bCacheKey];
+        const nowMs = Date.now();
+
+        if (cachedEntry && nowMs - cachedEntry.ts < 30000) {
+          subRaw = cachedEntry.data;
+        } else {
+          const bData = await fetchCandlesSmart(
+            "bithumb",
+            subSymbol,
+            bInterval,
+            Math.min(2000, initialSubLimit),
+          );
+          const rawList = Array.isArray(bData?.data)
+            ? bData.data
+            : Array.isArray(bData)
+              ? bData
+              : [];
+          subRaw = rawList
+            .map((d) => ({
+              time: Math.floor(Number(d[0]) / 1000),
+              open: Number(d[1]),
+              close: Number(d[2]),
+              high: Number(d[3]),
+              low: Number(d[4]),
+              vol: Number(d[5]),
+            }))
+            .sort((a, b) => a.time - b.time);
+
+          if (subRaw.length > 0) {
+            store.bithumbSubCache[bCacheKey] = { ts: nowMs, data: subRaw };
+          }
+        }
+      } else {
+        const subJson = await fetchCandlesSmart(
+          subExchange,
+          subSymbol,
+          store.currentTF,
+          500,
+        );
+        if (subJson?.result?.list) {
+          subRaw = subJson.result.list.sort(
+            (a, b) => Number(a[0]) - Number(b[0]),
+          );
+        } else {
+          subRaw = subJson;
+        }
+      }
+
+      store.subRawData = subRaw;
 
       let newKimchiData = calculateKimchiData(
         store.mainData,
