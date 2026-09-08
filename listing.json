@@ -1100,6 +1100,10 @@
   "COWUSDT": {
     "binance_listing": "2025-01-25"
   },
+  "CP": {
+    "upbit_listing": "2026-09-08",
+    "bybit_listing": "2026-09-04"
+  },
   "CPOOL": {
     "upbit_listing": "2025-10-20",
     "bybit_listing": "2024-02-01",

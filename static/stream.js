@@ -98,36 +98,15 @@ export function syncRowPrioritizedMetrics(row) {
       pOpen = row.spot_utc0_open_Raw ?? row.utc0_open_Raw;
       pInflow = "BINANCE_SPOT";
     } else if (
-      row.Bybit_Price_Futures &&
-      row.Listed_Exchanges?.includes("BYBIT_FUTURES")
-    ) {
-      pPrice = row.Bybit_Price_Futures;
-      p24h = row.Change_24h_Raw;
-      pToday = row.Change_Today_Futures ?? row.Change_Today_Raw;
-      pOpen = row.futures_utc0_open_Raw ?? row.utc0_open_Raw;
-      pInflow = "BYBIT_FUTURES";
-    } else if (
-      row.Bybit_Price_Spot &&
-      (row.Listed_Exchanges?.includes("BYBIT_SPOT") ||
-        row.Listed_Exchanges?.includes("BYBIT"))
-    ) {
-      pPrice = row.Bybit_Price_Spot;
-      p24h = row.Change_24h_Bybit ?? row.Change_24h_Raw;
-      pToday = row.Change_Today_Bybit ?? row.Change_Today_Raw;
-      pOpen = row.spot_utc0_open_Raw ?? row.utc0_open_Raw;
-      pInflow = "BYBIT_SPOT";
-    } else if (
       row.Upbit_Price &&
       (row.Upbit === "O" || row.Listed_Exchanges?.includes("UPBIT"))
     ) {
       const hasOvs =
         row.Binance === "O" ||
         row.Binance_Futures === "O" ||
-        row.Bybit === "O" ||
-        row.Bybit_Futures === "O" ||
         (row.Listed_Exchanges &&
           row.Listed_Exchanges.some(
-            (e) => e.includes("BINANCE") || e.includes("BYBIT"),
+            (e) => e.includes("BINANCE"),
           ));
       pPrice =
         hasOvs && row.Price_Raw
@@ -159,11 +138,9 @@ export function syncRowPrioritizedMetrics(row) {
       const hasOvs =
         row.Binance === "O" ||
         row.Binance_Futures === "O" ||
-        row.Bybit === "O" ||
-        row.Bybit_Futures === "O" ||
         (row.Listed_Exchanges &&
           row.Listed_Exchanges.some(
-            (e) => e.includes("BINANCE") || e.includes("BYBIT"),
+            (e) => e.includes("BINANCE"),
           ));
       pPrice =
         hasOvs && row.Price_Raw
@@ -188,6 +165,25 @@ export function syncRowPrioritizedMetrics(row) {
               : parseFloat(row.utc0_open_KRW)
             : row.utc0_open_Raw;
       pInflow = "BITHUMB";
+    } else if (
+      row.Bybit_Price_Futures &&
+      row.Listed_Exchanges?.includes("BYBIT_FUTURES")
+    ) {
+      pPrice = row.Bybit_Price_Futures;
+      p24h = row.Change_24h_Bybit_Futures ?? row.Change_24h_Bybit ?? row.Change_24h_Raw;
+      pToday = row.Change_Today_Bybit_Futures ?? row.Change_Today_Bybit ?? row.Change_Today_Raw;
+      pOpen = row.futures_utc0_open_Raw ?? row.utc0_open_Raw;
+      pInflow = "BYBIT_FUTURES";
+    } else if (
+      row.Bybit_Price_Spot &&
+      (row.Listed_Exchanges?.includes("BYBIT_SPOT") ||
+        row.Listed_Exchanges?.includes("BYBIT"))
+    ) {
+      pPrice = row.Bybit_Price_Spot;
+      p24h = row.Change_24h_Bybit ?? row.Change_24h_Raw;
+      pToday = row.Change_Today_Bybit ?? row.Change_Today_Raw;
+      pOpen = row.spot_utc0_open_Raw ?? row.utc0_open_Raw;
+      pInflow = "BYBIT_SPOT";
     }
   }
   // pOpen = row.utc0_open_Raw;

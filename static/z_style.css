@@ -309,8 +309,8 @@ body.theme-binance {
   --accent-rgb: 240, 185, 11;
   --upbit-blue: #1261c4;
   --binance-gold: #f0b90b;
-  --row-bg: #14161c;
-  --row-hover-bg: #1e222a;
+  --row-bg: #1e222d;
+  --row-hover-bg: #282d3b;
   /* 🚀 다크테마 메인 대시보드 바깥 그림자 */
   --dashboard-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   /* 🚀 다크테마 모바일 하단 네비게이션 바 그림자 */

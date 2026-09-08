@@ -330,21 +330,25 @@ export const realUpdateHeaderDisplay = (
     const hasSpot =
       row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE");
     if (hasFutures) {
-      n24 = row.Change_24h_Futures || row.Change_24h_Bybit_Futures || row.Change_24h_Bybit || row.Change_24h_Raw || 0;
-      nDay = row.Change_Today_Futures || row.Change_Today_Bybit_Futures || row.Change_Today_Bybit || row.Change_Today_Raw || 0;
+      n24 = row.Change_24h_Futures || row.Change_24h_Raw || 0;
+      nDay = row.Change_Today_Futures || row.Change_Today_Raw || 0;
     } else if (hasSpot) {
-      n24 = (row.Change_24h_Spot ?? row.Change_24h_Binance) ?? row.Change_24h_Bybit ?? row.Change_24h_Raw ?? 0;
-      nDay = (row.Change_Today_Spot ?? row.Change_Today_Binance) ?? row.Change_Today_Bybit ?? row.Change_Today_Raw ?? 0;
+      n24 = (row.Change_24h_Spot ?? row.Change_24h_Binance) ?? row.Change_24h_Raw ?? 0;
+      nDay = (row.Change_Today_Spot ?? row.Change_Today_Binance) ?? row.Change_Today_Raw ?? 0;
+    } else if (row.Upbit === "O" || row.Listed_Exchanges?.includes("UPBIT")) {
+      n24 = row.Change_24h_Upbit ?? row.Change_24h_Raw ?? 0;
+      nDay = row.Change_Today_Upbit ?? row.Change_Today_Raw ?? 0;
+    } else if (row.Bithumb === "O" || row.Listed_Exchanges?.includes("BITHUMB")) {
+      n24 = row.Change_24h_Bithumb ?? row.Change_24h_Raw ?? 0;
+      nDay = row.Change_Today_Bithumb ?? row.Change_Today_Raw ?? 0;
     } else {
       n24 =
-        row.Change_24h_Upbit ??
-        row.Change_24h_Bithumb ??
+        row.Change_24h_Bybit_Futures ??
         row.Change_24h_Bybit ??
         row.Change_24h_Raw ??
         0;
       nDay =
-        row.Change_Today_Upbit ??
-        row.Change_Today_Bithumb ??
+        row.Change_Today_Bybit_Futures ??
         row.Change_Today_Bybit ??
         row.Change_Today_Raw ??
         0;

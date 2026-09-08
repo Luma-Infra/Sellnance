@@ -162,54 +162,45 @@ export function getRowDisplayMetrics(row, isKrwMode = null, rate = null) {
     if (binanceP !== null && binanceP > 0) {
       activeExchange = "binance";
       displayPrice = binanceP;
-    } else if (bybitP !== null && bybitP > 0) {
-      activeExchange = "bybit";
-      displayPrice = bybitP;
     } else if (upbitP !== null && upbitP > 0) {
       activeExchange = "upbit";
       displayPrice = rate > 0 ? upbitP / rate : upbitP;
     } else if (bithumbP !== null && bithumbP > 0) {
       activeExchange = "bithumb";
       displayPrice = rate > 0 ? bithumbP / rate : bithumbP;
+    } else if (bybitP !== null && bybitP > 0) {
+      activeExchange = "bybit";
+      displayPrice = bybitP;
     } else {
       activeExchange = "binance";
       displayPrice = row.Price_Raw || 0;
     }
   }
 
-  // 🚀 [등락률 엄격 분리] 선물 코인은 오직 선물 등락률만, 현물은 오직 현물 등락률만 반영
+  // 🚀 [등락률 엄격 분리] activeExchange 기준으로 해당 거래소의 등락률을 1:1 매핑
   let n24h = 0;
   let nDay = 0;
 
-  if (isFutures) {
-    n24h =
-      row.Change_24h_Futures ||
-      row.Change_24h_Bybit_Futures ||
-      row.Change_24h_Bybit ||
-      row.Change_24h_Raw ||
-      row.Change_24h ||
-      0;
-    nDay =
-      row.Change_Today_Futures ||
-      row.Change_Today_Bybit_Futures ||
-      row.Change_Today_Bybit ||
-      row.Change_Today_Raw ||
-      row.Change_Today ||
-      0;
-  } else {
-    if (activeExchange === "upbit") {
-      n24h = row.Change_24h_Upbit || row.Change_24h_Raw || 0;
-      nDay = row.Change_Today_Upbit || row.Change_Today_Raw || 0;
-    } else if (activeExchange === "bithumb") {
-      n24h = row.Change_24h_Bithumb || row.Change_24h_Raw || 0;
-      nDay = row.Change_Today_Bithumb || row.Change_Today_Raw || 0;
-    } else if (activeExchange === "bybit") {
-      n24h = row.Change_24h_Bybit || row.Change_24h_Raw || 0;
-      nDay = row.Change_Today_Bybit || row.Change_Today_Raw || 0;
+  if (activeExchange === "upbit") {
+    n24h = row.Change_24h_Upbit || row.Change_24h_Raw || 0;
+    nDay = row.Change_Today_Upbit || row.Change_Today_Raw || 0;
+  } else if (activeExchange === "bithumb") {
+    n24h = row.Change_24h_Bithumb || row.Change_24h_Raw || 0;
+    nDay = row.Change_Today_Bithumb || row.Change_Today_Raw || 0;
+  } else if (activeExchange === "binance") {
+    if (isFutures) {
+      n24h = row.Change_24h_Futures || row.Change_24h_Raw || 0;
+      nDay = row.Change_Today_Futures || row.Change_Today_Raw || 0;
     } else {
       n24h = (row.Change_24h_Spot ?? row.Change_24h_Binance) || row.Change_24h_Raw || 0;
       nDay = (row.Change_Today_Spot ?? row.Change_Today_Binance) || row.Change_Today_Raw || 0;
     }
+  } else if (activeExchange === "bybit") {
+    n24h = row.Change_24h_Bybit_Futures || row.Change_24h_Bybit || row.Change_24h_Raw || 0;
+    nDay = row.Change_Today_Bybit_Futures || row.Change_Today_Bybit || row.Change_Today_Raw || 0;
+  } else {
+    n24h = row.Change_24h_Raw || 0;
+    nDay = row.Change_Today_Raw || 0;
   }
 
   return {
