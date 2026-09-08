@@ -444,60 +444,33 @@ export function startRealtimeCandle(
   if (needUpbit) {
     const upbitSym = (row?.Upbit_Symbol || row?.Symbol || pureSymbol).toUpperCase();
     const upbitCode = `KRW-${upbitSym}`;
-    const isConnectingOrOpen = store.upbitChartWs && (store.upbitChartWs.readyState === WebSocket.CONNECTING || store.upbitChartWs.readyState === WebSocket.OPEN);
+    store.currentUpbitStream = upbitCode;
 
-    const now = Date.now();
-    const wsCooldown = store._upbitWsCooldownUntil || 0;
-    const canAttemptConnect = now > wsCooldown;
+    // 테이블 단일 소켓(feed_upbit)을 통해 차트 틱 수신 (중복 연결 429 원천 차단)
+    const upbitHandler = getUpbitMessageHandler(symbol, broadcastCandleUpdate);
+    window._upbitChartHandler = upbitHandler;
 
-    if (!isConnectingOrOpen && canAttemptConnect) {
-      if (store.upbitChartWs) {
-        try {
-          store.upbitChartWs.onopen = null;
-          store.upbitChartWs.onmessage = null;
-          store.upbitChartWs.onerror = null;
-          store.upbitChartWs.onclose = null;
-          store.upbitChartWs.close();
-        } catch (e) { }
-      }
-      store.currentUpbitStream = upbitCode;
-      try {
-        const ws = new WebSocket("wss://api.upbit.com/websocket/v1");
-        store.upbitChartWs = ws;
-        ws.onopen = () => {
-          if (store.upbitChartWs !== ws) return;
-          store._upbitWsCooldownUntil = 0;
-          const activeCode = store.currentUpbitStream || upbitCode;
-          try {
-            ws.send(JSON.stringify([{ ticket: "sellnance_chart_" + getWsId() }, { type: "ticker", codes: [activeCode] }]));
-          } catch (e) { }
-        };
-        ws.onerror = (err) => {
-          store._upbitWsDelay = Math.min(30000, (store._upbitWsDelay || 5000) * 1.5);
-          store._upbitWsCooldownUntil = Date.now() + store._upbitWsDelay;
-        };
-        ws.onclose = () => {
-          if (store.upbitChartWs === ws) {
-            store.upbitChartWs = null;
-            store.currentUpbitStream = null;
-            store._upbitWsDelay = Math.min(30000, (store._upbitWsDelay || 5000) * 1.5);
-            store._upbitWsCooldownUntil = Date.now() + store._upbitWsDelay;
-          }
-        };
-      } catch (e) {
-        store._upbitWsDelay = Math.min(30000, (store._upbitWsDelay || 5000) * 1.5);
-        store._upbitWsCooldownUntil = Date.now() + store._upbitWsDelay;
-      }
-    } else if (isConnectingOrOpen && store.currentUpbitStream !== upbitCode) {
-      store.currentUpbitStream = upbitCode;
-      if (store.upbitChartWs.readyState === WebSocket.OPEN) {
-        try {
-          store.upbitChartWs.send(JSON.stringify([{ ticket: "sellnance_chart_" + getWsId() }, { type: "ticker", codes: [upbitCode] }]));
-        } catch (e) { }
-      }
-    }
     if (store.upbitChartWs) {
-      store.upbitChartWs.onmessage = getUpbitMessageHandler(symbol, broadcastCandleUpdate);
+      try {
+        store.upbitChartWs.onopen = null;
+        store.upbitChartWs.onmessage = null;
+        store.upbitChartWs.onerror = null;
+        store.upbitChartWs.onclose = null;
+        store.upbitChartWs.close();
+        store.upbitChartWs = null;
+      } catch (e) { }
+    }
+  } else {
+    window._upbitChartHandler = null;
+    if (store.upbitChartWs) {
+      try {
+        store.upbitChartWs.onopen = null;
+        store.upbitChartWs.onmessage = null;
+        store.upbitChartWs.onerror = null;
+        store.upbitChartWs.onclose = null;
+        store.upbitChartWs.close();
+        store.upbitChartWs = null;
+      } catch (e) { }
     }
   }
 

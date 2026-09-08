@@ -344,18 +344,25 @@ export function updateRealtimeKimchiThrottled(liveData, symbol, chartTime) {
 // 🚀 업비트 실시간 웹소켓 핸들러 팩토리
 export function getUpbitMessageHandler(symbol, broadcastCandleUpdate) {
   return async (e) => {
-    if (e.target !== store.upbitChartWs) return;
     const btnSim = document.getElementById("tab-btn-sim");
     if (btnSim && btnSim.classList.contains("active")) return;
 
     if (store.isFetchingChart || window.isFetchingChart || store.isLoadingMoreHistory || store.isRestoringTab) return;
+
+    let res = null;
+    try {
+      if (e && typeof e.trade_price !== "undefined" && e.code) {
+        res = e;
+      } else if (e && e.data) {
+        const text = typeof e.data === "string" ? e.data : await e.data.text();
+        res = JSON.parse(text);
+      }
+    } catch (err) { }
+    if (!res || !res.code) return;
+
     if (store.currentChartMarket !== "UPBIT") {
       // 🚀 현재 탭이 업비트가 아닌 경우(예: 바이낸스/바이비트),
       // 메인 차트 데이터(store.mainData)를 오염시키지 않고 오직 김프 계산을 위한 실시간 시세 버퍼 업데이트 및 김프 갱신만 수행합니다.
-      const text = typeof e.data === "string" ? e.data : await e.data.text();
-      const res = JSON.parse(text);
-      if (!res.code) return;
-
       const tickSymbol = res.code.toUpperCase();
       if (!isMatchingCurrentSymbol(tickSymbol)) return;
 
@@ -371,10 +378,6 @@ export function getUpbitMessageHandler(symbol, broadcastCandleUpdate) {
       }
       return;
     }
-
-    const text = typeof e.data === "string" ? e.data : await e.data.text();
-    const res = JSON.parse(text);
-    if (!res.code) return;
 
     const tickSymbol = res.code.toUpperCase();
 

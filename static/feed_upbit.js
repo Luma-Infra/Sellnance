@@ -102,6 +102,11 @@ export function startUpbitFeed() {
         const isFutures = store.currentMarket === "FUTURES";
         window.renderRealtimeRow(ticker.code, normalizedTicker, isFutures);
       }
+
+      // 실시간 차트 캔들 및 김프 갱신으로 직결 (단일 소켓 공유)
+      if (typeof window._upbitChartHandler === "function") {
+        window._upbitChartHandler(ticker);
+      }
     } catch (err) { }
   };
 }

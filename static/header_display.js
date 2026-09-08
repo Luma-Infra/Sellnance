@@ -259,7 +259,7 @@ export const realUpdateHeaderDisplay = (
   }
 
   const formattedMainPrice = isMainKrw
-    ? `${Number(displayPrice).toLocaleString(undefined, { maximumFractionDigits: getKrwPrecision(displayPrice) })} ₩`
+    ? `${Number(displayPrice).toLocaleString(undefined, { maximumFractionDigits: getKrwPrecision(displayPrice) })}`
     : (window.formatSmartPrice ? window.formatSmartPrice(displayPrice, pNormalized) : formatSmartPrice(displayPrice, pNormalized));
 
   if (dom.topEls) {
