@@ -148,7 +148,7 @@
         : '';
 
       const mutationLogs = (row._mutationHistory || []).map(m => `  • [${m.time}] ${m.prop}: ${typeof m.from === 'number' ? m.from.toFixed(4) : m.from} ➔ ${typeof m.to === 'number' ? m.to.toFixed(4) : m.to} (${m.caller})`).join('\n');
-      
+
       const logLine = `[${ticker}] (${state.Type || ''})
 - 가격: ${state.Price} (${state.PriceFormula}) ${state.IsSpike ? '🚨 비정상 유입!' : ''} ${state.IsRetrograde ? '⚠️ 과거 캐시 역행!' : ''}
 - 24h: ${state.Chg24h}
@@ -302,7 +302,7 @@
       const cacheKey = isFut ? `${baseSym}_FUTURES` : baseSym;
       const bePrice = backendOpenPrices[cacheKey];
       const fePrice = row.utc0_open_Raw;
-      
+
       let openPriceDiff = false;
       if (bePrice && fePrice && parseFloat(bePrice) > 0 && parseFloat(fePrice) > 0) {
         if (Math.abs(parseFloat(bePrice) - parseFloat(fePrice)) > 0.00001) {
@@ -317,7 +317,7 @@
       let color = '#aaa';
 
       if (isStalled) {
-        msg = `🚨정체:${(priceStallTime/1000).toFixed(0)}s`;
+        msg = `🚨정체:${(priceStallTime / 1000).toFixed(0)}s`;
         color = '#f43f5e';
       } else if (row._simultaneousSetters) {
         msg = `⚠️동시:${row._simultaneousSetters.slice(0, 2).join(',')}`;
@@ -404,7 +404,7 @@
           configurable: true,
           enumerable: true
         });
- 
+
         Object.defineProperty(row, 'Change_Today_Raw', {
           get() { return _todayRawVal; },
           set(newVal) {
@@ -416,7 +416,7 @@
             else if (stack.includes('feed_upbit.js')) caller = 'feed_upbit.js';
             else if (stack.includes('table_api.js')) caller = 'table_api.js';
             else caller = stack.split('\n')[2]?.trim() || 'unknown';
- 
+
             if (newVal !== _todayRawVal) {
               recordMutation('Change_Today_Raw', _todayRawVal, newVal, caller);
               if (getTop5().has(row.Ticker)) {
@@ -429,7 +429,7 @@
           configurable: true,
           enumerable: true
         });
- 
+
         Object.defineProperty(row, 'Kimchi_Raw', {
           get() { return _kimchiRawVal; },
           set(newVal) {
@@ -442,7 +442,7 @@
             else if (stack.includes('table_api.js')) caller = 'table_api.js';
             else if (stack.includes('stream_korea.js')) caller = 'stream_korea.js';
             else caller = stack.split('\n')[2]?.trim() || 'unknown';
- 
+
             if (newVal !== _kimchiRawVal) {
               recordMutation('Kimchi_Raw', _kimchiRawVal, newVal, caller);
               if (_kimchiRawVal !== undefined && newVal !== null && _kimchiRawVal !== null) {
@@ -509,13 +509,13 @@
     }
     return res;
   };
- 
+
   const _priceOrig = window.updateRowPriceDisplay;
   window.updateRowPriceDisplay = function (rowEl, row) {
     if (row && getTop5().has(row.Ticker)) {
       const src = getSource(new Error().stack);
       const prevState = traceMap.get(row.Ticker) || {};
- 
+
       const market = store.currentMarket || "ALL";
       let priceVal = row.Price_Raw ?? 0;
       let priceSrc = `Raw:${f(row.Price_Raw)}`;
@@ -532,12 +532,12 @@
         priceVal = row.Bybit_Price_Futures ?? priceVal;
         priceSrc = `Bybit_Fut:${f(row.Bybit_Price_Futures)}`;
       }
- 
+
       const anomalyInfo = detectAnomaly(row.Ticker, priceVal, rowEl, src);
- 
+
       let chg24 = row.Change_24h_Raw ?? 0;
       let chgToday = row.Change_Today_Raw ?? 0;
- 
+
       traceMap.set(row.Ticker, {
         Type: 'PRC (가격만)',
         Price: f(priceVal),

@@ -376,7 +376,7 @@ export async function loadMoreHistory() {
       "absolute left-1/2 top-4 z-[120] flex items-center gap-2 px-3 py-1.5 rounded-full bg-theme-panel/90 border border-theme-border shadow-lg text-[11px] font-medium text-theme-text opacity-0 pointer-events-none transition-all duration-300 transform -translate-x-1/2 scale-95";
     lazyIndicator.innerHTML = `
       <div class="w-3.5 h-3.5 border-2 border-theme-accent border-t-transparent rounded-full animate-spin"></div>
-      <span id="chart-lazy-loading-text">과거 데이터 불러오는 중...</span>
+      <span id="chart-lazy-loading-text">과거 캔들 불러오는 중...</span>
     `;
     const wrapper = document.getElementById("chart-wrapper");
     if (wrapper) wrapper.appendChild(lazyIndicator);
@@ -696,7 +696,7 @@ export async function loadMoreHistory() {
 
     // Xconsole.log(`✅ [Lazy Load] 과거 캔들 ${N}개 추가 결합 완료!`);
   } catch (err) {
-    console.error("🚨 과거 데이터 Lazy Loading 실패:", err);
+    // Xconsole.error("🚨 과거 데이터 Lazy Loading 실패:", err);
   } finally {
     store.isLoadingMoreHistory = false;
     lazyIndicator.classList.remove("opacity-100", "scale-100");
