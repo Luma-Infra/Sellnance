@@ -1,12 +1,12 @@
 # app.py
 from starlette.middleware.gzip import GZipMiddleware
+from fastapi import FastAPI, Request, Body, Response
 from datetime import datetime, timezone, timedelta
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from tvDatafeed import TvDatafeed, Interval
-from fastapi import FastAPI, Request, Body
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from pathlib import Path
@@ -15,8 +15,8 @@ import webbrowser
 import threading
 import requests
 import aiohttp
-import hashlib
 import asyncio
+import hashlib
 import pytz
 import json
 import time
@@ -108,7 +108,7 @@ builtins.print = safe_print
 from . import trace_hooking
 from . import api_manager
 from . import config_manager
-from .adapter import ExchangeAdapter  # 🔌 통합 지휘소 영입
+from .adapter import ExchangeAdapter  # 통합 지휘소 영입
 from .candle_proxy import (
     fetch_candles_guarded,
 )  # 🛡️ 캔들 3중 방어 엔진 (세마포어/합승/캐시)
@@ -126,6 +126,14 @@ async def lifespan(app: FastAPI):
 
     # 상장일 데이터 시스템 초기화 (LISTING_DATES 메모리 로드 + 바이낸스 API 콜)
     threading.Thread(target=_init_listing_dates, daemon=True).start()
+
+    # ⧆️ 트레이딩뷰 실시간 멀티플렉서 사전 웜업 (빗썸/환율 첫 호출 0초 서빙 준비)
+    try:
+        from .candle_proxy import PERSISTENT_TV_CLIENT
+
+        asyncio.create_task(PERSISTENT_TV_CLIENT._ensure_connected())
+    except Exception:
+        pass
 
     # 로컬(127.0.0.1) 환경이고, 아직 브라우저 안 열었을 때만 실행
     if not os.environ.get("RAILWAY_STATIC_URL") and not os.environ.get(
@@ -176,20 +184,48 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+class CachedStaticFiles(StaticFiles):
+    """
+    정적 자산(폰트, SVG 이미지, Vite 빌드 번들 등)에 브라우저 영구 캐시(Cache-Control: immutable)를 주입하여
+    다음 접속부터 0ms 디스크 캐시로 즉각 로딩을 보장하는 정적 파일 핸들러.
+    """
+
+    def file_response(self, *args, **kwargs) -> Response:
+        resp = super().file_response(*args, **kwargs)
+        path_str = str(kwargs.get("path") or (args[0] if args else "")).lower()
+        if any(
+            path_str.endswith(ext)
+            for ext in [".woff2", ".woff", ".svg", ".png", ".jpg", ".webp", ".ico"]
+        ):
+            resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        elif "/assets/" in str(self.directory) or "\\assets\\" in str(self.directory):
+            resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        else:
+            resp.headers["Cache-Control"] = "public, max-age=3600"
+        return resp
+
+
 if IS_PRODUCTION and DIST_DIR.exists():
     print("🚀 [ENV] Production (Railway) - Serving from /dist")
-    app.mount("/assets", StaticFiles(directory=str(DIST_DIR / "assets")), name="assets")
+    app.mount(
+        "/assets",
+        CachedStaticFiles(directory=str(DIST_DIR / "assets")),
+        name="assets",
+    )
     STATIC_DIR = BASE_DIR / "static"
-    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+    app.mount("/static", CachedStaticFiles(directory=str(STATIC_DIR)), name="static")
     templates = Jinja2Templates(directory=str(DIST_DIR))
 else:
     print("🛠️ [ENV] Local Dev - Serving raw templates/ and static/")
     if (DIST_DIR / "assets").exists():
         app.mount(
-            "/assets", StaticFiles(directory=str(DIST_DIR / "assets")), name="assets"
+            "/assets",
+            CachedStaticFiles(directory=str(DIST_DIR / "assets")),
+            name="assets",
         )
     STATIC_DIR = BASE_DIR / "static"
-    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+    app.mount("/static", CachedStaticFiles(directory=str(STATIC_DIR)), name="static")
     templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 
@@ -760,7 +796,9 @@ async def send_feedback(data: dict = Body(...)):
 
     env_clean = environment.replace("💻 ", "").replace("📱 ", "")
     email_tag = f" • ✉️ {email}" if email else ""
-    footer_text = f"📍 {symbol} (UID: {uid}) • 🖥️ {env_clean} • 📐 {resolution} • {now_kst_str}"
+    footer_text = (
+        f"📍 {symbol} (UID: {uid}) • 🖥️ {env_clean} • 📐 {resolution} • {now_kst_str}"
+    )
 
     payload = {
         "username": "Sellnance Feedback",

@@ -15,8 +15,8 @@ from . import api_manager
 
 CF_WORKER_PROXY_URL = os.getenv("CF_WORKER_PROXY_URL", "").strip()
 
-# 🚀 [500명 방어 엔진]
-CANDLE_SEMAPHORE = asyncio.Semaphore(20)
+# 🚀 [500명 방어 엔진 (I/O 병목 해제 50개 톨게이트)]
+CANDLE_SEMAPHORE = asyncio.Semaphore(50)
 GLOBAL_AIO_SESSION = None
 IN_FLIGHT_CANDLE_REQUESTS = {}
 CANDLE_CACHE = {}
@@ -87,7 +87,7 @@ def get_candle_ttl(interval: str, to: str = "") -> float:
 class UpbitTokenBucketLimiter:
     def __init__(self, capacity: float = 8.0, refill_rate: float = 8.0):
         self.capacity = capacity  # 최대 버스트 허용량 (업비트 10req/s 한도 내 8개)
-        self.tokens = capacity    # 초기 토큰 가득 참
+        self.tokens = capacity  # 초기 토큰 가득 참
         self.refill_rate = refill_rate  # 초당 토큰 충전량
         self.last_refill = time.time()
         self.cooldown_until = 0.0
@@ -109,7 +109,9 @@ class UpbitTokenBucketLimiter:
                 else:
                     # 2. 토큰 충전 계산
                     elapsed = now - self.last_refill
-                    self.tokens = min(self.capacity, self.tokens + elapsed * self.refill_rate)
+                    self.tokens = min(
+                        self.capacity, self.tokens + elapsed * self.refill_rate
+                    )
                     self.last_refill = now
 
                     # 3. 토큰이 1개 이상이면 대기 없이 즉시 통과 (0ms)
@@ -278,12 +280,11 @@ class PersistentTVClient:
                     )
                 )
 
-                # Future 완료 대기 (최대 2.0초)
-                candles = await asyncio.wait_for(fut, timeout=2.0)
+                # Future 완료 대기 (최대 2.8초 단일 타임아웃)
+                candles = await asyncio.wait_for(fut, timeout=2.8)
                 return candles if candles else []
             except Exception:
-                # 타임아웃 또는 실패 시 1회 직통 aiohttp 폴백
-                return await get_tv_candles_aiohttp(symbol, timeframe, n_bars)
+                return []
             finally:
                 # [GC 원자성] 퓨처 맵에서 원자적 제거 + 트레이딩뷰 서버 세션 즉시 삭제
                 self.pending_futures.pop(chart_session, None)
@@ -560,9 +561,14 @@ async def _raw_fetch_candles(
         session = await get_aio_session()
         data = None
         current_target = fetch_url
+        req_timeout = (
+            aiohttp.ClientTimeout(total=2.5, connect=1.5)
+            if exchange == "bithumb"
+            else None
+        )
         for attempt in range(3):
             try:
-                async with session.get(current_target) as resp:
+                async with session.get(current_target, timeout=req_timeout) as resp:
                     if resp.status == 429:
                         if exchange == "upbit":
                             UPBIT_RATE_LIMITER.trigger_cooldown(1.5)
