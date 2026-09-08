@@ -687,14 +687,11 @@ export async function loadMoreHistory() {
             });
           }
         } catch (setErr) {
-          console.warn(
-            "🚨 Lazy Load 내부 렌더링/범위조정 예외 우회 완료:",
-            setErr,
-          );
+          // Xconsole.warn("🚨 Lazy Load 내부 렌더링/범위조정 예외 우회 완료:",setErr,);
         }
       });
     } catch (candleErr) {
-      console.warn("🚨 Lazy Load 데이터 세팅 예외 우회 완료:", candleErr);
+      // Xconsole.warn("🚨 Lazy Load 데이터 세팅 예외 우회 완료:", candleErr);
     }
 
     // Xconsole.log(`✅ [Lazy Load] 과거 캔들 ${N}개 추가 결합 완료!`);

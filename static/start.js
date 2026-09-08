@@ -803,35 +803,52 @@ async function loadStartPreviewKlines(tf) {
 }
 
 let startQvLastUpdateTimes = {};
+let startQvCurrentStreams = [];
 
-// 🌐 실시간 웹소켓 가동 (🚀 시작 화면 최적화: 1초 쓰로틀링 적용)
+// 🌐 실시간 웹소켓 가동 (🚀 시작 화면 최적화: 1초 쓰로틀링 + 단일 소켓 구독 갱신)
 function startStartPreviewWebSocket(tf) {
-  if (startQvWs) {
-    const oldWs = startQvWs;
-    oldWs.onmessage = null;
-    oldWs.onclose = null;
-    oldWs.onerror = null;
-    if (oldWs.readyState === WebSocket.CONNECTING) {
-      oldWs.onopen = () => {
-        try {
-          oldWs.close(1000, "Normal Closure");
-        } catch (e) { }
-      };
-    } else {
+  const newStreams = START_ASSETS.map(
+    (a) => `${a.symbol.toLowerCase()}@kline_${tf}`,
+  );
+  const streamJoined = newStreams.join("/");
+
+  if (startQvWs && (startQvWs.readyState === WebSocket.OPEN || startQvWs.readyState === WebSocket.CONNECTING)) {
+    if (startQvWs.readyState === WebSocket.OPEN) {
       try {
-        oldWs.close(1000, "Normal Closure");
+        if (startQvCurrentStreams.length > 0) {
+          startQvWs.send(JSON.stringify({ method: "UNSUBSCRIBE", params: startQvCurrentStreams, id: Date.now() }));
+        }
+        startQvWs.send(JSON.stringify({ method: "SUBSCRIBE", params: newStreams, id: Date.now() + 1 }));
       } catch (e) { }
     }
+    startQvCurrentStreams = newStreams;
+    return;
+  }
+
+  if (startQvWs) {
+    try {
+      startQvWs.onopen = null;
+      startQvWs.onmessage = null;
+      startQvWs.onerror = null;
+      startQvWs.onclose = null;
+      startQvWs.close();
+    } catch (e) { }
     startQvWs = null;
   }
+
+  startQvCurrentStreams = newStreams;
   startQvLastUpdateTimes = {};
   try {
-    const streams = START_ASSETS.map(
-      (a) => `${a.symbol.toLowerCase()}@kline_${tf}`,
-    ).join("/");
     startQvWs = new WebSocket(
-      `wss://stream.binance.com:9443/stream?streams=${streams}`,
+      `wss://stream.binance.com:9443/stream?streams=${streamJoined}`,
     );
+    startQvWs.onopen = () => {
+      if (startQvWs && startQvCurrentStreams.length > 0) {
+        try {
+          startQvWs.send(JSON.stringify({ method: "SUBSCRIBE", params: startQvCurrentStreams, id: Date.now() }));
+        } catch (e) { }
+      }
+    };
     startQvWs.onmessage = (e) => {
       try {
         const res = JSON.parse(e.data);
@@ -868,6 +885,11 @@ function startStartPreviewWebSocket(tf) {
           if (ovEl) ovEl.innerText = `$${candle.close.toLocaleString()}`;
         }
       } catch (err) { }
+    };
+    startQvWs.onerror = () => { };
+    startQvWs.onclose = () => {
+      startQvWs = null;
+      startQvCurrentStreams = [];
     };
   } catch (err) { }
 }

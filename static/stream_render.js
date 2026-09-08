@@ -38,7 +38,7 @@ function flushRealtimeRender() {
             window.updateRealtimeCountdown(Date.now(), Number(currentCandle.close));
         }
     } catch (candleUpdateErr) {
-        console.warn("🚨 candleSeries.update 예외 우회 완료:", candleUpdateErr);
+        // Xconsole.warn("🚨 candleSeries.update 예외 우회 완료:", candleUpdateErr);
     }
 
     // 2️⃣ 하단 거래량(Volume) 히스토그램 업데이트
@@ -83,7 +83,7 @@ function flushRealtimeRender() {
                 }
             }
         } catch (e) {
-            console.warn("🚨 volumeSeries.update 예외 발생, 완전 멸균 후 재바인딩 복구 가동:", e);
+            // Xconsole.warn("🚨 volumeSeries.update 예외 발생, 완전 삭제 후 재바인딩 복구 가동:", e);
             restoreVolumeDataSterilized();
         }
     }

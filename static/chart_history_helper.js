@@ -189,6 +189,6 @@ export function determineListingDate(rawMain, rowInfo, pureBase, exchangeFlags) 
       }
     }
   } catch (e) {
-    console.warn("Listing Date Update Error:", e);
+    // Xconsole.warn("Listing Date Update Error:", e);
   }
 }

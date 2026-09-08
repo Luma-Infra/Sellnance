@@ -442,7 +442,7 @@ export async function lazyRenderKimchiData(params) {
         try {
           if (typeof applyChartLayout === "function") applyChartLayout();
         } catch (layoutErr) {
-          console.warn("🚨 fetchHistory 내 applyChartLayout 예외 우회:", layoutErr);
+          // Xconsole.warn("🚨 fetchHistory 내 applyChartLayout 예외 우회:", layoutErr);
         }
       });
 
@@ -612,7 +612,7 @@ export async function lazyRenderKimchiData(params) {
             if (typeof window.syncPriceScaleWidths === "function")
               setTimeout(window.syncPriceScaleWidths, 50);
           } catch (setErr) {
-            console.warn("🚨 kimchiSeries.setData 렌더링 예외 우회 완료:", setErr);
+            // Xconsole.warn("🚨 kimchiSeries.setData 렌더링 예외 우회 완료:", setErr);
             hideKimchiLoading();
           }
         });

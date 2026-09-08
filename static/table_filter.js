@@ -355,7 +355,7 @@ export function saveControlPanelSession() {
       JSON.stringify(data),
     );
   } catch (e) {
-    console.warn("Failed to save control panel session:", e);
+    // Xconsole.warn("Failed to save control panel session:", e);
   }
 }
 

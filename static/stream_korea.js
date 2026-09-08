@@ -278,7 +278,7 @@ export function updateRealtimeKimchi(liveData, symbol, chartTime) {
           }
         }
       } catch (e) {
-        console.warn("🚨 kimchiSeries.update 예외 발생, vol-pane 자동 복구 시도:", e);
+        // Xconsole.warn("🚨 kimchiSeries.update 예외 발생, vol-pane 자동 복구 시도:", e);
         if (store.kimchiSeries && store.kimchiData && store.kimchiData.length > 0) {
           // 김프 데이터 내부의 value가 null이 되지 않도록 0층 방어벽 가동
           const sterileKimchiData = store.kimchiData.map(item => ({
@@ -300,7 +300,7 @@ export function updateRealtimeKimchi(liveData, symbol, chartTime) {
   // (축 너비는 윈도우 리사이즈 및 탭 전환 시에만 동기화되도록 분리)
   const totalPerf = performance.now() - perfStart;
   if (ENABLE_PERF_LOG && totalPerf > 1.0) {
-    console.warn(`[Perf] updateRealtimeKimchi took ${totalPerf.toFixed(2)}ms (RowFind: ${tFind.toFixed(2)}ms, ChartUpdate: ${tUpdate.toFixed(2)}ms, DomUpdate: ${tDom.toFixed(2)}ms, WidthSync: ${tSync.toFixed(2)}ms)`);
+    // Xconsole.warn(`[Perf] updateRealtimeKimchi took ${totalPerf.toFixed(2)}ms (RowFind: ${tFind.toFixed(2)}ms, ChartUpdate: ${tUpdate.toFixed(2)}ms, DomUpdate: ${tDom.toFixed(2)}ms, WidthSync: ${tSync.toFixed(2)}ms)`);
   }
 }
 

@@ -798,10 +798,7 @@ export async function initChart() {
                   }
                 }, 50);
               } catch (applyErr) {
-                console.warn(
-                  "🚨 차트 간 applyOptions 레이아웃 동기화 예외 방어 완료:",
-                  applyErr,
-                );
+                // Xconsole.warn("🚨 차트 간 applyOptions 레이아웃 동기화 예외 방어 완료:", applyErr,);
               }
             });
           }
@@ -994,7 +991,7 @@ export async function initChart() {
       } catch (err) { }
       const totalPerf = performance.now() - perfStart;
       if (ENABLE_PERF_LOG && totalPerf > 1.5) {
-        console.warn(`[Perf] syncCrosshair took ${totalPerf.toFixed(2)}ms`);
+        // Xconsole.warn(`[Perf] syncCrosshair took ${totalPerf.toFixed(2)}ms`);
       }
     });
   };
@@ -1321,10 +1318,7 @@ export function updateChartTheme() {
           : store.volumeData,
       );
     } catch (volThemeErr) {
-      console.warn(
-        "🚨 volumeSeries.setData in updateChartTheme 예외 우회 완료:",
-        volThemeErr,
-      );
+      // Xconsole.warn("🚨 volumeSeries.setData in updateChartTheme 예외 우회 완료:", volThemeErr,);
     }
   }
 

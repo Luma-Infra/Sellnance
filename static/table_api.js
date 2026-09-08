@@ -278,7 +278,7 @@ export async function loadTableData(force = false, silent = false) {
         hasCache = true;
       }
     } catch (e) {
-      console.warn("로컬 스토리지 캐시 파싱 에러:", e);
+      // Xconsole.warn("로컬 스토리지 캐시 파싱 에러:", e);
     }
   }
 
@@ -314,7 +314,7 @@ export async function loadTableData(force = false, silent = false) {
           JSON.stringify(result),
         );
       } catch (e) {
-        console.warn("로컬 캐시 쓰기 실패:", e);
+        // Xconsole.warn("로컬 캐시 쓰기 실패:", e);
       }
     }, 500);
 

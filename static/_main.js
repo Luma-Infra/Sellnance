@@ -94,7 +94,7 @@ if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
       .register("/static/sw.js")
-      .then((reg) => console.log("✅ PWA SW registered:", reg.scope))
+      .then((reg) => console.log("PWA SW registered:", reg.scope))
       .catch((err) => console.warn("PWA SW registration failed:", err));
 
     // PWA 설치 모달 비활성화 (주석 처리)
