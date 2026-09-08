@@ -256,7 +256,7 @@ export const realUpdateHeaderDisplay = (
   }
 
   const formattedMainPrice = isMainKrw
-    ? formatKrwPrice(displayPrice)
+    ? formatKrwPrice(displayPrice, activeExchange)
     : (window.formatSmartPrice ? window.formatSmartPrice(displayPrice, pNormalized) : formatSmartPrice(displayPrice, pNormalized));
 
   if (dom.topEls) {
@@ -269,7 +269,7 @@ export const realUpdateHeaderDisplay = (
   const formattedSubPrice = hasSubPrice
     ? (isMainKrw
       ? `≈ $ ${window.formatSmartPrice ? window.formatSmartPrice(subPrice, pNormalized) : formatSmartPrice(subPrice, pNormalized)}`
-      : `≈ ${formatKrwPrice(subPrice)}`)
+      : `≈ ${formatKrwPrice(subPrice, activeExchange)}`)
     : "";
 
   if (dom.bottomEls) {

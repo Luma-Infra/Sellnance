@@ -124,19 +124,39 @@ function resetChartScale() {
   }, 150);
 }
 
-// 업비트 최신 공식 호가단위 동기화: 가격대별 자동 precision 반환 (로그 클램핑 수식)
-export function getKrwPrecision(price) {
+// 🟦 업비트 최신 공식 호가단위 동기화: 가격대별 자동 precision 반환 (로그 클램핑 수식)
+export function getUpbitKrwPrecision(price) {
   if (!price || price <= 0 || isNaN(price)) return 0;
   return price >= 100
     ? 0
     : Math.min(8, Math.max(0, 2 - Math.floor(Math.log10(price))));
 }
+if (typeof window !== "undefined") window.getUpbitKrwPrecision = getUpbitKrwPrecision;
+
+// 🟧 빗썸 최신 공식 호가단위 동기화: (100원 이상 0, 10~100원 2, 1~10원 3, 1원 미만 4)
+export function getBithumbKrwPrecision(price) {
+  if (!price || price <= 0 || isNaN(price)) return 0;
+  if (price >= 100) return 0;
+  if (price >= 10) return 2;
+  if (price >= 1) return 3;
+  return 4;
+}
+if (typeof window !== "undefined") window.getBithumbKrwPrecision = getBithumbKrwPrecision;
+
+// 🎯 원화 거래소(업비트/빗썸) 통합 precision 라우터
+export function getKrwPrecision(price, exchange = "upbit") {
+  const exch = (exchange || (store && store.currentExchange) || "upbit").toLowerCase();
+  if (exch.includes("bithumb")) {
+    return getBithumbKrwPrecision(price);
+  }
+  return getUpbitKrwPrecision(price);
+}
 if (typeof window !== "undefined") window.getKrwPrecision = getKrwPrecision;
 
-export function formatKrwPrice(price) {
+export function formatKrwPrice(price, exchange = "upbit") {
   if (price === null || price === undefined || isNaN(price)) return "0";
   const num = Number(price);
-  const prec = getKrwPrecision(num);
+  const prec = getKrwPrecision(num, exchange);
   return num.toLocaleString(undefined, {
     minimumFractionDigits: prec,
     maximumFractionDigits: prec,

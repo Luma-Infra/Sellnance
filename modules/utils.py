@@ -30,7 +30,7 @@ def atomic_save_json(
     ensure_ascii=False,
 ):
     """
-    동시 쓰기 시 파일 손상(Race condition & corrupted JSON)을 원천 차단하는 원자적 저장 함수.
+    동시 쓰기 시 파일 손상(Race condition & corrupted JSON)을 원천 차단하는 원자적 저장 함수
     1) 스레드 락으로 동일 프로세스 내 동시 쓰기 충돌 방지
     2) 동일 디렉토리에 임시 파일(.tmp) 완전 기록 후 os.replace()로 원자적(Atomic) 교체
     """
@@ -119,6 +119,28 @@ def get_upbit_krw_precision(price: float) -> int:
     return 0 if price >= 100 else min(8, max(0, 2 - math.floor(math.log10(price))))
 
 
+def get_bithumb_krw_precision(price: float) -> int:
+    """빗썸 공식 호가단위 일치 정밀도 반환 (100원 이상 0, 10~100원 2, 1~10원 3, 1원 미만 4)"""
+    if price is None or price <= 0:
+        return 0
+    if price >= 100:
+        return 0
+    elif price >= 10:
+        return 2
+    elif price >= 1:
+        return 3
+    else:
+        return 4
+
+
+def get_krw_precision(price: float, exchange: str = "upbit") -> int:
+    """원화 거래소(업비트/빗썸)별 공식 호가 정밀도 분기 반환"""
+    exch = (exchange or "upbit").lower()
+    if "bithumb" in exch:
+        return get_bithumb_krw_precision(price)
+    return get_upbit_krw_precision(price)
+
+
 # 2. 포맷팅 함수 (초간단)
 def format_dynamic_price(price, precision):
     if price is None or price == 0:
@@ -151,7 +173,7 @@ def format_change(percent):
 def create_image_tag(url):
     if not url:
         return ""
-    return f'<img src="{url}" loading="lazy" style="width: 24px; height: 24px; vertical-align: middle; border-radius: 50%;" onerror="this.onerror=null;this.classList.add(\'fallback-logo\');this.src=(document.body.classList.contains(\'theme-upbit\')?\'/static/luma-deer-svg-light.svg\':\'/static/luma-deer-svg-dark.svg\');">'
+    return f"<img src=\"{url}\" loading=\"lazy\" style=\"width: 24px; height: 24px; vertical-align: middle; border-radius: 50%;\" onerror=\"this.onerror=null;this.classList.add('fallback-logo');this.src=(document.body.classList.contains('theme-upbit')?'/static/luma-deer-svg-light.svg':'/static/luma-deer-svg-dark.svg');\">"
 
 
 def get_pure_base_asset(ticker):
@@ -222,6 +244,7 @@ def is_valid_ticker(ticker, skip_list=None):
         if _SKIP_LIST_CACHE is None:
             try:
                 from modules import config_manager
+
                 mapping = config_manager.load_mapping_data()
                 _SKIP_LIST_CACHE = mapping.get("HARDCODE_VERIFY_SKIP_LIST", [])
             except:
