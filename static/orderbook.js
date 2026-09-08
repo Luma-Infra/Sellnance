@@ -140,43 +140,82 @@ export function startOrderbookStream(symbol, market) {
 
   if (market === "UPBIT") {
     const rawSym = `KRW-${baseSym}`;
-    store.orderbookWs = new WebSocket("wss://api.upbit.com/websocket/v1");
-    store.orderbookWs.binaryType = "blob";
-    store.orderbookWs.onopen = () => {
-      store.orderbookWs.send(
-        JSON.stringify([
-          { ticket: "ob_" + Date.now() },
-          { type: "orderbook", codes: [rawSym] },
-          { format: "SIMPLE" },
-        ]),
-      );
+    const payload = JSON.stringify([
+      { ticket: "ob_" + Date.now() },
+      { type: "orderbook", codes: [rawSym] },
+      { format: "SIMPLE" },
+    ]);
+
+    if (store.orderbookWs && store.orderbookWs.readyState === WebSocket.OPEN && store.orderbookWs._market === "UPBIT") {
+      try {
+        store.orderbookWs.send(payload);
+        return;
+      } catch (e) { }
+    }
+
+    if (store.orderbookWs) {
+      try {
+        store.orderbookWs.onopen = null;
+        store.orderbookWs.onmessage = null;
+        store.orderbookWs.close();
+      } catch (e) { }
+    }
+
+    const ws = new WebSocket("wss://api.upbit.com/websocket/v1");
+    ws._market = "UPBIT";
+    store.orderbookWs = ws;
+    ws.binaryType = "blob";
+    ws.onopen = () => {
+      try {
+        ws.send(payload);
+      } catch (e) { }
     };
-    store.orderbookWs.onmessage = async (e) => {
+    ws.onmessage = async (e) => {
+      if (store.orderbookWs !== ws) return;
       let data = e.data;
       if (e.data instanceof Blob) {
         data = await e.data.text();
       }
-      const res = JSON.parse(data);
-      if (res.ty === "orderbook" && res.obu) {
-        obState.asks = res.obu
-          .map((u) => ({ price: u.ap, size: u.as }))
-          .reverse();
-        obState.bids = res.obu.map((u) => ({ price: u.bp, size: u.bs }));
-        scheduleRender();
-      }
+      try {
+        const res = JSON.parse(data);
+        if (res.ty === "orderbook" && res.obu) {
+          obState.asks = res.obu
+            .map((u) => ({ price: u.ap, size: u.as }))
+            .reverse();
+          obState.bids = res.obu.map((u) => ({ price: u.bp, size: u.bs }));
+          scheduleRender();
+        }
+      } catch (err) { }
     };
   } else if (market === "BITHUMB") {
     const rawSym = `${baseSym}_KRW`;
-    console.log(`⚡ [DEBUG] Bithumb WS Connecting... Symbol: ${rawSym}`);
-    store.orderbookWs = new WebSocket("wss://pubwss.bithumb.com/pub/ws");
-    store.orderbookWs.onopen = () => {
-      console.log(`⚡ [DEBUG] Bithumb WS Connected. Sending subscription for ${rawSym}`);
-      store.orderbookWs.send(
-        JSON.stringify({
-          type: "orderbookdepth",
-          symbols: [rawSym],
-        }),
-      );
+    const payload = JSON.stringify({
+      type: "orderbookdepth",
+      symbols: [rawSym],
+    });
+
+    if (store.orderbookWs && store.orderbookWs.readyState === WebSocket.OPEN && store.orderbookWs._market === "BITHUMB") {
+      try {
+        store.orderbookWs.send(payload);
+        return;
+      } catch (e) { }
+    }
+
+    if (store.orderbookWs) {
+      try {
+        store.orderbookWs.onopen = null;
+        store.orderbookWs.onmessage = null;
+        store.orderbookWs.close();
+      } catch (e) { }
+    }
+
+    const ws = new WebSocket("wss://pubwss.bithumb.com/pub/ws");
+    ws._market = "BITHUMB";
+    store.orderbookWs = ws;
+    ws.onopen = () => {
+      try {
+        ws.send(payload);
+      } catch (e) { }
     };
     store.orderbookWs.onmessage = (e) => {
       const res = JSON.parse(e.data);
@@ -207,17 +246,31 @@ export function startOrderbookStream(symbol, market) {
     const wsUrl = isFutures
       ? "wss://stream.bybit.com/v5/public/linear"
       : "wss://stream.bybit.com/v5/public/spot";
-    store.orderbookWs = new WebSocket(wsUrl);
+
+    if (store.orderbookWs) {
+      try {
+        store.orderbookWs.onopen = null;
+        store.orderbookWs.onmessage = null;
+        store.orderbookWs.close();
+      } catch (e) { }
+    }
+
+    const ws = new WebSocket(wsUrl);
+    ws._market = isFutures ? "BYBIT_FUTURES" : "BYBIT";
+    store.orderbookWs = ws;
     const streamSym = baseSym + "USDT";
-    store.orderbookWs.onopen = () => {
-      store.orderbookWs.send(
-        JSON.stringify({
-          op: "subscribe",
-          args: [`orderbook.50.${streamSym}`],
-        }),
-      );
+    ws.onopen = () => {
+      try {
+        ws.send(
+          JSON.stringify({
+            op: "subscribe",
+            args: [`orderbook.50.${streamSym}`],
+          }),
+        );
+      } catch (e) { }
     };
-    store.orderbookWs.onmessage = (e) => {
+    ws.onmessage = (e) => {
+      if (store.orderbookWs !== ws) return;
       const res = JSON.parse(e.data);
       if (res.topic && res.data) {
         if (res.type === "snapshot") {
@@ -270,9 +323,19 @@ export function startOrderbookStream(symbol, market) {
       : "wss://stream.binance.com:9443/ws";
     const streamSym = baseSym.toLowerCase() + "usdt"; // Cleanly formulated endpoint
 
-    // Depth stream returns asks and bids natively
-    store.orderbookWs = new WebSocket(`${wsBase}/${streamSym}@depth20@100ms`);
-    store.orderbookWs.onmessage = (e) => {
+    if (store.orderbookWs) {
+      try {
+        store.orderbookWs.onopen = null;
+        store.orderbookWs.onmessage = null;
+        store.orderbookWs.close();
+      } catch (e) { }
+    }
+
+    const ws = new WebSocket(`${wsBase}/${streamSym}@depth20@100ms`);
+    ws._market = isFutures ? "BINANCE_FUTURES" : "BINANCE_SPOT";
+    store.orderbookWs = ws;
+    ws.onmessage = (e) => {
+      if (store.orderbookWs !== ws) return;
       const res = JSON.parse(e.data);
       const asksArr = res.asks || res.a;
       const bidsArr = res.bids || res.b;

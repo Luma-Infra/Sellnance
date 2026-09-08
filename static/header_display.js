@@ -272,7 +272,7 @@ export const realUpdateHeaderDisplay = (
   const formattedSubPrice = hasSubPrice
     ? (isMainKrw
       ? `≈ $ ${window.formatSmartPrice ? window.formatSmartPrice(subPrice, pNormalized) : formatSmartPrice(subPrice, pNormalized)}`
-      : `≈ ${Number(subPrice).toLocaleString(undefined, { maximumFractionDigits: getKrwPrecision(subPrice) })} ₩`)
+      : `≈ ${Number(subPrice).toLocaleString(undefined, { maximumFractionDigits: getKrwPrecision(subPrice) })}`)
     : "";
 
   if (dom.bottomEls) {
