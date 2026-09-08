@@ -1,5 +1,5 @@
 // _main.js
-// 🏛️ Sellnance Main Entry Point
+// Sellnance Main Entry Point
 
 import { store } from "./_store.js";
 import {
@@ -18,7 +18,7 @@ import "./stream.js";
 import "./table.js";
 import "./start.js";
 import "./quickview.js";
-import { toggleFeedbackModal, submitFeedback } from "./feedback_modal.js";
+import "./feedback_modal.js";
 
 // 분리된 3대 모듈
 import {
