@@ -83,28 +83,49 @@ def get_candle_ttl(interval: str, to: str = "") -> float:
     return 15.0  # 15초
 
 
-# 🛡️ [업비트 429 차단 선제적 레이트 리미터 (초당 최대 5회 / 200ms 간격 및 429 전역 쿨다운)]
-class UpbitRateLimiter:
-    def __init__(self, max_per_second: float = 5.0):
-        self.interval = 1.0 / max_per_second
-        self.last_call = 0.0
+# 🛡️ [업비트 429 방어 고속 토큰 버킷 레이트 리미터 (버스트 8개 허용 / 초당 8개 충전, 429 쿨다운)]
+class UpbitTokenBucketLimiter:
+    def __init__(self, capacity: float = 8.0, refill_rate: float = 8.0):
+        self.capacity = capacity  # 최대 버스트 허용량 (업비트 10req/s 한도 내 8개)
+        self.tokens = capacity    # 초기 토큰 가득 참
+        self.refill_rate = refill_rate  # 초당 토큰 충전량
+        self.last_refill = time.time()
         self.cooldown_until = 0.0
         self.lock = asyncio.Lock()
 
-    def trigger_cooldown(self, seconds: float = 1.2):
+    def trigger_cooldown(self, seconds: float = 1.5):
         now = time.time()
         self.cooldown_until = max(self.cooldown_until, now + seconds)
+        self.tokens = 0.0  # 429 감지 시 토큰 즉시 소진
 
     async def wait(self):
-        async with self.lock:
-            now = time.time()
-            elapsed = now - self.last_call
-            if elapsed < self.interval:
-                await asyncio.sleep(self.interval - elapsed)
-            self.last_call = time.time()
+        while True:
+            sleep_time = 0.0
+            async with self.lock:
+                now = time.time()
+                # 1. 429 쿨다운 체크
+                if now < self.cooldown_until:
+                    sleep_time = self.cooldown_until - now
+                else:
+                    # 2. 토큰 충전 계산
+                    elapsed = now - self.last_refill
+                    self.tokens = min(self.capacity, self.tokens + elapsed * self.refill_rate)
+                    self.last_refill = now
+
+                    # 3. 토큰이 1개 이상이면 대기 없이 즉시 통과 (0ms)
+                    if self.tokens >= 1.0:
+                        self.tokens -= 1.0
+                        return
+
+                    # 4. 토큰 부족 시 필요한 만큼만 최소 대기
+                    needed = 1.0 - self.tokens
+                    sleep_time = needed / self.refill_rate
+
+            if sleep_time > 0:
+                await asyncio.sleep(sleep_time)
 
 
-UPBIT_RATE_LIMITER = UpbitRateLimiter(max_per_second=5.0)
+UPBIT_RATE_LIMITER = UpbitTokenBucketLimiter(capacity=8.0, refill_rate=8.0)
 
 
 def _construct_tv_msg(func, param_list):

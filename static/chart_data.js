@@ -205,8 +205,8 @@ export async function fetchPaginated(
     }
 
     if (remaining > 0) {
-      await new Promise((resolve) => setTimeout(resolve, 150));
-      // 🛡️ 업비트 초당 8회 이하 안전 간격 보장 (IP 차단 0%)
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      // 🛡️ 백엔드 토큰 버킷과 연동하여 안전하고 빠른 백그라운드 페이징 보장
     }
   }
   return result;
