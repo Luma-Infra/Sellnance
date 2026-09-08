@@ -166,6 +166,7 @@ if allowed_origins_env:
     ]
 elif IS_PRODUCTION:
     cors_origins = [
+        "https://sellnance.app",
         "https://sellnance.site",
     ]
 else:
@@ -802,7 +803,7 @@ async def send_feedback(data: dict = Body(...)):
 
     payload = {
         "username": "Sellnance Feedback",
-        "avatar_url": "https://sellnance.site/static/luma-deer-svg-dark.svg",
+        "avatar_url": "https://sellnance.app/static/luma-deer-svg-dark.svg",
         "embeds": [
             {
                 "title": f"💬 사용자 피드백{email_tag}",
