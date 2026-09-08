@@ -72,6 +72,11 @@ export function startBithumbFeed() {
           window.renderRealtimeRow(tickSymbol, { c: newPrice, isBithumbRealtime: true }, false);
         }
       }
+
+      // 🚀 퀵뷰 전용 실시간 캔들 갱신 라우팅 (단일 소켓 공유)
+      if (typeof window._qvBithumbHandler === "function") {
+        window._qvBithumbHandler(trade);
+      }
     });
   };
 

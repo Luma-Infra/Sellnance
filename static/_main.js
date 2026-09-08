@@ -52,8 +52,6 @@ window.selectSymbol = selectSymbol;
 window.getKrwPrecision = getKrwPrecision;
 window.updateHeaderDisplay = updateHeaderDisplay;
 window.toggleHeaderTop = toggleHeaderTop;
-window.toggleFeedbackModal = toggleFeedbackModal;
-window.submitFeedback = submitFeedback;
 
 // 🚀 DOM 로드 완료 시 사용자 설정 복원
 if (document.readyState === "loading") {

@@ -2,6 +2,7 @@
 import re
 import os
 import json
+import math
 import tempfile
 import threading
 from decimal import Decimal, ROUND_HALF_UP
@@ -109,6 +110,13 @@ def get_precision(tick_size_str):
         return 0
     # 뒤에 붙은 의미 없는 0을 지우고 소수점 아래 길이를 잽니다.
     return len(str(tick_size_str).split(".")[-1].rstrip("0"))
+
+
+def get_upbit_krw_precision(price: float) -> int:
+    """업비트 최신 공식 호가단위 일치 정밀도 반환 (로그 클램핑 수식)"""
+    if price is None or price <= 0:
+        return 0
+    return 0 if price >= 100 else min(8, max(0, 2 - math.floor(math.log10(price))))
 
 
 # 2. 포맷팅 함수 (초간단)

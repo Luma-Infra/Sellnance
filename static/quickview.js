@@ -3,6 +3,7 @@ import { store, tfSec } from "./_store.js";
 import { getRowExchangeMeta } from "./_market_rules.js";
 import { getPureBase } from "./chart_utils.js";
 import { getCandleThemeColors } from "./theme_manager.js";
+import { formatChartTickMark, formatChartTime } from "./chart_timezone.js";
 
 // ⚡ 퀵뷰 전용 상태 제어 장치
 const qvState = {
@@ -414,7 +415,14 @@ async function initSingleQuickViewChart(container, asset, idx) {
       textColor: textColor,
       visible: true,
       timeVisible: true,
+      secondsVisible: false,
       rightOffset: 3,
+      tickMarkFormatter: (time, tickMarkType) =>
+        formatChartTickMark(time, tickMarkType, qvState.timeframe),
+    },
+    localization: {
+      locale: navigator.language,
+      timeFormatter: (tick) => formatChartTime(tick, qvState.timeframe),
     },
     handleScale: {
       mouseWheel: true,
@@ -819,34 +827,22 @@ function connectQuickViewSockets() {
     qvState.binanceFuturesWs.onmessage = (e) => handleBinanceWsMessage(e, true);
   }
 
-  // 3. 업비트 Ticker 스트림 활성화
+  // 3. 업비트 Ticker 스트림 활성화 (메인 단일 소켓 이벤트 공유 -> 429 방지)
   if (upbitAssets.length > 0) {
-    qvState.upbitWs = new WebSocket("wss://api.upbit.com/websocket/v1");
-    qvState.upbitWs.binaryType = "arraybuffer";
-
-    qvState.upbitWs.onopen = () => {
-      const codes = upbitAssets.map(
-        (a) => `KRW-${String(a.resolvedSymbol).replace(/^KRW-?/i, "").replace(/KRW$/i, "").replace(/USDT$/i, "").trim().toUpperCase()}`,
-      );
-      qvState.upbitWs.send(
-        JSON.stringify([
-          { ticket: "quickview_upbit_engine" },
-          { type: "ticker", codes: codes },
-        ]),
-      );
-    };
-
-    const decoder = new TextDecoder("utf-8");
-    qvState.upbitWs.onmessage = (e) => {
+    window._qvUpbitHandler = (ticker) => {
       try {
-        const ticker = JSON.parse(decoder.decode(e.data));
-        if (!ticker.code) return;
+        if (!ticker || !ticker.code) return;
 
         const pureSym = ticker.code.replace("KRW-", "").toUpperCase();
 
         // 해당하는 차트 인덱스 찾기
         const idx = qvState.activeAssets.findIndex(
-          (a) => a.resolvedExchange === "upbit" && String(a.resolvedSymbol).replace(/^KRW-?/i, "").replace(/KRW$/i, "").toUpperCase() === pureSym,
+          (a) =>
+            a.resolvedExchange === "upbit" &&
+            String(a.resolvedSymbol)
+              .replace(/^KRW-?/i, "")
+              .replace(/KRW$/i, "")
+              .toUpperCase() === pureSym
         );
         if (idx === -1) return;
 
@@ -874,83 +870,62 @@ function connectQuickViewSockets() {
           idx,
           tradePrice,
           (ticker.signed_change_rate * 100).toString(),
-          true,
+          true
         );
-      } catch (err) {
-        console.error("퀵뷰 업비트 소켓 파싱 에러:", err);
-      }
+      } catch (err) { }
     };
+  } else {
+    window._qvUpbitHandler = null;
   }
 
-  // 4. 빗썸 Transaction 스트림 활성화
+  // 4. 빗썸 Transaction 스트림 활성화 (메인 단일 소켓 이벤트 공유)
   if (bithumbAssets.length > 0) {
-    qvState.bithumbWs = new WebSocket("wss://pubwss.bithumb.com/pub/ws");
-
-    qvState.bithumbWs.onopen = () => {
-      const symbols = bithumbAssets.map((a) => {
-        const cleanSym = String(a.resolvedSymbol).replace(/_?KRW$/i, "").replace(/USDT$/i, "").trim().toUpperCase();
-        return `${cleanSym}_KRW`;
-      });
+    window._qvBithumbHandler = (trade) => {
       try {
-        qvState.bithumbWs.send(
-          JSON.stringify({
-            type: "transaction",
-            symbols: symbols,
-          }),
-        );
-      } catch (e) {
-        console.error("퀵뷰 빗썸 소켓 구독 에러:", e);
-      }
-    };
+        if (!trade || !trade.symbol) return;
+        const pureSym = trade.symbol.replace("_KRW", "").toUpperCase();
+        const newPrice = parseFloat(trade.contPrice);
+        if (isNaN(newPrice)) return;
 
-    qvState.bithumbWs.onmessage = (event) => {
-      try {
-        const res = JSON.parse(event.data);
-        if (res.type !== "transaction" || !res.content?.list) return;
-
-        res.content.list.forEach((trade) => {
-          const pureSym = trade.symbol.replace("_KRW", "").toUpperCase();
-          const newPrice = parseFloat(trade.contPrice);
-          if (isNaN(newPrice)) return;
-
-          // 해당하는 차트 인덱스 찾기
-          const idx = qvState.activeAssets.findIndex((a) => {
-            if (a.resolvedExchange !== "bithumb" || !a.resolvedSymbol) return false;
-            const target = String(a.resolvedSymbol).replace(/_?KRW$/i, "").toUpperCase();
-            return target === pureSym;
-          });
-          if (idx === -1) return;
-
-          const series = qvState.series[idx];
-          const chart = qvState.charts[idx];
-          if (!series || !chart) return;
-
-          const secondsPerBar = tfSec[qvState.timeframe] || 3600;
-          const nowSec = Math.floor(Date.now() / 1000);
-          const barTime = Math.floor(nowSec / secondsPerBar) * secondsPerBar;
-
-          const candle = {
-            time: barTime,
-            open: newPrice,
-            high: newPrice,
-            low: newPrice,
-            close: newPrice,
-          };
-
-          try {
-            series.update(candle);
-            const asset = qvState.activeAssets[idx];
-            const chgValue =
-              qvState.sortType === "day"
-                ? asset.Change_Today_Raw || 0
-                : asset.Change_24h_Raw || 0;
-            updateLiveHeaderPrice(idx, newPrice, chgValue.toString(), true);
-          } catch (err) { }
+        // 해당하는 차트 인덱스 찾기
+        const idx = qvState.activeAssets.findIndex((a) => {
+          if (a.resolvedExchange !== "bithumb" || !a.resolvedSymbol) return false;
+          const target = String(a.resolvedSymbol).replace(/_?KRW$/i, "").toUpperCase();
+          return target === pureSym;
         });
+        if (idx === -1) return;
+
+        const series = qvState.series[idx];
+        const chart = qvState.charts[idx];
+        if (!series || !chart) return;
+
+        const secondsPerBar = tfSec[qvState.timeframe] || 3600;
+        const nowSec = Math.floor(Date.now() / 1000);
+        const barTime = Math.floor(nowSec / secondsPerBar) * secondsPerBar;
+
+        const candle = {
+          time: barTime,
+          open: newPrice,
+          high: newPrice,
+          low: newPrice,
+          close: newPrice,
+        };
+
+        try {
+          series.update(candle);
+          const asset = qvState.activeAssets[idx];
+          const chgValue =
+            qvState.sortType === "day"
+              ? asset.Change_Today_Raw || 0
+              : asset.Change_24h_Raw || 0;
+          updateLiveHeaderPrice(idx, newPrice, chgValue.toString(), true);
+        } catch (err) { }
       } catch (err) {
-        console.error("퀵뷰 빗썸 소켓 파싱 에러:", err);
+        console.error("퀵뷰 빗썸 이벤트 처리 에러:", err);
       }
     };
+  } else {
+    window._qvBithumbHandler = null;
   }
 }
 
@@ -974,6 +949,7 @@ function disconnectQuickViewSockets() {
     } catch (e) { }
     qvState.binanceFuturesWs = null;
   }
+  window._qvUpbitHandler = null;
   if (qvState.upbitWs) {
     qvState.upbitWs.onmessage = null;
     qvState.upbitWs.onerror = null;
@@ -983,6 +959,7 @@ function disconnectQuickViewSockets() {
     } catch (e) { }
     qvState.upbitWs = null;
   }
+  window._qvBithumbHandler = null;
   if (qvState.bithumbWs) {
     qvState.bithumbWs.onmessage = null;
     qvState.bithumbWs.onerror = null;
@@ -1462,5 +1439,24 @@ export function updateQuickViewTheme() {
   });
 }
 window.updateQuickViewTheme = updateQuickViewTheme;
+
+// 🚀 타임존 변경 시 퀵뷰 8개 차트 X축 시간 포맷터 일괄 동기화
+export function updateQuickViewTimezone() {
+  if (!qvState.charts || qvState.charts.length === 0) return;
+  const tickMarkFormatter = (time, tickMarkType) =>
+    formatChartTickMark(time, tickMarkType, qvState.timeframe);
+  const timeFormatter = (tick) =>
+    formatChartTime(tick, qvState.timeframe);
+
+  qvState.charts.forEach((chart) => {
+    if (chart) {
+      chart.applyOptions({
+        timeScale: { tickMarkFormatter },
+        localization: { timeFormatter },
+      });
+    }
+  });
+}
+window.updateQuickViewTimezone = updateQuickViewTimezone;
 window.initQuickView = initQuickView;
 window.destroyQuickView = destroyQuickView;

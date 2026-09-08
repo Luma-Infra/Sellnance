@@ -137,6 +137,11 @@ export function applyTimezoneToCharts() {
     });
   }
 
+  // 🚀 퀵뷰(QuickView) 차트 타임존 실시간 일괄 갱신
+  if (typeof window.updateQuickViewTimezone === "function") {
+    window.updateQuickViewTimezone();
+  }
+
   updateTimezoneButtonLabel();
 }
 

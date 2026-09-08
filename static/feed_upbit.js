@@ -107,6 +107,10 @@ export function startUpbitFeed() {
       if (typeof window._upbitChartHandler === "function") {
         window._upbitChartHandler(ticker);
       }
+      // 퀵뷰 전용 실시간 캔들 갱신 라우팅 (소켓 중복 연결 없이 단일 소켓 공유)
+      if (typeof window._qvUpbitHandler === "function") {
+        window._qvUpbitHandler(ticker);
+      }
     } catch (err) { }
   };
 }

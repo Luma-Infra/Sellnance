@@ -124,6 +124,26 @@ function resetChartScale() {
   }, 150);
 }
 
+// 업비트 최신 공식 호가단위 동기화: 가격대별 자동 precision 반환 (로그 클램핑 수식)
+export function getKrwPrecision(price) {
+  if (!price || price <= 0 || isNaN(price)) return 0;
+  return price >= 100
+    ? 0
+    : Math.min(8, Math.max(0, 2 - Math.floor(Math.log10(price))));
+}
+if (typeof window !== "undefined") window.getKrwPrecision = getKrwPrecision;
+
+export function formatKrwPrice(price) {
+  if (price === null || price === undefined || isNaN(price)) return "0";
+  const num = Number(price);
+  const prec = getKrwPrecision(num);
+  return num.toLocaleString(undefined, {
+    minimumFractionDigits: prec,
+    maximumFractionDigits: prec,
+  });
+}
+if (typeof window !== "undefined") window.formatKrwPrice = formatKrwPrice;
+
 // ✅ 포맷팅 by precision (원화 가격과 달러 가격 분리 규칙 적용)
 export function formatSmartPrice(price, p, isKrw = false) {
   try {
@@ -152,39 +172,9 @@ export function formatSmartPrice(price, p, isKrw = false) {
       });
     }
 
-    // 1️⃣ 원화(KRW) 가격 규칙: 실제 원화 가격 또는 추정된 원화 가격
+    // 1️⃣ 원화(KRW) 가격 규칙: 업비트 최신 공식 호가단위 100% 동기화
     if (isKrw) {
-      // 100원 이상: 소수점 없이 정수 콤마 표기
-      if (numPrice >= 100) {
-        return Math.round(numPrice).toLocaleString(undefined, {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
-        });
-      }
-
-      // 100원 미만 원화: 무조건 유효숫자 출몰부터 3개만 표기 (예: 1.22, 0.123, 0.000123)
-      const formattedStr = numPrice.toPrecision(3);
-      const parts = formattedStr.split("e");
-      if (parts.length === 1) {
-        const dotIndex = formattedStr.indexOf(".");
-        let decimals = 0;
-        if (dotIndex !== -1) {
-          const sub = formattedStr.substring(dotIndex + 1);
-          const firstActive = sub.search(/[1-9]/);
-          decimals = firstActive !== -1 ? firstActive + 3 : 3;
-        }
-        return numPrice.toLocaleString(undefined, {
-          minimumFractionDigits: decimals,
-          maximumFractionDigits: decimals,
-        });
-      } else {
-        const exp = Math.abs(parseInt(parts[1], 10));
-        const decimals = Math.min(10, exp + 2); // e-N 일 때 유효숫자 3개를 위해 N+2 소수 자릿수가 필요함
-        return numPrice.toLocaleString(undefined, {
-          minimumFractionDigits: decimals,
-          maximumFractionDigits: decimals,
-        });
-      }
+      return formatKrwPrice(numPrice);
     }
 
     // 2️⃣ 달러(USD) 가격 규칙: 소수점 이하 유효숫자 4자리 보장 (0.00000001080 등 극소수 코인 0/잘림 방어)

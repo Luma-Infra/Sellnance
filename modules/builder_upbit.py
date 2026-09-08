@@ -78,9 +78,7 @@ def _calculate_upbit_prices(up_info, krw_usd_rate):
 def _determine_precision(
     base, p, final_ucid, DUPLICATED_LIST, bybit_data, binance_data
 ):
-    up_precision = (
-        0 if p >= 100 else 1 if p >= 10 else 2 if p >= 1 else 3 if p >= 0.1 else 4
-    )
+    up_precision = utils.get_upbit_krw_precision(p)
 
     duplicated_bases = set()
     for k, v in DUPLICATED_LIST.items():

@@ -2,18 +2,14 @@
 // 📊 차트 상단 헤더 전광판 가격, 등락률, 시가총액, 거래량 실시간 렌더링 및 쓰로틀링 모듈
 
 import { store } from "./_store.js";
-import { getMultiplier, formatSmartPrice } from "./chart_utils.js";
+import {
+  getMultiplier,
+  formatSmartPrice,
+  getKrwPrecision,
+  formatKrwPrice,
+} from "./chart_utils.js";
 
-// 🚀 업비트 원화 소수점 규칙: 가격대별 자동 precision 반환
-export function getKrwPrecision(price) {
-  if (!price || isNaN(price)) return 0;
-  if (price >= 100000) return 0;
-  if (price >= 10000) return 1;
-  if (price >= 100) return 2;
-  if (price >= 1) return 3;
-  return 4;
-}
-window.getKrwPrecision = getKrwPrecision;
+export { getKrwPrecision, formatKrwPrice };
 
 let headerThrottleTimeout = null;
 
@@ -259,7 +255,7 @@ export const realUpdateHeaderDisplay = (
   }
 
   const formattedMainPrice = isMainKrw
-    ? `${Number(displayPrice).toLocaleString(undefined, { maximumFractionDigits: getKrwPrecision(displayPrice) })}`
+    ? formatKrwPrice(displayPrice)
     : (window.formatSmartPrice ? window.formatSmartPrice(displayPrice, pNormalized) : formatSmartPrice(displayPrice, pNormalized));
 
   if (dom.topEls) {
@@ -272,7 +268,7 @@ export const realUpdateHeaderDisplay = (
   const formattedSubPrice = hasSubPrice
     ? (isMainKrw
       ? `≈ $ ${window.formatSmartPrice ? window.formatSmartPrice(subPrice, pNormalized) : formatSmartPrice(subPrice, pNormalized)}`
-      : `≈ ${Number(subPrice).toLocaleString(undefined, { maximumFractionDigits: getKrwPrecision(subPrice) })}`)
+      : `≈ ${formatKrwPrice(subPrice)}`)
     : "";
 
   if (dom.bottomEls) {
