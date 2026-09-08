@@ -758,6 +758,9 @@
   "BNBUSDT": {
     "binance_listing": "2025-01-16"
   },
+  "BNC": {
+    "binance_listing": "2026-07-09"
+  },
   "BNSOLUSDT": {
     "binance_listing": "2024-10-17"
   },
@@ -3595,8 +3598,10 @@
     "binance_listing": "2025-05-19"
   },
   "SOPH": {
-    "binance_listing": "2025-05-28",
-    "upbit_listing": "2026-08-29"
+    "binance_listing": "2025-05-26",
+    "upbit_listing": "2025-05-26",
+    "bithumb_listing": "2025-06-02",
+    "bybit_listing": "2025-05-26"
   },
   "SOPHUSDT": {
     "binance_listing": "2025-05-28",
@@ -4206,7 +4211,9 @@
   },
   "WAVES": {
     "binance_listing": "2019-09-25",
-    "upbit_listing": "2025-12-13"
+    "upbit_listing": "2022-11-14",
+    "bithumb_listing": "2018-09-17",
+    "bybit_listing": "2021-10-25"
   },
   "WAXP": {
     "binance_listing": "2023-10-18"

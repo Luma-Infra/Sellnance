@@ -917,9 +917,15 @@ def fetch_bybit_prices():
             if sym.endswith("USDT") and is_valid_ticker(sym.replace("USDT", "")):
                 base = sym.replace("USDT", "")
                 if base not in bybit_data:
-                    bybit_data[base] = {"volume_24h": 0.0}
+                    bybit_data[base] = {
+                        "volume_24h": 0.0,
+                        "spot_volume_24h": 0.0,
+                        "futures_volume_24h": 0.0,
+                    }
                 bybit_data[base]["spot_price"] = float(item.get("lastPrice", 0))
-                bybit_data[base]["volume_24h"] += float(item.get("turnover24h", 0))
+                s_vol = float(item.get("turnover24h", 0))
+                bybit_data[base]["spot_volume_24h"] = s_vol
+                bybit_data[base]["volume_24h"] += s_vol
                 chg_24 = float(item.get("price24hPcnt", 0.0)) * 100
                 bybit_data[base]["change_24h"] = chg_24
                 bybit_data[base]["spot_change_24h"] = chg_24
@@ -929,9 +935,15 @@ def fetch_bybit_prices():
             if sym.endswith("USDT") and is_valid_ticker(sym.replace("USDT", "")):
                 base = sym.replace("USDT", "")
                 if base not in bybit_data:
-                    bybit_data[base] = {"volume_24h": 0.0}
+                    bybit_data[base] = {
+                        "volume_24h": 0.0,
+                        "spot_volume_24h": 0.0,
+                        "futures_volume_24h": 0.0,
+                    }
                 bybit_data[base]["futures_price"] = float(item.get("lastPrice", 0))
-                bybit_data[base]["volume_24h"] += float(item.get("turnover24h", 0))
+                f_vol = float(item.get("turnover24h", 0))
+                bybit_data[base]["futures_volume_24h"] = f_vol
+                bybit_data[base]["volume_24h"] += f_vol
                 bybit_data[base]["funding_rate"] = float(item.get("fundingRate", 0))
                 chg_24 = float(item.get("price24hPcnt", 0.0)) * 100
                 bybit_data[base]["futures_change_24h"] = chg_24

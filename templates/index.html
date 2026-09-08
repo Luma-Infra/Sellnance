@@ -1137,7 +1137,7 @@
                 </div>
               </div>
 
-              <!-- 🚀 우측 통계 지표 그룹: 24H Chg, Day Chg, Market Cap, F-Vol, U-Vol (우측 정렬 & 볼드 제거) -->
+              <!-- 🚀 우측 통계 지표 그룹: 24H Chg, Day Chg, Market Cap, B-Vol, U-Vol (우측 정렬 & 볼드 제거) -->
               <div id="head-metrics-container"
                 class="flex items-center gap-2 sm:gap-3 shrink-0 text-right min-[1200px]:gap-6 ml-auto min-[1200px]:items-start">
                 <!-- 🚀 2. 24H 변동률 전광판 -->
@@ -1168,20 +1168,20 @@
                     class="text-[12px] md:text-[13px] min-[1200px]:text-[13px] font-sans tabular-nums mt-0.5 min-[1200px]:mt-[3px] font-normal text-right min-[1200px]:leading-none">-</b>
                 </div>
 
-                <!-- 🚀 5. Vol(24h) (PC 전용 노출) -->
-                <div id="head-metric-box-fvol"
+                <!-- 🚀 5. 해외 Vol(24h) (PC 전용 노출) -->
+                <div id="head-metric-box-bvol"
                   class="hidden min-[1200px]:flex flex-col text-xs text-right shrink-0 min-w-fit items-end">
                   <span
-                    class="opacity-50 text-[10px] min-[1200px]:text-[9.5px] uppercase font-medium tracking-wider text-right min-[1200px]:leading-none">F-Vol(24h)</span>
+                    class="opacity-50 text-[10px] min-[1200px]:text-[9.5px] uppercase font-medium tracking-wider text-right min-[1200px]:leading-none">Vol(24h)</span>
                   <b id="head-vol-binance"
                     class="text-[12px] md:text-[13px] min-[1200px]:text-[13px] font-sans tabular-nums mt-0.5 min-[1200px]:mt-[3px] text-[#f0b90b] font-normal text-right min-[1200px]:leading-none">-</b>
                 </div>
 
-                <!-- 🚀 6. U-Vol(24h) (PC 전용 노출) -->
+                <!-- 🚀 6. 국내 Vol(24h) (PC 전용 노출) -->
                 <div id="head-metric-box-uvol"
                   class="hidden min-[1200px]:flex flex-col text-xs text-right shrink-0 min-w-fit items-end">
                   <span
-                    class="opacity-50 text-[10px] min-[1200px]:text-[9.5px] uppercase font-medium tracking-wider text-right min-[1200px]:leading-none">U-Vol(24h)</span>
+                    class="opacity-50 text-[10px] min-[1200px]:text-[9.5px] uppercase font-medium tracking-wider text-right min-[1200px]:leading-none">Vol(24h)</span>
                   <b id="head-vol-upbit"
                     class="text-[12px] md:text-[13px] min-[1200px]:text-[13px] font-sans tabular-nums mt-0.5 min-[1200px]:mt-[3px] text-upbit-color font-normal text-right min-[1200px]:leading-none">-</b>
                 </div>
@@ -2126,7 +2126,7 @@
             class="w-full h-8 px-3 rounded-xl bg-theme-bg/60 border border-theme-border/80 focus:border-theme-accent focus:outline-none text-xs text-theme-text placeholder:text-theme-text/40 transition-colors" />
         </div>
         <div>
-          <textarea id="feedback-content" required rows="4" placeholder="피드백이나 문의 내용을 자유롭게 적어주세요."
+          <textarea id="feedback-content" required rows="4" placeholder="피드백이나 문의 내용을 자유롭게 적어주세요"
             class="w-full p-3 rounded-xl bg-theme-bg/60 border border-theme-border/80 focus:border-theme-accent focus:outline-none text-xs text-theme-text placeholder:text-theme-text/40 resize-none transition-colors leading-relaxed"></textarea>
           <p class="text-[11px] text-theme-text/40 tracking-tight mt-1">
             ※ 개선을 위해 일부 환경 정보 (선택 코인, 기기, 해상도)를 함께 보낼게요

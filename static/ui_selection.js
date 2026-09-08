@@ -186,6 +186,9 @@ export function selectSymbol(
   if (typeof window.flushRealtimeBuffers === "function") {
     window.flushRealtimeBuffers();
   }
+  if (typeof window.hideKimchiLoading === "function") {
+    window.hideKimchiLoading();
+  }
   store.isFetchingChart = true;
   window.isFetchingChart = true;
   store.isUserZoomed = false;

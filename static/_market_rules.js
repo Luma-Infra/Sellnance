@@ -213,7 +213,153 @@ export function getRowDisplayMetrics(row, isKrwMode = null, rate = null) {
 }
 
 /**
- * 5. 티커명 뒤에 .P 표기 HTML 생성
+ * 5. 행(Row) 및 차트 탑존의 거래량(Volume) 단일 산출 규칙
+ * 
+ * [A. 테이블 Row (고정형)]
+ *  - ALL / 일반 탭: 선물 코인은 선물 24h 대금, 현물 전용은 현물 24h 대금
+ * 
+ * [B. 차트 탑존 (유동적)]
+ *  - 메인 마켓(activeMarket) + 하단 서브 김프 파트너(subMarket) 1:1 페어링
+ *  - 1) 국내 메인 선택 시 (UPBIT, BITHUMB):
+ *       우측(국내): 메인 국내 거래소 볼륨 (업비트 🔵 / 빗썸 🟠)
+ *       좌측(해외): 서브 김프에서 선택된 해외 거래소 볼륨 (바낸 🟡 / 바이빗 🟠)
+ *  - 2) 해외 메인 선택 시 (BINANCE FUTURES, BINANCE SPOT, BYBIT 등):
+ *       좌측(해외): 메인 해외 거래소 볼륨 (바낸 🟡 / 바이빗 🟠)
+ *       우측(국내): 서브 김프에서 선택된 국내 거래소 볼륨 (업비트 🔵 / 빗썸 🟠)
+ */
+export function getRowDisplayVolume(
+  row,
+  activeMarket = "ALL",
+  subMarket = null,
+  isKrwMode = null,
+  rate = null,
+) {
+  if (!row) {
+    return {
+      volBFormatted: "-",
+      volUFormatted: "-",
+      volBRaw: 0,
+      volURaw: 0,
+      volBColorClass: "text-[#f0b90b]",
+      volUColorClass: "text-upbit-color",
+    };
+  }
+
+  if (isKrwMode === null) isKrwMode = store.currencyMode === "KRW";
+  if (!rate) rate = store.marketDataMap?.krw_usd_rate || 1;
+
+  const isFutures = isFuturesCoin(row);
+  const normActive = String(activeMarket || "").toUpperCase().replace(/-/g, "_");
+  const isKoreaMain = normActive === "UPBIT" || normActive === "BITHUMB";
+
+  // 좌측 해외 거래소 볼륨 & 색상 산출 (하단 서브 김프 노출 순서 & ID 완벽 동기화)
+  let volBRaw = 0;
+  let volBColorClass = "text-[#f0b90b]"; // 바낸 기본
+
+  const rawGlobalMkt = isKoreaMain
+    ? (subMarket || (isFutures ? "BINANCE_FUTURES" : "BINANCE"))
+    : activeMarket;
+  const normGlobal = String(rawGlobalMkt || "").toUpperCase().replace(/-/g, "_");
+
+  const isBybit = normGlobal.includes("BYBIT") || normGlobal.includes("BYB");
+  const isBybitFutures =
+    normGlobal.includes("BYBIT_FUTURES") ||
+    normGlobal.includes("BYB_F") ||
+    normGlobal === "BYBIT_FUT" ||
+    (normGlobal === "BYBIT" && isFutures);
+
+  const isBinanceFutures =
+    normGlobal.includes("BINANCE_FUTURES") ||
+    normGlobal === "FUTURES" ||
+    normGlobal === "B_FUT";
+  const isBinanceSpot =
+    normGlobal.includes("BINANCE_SPOT") ||
+    normGlobal === "SPOT" ||
+    normGlobal === "BINANCE" ||
+    normGlobal === "B_SPOT";
+
+  if (isBybit) {
+    volBColorClass = "text-[#f7a600]";
+    if (isBybitFutures) {
+      volBRaw = row.Bybit_Vol_Futures || row.Bybit_Vol || 0;
+    } else {
+      volBRaw = row.Bybit_Vol_Spot || 0;
+    }
+  } else if (isBinanceFutures) {
+    volBColorClass = "text-[#f0b90b]";
+    volBRaw = row.Binance_Vol_Futures || 0;
+  } else if (isBinanceSpot) {
+    volBColorClass = "text-[#f0b90b]";
+    volBRaw = row.Binance_Vol_Spot || 0;
+  } else {
+    // ALL 등 기본 탭
+    if (isFutures) {
+      volBColorClass = "text-[#f0b90b]";
+      volBRaw = row.Binance_Vol_Futures || row.Binance_Vol_Spot || 0;
+    } else if (row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE")) {
+      volBColorClass = "text-[#f0b90b]";
+      volBRaw = row.Binance_Vol_Spot || row.Binance_Vol_Futures || 0;
+    } else if (row.Bybit_Futures === "O") {
+      volBColorClass = "text-[#f7a600]";
+      volBRaw = row.Bybit_Vol_Futures || row.Bybit_Vol || 0;
+    } else if (row.Bybit === "O") {
+      volBColorClass = "text-[#f7a600]";
+      volBRaw = row.Bybit_Vol_Spot || row.Bybit_Vol || 0;
+    } else {
+      volBColorClass = "text-theme-text opacity-40";
+      volBRaw = 0;
+    }
+  }
+
+  // 우측 국내 거래소 볼륨 & 색상 산출 (하단 서브 김프 노출 순서 & ID 완벽 동기화)
+  let volURaw = 0;
+  let volUColorClass = "text-upbit-color";
+
+  const rawKoreaMkt = isKoreaMain
+    ? activeMarket
+    : (subMarket || "UPBIT");
+  const normKorea = String(rawKoreaMkt || "").toUpperCase();
+
+  if (normKorea.includes("BITHUMB")) {
+    volUColorClass = "text-[#f37321]";
+    volURaw = row.Bithumb_Vol || 0;
+  } else {
+    // UPBIT 및 기본
+    volUColorClass = "text-upbit-color";
+    volURaw = row.Upbit_Vol || 0;
+  }
+
+  // 🚀 [3] 통화 모드 (KRW / USD) 포맷팅
+  let volBFormatted = "-";
+  if (volBRaw > 0) {
+    if (isKrwMode && typeof window.formatVolumeKRW === "function") {
+      volBFormatted = window.formatVolumeKRW(volBRaw * rate);
+    } else if (typeof window.formatVolumeDollar === "function") {
+      volBFormatted = window.formatVolumeDollar(volBRaw);
+    }
+  }
+
+  let volUFormatted = "-";
+  if (volURaw > 0) {
+    if (isKrwMode && typeof window.formatVolumeKRW === "function") {
+      volUFormatted = window.formatVolumeKRW(volURaw);
+    } else if (typeof window.formatVolumeDollar === "function" && rate > 0) {
+      volUFormatted = window.formatVolumeDollar(volURaw / rate);
+    }
+  }
+
+  return {
+    volBFormatted,
+    volUFormatted,
+    volBRaw,
+    volURaw,
+    volBColorClass,
+    volUColorClass,
+  };
+}
+
+/**
+ * 6. 티커명 뒤에 .P 표기 HTML 생성
  */
 export function getDisplayTickerHtml(row) {
   if (!row) return "";
@@ -223,7 +369,7 @@ export function getDisplayTickerHtml(row) {
 }
 
 /**
- * 6. 차트 클릭 시 기본 마켓 결정 규칙
+ * 7. 차트 클릭 시 기본 마켓 결정 규칙
  */
 export function getChartDefaultMarket(row) {
   if (!row) return "FUTURES";
@@ -240,7 +386,7 @@ export function getChartDefaultMarket(row) {
 }
 
 /**
- * 7. 거래소별 네이티브 타임프레임(캔들 봉) 지원 여부 판별 (3D/12H 등 리샘플링 여부 결정)
+ * 8. 거래소별 네이티브 타임프레임(캔들 봉) 지원 여부 판별 (3D/12H 등 리샘플링 여부 결정)
  */
 export const NATIVE_TF_MAP = {
   binance: new Set(["1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h", "1d", "3d", "1w", "1M"]),
@@ -263,6 +409,7 @@ window.MarketRules = {
   getRowExchangeMeta,
   getRowKimchiGlobalPrice,
   getRowDisplayMetrics,
+  getRowDisplayVolume,
   getDisplayTickerHtml,
   getChartDefaultMarket,
   isExchangeNativeTF,

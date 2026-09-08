@@ -129,6 +129,7 @@ export const store = {
   exchFilterMode: sessionControlPanel?.exchFilterMode ?? "AND", // 🚀 거래소 필터링 결합 모드 (AND, OR, ONLY)
 
   isFetchingChart: false, // 🚀 차트 데이터 호출 진행 상태 플래그
+  isKimchiLoading: false, // 🚀 서브 김프 데이터 호출/로딩 진행 상태 플래그
   blockLeftDom: false, // 🚀 좌측 테이블 DOM 렌더링 최적화/차단 여부
   blockRightDom: false, // 🚀 우측 패널 DOM 렌더링 최적화/차단 여부
   blockChartDom: false, // 🚀 실시간 차트 갱신 렌더링 최적화/차단 여부

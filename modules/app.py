@@ -37,9 +37,30 @@ try:
     logging.getLogger("tvDatafeed").setLevel(logging.CRITICAL)
 
     def sentry_before_send(event, hint):
+        # 1. 종료 시그널(Ctrl+C) 및 비동기 취소(CancelledError) 노이즈 필터링
+        if "exc_info" in hint:
+            exc_type, exc_value, _ = hint["exc_info"]
+            if isinstance(
+                exc_value, (KeyboardInterrupt, asyncio.CancelledError)
+            ) or exc_type in (
+                KeyboardInterrupt,
+                asyncio.CancelledError,
+            ):
+                return None
+
+        for exc in event.get("exception", {}).get("values", []):
+            if exc.get("type") in ("KeyboardInterrupt", "CancelledError"):
+                return None
+
+        # 2. tvDatafeed 및 uvicorn 정상 종료 로그 노이즈 필터링
         logger_name = event.get("logger") or ""
         if "tvDatafeed" in logger_name:
             return None
+        if logger_name == "uvicorn.error":
+            log_msg = str(event.get("logentry", {}).get("message", ""))
+            if "CancelledError" in log_msg or "KeyboardInterrupt" in log_msg:
+                return None
+
         return event
 
     sentry_dsn = os.environ.get("SENTRY_DSN", "").strip()
@@ -164,7 +185,9 @@ if IS_PRODUCTION and DIST_DIR.exists():
 else:
     print("🛠️ [ENV] Local Dev - Serving raw templates/ and static/")
     if (DIST_DIR / "assets").exists():
-        app.mount("/assets", StaticFiles(directory=str(DIST_DIR / "assets")), name="assets")
+        app.mount(
+            "/assets", StaticFiles(directory=str(DIST_DIR / "assets")), name="assets"
+        )
     STATIC_DIR = BASE_DIR / "static"
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
     templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
@@ -735,44 +758,21 @@ async def send_feedback(data: dict = Body(...)):
     kst = pytz.timezone("Asia/Seoul")
     now_kst_str = datetime.now(kst).strftime("%Y-%m-%d %H:%M:%S")
 
-    fields = []
-    if email:
-        fields.append({
-            "name": "✉️ 회신 이메일",
-            "value": f"`{email}`",
-            "inline": False,
-        })
-    fields.extend([
-        {
-            "name": "📍 보고 있던 코인",
-            "value": f"`{symbol}` (UID: `{uid}`)",
-            "inline": True,
-        },
-        {
-            "name": "💻 접속 환경",
-            "value": f"`{environment}`",
-            "inline": True,
-        },
-        {
-            "name": "📐 화면 크기",
-            "value": f"`{resolution}`",
-            "inline": True,
-        },
-    ])
+    env_clean = environment.replace("💻 ", "").replace("📱 ", "")
+    email_tag = f" • ✉️ {email}" if email else ""
+    footer_text = f"📍 {symbol} (UID: {uid}) • 🖥️ {env_clean} • 📐 {resolution} • {now_kst_str}"
 
     payload = {
         "username": "Sellnance Feedback",
         "avatar_url": "https://sellnance.site/static/luma-deer-svg-dark.svg",
         "embeds": [
             {
-                "title": "💬 새로운 사용자 피드백 / 문의",
+                "title": f"💬 사용자 피드백{email_tag}",
                 "description": message,
                 "color": 15776011,  # Sellnance Gold (#F0B90B)
-                "fields": fields,
                 "footer": {
-                    "text": f"Sellnance Web • {now_kst_str}",
+                    "text": footer_text,
                 },
-                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
         ],
     }

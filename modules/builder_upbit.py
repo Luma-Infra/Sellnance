@@ -360,11 +360,14 @@ def build_upbit_row(
 
     bithumb_price = bithumb_data.get(base, {}).get("price", 0.0)
     bithumb_open = bithumb_data.get(base, {}).get("utc0_open", 0.0) or 0.0
+    bithumb_vol = bithumb_data.get(base, {}).get("volume_24h", 0.0)
     for a in bithumb_aliases:
         if bithumb_price == 0:
             bithumb_price = bithumb_data.get(a.upper(), {}).get("price", 0.0)
         if bithumb_open == 0:
             bithumb_open = bithumb_data.get(a.upper(), {}).get("utc0_open", 0.0) or 0.0
+        if bithumb_vol == 0:
+            bithumb_vol = bithumb_data.get(a.upper(), {}).get("volume_24h", 0.0)
 
     bithumb_symbol = base
     if bithumb_aliases:
@@ -410,24 +413,21 @@ def build_upbit_row(
         "Change_24h": utils.format_change(up_change_24h),
         "Change_Today": utils.format_change(change_today),
         "Volume_Formatted": (
-            utils.format_volume_string(
-                binance_vol
-                if (has_binance_listing and binance_vol > 0)
-                else by_raw.get("volume_24h", 0.0)
-            )
-            if (binance_vol > 0 or by_raw.get("volume_24h", 0.0) > 0)
+            utils.format_volume_string(binance_vol)
+            if (has_binance_listing and binance_vol > 0)
             else "-"
         ),
         "Kimchi_Formatted": "-",
         "Kimchi_Label": kimchi_label,
         "MarketCap_Formatted": utils.format_market_cap_string(mcap),
         "VMC_Formatted": f"{vmc_raw:.2f}%",
+        "Binance_Vol_Formatted": utils.format_volume_string(binance_vol) if (has_binance_listing and binance_vol > 0) else "-",
+        "Binance_Spot_Vol_Formatted": utils.format_volume_string(bin_agg["binance_spot_vol"]) if bin_agg["binance_spot_vol"] > 0 else "-",
+        "Binance_Futures_Vol_Formatted": utils.format_volume_string(bin_agg["binance_futures_vol"]) if bin_agg["binance_futures_vol"] > 0 else "-",
         "Price_Raw": current_p,
         "Change_24h_Raw": up_change_24h,
         "Change_Today_Raw": change_today,
-        "Volume_Raw": (
-            binance_vol if has_binance_listing else by_raw.get("volume_24h", 0.0)
-        ),
+        "Volume_Raw": binance_vol if has_binance_listing else 0.0,
         "MarketCap_Raw": mcap,
         "VMC_Raw": vmc_raw,
         "Kimchi_Raw": None,
@@ -462,13 +462,31 @@ def build_upbit_row(
             if krw_usd_rate > 0
             else "-"
         ),
+        "Upbit_Vol_KRW_Formatted": (
+            utils.format_volume_krw_string(up_info.get("acc_trade_price_24h", 0.0))
+            if up_info.get("acc_trade_price_24h", 0.0) > 0
+            else "-"
+        ),
         "Upbit_Vol": up_info.get("acc_trade_price_24h", 0.0),
+        "Bybit_Vol_Spot": by_raw.get("spot_volume_24h", 0.0),
+        "Bybit_Vol_Futures": by_raw.get("futures_volume_24h", 0.0),
         "Bybit_Vol_Formatted": (
             utils.format_volume_string(by_raw.get("volume_24h", 0.0))
             if by_raw.get("volume_24h", 0.0) > 0
             else "-"
         ),
         "Bybit_Vol": by_raw.get("volume_24h", 0.0),
+        "Bithumb_Vol_Formatted": (
+            utils.format_volume_string(bithumb_vol / krw_usd_rate)
+            if (bithumb_vol > 0 and krw_usd_rate > 0)
+            else "-"
+        ),
+        "Bithumb_Vol_KRW_Formatted": (
+            utils.format_volume_krw_string(bithumb_vol)
+            if bithumb_vol > 0
+            else "-"
+        ),
+        "Bithumb_Vol": bithumb_vol,
         "Binance_Price_Futures": (
             bin_agg["binance_futures_price"]
             if bin_agg["binance_futures_price"] > 0

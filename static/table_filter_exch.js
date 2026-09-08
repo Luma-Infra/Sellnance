@@ -38,7 +38,7 @@ export function updateExchFilterUI() {
     { id: "BINANCE_STOCK", cmcId: 270, label: "ST", name: "B-STOCK" },
     { id: "UPBIT", cmcId: 351, name: "UPBIT" },
     { id: "BITHUMB", cmcId: 200, name: "BITHUMB" },
-    { id: "BYBIT_SPOT", cmcId: 521, label: "S", name: "BYBIT" },
+    { id: "BYBIT_SPOT", cmcId: 521, label: "S", name: "BYB-S" },
     { id: "BYBIT_FUTURES", cmcId: 521, label: "F", name: "BYB-F" },
     { id: "OKX_SPOT", cmcId: 294, name: "OKX" },
     { id: "BITGET_SPOT", cmcId: 513, name: "BITGET" },

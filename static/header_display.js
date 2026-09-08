@@ -8,6 +8,7 @@ import {
   getKrwPrecision,
   formatKrwPrice,
 } from "./chart_utils.js";
+import { getRowDisplayVolume } from "./_market_rules.js";
 
 export { getKrwPrecision, formatKrwPrice };
 
@@ -404,53 +405,32 @@ export const realUpdateHeaderDisplay = (
   if (dom.headMcap && dom.headMcap.textContent !== displayMcap) {
     dom.headMcap.textContent = displayMcap;
   }
-  const hasBinance =
-    row.Binance === "O" ||
-    row.Binance_Futures === "O" ||
-    (row.Listed_Exchanges &&
-      (row.Listed_Exchanges.includes("BINANCE") ||
-        row.Listed_Exchanges.includes("BINANCE_FUTURES")));
-  const hasGlobalVol =
-    hasBinance ||
-    row.Bybit === "O" ||
-    row.Bybit_Futures === "O" ||
-    (row.Listed_Exchanges &&
-      (row.Listed_Exchanges.includes("BYBIT") ||
-        row.Listed_Exchanges.includes("BYBIT_FUTURES") ||
-        row.Listed_Exchanges.includes("BYBIT_SPOT")));
+  // 🚀 [단일 룰북 연동] 좌측(해외) & 우측(국내) 거래량 및 브랜드 색상 연산 (서브 김프 페어링)
+  const {
+    volBFormatted,
+    volUFormatted,
+    volBColorClass,
+    volUColorClass,
+  } = getRowDisplayVolume(
+    row,
+    activeMarket,
+    store.preferredKimchiSub,
+    isKrwMode,
+    rate,
+  );
 
-  const volBText =
-    (hasGlobalVol &&
-      row.Volume_Formatted &&
-      row.Volume_Formatted !== "-" &&
-      row.Volume_Formatted !== "0"
-      ? row.Volume_Formatted
-      : null) ||
-    (row.Bybit_Vol_Formatted &&
-      row.Bybit_Vol_Formatted !== "-" &&
-      row.Bybit_Vol_Formatted !== "0"
-      ? row.Bybit_Vol_Formatted
-      : null) ||
-    "-";
-  if (dom.headVolB && dom.headVolB.textContent !== volBText) {
-    dom.headVolB.textContent = volBText;
+  if (dom.headVolB) {
+    if (dom.headVolB.textContent !== volBFormatted) dom.headVolB.textContent = volBFormatted;
+    const baseCls =
+      "text-[12px] md:text-[13px] min-[1200px]:text-[13px] font-sans tabular-nums mt-0.5 min-[1200px]:mt-[3px] font-normal text-right min-[1200px]:leading-none";
+    dom.headVolB.className = `${baseCls} ${volBColorClass}`;
   }
 
-  let volUText = "-";
-  if (
-    row.Upbit_Vol_Formatted &&
-    row.Upbit_Vol_Formatted !== "-" &&
-    row.Upbit_Vol_Formatted !== "0"
-  ) {
-    volUText = row.Upbit_Vol_Formatted;
-  } else if (row.Upbit_Vol && Number(row.Upbit_Vol) > 0) {
-    volUText =
-      typeof window.formatVolumeKRW === "function"
-        ? window.formatVolumeKRW(row.Upbit_Vol)
-        : Number(row.Upbit_Vol).toLocaleString();
-  }
-  if (dom.headVolU && dom.headVolU.textContent !== volUText) {
-    dom.headVolU.textContent = volUText;
+  if (dom.headVolU) {
+    if (dom.headVolU.textContent !== volUFormatted) dom.headVolU.textContent = volUFormatted;
+    const baseCls =
+      "text-[12px] md:text-[13px] min-[1200px]:text-[13px] font-sans tabular-nums mt-0.5 min-[1200px]:mt-[3px] font-normal text-right min-[1200px]:leading-none";
+    dom.headVolU.className = `${baseCls} ${volUColorClass}`;
   }
 };
 
@@ -523,6 +503,7 @@ export const updateHeaderDisplay = (row, newPrice, p, isRealtimeStream = false) 
     }, 100);
   }
 };
+window.realUpdateHeaderDisplay = realUpdateHeaderDisplay;
 window.updateHeaderDisplay = updateHeaderDisplay;
 
 // 🚀 [추가] 차트 우측 패널 상단부 접고 펼치는 기능

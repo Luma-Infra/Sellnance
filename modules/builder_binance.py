@@ -511,26 +511,28 @@ def build_binance_row(
 
     by_spot_p = 0.0
     by_futures_p = 0.0
+    by_spot_vol = 0.0
+    by_futures_vol = 0.0
     by_vol_24h = 0.0
     if not is_stock:
-        by_spot_p = bybit_data.get(raw_symbol, {}).get(
-            "spot_price", 0.0
-        ) or bybit_data.get(base, {}).get("spot_price", 0.0)
-        by_futures_p = bybit_data.get(raw_symbol, {}).get(
-            "futures_price", 0.0
-        ) or bybit_data.get(base, {}).get("futures_price", 0.0)
-        by_vol_24h = bybit_data.get(raw_symbol, {}).get(
-            "volume_24h", 0.0
-        ) or bybit_data.get(base, {}).get("volume_24h", 0.0)
+        by_info = bybit_data.get(raw_symbol, {}) or bybit_data.get(base, {})
+        by_spot_p = by_info.get("spot_price", 0.0)
+        by_futures_p = by_info.get("futures_price", 0.0)
+        by_spot_vol = by_info.get("spot_volume_24h", 0.0)
+        by_futures_vol = by_info.get("futures_volume_24h", 0.0)
+        by_vol_24h = by_info.get("volume_24h", 0.0)
 
     if (
         (by_spot_p == 0 and by_futures_p == 0)
         and target_up_base
         and target_up_base in bybit_data
     ):
-        by_spot_p = bybit_data.get(target_up_base, {}).get("spot_price", 0.0)
-        by_futures_p = bybit_data.get(target_up_base, {}).get("futures_price", 0.0)
-        by_vol_24h = bybit_data.get(target_up_base, {}).get("volume_24h", 0.0)
+        by_info = bybit_data.get(target_up_base, {})
+        by_spot_p = by_info.get("spot_price", 0.0)
+        by_futures_p = by_info.get("futures_price", 0.0)
+        by_spot_vol = by_info.get("spot_volume_24h", 0.0)
+        by_futures_vol = by_info.get("futures_volume_24h", 0.0)
+        by_vol_24h = by_info.get("volume_24h", 0.0)
 
     if by_futures_p > 0:
         listed_on.add("BYBIT_FUTURES")
@@ -584,11 +586,13 @@ def build_binance_row(
     bithumb_symbol = None
     bithumb_price = 0.0
     bithumb_open = 0.0
+    bithumb_vol = 0.0
 
     if bithumb_direct_match:
         bithumb_symbol = target_bi_base
         bithumb_price = bithumb_data.get(target_bi_base, {}).get("price", 0.0)
         bithumb_open = bithumb_data.get(target_bi_base, {}).get("utc0_open", 0.0)
+        bithumb_vol = bithumb_data.get(target_bi_base, {}).get("volume_24h", 0.0)
 
     if bithumb_price == 0 and bithumb_aliases:
         bithumb_symbol = bithumb_aliases[0]
@@ -597,6 +601,9 @@ def build_binance_row(
         )
         bithumb_open = bithumb_data.get(bithumb_aliases[0].upper(), {}).get(
             "utc0_open", 0.0
+        )
+        bithumb_vol = bithumb_data.get(bithumb_aliases[0].upper(), {}).get(
+            "volume_24h", 0.0
         )
 
     kimchi_raw = None
@@ -693,17 +700,25 @@ def build_binance_row(
         "Kimchi_Label": kimchi_label,
         "Basis_Formatted": f"{basis_raw:+.2f}%" if basis_raw != 0 else "0.00%",
         "Volume_Formatted": (
-            utils.format_volume_string(binance_vol or by_vol_24h)
-            if (binance_vol > 0 or by_vol_24h > 0)
-            else "-"
+            utils.format_volume_string(binance_vol) if binance_vol > 0 else "-"
         ),
         "MarketCap_Formatted": utils.format_market_cap_string(mcap),
         "VMC_Formatted": f"{vmc_raw:.2f}%",
-        "Binance_Vol_Formatted": utils.format_volume_string(binance_vol),
+        "Binance_Vol_Formatted": (
+            utils.format_volume_string(binance_vol) if binance_vol > 0 else "-"
+        ),
+        "Binance_Spot_Vol_Formatted": (
+            utils.format_volume_string(total_vol_spot) if total_vol_spot > 0 else "-"
+        ),
+        "Binance_Futures_Vol_Formatted": (
+            utils.format_volume_string(total_vol_futures)
+            if total_vol_futures > 0
+            else "-"
+        ),
         "Price_Raw": price,
         "Change_24h_Raw": change_24h,
         "Change_Today_Raw": change_today,
-        "Volume_Raw": binance_vol or by_vol_24h,
+        "Volume_Raw": binance_vol,
         "MarketCap_Raw": mcap,
         "VMC_Raw": vmc_raw,
         "Basis_Raw": basis_raw,
@@ -774,10 +789,23 @@ def build_binance_row(
             else "-"
         ),
         "Upbit_Vol": up_vol_24h_krw,
+        "Bybit_Vol_Spot": by_spot_vol,
+        "Bybit_Vol_Futures": by_futures_vol,
         "Bybit_Vol_Formatted": (
             utils.format_volume_string(by_vol_24h) if by_vol_24h > 0 else "-"
         ),
         "Bybit_Vol": by_vol_24h,
+        "Bithumb_Vol_Formatted": (
+            utils.format_volume_string(bithumb_vol / krw_usd_rate)
+            if (bithumb_vol > 0 and krw_usd_rate > 0)
+            else "-"
+        ),
+        "Bithumb_Vol_KRW_Formatted": (
+            utils.format_volume_krw_string(bithumb_vol)
+            if bithumb_vol > 0
+            else "-"
+        ),
+        "Bithumb_Vol": bithumb_vol,
         "Binance_Price_Futures": (
             binance_futures_price if binance_futures_price > 0 else None
         ),

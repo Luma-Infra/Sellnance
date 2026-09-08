@@ -746,6 +746,9 @@ export async function fetchHistory(
   } finally {
     window.isFetchingChart = false;
     store.isFetchingChart = false;
+    if (typeof window.hideKimchiLoading === "function") {
+      window.hideKimchiLoading();
+    }
     if (loadingModal) loadingModal.classList.add("hidden");
     if (wrapper) wrapper.classList.remove("chart-loading");
     if (gapOverlay) gapOverlay.style.display = "none";
