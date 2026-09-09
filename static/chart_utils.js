@@ -63,10 +63,43 @@ export const ensureSafeUnixSeconds = (t) => {
 };
 window.ensureSafeUnixSeconds = ensureSafeUnixSeconds;
 
-function resetChartScale() {
+export function resetChartScale() {
   if (!store.chart || !store.candleSeries) return;
 
-  store.chart.priceScale("right").applyOptions({ autoScale: true });
+  store.isPriceScaleUserZoomed = false;
+  store.isVolPriceScaleUserZoomed = false;
+  store.isKimchiPriceScaleUserZoomed = false;
+  store.savedPriceScaleWidth = null;
+  store.mainCustomPriceRange = null;
+  store.volCustomPriceRange = null;
+  store.kimchiCustomPriceRange = null;
+
+  if (store.candleSeries) {
+    store.candleSeries.applyOptions({ autoscaleInfoProvider: (original) => (original ? original() : null) });
+  }
+  if (store.previewSeries) {
+    store.previewSeries.applyOptions({ autoscaleInfoProvider: (original) => (original ? original() : null) });
+  }
+  if (store.leftScaleSeries) {
+    store.leftScaleSeries.applyOptions({ autoscaleInfoProvider: (original) => (original ? original() : null) });
+  }
+  if (store.volumeSeries) {
+    store.volumeSeries.applyOptions({ autoscaleInfoProvider: (original) => (original ? original() : null) });
+  }
+  if (store.kimchiSeries) {
+    store.kimchiSeries.applyOptions({ autoscaleInfoProvider: (original) => (original ? original() : null) });
+  }
+
+  // 🚀 [원자적 리셋] 메인 및 볼륨/김프 스케일 일괄 autoScale 복구
+  store.chart.priceScale("right").applyOptions({ minimumWidth: 0, autoScale: true });
+  if (store.leftScaleSeries) {
+    store.chart.priceScale("left").applyOptions({ minimumWidth: 0, autoScale: true });
+  }
+
+  if (store.chartVol) {
+    store.chartVol.priceScale("right").applyOptions({ minimumWidth: 0, autoScale: true });
+    store.chartVol.priceScale("left").applyOptions({ minimumWidth: 0, autoScale: true });
+  }
 
   const margin = 10; // 🚀 [수동 오토핏 버튼] 우측 마진 고정값 10으로 강제 세팅
 
@@ -90,13 +123,6 @@ function resetChartScale() {
   }
 
   if (store.chartVol) {
-    store.chartVol
-      .priceScale("right")
-      .applyOptions({ autoScale: true });
-    store.chartVol
-      .priceScale("left")
-      .applyOptions({ autoScale: true });
-
     try {
       const timeScaleVol = store.chartVol.timeScale();
       const rangeVol = timeScaleVol.getVisibleLogicalRange();
@@ -117,11 +143,13 @@ function resetChartScale() {
     }
   }
 
-  setTimeout(() => {
-    if (typeof window.syncPriceScaleWidths === "function") {
-      window.syncPriceScaleWidths(true);
-    }
-  }, 150);
+  // 🚀 [즉각 동기화] 타이머 없이 단일 프레임에서 가로폭 완벽 싱크
+  if (typeof window.syncPriceScaleWidths === "function") {
+    window.syncPriceScaleWidths(true);
+  }
+  if (typeof window.updateScaleModeButtonsUI === "function") {
+    window.updateScaleModeButtonsUI();
+  }
 }
 
 // 🟦 업비트 최신 공식 호가단위 동기화: 가격대별 자동 precision 반환 (로그 클램핑 수식)
@@ -624,7 +652,9 @@ function autoFit(isTabRestore = false) {
         } else {
           timeScale.scrollToRealtime();
         }
-        store.chart.priceScale("right").applyOptions({ autoScale: true });
+        if (!store.isPriceScaleUserZoomed) {
+          store.chart.priceScale("right").applyOptions({ autoScale: true });
+        }
       }
       if (store.chartVol) {
         const timeScaleVol = store.chartVol.timeScale();
@@ -640,8 +670,10 @@ function autoFit(isTabRestore = false) {
         } else {
           timeScaleVol.scrollToRealtime();
         }
-        store.chartVol.priceScale("right").applyOptions({ autoScale: true });
-        if (store.kimchiSeries) {
+        if (!store.isVolPriceScaleUserZoomed) {
+          store.chartVol.priceScale("right").applyOptions({ autoScale: true });
+        }
+        if (!store.isKimchiPriceScaleUserZoomed && store.kimchiSeries) {
           store.chartVol.priceScale("left").applyOptions({ autoScale: true });
         }
       }
@@ -660,14 +692,18 @@ function autoFit(isTabRestore = false) {
     };
 
     store.chart.timeScale().setVisibleLogicalRange(logicalRange);
-    store.chart.priceScale("right").applyOptions({ autoScale: true });
+    if (!store.isPriceScaleUserZoomed) {
+      store.chart.priceScale("right").applyOptions({ autoScale: true });
+    }
 
     // 🚀 거래량 차트(vol-pane) 완벽 동기화 오토핏! (스케일 뻗거나 꼬이는 현상 원천 차단)
     if (store.chartVol) {
       try {
         store.chartVol.timeScale().setVisibleLogicalRange(logicalRange);
-        store.chartVol.priceScale("right").applyOptions({ autoScale: true });
-        if (store.kimchiSeries) {
+        if (!store.isVolPriceScaleUserZoomed) {
+          store.chartVol.priceScale("right").applyOptions({ autoScale: true });
+        }
+        if (!store.isKimchiPriceScaleUserZoomed && store.kimchiSeries) {
           store.chartVol.priceScale("left").applyOptions({ autoScale: true });
         }
       } catch (e) { }

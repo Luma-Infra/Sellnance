@@ -24,8 +24,17 @@ export async function fetchHistory(
   if (now - store.lastFetchTime < 100) return;
   store.lastFetchTime = now;
 
-  if (!isTfChange && !isSubSwitch) {
-    store.preferredKimchiSub = null;
+  if (!isSubSwitch) {
+    if (!isTfChange) {
+      store.preferredKimchiSub = null;
+    }
+    store.isPriceScaleUserZoomed = false;
+    store.isVolPriceScaleUserZoomed = false;
+    store.isKimchiPriceScaleUserZoomed = false;
+    store.savedPriceScaleWidth = null;
+    if (typeof window.updateScaleModeButtonsUI === "function") {
+      window.updateScaleModeButtonsUI();
+    }
   }
 
   store.isFetchingChart = true;
@@ -615,16 +624,27 @@ export async function fetchHistory(
           },
         });
 
-        // 🚀 [자릿수 축소 공백 제거] 이전 10자리(0.0000000001) 코인의 minimumWidth 잔상을 해제하여 1달러 코인 전환 시 우측 여백 공백 제거
-        store.savedPriceScaleWidth = null;
-        if (store.chart) store.chart.priceScale("right").applyOptions({ minimumWidth: 0, autoScale: true });
-        if (store.chartVol) store.chartVol.priceScale("right").applyOptions({ minimumWidth: 0, autoScale: true });
+        // 🚀 [신규 코인 로드 시 오토스케일 완벽 보장] 이전 코인의 커스텀 스케일 락을 해제하여 캔들 증발 방지
+        if (!isSubSwitch && !isTfChange) {
+          store.isPriceScaleUserZoomed = false;
+          store.isVolPriceScaleUserZoomed = false;
+          store.isKimchiPriceScaleUserZoomed = false;
+          store.mainCustomPriceRange = null;
+          store.volCustomPriceRange = null;
+          store.kimchiCustomPriceRange = null;
+          if (store.candleSeries) {
+            store.candleSeries.applyOptions({ autoscaleInfoProvider: (original) => (original ? original() : null) });
+          }
+          if (store.previewSeries) {
+            store.previewSeries.applyOptions({ autoscaleInfoProvider: (original) => (original ? original() : null) });
+          }
+        }
 
         if (store.candleSeries && !isSubSwitch) {
           store.candleSeries.setData(sanitizeChartData(store.mainData));
         }
 
-        if (store.leftScaleSeries) {
+        if (store.leftScaleSeries && !isSubSwitch) {
           const leftData = store.mainData.map((d) => {
             const m = mapTime(d);
             return { time: m.time, value: m.close };
@@ -632,21 +652,25 @@ export async function fetchHistory(
           store.leftScaleSeries.setData(sanitizeChartData(leftData, true));
         }
 
-        if (
-          store.volumeSeries &&
-          store.volumeData &&
-          store.volumeData.length > 0
-        ) {
-          store.volumeSeries.setData(sanitizeChartData(store.volumeData, true));
-          if (typeof window.toggleVolFallback === "function") {
-            window.toggleVolFallback(false);
+        if (!isSubSwitch) {
+          if (
+            store.volumeSeries &&
+            store.volumeData &&
+            store.volumeData.length > 0
+          ) {
+            store.volumeSeries.setData(sanitizeChartData(store.volumeData, true));
+            if (typeof window.toggleVolFallback === "function") {
+              window.toggleVolFallback(false);
+            }
+          } else if (store.volumeSeries) {
+            store.volumeSeries.setData([]);
           }
-        } else if (store.volumeSeries) {
-          store.volumeSeries.setData([]);
         }
 
         if (store.kimchiSeries) {
+          const visibleRange = store.chart ? store.chart.timeScale().getVisibleLogicalRange() : null;
           store.kimchiSeries.setData([]);
+          if (visibleRange && store.chartVol) store.chartVol.timeScale().setVisibleLogicalRange(visibleRange);
         }
         store.kimchiData = [];
         if (store.kimchiDataMap) {
@@ -654,8 +678,13 @@ export async function fetchHistory(
         }
         store.realtimeKimchi = null;
 
+        // 🚀 [원자적 상하 너비 완벽 동기화] 캔들/볼륨 주입 직후 단 1회의 동기 틱에서 상하 우측 너비를 일치시켜 코인/TF 변경 덜그럭 원천 차단
+        if (typeof syncPriceScaleWidths === "function") {
+          syncPriceScaleWidths(!isSubSwitch);
+        }
+
         if (typeof applyChartLayout === "function") applyChartLayout();
-        if (typeof autoFit === "function") autoFit(isTabRestore); // [1차 선제 피팅] 캔들/볼륨 로드 직후 뷰포트 즉시 고정
+        if (typeof autoFit === "function" && !isSubSwitch) autoFit(isTabRestore); // [1차 선제 피팅] 캔들/볼륨 로드 직후 뷰포트 즉시 고정
         // [핵심] 캔들과 거래량이 차트에 안착한 즉시 Fetching 락 해제 (실시간 소켓 틱 드랍 방지)
         window.isFetchingChart = false;
         store.isFetchingChart = false;

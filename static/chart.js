@@ -8,6 +8,15 @@ import {
   formatChartTime,
   mountTimezoneButton,
 } from "./chart_timezone.js";
+import {
+  initChartSync,
+  syncCrosshair,
+  syncTimeScales,
+  syncPriceScaleWidths,
+  resetPriceScaleWidthSync,
+  setupScaleModeButtons,
+  updateScaleModeButtonsUI,
+} from "./chart_sync.js";
 export { getCandleThemeColors, applyCandleTheme };
 
 // === DEBUG_PERF_TOGGLE ===
@@ -341,6 +350,45 @@ export async function initChart() {
         return;
       if (Math.abs(e.deltaY) < 1) return;
 
+      // [정밀 영역 분기 가드: Y축 가격/김프 스케일 영역 검출]
+      // 1) DOM 기반 체크: Lightweight Charts 내부 테이블 구조
+      const targetEl = e.target;
+      const td = targetEl ? targetEl.closest("td") : null;
+      const tr = td ? td.parentElement : null;
+      const tdIndex = tr ? Array.from(tr.children).indexOf(td) : -1;
+      // tdIndex 0: 좌측 스케일(김프), 1: 차트 본체(캔들/바), 2: 우측 가격 스케일
+
+      // 2) 좌표 기반 듀얼 체크
+      const isOverVol = elVol && elVol.contains(targetEl);
+      const activeEl = isOverVol ? elVol : elMain;
+      const activeChart = isOverVol ? store.chartVol : store.chart;
+      const rect = activeEl ? activeEl.getBoundingClientRect() : null;
+
+      let isOverRightScale = tdIndex === 2;
+      let isOverLeftScale = tdIndex === 0;
+
+      if (rect) {
+        const cursorX = e.clientX - rect.left;
+        const rightWidth = activeChart ? activeChart.priceScale("right").width() : 50;
+        const leftWidth = activeChart ? activeChart.priceScale("left").width() : 0;
+        if (cursorX >= rect.width - rightWidth - 10) {
+          isOverRightScale = true;
+        } else if (leftWidth > 0 && cursorX <= leftWidth + 10) {
+          isOverLeftScale = true;
+        }
+      }
+
+      // 🛑 마우스 커서가 가격 스케일(우측) 또는 김프 스케일(좌측) 위에 있을 때:
+      // 메인 차트 캔들(가로 TimeScale) 줌을 100% 차단하고 Y축 스케일 인터랙션으로 분기!
+      if (isOverRightScale || isOverLeftScale) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const cursorY = rect ? e.clientY - rect.top : null;
+        zoomPriceScale(!isOverVol, isOverRightScale, e.deltaY, cursorY, activeEl);
+        return;
+      }
+
       e.preventDefault();
 
       const timeScale = store.chart.timeScale();
@@ -362,7 +410,6 @@ export async function initChart() {
       if (e.deltaY < 0 && currentSpan <= MIN_SPAN + 0.1) return;
 
       // 🚀 [크로스헤어 정밀 앵커]
-      const rect = elMain.getBoundingClientRect();
       const cursorX = e.clientX - rect.left;
       let cursorLogical = timeScale.coordinateToLogical(cursorX);
 
@@ -657,575 +704,8 @@ export async function initChart() {
     store.volumeSeries.attachPrimitive(store._volCrosshair);
   }
 
-  // 🌊 시간축 스크롤 완벽 동기화 엔진 (1:1 다이렉트 캐싱 & 동기식 뮤텍스 락으로 오버헤드 0 / 0ms 무지연 보장)
-  let isSyncingTimeScales = false;
-
-  const syncTimeScalePair = (sourceChart, targetChart) => {
-    if (!sourceChart || !targetChart) return;
-    const targetTs = targetChart.timeScale();
-
-    sourceChart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
-      if (isSyncingTimeScales || !range) return;
-
-      isSyncingTimeScales = true;
-      try {
-        targetTs.setVisibleLogicalRange(range);
-
-        // [스크롤 0ms 동기화] 마우스 휠 스크롤/패닝 중에도 메인과 볼륨 차트 크로스헤어 세로선이 1frame 지연 없이 즉시 동시 스냅
-        if (
-          store.lastMouseX !== null &&
-          store.lastMouseX !== undefined &&
-          store.isCrosshairActive
-        ) {
-          let magnetX = store.lastMouseX;
-          if (
-            sourceChart.timeScale &&
-            typeof sourceChart.timeScale().coordinateToLogical === "function" &&
-            typeof sourceChart.timeScale().logicalToCoordinate === "function"
-          ) {
-            const logical = sourceChart
-              .timeScale()
-              .coordinateToLogical(store.lastMouseX);
-            if (logical !== null) {
-              const snappedX = sourceChart
-                .timeScale()
-                .logicalToCoordinate(Math.round(logical));
-              if (snappedX !== null) magnetX = snappedX;
-            }
-          }
-          if (store._mainCrosshair) store._mainCrosshair.setX(magnetX);
-          if (store._volCrosshair) store._volCrosshair.setX(magnetX);
-        }
-      } catch (syncErr) {
-        // 동기화 실패 시 예외가 전파되어 멈추는 현상 완벽 방어
-      } finally {
-        isSyncingTimeScales = false;
-      }
-    });
-  };
-
-  syncTimeScalePair(store.chart, store.chartVol);
-  syncTimeScalePair(store.chartVol, store.chart);
-
-  // 🎯 십자선 크로스헤어 완벽 동기화 엔진 (레이스 컨디션 원천 차단 무적 알고리즘)
-  const syncCrosshair = (sourceChart, targetCharts) => {
-    sourceChart.subscribeCrosshairMove((param) => {
-      const perfStart = performance.now();
-      try {
-        // 🚀 [마우스 이벤트 차단 토글 방어막]
-        if (store.blockChartMouseEvent) {
-          if (store.bypassCounters) store.bypassCounters.mouseEvent++;
-          if (store._mainCrosshair) store._mainCrosshair.setX(null);
-          if (store._volCrosshair) store._volCrosshair.setX(null);
-          try {
-            sourceChart.clearCrosshairPosition();
-            targetCharts.forEach((tObj) => {
-              if (tObj && tObj.chart) tObj.chart.clearCrosshairPosition();
-            });
-          } catch (e) { }
-          return;
-        }
-
-        // 🚀 [데이터 로딩 방어막] 차트 데이터 갱신 중(타임프레임 변경 등)일 때는 옵션 변경 및 십자선 렌더링 원천 차단!
-        // (이 방어막이 없으면 렌더링 도중 applyOptions가 호출되어 Histogram Value is null 에러가 터짐)
-        if (store.isFetchingChart) return;
-
-        const isHover =
-          param.point !== undefined && param.point.x >= 0 && param.point.y >= 0;
-
-        if (isHover) {
-          // 🚀 1. 현재 마우스가 올라간 차트(sourceChart)에 맞춰 가로선 활성화/비활성화 처리 ( activeChart 단일 진실 소스 기준 O(1) 업데이트 )
-          if (store.activeChart !== sourceChart) {
-            store.activeChart = sourceChart;
-
-            // 🔥 [핵심 패치] applyOptions를 이벤트 수신 즉시 동기 실행하면 아직 초기화 안 된
-            //    서브 차트 히스토그램 버퍼를 강제 리페인트하여 Value is null을 유발합니다.
-            //    cancelAnimationFrame + requestAnimationFrame 디바운스로 단일 프레임에서만 실행합니다.
-            if (sourceChart._crosshairApplyRaf) {
-              cancelAnimationFrame(sourceChart._crosshairApplyRaf);
-            }
-            sourceChart._crosshairApplyRaf = requestAnimationFrame(() => {
-              try {
-                if (!sourceChart || !window.LightweightCharts) return;
-
-                // 🚀 1. 활성 차트 (마우스가 있는 곳): 가로선과 가격 라벨을 원래 색상으로 우아하게 복원!
-                sourceChart.applyOptions({
-                  crosshair: {
-                    mode: window.LightweightCharts.CrosshairMode.Normal,
-                    vertLine: {
-                      visible: true,
-                      color: "transparent",
-                      labelVisible: true,
-                      style: window.LightweightCharts.LineStyle.Dotted,
-                    },
-                    horzLine: {
-                      visible: true,
-                      labelVisible: true,
-                      color: "#758696", // 원래 트뷰 기본 십자선 색상 복구
-                      labelBackgroundColor: "#2b2b43", // 원래 트뷰 기본 라벨 배경색 복구
-                      style: window.LightweightCharts.LineStyle.Dotted,
-                    },
-                  },
-                });
-
-                // 🚀 2. 비활성 차트 (타겟): 트뷰 API 강제 오버라이드를 피하기 위해, 네이티브 색상 제어로 완벽 투명화!
-                targetCharts.forEach((targetObj) => {
-                  if (targetObj.chart) {
-                    targetObj.chart.applyOptions({
-                      crosshair: {
-                        mode: window.LightweightCharts.CrosshairMode.Normal,
-                        horzLine: {
-                          visible: false,
-                          labelVisible: false,
-                          color: "transparent", // 가로선 완전 투명화
-                          labelBackgroundColor: "transparent", // 라벨 배경 완전 투명화
-                        },
-                        vertLine: {
-                          visible: true,
-                          color: "transparent",
-                          labelVisible: true,
-                          style: window.LightweightCharts.LineStyle.Dotted,
-                        },
-                      },
-                    });
-                  }
-                });
-
-                // 🚀 [추가] 크로스헤어 활성화 여부에 따라 가격 라벨 너비가 변하므로 즉각 동기화 트리거
-                setTimeout(() => {
-                  if (typeof window.syncPriceScaleWidths === "function") {
-                    window.syncPriceScaleWidths(true);
-                  }
-                }, 50);
-              } catch (applyErr) {
-                // Xconsole.warn("🚨 차트 간 applyOptions 레이아웃 동기화 예외 방어 완료:", applyErr,);
-              }
-            });
-          }
-
-          // 🚀 2. 가로축(시간축) 방향 마그네틱(자석) 효과 적용
-          store.lastMouseX = param.point.x;
-          let magnetX = param.point.x;
-          let currentLogical = null;
-          if (
-            sourceChart.timeScale &&
-            typeof sourceChart.timeScale().coordinateToLogical === "function" &&
-            typeof sourceChart.timeScale().logicalToCoordinate === "function"
-          ) {
-            const logical = sourceChart
-              .timeScale()
-              .coordinateToLogical(param.point.x);
-            if (logical !== null) {
-              currentLogical = logical;
-              const snappedX = sourceChart
-                .timeScale()
-                .logicalToCoordinate(Math.round(logical));
-              if (snappedX !== null) {
-                magnetX = snappedX;
-              }
-            }
-          }
-
-          // 🚀 3. [핵심] 원본 차트(sourceChart) 캔버스 플러그인 세로선 다이렉트 렌더링! (메인 차트 세로선 누락 원천 차단!!!)
-          if (sourceChart === store.chart && store._mainCrosshair) {
-            store._mainCrosshair.setX(magnetX);
-          } else if (sourceChart === store.chartVol && store._volCrosshair) {
-            store._volCrosshair.setX(magnetX);
-          }
-
-          // 🚀 4. 타겟 차트들 처리 (하단 시간축 라벨 유지, 캔버스 플러그인 단독 렌더링!)
-          let targetTime = param.time;
-
-          // 🚀 [원인 완벽 규명 및 해결: 미래 캔들 영역 타임스탬프 증발 방어]
-          // 미래 허공(우측 여백)에 마우스를 올렸을 때 param.time은 undefined가 떨어집니다.
-          // 기존에는 coordinateToTime(x)만 시도했으나, 미래 영역에서는 이것도 null을 반환합니다.
-          // 이제 마우스 좌표를 논리적 인덱스(logical)로 변환한 뒤 미래 시간을 직접 역산(Extrapolation)하여 하단 라벨을 완벽히 살려냅니다!
-          if (targetTime === undefined) {
-            let logicalIndex = null;
-            if (
-              typeof sourceChart.timeScale().coordinateToLogical === "function"
-            ) {
-              logicalIndex = sourceChart
-                .timeScale()
-                .coordinateToLogical(param.point.x);
-            }
-            if (logicalIndex !== null) {
-              const roundedLogical = Math.round(logicalIndex);
-              const totalCandles = store.mainData ? store.mainData.length : 0;
-
-              if (totalCandles > 0 && roundedLogical >= totalCandles - 1) {
-                // 미래 영역: 마지막 캔들 시간 + (남은 캔들 개수 * 초 단위)
-                const lastCandle = store.mainData[totalCandles - 1];
-                const lastCandleSec = getUnixSeconds(lastCandle.time); // 🚨 문자열 방어! 숫자로 변환
-                const secondsPerBar = tfSec[store.currentTF] || 60;
-                const futureBars = roundedLogical - (totalCandles - 1);
-                targetTime = lastCandleSec + futureBars * secondsPerBar;
-              } else if (
-                typeof sourceChart.timeScale().coordinateToTime === "function"
-              ) {
-                // 과거/현재 영역 폴백
-                targetTime = sourceChart
-                  .timeScale()
-                  .coordinateToTime(param.point.x);
-              }
-            }
-          }
-
-          // 🚀 targetTime을 차트 타임프레임 형식(isDayUnit 여부)에 맞추어 규격화 (일봉인 경우 "YYYY-MM-DD", 분봉인 경우 Unix Seconds)
-          let normalizedTime = targetTime;
-          if (targetTime !== undefined && targetTime !== null) {
-            const isDayUnit = !(store.currentTF || "1h").match(/[hm]/);
-            const totalSec = getUnixSeconds(targetTime);
-            if (isDayUnit) {
-              const dt = new Date(totalSec * 1000);
-              normalizedTime = `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, "0")}-${String(dt.getUTCDate()).padStart(2, "0")}`;
-            } else {
-              normalizedTime = totalSec;
-            }
-          }
-
-          renderTargetCharts(
-            targetCharts,
-            normalizedTime,
-            targetTime,
-            magnetX,
-            currentLogical,
-          );
-
-          // 🚀 5. 레전드 업데이트 등 기존 로직 유지
-          if (
-            sourceChart === store.chart &&
-            store.candleSeries &&
-            typeof store.candleSeries.coordinateToPrice === "function"
-          ) {
-            store.crosshairPrice = store.candleSeries.coordinateToPrice(
-              param.point.y,
-            );
-            if (
-              store.leftScaleSeries &&
-              typeof store.leftScaleSeries.coordinateToPrice === "function"
-            ) {
-              store.crosshairLeftPrice =
-                store.leftScaleSeries.coordinateToPrice(param.point.y);
-            }
-          }
-          store.isCrosshairActive = true;
-          if (store._drawingPrimitive) {
-            store._drawingPrimitive.updateAll();
-          }
-          // 🚀 [미래 타임스탬프 완벽 연동] param.time이 undefined일 때, 위에서 역산한 targetTime(미래 시간)을 십자선 시간으로 사용!
-          const activeTime = param.time !== undefined ? param.time : targetTime;
-          const pTime = getUnixSeconds(activeTime);
-
-          let d = null;
-          if (sourceChart === store.chart) {
-            d = param.seriesData.get(store.candleSeries);
-            // 🚀 [완벽 폴백 보강] 라이브러리 내부 캔들 구조체(d)에는 volume 필드가 없으므로, 원본 메인 장부(store.mainData)에서 찾아 volume을 주입합니다!
-            const mainCandle = store.mainDataMap.get(pTime);
-            if (d && mainCandle && mainCandle.volume !== undefined) {
-              d.volume = mainCandle.volume;
-            } else if (!d && mainCandle) {
-              // 🚀 [미래 캔들 폴백] param.seriesData에 없어도(허공) mainData에 있으면 강제 표시!
-              d = { ...mainCandle };
-            }
-          } else {
-            d = store.mainDataMap.get(pTime) || null;
-          }
-          const v = store.volumeDataMap.get(pTime) || null;
-          const k = store.kimchiDataMap.get(pTime) || null;
-          if (d && typeof window.updateLegend === "function") {
-            window.updateLegend(d, v, k);
-          } else {
-            if (
-              store.mainData &&
-              store.mainData.length > 0 &&
-              typeof window.updateLegend === "function"
-            ) {
-              const lastIdx = store.mainData.length - 1;
-              const vLast = store.volumeData ? store.volumeData[lastIdx] : null;
-              const kLast = store.kimchiData ? store.kimchiData[lastIdx] : null;
-              window.updateLegend(store.mainData[lastIdx], vLast, kLast);
-            }
-            if (typeof window.updateStatus === "function") {
-              // 허공일 때는 현재 활성 가격(updateStatus)으로 복구!
-              window.updateStatus();
-            }
-          }
-        } else {
-          // 🚀 [핵심 방어책] isHover === false 일 때, 현재 activeChart가 내 차트(sourceChart)인 경우에만 초기화 실행!!!
-          // (즉, 마우스가 다른 차트로 넘어갔을 때는 이전 차트의 else 블록이 방해하지 못하도록 원천 차단!!!)
-          if (store.activeChart === sourceChart) {
-            store.activeChart = null;
-            if (sourceChart === store.chart) {
-              store.crosshairPrice = null;
-              store.crosshairLeftPrice = null;
-            }
-            targetCharts.forEach((targetObj) => {
-              if (targetObj.chart) targetObj.chart.clearCrosshairPosition();
-              if (store._volCrosshair) store._volCrosshair.setX(null);
-              if (store._mainCrosshair) store._mainCrosshair.setX(null);
-            });
-            store.isCrosshairActive = false;
-            if (store._drawingPrimitive) {
-              store._drawingPrimitive.updateAll();
-            }
-            if (
-              store.mainData &&
-              store.mainData.length > 0 &&
-              typeof window.updateLegend === "function"
-            ) {
-              const lastIdx = store.mainData.length - 1;
-              const v = store.volumeData ? store.volumeData[lastIdx] : null;
-              const k = store.kimchiData ? store.kimchiData[lastIdx] : null;
-              window.updateLegend(store.mainData[lastIdx], v, k);
-            }
-
-            // 🚀 [추가] 크로스헤어가 사라져 가격 라벨이 숨겨질 때도 즉각 동기화 트리거
-            setTimeout(() => {
-              if (typeof window.syncPriceScaleWidths === "function") {
-                window.syncPriceScaleWidths(true);
-              }
-            }, 50);
-          }
-        }
-      } catch (err) { }
-      const totalPerf = performance.now() - perfStart;
-      if (ENABLE_PERF_LOG && totalPerf > 1.5) {
-        // Xconsole.warn(`[Perf] syncCrosshair took ${totalPerf.toFixed(2)}ms`);
-      }
-    });
-  };
-
-  // Helper function to render target charts and keep the subscribe handler flat
-  function renderTargetCharts(
-    targetCharts,
-    normalizedTime,
-    targetTime,
-    magnetX,
-    logical = null,
-  ) {
-    targetCharts.forEach((targetObj) => {
-      try {
-        const { chart: tChart, series: tSeries } = targetObj;
-        if (!tChart || !tSeries) return;
-
-        if (
-          normalizedTime !== undefined &&
-          normalizedTime !== null &&
-          !String(normalizedTime).includes("NaN")
-        ) {
-          try {
-            tChart.clearCrosshairPosition();
-          } catch (e) { }
-        }
-
-        let timeStr = null;
-        if (targetTime !== undefined && targetTime !== null) {
-          timeStr = formatChartTime(targetTime, store.currentTF);
-        }
-
-        // 🚀 타겟 차트 자체의 timeScale에서 논리적 인덱스로 1:1 도킹 좌표 계산
-        let targetX = magnetX;
-        if (
-          logical !== null &&
-          tChart.timeScale &&
-          typeof tChart.timeScale().logicalToCoordinate === "function"
-        ) {
-          const snappedTarget = tChart
-            .timeScale()
-            .logicalToCoordinate(Math.round(logical));
-          if (snappedTarget !== null) {
-            targetX = snappedTarget;
-          }
-        }
-
-        if (tChart === store.chartVol && store._volCrosshair) {
-          store._volCrosshair.setX(targetX, timeStr);
-        } else if (tChart === store.chart && store._mainCrosshair) {
-          store._mainCrosshair.setX(targetX, timeStr);
-        }
-      } catch (e) {
-        /* suppress lightweight-charts internal null value errors */
-      }
-    });
-  }
-
-  syncCrosshair(store.chart, [
-    { chart: store.chartVol, series: store.volumeSeries },
-  ]);
-  syncCrosshair(store.chartVol, [
-    { chart: store.chart, series: store.candleSeries },
-  ]);
-
-  // 🚀 Y축(Price Scale) 가로폭 완벽 동기화 엔진 (좌/우측 스케일 동시 관리)
-  let currentMaxRight = 0;
-  let currentMaxLeft = 0;
-  window.isResettingWidth = false; // 🚀 [레이스 컨디션 방어 락] 리셋 중 이벤트 폭주 원천 차단!
-
-  let lastWidthSyncTime = 0;
-  let widthSyncPending = false;
-
-  const performSyncPriceScaleWidths = (force = false) => {
-    const c1 = store.chart;
-    const c2 = store.chartVol;
-    if (!c1 && !c2) return;
-
-    if (force) {
-      currentMaxRight = 0;
-      currentMaxLeft = 0;
-      store.savedPriceScaleWidth = null; // 🚀 [뚱뚱 상태 원천 차단] 새 코인/TF 전환 시 이전 코인의 넓은 너비 잔상 즉시 초기화!
-      if (c1)
-        c1.priceScale("right").applyOptions({
-          minimumWidth: 0,
-          autoScale: true,
-        });
-      if (c2)
-        c2.priceScale("right").applyOptions({
-          minimumWidth: 0,
-          autoScale: true,
-        });
-    }
-
-    let maxRight = 0;
-    let maxLeft = 0;
-
-    const isSmallMobile =
-      typeof window !== "undefined" && window.innerWidth < 768;
-    const isKimchiVisible =
-      !!store.paneConfig?.kimchi && !store.isKimchiDisabled;
-
-    if (c1) {
-      let rWidth = c1.priceScale("right").width();
-      if (store.isLogMode) rWidth = Math.min(rWidth, 80);
-      if (rWidth > maxRight) maxRight = rWidth;
-      if (!isSmallMobile && isKimchiVisible) {
-        const lWidth = c1.priceScale("left").width();
-        if (lWidth > maxLeft) maxLeft = lWidth;
-      }
-    }
-    if (c2) {
-      let rWidth = c2.priceScale("right").width();
-      if (store.isLogMode) rWidth = Math.min(rWidth, 80);
-      if (rWidth > maxRight) maxRight = rWidth;
-      if (!isSmallMobile && isKimchiVisible) {
-        const lWidth = c2.priceScale("left").width();
-        if (lWidth > maxLeft) maxLeft = lWidth;
-      }
-    }
-
-    // 🚀 [모바일/김프OFF 방어] 모바일(768px 미만)이거나 김프 OFF 시 좌측 여백을 0px로 확정하여 가로 너비 덜컹거림/버벅임 완벽 차단!
-    if (isSmallMobile || !isKimchiVisible) {
-      maxLeft = 0;
-    }
-
-    // 🚀 [안정적 우측 가격축 유지] force(새 코인 전환)가 아닐 때만 팝업/타임존 토글 시 가격축 덜컹거림 방지
-    if (
-      !force &&
-      !window.isResettingWidth &&
-      store.savedPriceScaleWidth &&
-      store.savedPriceScaleWidth > 0
-    ) {
-      maxRight = Math.max(maxRight, store.savedPriceScaleWidth);
-    }
-
-    // 🚀 [원자적 동기화] 너비가 변경되었거나 force=true인 경우 0ms 즉각 일치 적용!
-    if (maxRight > 0 && (force || maxRight !== currentMaxRight)) {
-      currentMaxRight = maxRight;
-      store.savedPriceScaleWidth = maxRight;
-      if (c1) c1.priceScale("right").applyOptions({ minimumWidth: maxRight });
-      if (c2) c2.priceScale("right").applyOptions({ minimumWidth: maxRight });
-    }
-    if (force || maxLeft !== currentMaxLeft) {
-      currentMaxLeft = maxLeft;
-      const lOpts = {
-        minimumWidth: maxLeft,
-        visible: maxLeft > 0,
-      };
-      if (c1) c1.priceScale("left").applyOptions(lOpts);
-      if (c2) c2.priceScale("left").applyOptions(lOpts);
-    }
-  };
-
-  window.syncPriceScaleWidths = (force = false) => {
-    if (window.isResettingWidth) return;
-    if (force) {
-      // 🚀 [원자적 즉시 동기화] 코인/TF 전환 시 rAF 지연 없이 단일 프레임 내에서 즉시 동기 실행
-      performSyncPriceScaleWidths(true);
-      return;
-    }
-
-    if (widthSyncPending) return;
-    const now = performance.now();
-    if (now - lastWidthSyncTime < 100) return;
-    widthSyncPending = true;
-
-    requestAnimationFrame(() => {
-      widthSyncPending = false;
-      lastWidthSyncTime = performance.now();
-      performSyncPriceScaleWidths(false);
-    });
-  };
-
-  let sizeChangeTimeout = null;
-  const onChartSizeChange = () => {
-    if (sizeChangeTimeout) clearTimeout(sizeChangeTimeout);
-    sizeChangeTimeout = setTimeout(() => {
-      window.syncPriceScaleWidths(true);
-    }, 150);
-  };
-  if (store.chart) {
-    store.chart.timeScale().subscribeSizeChange(onChartSizeChange);
-    store.chart.timeScale().subscribeVisibleLogicalRangeChange(() => {
-      window.syncPriceScaleWidths();
-    });
-  }
-  if (store.chartVol) {
-    store.chartVol.timeScale().subscribeSizeChange(onChartSizeChange);
-    store.chartVol.timeScale().subscribeVisibleLogicalRangeChange(() => {
-      window.syncPriceScaleWidths();
-    });
-  }
-
-  // 🚀 [메모리 누수 방지] 이전 더블클릭 이벤트 리스너 제거
-  [elMain, elVol].forEach((el) => {
-    if (el && typeof window.resetPriceScaleWidthSync === "function") {
-      el.removeEventListener("dblclick", window.resetPriceScaleWidthSync);
-    }
-  });
-
-  // 🚀 전역 리셋 함수 (데이터 로드 전 초기화 및 로드 후 자동 싱크 보장)
-  window.resetPriceScaleWidthSync = () => {
-    window.isResettingWidth = true; // 🚨 락 활성화!
-    currentMaxRight = 0;
-    currentMaxLeft = 0;
-    const c1 = store.chart;
-    const c2 = store.chartVol;
-    if (c1) {
-      c1.priceScale("right").applyOptions({ minimumWidth: 0, autoScale: true });
-      c1.priceScale("left").applyOptions({ minimumWidth: 0, autoScale: true });
-    }
-    if (c2) {
-      c2.priceScale("right").applyOptions({ minimumWidth: 0, autoScale: true });
-      c2.priceScale("left").applyOptions({ minimumWidth: 0, autoScale: true });
-    }
-
-    // 🚀 브라우저 렌더링 사이클(Repaint)이 완벽히 끝나 라이브러리 내부 width()가 순수하게 줄어든 150ms 뒤에 락 해제 및 최종 싱크!
-    setTimeout(() => {
-      window.isResettingWidth = false;
-      window.syncPriceScaleWidths();
-    }, 100);
-  };
-
-  window.resetPriceScaleWidthSync();
-
-  // 🚀 [추가] 차트 가격 스케일별 트레이딩뷰 스타일 A / L 모드 버튼 오버레이 생성
-  setupScaleModeButtons();
-  mountTimezoneButton();
-
-  // 🚀 차트 스케일 리셋(더블클릭) 시 이전 넓이의 저주를 풀고 즉시 0으로 리셋 후 재계산 연동!
-  [elMain, elVol].forEach((el) => {
-    if (el) el.addEventListener("dblclick", window.resetPriceScaleWidthSync);
-  });
+  // 🚀 [멀티 차트 동기화 전담 엔진 초기화] 크로스헤어, 시간축, 가격축 너비 락킹 및 스케일 모드 버튼 바인딩
+  initChartSync(elMain, elVol);
 
   initResizers();
   applyChartLayout();
@@ -1325,75 +805,14 @@ export function updateChartTheme() {
   applyChartLayout();
 }
 
-export function setupScaleModeButtons() {
-  const mainA = document.getElementById("main-scale-a-btn");
-  const mainL = document.getElementById("main-scale-l-btn");
-  const volA = document.getElementById("vol-scale-a-btn");
-  const volL = document.getElementById("vol-scale-l-btn");
+export {
+  initChartSync,
+  syncCrosshair,
+  syncTimeScales,
+  syncPriceScaleWidths,
+  resetPriceScaleWidthSync,
+  setupScaleModeButtons,
+  updateScaleModeButtonsUI,
+};
 
-  [mainA, mainL, volA, volL].forEach((btn) => {
-    if (btn) {
-      ["pointerdown", "mousedown", "touchstart", "dblclick"].forEach((evt) => {
-        btn.addEventListener(evt, (e) => e.stopPropagation());
-      });
-    }
-  });
-
-  if (mainA) {
-    mainA.onclick = (e) => {
-      e.stopPropagation();
-      if (typeof resetChartScale === "function") resetChartScale();
-      if (typeof window.syncPriceScaleWidths === "function") {
-        window.syncPriceScaleWidths(true);
-      }
-    };
-  }
-
-  if (mainL) {
-    mainL.onclick = (e) => {
-      e.stopPropagation();
-      if (window.toggleLogScale) window.toggleLogScale();
-    };
-
-    // 초기 L 버튼 활성화 스타일 세팅
-    if (store.isLogMode) {
-      mainL.className =
-        "w-5 h-5 flex items-center justify-center text-[9px] font-medium rounded cursor-pointer transition-colors bg-theme-accent text-white shadow-sm border border-theme-accent";
-    } else {
-      mainL.className =
-        "w-5 h-5 flex items-center justify-center text-[9px] font-medium rounded cursor-pointer transition-colors bg-theme-border/20 text-theme-text hover:bg-theme-border/40 border border-theme-border/30";
-    }
-  }
-
-  if (volA) {
-    volA.onclick = (e) => {
-      e.stopPropagation();
-      if (store.chartVol) {
-        store.chartVol.priceScale("right").applyOptions({ autoScale: true });
-        store.chartVol.priceScale("left").applyOptions({ autoScale: true });
-      }
-      if (typeof window.syncPriceScaleWidths === "function") {
-        window.syncPriceScaleWidths(true);
-      }
-    };
-  }
-
-  if (volL) {
-    volL.onclick = (e) => {
-      e.stopPropagation();
-      if (window.toggleLogScale) window.toggleLogScale();
-    };
-
-    // 초기 L 버튼 활성화 스타일 세팅
-    if (store.isLogMode) {
-      volL.className =
-        "w-5 h-5 flex items-center justify-center text-[9px] font-medium rounded cursor-pointer transition-colors bg-theme-accent text-white shadow-sm border border-theme-accent";
-    } else {
-      volL.className =
-        "w-5 h-5 flex items-center justify-center text-[9px] font-medium rounded cursor-pointer transition-colors bg-theme-border/20 text-theme-text hover:bg-theme-border/40 border border-theme-border/30";
-    }
-  }
-}
-
-window.setupScaleModeButtons = setupScaleModeButtons;
 window.updateChartTheme = updateChartTheme;

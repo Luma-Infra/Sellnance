@@ -160,7 +160,9 @@ export function updateKimchiComparisonUI() {
     store.kimchiSeries.applyOptions({ visible: !isDisabled });
     if (isDisabled) {
       try {
+        const visibleRange = store.chart ? store.chart.timeScale().getVisibleLogicalRange() : null;
         store.kimchiSeries.setData([]);
+        if (visibleRange && store.chartVol) store.chartVol.timeScale().setVisibleLogicalRange(visibleRange);
       } catch (e) { }
     }
   }
@@ -191,7 +193,9 @@ export function toggleKimchiComparison(forceVal) {
     // 🎯 [김프 끄기] 전체 재조회(fetchHistory) 없이 캔들과 볼륨은 100% 실시간 스트리밍 유지하고 김프만 즉시 정화
     if (store.kimchiSeries) {
       try {
+        const visibleRange = store.chart ? store.chart.timeScale().getVisibleLogicalRange() : null;
         store.kimchiSeries.setData([]);
+        if (visibleRange && store.chartVol) store.chartVol.timeScale().setVisibleLogicalRange(visibleRange);
       } catch (e) { }
     }
     store.kimchiData = [];
@@ -247,7 +251,9 @@ export async function lazyRenderKimchiData(params) {
   if (store.isKimchiDisabled) {
     if (store.kimchiSeries) {
       try {
+        const visibleRange = store.chart ? store.chart.timeScale().getVisibleLogicalRange() : null;
         store.kimchiSeries.setData([]);
+        if (visibleRange && store.chartVol) store.chartVol.timeScale().setVisibleLogicalRange(visibleRange);
       } catch (e) { }
     }
     store.kimchiData = [];
@@ -563,18 +569,21 @@ export async function lazyRenderKimchiData(params) {
           store.kimchiData = batchKimchi.map((d) => mapTime(d));
           rebuildKimchiDataMap();
           if (store.kimchiSeries) {
-            const lastK = store.kimchiData[store.kimchiData.length - 1];
-            if (wrapper && lastK) {
-              wrapper.style.setProperty("--kimchi-color", lastK.color);
-            }
-            try {
-              const currentRange = store.chart?.timeScale().getVisibleLogicalRange();
-              store.kimchiSeries.setData(sanitizeChartData(store.kimchiData, true));
-              if (currentRange) {
-                store.chart.timeScale().setVisibleLogicalRange(currentRange);
+            const visibleRange = store.chart ? store.chart.timeScale().getVisibleLogicalRange() : null;
+            if (store.paneConfig.kimchi) {
+              if (store.isCrosshairActive) {
+                requestAnimationFrame(() => {
+                  store.kimchiSeries.setData(sanitizeChartData(store.kimchiData, true));
+                  if (visibleRange && store.chartVol) store.chartVol.timeScale().setVisibleLogicalRange(visibleRange);
+                });
+              } else {
+                store.kimchiSeries.setData(sanitizeChartData(store.kimchiData, true));
+                if (visibleRange && store.chartVol) store.chartVol.timeScale().setVisibleLogicalRange(visibleRange);
               }
-              if (typeof applyChartLayout === "function") applyChartLayout();
-            } catch (err) { }
+            } else {
+              store.kimchiSeries.setData([]);
+            }
+            if (typeof applyChartLayout === "function") applyChartLayout();
           }
         }
       };
@@ -691,10 +700,6 @@ export async function lazyRenderKimchiData(params) {
         });
       } else {
         hideKimchiLoading();
-        // 데이터가 없거나 로드되지 않은 상태이므로 경고 문구 표시
-        if (typeof window.toggleVolFallback === "function") {
-          window.toggleVolFallback(true);
-        }
       }
     } else {
       hideKimchiLoading();
@@ -713,11 +718,6 @@ export async function lazyRenderKimchiData(params) {
       if (wrapper)
         wrapper.style.setProperty("--kimchi-color", "transparent");
 
-      // 🚀 데이터가 없으므로 경고 문구 표시
-      if (typeof window.toggleVolFallback === "function") {
-        window.toggleVolFallback(true);
-      }
-
       const noDataMsg = document.getElementById("kimchi-no-data");
       if (noDataMsg && !isTfChange) {
         noDataMsg.classList.remove("hidden");
@@ -729,20 +729,15 @@ export async function lazyRenderKimchiData(params) {
         try {
           if (typeof applyChartLayout === "function") applyChartLayout();
         } catch (layoutErr) {
-          console.warn("🚨 fetchHistory (no-data) applyChartLayout 예외 우회:", layoutErr);
+          // Xconsole.warn("fetchHistory (no-data) applyChartLayout 예외 우회:", layoutErr);
         }
       });
     }
   } catch (err) {
-    console.error("김프 백그라운드 렌더링 실패:", err);
+    // Xconsole.error("김프 백그라운드 렌더링 실패:", err);
     let loadingMessageContainer = document.getElementById("kimchi-loading-message");
     if (loadingMessageContainer)
       loadingMessageContainer.style.display = "none";
-
-    // 에러 발생 시 경고 문구 표시
-    if (typeof window.toggleVolFallback === "function") {
-      window.toggleVolFallback(true);
-    }
   }
 }
 

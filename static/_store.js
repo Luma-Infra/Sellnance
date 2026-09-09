@@ -78,6 +78,7 @@ export const store = {
   tempVolSource: sessionControlPanel?.customVolSource ?? "BINANCE",
   useFlip: true, // 🚀 플립 애니메이션 사용 여부
   chartZoomSpeed: 1.15, // 🚀 캔버스 휠 스크롤 줌 가속 배속 (1.0: 기본 트뷰 속도, 2.0~2.5: 초고속 쾌적 줌, 3.5: 초광속)
+  priceScaleZoomSpeed: 0.035, // 🚀 가격축 Y스케일 휠 감도 (기존 12~14% 과민 줌 -> 1휠 틱당 약 3.5% 트뷰 디폴트 감도: Math.min(abs(deltaY) / 100, 1.2) * 0.035)
   hideSmallCap: sessionControlPanel?.hideSmallCap ?? false, // 🚀 시총 1M 미만 숨기기 여부
   currentTab: sessionControlPanel?.currentTab || "ALL", // 🚀 카테고리 탭 (ALL, FAV, FAV2)
   activePresetIndex: sessionControlPanel?.activePresetIndex, // 🚀 활성 프리셋 인덱스
@@ -115,6 +116,10 @@ export const store = {
   savedZoomWidth: null, // 🚀 [UX 개선] 사용자가 스크롤/줌을 통해 설정한 캔들 개수(가로폭) 저장용
   savedRightMargin: null, // 🚀 [UX 개선] 사용자가 드래그해서 맞춘 마지막 캔들 우측 여백 칸 수 저장용
   savedPriceScaleWidth: null, // 🚀 [UX 개선] 우측 가격 축의 실시간 너비 저장용 (멀티 뷰포트 정밀 동기화용)
+  isUserZoomed: false, // 🚀 사용자가 시간축(가로) 줌/패닝을 직접 조작한 상태
+  isPriceScaleUserZoomed: false, // 🚀 사용자가 메인 Y축 가격 스케일을 수동 드래그/줌한 상태 (autoScale 보존용)
+  isVolPriceScaleUserZoomed: false, // 🚀 사용자가 하단 볼륨 Y축 스케일을 수동 조작한 상태
+  isKimchiPriceScaleUserZoomed: false, // 🚀 사용자가 하단 김프 Y축 스케일을 수동 조작한 상태
   kimchiSeries: null,
   chartVol: null,
   chartKimchi: null,
