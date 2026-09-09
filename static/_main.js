@@ -13,6 +13,8 @@ import "./ui_dialog.js";
 import "./_market_rules.js";
 import "./chart_layout.js";
 import "./chart_timezone.js";
+import "./chart_crosshair.js";
+import "./chart_sync.js";
 import "./sim_engine.js";
 import "./stream.js";
 import "./table.js";

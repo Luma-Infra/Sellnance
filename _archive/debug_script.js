@@ -255,13 +255,13 @@
       // 🚀 1초(1000ms) 내에 이전 가격 대비 5% 초과 차이가 나면 비정상(범인)으로 간주
       if (diffRatio > 0.05 && timeDiff <= 1000) {
         isSpike = true;
-        // console.warn(`🚨 [스파이크] ${ticker} 1초 내에 튀는 값 유입! (시간차:${timeDiff}ms | 전:${oldPrice} -> 후:${newPrice} | 차이:${(diffRatio * 100).toFixed(2)}%)`);
+        // Xconsole.warn(`🚨 [스파이크] ${ticker} 1초 내에 튀는 값 유입! (시간차:${timeDiff}ms | 전:${oldPrice} -> 후:${newPrice} | 차이:${(diffRatio * 100).toFixed(2)}%)`);
       }
 
       // 🚀 실시간 소켓이 3초 레이더 값으로 덮어씌워지는지 (과거 데이터 유입 역행) 체크
       if (oldSrc === '🔌 실시간소켓' && src === '⏱ 3초레이더') {
         isRetrograde = true;
-        // console.warn(`⚠️ [역행 오염] ${ticker} 최신 실시간 데이터가 낡은 3초 레이더 데이터로 덮어씌워짐! (전:${oldPrice} -> 후:${newPrice})`);
+        // Xconsole.warn(`⚠️ [역행 오염] ${ticker} 최신 실시간 데이터가 낡은 3초 레이더 데이터로 덮어씌워짐! (전:${oldPrice} -> 후:${newPrice})`);
       }
 
       if (isSpike || isRetrograde) {
@@ -395,7 +395,7 @@
             if (newVal !== _priceRawVal) {
               recordMutation('Price_Raw', _priceRawVal, newVal, caller);
               if (getTop5().has(row.Ticker)) {
-                // console.warn(`[PROPERTY INTERCEPT] 🚨 ${row.Ticker}.Price_Raw 오염 감지: ${_priceRawVal} ➔ ${newVal} | 호출자: ${caller}`);
+                // Xconsole.warn(`[PROPERTY INTERCEPT] 🚨 ${row.Ticker}.Price_Raw 오염 감지: ${_priceRawVal} ➔ ${newVal} | 호출자: ${caller}`);
                 row._lastPriceRawCaller = caller;
               }
             }
@@ -420,7 +420,7 @@
             if (newVal !== _todayRawVal) {
               recordMutation('Change_Today_Raw', _todayRawVal, newVal, caller);
               if (getTop5().has(row.Ticker)) {
-                // console.warn(`[PROPERTY INTERCEPT] 🚨 ${row.Ticker}.Change_Today_Raw 오염 감지: ${_todayRawVal} ➔ ${newVal} | 호출자: ${caller}`);
+                // Xconsole.warn(`[PROPERTY INTERCEPT] 🚨 ${row.Ticker}.Change_Today_Raw 오염 감지: ${_todayRawVal} ➔ ${newVal} | 호출자: ${caller}`);
                 row._lastTodayRawCaller = caller;
               }
             }
@@ -652,7 +652,7 @@
     window.updateRowPriceDisplay = _priceOrig;
     const panel = document.getElementById("realtime-debug-panel");
     if (panel) panel.remove();
-    console.log('🛑 디버거 종료 완료');
+    // Xconsole.log('🛑 디버거 종료 완료');
   };
 })();
 

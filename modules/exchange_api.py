@@ -861,6 +861,7 @@ def fetch_upbit_prices(upbit_assets):
                         "utc0_open": item["opening_price"],
                         "change_24h": item.get("signed_change_rate", 0.0) * 100,
                         "volume_24h": item.get("acc_trade_price_24h", 0.0),
+                        "acc_trade_price_24h": item.get("acc_trade_price_24h", 0.0),
                     }
                 success = True
                 break

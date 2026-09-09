@@ -300,16 +300,18 @@ export function renderTable(isRealtime = false) {
           .replace(/^\d+_/, "")
           .replace(/_(BINANCE|UPBIT|BITHUMB|BYBIT)$/i, "")
           .toUpperCase();
+        const ghostTicker = `DELISTED_${uid}`;
         const ghostRowEl = document.createElement("div");
         ghostRowEl.classList.add("coin-row");
-        ghostRowEl.dataset.sym = cleanSym;
+        ghostRowEl.dataset.sym = ghostTicker;
         ghostRowEl.dataset.delisted = "true";
+        ghostRowEl.dataset.uid = String(uid);
         ghostRowEl.style.cursor = "default";
         ghostRowEl.style.position = "absolute";
         ghostRowEl.style.height = "52px";
         ghostRowEl.style.contain = "content";
         ghostRowEl.style.setProperty("display", "none", "important");
-        store.rowDomMap.set(cleanSym, ghostRowEl);
+        store.rowDomMap.set(ghostTicker, ghostRowEl);
         store.rowDomMap.set(String(uid), ghostRowEl);
         store.tableObserver.observe(ghostRowEl);
         fragment.appendChild(ghostRowEl);
@@ -338,13 +340,24 @@ export function renderTable(isRealtime = false) {
     if (d) {
       currentVisibleSet.add(d.Ticker);
       if (d.UID) currentVisibleSet.add(String(d.UID));
-      if (d.DisplayTicker) currentVisibleSet.add(d.DisplayTicker);
+      if (d.DisplayTicker && !d.isDelisted) currentVisibleSet.add(d.DisplayTicker);
     }
   }
 
   // 🚀 [스마트 숨김] 전체를 껐다 켜지 않고, 이번 필터에 없는 행들만 골라서 숨김 (화면 점멸/깜빡임 0% 원천 차단)
+  const isFavTab = store.currentTab === "FAV" || store.currentTab === "FAV2";
   for (const child of tbody.children) {
     const sym = child.dataset.sym;
+    const isDelistedDom = child.dataset.delisted === "true";
+    
+    // FAV 탭이 아닐 때는 상폐 Ghost DOM 무조건 은닉
+    if (isDelistedDom && !isFavTab) {
+      if (child.style.display !== "none") {
+        child.style.setProperty("display", "none", "important");
+      }
+      continue;
+    }
+
     if (!sym || !currentVisibleSet.has(sym)) {
       if (child.style.display !== "none") {
         child.style.setProperty("display", "none", "important");

@@ -35,15 +35,17 @@ export function startUpbitFeed() {
 
   upbitRadarWs.onopen = () => {
     upbitRadarRetryDelay = 5000;
-    const allUpbitCodes = (store.currentTableData || [])
+    let allUpbitCodes = (store.currentTableData || [])
       .filter((row) => row.Upbit === "O" && row.Symbol)
       .map((row) => `KRW-${row.Symbol}`);
-    if (allUpbitCodes.length === 0) return;
+    if (allUpbitCodes.length === 0) {
+      allUpbitCodes = ["KRW-BTC"]; // 🚀 업비트 웹소켓 필수 페이로드 보장 (페이로드 미전송 시 업비트 서버가 소켓을 강제 차단/드랍하는 현상 원천 방지)
+    }
 
     try {
       upbitRadarWs.send(
         JSON.stringify([
-          { ticket: "sellnance_upbit_radar" },
+          { ticket: `sellnance_upbit_radar_${Date.now()}` },
           { type: "ticker", codes: allUpbitCodes },
         ])
       );
@@ -130,5 +132,34 @@ export function initUpbitSniperSocket() {
   startUpbitFeed();
 }
 
+export function syncUpbitRadarSubscription() {
+  if (!upbitRadarWs || upbitRadarWs.readyState !== WebSocket.OPEN) return;
+  const allUpbitCodes = (store.currentTableData || [])
+    .filter((row) => row.Upbit === "O" && row.Symbol)
+    .map((row) => `KRW-${row.Symbol}`);
+  if (allUpbitCodes.length === 0) return;
+  try {
+    upbitRadarWs.send(
+      JSON.stringify([
+        { ticket: `sellnance_upbit_radar_${Date.now()}` },
+        { type: "ticker", codes: allUpbitCodes },
+      ])
+    );
+  } catch (e) { }
+}
+
+if (typeof window !== "undefined") {
+  window.addEventListener("beforeunload", () => {
+    if (upbitRadarWs) {
+      upbitRadarWs.onclose = null;
+      upbitRadarWs.onerror = null;
+      try {
+        upbitRadarWs.close(1000);
+      } catch (_) { }
+    }
+  });
+}
+
+window.syncUpbitRadarSubscription = syncUpbitRadarSubscription;
 window.initUpbitSniperSocket = initUpbitSniperSocket;
 

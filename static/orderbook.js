@@ -220,7 +220,7 @@ export function startOrderbookStream(symbol, market) {
     store.orderbookWs.onmessage = (e) => {
       const res = JSON.parse(e.data);
       if (res.type === "orderbookdepth" && res.content && res.content.list) {
-        console.log(`⚡ [DEBUG] Bithumb WS Message received: ${res.content.list.length} levels`);
+        //Xconsole.log(`⚡ [DEBUG] Bithumb WS Message received: ${res.content.list.length} levels`);
         const asks = [];
         const bids = [];
         res.content.list.forEach((item) => {
@@ -238,7 +238,7 @@ export function startOrderbookStream(symbol, market) {
         obState.bids = bids;
         scheduleRender();
       } else {
-        console.log("⚡ [DEBUG] Bithumb WS Other message:", res);
+        //Xconsole.log("⚡ [DEBUG] Bithumb WS Other message:", res);
       }
     };
   } else if (market === "BYBIT" || market === "BYBIT_FUTURES") {
@@ -482,6 +482,20 @@ function formatVol(v) {
   if (v >= 1000) return (v / 1000).toFixed(2) + "K";
   if (v >= 100) return v.toFixed(1);
   return v.toFixed(3);
+}
+
+if (typeof window !== "undefined") {
+  window.addEventListener("beforeunload", () => {
+    if (store.orderbookWs) {
+      store.orderbookWs.onopen = null;
+      store.orderbookWs.onmessage = null;
+      store.orderbookWs.onerror = null;
+      store.orderbookWs.onclose = null;
+      try {
+        store.orderbookWs.close(1000);
+      } catch (_) { }
+    }
+  });
 }
 
 window.toggleOrderbook = toggleOrderbook;

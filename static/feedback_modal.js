@@ -6,20 +6,17 @@ import { showToast } from "./ui_dialog.js";
 
 export function toggleFeedbackModal(show) {
   const modal = document.getElementById("feedback-modal");
-  const card = document.getElementById("feedback-modal-card");
-  if (!modal || !card) return;
+  const floatingBtn = document.getElementById("feedback-floating-btn");
+  if (!modal) return;
 
   if (show) {
-    modal.classList.remove("hidden");
-    modal.classList.add("flex");
-    requestAnimationFrame(() => {
-      modal.classList.remove("opacity-0");
-      modal.classList.add("opacity-100");
-      card.classList.remove("scale-95");
-      card.classList.add("scale-100");
-    });
+    modal.classList.remove("scale-0", "opacity-0", "pointer-events-none");
+    modal.classList.add("scale-100", "opacity-100");
+    if (floatingBtn) {
+      floatingBtn.classList.add("scale-0", "opacity-0", "pointer-events-none");
+    }
     const textarea = document.getElementById("feedback-content");
-    if (textarea) setTimeout(() => textarea.focus(), 60);
+    if (textarea) setTimeout(() => textarea.focus(), 120);
 
     const handleEsc = (e) => {
       if (e.key === "Escape") {
@@ -29,14 +26,11 @@ export function toggleFeedbackModal(show) {
     };
     document.addEventListener("keydown", handleEsc);
   } else {
-    modal.classList.remove("opacity-100");
-    modal.classList.add("opacity-0");
-    card.classList.remove("scale-100");
-    card.classList.add("scale-95");
-    setTimeout(() => {
-      modal.classList.remove("flex");
-      modal.classList.add("hidden");
-    }, 200);
+    modal.classList.remove("scale-100", "opacity-100");
+    modal.classList.add("scale-0", "opacity-0", "pointer-events-none");
+    if (floatingBtn) {
+      floatingBtn.classList.remove("scale-0", "opacity-0", "pointer-events-none");
+    }
   }
 }
 

@@ -559,11 +559,25 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
   if (isKoreaSocket) {
     if (data.q_upbit !== undefined) {
       row.Upbit_Vol = parseFloat(data.q_upbit);
+      const rate = store.marketDataMap?.krw_usd_rate || 1350;
       if (store.currencyMode === "KRW" && typeof window.formatVolumeKRW === "function") {
         row.Upbit_Vol_Formatted = window.formatVolumeKRW(row.Upbit_Vol);
       } else if (typeof window.formatVolumeDollar === "function") {
-        const rate = store.marketDataMap?.krw_usd_rate || 1350;
         row.Upbit_Vol_Formatted = window.formatVolumeDollar(rate > 0 ? row.Upbit_Vol / rate : row.Upbit_Vol);
+      }
+      const hasGlobal =
+        row.Binance === "O" ||
+        row.Binance_Futures === "O" ||
+        row.Listed_Exchanges?.includes("BINANCE") ||
+        row.Listed_Exchanges?.includes("BINANCE_FUTURES");
+      if (!hasGlobal && row.Upbit_Vol > 0) {
+        const upVolUsd = rate > 0 ? row.Upbit_Vol / rate : row.Upbit_Vol;
+        row.Volume_Raw = upVolUsd;
+        if (store.currencyMode === "KRW" && typeof window.formatVolumeKRW === "function") {
+          row.Volume_Formatted = window.formatVolumeKRW(row.Upbit_Vol);
+        } else if (typeof window.formatVolumeDollar === "function") {
+          row.Volume_Formatted = window.formatVolumeDollar(upVolUsd);
+        }
       }
     }
   } else {

@@ -163,6 +163,11 @@ export function processTableData(result) {
     window.restoreControlPanelUI();
   }
 
+  // 🚀 [신규] 테이블 장부 로드 완료 후 업비트 웹소켓 전체 구독 목록 즉시 동기화
+  if (typeof window.syncUpbitRadarSubscription === "function") {
+    window.syncUpbitRadarSubscription();
+  }
+
   // 🚀 [신규] 마지막 정렬 기준 화살표 및 버튼 강조 상태 복원
   if (typeof window.updateSortUI === "function") {
     window.updateSortUI(store.currentSortCol, store.sortState);

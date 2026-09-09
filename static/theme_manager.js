@@ -169,8 +169,8 @@ export function toggleTheme() {
     html.classList.add("theme-upbit");
     store.currentTheme = "upbit";
     updateThemeButtons("upbit");
-    if (faviconLink) faviconLink.href = staticPath + "luma-deer-svg-light.svg";
-    if (mainLogoImg) mainLogoImg.src = staticPath + "luma-deer-svg-light.svg";
+    if (faviconLink) faviconLink.href = "/static/luma-deer-svg-light.svg";
+    if (mainLogoImg) mainLogoImg.src = "/static/luma-deer-svg-light.svg";
   } else {
     body.classList.remove("theme-upbit");
     body.classList.add("theme-binance");
@@ -178,8 +178,8 @@ export function toggleTheme() {
     html.classList.add("theme-binance");
     store.currentTheme = "binance";
     updateThemeButtons("binance");
-    if (faviconLink) faviconLink.href = staticPath + "luma-deer-svg-dark.svg";
-    if (mainLogoImg) mainLogoImg.src = staticPath + "luma-deer-svg-dark.svg";
+    if (faviconLink) faviconLink.href = "/static/luma-deer-svg-dark.svg";
+    if (mainLogoImg) mainLogoImg.src = "/static/luma-deer-svg-dark.svg";
   }
 
   // 🚀 캔들, 볼륨(vol), 프리뷰 차트 색상 일괄 동기화

@@ -439,15 +439,15 @@ body.theme-binance {
   #head-info-row {
     margin-top: auto !important;
     margin-bottom: auto !important;
-    padding-top: 2px !important;
-    padding-bottom: 2px !important;
+    padding-top: 1px !important;
+    padding-bottom: 1px !important;
     gap: 24px !important;
   }
 
   #head-controls-row {
     margin-top: 0 !important;
-    padding-top: 2px !important;
-    padding-bottom: 4px !important;
+    padding-top: 3px !important;
+    padding-bottom: 5px !important;
   }
 
   #head-control-buttons button {
@@ -460,6 +460,7 @@ body.theme-binance {
     flex-direction: row !important;
     align-items: center !important;
     gap: 8px !important;
+    margin-top: 2px !important;
   }
 
   #head-price-label {
@@ -1123,12 +1124,12 @@ body.theme-upbit:not(.resizing-active) #right-panel {
       display: none !important;
     }
 
-    #control-panel-parent {
-      /* gap: 0 !important;
+    /* #control-panel-parent {
+      gap: 0 !important;
       padding: 0 !important;
       margin: 0 !important;
-      border: none !important; */
-    }
+      border: none !important;
+    } */
 
     #table-top-zone {
       height: auto !important;

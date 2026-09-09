@@ -413,8 +413,8 @@ def build_upbit_row(
         "Change_24h": utils.format_change(up_change_24h),
         "Change_Today": utils.format_change(change_today),
         "Volume_Formatted": (
-            utils.format_volume_string(binance_vol)
-            if (has_binance_listing and binance_vol > 0)
+            utils.format_volume_string(binance_vol if has_binance_listing else (float(up_info.get("volume_24h") or up_info.get("acc_trade_price_24h") or 0.0) / krw_usd_rate if krw_usd_rate > 0 else 0.0))
+            if (binance_vol > 0 if has_binance_listing else float(up_info.get("volume_24h") or up_info.get("acc_trade_price_24h") or 0.0) > 0)
             else "-"
         ),
         "Kimchi_Formatted": "-",
@@ -427,7 +427,7 @@ def build_upbit_row(
         "Price_Raw": current_p,
         "Change_24h_Raw": up_change_24h,
         "Change_Today_Raw": change_today,
-        "Volume_Raw": binance_vol if has_binance_listing else 0.0,
+        "Volume_Raw": binance_vol if has_binance_listing else (float(up_info.get("volume_24h") or up_info.get("acc_trade_price_24h") or 0.0) / krw_usd_rate if krw_usd_rate > 0 else 0.0),
         "MarketCap_Raw": mcap,
         "VMC_Raw": vmc_raw,
         "Kimchi_Raw": None,
@@ -457,17 +457,17 @@ def build_upbit_row(
         "Exact_Spot": bin_agg["exact_spot_ticker"],
         "Upbit_Vol_Formatted": (
             utils.format_volume_string(
-                up_info.get("acc_trade_price_24h", 0.0) / krw_usd_rate
+                float(up_info.get("volume_24h") or up_info.get("acc_trade_price_24h") or 0.0) / krw_usd_rate
             )
-            if krw_usd_rate > 0
+            if (krw_usd_rate > 0 and float(up_info.get("volume_24h") or up_info.get("acc_trade_price_24h") or 0.0) > 0)
             else "-"
         ),
         "Upbit_Vol_KRW_Formatted": (
-            utils.format_volume_krw_string(up_info.get("acc_trade_price_24h", 0.0))
-            if up_info.get("acc_trade_price_24h", 0.0) > 0
+            utils.format_volume_krw_string(float(up_info.get("volume_24h") or up_info.get("acc_trade_price_24h") or 0.0))
+            if float(up_info.get("volume_24h") or up_info.get("acc_trade_price_24h") or 0.0) > 0
             else "-"
         ),
-        "Upbit_Vol": up_info.get("acc_trade_price_24h", 0.0),
+        "Upbit_Vol": float(up_info.get("volume_24h") or up_info.get("acc_trade_price_24h") or 0.0),
         "Bybit_Vol_Spot": by_raw.get("spot_volume_24h", 0.0),
         "Bybit_Vol_Futures": by_raw.get("futures_volume_24h", 0.0),
         "Bybit_Vol_Formatted": (

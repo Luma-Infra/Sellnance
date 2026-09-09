@@ -140,10 +140,11 @@ export function getFilteredData() {
         .toUpperCase();
       const realName = meta.name || cleanSym;
       const realNameKR = meta.name_kr || realName;
+      const ghostTicker = `DELISTED_${uid}`;
 
       const ghost = {
         UID: uid,
-        Ticker: cleanSym,
+        Ticker: ghostTicker,
         DisplayTicker: cleanSym,
         Symbol: cleanSym,
         Name: realName,
@@ -170,8 +171,7 @@ export function getFilteredData() {
       };
 
       if (store.tickerRowMap) {
-        store.tickerRowMap.set(cleanSym, ghost);
-        store.tickerRowMap.set(cleanSym.toUpperCase(), ghost);
+        store.tickerRowMap.set(ghostTicker, ghost);
         store.tickerRowMap.set(String(uid), ghost);
       }
       return ghost;

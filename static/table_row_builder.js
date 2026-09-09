@@ -17,9 +17,6 @@ import { getWarningBadgeHtml, getListingDate, formatListingDateWithExchange } fr
 export function createRowElement(row) {
   const rowEl = document.createElement("div");
   rowEl.classList.add("coin-row");
-  if (row.isDelisted) {
-    rowEl.classList.add("opacity-40", "grayscale", "hover:opacity-90", "transition-opacity");
-  }
   const ticker = row.Ticker; // 🚀 중복 없는 유니크 티커 사용 (BTCKRW != BTCUSDT)
   rowEl.dataset.sym = ticker;
   rowEl.style.position = "relative";
@@ -37,12 +34,6 @@ export function updateRowStaticHTML(rowEl, row) {
   rowEl._volUCell = null;
   rowEl._kimchiCell = null;
   rowEl._priceEl = null;
-
-  if (row.isDelisted) {
-    rowEl.classList.add("opacity-40", "grayscale", "hover:opacity-90", "transition-opacity");
-  } else {
-    rowEl.classList.remove("opacity-40", "grayscale", "hover:opacity-90");
-  }
 
   const pureSymbol = row.Symbol;
   const tId = row.Ticker; // 🚀 DOM ID용 완벽한 고유키
@@ -88,6 +79,8 @@ export function updateRowStaticHTML(rowEl, row) {
     starClass = "active-blue";
   }
 
+  const delistMutedClass = row.isDelisted ? "grayscale opacity-50" : "";
+
   // 🚀 정적 식별 정보 레이아웃 렌더링 (순위, 즐겨찾기 별, 로고, 코인명)
   // 동적 수치 데이터 영역은 빈 Placeholder div 구조로 생성하여 레이아웃 깨짐을 방지하고 스크롤 시 공백(하얀 칸) 노출을 방어합니다.
   rowEl.innerHTML = `
@@ -105,7 +98,7 @@ export function updateRowStaticHTML(rowEl, row) {
       <div class="w-[20px] flex-shrink-0 text-center">
         <span class="row-counter text-[10px] font-medium font-medium text-theme-text opacity-40 flex-shrink-0 px-0 leading-none"></span>
       </div>
-      <!-- 1. 별 버튼 -->
+      <!-- 1. 별 버튼 (상폐 여부와 무관하게 100% 선명한 원본 컬러 유지) -->
       <div class="flex items-center gap-0.5 flex-shrink-0">
         <button onclick="toggleFavorite('${uId}', event)" class="star-btn text-[14px] transition-all hover:scale-125 flex-shrink-0 ${starClass}" style="color: ${starColor}">
           ${starText}
@@ -123,13 +116,13 @@ export function updateRowStaticHTML(rowEl, row) {
     }
       </div>
       
-      <!-- 2. 티커 이미지 -->
-      <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-white/1 overflow-hidden">
+      <!-- 2. 티커 이미지 (상폐 시 회색조 처리) -->
+      <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-white/1 overflow-hidden ${delistMutedClass}">
         ${row.Logo || `<img src="${document.body?.classList.contains('theme-upbit') ? '/static/luma-deer-svg-light.svg' : '/static/luma-deer-svg-dark.svg'}" class="fallback-logo" loading="lazy" style="width: 24px; height: 24px; vertical-align: middle; border-radius: 50%;">`}
       </div>
       
-      <!-- 3. 티커 & 이름 -->
-      <div class="flex flex-col leading-[1.1] min-w-0 flex-1">
+      <!-- 3. 티커 & 이름 (상폐 시 회색조 처리) -->
+      <div class="flex flex-col leading-[1.1] min-w-0 flex-1 ${delistMutedClass}">
         <b class="text-[12px] text-theme-text truncate font-medium tracking-tighter">
           ${getDisplayTickerHtml(row)}
         </b>
