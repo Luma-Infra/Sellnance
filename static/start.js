@@ -1232,7 +1232,7 @@ async function initStartScreen() {
   await initStartQuickViewPreview();
 }
 
-function saveAndStart() {
+async function saveAndStart() {
   const isEngineActive = !!(store && store.isEngineStarted);
   const input = document.getElementById("cmc-api-input");
   if (input && !input.value.includes("*")) {
@@ -1275,25 +1275,73 @@ function saveAndStart() {
   const oldKey = localStorage.getItem("CMC_API_KEY") || "";
   const isKeyChanged = oldKey !== keyToSave;
 
-  // 🚀 [INP 최적화 1] 클릭 즉시 시각적 피드백 제공 (Next Paint 가속)
   const btnStart = document.getElementById("btn-start-engine");
   if (btnStart) {
-    btnStart.innerText = isEngineActive ? "SAVING KEY..." : "STARTING DASHBOARD...";
+    btnStart.innerText = "VERIFYING KEY...";
     btnStart.style.pointerEvents = "none";
   }
 
-  // 🚀 [INP 최적화 2] 브라우저가 화면을 즉시 페인트할 수 있도록 메인 스레드 양보 (Yielding to Main Thread)
-  requestAnimationFrame(() => {
-    setTimeout(() => {
-      localStorage.setItem("CMC_API_KEY", keyToSave);
-      hideStartScreen();
+  try {
+    // 🚀 백엔드 실시간 CMC API 키 유효성 검증
+    const res = await fetch("/api/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ CMC_API_KEY: keyToSave }),
+    });
+    const result = await res.json();
 
-      // 이미 대시보드가 가동 중이고 키가 변경되었을 때만 시총 장부 사일런트 갱신
-      if (isEngineActive && isKeyChanged && typeof loadTableData === "function") {
-        loadTableData(true, true);
+    if (!result || result.valid === false || result.status === "error") {
+      if (input) {
+        input.classList.add(
+          "!border-red-500/80",
+          "shadow-[0_0_15px_rgba(239,68,68,0.3)]",
+        );
+        setTimeout(() => {
+          input.classList.remove(
+            "!border-red-500/80",
+            "shadow-[0_0_15px_rgba(239,68,68,0.3)]",
+          );
+        }, 2000);
+        input.focus();
       }
-    }, 0);
-  });
+
+      if (btnStart) {
+        btnStart.innerText = isEngineActive ? "Save & Apply Key" : "Start Dashboard";
+        btnStart.style.pointerEvents = "auto";
+      }
+
+      showToast(
+        result?.message || "CMC API Key 인증에 실패했습니다. 키를 다시 확인해주세요.",
+        "warning",
+        3000,
+      );
+      return;
+    }
+
+    // 🚀 [INP 최적화] 브라우저가 화면을 즉시 페인트할 수 있도록 메인 스레드 양보 (Yielding to Main Thread)
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        localStorage.setItem("CMC_API_KEY", keyToSave);
+        hideStartScreen();
+
+        // 이미 대시보드가 가동 중이고 키가 변경되었을 때만 시총 장부 사일런트 갱신
+        if (isEngineActive && isKeyChanged && typeof loadTableData === "function") {
+          loadTableData(true, true);
+        }
+      }, 0);
+    });
+  } catch (err) {
+    console.error("CMC validation error in start screen:", err);
+    if (btnStart) {
+      btnStart.innerText = isEngineActive ? "Save & Apply Key" : "Start Dashboard";
+      btnStart.style.pointerEvents = "auto";
+    }
+    showToast(
+      "서버와 통신 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+      "error",
+      3000,
+    );
+  }
 }
 
 // 🚀 Skip (일일캐시 모드 진입 / 대시보드로 복귀)
