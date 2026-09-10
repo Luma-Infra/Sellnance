@@ -171,26 +171,47 @@ export function initResizers() {
     document.body.style.cursor = "row-resize";
   };
 
-  if (rVol) rVol.addEventListener("mousedown", startDrag);
+  if (rVol) {
+    rVol.addEventListener("mousedown", startDrag);
+    rVol.addEventListener("touchstart", startDrag, { passive: true });
+  }
 
-  window.addEventListener("mousemove", (e) => {
+  const handleDragMove = (clientY) => {
     if (!isDraggingResizer) return;
     const rect = wrapper.getBoundingClientRect();
-    let pct = (e.clientY - rect.top) / rect.height;
+    let pct = (clientY - rect.top) / rect.height;
 
     if (pct < 0.2) pct = 0.2;
     if (pct > 0.9) pct = 0.9;
     store.chartSplits.s1 = pct;
     if (typeof window.applyChartLayout === "function")
       window.applyChartLayout();
+  };
+
+  window.addEventListener("mousemove", (e) => {
+    handleDragMove(e.clientY);
   });
 
-  window.addEventListener("mouseup", () => {
+  window.addEventListener("touchmove", (e) => {
+    if (isDraggingResizer && e.touches && e.touches.length > 0) {
+      handleDragMove(e.touches[0].clientY);
+    }
+  }, { passive: true });
+
+  const endDrag = () => {
     if (isDraggingResizer) {
       isDraggingResizer = false;
       document.body.style.cursor = "default";
+      try {
+        if (store.chartSplits?.s1) {
+          localStorage.setItem("sellnance_chart_split_s1", String(store.chartSplits.s1));
+        }
+      } catch (e) { }
     }
-  });
+  };
+
+  window.addEventListener("mouseup", endDrag);
+  window.addEventListener("touchend", endDrag, { passive: true });
 }
 
 window.togglePane = togglePane;

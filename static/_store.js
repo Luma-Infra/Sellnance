@@ -132,7 +132,15 @@ export const store = {
   kimchiDataMap: new Map(), // [최적화] O(1) 탐색용 해시맵
   countdownPriceLine: null,
   paneConfig: { volume: true, kimchi: true },
-  chartSplits: { s1: 0.65, s2: 0.85 },
+  chartSplits: (() => {
+    try {
+      const saved = parseFloat(localStorage.getItem("sellnance_chart_split_s1"));
+      if (!isNaN(saved) && saved >= 0.2 && saved <= 0.9) {
+        return { s1: saved, s2: 0.85 };
+      }
+    } catch (e) {}
+    return { s1: 0.75, s2: 0.85 };
+  })(),
   exchFilterStates: sessionControlPanel?.exchFilterStates ?? {
     BINANCE: 0,
     BINANCE_FUTURES: 0,
