@@ -14,7 +14,7 @@
     "__MEMO__12": "DUPLICATED_LIST: 동일 티커 다른 코인(동명이인) 또는 거래소별 티커 상이 코인의 UID/거래소별 티커 매핑",
     "__MEMO__13": "TICKER_DATA: 전체 자산 마스터 메타데이터: [0: CMC_ID, 1: 체인/메인넷, 2: 영문명, 3: 표준티커, 4: 자산타입(COIN/STOCK)]",
     "__MEMO__14": "-------------------------------------------------------------",
-    "DEFAULT_KRW_USD_RATE": 1340.97,
+    "DEFAULT_KRW_USD_RATE": 1341.47,
     "CHAIN_LOGO_MAP": {
         "ETH": "https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png",
         "BNB": "https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png",

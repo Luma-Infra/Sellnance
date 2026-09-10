@@ -1,11 +1,19 @@
-import { describe, it, expect } from "vitest";
-import { TIMEZONE_LIST, getSavedTimezoneId } from "../static/chart_timezone.js";
+import { describe, it, expect, beforeEach } from "vitest";
+import { TIMEZONE_LIST } from "../static/chart_timezone.js";
 import { ensureSafeUnixSeconds, getUnixSeconds } from "../static/chart_utils.js";
-import { isValidPriceRatio } from "../static/stream_utils.js";
+import { isValidPriceRatio, isTimeValid } from "../static/stream_utils.js";
 import { resampleSubCandles } from "../static/chart_data_kimchi.js";
 import { CONFIG, tfSec } from "../static/_store.js";
+import { isFuturesCoin, getRowExchangeMeta, isExchangeNativeTF } from "../static/_market_rules.js";
+import { addRecentSearch, getRecentSearches, removeRecentSearch, clearAllRecentSearches } from "../static/ui_search.js";
+import { getVisibleTfs, saveVisibleTfs } from "../static/ui_timeframe.js";
+import { isStockCoin } from "../static/table_filter.js";
 
 describe("Frontend Core Modules Direct Tests", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
   // 1. 타임존 목록 및 변환 엔진 실제 모듈 검증
   it("1. Real TIMEZONE_LIST & Unix Seconds Conversion", () => {
     expect(TIMEZONE_LIST.length).toBeGreaterThan(20);
@@ -32,6 +40,11 @@ describe("Frontend Core Modules Direct Tests", () => {
     expect(isValidPriceRatio(100, 100_000)).toBe(false); // 0.001
     expect(isValidPriceRatio(100_000_000, 100_000)).toBe(false); // 1000배
 
+    // 시간 포맷 유효성 검증
+    expect(isTimeValid(1700000000)).toBe(true);
+    expect(isTimeValid("2024-01-01")).toBe(true);
+    expect(isTimeValid(null)).toBe(false);
+
     // 12h 서브캔들 리샘플링 검증
     const rawCandles = [
       { time: 1700000000, open: 100, high: 110, low: 95, close: 105, vol: 10 },
@@ -52,149 +65,70 @@ describe("Frontend Core Modules Direct Tests", () => {
     expect(tfSec["1d"]).toBe(86400);
   });
 
-  // 2. 검색 및 티커 필터 가중치 정렬 테스트
-  it("2. Search & Ticker Filter Ranking", () => {
-    const mockCoins = [
-      { Symbol: "BTC", Korean_Name: "비트코인", DisplayTicker: "BTC" },
-      { Symbol: "BTCDOWN", Korean_Name: "비트코인다운", DisplayTicker: "BTCDOWN" },
-      { Symbol: "ETH", Korean_Name: "이더리움", DisplayTicker: "ETH" },
-      { Symbol: "BAT", Korean_Name: "베이직어텐션토큰", DisplayTicker: "BAT" },
-    ];
+  // 4. 최근 검색어(Recent Searches) 실제 모듈(ui_search.js) 검증
+  it("4. Real Recent Searches Module (ui_search.js)", () => {
+    expect(getRecentSearches()).toEqual([]);
 
-    function searchAndRank(query, items) {
-      const q = query.trim().toUpperCase();
-      if (!q) return items;
+    addRecentSearch("BTC");
+    addRecentSearch("ETH");
+    addRecentSearch("SOL");
 
-      return items
-        .filter((item) => {
-          const sym = (item.Symbol || "").toUpperCase();
-          const name = (item.Korean_Name || "").toUpperCase();
-          return sym.includes(q) || name.includes(q);
-        })
-        .sort((a, b) => {
-          const aExact = (a.Symbol || "").toUpperCase() === q ? 2 : 0;
-          const bExact = (b.Symbol || "").toUpperCase() === q ? 2 : 0;
-          if (aExact !== bExact) return bExact - aExact;
+    const list = getRecentSearches();
+    expect(list).toEqual(["SOL", "ETH", "BTC"]); // 최신순 정렬
 
-          const aStarts = (a.Symbol || "").toUpperCase().startsWith(q) ? 1 : 0;
-          const bStarts = (b.Symbol || "").toUpperCase().startsWith(q) ? 1 : 0;
-          return bStarts - aStarts;
-        });
-    }
+    // 중복 추가 시 최상단 이동
+    addRecentSearch("ETH");
+    expect(getRecentSearches()).toEqual(["ETH", "SOL", "BTC"]);
 
-    const resBtc = searchAndRank("BTC", mockCoins);
-    expect(resBtc.length).toBe(2);
-    expect(resBtc[0].Symbol).toBe("BTC"); // Exact match ranks first
-    expect(resBtc[1].Symbol).toBe("BTCDOWN");
+    // 단일 검색어 삭제
+    removeRecentSearch("SOL");
+    expect(getRecentSearches()).toEqual(["ETH", "BTC"]);
 
-    const resEth = searchAndRank("이더", mockCoins);
-    expect(resEth.length).toBe(1);
-    expect(resEth[0].Symbol).toBe("ETH");
+    // 전체 삭제
+    clearAllRecentSearches();
+    expect(getRecentSearches()).toEqual([]);
   });
 
-  // 3. 거래소 다중 필터 (AND vs OR) 로직 검증
-  it("3. Multi-exchange Filter Logic (AND vs OR)", () => {
-    const mockRows = [
-      { Symbol: "BTC", Upbit: "O", Bithumb: "O", Binance: "O" },
-      { Symbol: "ALT1", Upbit: "O", Bithumb: "X", Binance: "X" },
-      { Symbol: "ALT2", Upbit: "X", Bithumb: "X", Binance: "O" },
-    ];
+  // 5. 마켓 룰 및 거래소 메타 실제 모듈(_market_rules.js) 검증
+  it("5. Real Market Rules & Exchange Meta (_market_rules.js)", () => {
+    // 선물 전용 코인 검증
+    expect(isFuturesCoin({ Binance_Futures: "O" })).toBe(true);
+    expect(isFuturesCoin({ Bybit_Futures: "O" })).toBe(true);
+    expect(isFuturesCoin({ Binance_Futures: "X", Bybit_Futures: "X", Upbit: "O" })).toBe(false);
 
-    function filterByExchanges(rows, activeExchs, mode = "AND") {
-      if (activeExchs.length === 0) return rows;
+    // 거래소 지원 타임프레임(Native TF) 판별
+    expect(isExchangeNativeTF("binance", "1m")).toBe(true);
+    expect(isExchangeNativeTF("upbit", "12h")).toBe(false); // 업비트는 12h 미지원 -> 리샘플링 필요
 
-      return rows.filter((row) => {
-        if (mode === "AND") {
-          return activeExchs.every((exch) => row[exch] === "O");
-        } else {
-          // OR mode
-          return activeExchs.some((exch) => row[exch] === "O");
-        }
-      });
-    }
-
-    // AND 모드: Upbit AND Binance 상장 코인 -> BTC만 해당
-    const andResult = filterByExchanges(mockRows, ["Upbit", "Binance"], "AND");
-    expect(andResult.length).toBe(1);
-    expect(andResult[0].Symbol).toBe("BTC");
-
-    // OR 모드: Upbit OR Binance 상장 코인 -> BTC, ALT1, ALT2 모두 해당
-    const orResult = filterByExchanges(mockRows, ["Upbit", "Binance"], "OR");
-    expect(orResult.length).toBe(3);
+    // 거래소 메타 계산
+    const meta = getRowExchangeMeta({
+      Upbit: "O",
+      Bithumb: "O",
+      Binance: "O",
+      Bybit: "X",
+      Upbit_price: 100000,
+      Binance_price: 70,
+    });
+    expect(meta.hasUpbit).toBe(true);
+    expect(meta.hasBinanceSpot).toBe(true);
+    expect(meta.hasBybitSpot).toBe(false);
+    expect(meta.isSpot).toBe(true);
   });
 
-  // 4. 커스텀 필터 슬라이더 범위 및 SessionStorage 상태 복원
-  it("4. Custom Filter State Serialization & Bounds", () => {
-    const defaultBounds = {
-      mcapMin: 0,
-      mcapMax: 100_000_000_000,
-      volMin: 0,
-      volMax: 10_000_000_000,
-      volSource: "BINANCE",
-      hideSmallCap: false,
-    };
+  // 6. 타임프레임 가시성 설정 실제 모듈(ui_timeframe.js) 검증
+  it("6. Real Timeframe Persistence (ui_timeframe.js)", () => {
+    const defaultTfs = getVisibleTfs();
+    expect(defaultTfs.length).toBeGreaterThanOrEqual(4);
 
-    function serializeFilterState(state) {
-      return JSON.stringify(state);
-    }
-
-    function deserializeFilterState(savedStr, fallback) {
-      if (!savedStr) return fallback;
-      try {
-        const parsed = JSON.parse(savedStr);
-        return {
-          mcapMin: Math.max(0, parsed.mcapMin ?? fallback.mcapMin),
-          mcapMax: Math.min(fallback.mcapMax, parsed.mcapMax ?? fallback.mcapMax),
-          volMin: Math.max(0, parsed.volMin ?? fallback.volMin),
-          volMax: Math.min(fallback.volMax, parsed.volMax ?? fallback.volMax),
-          volSource: parsed.volSource || fallback.volSource,
-          hideSmallCap: Boolean(parsed.hideSmallCap),
-        };
-      } catch {
-        return fallback;
-      }
-    }
-
-    const userSettings = {
-      mcapMin: 50_000_000,
-      mcapMax: 200_000_000_000, // exceeds max bound
-      volMin: 1_000_000,
-      volMax: 5_000_000_000,
-      volSource: "UPBIT",
-      hideSmallCap: true,
-    };
-
-    const saved = serializeFilterState(userSettings);
-    const restored = deserializeFilterState(saved, defaultBounds);
-
-    expect(restored.mcapMin).toBe(50_000_000);
-    expect(restored.mcapMax).toBe(100_000_000_000); // clamped to upper limit
-    expect(restored.volSource).toBe("UPBIT");
-    expect(restored.hideSmallCap).toBe(true);
+    saveVisibleTfs(["1m", "5m", "1h", "1d"]);
+    expect(getVisibleTfs()).toEqual(["1m", "5m", "1h", "1d"]);
   });
 
-  // 5. 패널 스왑 토글 및 레이아웃 상태 검증
-  it("5. Panel Swap State Toggle & Layout Orientation", () => {
-    let isSwapped = false;
-
-    function togglePanelSwap(currentState) {
-      const nextState = !currentState;
-      // return layout classes for left and right panel
-      return {
-        isSwapped: nextState,
-        leftPanelOrder: nextState ? "order-2" : "order-1",
-        rightPanelOrder: nextState ? "order-1" : "order-2",
-      };
-    }
-
-    const firstToggle = togglePanelSwap(isSwapped);
-    expect(firstToggle.isSwapped).toBe(true);
-    expect(firstToggle.leftPanelOrder).toBe("order-2");
-    expect(firstToggle.rightPanelOrder).toBe("order-1");
-
-    const secondToggle = togglePanelSwap(firstToggle.isSwapped);
-    expect(secondToggle.isSwapped).toBe(false);
-    expect(secondToggle.leftPanelOrder).toBe("order-1");
-    expect(secondToggle.rightPanelOrder).toBe("order-2");
+  // 7. 주식/지수 코인 및 해외 자산 판정 실제 모듈(table_filter.js) 검증
+  it("7. Real Stock/Commodity Coin Filter (table_filter.js)", () => {
+    expect(isStockCoin({ Name: "Tesla Stock Token" })).toBe(true);
+    expect(isStockCoin({ Is_Stock: true })).toBe(true);
+    expect(isStockCoin({ Name: "Rootstock Smart Bitcoin" })).toBe(false); // Rootstock 예외 필터링
+    expect(isStockCoin({ Name: "Bitcoin", Symbol: "BTC" })).toBe(false);
   });
 });

@@ -131,20 +131,24 @@ export async function submitFeedback(event) {
     });
 
     const result = await res.json().catch(() => ({}));
-    if (result.status === "error" && result.message) {
-      showToast(result.message, "warning", 2000);
+    if (!res.ok || result.status === "error") {
+      const errMsg =
+        result.message ||
+        (res.status === 429
+          ? "요청이 너무 많습니다. 잠시 후 다시 시도해주세요."
+          : "피드백 전송에 실패했습니다.");
+      showToast(errMsg, "error", 3000);
       return;
     }
 
     lastFeedbackSubmitTime = Date.now();
-    showToast("피드백 감사해요!", "success", 2500);
+    showToast("피드백 감사해요!", "success", 3000);
     if (contentInput) contentInput.value = "";
     if (emailInput) emailInput.value = "";
     toggleFeedbackModal(false);
   } catch (err) {
-    lastFeedbackSubmitTime = Date.now();
-    showToast("피드백 감사해요!", "success", 2500);
-    toggleFeedbackModal(false);
+    console.error("Feedback submission error:", err);
+    showToast("네트워크 오류로 피드백을 전송하지 못했습니다.", "error", 3000);
   } finally {
     if (submitBtn) {
       submitBtn.disabled = false;

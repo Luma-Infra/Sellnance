@@ -43,7 +43,7 @@ user_cache_lock = threading.Lock()
 data_lock = threading.Lock()
 
 
-def is_valid_cmc_key_format(key: str) -> bool:
+def is_valid_cmc_key_format(key: str | None) -> bool:
     """CMC API 키 포맷 유효성 검증 (32~64자리 영문/숫자/하이픈)"""
     if not key or not isinstance(key, str):
         return False
@@ -52,7 +52,7 @@ def is_valid_cmc_key_format(key: str) -> bool:
 
 
 def _prune_user_cmc_caches():
-    """유저별 CMC 캐시 개수 상한(50개) 관리 및 만료 캐시 자동 퇴출 (메모리 보호)"""
+    """유저별 CMC 캐시 개수 상한 관리 및 만료 캐시 자동 퇴출 (메모리 보호)"""
     now = datetime.now(KST)
     expired_keys = [
         k
@@ -70,6 +70,16 @@ def _prune_user_cmc_caches():
         )
         for k in sorted_keys[: len(USER_CMC_CACHES) - MAX_USER_CACHES]:
             USER_CMC_CACHES.pop(k, None)
+
+    # USER_KEY_FETCH_LOCKS 누수 방어 (미사용 락 자동 회수)
+    with user_key_lock_mutex:
+        stale_locks = [
+            k
+            for k, l in list(USER_KEY_FETCH_LOCKS.items())
+            if not l.locked() and (k not in USER_CMC_CACHES or len(USER_KEY_FETCH_LOCKS) > MAX_USER_CACHES)
+        ]
+        for k in stale_locks:
+            USER_KEY_FETCH_LOCKS.pop(k, None)
 
 
 def _load_market_data_cache_from_file():
@@ -618,48 +628,54 @@ def get_cached_data(force_reload=False, silent_mode=False, user_api_key=None):
                 USER_KEY_FETCH_LOCKS[key_hash] = threading.Lock()
             fetch_lock = USER_KEY_FETCH_LOCKS[key_hash]
 
-        with fetch_lock:
-            # 락 진입 후 더블 체크 (앞선 스레드가 이미 완료했는지 확인)
-            with user_cache_lock:
-                user_cache = USER_CMC_CACHES.get(key_hash)
-                if user_cache and not force_reload:
-                    is_user_expired = (
-                        user_cache.get("timestamp") == datetime.min
-                        or (
-                            now_kst - user_cache["timestamp"].astimezone(KST)
-                        ).total_seconds()
-                        > USER_CACHE_TIMEOUT
-                    )
-                    if not is_user_expired and user_cache.get("assembled_data"):
-                        user_ts = user_cache.get("timestamp", datetime.min)
-                        ts_str = (
-                            user_ts.astimezone(kst).strftime("%Y-%m-%d %H:%M:%S")
-                            if user_ts != datetime.min
-                            else now_kst.strftime("%Y-%m-%d %H:%M:%S")
+        try:
+            with fetch_lock:
+                # 락 진입 후 더블 체크 (앞선 스레드가 이미 완료했는지 확인)
+                with user_cache_lock:
+                    user_cache = USER_CMC_CACHES.get(key_hash)
+                    if user_cache and not force_reload:
+                        is_user_expired = (
+                            user_cache.get("timestamp") == datetime.min
+                            or (
+                                now_kst - user_cache["timestamp"].astimezone(KST)
+                            ).total_seconds()
+                            > USER_CACHE_TIMEOUT
                         )
-                        return user_cache["assembled_data"], ts_str
+                        if not is_user_expired and user_cache.get("assembled_data"):
+                            user_ts = user_cache.get("timestamp", datetime.min)
+                            ts_str = (
+                                user_ts.astimezone(kst).strftime("%Y-%m-%d %H:%M:%S")
+                                if user_ts != datetime.min
+                                else now_kst.strftime("%Y-%m-%d %H:%M:%S")
+                            )
+                            return user_cache["assembled_data"], ts_str
 
-            raw_data = _fetch_and_process_data(silent_mode=False, api_key=user_api_key)
-            with user_cache_lock:
-                _prune_user_cmc_caches()
-                user_cache = USER_CMC_CACHES.setdefault(
-                    key_hash,
-                    {
-                        "map": {},
-                        "lookup": {},
-                        "timestamp": now_kst,
-                        "assembled_data": None,
-                    },
+                raw_data = _fetch_and_process_data(silent_mode=False, api_key=user_api_key)
+                with user_cache_lock:
+                    _prune_user_cmc_caches()
+                    user_cache = USER_CMC_CACHES.setdefault(
+                        key_hash,
+                        {
+                            "map": {},
+                            "lookup": {},
+                            "timestamp": now_kst,
+                            "assembled_data": None,
+                        },
+                    )
+                    user_cache["assembled_data"] = raw_data
+                    user_ts = user_cache.get("timestamp", now_kst)
+
+                ts_str = (
+                    user_ts.astimezone(kst).strftime("%Y-%m-%d %H:%M:%S")
+                    if user_ts != datetime.min
+                    else now_kst.strftime("%Y-%m-%d %H:%M:%S")
                 )
-                user_cache["assembled_data"] = raw_data
-                user_ts = user_cache.get("timestamp", now_kst)
-
-            ts_str = (
-                user_ts.astimezone(kst).strftime("%Y-%m-%d %H:%M:%S")
-                if user_ts != datetime.min
-                else now_kst.strftime("%Y-%m-%d %H:%M:%S")
-            )
-            return raw_data, ts_str
+                return raw_data, ts_str
+        finally:
+            with user_key_lock_mutex:
+                if key_hash in USER_KEY_FETCH_LOCKS and not USER_KEY_FETCH_LOCKS[key_hash].locked():
+                    if len(USER_KEY_FETCH_LOCKS) > MAX_USER_CACHES:
+                        USER_KEY_FETCH_LOCKS.pop(key_hash, None)
 
     with data_lock:
         needs_reset = False

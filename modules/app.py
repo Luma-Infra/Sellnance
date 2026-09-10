@@ -323,20 +323,21 @@ def update_listing_date(request: Request, data: dict = Body(...)):
     """
     admin_secret = os.environ.get("ADMIN_SECRET", "").strip()
     client_key = request.headers.get("X-ADMIN-SECRET", "").strip()
-    client_ip = request.headers.get("x-forwarded-for") or (
-        request.client.host if request.client else ""
-    )
-    if "," in client_ip:
-        client_ip = client_ip.split(",")[0].strip()
-    is_local = client_ip in ("127.0.0.1", "localhost", "::1", "testclient")
+    direct_client_host = request.client.host if request.client else ""
+    is_local = direct_client_host in ("127.0.0.1", "localhost", "::1", "testclient")
 
     if admin_secret:
         if client_key != admin_secret:
-            raise HTTPException(status_code=403, detail="Unauthorized listing date update")
-    elif not is_local and IS_PRODUCTION:
-        raise HTTPException(
-            status_code=403, detail="Listing date modification is disabled in production"
-        )
+            raise HTTPException(
+                status_code=403,
+                detail="Unauthorized listing date update: Invalid X-ADMIN-SECRET",
+            )
+    else:
+        if IS_PRODUCTION or not is_local:
+            raise HTTPException(
+                status_code=403,
+                detail="Listing date modification is forbidden for non-local requests without ADMIN_SECRET",
+            )
 
     symbol = str(data.get("symbol") or "").upper().strip()
     exchange_key = str(data.get("exchange_key") or "").strip()
@@ -370,7 +371,10 @@ def update_listing_date(request: Request, data: dict = Body(...)):
         min_date = datetime(2009, 1, 1).date()
         max_date = datetime.now(timezone.utc).date() + timedelta(days=2)
         if not (min_date <= parsed_date <= max_date):
-            return {"status": "error", "msg": f"날짜 범위는 {min_date} ~ {max_date} 사이여야 합니다"}
+            return {
+                "status": "error",
+                "msg": f"날짜 범위는 {min_date} ~ {max_date} 사이여야 합니다",
+            }
     except ValueError:
         return {"status": "error", "msg": "유효하지 않은 날짜"}
 
@@ -899,7 +903,10 @@ async def send_feedback(data: dict = Body(...)):
                     }
     except Exception as e:
         print(f"피드백 전송 예외: {e}")
-        return {"status": "error", "message": "피드백 전송 중 통신 오류가 발생했습니다."}
+        return {
+            "status": "error",
+            "message": "피드백 전송 중 통신 오류가 발생했습니다.",
+        }
 
     return {"status": "error", "message": "피드백 전송에 실패했습니다."}
 

@@ -1,4 +1,5 @@
 import os
+
 os.environ["TESTING"] = "1"
 
 import pytest
@@ -11,6 +12,7 @@ import config
 
 def test_kimchi_premium_formula():
     """1. 김프 공식 단위 테스트 (정상가, 역프, 0 나누기 방어)"""
+
     def calc_kimchi(upbit_krw: float, binance_usd: float, ex_rate: float) -> float:
         if binance_usd <= 0 or ex_rate <= 0:
             return 0.0
@@ -77,11 +79,21 @@ def test_binance_adapter_normalization():
     assert ExchangeAdapter.normalize_interval("binance_spot", "minutes/15") == "15m"
 
     # 캔들 URL 생성
-    futures_url = ExchangeAdapter.get_candle_url("binance_futures", "BTCUSDT", "15m", limit=50)
-    assert "https://fapi.binance.com/fapi/v1/klines?symbol=BTCUSDT&interval=15m&limit=50" == futures_url
+    futures_url = ExchangeAdapter.get_candle_url(
+        "binance_futures", "BTCUSDT", "15m", limit=50
+    )
+    assert (
+        "https://fapi.binance.com/fapi/v1/klines?symbol=BTCUSDT&interval=15m&limit=50"
+        == futures_url
+    )
 
-    spot_url = ExchangeAdapter.get_candle_url("binance_spot", "ETHUSDT", "1d", limit=100)
-    assert "https://api.binance.com/api/v3/klines?symbol=ETHUSDT&interval=1d&limit=100" == spot_url
+    spot_url = ExchangeAdapter.get_candle_url(
+        "binance_spot", "ETHUSDT", "1d", limit=100
+    )
+    assert (
+        "https://api.binance.com/api/v3/klines?symbol=ETHUSDT&interval=1d&limit=100"
+        == spot_url
+    )
 
 
 def test_security_cmc_key_isolation_and_endpoints():
@@ -110,26 +122,38 @@ def test_mapping_json_integrity_and_safeguards():
     mapping_data = config_manager.load_mapping_data()
     assert isinstance(mapping_data, dict), "mapping_data는 dict 형식이어야 합니다."
     assert "TICKER_DATA" in mapping_data, "TICKER_DATA 필수 키가 누락되었습니다."
-    assert "DUPLICATED_LIST" in mapping_data, "DUPLICATED_LIST 필수 키가 누락되었습니다."
-    assert "DEFAULT_KRW_USD_RATE" in mapping_data, "DEFAULT_KRW_USD_RATE 환율 키가 누락되었습니다."
+    assert (
+        "DUPLICATED_LIST" in mapping_data
+    ), "DUPLICATED_LIST 필수 키가 누락되었습니다."
+    assert (
+        "DEFAULT_KRW_USD_RATE" in mapping_data
+    ), "DEFAULT_KRW_USD_RATE 환율 키가 누락되었습니다."
 
     ticker_data = mapping_data.get("TICKER_DATA", {})
     dup_list = mapping_data.get("DUPLICATED_LIST", {})
 
     # 전체 매핑된 코인 수량 검증 (최소 500개 이상)
-    assert len(ticker_data) >= 500, f"TICKER_DATA 개수({len(ticker_data)})가 비정상적으로 적습니다."
-    assert len(dup_list) >= 10, f"DUPLICATED_LIST 개수({len(dup_list)})가 비정상적으로 적습니다."
+    assert (
+        len(ticker_data) >= 500
+    ), f"TICKER_DATA 개수({len(ticker_data)})가 비정상적으로 적습니다."
+    assert (
+        len(dup_list) >= 10
+    ), f"DUPLICATED_LIST 개수({len(dup_list)})가 비정상적으로 적습니다."
 
     # 2) 대표 메이저 코인(BTC, ETH, SOL) 족보 구조 검증 ([cmc_id, logo, name, symbol, type])
     assert "BTC" in ticker_data, "BTC 족보가 누락되었습니다."
     btc_entry = ticker_data["BTC"]
     assert isinstance(btc_entry, list), "TICKER_DATA 항목은 리스트 형태여야 합니다."
-    assert btc_entry[0] == "1", f"BTC의 CMC ID는 '1'이어야 합니다. (현재: {btc_entry[0]})"
+    assert (
+        btc_entry[0] == "1"
+    ), f"BTC의 CMC ID는 '1'이어야 합니다. (현재: {btc_entry[0]})"
     assert btc_entry[2] == "Bitcoin", "BTC 코인명이 올바르지 않습니다."
 
     assert "ETH" in ticker_data, "ETH 족보가 누락되었습니다."
     eth_entry = ticker_data["ETH"]
-    assert eth_entry[0] == "1027", f"ETH의 CMC ID는 '1027'이어야 합니다. (현재: {eth_entry[0]})"
+    assert (
+        eth_entry[0] == "1027"
+    ), f"ETH의 CMC ID는 '1027'이어야 합니다. (현재: {eth_entry[0]})"
     assert eth_entry[2] == "Ethereum", "ETH 코인명이 올바르지 않습니다."
 
     # 3) 데이터 증발 방어막(Critical Safeguard) 검증: 빈 데이터 덮어쓰기 시도 차단
@@ -150,11 +174,43 @@ def test_bithumb_12h_resolution_mapping():
     assert ExchangeAdapter.normalize_interval("bybit_futures", "4h") == "240"
 
 
-def test_cmc_key_validation_and_listing_security():
-    """8. 유저 CMC 키 유효성 검증 및 상장일 수정 보안 가드 테스트"""
-    from modules.api_manager import is_valid_cmc_key_format
+from modules import utils
+from modules.api_manager import (
+    is_valid_cmc_key_format,
+    _prune_user_cmc_caches,
+    USER_CMC_CACHES,
+    USER_KEY_FETCH_LOCKS,
+    MAX_USER_CACHES,
+)
+import threading
 
-    # 정상 CMC 키 포맷 (32~64자리)
+
+def test_kimchi_premium_and_utils_math():
+    """1. 실제 프로덕션 utils 연산 및 김프 공식 단위 테스트"""
+    # 1) utils.js_round 반올림 정밀도
+    assert utils.js_round(5.004, 2) == 5.0
+    assert utils.js_round(5.005, 2) == 5.01
+    assert utils.js_round(-2.006, 2) == -2.01
+
+    # 2) utils.get_pure_base_asset 심볼 정제
+    assert utils.get_pure_base_asset("BTCUSDT") == "BTC"
+    assert utils.get_pure_base_asset("1000PEPEUSDT") == "PEPE"
+    assert utils.get_pure_base_asset("ETHKRW") == "ETH"
+
+    # 3) utils.get_multiplier 배율 계산
+    assert utils.get_multiplier("1000SHIBUSDT") == 1000
+    assert utils.get_multiplier("BTCUSDT") == 1
+
+    # 4) 업비트 호가창 정밀도 검증 (utils.get_upbit_krw_precision)
+    assert utils.get_upbit_krw_precision(2_000_000) == 0  # 2백만원 이상 -> 0자리
+    assert utils.get_upbit_krw_precision(50) == 1  # 10원~100원 -> 소수점 1자리
+    assert utils.get_upbit_krw_precision(0.5) == 3  # 0.1원~1원 -> 소수점 3자리
+    assert utils.get_upbit_krw_precision(0.05) == 4  # 0.01원~0.1원 -> 소수점 4자리
+
+
+def test_cmc_key_validation_and_listing_security():
+    """8. 유저 CMC 키 유효성 검증, 락 누수 방어, 상장일 수정 보안 가드 테스트"""
+    # 1) 정상 CMC 키 포맷 (32~64자리)
     assert is_valid_cmc_key_format("b54bcf4d-1bca-4e8e-9a24-22ff2c3d462c") is True
     assert is_valid_cmc_key_format("1234567890abcdef1234567890abcdef") is True
 
@@ -164,15 +220,44 @@ def test_cmc_key_validation_and_listing_security():
     assert is_valid_cmc_key_format("") is False
     assert is_valid_cmc_key_format(None) is False
 
-    # 상장일 엔드포인트 보안 검증: 비인가 외부 쓰기 차단
+    # 2) USER_KEY_FETCH_LOCKS 누수 방어 검증
+    # 임의의 가짜 락 10개를 주입 후 _prune_user_cmc_caches 호출
+    for i in range(10):
+        USER_KEY_FETCH_LOCKS[f"fake_key_{i}"] = threading.Lock()
+    _prune_user_cmc_caches()
+    # 미사용 락이 상한선 이하로 자동 회수되었는지 검증
+    assert len(USER_KEY_FETCH_LOCKS) <= MAX_USER_CACHES
+
+    # 3) 상장일 엔드포인트 보안 검증: 정상 날짜라도 비인가 외부 쓰기 시 403 차단
     client = TestClient(app)
-    # 1) 잘못된 날짜 포맷 (0000-00-00) 차단
-    res_bad_date = client.post(
-        "/api/listing-dates",
-        json={"symbol": "BTC", "exchange_key": "upbit_listing", "date": "0000-00-00"},
-        headers={"X-ADMIN-SECRET": "wrong_secret"},
-    )
-    assert res_bad_date.status_code in [400, 403, 422] or res_bad_date.json().get("status") == "error"
 
+    # 비인가 요청 (X-ADMIN-SECRET 누락/불일치) -> 정상 날짜(2024-01-01)를 보내도 403 반환 검증
+    os.environ["ADMIN_SECRET"] = "super_secret_test_key"
+    try:
+        res_unauthorized = client.post(
+            "/api/listing-dates",
+            json={
+                "symbol": "BTC",
+                "exchange_key": "upbit_listing",
+                "date": "2024-01-01",
+            },
+            headers={"X-ADMIN-SECRET": "wrong_secret"},
+        )
+        assert (
+            res_unauthorized.status_code == 403
+        ), f"비인가 요청은 403이어야 합니다. (현재: {res_unauthorized.status_code})"
 
-
+        # 정상 인증키를 보냈을 때만 허용
+        res_authorized = client.post(
+            "/api/listing-dates",
+            json={
+                "symbol": "BTC",
+                "exchange_key": "upbit_listing",
+                "date": "2024-01-01",
+            },
+            headers={"X-ADMIN-SECRET": "super_secret_test_key"},
+        )
+        assert res_authorized.status_code == 200
+        assert res_authorized.json().get("status") in ["updated", "success", "skipped"]
+    finally:
+        os.environ.pop("ADMIN_SECRET", None)
