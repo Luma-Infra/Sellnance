@@ -32,13 +32,23 @@ MARKET_DATA_CACHE_FILE = os.path.join(
 OWNER_CACHE_FILE = os.path.join(
     os.path.dirname(__file__), "../static/cmc_owner_cache.json"
 )
+import collections
+
 OWNER_CACHE_TIMEOUT = 14400  # 4시간
 USER_CACHE_TIMEOUT = 900  # 15분
 MAX_USER_CACHES = 5  # [메모리 보호] 유저 키 캐시 최대치 상한
 
 USER_CMC_CACHES = {}
-USER_KEY_FETCH_LOCKS = {}
-user_key_lock_mutex = threading.Lock()
+FAILED_CMC_KEYS = {}  # {key_hash: datetime} 실패/가짜 키 5분 쿨다운 네거티브 캐시
+FAILED_KEY_COOLDOWN = 60
+NEW_KEY_FETCH_HISTORY = collections.deque()
+MAX_NEW_KEY_FETCHES_PER_MIN = 10
+new_key_rate_lock = threading.Lock()
+
+# 🚀 고정 크기 해시 버킷 락 풀 (Lock 생성/삭제 Race Condition 및 메모리 누수 0% 차단)
+NUM_CMC_LOCK_BUCKETS = 64
+CMC_FETCH_BUCKET_LOCKS = [threading.Lock() for _ in range(NUM_CMC_LOCK_BUCKETS)]
+
 user_cache_lock = threading.Lock()
 data_lock = threading.Lock()
 
@@ -70,16 +80,6 @@ def _prune_user_cmc_caches():
         )
         for k in sorted_keys[: len(USER_CMC_CACHES) - MAX_USER_CACHES]:
             USER_CMC_CACHES.pop(k, None)
-
-    # USER_KEY_FETCH_LOCKS 누수 방어 (미사용 락 자동 회수)
-    with user_key_lock_mutex:
-        stale_locks = [
-            k
-            for k, l in list(USER_KEY_FETCH_LOCKS.items())
-            if not l.locked() and (k not in USER_CMC_CACHES or len(USER_KEY_FETCH_LOCKS) > MAX_USER_CACHES)
-        ]
-        for k in stale_locks:
-            USER_KEY_FETCH_LOCKS.pop(k, None)
 
 
 def _load_market_data_cache_from_file():
@@ -622,60 +622,85 @@ def get_cached_data(force_reload=False, silent_mode=False, user_api_key=None):
                     )
                     return user_cache["assembled_data"], ts_str
 
-        # 2. 동일 유저 키 동시 요청 합승 (In-flight Single-Flight Coalescing)
-        with user_key_lock_mutex:
-            if key_hash not in USER_KEY_FETCH_LOCKS:
-                USER_KEY_FETCH_LOCKS[key_hash] = threading.Lock()
-            fetch_lock = USER_KEY_FETCH_LOCKS[key_hash]
-
-        try:
-            with fetch_lock:
-                # 락 진입 후 더블 체크 (앞선 스레드가 이미 완료했는지 확인)
-                with user_cache_lock:
-                    user_cache = USER_CMC_CACHES.get(key_hash)
-                    if user_cache and not force_reload:
-                        is_user_expired = (
-                            user_cache.get("timestamp") == datetime.min
-                            or (
-                                now_kst - user_cache["timestamp"].astimezone(KST)
-                            ).total_seconds()
-                            > USER_CACHE_TIMEOUT
-                        )
-                        if not is_user_expired and user_cache.get("assembled_data"):
-                            user_ts = user_cache.get("timestamp", datetime.min)
-                            ts_str = (
-                                user_ts.astimezone(kst).strftime("%Y-%m-%d %H:%M:%S")
-                                if user_ts != datetime.min
-                                else now_kst.strftime("%Y-%m-%d %H:%M:%S")
-                            )
-                            return user_cache["assembled_data"], ts_str
-
-                raw_data = _fetch_and_process_data(silent_mode=False, api_key=user_api_key)
-                with user_cache_lock:
-                    _prune_user_cmc_caches()
-                    user_cache = USER_CMC_CACHES.setdefault(
-                        key_hash,
-                        {
-                            "map": {},
-                            "lookup": {},
-                            "timestamp": now_kst,
-                            "assembled_data": None,
-                        },
-                    )
-                    user_cache["assembled_data"] = raw_data
-                    user_ts = user_cache.get("timestamp", now_kst)
-
-                ts_str = (
-                    user_ts.astimezone(kst).strftime("%Y-%m-%d %H:%M:%S")
-                    if user_ts != datetime.min
-                    else now_kst.strftime("%Y-%m-%d %H:%M:%S")
+        # 2. 가짜/실패 키 5분 쿨다운 네거티브 캐시 확인
+        with user_cache_lock:
+            failed_at = FAILED_CMC_KEYS.get(key_hash)
+            if (
+                failed_at
+                and (now_kst - failed_at).total_seconds() < FAILED_KEY_COOLDOWN
+            ):
+                # 5분 이내 실패했던 무효/가짜 키 -> 외부 호출 차단 및 글로벌 기본 데이터 반환
+                return GLOBAL_CACHE.get("data", []), GLOBAL_CACHE.get(
+                    "last_updated_str", ""
                 )
-                return raw_data, ts_str
-        finally:
-            with user_key_lock_mutex:
-                if key_hash in USER_KEY_FETCH_LOCKS and not USER_KEY_FETCH_LOCKS[key_hash].locked():
-                    if len(USER_KEY_FETCH_LOCKS) > MAX_USER_CACHES:
-                        USER_KEY_FETCH_LOCKS.pop(key_hash, None)
+
+        # 3. 신규 미등록 키 생성 남발 레이트 리미팅 (1분당 10회 제한)
+        with new_key_rate_lock:
+            now_ts = time.time()
+            while NEW_KEY_FETCH_HISTORY and now_ts - NEW_KEY_FETCH_HISTORY[0] > 60:
+                NEW_KEY_FETCH_HISTORY.popleft()
+            if (
+                len(NEW_KEY_FETCH_HISTORY) >= MAX_NEW_KEY_FETCHES_PER_MIN
+                and key_hash not in USER_CMC_CACHES
+            ):
+                # 1분당 10회 초과 신규 키 수집 요청 시 즉시 기본 캐시 반환하여 외부 DoS 차단
+                return GLOBAL_CACHE.get("data", []), GLOBAL_CACHE.get(
+                    "last_updated_str", ""
+                )
+            NEW_KEY_FETCH_HISTORY.append(now_ts)
+
+        # 4. 고정 해시 버킷 락 획득 (Race Condition & Lock 삭제 누수 100% 방지)
+        bucket_idx = int(key_hash[:8], 16) % NUM_CMC_LOCK_BUCKETS
+        fetch_lock = CMC_FETCH_BUCKET_LOCKS[bucket_idx]
+
+        with fetch_lock:
+            # 락 진입 후 더블 체크 (앞선 스레드가 이미 완료했는지 확인)
+            with user_cache_lock:
+                user_cache = USER_CMC_CACHES.get(key_hash)
+                if user_cache and not force_reload:
+                    is_user_expired = (
+                        user_cache.get("timestamp") == datetime.min
+                        or (
+                            now_kst - user_cache["timestamp"].astimezone(KST)
+                        ).total_seconds()
+                        > USER_CACHE_TIMEOUT
+                    )
+                    if not is_user_expired and user_cache.get("assembled_data"):
+                        user_ts = user_cache.get("timestamp", datetime.min)
+                        ts_str = (
+                            user_ts.astimezone(kst).strftime("%Y-%m-%d %H:%M:%S")
+                            if user_ts != datetime.min
+                            else now_kst.strftime("%Y-%m-%d %H:%M:%S")
+                        )
+                        return user_cache["assembled_data"], ts_str
+
+            raw_data = _fetch_and_process_data(silent_mode=False, api_key=user_api_key)
+            if not raw_data:
+                # 무효 키 / 빈 응답 시 네거티브 캐시에 등록하여 반복 DoS 차단 및 기본 캐시 반환
+                with user_cache_lock:
+                    FAILED_CMC_KEYS[key_hash] = now_kst
+                return GLOBAL_CACHE.get("data", []), GLOBAL_CACHE.get("last_updated_str", "")
+
+            with user_cache_lock:
+                _prune_user_cmc_caches()
+                user_cache = USER_CMC_CACHES.setdefault(
+                    key_hash,
+                    {
+                        "map": {},
+                        "lookup": {},
+                        "timestamp": now_kst,
+                        "assembled_data": None,
+                    },
+                )
+                user_cache["assembled_data"] = raw_data
+                user_ts = user_cache.get("timestamp", now_kst)
+
+            ts_str = (
+                user_ts.astimezone(kst).strftime("%Y-%m-%d %H:%M:%S")
+                if user_ts != datetime.min
+                else now_kst.strftime("%Y-%m-%d %H:%M:%S")
+            )
+            return raw_data, ts_str
 
     with data_lock:
         needs_reset = False

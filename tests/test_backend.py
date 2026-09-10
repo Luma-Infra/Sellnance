@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 
 os.environ["TESTING"] = "1"
 
@@ -179,7 +180,8 @@ from modules.api_manager import (
     is_valid_cmc_key_format,
     _prune_user_cmc_caches,
     USER_CMC_CACHES,
-    USER_KEY_FETCH_LOCKS,
+    NUM_CMC_LOCK_BUCKETS,
+    CMC_FETCH_BUCKET_LOCKS,
     MAX_USER_CACHES,
 )
 import threading
@@ -220,13 +222,18 @@ def test_cmc_key_validation_and_listing_security():
     assert is_valid_cmc_key_format("") is False
     assert is_valid_cmc_key_format(None) is False
 
-    # 2) USER_KEY_FETCH_LOCKS 누수 방어 검증
-    # 임의의 가짜 락 10개를 주입 후 _prune_user_cmc_caches 호출
+    # 2) 고정 해시 버킷 락 풀(64개) 검증 (Race Condition & Lock 삭제 누수 0% 보장)
+    assert NUM_CMC_LOCK_BUCKETS == 64
+    assert len(CMC_FETCH_BUCKET_LOCKS) == 64
+
+    # 3) 유저 캐시 상한(LRU 퇴출) 동작 검증
     for i in range(10):
-        USER_KEY_FETCH_LOCKS[f"fake_key_{i}"] = threading.Lock()
+        USER_CMC_CACHES[f"key_{i}"] = {
+            "timestamp": datetime.now(),
+            "assembled_data": [],
+        }
     _prune_user_cmc_caches()
-    # 미사용 락이 상한선 이하로 자동 회수되었는지 검증
-    assert len(USER_KEY_FETCH_LOCKS) <= MAX_USER_CACHES
+    assert len(USER_CMC_CACHES) <= MAX_USER_CACHES
 
     # 3) 상장일 엔드포인트 보안 검증: 정상 날짜라도 비인가 외부 쓰기 시 403 차단
     client = TestClient(app)
