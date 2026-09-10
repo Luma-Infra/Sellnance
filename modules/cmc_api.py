@@ -14,6 +14,33 @@ from modules import utils
 from modules.utils import get_pure_base_asset, is_valid_ticker
 
 
+def validate_cmc_api_key(api_key: str | None) -> tuple[bool, str]:
+    """사용자가 입력한 개인 CMC API 키의 유효성을 실시간으로 1회 검증합니다."""
+    if not api_key or not isinstance(api_key, str) or not api_key.strip():
+        return True, "키가 설정되지 않았습니다."
+
+    clean_key = api_key.strip()
+    url = "https://pro-api.coinmarketcap.com/v1/key/info"
+    headers = {
+        "Accepts": "application/json",
+        "X-CMC_PRO_API_KEY": clean_key,
+    }
+    try:
+        resp = requests.get(url, headers=headers, timeout=5)
+        if resp.status_code in [400, 401, 402, 403, 429]:
+            return False, f"유효하지 않은 CMC API 키입니다 (HTTP {resp.status_code})"
+        if resp.status_code == 200:
+            data = resp.json()
+            status_obj = data.get("status", {})
+            error_code = status_obj.get("error_code")
+            if error_code not in [0, None]:
+                return False, f"CMC 인증 오류: {status_obj.get('error_message')}"
+            return True, "유효한 API 키입니다."
+        return False, f"CMC 응답 오류 (HTTP {resp.status_code})"
+    except Exception as e:
+        return False, f"검증 요청 실패: {e}"
+
+
 def _fetch_cmc_api_chunk(task):
     url, headers, params = task
     try:

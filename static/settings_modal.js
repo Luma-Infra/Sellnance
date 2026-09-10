@@ -137,7 +137,7 @@ export async function saveSettings() {
     document.getElementById("btn-save-settings") ||
     document.querySelector("button[onclick*='saveSettings']");
   if (saveBtn) {
-    saveBtn.innerText = "SAVING...";
+    saveBtn.innerText = "VERIFYING...";
     saveBtn.style.pointerEvents = "none";
   }
 
@@ -145,19 +145,46 @@ export async function saveSettings() {
     const prevKey = (localStorage.getItem("CMC_API_KEY") || "").trim();
     const isKeyChanged = prevKey !== cleanKey;
 
-    // 백엔드 환경 설정 동기화
-    await fetch("/api/settings", {
+    // 백엔드 실시간 CMC API 키 유효성 검증
+    const res = await fetch("/api/settings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ CMC_API_KEY: cleanKey }),
     });
+    const result = await res.json();
+
+    if (!result || result.valid === false || result.status === "error") {
+      input.classList.add(
+        "!border-red-500/80",
+        "shadow-[0_0_15px_rgba(239,68,68,0.3)]",
+      );
+      setTimeout(() => {
+        input.classList.remove(
+          "!border-red-500/80",
+          "shadow-[0_0_15px_rgba(239,68,68,0.3)]",
+        );
+      }, 2500);
+      input.focus();
+      showToast(
+        result?.message || "유효하지 않은 CMC API 키입니다",
+        "error",
+        3000,
+      );
+      return;
+    }
 
     if (cleanKey) {
       localStorage.setItem("CMC_API_KEY", cleanKey);
-      showToast("CMC API 키가 성공적으로 저장되었습니다", "success", 2000);
+      store.cmcStatus = "OK";
+      showToast("CMC API 키가 성공적으로 연동되었어요", "success", 2000);
     } else {
       localStorage.removeItem("CMC_API_KEY");
-      showToast("CMC API 키가 삭제되었습니다", "info", 2000);
+      store.cmcStatus = "SERVER_CACHE";
+      showToast("CMC API 키가 삭제되었어요", "info", 2000);
+    }
+
+    if (typeof window.updateStatusBadge === "function") {
+      window.updateStatusBadge();
     }
 
     closeSettingsModal();

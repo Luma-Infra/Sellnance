@@ -109,6 +109,7 @@ from . import trace_hooking
 from . import api_manager
 from . import exchange_api
 from . import config_manager
+from . import cmc_api
 from .adapter import ExchangeAdapter  # 통합 지휘소 영입
 from .candle_proxy import (
     fetch_candles_guarded,
@@ -544,7 +545,7 @@ def get_market_data(request: Request, force: bool = False):
     }
 
 
-@app.get("/api/dev/trigger-9am")
+# @app.get("/api/dev/trigger-9am")
 def dev_trigger_9am():
     """🚀 [개발/테스트 전용] 9시 정각 시가 초기화 및 캐시 갱신 원스톱 파이프라인 수동 강제 트리거"""
     if IS_PRODUCTION:
@@ -870,9 +871,18 @@ def get_settings():
 
 @app.post("/api/settings")
 def update_settings(data: dict = Body(...)):
-    # 🔒 [보안 격리] 외부 HTTP 요청으로 서버 마스터 키(CMC_API_KEY) 오염/삭제 원천 차단
-    # 유저의 개인 CMC 키는 브라우저 localStorage에 안전하게 보관되고 X-CMC-API-KEY 헤더로 전달됨
-    return {"status": "success"}
+    # 🔒 [보안 격리 및 실시간 유효성 검증] 유저가 입력한 키의 CMC 인증 상태를 즉시 검증
+    cmc_key = str(data.get("CMC_API_KEY", "")).strip()
+    if cmc_key:
+        is_valid, msg = cmc_api.validate_cmc_api_key(cmc_key)
+        if not is_valid:
+            return {"status": "error", "valid": False, "message": msg}
+        return {"status": "success", "valid": True, "message": "CMC API 키 인증 성공"}
+    return {
+        "status": "success",
+        "valid": True,
+        "message": "CMC API 키가 제거되었습니다",
+    }
 
 
 # 💬 [보안 격리] 디스코드 피드백 프록시 (도배 방지)

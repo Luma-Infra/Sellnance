@@ -293,7 +293,7 @@ export function updateStatusBadge() {
       if (tipTimerEl)
         tipTimerEl.innerHTML = `<span class="text-rose-400 font-bold">⚠️ CMC API 키 오류</span>`;
       if (tipTextEl) {
-        tipTextEl.innerHTML = `<span class="text-rose-400 font-bold">입력하신 개인 CMC API 키가 유효하지 않아요</span><br/>실시간 시세 및 차트는 정상 작동하며, 시가총액은 서버 캐시로 안전하게 유지할게요<br/><span class="text-xs opacity-75 text-theme-accent">설정(⚙️)에서 유효한 키인지 다시 확인해 주세요.</span>`;
+        tipTextEl.innerHTML = `<span class="text-rose-400 font-bold">입력하신 개인 CMC API 키가 유효하지 않아요</span><br/>실시간 시세 및 차트는 정상 작동하며, 시가총액은 서버 캐시로 안전하게 유지할게요<br/><span class="text-xs opacity-75 text-theme-accent">설정에서 유효한 키인지 다시 확인해 주세요</span>`;
       }
       if (dot)
         dot.className =
