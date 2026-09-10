@@ -1,6 +1,6 @@
 # app.py
+from fastapi import FastAPI, Request, Body, Response, HTTPException
 from starlette.middleware.gzip import GZipMiddleware
-from fastapi import FastAPI, Request, Body, Response
 from datetime import datetime, timezone, timedelta
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -146,7 +146,13 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Blueprint Terminal", lifespan=lifespan)
+app = FastAPI(
+    title="Blueprint Terminal",
+    lifespan=lifespan,
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None,
+)
 
 # 유저 동시 접속 대비 10배 네트워크 압축 (2.5MB -> 250KB)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
@@ -313,16 +319,43 @@ def get_listing_dates():
 def update_listing_date(data: dict = Body(...)):
     """업비트/빗썸 등 캔들 역산 날짜 업데이트.
     body: { symbol: "BTC", exchange_key: "upbit_listing", date: "2017-10-15" }
-    - 더 오래된 날짜만 덮어쓰기.
+    - 더 오래된 날짜만 덮어쓰기 (엄격한 화이트리스트 & 날짜 범위 검증).
     """
     symbol = str(data.get("symbol") or "").upper().strip()
     exchange_key = str(data.get("exchange_key") or "").strip()
     new_date = str(data.get("date") or "").strip()
 
+    # 1. 필수값 및 심볼 유효성 검증
     if not symbol or not exchange_key or not new_date:
         return {"status": "error", "msg": "symbol, exchange_key, date 필수"}
+    if not re.match(r"^[A-Z0-9_.]{1,30}$", symbol):
+        return {"status": "error", "msg": "유효하지 않은 심볼 형식"}
+
+    # 2. 거래소 키 화이트리스트 검증
+    allowed_keys = {
+        "upbit_listing",
+        "bithumb_listing",
+        "binance_listing",
+        "bybit_listing",
+        "coinbase_listing",
+        "okx_listing",
+        "bitget_listing",
+        "gateio_listing",
+    }
+    if exchange_key not in allowed_keys:
+        return {"status": "error", "msg": "허용되지 않은 거래소 키"}
+
+    # 3. 날짜 형식 및 상식적 범위 (2009년 BTC 탄생 ~ 현재 당일) 정밀 검증
     if not re.match(r"^\d{4}-\d{2}-\d{2}$", new_date):
         return {"status": "error", "msg": "date 포맷은 YYYY-MM-DD"}
+    try:
+        parsed_date = datetime.strptime(new_date, "%Y-%m-%d").date()
+        min_date = datetime(2009, 1, 1).date()
+        max_date = datetime.now(timezone.utc).date() + timedelta(days=2)
+        if not (min_date <= parsed_date <= max_date):
+            return {"status": "error", "msg": f"날짜 범위는 {min_date} ~ {max_date} 사이여야 합니다"}
+    except ValueError:
+        return {"status": "error", "msg": "유효하지 않은 날짜"}
 
     updated = False
     with _listing_dates_lock:
@@ -459,6 +492,8 @@ def get_market_data(request: Request, force: bool = False):
 @app.get("/api/dev/trigger-9am")
 def dev_trigger_9am():
     """🚀 [개발/테스트 전용] 9시 정각 시가 초기화 및 캐시 갱신 원스톱 파이프라인 수동 강제 트리거"""
+    if IS_PRODUCTION:
+        raise HTTPException(status_code=404, detail="Not Found")
     success = api_manager.trigger_kst_9am_reset_atomic()
     today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     cache_count = len(exchange_api.UTC0_OPEN_CACHE.get(today_str, {}))

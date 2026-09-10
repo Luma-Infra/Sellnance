@@ -774,7 +774,10 @@ async def fetch_candles_guarded(
                     exchange, symbol, interval, limit, to, start
                 )
 
-        if isinstance(data, (list, dict)) and "error" not in data:
+        # 🚀 [유효성 검증] 유효한 캔들 데이터(len > 0)만 캐시 저장 (빈 배열 [] 캐싱 차단)
+        if isinstance(data, list) and len(data) > 0:
+            CANDLE_CACHE[req_cache_key] = (time.time(), data)
+        elif isinstance(data, dict) and "error" not in data and bool(data):
             CANDLE_CACHE[req_cache_key] = (time.time(), data)
         return data
 

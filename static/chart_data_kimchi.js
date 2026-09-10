@@ -131,12 +131,13 @@ export function calculateKimchiData(mainData, subRaw, params) {
         rateIndex++;
       }
 
-      // 🚀 [최인접 시간 매칭 알고리즘]
+      // 🚀 [시계열 정합성 보장 최인접 시간 매칭 알고리즘]
       // 메인 차트와 서브 차트가 모두 오름차순 정렬된 상태이므로,
-      // 순방향 포인터를 돌며 현재 메인 캔들 시각에 가장 오차가 적은 서브 캔들을 탐색합니다.
+      // 순방향 포인터를 돌며 현재 메인 캔들 시각(candleTimeSec) 이하(과거/동일) 또는 미세 오차 이내의 서브 캔들을 탐색합니다.
       while (
         subIndex < sortedSub.length - 1 &&
-        Math.abs(getSubTime(sortedSub[subIndex + 1]) - candleTimeSec) <
+        getSubTime(sortedSub[subIndex + 1]) <= candleTimeSec + intervalSec * 0.2 &&
+        Math.abs(getSubTime(sortedSub[subIndex + 1]) - candleTimeSec) <=
         Math.abs(getSubTime(sortedSub[subIndex]) - candleTimeSec)
       ) {
         subIndex++;
@@ -144,9 +145,16 @@ export function calculateKimchiData(mainData, subRaw, params) {
 
       const bestSub = sortedSub[subIndex];
       const bestSubTime = getSubTime(bestSub);
+      const timeDiff = bestSubTime - candleTimeSec;
 
-      // 두 캔들의 실제 시차가 타임프레임의 1.5배 이내인 경우만 유효 매칭으로 간주
-      if (Math.abs(bestSubTime - candleTimeSec) <= intervalSec * 1.5) {
+      // 두 캔들의 실제 시차가 타임프레임의 허용 범위 이내인 경우만 유효 매칭으로 간주
+      // (미래 캔들 왜곡 방지: 서브 캔들이 메인 캔들보다 미래인 경우 최대 0.2봉까지만 허용, 과거는 1.5봉까지 허용)
+      const isValidAlignment =
+        timeDiff <= 0
+          ? Math.abs(timeDiff) <= intervalSec * 1.5
+          : timeDiff <= intervalSec * 0.2;
+
+      if (isValidAlignment) {
         lastKnownSubClose = getSubClose(bestSub);
         lastKnownSubTime = candleTimeSec;
       } else {

@@ -20,21 +20,34 @@ def get_lan_ip():
 
 
 def clear_port(port):
-    """8000번 포트를 점유 중인 프로세스를 찾아 강제로 종료합니다."""
+    """8000번 포트를 리스닝 중인 프로세스를 안전하고 정확하게 종료합니다."""
     try:
-        # 윈도우 netstat 명령어로 PID 찾기
-        result = subprocess.check_output(
-            f"netstat -aon | findstr :{port}", shell=True
-        ).decode("cp949")
-        for line in result.strip().split("\n"):
-            if "LISTENING" in line:
-                pid = line.strip().split()[-1]
-                print(
-                    f"🧹 [PORT CLEAR] 포트 {port}를 점유 중인 프로세스({pid}) 종료 중..."
-                )
-                os.system(f"taskkill /f /pid {pid}")
-    except:
-        # 포트가 비어있으면 에러 무시
+        current_pid = os.getpid()
+        if sys.platform == "win32":
+            # 윈도우 netstat 출력에서 정확히 로컬 포트가 :{port} 인 LISTENING 프로세스만 필터링
+            output = subprocess.check_output(
+                "netstat -ano -p tcp", shell=True
+            ).decode("cp949", errors="ignore")
+            for line in output.strip().splitlines():
+                parts = line.strip().split()
+                # 프로토콜 로컬주소 외부주소 상태 PID (최소 5개 컬럼)
+                if len(parts) >= 5 and parts[3] == "LISTENING":
+                    local_addr = parts[1]
+                    # 로컬 주소가 정확히 :{port}로 끝나는지 검증
+                    if local_addr.endswith(f":{port}"):
+                        pid_str = parts[4]
+                        if pid_str.isdigit():
+                            pid = int(pid_str)
+                            if pid != current_pid and pid > 0:
+                                print(
+                                    f"🧹 [PORT CLEAR] 포트 {port}를 점유 중인 기존 프로세스(PID: {pid}) 정리 중..."
+                                )
+                                subprocess.run(
+                                    ["taskkill", "/F", "/PID", str(pid)],
+                                    stdout=subprocess.DEVNULL,
+                                    stderr=subprocess.DEVNULL,
+                                )
+    except Exception:
         pass
 
 
