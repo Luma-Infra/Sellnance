@@ -18,15 +18,32 @@ def _fetch_cmc_api_chunk(task):
     url, headers, params = task
     try:
         resp = requests.get(url, headers=headers, params=params, timeout=10)
+        if resp.status_code in [400, 402, 401, 403, 429]:
+            print(
+                f"[CMC 키 인증 실패] HTTP {resp.status_code}: 유효하지 않은 API 키입니다."
+            )
+            return {"error": "INVALID_KEY", "status_code": resp.status_code}
         resp.raise_for_status()
         if resp.text:
-            return resp.json()
+            data = resp.json()
+            if isinstance(data, dict):
+                status_obj = data.get("status", {})
+                error_code = status_obj.get("error_code")
+                if error_code not in [0, None]:
+                    print(
+                        f"[CMC API 에러] 코드 {error_code}: {status_obj.get('error_message')}"
+                    )
+                    return {
+                        "error": "INVALID_KEY",
+                        "message": status_obj.get("error_message"),
+                    }
+            return data
     except Exception as e:
         # 에러가 나도 당황하지 않고 '어떤' 에러인지 깔끔하게 보고!
         if "timeout" in str(e).lower():
-            print(f"⏳ [CMC 지연] {params.get('symbol')} 수집 중 시간 초과 (10초 경과)")
+            print(f"[CMC 지연] {params.get('symbol')} 수집 중 시간 초과")
         else:
-            print(f"🚨 [CMC 에러] {e} | 대상: {params.get('symbol')}")
+            print(f"[CMC 에러] {e} | 대상: {params.get('symbol')}")
         return None
 
 
@@ -57,7 +74,7 @@ def build_cmc_lookup_lists(binance_data, upbit_krw_set, MAPPING_DATA):
     for k, v in DUPLICATED_LIST.items():
         if len(v) >= 4:
             ex = v[3].upper()
-            virtual_key = k.split('(')[0].upper()
+            virtual_key = k.split("(")[0].upper()
             REVERSE_LOOKUP[f"{virtual_key}_{ex}"] = k
             if ex.startswith("BINANCE"):
                 REVERSE_LOOKUP.setdefault(f"{virtual_key}_BINANCE", k)
@@ -185,8 +202,10 @@ def fetch_cmc_market_data(binance_data, upbit_krw_set, MAPPING_DATA, api_key=Non
     )
 
     # 3. CMC API 실행
-    market_data_map = execute_cmc_requests(id_lookup, sym_lookup, api_key=api_key)
-    return market_data_map, asset_to_lookup_key
+    market_data_map, is_invalid_key = execute_cmc_requests(
+        id_lookup, sym_lookup, api_key=api_key
+    )
+    return market_data_map, asset_to_lookup_key, is_invalid_key
 
 
 # ThreadPool 돌려서 CMC 데이터 긁어오고 market_data_map 만드는 로직.
@@ -214,16 +233,22 @@ def execute_cmc_requests(id_lookup, sym_lookup, api_key=None):
             )
 
     market_data_map = {}
+    is_invalid_key = False
     results = []
     try:
         with ThreadPoolExecutor(max_workers=5) as executor:
             results = list(executor.map(_fetch_cmc_api_chunk, quote_tasks))
     except RuntimeError:
         # 인터프리터 종료 중이면 그냥 빈 결과 리턴 (에러 방지)
-        return {}
+        return {}, False
 
     for res in results:
-        if not res or "data" not in res:
+        if not res:
+            continue
+        if isinstance(res, dict) and res.get("error") == "INVALID_KEY":
+            is_invalid_key = True
+            continue
+        if "data" not in res:
             continue
         for k, v in res["data"].items():
             items = v if isinstance(v, list) else [v]
@@ -234,7 +259,11 @@ def execute_cmc_requests(id_lookup, sym_lookup, api_key=None):
                 q = info["quote"]["USD"]
                 ucid_str = str(info.get("id", ""))
                 name = info.get("name", "")
-                mcap = q.get("market_cap") or info.get("self_reported_market_cap") or q.get("fully_diluted_market_cap")
+                mcap = (
+                    q.get("market_cap")
+                    or info.get("self_reported_market_cap")
+                    or q.get("fully_diluted_market_cap")
+                )
 
                 # 🚀 [핵심] builder가 찾기 쉽게 공통 데이터 맵을 만듭니다.
                 asset_info = {
@@ -266,4 +295,4 @@ def execute_cmc_requests(id_lookup, sym_lookup, api_key=None):
                     if sym_upper not in market_data_map:
                         market_data_map[sym_upper] = asset_info
 
-    return market_data_map
+    return market_data_map, is_invalid_key

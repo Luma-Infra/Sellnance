@@ -525,6 +525,13 @@ def get_market_data(request: Request, force: bool = False):
         else:
             raw_ts = time.mktime(cache_timestamp.timetuple())
 
+    if isinstance(data, dict):
+        data = list(data.values())
+
+    cmc_status = (
+        api_manager.get_user_cmc_status(cmc_key) if is_user_key else "SERVER_CACHE"
+    )
+
     return {
         "data": data,
         "last_updated": last_updated,
@@ -533,6 +540,7 @@ def get_market_data(request: Request, force: bool = False):
             is_user_key=is_user_key, last_raw_ts=raw_ts
         ),
         "active_users": user_count,
+        "cmc_status": cmc_status,
     }
 
 
@@ -584,6 +592,11 @@ def get_market_data_silent(request: Request):
 
     if isinstance(data, dict):
         data = list(data.values())
+
+    cmc_status = (
+        api_manager.get_user_cmc_status(cmc_key) if is_user_key else "SERVER_CACHE"
+    )
+
     return {
         "data": data,
         "last_updated": last_updated,
@@ -592,6 +605,7 @@ def get_market_data_silent(request: Request):
             is_user_key=is_user_key, last_raw_ts=raw_ts
         ),
         "active_users": user_count,
+        "cmc_status": cmc_status,
     }
 
 

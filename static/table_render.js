@@ -291,8 +291,10 @@ export function renderTable(isRealtime = false) {
       const allUids = new Set(allSource.map((d) => String(d.UID)));
       const fav1 = JSON.parse(localStorage.getItem("sellnance_favs") || "[]");
       const fav2 = JSON.parse(localStorage.getItem("sellnance_favs2") || "[]");
-      const favMeta = JSON.parse(localStorage.getItem("sellnance_fav_meta") || "{}");
-      const delistedFavUids = Array.from(new Set([...fav1, ...fav2])).filter((uid) => !allUids.has(String(uid)));
+      const isDataLoaded = allSource && allSource.length > 50;
+      const delistedFavUids = isDataLoaded
+        ? Array.from(new Set([...fav1, ...fav2])).filter((uid) => !allUids.has(String(uid)))
+        : [];
 
       delistedFavUids.forEach((uid) => {
         const meta = favMeta[uid] || {};

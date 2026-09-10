@@ -181,14 +181,18 @@ export function positionCustomFilterDropdown(dropdown) {
   }
 
   const rect = btn.getBoundingClientRect();
-  const dropdownWidth = Math.min(340, window.innerWidth - 16);
+  const isMobile =
+    window.innerWidth < 1200 ||
+    (typeof window.isTouchDevice === "function" && window.isTouchDevice());
+  const baseWidth = isMobile ? 280 : 320;
+  const dropdownWidth = Math.min(baseWidth, window.innerWidth - (isMobile ? 32 : 16));
 
   dropdown.style.position = "fixed";
-  dropdown.style.zIndex = "250";
+  dropdown.style.zIndex = isMobile ? "500" : "250";
   dropdown.style.top = `${rect.bottom + 6}px`;
   dropdown.style.left = `${Math.max(8, Math.min(rect.right - dropdownWidth, window.innerWidth - dropdownWidth - 8))}px`;
   dropdown.style.width = `${dropdownWidth}px`;
-  dropdown.style.maxWidth = "calc(100vw - 16px)";
+  dropdown.style.maxWidth = isMobile ? "calc(100vw - 32px)" : "calc(100vw - 16px)";
   dropdown.style.maxHeight = "calc(100dvh - 120px)";
   dropdown.style.overflowY = "auto";
 }

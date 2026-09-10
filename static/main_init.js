@@ -283,19 +283,36 @@ export function updateStatusBadge() {
   const formattedTime = `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
 
   if (hasKey) {
-    if (timerEl) {
-      timerEl.innerText = `${formattedTime} 이후 갱신`;
-      timerEl.title = "";
-      timerEl.style.cursor = "default";
+    const isKeyInvalid = store.cmcStatus === "INVALID_KEY";
+    if (isKeyInvalid) {
+      if (timerEl) {
+        timerEl.innerHTML = `${iconInfo}${formattedTime} (키 오류)`;
+        timerEl.title = "CMC API 키 오류 (서버 정기 캐시 유지)";
+        timerEl.style.cursor = "default";
+      }
+      if (tipTimerEl)
+        tipTimerEl.innerHTML = `<span class="text-rose-400 font-bold">⚠️ CMC API 키 오류</span>`;
+      if (tipTextEl) {
+        tipTextEl.innerHTML = `<span class="text-rose-400 font-bold">입력하신 개인 CMC API 키가 유효하지 않아요</span><br/>실시간 시세 및 차트는 정상 작동하며, 시가총액은 서버 캐시로 안전하게 유지할게요<br/><span class="text-xs opacity-75 text-theme-accent">설정(⚙️)에서 유효한 키인지 다시 확인해 주세요.</span>`;
+      }
+      if (dot)
+        dot.className =
+          "inline-block w-2 h-2 min-[1200px]:w-1.5 min-[1200px]:h-1.5 rounded-full bg-rose-500 animate-pulse";
+    } else {
+      if (timerEl) {
+        timerEl.innerText = `${formattedTime} 이후 갱신`;
+        timerEl.title = "";
+        timerEl.style.cursor = "default";
+      }
+      if (tipTimerEl)
+        tipTimerEl.innerHTML = `${iconTimer}${formattedTime} 남음 (15분 주기)`;
+      if (tipTextEl) {
+        tipTextEl.innerHTML = `개인 CMC API 키 연동 완료 ${iconRocket}<br/>15분 주기로 시총이 자동 갱신됩니다.`;
+      }
+      if (dot)
+        dot.className =
+          "inline-block w-2 h-2 min-[1200px]:w-1.5 min-[1200px]:h-1.5 rounded-full bg-emerald-500 animate-pulse";
     }
-    if (tipTimerEl)
-      tipTimerEl.innerHTML = `${iconTimer}${formattedTime} 남음 (15분 주기)`;
-    if (tipTextEl) {
-      tipTextEl.innerHTML = `개인 CMC API 키 연동 완료 ${iconRocket}<br/>15분 주기로 시총이 자동 갱신됩니다.`;
-    }
-    if (dot)
-      dot.className =
-        "inline-block w-2 h-2 min-[1200px]:w-1.5 min-[1200px]:h-1.5 rounded-full bg-emerald-500 animate-pulse";
   } else {
     if (timerEl) {
       timerEl.innerHTML = `${iconInfo}${formattedTime} (정기 캐시)`;

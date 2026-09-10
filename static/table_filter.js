@@ -152,8 +152,13 @@ export function getFilteredData() {
     }
     filteredData = matchedRows;
 
-    // 🚀 [이스터에그] 즐겨찾기에 남아있으나 현재 상장 폐지된 코인 껍데기(Ghost Row) 생성
-    const delistedUids = favorites.filter((uid) => !seenUids.has(uid));
+    // [이스터에그] 즐겨찾기에 남아있으나 현재 상장 폐지된 코인 껍데기(Ghost Row) 생성
+    // [상폐 오인 방어] 전체 테이블 데이터가 아직 로드되지 않은 초기/로딩 상태(50개 이하)일 때는 정상 코인을 상폐로 오인하지 않도록 방어
+    const totalLoadedCount =
+      (store.originalTableData ? store.originalTableData.length : 0) ||
+      (store.currentTableData ? store.currentTableData.length : 0);
+    const delistedUids =
+      totalLoadedCount > 50 ? favorites.filter((uid) => !seenUids.has(uid)) : [];
 
     delistedRows = delistedUids.map((uid) => {
       const meta = favMeta[uid] || {};

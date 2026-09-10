@@ -462,18 +462,32 @@ def _fetch_and_process_data(silent_mode=False, api_key=None):
                 "🛡️ [2/3 CMC 유저 캐시 재활용] API 크레딧 소모 0, 기존 시가총액 장부 유지"
             )
         else:
-            market_data_map, asset_to_lookup_key = cmc_api.fetch_cmc_market_data(
+            market_data_map, asset_to_lookup_key, is_invalid_key = cmc_api.fetch_cmc_market_data(
                 binance_data, upbit_only_assets, MAPPING_DATA, api_key=api_key
             )
             with user_cache_lock:
-                USER_CMC_CACHES[key_hash] = {
-                    "map": market_data_map,
-                    "lookup": asset_to_lookup_key,
-                    "timestamp": now_kst,
-                }
-            print(
-                f"📊 [2/3 CMC 유저 키 호출 완료] 장부 매칭 성공:{len(market_data_map)}개"
-            )
+                if is_invalid_key:
+                    FAILED_CMC_KEYS[key_hash] = now_kst
+                    USER_CMC_CACHES[key_hash] = {
+                        "map": GLOBAL_CMC_CACHE.get("map", {}),
+                        "lookup": GLOBAL_CMC_CACHE.get("lookup", {}),
+                        "timestamp": now_kst,
+                        "status": "INVALID_KEY",
+                    }
+                    market_data_map = GLOBAL_CMC_CACHE.get("map", {})
+                    asset_to_lookup_key = GLOBAL_CMC_CACHE.get("lookup", {})
+                    print("🚨 [CMC 유저 키 인증 실패] 서버 기본 캐시로 폴백")
+                else:
+                    FAILED_CMC_KEYS.pop(key_hash, None)
+                    USER_CMC_CACHES[key_hash] = {
+                        "map": market_data_map,
+                        "lookup": asset_to_lookup_key,
+                        "timestamp": now_kst,
+                        "status": "OK",
+                    }
+                    print(
+                        f"📊 [2/3 CMC 유저 키 호출 완료] 장부 매칭 성공:{len(market_data_map)}개"
+                    )
     else:
         # 서버 키 처리 (4시간 정각 캐시: 01:00, 05:00, 09:00, 13:00, 17:00, 21:00)
         cmc_expired = False
@@ -494,7 +508,7 @@ def _fetch_and_process_data(silent_mode=False, api_key=None):
                 "🛡️ [2/3 CMC 서버 캐시 재활용] API 크레딧 소모 0, 기존 시가총액 장부 유지"
             )
         else:
-            market_data_map, asset_to_lookup_key = cmc_api.fetch_cmc_market_data(
+            market_data_map, asset_to_lookup_key, _ = cmc_api.fetch_cmc_market_data(
                 binance_data, upbit_only_assets, MAPPING_DATA, api_key=None
             )
             GLOBAL_CMC_CACHE = {
@@ -748,3 +762,18 @@ def get_cached_data(force_reload=False, silent_mode=False, user_api_key=None):
         data_to_return = list(data_to_return.values())
 
     return data_to_return, GLOBAL_CACHE["last_updated_str"]
+
+
+def get_user_cmc_status(api_key: str | None) -> str:
+    """유저의 개인 CMC API 키의 유효성 상태를 반환합니다 ('OK', 'INVALID_KEY', 'SERVER_CACHE')"""
+    if not api_key or not isinstance(api_key, str) or not api_key.strip():
+        return "SERVER_CACHE"
+    key_hash = hashlib.sha256(api_key.strip().encode()).hexdigest()
+    with user_cache_lock:
+        if key_hash in FAILED_CMC_KEYS:
+            return "INVALID_KEY"
+        user_cache = USER_CMC_CACHES.get(key_hash)
+        if user_cache:
+            return user_cache.get("status", "OK")
+    return "OK"
+

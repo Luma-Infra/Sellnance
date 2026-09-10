@@ -9,7 +9,9 @@ export function isTouchDevice() {
   if (typeof window === "undefined") return false;
   const ua = navigator.userAgent || "";
   const isMobileUA =
-    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|HarmonyOS|HuaweiBrowser|MiuiBrowser|VivoBrowser|HeyTapBrowser|QQBrowser|UCBrowser|MicroMessenger|Mobile/i.test(
+      ua,
+    );
   const isTouchOnly =
     window.matchMedia &&
     window.matchMedia("(pointer: coarse) and (hover: none)").matches;

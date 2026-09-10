@@ -163,9 +163,11 @@ html:not(.is-touch-device) #right-panel {
   min-width: 600px !important;
 }
 
-html:not(.is-touch-device) #search-input-wrapper,
-html:not(.is-touch-device) #chart-tab-wrapper {
-  display: flex !important;
+@media (min-width: 1200px) {
+  html:not(.is-touch-device) #search-input-wrapper,
+  html:not(.is-touch-device) #chart-tab-wrapper {
+    display: flex !important;
+  }
 }
 
 html:not(.is-touch-device) #mobile-nav-bar,
@@ -178,7 +180,7 @@ html:not(.is-touch-device) #tab-search-wrapper {
 
 /* ==========================================================================
    📱 [모바일 터치 기기 전용] - 단일 뷰포트 & 탭바 & 차트 오버레이 방식
-   - html.is-touch-device 가드로 PC 환경과 완전 격리
+   - html.is-touch-device 및 max-width: 1199px 가드로 PC 환경과 완전 격리
    ========================================================================== */
 html.is-touch-device {
   overflow-x: hidden !important;
@@ -226,8 +228,76 @@ html.is-touch-device #coin-list-body {
 
 html.is-touch-device #search-input-wrapper,
 html.is-touch-device #chart-tab-wrapper,
-html.is-touch-device #chart-fullscreen-btn {
+html.is-touch-device #chart-fullscreen-btn,
+html.is-touch-device #sidebar-toggle-btn {
   display: none !important;
+}
+
+/* 📱 모바일 전용: OHLC 레전드 반투명 효과 절반 감소 (연하게) */
+html.is-touch-device #ohlc-legend {
+  background-color: color-mix(in srgb, var(--panel) 25%, transparent) !important;
+  border-color: color-mix(in srgb, var(--border) 25%, transparent) !important;
+}
+
+/* 💻 PC 전용: OHLC 기본 배경 */
+@media (min-width: 1200px) {
+  html:not(.is-touch-device) #ohlc-legend {
+    background-color: color-mix(in srgb, var(--panel) 50%, transparent);
+  }
+}
+
+/* 📱 모바일 전용: 호가창(Orderbook) 반투명 효과 및 배경 최적화 */
+html.is-touch-device #orderbook-panel {
+  background-color: color-mix(in srgb, var(--panel) 50%, transparent) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+html.is-touch-device #orderbook-panel #orderbook-asks,
+html.is-touch-device #orderbook-panel #orderbook-bids {
+  background-color: transparent !important;
+}
+
+/* 📱 모바일 전용: 커스텀 필터 모달 z-index 500 및 가로폭 최적화 */
+html.is-touch-device #custom-filter-dropdown {
+  z-index: 500 !important;
+  max-width: calc(100vw - 32px) !important;
+}
+
+/* 📱 모바일 전용: 차트 상단 거래소 뱃지와 가격/등락폭 사이 보더 구분선 제거 */
+html.is-touch-device #head-info-row {
+  border-top: none !important;
+}
+
+@media (max-width: 1199px) {
+  #search-input-wrapper,
+  #chart-tab-wrapper,
+  #chart-fullscreen-btn,
+  #sidebar-toggle-btn {
+    display: none !important;
+  }
+  #mobile-nav-bar {
+    display: flex !important;
+  }
+  #ohlc-legend {
+    background-color: color-mix(in srgb, var(--panel) 25%, transparent) !important;
+    border-color: color-mix(in srgb, var(--border) 25%, transparent) !important;
+  }
+  #orderbook-panel {
+    background-color: color-mix(in srgb, var(--panel) 50%, transparent) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  #orderbook-panel #orderbook-asks,
+  #orderbook-panel #orderbook-bids {
+    background-color: transparent !important;
+  }
+  #custom-filter-dropdown {
+    z-index: 500 !important;
+    max-width: calc(100vw - 32px) !important;
+  }
+  #head-info-row {
+    border-top: none !important;
+  }
 }
 
 html.start-screen-active .floating-support-btn {

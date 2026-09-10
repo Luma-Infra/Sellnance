@@ -89,6 +89,7 @@ export const store = {
   currencyMode: "USD", // 🚀 [추가] USD, KRW 토글 모드
   viewMode: "DETAILED",
   tableViewMode: "basic",
+  cmcStatus: "SERVER_CACHE", // 'OK' | 'INVALID_KEY' | 'SERVER_CACHE'
   listingDates: {}, // 📅 거래소별 상장일 { BTC: { binance_listing: "2019-09-08", upbit_listing: "..." } }
   settings: {
     CMC_API_KEY: "",

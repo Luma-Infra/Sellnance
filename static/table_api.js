@@ -20,10 +20,14 @@ export function processTableData(result) {
   store.currentTableData = rawList.map((r) => ({ ...r }));
 
   // 🚀 [신규] 상태 데이터 동기화
+  if (result.cmc_status !== undefined) {
+    store.cmcStatus = result.cmc_status;
+  }
   if (result.active_users !== undefined) {
     store.activeUsers = result.active_users;
-    if (typeof window.updateStatusBadge === "function")
-      window.updateStatusBadge();
+  }
+  if (typeof window.updateStatusBadge === "function") {
+    window.updateStatusBadge();
   }
   if (result.last_updated_raw !== undefined) {
     store.lastUpdatedRaw = result.last_updated_raw;
@@ -531,10 +535,14 @@ export async function loadTableDataSilent() {
       }
 
       // 🚀 [신규] 사일런트 갱신 시 상태 바 업데이트
+      if (result.cmc_status !== undefined) {
+        store.cmcStatus = result.cmc_status;
+      }
       if (result.active_users !== undefined) {
         store.activeUsers = result.active_users;
-        if (typeof window.updateStatusBadge === "function")
-          window.updateStatusBadge();
+      }
+      if (typeof window.updateStatusBadge === "function") {
+        window.updateStatusBadge();
       }
       if (result.last_updated_raw !== undefined) {
         store.lastUpdatedRaw = result.last_updated_raw;

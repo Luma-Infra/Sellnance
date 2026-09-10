@@ -113,6 +113,12 @@ def test_security_cmc_key_isolation_and_endpoints():
     res_env = client.get("/api/get-env-key")
     assert res_env.status_code == 404
 
+    # 3) /api/market-data-silent 에서 cmc_status 정상 반환 검증
+    res_market = client.get("/api/market-data-silent")
+    assert res_market.status_code == 200
+    assert "cmc_status" in res_market.json()
+    assert res_market.json()["cmc_status"] == "SERVER_CACHE"
+
 
 def test_mapping_json_integrity_and_safeguards():
     """6. 족보(mapping.json) 무결성 및 증발 방어 세이프가드 테스트"""
