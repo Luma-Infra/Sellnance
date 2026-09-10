@@ -25,6 +25,11 @@ export function toggleSidebar() {
     "sellnance_sidebar_collapsed",
     (!store.isSidebarOpen).toString(),
   );
+
+  if (typeof window.syncQuickViewNeonSize === "function") {
+    requestAnimationFrame(() => window.syncQuickViewNeonSize());
+    setTimeout(() => window.syncQuickViewNeonSize(), 320);
+  }
 }
 
 export function switchViewMode(mode, saveToStorage = true) {
@@ -234,9 +239,12 @@ export function checkLayoutOverlap() {
   const rightPanel = document.getElementById("right-panel");
   if (!leftPanel || !rightPanel) return;
 
-  const isTouch = typeof window.isTouchDevice === "function"
-    ? window.isTouchDevice()
-    : ((window.matchMedia && window.matchMedia("(pointer: coarse)").matches) || ("ontouchstart" in window) || (typeof navigator !== "undefined" && navigator.maxTouchPoints > 0));
+  const isTouch =
+    typeof window.isTouchDevice === "function"
+      ? window.isTouchDevice()
+      : /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent || "",
+      );
 
   // 1. 진짜 모바일/F12 터치 기기일 때 (<1200px)
   if (isTouch && window.innerWidth < 1200) {
@@ -369,7 +377,7 @@ document.addEventListener("DOMContentLoaded", () => {
 // ==========================================
 export function switchChartTab(mode) {
   const btnSim = document.getElementById("tab-btn-sim");
-  if (mode === "chart" && btnSim && btnSim.classList.contains("active")) {
+  if (mode !== "sim" && btnSim && btnSim.classList.contains("active")) {
     showConfirm({
       title: "시뮬레이션 종료 🚨",
       html: "그려둔 가상 캔들이 모두 초기화되고 실제 차트로 돌아가요<br/>진짜로 넘어갈까요?",
@@ -399,6 +407,10 @@ export function executeTabSwitch(mode) {
     btnQuick = document.getElementById("tab-btn-quickview"),
     controls = document.getElementById("sim-controls");
 
+  if (mode === "chart" || mode === "sim") {
+    store.previousChartTab = mode;
+  }
+
   if (mode === "chart") {
     if (typeof window.moveTabSlider === "function") window.moveTabSlider(0);
     if (btnChart) btnChart.classList.add("active");
@@ -420,9 +432,7 @@ export function executeTabSwitch(mode) {
       window.resetPriceScaleWidthSync();
     }
 
-    if (typeof fetchHistory === "function")
-      fetchHistory(undefined, false, true);
-
+    // 🚀 퀵뷰 복귀 시 불필요한 차트 재조회(fetchHistory) 제거 -> 즉시 복귀
     requestAnimationFrame(() => {
       if (typeof window.applyChartLayout === "function") {
         window.applyChartLayout();

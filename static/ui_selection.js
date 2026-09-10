@@ -154,7 +154,14 @@ export function selectSymbol(
     parsedSymbol !== "BTC" &&
     parsedSymbol !== "BTCUSDT"
   ) {
-    return selectSymbol("BINANCE:BTC_FUTURES");
+    let fallbackSymbol = "BINANCE:BTC_FUTURES";
+    try {
+      const last = localStorage.getItem("sellnance_last_symbol");
+      if (last && last !== parsedSymbol && last !== rawSymbol) {
+        fallbackSymbol = last;
+      }
+    } catch (_) { }
+    return selectSymbol(fallbackSymbol);
   }
 
   const uniqueTicker = rowInfo ? rowInfo.Ticker : parsedSymbol;

@@ -168,14 +168,14 @@
   <link rel="stylesheet" crossorigin href="/assets/main.css">
 </head>
 
-<body class="bg-theme-bg text-theme-text font-sans h-screen w-screen overflow-hidden flex justify-center">
+<body class="bg-theme-bg text-theme-text font-sans h-screen w-screen overflow-hidden flex justify-center items-start">
   <div id="app-loader"></div>
 
   <!-- 🚀 온보딩 모달 (첫 방문 안내) -->
   <div id="onboarding-modal" onclick="if (event.target === this) window.closeOnboardingModal();"
-    class="fixed z-[300] inset-0 bg-black/60 hidden backdrop-blur-sm flex-col justify-center items-center p-4 transition-opacity duration-300 opacity-0 cursor-pointer">
+    class="fixed z-[500] inset-0 bg-black/60 hidden backdrop-blur-sm flex-col justify-center items-center p-4 transition-opacity duration-300 opacity-0 cursor-pointer">
     <div
-      class="bg-theme-panel border border-theme-border/50 rounded-2xl w-full max-w-2xl max-h-[60dvh] max-h-[60vh] md:max-h-none shadow-2xl overflow-hidden flex flex-col transform scale-95 transition-transform duration-300 cursor-default"
+      class="bg-theme-panel border border-theme-border/50 rounded-2xl w-full max-w-2xl max-h-[calc(100dvh-32px)] md:max-h-[85vh] shadow-2xl overflow-hidden flex flex-col transform scale-95 transition-transform duration-300 cursor-default"
       id="onboarding-modal-content">
       <div class="p-4 md:p-4 flex-1 overflow-y-auto min-h-0 overscroll-contain">
         <h2 class="text-lg md:text-xl font-bold text-theme-text mb-2 flex items-center gap-1.5">
@@ -381,7 +381,7 @@
             class="text-xs text-theme-text/80 group-hover:text-theme-text whitespace-nowrap font-medium transition-colors">다시
             보지 않기</span>
         </label>
-        <button onclick="window.closeOnboardingModal()"
+        <button onclick="window.closeOnboardingModal()" type="button"
           class="h-[38px] px-6 bg-theme-accent text-white text-xs md:text-sm font-bold rounded-xl shadow-sm hover:brightness-105 active:scale-[0.98] transition-all tracking-wider flex items-center gap-1.5">
           <span>시작하기</span>
           <span>→</span>
@@ -415,7 +415,7 @@
   <div id="main-dashboard-content"
     x-data="{ currentMobileTab: (function(){ try { return sessionStorage.getItem('sellnance_active_mobile_tab') || 'list'; } catch(e){ return 'list'; } })() }"
     @mobile-tab-changed.window="currentMobileTab = $event.detail"
-    class="flex flex-col h-[100dvh] min-[1200px]:h-[98dvh] max-h-[100dvh] min-[1200px]:max-h-[880px] w-full max-w-[1440px] bg-theme-bg relative overflow-hidden shrink-0 mx-auto min-[1200px]:mb-[2dvh] rounded-none min-[1200px]:rounded-md">
+    class="flex flex-col h-[100dvh] min-[1200px]:h-[95dvh] max-h-[100dvh] min-[1200px]:max-h-[95dvh] w-full min-[1200px]:w-[75vw] max-w-[1440px] min-[1800px]:max-w-[1920px] min-[2500px]:max-w-[2400px] bg-theme-bg relative overflow-hidden shrink-0 mx-auto rounded-none min-[1200px]:rounded-md">
     <!-- 🚀 글로벌 통합 탑 헤더 (모든 패널 위에 위치) -->
     <header id="main-global-header"
       class="relative flex w-full shrink-0 h-11 bg-theme-panel border-b border-theme-border/50 px-4 items-center justify-between z-[100] shadow-sm">
@@ -1042,16 +1042,11 @@
             <div id="chart-tab-container"
               class="relative flex flex-1 h-[36px] min-[1200px]:h-[32px] bg-theme-panel border border-theme-border rounded-md items-stretch z-0 overflow-hidden gap-1.5 p-0.5 shadow-inner">
               <div id="tab-sliding-bg"
-                class="absolute top-[2px] bottom-[2px] left-0 bg-white/10 rounded-sm transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] z-10 pointer-events-none border border-white/5 overflow-hidden"
-                style="isolation: isolate">
-                <span id="quickview-neon-glow"
-                  class="absolute inset-0 bg-gradient-to-r from-theme-accent via-cyan-400 via-purple-500 via-pink-500 to-theme-accent opacity-0 transition-opacity duration-300 animate-[spin_8s_linear_infinite] scale-150 rounded-sm"></span>
-                <span id="quickview-neon-mask"
-                  class="absolute inset-[1px] bg-theme-panel rounded-sm opacity-0 transition-opacity duration-300"></span>
-              </div>
+                class="absolute top-[2px] bottom-[2px] left-0 bg-theme-bg/90 border border-theme-border/60 rounded-md shadow-sm transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] z-10 pointer-events-none overflow-hidden"
+                style="will-change: transform, width;"></div>
 
               <button id="tab-btn-chart"
-                class="chart-tabs-btn active relative flex-1 h-full bg-transparent border-none text-theme-text text-sm min-[1200px]:text-xs font-medium transition-all cursor-pointer z-20 flex items-center justify-center gap-1.5 opacity-60 [&.active]:opacity-100 min-w-0 px-1"
+                class="chart-tabs-btn active relative flex-1 h-full bg-transparent border-none text-theme-text text-sm min-[1200px]:text-xs font-medium transition-all cursor-pointer z-20 flex items-center justify-center gap-1.5 opacity-60 hover:opacity-90 [&.active]:opacity-100 [&.active]:font-bold min-w-0 px-1 rounded-md"
                 onclick="switchChartTab('chart')">
                 <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                   stroke-linecap="round" stroke-linejoin="round">
@@ -1063,7 +1058,7 @@
               </button>
 
               <button id="tab-btn-sim"
-                class="chart-tabs-btn relative flex-1 h-full bg-transparent border-none text-theme-text text-sm min-[1200px]:text-xs font-medium transition-all cursor-pointer z-20 flex items-center justify-center gap-1.5 opacity-60 [&.active]:opacity-100 min-w-0 px-1"
+                class="chart-tabs-btn relative flex-1 h-full bg-transparent border-none text-theme-text text-sm min-[1200px]:text-xs font-medium transition-all cursor-pointer z-20 flex items-center justify-center gap-1.5 opacity-60 hover:opacity-90 [&.active]:opacity-100 [&.active]:font-bold min-w-0 px-1 rounded-md"
                 onclick="switchChartTab('sim')">
                 <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                   stroke-linecap="round" stroke-linejoin="round">
@@ -1075,23 +1070,23 @@
               </button>
 
               <button id="tab-btn-quickview"
-                class="chart-tabs-btn active:opacity-100 [&.active]:opacity-100 relative flex-1 h-full bg-transparent border-none text-theme-text text-sm min-[1200px]:text-xs font-medium transition-all cursor-pointer z-20 flex items-center justify-center gap-1.5 opacity-70 overflow-hidden rounded-md group hover:opacity-100 min-w-0 px-1"
-                style="isolation: isolate; transform: translate3d(0, 0, 0)" onclick="switchChartTab('quickview')">
-                <span
-                  class="absolute inset-0 z-0 bg-gradient-to-r from-theme-accent via-cyan-400 via-purple-500 via-pink-500 to-theme-accent animate-[spin_15s_linear_infinite] scale-150 transition-opacity duration-500 opacity-30 group-hover:opacity-60 group-[.active]:opacity-90 blur-[4px]"></span>
-
-                <span
-                  class="absolute inset-0 z-0 bg-gradient-to-r from-theme-accent via-cyan-400 via-purple-500 via-pink-500 to-theme-accent animate-[spin_15s_linear_infinite] scale-150 transition-opacity duration-500 opacity-50 group-hover:opacity-80 group-[.active]:opacity-100"></span>
-
-                <span class="absolute inset-[1.5px] z-10 bg-theme-panel rounded-[inherit]"></span>
-
-                <span class="relative z-20 flex items-center justify-center gap-1.5 min-w-0 px-1 w-full">
-                  <svg class="w-3.5 h-3.5 shrink-0 text-theme-accent drop-shadow-[0_0_3px_rgba(59,130,246,0.6)]"
-                    viewBox="0 0 24 24" fill="currentColor" stroke="none">
-                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-                  </svg>
-                  <span class="truncate">Quick View</span>
+                class="chart-tabs-btn relative flex-1 h-full bg-transparent border-none text-theme-text text-sm min-[1200px]:text-xs font-medium transition-all cursor-pointer z-20 flex items-center justify-center gap-1.5 opacity-80 hover:opacity-100 [&.active]:opacity-100 [&.active]:font-bold min-w-0 px-1 rounded-md overflow-hidden"
+                onclick="switchChartTab('quickview')">
+                <span class="absolute inset-0 rounded-md p-[2px] pointer-events-none overflow-hidden"
+                  style="-webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude;">
+                  <span id="quickview-neon-wrapper" class="pointer-events-none"
+                    style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 250%; aspect-ratio: 1; min-width: 260px; min-height: 260px; display: flex; align-items: center; justify-content: center;">
+                    <span id="quickview-neon-glow"
+                      class="pointer-events-none opacity-45 transition-opacity duration-300 animate-spin-slow bg-gradient-to-r from-purple-600 via-violet-400 via-indigo-400 to-purple-600"
+                      style="display: block; width: 100%; height: 100%;"></span>
+                  </span>
                 </span>
+                <svg
+                  class="relative z-10 w-3.5 h-3.5 shrink-0 text-theme-accent drop-shadow-[0_0_4px_rgba(59,130,246,0.6)]"
+                  viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                </svg>
+                <span class="relative z-10 truncate">Quick View</span>
               </button>
             </div>
           </div>
@@ -1670,7 +1665,7 @@
 
     <!-- ⚙️ 전문가용 설정 모달 (모바일 바텀시트) -->
     <div id="settings-modal" style="display: none" onclick="if (event.target === this) closeSettingsModal();"
-      class="fixed inset-0 z-[300] items-center justify-center bg-black/60 backdrop-blur-sm cursor-pointer">
+      class="fixed inset-0 z-[500] items-center justify-center bg-black/60 backdrop-blur-sm cursor-pointer">
       <form onsubmit="event.preventDefault()" onclick="event.stopPropagation()"
         class="bg-theme-panel border border-theme-border p-6 rounded-2xl shadow-2xl w-[calc(100%-32px)] max-w-[400px] max-h-[85dvh] flex flex-col gap-5 overflow-y-auto cursor-default">
         <div class="flex justify-between items-center border-b border-theme-border pb-3">
@@ -2109,9 +2104,9 @@
     </svg>
   </button>
 
-  <!-- 💬 우측 하단 팝오버 확장/최소화 피드백 위젯 (배경 블러 없이 차트 가림 최소화) -->
+  <!-- 💬 우측 하단 팝오버(PC 스케일 / 모바일 바텀 슬라이드) 피드백 위젯 -->
   <div id="feedback-modal"
-    class="fixed bottom-4 right-4 z-[550] pointer-events-none transition-all duration-300 ease-out origin-bottom-right scale-0 opacity-0">
+    class="fixed bottom-4 right-4 z-[550] pointer-events-none transition-all duration-300 ease-out opacity-0 max-[1199px]:translate-y-full min-[1200px]:origin-bottom-right min-[1200px]:scale-0">
     <div id="feedback-modal-card"
       class="pointer-events-auto relative w-[320px] max-w-[calc(100vw-32px)] p-4 rounded-2xl bg-theme-panel/95 border border-theme-border/90 shadow-2xl shadow-black/50 flex flex-col gap-3 text-theme-text font-sans backdrop-blur-md">
       <!-- 위젯 헤더 -->

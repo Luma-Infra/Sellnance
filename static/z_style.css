@@ -37,20 +37,40 @@
   }
 }
 
+/* Quick View 네온 글로우 360도 회전 애니메이션 */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin 10s linear infinite !important;
+}
+
 /* 스타트 스크린 전역 오버레이 */
 #start-screen {
   position: fixed;
   inset: 0;
   width: 100vw;
   height: 100dvh;
-  background-color: var(--bg);
+  background-color: color-mix(in srgb, var(--bg) 80%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   z-index: 500;
   pointer-events: auto;
 }
 
-/* 스타트 스크린 활성화 상태에서 메인 대시보드 & 글로벌 헤더 100% 완전 은닉 */
+/* 스타트 스크린 활성화 상태에서 배경이 은은하게 비치도록 포인터 이벤트만 차단 */
 html.start-screen-active #main-dashboard-content,
-html.start-screen-active #main-global-header,
+html.start-screen-active #main-global-header {
+  pointer-events: none !important;
+}
+
 html.start-screen-active #loading-modal {
   display: none !important;
   visibility: hidden !important;
@@ -77,10 +97,142 @@ html.panel-swapped-mode #panel-split-container {
   }
 }
 
-html.start-screen-active .floating-support-btn {
+/* 🚀 온보딩 / 설정 모달 z-index 500 (하단 네비바 z-400 위에 덮도록 설정) */
+#onboarding-modal,
+#settings-modal {
+  z-index: 500 !important;
+}
+
+/* ==========================================================================
+   🖥️ [PC 데스크탑 전용] - 업비트/빗썸 방식 (화면 축소 시에도 좌우 패널 고정 & 여백만 감소)
+   - html:not(.is-touch-device) 가드로 모바일 전환을 원천 차단
+   ========================================================================== */
+html:not(.is-touch-device) {
+  min-width: 1200px;
+  overflow-x: auto;
+}
+
+html:not(.is-touch-device) #main-dashboard-content {
+  width: 1400px !important;
+  max-width: 1440px !important;
+  min-width: 1200px !important;
+  height: 95dvh !important;
+  max-height: 95dvh !important;
+  border-radius: 8px !important;
+  margin: 0 auto !important;
+}
+
+@media (min-width: 1800px) {
+  html:not(.is-touch-device) #main-dashboard-content {
+    width: 1440px !important;
+    max-width: 1920px !important;
+    height: 95dvh !important;
+    max-height: 95dvh !important;
+  }
+}
+
+@media (min-width: 2500px) {
+  html:not(.is-touch-device) #main-dashboard-content {
+    width: 2000px !important;
+    max-width: 2400px !important;
+    height: 90dvh !important;
+    max-height: 90dvh !important;
+  }
+}
+
+@media (min-width: 3200px) {
+  html:not(.is-touch-device) #main-dashboard-content {
+    width: 2400px !important;
+    max-width: 2400px !important;
+    height: 80dvh !important;
+    max-height: 80dvh !important;
+  }
+}
+
+html:not(.is-touch-device) #left-panel {
+  width: 560px !important;
+  min-width: 520px !important;
+  max-width: 50vw !important;
+  border-right-width: 1px !important;
+  display: flex !important;
+}
+
+html:not(.is-touch-device) #right-panel {
+  display: flex !important;
+  flex: 1 !important;
+  min-width: 600px !important;
+}
+
+html:not(.is-touch-device) #search-input-wrapper,
+html:not(.is-touch-device) #chart-tab-wrapper {
+  display: flex !important;
+}
+
+html:not(.is-touch-device) #mobile-nav-bar,
+html:not(.is-touch-device) #mobile-chart-overlay,
+html:not(.is-touch-device) #coin-list-bottom-fade,
+html:not(.is-touch-device) #btn-toggle-tab-search,
+html:not(.is-touch-device) #tab-search-wrapper {
   display: none !important;
 }
 
+/* ==========================================================================
+   📱 [모바일 터치 기기 전용] - 단일 뷰포트 & 탭바 & 차트 오버레이 방식
+   - html.is-touch-device 가드로 PC 환경과 완전 격리
+   ========================================================================== */
+html.is-touch-device {
+  overflow-x: hidden !important;
+}
+
+html.is-touch-device body {
+  overflow-x: hidden !important;
+  position: relative;
+}
+
+html.is-touch-device #main-dashboard-content {
+  width: 100vw !important;
+  min-width: 0 !important;
+  max-width: 100vw !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+}
+
+html.is-touch-device #left-panel {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  border-right-width: 0 !important;
+  display: flex !important;
+  zoom: clamp(0.72, calc(100vw / 1200), 1) !important;
+}
+
+html.is-touch-device #right-panel {
+  display: none !important;
+}
+
+html.is-touch-device #mobile-nav-bar {
+  display: flex !important;
+}
+
+html.is-touch-device #coin-list-bottom-fade {
+  display: block !important;
+}
+
+html.is-touch-device #coin-list-body {
+  padding-bottom: 96px !important;
+}
+
+html.is-touch-device #search-input-wrapper,
+html.is-touch-device #chart-tab-wrapper,
+html.is-touch-device #chart-fullscreen-btn {
+  display: none !important;
+}
+
+html.start-screen-active .floating-support-btn {
+  display: none !important;
+}
 
 html.panel-swapped-mode #left-panel {
   border-right-width: 0px !important;
@@ -529,14 +681,12 @@ body.theme-binance {
 }
 
 /* ============================================================
-   📱 [모바일 vs PC 레이아웃 완벽 격리]
-   - PC 데스크탑 (>= 1200px): 하단 탭바, 모바일 오버레이 절대 숨김! 검색창/차트탭 100% 정상 노출
-   - 모바일 / 태블릿 (< 1200px): 하단 플로팅 알약 탭바 및 모바일 바텀시트 활성화
+   📱 [모바일 하단 플로팅 네비게이션 & 오버레이 베이스 스타일]
+   - 표시/숨김 분기는 최상단 html.is-touch-device 단일 가드에서 제어
    ============================================================ */
 
-/* 1. 하단 플로팅 알약 네비게이션 바: 기본 완전 숨김 */
 #mobile-nav-bar {
-  display: none !important;
+  display: none;
   box-shadow: var(--mobile-nav-shadow);
 }
 
@@ -545,78 +695,7 @@ body.theme-binance {
 }
 
 #coin-list-bottom-fade {
-  display: none !important;
-}
-
-/* 📱 모바일 / 태블릿 (< 1200px) 전용 스타일 */
-@media (max-width: 1199px) {
-  #mobile-nav-bar {
-    display: flex !important;
-  }
-
-  #search-input-wrapper {
-    display: none !important;
-  }
-
-  #chart-tab-wrapper {
-    display: none !important;
-  }
-
-  #panel-split-container {
-    width: 100% !important;
-    max-width: 100vw !important;
-  }
-
-  #left-panel {
-    width: 100% !important;
-    max-width: 100vw !important;
-    min-width: 0 !important;
-    border-right-width: 0 !important;
-  }
-
-  #coin-list-bottom-fade {
-    display: block !important;
-  }
-
-  #coin-list-body {
-    padding-bottom: 96px !important;
-  }
-}
-
-/* 💻 PC 데스크탑 (>= 1200px) 전용 스타일: 어떠한 터치 클래스가 붙어도 모바일 요소 100% 강제 숨김 */
-@media (min-width: 1200px) {
-
-  #mobile-nav-bar,
-  html.is-touch-device #mobile-nav-bar {
-    display: none !important;
-  }
-
-  #mobile-chart-overlay,
-  html.is-touch-device #mobile-chart-overlay {
-    display: none !important;
-  }
-
-  #coin-list-bottom-fade,
-  html.is-touch-device #coin-list-bottom-fade {
-    display: none !important;
-  }
-
-  #btn-toggle-tab-search,
-  #tab-search-wrapper {
-    display: none !important;
-  }
-
-  #search-input-wrapper {
-    display: flex !important;
-  }
-
-  #chart-tab-wrapper {
-    display: flex !important;
-  }
-
-  #coin-list-body {
-    padding-bottom: 0 !important;
-  }
+  display: none;
 }
 
 #mobile-nav-slider {
@@ -1040,104 +1119,61 @@ body.theme-upbit:not(.resizing-active) #right-panel {
   height: 100% !important;
 }
 
-/* ✅ 모바일/태블릿 반응형 통합 최적화 (< 1200px) */
-@media (max-width: 1199px) {
+/* ✅ [모바일 터치 환경 반응형 헤더 & 공지사항 바 최적화] */
+html.is-touch-device header {
+  font-size: clamp(0.6rem, 1.2vw, 1rem) !important;
+  padding-left: 0.5rem !important;
+  padding-right: 0.5rem !important;
+}
 
-  /* 가로 스크롤 완전 차단 */
-  body,
-  html {
-    overflow-x: hidden !important;
-    position: relative;
-  }
+html.is-touch-device header h2 {
+  font-size: clamp(0.75rem, 1.5vw, 1.125rem) !important;
+}
 
-  /* 1. 글로벌 통합 헤더 및 좌측 패널: 모바일/태블릿 반응형 줌 비율 감소 기법 */
-  header {
-    font-size: clamp(0.6rem, 1.2vw, 1rem) !important;
-    padding-left: 0.5rem !important;
-    padding-right: 0.5rem !important;
-  }
+html.is-touch-device #server-status-badge {
+  transform: scale(clamp(0.7, 1.2vw, 1));
+  transform-origin: left center;
+}
 
-  header h2 {
-    font-size: clamp(0.75rem, 1.5vw, 1.125rem) !important;
-  }
+html.is-touch-device header>div.absolute {
+  width: clamp(260px, 60vw, 900px) !important;
+}
 
-  #server-status-badge {
-    transform: scale(clamp(0.7, 1.2vw, 1));
-    transform-origin: left center;
-  }
+html.is-touch-device header>div.absolute span {
+  white-space: nowrap !important;
+}
 
+/* 🚀 1000px 미만 소형 화면 대응: 상단 롤링 공지사항 바 숨김 처리 */
+@media (max-width: 999px) {
+
+  #header-notice-container,
   header>div.absolute {
-    width: clamp(260px, 60vw, 900px) !important;
+    display: none !important;
+  }
+}
+
+/* 🚀 500px 미만 초소형 모바일 기기 대응: 김프/거래소 열 숨김 처리 */
+@media (max-width: 499px) {
+  :root {
+    --ratio-total: calc(var(--ratio-asset) + var(--ratio-price) + var(--ratio-vol-b) + var(--ratio-vol-u));
   }
 
-  header>div.absolute span {
-    white-space: nowrap !important;
-  }
-
-  /* 2. 리스트 패널: 정상 Flex 흐름으로 배치 (헤더 아래에 자연스럽게 위치) */
-  #left-panel {
-    position: relative !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    height: 100% !important;
-    max-height: 100% !important;
-    display: flex !important;
-    flex-direction: column !important;
-    overflow: hidden !important;
-    background-color: var(--bg);
-
-    /* 🚀 물리적 비율 완벽 유지를 위한 zoom 기법 적용 (글자 크기 비율과 패딩 비율이 깨지지 않고 자연스럽게 작아짐) */
-    zoom: clamp(0.72, calc(100vw / 1200), 1) !important;
-  }
-
-  /* 3. [잔상박멸] 평소 우측 패널은 보이지 않게 차단 (스르륵 오버레이 열릴때만 강제 표시) */
-  #right-panel {
+  .col-kimch,
+  .col-exch {
     display: none !important;
   }
 
-  /* 4. 모바일 화면에서 차트 전체화면 버튼 숨김 */
-  #chart-fullscreen-btn {
+  #control-panel-parent>*:not(#category-tab-container) {
     display: none !important;
   }
 
-  /* 🚀 1000px 미만 화면 대응: 상단 롤링 공지사항 바 완전 숨김 처리 */
-  @media (max-width: 999px) {
-
-    #header-notice-container,
-    header>div.absolute {
-      display: none !important;
-    }
+  #table-top-zone {
+    height: auto !important;
+    max-height: none !important;
   }
+}
 
-  /* 🚀 500px 미만 초소형 모바일 기기 대응: 김프/거래소 열 숨김 처리 */
-  @media (max-width: 499px) {
-    :root {
-      --ratio-total: calc(var(--ratio-asset) + var(--ratio-price) + var(--ratio-vol-b) + var(--ratio-vol-u));
-    }
-
-    .col-kimch,
-    .col-exch {
-      display: none !important;
-    }
-
-    #control-panel-parent>*:not(#category-tab-container) {
-      display: none !important;
-    }
-
-    /* #control-panel-parent {
-      gap: 0 !important;
-      padding: 0 !important;
-      margin: 0 !important;
-      border: none !important;
-    } */
-
-    #table-top-zone {
-      height: auto !important;
-      max-height: none !important;
-    }
-  }
-
-  /* 
+/* 
   .chart-container canvas,
   .tv-lightweight-charts {
     display: none !important;
@@ -1147,46 +1183,45 @@ body.theme-upbit:not(.resizing-active) #right-panel {
     opacity: 0 !important;
   } */
 
-  /* 3. [부활] 팝업 활성화 시에만 정중하게 재소환 */
-  #mobile-chart-overlay.active #right-panel,
-  #mobile-chart-overlay.active #right-panel *,
-  #mobile-chart-overlay.active .chart-container canvas {
-    display: flex !important;
-    position: relative !important;
-    left: 0 !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-  }
+/* 3. [부활] 팝업 활성화 시에만 정중하게 재소환 */
+#mobile-chart-overlay.active #right-panel,
+#mobile-chart-overlay.active #right-panel *,
+#mobile-chart-overlay.active .chart-container canvas {
+  display: flex !important;
+  position: relative !important;
+  left: 0 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
 
-  /* 4. 테이블 & 차트 세부 조정 */
-  /* #coin-list-body {
+/* 4. 테이블 & 차트 세부 조정 */
+/* #coin-list-body {
     display: block !important;
     height: 500px !important;
     overflow-y: auto !important;
     width: 100%;
   } */
 
-  /* 3. 헤더는 딱 붙어있게 고정 (이미 되어있겠지만 확인!) */
-  thead {
-    flex-shrink: 0;
-    /* 헤더가 찌그러지지 않게 */
-    display: table;
-    width: 100%;
-    table-layout: fixed;
-  }
+/* 3. 헤더는 딱 붙어있게 고정 (이미 되어있겠지만 확인!) */
+thead {
+  flex-shrink: 0;
+  /* 헤더가 찌그러지지 않게 */
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
 
-  #coin-list-body td,
-  thead th {
-    padding: 8px 4px !important;
-    font-size: 11px !important;
-  }
+#coin-list-body td,
+thead th {
+  padding: 8px 4px !important;
+  font-size: 11px !important;
+}
 
-  /* .chart-container { */
-  #chart-wrapper {
-    height: 100% !important;
-    width: 100% !important;
-    margin: 0 !important;
-  }
+/* .chart-container { */
+#chart-wrapper {
+  height: 100% !important;
+  width: 100% !important;
+  margin: 0 !important;
 }
 
 /* 🚀 테이블 가격 옆 거래소 마크 태그 */
@@ -2557,33 +2592,7 @@ body.theme-upbit #right-panel {
   border-left-width: 1px !important;
 }
 
-/* 🚀 PC 데스크탑 환경 (>=1200px): 최소 가로 800px x 세로 600px 하한선 절대 보장 (레이아웃 붕괴/0px 축소 방지) */
-@media (min-width: 1200px) and (pointer: fine) {
-
-  html,
-  body {
-    min-width: 800px !important;
-    min-height: 600px !important;
-    overflow: auto !important;
-  }
-
-  #main-dashboard-content {
-    min-width: 800px !important;
-    min-height: 600px !important;
-    height: 100vh !important;
-  }
-}
-
-@media (pointer: coarse) {
-
-  html,
-  body,
-  #main-dashboard-content {
-    min-width: 0 !important;
-    min-height: 0 !important;
-  }
-}
-
+/* 💻 [PC / 모바일 최소 크기 및 스크롤 바운더리] - 상단 단일 가드와 일관되게 유지 */
 html.is-touch-device,
 html.is-touch-device body,
 html.is-touch-device #main-dashboard-content {

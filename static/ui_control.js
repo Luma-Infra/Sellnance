@@ -124,32 +124,51 @@ export function moveTabSlider(index) {
   if (buttons.length <= index) return;
 
   const btn = buttons[index];
-  const btnRect = btn.getBoundingClientRect();
-  const parent = btn.parentElement;
-  const parentRect = parent.getBoundingClientRect();
+  const left = btn.offsetLeft;
+  const width = btn.offsetWidth;
 
-  const left = btnRect.left - parentRect.left;
-  slider.style.left = `${left}px`;
-  slider.style.width = `${btnRect.width}px`;
+  slider.style.transform = `translate3d(${left}px, 0, 0)`;
+  slider.style.width = `${width}px`;
 
-  // Quick View 탭(index 2)일 때만 네온 글로우 활성화
+  // Quick View 탭 네온 글로우 상시 노출 (테두리만 노출, 가운데 채우지 않음)
   const neonGlow = document.getElementById("quickview-neon-glow");
   const neonMask = document.getElementById("quickview-neon-mask");
+  if (neonMask) neonMask.style.display = "none";
   if (index === 2) {
-    if (neonGlow) neonGlow.style.opacity = "0.7";
-    if (neonMask) neonMask.style.opacity = "1";
+    if (neonGlow) neonGlow.style.opacity = "0.45";
   } else {
-    if (neonGlow) neonGlow.style.opacity = "0";
-    if (neonMask) neonMask.style.opacity = "0";
+    if (neonGlow) neonGlow.style.opacity = "0.3";
+  }
+  syncQuickViewNeonSize();
+}
+
+// 📏 실제 박스 크기(가로, 세로, 대각선)를 기반으로 네온 회전 영역을 동적 동기화
+export function syncQuickViewNeonSize() {
+  const btn = document.getElementById("tab-btn-quickview");
+  const glow = document.getElementById("quickview-neon-glow");
+  if (!btn || !glow) return;
+  const w = btn.offsetWidth;
+  const h = btn.offsetHeight;
+  if (!w || !h) return;
+  // 박스의 실제 대각선 길이 + 여유 모서리 여백(32px)으로 회전 영역을 동적 산출하여
+  // 사이드바 토글 등으로 박스 크기가 변해도 우측 하단 및 모든 모서리가 100% 꽉 채워지도록 보장
+  const diag = Math.ceil(Math.hypot(w, h)) + 32;
+  const wrapper = document.getElementById("quickview-neon-wrapper") || glow.parentElement;
+  if (wrapper) {
+    wrapper.style.width = `${diag}px`;
+    wrapper.style.height = `${diag}px`;
   }
 }
+window.syncQuickViewNeonSize = syncQuickViewNeonSize;
 
 // 🚀 탭 컨테이너 크기 변경 시 하이라이터 위치 동적 재조정
 document.addEventListener("DOMContentLoaded", () => {
   setTimeout(() => {
+    syncQuickViewNeonSize();
     const container = document.getElementById("chart-tab-container");
     if (container) {
       const observer = new ResizeObserver(() => {
+        syncQuickViewNeonSize();
         const activeBtn = container.querySelector(".chart-tabs-btn.active");
         if (activeBtn) {
           const buttons = Array.from(

@@ -4,14 +4,16 @@ import { store, CONFIG } from "./_store.js";
 
 let _closeMobileChartTimer = null;
 
-// 📱 [터치 스크린 / 모바일 기기 감지 헬퍼]
+// 📱 [터치 스크린 / 모바일 기기 감지 헬퍼: 데스크탑 PC 오감지 방지]
 export function isTouchDevice() {
   if (typeof window === "undefined") return false;
-  return (
-    (window.matchMedia && window.matchMedia("(pointer: coarse)").matches) ||
-    "ontouchstart" in window ||
-    (typeof navigator !== "undefined" && navigator.maxTouchPoints > 0)
-  );
+  const ua = navigator.userAgent || "";
+  const isMobileUA =
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+  const isTouchOnly =
+    window.matchMedia &&
+    window.matchMedia("(pointer: coarse) and (hover: none)").matches;
+  return isMobileUA || isTouchOnly;
 }
 
 export function syncTouchDeviceClass() {
