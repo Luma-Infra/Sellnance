@@ -676,6 +676,10 @@
   "BERAUSDT": {
     "binance_listing": "2025-02-06"
   },
+  "BFC": {
+    "upbit_listing": "2026-09-10",
+    "bithumb_listing": "2026-08-06"
+  },
   "BFUSDUSDT": {
     "binance_listing": "2025-08-13"
   },
@@ -1733,7 +1737,7 @@
     "binance_listing": "2026-06-10"
   },
   "GMT": {
-    "binance_listing": "2022-03-14",
+    "binance_listing": "2022-03-01",
     "upbit_listing": "2022-07-25"
   },
   "GMTUSDT": {
@@ -4195,7 +4199,8 @@
     "binance_listing": "2024-08-20"
   },
   "VTHO": {
-    "binance_listing": "2025-01-01"
+    "binance_listing": "2025-01-01",
+    "upbit_listing": "2026-02-23"
   },
   "VTHOUSDT": {
     "binance_listing": "2025-01-22"
@@ -4304,7 +4309,7 @@
     "binance_listing": "2025-09-29"
   },
   "XAU": {
-    "binance_listing": "2025-12-08"
+    "binance_listing": "2025-12-01"
   },
   "XAUT": {
     "binance_listing": "2026-03-23",

@@ -107,6 +107,7 @@ builtins.print = safe_print
 
 from . import trace_hooking
 from . import api_manager
+from . import exchange_api
 from . import config_manager
 from .adapter import ExchangeAdapter  # 통합 지휘소 영입
 from .candle_proxy import (
@@ -421,8 +422,9 @@ def get_market_data(request: Request, force: bool = False):
     is_user_key = bool(cmc_key and isinstance(cmc_key, str) and cmc_key.strip() != "")
 
     user_count = track_user_session(request)
+    # 🔒 [DDoS / API 쿼터 고갈 방어] 외부 유저의 ?force=true 무차별 캐시 무효화 차단 (서버 15분 스케줄러 캐시만 제공)
     data, last_updated = api_manager.get_cached_data(
-        force_reload=force, user_api_key=cmc_key
+        force_reload=False, user_api_key=cmc_key
     )
 
     # 쿨타임 타이머용 raw 타임스탬프 획득
@@ -451,6 +453,19 @@ def get_market_data(request: Request, force: bool = False):
             is_user_key=is_user_key, last_raw_ts=raw_ts
         ),
         "active_users": user_count,
+    }
+
+
+@app.get("/api/dev/trigger-9am")
+def dev_trigger_9am():
+    """🚀 [개발/테스트 전용] 9시 정각 시가 초기화 및 캐시 갱신 원스톱 파이프라인 수동 강제 트리거"""
+    success = api_manager.trigger_kst_9am_reset_atomic()
+    today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    cache_count = len(exchange_api.UTC0_OPEN_CACHE.get(today_str, {}))
+    return {
+        "status": "success" if success else "error",
+        "message": f"KST 09:00 (UTC 00:00) 초기화 파이프라인 완료 ({today_str})",
+        "utc0_open_count": cache_count,
     }
 
 
@@ -759,8 +774,8 @@ def get_settings():
 
 @app.post("/api/settings")
 def update_settings(data: dict = Body(...)):
-    if "CMC_API_KEY" in data:
-        config.set_cmc_api_key(data["CMC_API_KEY"])
+    # 🔒 [보안 격리] 외부 HTTP 요청으로 서버 마스터 키(CMC_API_KEY) 오염/삭제 원천 차단
+    # 유저의 개인 CMC 키는 브라우저 localStorage에 안전하게 보관되고 X-CMC-API-KEY 헤더로 전달됨
     return {"status": "success"}
 
 

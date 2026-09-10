@@ -230,9 +230,15 @@ export function processTableData(result) {
       store.originalTableData.length > 100 &&
       typeof window.selectSymbol === "function"
     ) {
-      // 🚀 [무한 락업 보호] 최초 진입 시 URL에 존재하지 않는 유령/쓰레기 주소가 들어왔고, 전체 데이터(100개 초과)가 로드된 상태일 때만 비트코인 폴백!
-      // 이미 유저가 보고 있는 코인(store.currentSelectedSymbol)이나 캐시 상위 30개 선제 렌더링 시에는 절대로 BTC로 덮어쓰지 않고 현재 코인을 무한 유지합니다.
-      window.selectSymbol("BINANCE:BTC_FUTURES");
+      // 🚀 [무한 락업 보호] 최초 진입 시 URL에 존재하지 않는 유령/쓰레기 주소가 들어왔을 때 유저가 보던 직전 코인으로 즉시 리턴
+      let fallbackSymbol = "BINANCE:BTC_FUTURES";
+      try {
+        const last = localStorage.getItem("sellnance_last_symbol");
+        if (last && last !== targetSym) {
+          fallbackSymbol = last;
+        }
+      } catch (_) { }
+      window.selectSymbol(fallbackSymbol);
     }
   }
 }

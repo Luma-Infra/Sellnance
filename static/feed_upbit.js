@@ -35,13 +35,7 @@ export function startUpbitFeed() {
 
   upbitRadarWs.onopen = () => {
     upbitRadarRetryDelay = 5000;
-    let allUpbitCodes = (store.currentTableData || [])
-      .filter((row) => row.Upbit === "O" && row.Symbol)
-      .map((row) => `KRW-${row.Symbol}`);
-    if (allUpbitCodes.length === 0) {
-      allUpbitCodes = ["KRW-BTC"]; // 🚀 업비트 웹소켓 필수 페이로드 보장 (페이로드 미전송 시 업비트 서버가 소켓을 강제 차단/드랍하는 현상 원천 방지)
-    }
-
+    const allUpbitCodes = getActiveUpbitCodes();
     try {
       upbitRadarWs.send(
         JSON.stringify([
@@ -132,12 +126,34 @@ export function initUpbitSniperSocket() {
   startUpbitFeed();
 }
 
+// 📋 단일 소켓에서 구독할 모든 업비트 심볼 추출 (메인 테이블 + 퀵뷰 활성 코인 통합)
+export function getActiveUpbitCodes() {
+  const codeSet = new Set();
+  const source = store.currentTableData || store.originalTableData || [];
+  source.forEach((row) => {
+    if (row.Upbit === "O" && row.Symbol) {
+      codeSet.add(`KRW-${row.Symbol}`);
+    }
+  });
+
+  // 🚀 퀵뷰 전용 활성 코인(8개 중 업비트 코인) 강제 포함 보장
+  if (typeof window._getQvUpbitCodes === "function") {
+    const qvCodes = window._getQvUpbitCodes();
+    if (Array.isArray(qvCodes)) {
+      qvCodes.forEach((c) => codeSet.add(c));
+    }
+  }
+
+  const list = Array.from(codeSet);
+  return list.length > 0 ? list : ["KRW-BTC"];
+}
+
 export function syncUpbitRadarSubscription() {
-  if (!upbitRadarWs || upbitRadarWs.readyState !== WebSocket.OPEN) return;
-  const allUpbitCodes = (store.currentTableData || [])
-    .filter((row) => row.Upbit === "O" && row.Symbol)
-    .map((row) => `KRW-${row.Symbol}`);
-  if (allUpbitCodes.length === 0) return;
+  if (!upbitRadarWs || upbitRadarWs.readyState !== WebSocket.OPEN) {
+    startUpbitFeed();
+    return;
+  }
+  const allUpbitCodes = getActiveUpbitCodes();
   try {
     upbitRadarWs.send(
       JSON.stringify([

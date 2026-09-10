@@ -15,6 +15,7 @@ const qvState = {
   activeAssets: [], // 현재 활성화된 8개 자산 객체 리스트
   charts: [], // 8개 차트 인스턴스 배열
   series: [], // 8개 캔들 시리즈 인스턴스 배열
+  candlesData: [], // 8개 차트의 캔들 데이터 배열 (OHLC 무결성 보존 및 실시간 갱신용)
   binanceWs: null, // 바이낸스 현물 복합 스트림 소켓
   binanceFuturesWs: null, // 바이낸스 선물 복합 스트림 소켓
   upbitWs: null, // 업비트 정밀 체결 소켓
@@ -123,6 +124,7 @@ export function destroyQuickView() {
 
   qvState.charts = [];
   qvState.series = [];
+  qvState.candlesData = [];
   qvState.barCounts = [];
   qvState.activeAssets = [];
   qvState.focusIndex = -1;
@@ -241,6 +243,7 @@ async function rebuildQuickViewCharts() {
   });
   qvState.charts = [];
   qvState.series = [];
+  qvState.candlesData = [];
   qvState.barCounts = [];
   wrapper.innerHTML = "";
 
@@ -311,8 +314,25 @@ async function rebuildQuickViewCharts() {
 
     // 2. 차트 캔버스 영역
     const canvasArea = document.createElement("div");
-    canvasArea.className = "qv-chart-canvas-area";
+    canvasArea.className = "qv-chart-canvas-area relative w-full h-full";
     canvasArea.id = `qv-canvas-${idx}`;
+
+    // 개별 차트 카드 전용 테마 로더 (200ms 이상 지연 시에만 부드럽게 노출)
+    const cardLoader = document.createElement("div");
+    cardLoader.id = `qv-loader-${idx}`;
+    cardLoader.className =
+      "qv-card-loader absolute inset-0 flex items-center justify-center pointer-events-none z-10 transition-opacity duration-200 bg-theme-panel/20 backdrop-blur-[1px] opacity-0";
+    cardLoader.innerHTML = `<div class="neon-tapered-spinner !w-6 !h-6 !border-2"></div>`;
+    canvasArea.appendChild(cardLoader);
+
+    // 🚀 200ms 지연 타이머: 200ms 이내에 데이터가 로드되면 스피너가 아예 표시되지 않음
+    cardLoader._delayTimer = setTimeout(() => {
+      if (document.getElementById(`qv-loader-${idx}`)) {
+        cardLoader.classList.remove("opacity-0");
+        cardLoader.classList.add("opacity-100");
+      }
+    }, 200);
+
     card.appendChild(canvasArea);
 
     wrapper.appendChild(card);
@@ -554,14 +574,27 @@ async function initSingleQuickViewChart(container, asset, idx) {
     }
 
     if (candles.length > 0) {
+      qvState.candlesData[idx] = candles;
       qvState.barCounts[idx] = candles.length;
       series.setData(candles);
       // 💡 개별 fitContent()는 23개/32개 등 소량 캔들을 좌우로 늘려 최신 캔들이 잘리게 하므로 제외
     } else {
+      qvState.candlesData[idx] = [];
       qvState.barCounts[idx] = 0;
     }
   } catch (err) {
     console.error(`Failed to fetch history for ${asset.Ticker}:`, err);
+  } finally {
+    const loader = document.getElementById(`qv-loader-${idx}`);
+    if (loader) {
+      if (loader._delayTimer) {
+        clearTimeout(loader._delayTimer);
+        loader._delayTimer = null;
+      }
+      loader.classList.remove("opacity-100");
+      loader.classList.add("opacity-0");
+      setTimeout(() => loader.remove(), 200);
+    }
   }
 }
 
@@ -709,6 +742,71 @@ function renderOverlapLegend() {
   }, 1000);
 }
 
+// 🕯️ 실시간 체결가 수신 시 캔들의 시가(Open)를 보존하고 고/저/종가를 정밀 누적 갱신
+function updateQvCandleWithTrade(idx, newPrice, tradeTimeMs, tradeVolume = 0) {
+  const series = qvState.series[idx];
+  const chart = qvState.charts[idx];
+  if (!series || !chart) return;
+
+  if (!qvState.candlesData[idx]) {
+    qvState.candlesData[idx] = [];
+  }
+  const candles = qvState.candlesData[idx];
+  const secondsPerBar = tfSec[qvState.timeframe] || 3600;
+  const currentUnix = tradeTimeMs ? Math.floor(tradeTimeMs / 1000) : Math.floor(Date.now() / 1000);
+  const currentBarTime = Math.floor(currentUnix / secondsPerBar) * secondsPerBar;
+
+  if (candles.length > 0) {
+    const lastCandle = candles[candles.length - 1];
+    const isSameBar =
+      lastCandle.time === currentBarTime ||
+      (currentUnix >= lastCandle.time && currentUnix < lastCandle.time + secondsPerBar);
+
+    if (isSameBar) {
+      lastCandle.close = newPrice;
+      lastCandle.high = Math.max(lastCandle.high, newPrice);
+      lastCandle.low = Math.min(lastCandle.low, newPrice);
+      if (tradeVolume > 0 && typeof lastCandle.volume === "number") {
+        lastCandle.volume += tradeVolume;
+      }
+      try {
+        series.update(lastCandle);
+      } catch (e) { }
+      return;
+    }
+  }
+
+  // 🚀 새 캔들봉 시작
+  const newCandle = {
+    time: currentBarTime,
+    open: newPrice,
+    high: newPrice,
+    low: newPrice,
+    close: newPrice,
+    volume: tradeVolume || 0,
+  };
+  candles.push(newCandle);
+  qvState.barCounts[idx] = candles.length;
+  try {
+    series.update(newCandle);
+  } catch (e) { }
+}
+
+// 🌐 퀵뷰 전용 업비트 활성 코드 목록 제공기 (feed_upbit 단일 소켓 동적 구독용)
+window._getQvUpbitCodes = function () {
+  const list = [];
+  qvState.activeAssets.forEach((asset) => {
+    if (asset.resolvedExchange === "upbit") {
+      const rawSym = String(asset.resolvedSymbol || asset.Ticker || asset.Symbol).trim().toUpperCase();
+      const cleanSym = (rawSym === "USDT" || rawSym === "KRW-USDT")
+        ? "USDT"
+        : rawSym.replace(/^KRW-?/i, "").replace(/KRW$/i, "").replace(/USDT$/i, "").trim();
+      list.push(`KRW-${cleanSym}`);
+    }
+  });
+  return list;
+};
+
 // ⚡ 실시간 웹소켓 통합 연결 및 멀티플렉스 스트림 가동
 function connectQuickViewSockets() {
   disconnectQuickViewSockets();
@@ -764,34 +862,29 @@ function connectQuickViewSockets() {
       };
 
       try {
+        if (!qvState.candlesData[idx]) qvState.candlesData[idx] = [];
+        const candles = qvState.candlesData[idx];
+        if (candles.length > 0 && candles[candles.length - 1].time === candle.time) {
+          candles[candles.length - 1] = candle;
+        } else {
+          candles.push(candle);
+          qvState.barCounts[idx] = candles.length;
+        }
         series.update(candle);
         updateLiveHeaderPrice(idx, candle.close, k.P || "0.0");
       } catch (err) { }
     } else if (eventType === "aggTrade") {
       const newPrice = parseFloat(data.p);
+      const tradeQty = parseFloat(data.q) || 0;
       if (isNaN(newPrice)) return;
 
-      const secondsPerBar = tfSec[qvState.timeframe] || 3600;
-      const barTime =
-        Math.floor(data.E / 1000 / secondsPerBar) * secondsPerBar;
-
-      const candle = {
-        time: barTime,
-        open: newPrice,
-        high: newPrice,
-        low: newPrice,
-        close: newPrice,
-      };
-
-      try {
-        series.update(candle);
-        const asset = qvState.activeAssets[idx];
-        const chgValue =
-          qvState.sortType === "day"
-            ? asset.Change_Today_Raw || 0
-            : asset.Change_24h_Raw || 0;
-        updateLiveHeaderPrice(idx, newPrice, chgValue.toString(), true);
-      } catch (err) { }
+      updateQvCandleWithTrade(idx, newPrice, data.E, tradeQty);
+      const asset = qvState.activeAssets[idx];
+      const chgValue =
+        qvState.sortType === "day"
+          ? asset.Change_Today_Raw || 0
+          : asset.Change_24h_Raw || 0;
+      updateLiveHeaderPrice(idx, newPrice, chgValue.toString(), true);
     }
   };
 
@@ -827,8 +920,11 @@ function connectQuickViewSockets() {
     qvState.binanceFuturesWs.onmessage = (e) => handleBinanceWsMessage(e, true);
   }
 
-  // 3. 업비트 Ticker 스트림 활성화 (메인 단일 소켓 이벤트 공유 -> 429 방지)
+  // 3. 업비트 Ticker 스트림 활성화 (기존 메인 단일 소켓에 구독 동기화 -> 중복 연결/Ban 위험 원천 차단)
   if (upbitAssets.length > 0) {
+    if (typeof window.syncUpbitRadarSubscription === "function") {
+      window.syncUpbitRadarSubscription();
+    }
     window._qvUpbitHandler = (ticker) => {
       try {
         if (!ticker || !ticker.code) return;
@@ -836,36 +932,22 @@ function connectQuickViewSockets() {
         const pureSym = ticker.code.replace("KRW-", "").toUpperCase();
 
         // 해당하는 차트 인덱스 찾기
-        const idx = qvState.activeAssets.findIndex(
-          (a) =>
-            a.resolvedExchange === "upbit" &&
-            String(a.resolvedSymbol)
-              .replace(/^KRW-?/i, "")
-              .replace(/KRW$/i, "")
-              .toUpperCase() === pureSym
-        );
+        const idx = qvState.activeAssets.findIndex((a) => {
+          if (a.resolvedExchange !== "upbit") return false;
+          const aSym = String(a.resolvedSymbol || a.Ticker || a.Symbol)
+            .replace(/^KRW-?/i, "")
+            .replace(/KRW$/i, "")
+            .replace(/USDT$/i, "")
+            .toUpperCase()
+            .trim();
+          return aSym === pureSym;
+        });
         if (idx === -1) return;
 
-        const series = qvState.series[idx];
-        const chart = qvState.charts[idx];
-        if (!series || !chart) return;
-
-        const nowMs = ticker.timestamp;
-        const secondsPerBar = tfSec[qvState.timeframe] || 3600;
-        const barTime =
-          Math.floor(nowMs / 1000 / secondsPerBar) * secondsPerBar;
-
         const tradePrice = parseFloat(ticker.trade_price);
+        if (isNaN(tradePrice)) return;
 
-        const candle = {
-          time: barTime,
-          open: tradePrice,
-          high: tradePrice,
-          low: tradePrice,
-          close: tradePrice,
-        };
-
-        series.update(candle);
+        updateQvCandleWithTrade(idx, tradePrice, ticker.timestamp);
         updateLiveHeaderPrice(
           idx,
           tradePrice,
@@ -889,37 +971,23 @@ function connectQuickViewSockets() {
 
         // 해당하는 차트 인덱스 찾기
         const idx = qvState.activeAssets.findIndex((a) => {
-          if (a.resolvedExchange !== "bithumb" || !a.resolvedSymbol) return false;
-          const target = String(a.resolvedSymbol).replace(/_?KRW$/i, "").toUpperCase();
+          if (a.resolvedExchange !== "bithumb") return false;
+          const target = String(a.resolvedSymbol || a.Ticker || a.Symbol)
+            .replace(/_?KRW$/i, "")
+            .replace(/USDT$/i, "")
+            .toUpperCase()
+            .trim();
           return target === pureSym;
         });
         if (idx === -1) return;
 
-        const series = qvState.series[idx];
-        const chart = qvState.charts[idx];
-        if (!series || !chart) return;
-
-        const secondsPerBar = tfSec[qvState.timeframe] || 3600;
-        const nowSec = Math.floor(Date.now() / 1000);
-        const barTime = Math.floor(nowSec / secondsPerBar) * secondsPerBar;
-
-        const candle = {
-          time: barTime,
-          open: newPrice,
-          high: newPrice,
-          low: newPrice,
-          close: newPrice,
-        };
-
-        try {
-          series.update(candle);
-          const asset = qvState.activeAssets[idx];
-          const chgValue =
-            qvState.sortType === "day"
-              ? asset.Change_Today_Raw || 0
-              : asset.Change_24h_Raw || 0;
-          updateLiveHeaderPrice(idx, newPrice, chgValue.toString(), true);
-        } catch (err) { }
+        updateQvCandleWithTrade(idx, newPrice, Date.now());
+        const asset = qvState.activeAssets[idx];
+        const chgValue =
+          qvState.sortType === "day"
+            ? asset.Change_Today_Raw || 0
+            : asset.Change_24h_Raw || 0;
+        updateLiveHeaderPrice(idx, newPrice, chgValue.toString(), true);
       } catch (err) {
         console.error("퀵뷰 빗썸 이벤트 처리 에러:", err);
       }
@@ -1286,11 +1354,13 @@ export function resetQuickView() {
 }
 
 export function closeQuickViewModal() {
+  const returnTab =
+    (typeof window !== "undefined" &&
+      window.store &&
+      window.store.previousChartTab) ||
+    "chart";
   if (typeof window.switchChartTab === "function") {
-    window.switchChartTab("chart");
-  }
-  if (typeof window.moveTabSlider === "function") {
-    window.moveTabSlider(0);
+    window.switchChartTab(returnTab);
   }
 }
 

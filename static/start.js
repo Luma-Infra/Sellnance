@@ -104,7 +104,9 @@ function getStartScreenHTML() {
         inset: 0;
         width: 100vw;
         height: 100dvh;
-        background-color: var(--bg);
+        background-color: color-mix(in srgb, var(--bg) 80%, transparent);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
         font-family: var(--font-sans);
         perspective: ${START_3D_CONFIG.perspective}px;
         overflow: hidden;

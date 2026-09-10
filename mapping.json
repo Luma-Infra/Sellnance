@@ -1,14 +1,26 @@
 {
+    "__MEMO__0": "-------------------------------------------------------------",
+    "__MEMO__1": "BTC ETH 파생형 너무 많아서 고정 + 중국어 포함 모든 언어 티커 대응",
+    "__MEMO__2": "-------------------------------------------------------------",
+    "__MEMO__3": "DEFAULT_KRW_USD_RATE: 환율 API 장애 또는 초기 로딩 시 사용할 기본 USD/KRW 환율 fallback",
+    "__MEMO__4": "CHAIN_LOGO_MAP: 메인넷(체인)별 대표 코인마켓캡 로고 이미지 URL 매핑",
+    "__MEMO__5": "EXCLUSION_LIST: 거래소 시세 및 테이블 생성 시 집계에서 제외할 심볼 목록",
+    "__MEMO__6": "HARDCODE_VERIFY_SKIP_LIST: CMC 중국어 스킵해서 에러 안뜨게 하기",
+    "__MEMO__7": "NOTE_MAP: 중국어 등 특수 코인들의 영문 별칭",
+    "__MEMO__8": "PAST_GAP_RECOVERY_MAP: 과거 차트 단절(Gap) 구간 발생 시(포크/리브랜딩/재상장/스왑/마그/액분병) 캔들 데이터 가져올 기준 거래소 매핑",
+    "__MEMO__9": "SPECIAL_SYMBOL_MAP: 특정 거래소 전용 티커 변환 및 예외 심볼 커스텀 매핑",
+    "__MEMO__10": "MANUAL_SUPPLY_MAP: CMC 유통량/발행량 누락 또는 비정상 코인의 수동 공급량",
+    "__MEMO__11": "SYMBOL_TO_ID_MAP: 심볼과 코인마켓캡(CMC) 고유 식별자(ID) 1:1 맵핑(동명 심볼 방지)",
+    "__MEMO__12": "DUPLICATED_LIST: 동일 티커 다른 코인(동명이인) 또는 거래소별 티커 상이 코인의 UID/거래소별 티커 매핑",
+    "__MEMO__13": "TICKER_DATA: 전체 자산 마스터 메타데이터: [0: CMC_ID, 1: 체인/메인넷, 2: 영문명, 3: 표준티커, 4: 자산타입(COIN/STOCK)]",
+    "__MEMO__14": "-------------------------------------------------------------",
+    "DEFAULT_KRW_USD_RATE": 1340.35,
     "CHAIN_LOGO_MAP": {
         "ETH": "https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png",
         "BNB": "https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png",
         "SOL": "https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png",
         "SUI": "https://s2.coinmarketcap.com/static/img/coins/64x64/20947.png"
     },
-    "DEFAULT_KRW_USD_RATE": 1337.71,
-    "__MEMO__0": "-----------------------------------------------------------",
-    "__MEMO__1": "BTC ETH 파생형 너무 많아서 고정 + 중국어 포함 모든 언어 티커 대응",
-    "__MEMO__2": "-----------------------------------------------------------",
     "EXCLUSION_LIST": [
         "BTCDOM",
         "WBTC",
@@ -65,13 +77,10 @@
         "SPORTFUN": "38647",
         "我踏马来了": "39322",
         "龙虾": "39671",
-        "牛来": "41861",
-        "SKHYNIX": "39500",
-        "SAMSUNG": "39503",
-        "HYUNDAI": "39573"
+        "牛来": "41861"
     },
     "_COMMENT_DUPLICATED_LIST": {
-        "💡 [매칭 룰] 바이낸스 또는 업비트": "",
+        "[매칭 룰] 바이낸스 또는 업비트": "",
         "둘 중 하나라도 타 거래소(빗썸/바이비트) 티커명과 일치하거나,": "",
         "여기에 명시된 UID가 일치하면 시세 및 뱃지가 자동으로 도킹됩니다!": ""
     },
@@ -1105,6 +1114,13 @@
             "BERA",
             "COIN"
         ],
+        "BFC": [
+            "7817",
+            "ETH",
+            "Bifrost",
+            "BFC",
+            "COIN"
+        ],
         "BFUSD": [
             "37760",
             null,
@@ -1726,6 +1742,13 @@
             null,
             "CRM (Derivatives)",
             "CRM",
+            "STOCK"
+        ],
+        "CRMB(STOCK)": [
+            "42045",
+            null,
+            "CRMB (Derivatives)",
+            "CRMB",
             "STOCK"
         ],
         "CRO": [
@@ -2748,6 +2771,13 @@
             null,
             "HIMS (Derivatives)",
             "HIMS",
+            "STOCK"
+        ],
+        "HIMSB(STOCK)": [
+            "42046",
+            null,
+            "HIMSB (Derivatives)",
+            "HIMSB",
             "STOCK"
         ],
         "HIVE": [

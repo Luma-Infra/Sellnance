@@ -154,10 +154,10 @@ export async function saveSettings() {
 
     if (cleanKey) {
       localStorage.setItem("CMC_API_KEY", cleanKey);
-      showToast("CMC API 키가 성공적으로 저장되었습니다.", "success", 2000);
+      showToast("CMC API 키가 성공적으로 저장되었습니다", "success", 2000);
     } else {
       localStorage.removeItem("CMC_API_KEY");
-      showToast("CMC API 키가 삭제되었습니다 (서버 캐시 모드).", "info", 2000);
+      showToast("CMC API 키가 삭제되었습니다", "info", 2000);
     }
 
     closeSettingsModal();

@@ -141,8 +141,8 @@ export function updateRowStaticHTML(rowEl, row) {
     </div>
   </div>
   <div class="p-2 col-price overflow-hidden price-placeholder text-theme-text font-medium text-[14px]">
-    <div class="flex flex-col leading-tight min-w-0 gap-0.5">
-      <div class="font-medium text-[14px] tracking-tighter truncate block flex items-center">-</div>
+    <div class="flex flex-col leading-tight min-w-0 gap-0.5 w-full">
+      <div class="font-medium text-[14px] tracking-tighter truncate block flex items-center w-full min-w-0">-</div>
       <div class="flex items-center gap-1.5 text-[10.5px] font-medium text-left mt-0.5 w-full min-w-0 opacity-0">
         <span class="flex-1 min-w-0 text-left tracking-tighter whitespace-nowrap">-</span>
         <span class="flex-1 min-w-0 text-left tracking-tighter whitespace-nowrap">-</span>
@@ -155,10 +155,10 @@ export function updateRowStaticHTML(rowEl, row) {
       <span class="text-[10px] font-bold mt-0.5 truncate opacity-0">-</span>
     </div>
   </div>
-  <div class="p-2 col-vol-u overflow-hidden vol-u-placeholder text-[11px] font-bold text-theme-text text-right">
-    <div class="flex flex-col h-full justify-center items-end leading-tight min-w-0 gap-0.5 text-right w-full">
-      <span class="text-[11px] font-medium font-bold truncate w-full text-right">-</span>
-      <span class="text-[10px] font-bold mt-0.5 truncate w-full text-right opacity-0">-</span>
+  <div class="p-2 col-vol-u overflow-hidden vol-u-placeholder text-[11px] font-bold text-theme-text text-left">
+    <div class="flex flex-col h-full justify-center items-start leading-tight min-w-0 gap-0.5 text-left w-full">
+      <span class="text-[11px] font-medium font-bold truncate w-full text-left">-</span>
+      <span class="text-[10px] font-bold mt-0.5 truncate w-full text-left opacity-0">-</span>
     </div>
   </div>
   <div class="p-2 col-kimch overflow-hidden kimchi-placeholder text-[12px] font-medium text-theme-text">
@@ -332,8 +332,8 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
         const initStyleAttr = initSizePx ? `style="font-size: ${initSizePx}px;"` : "";
 
         priceCell.innerHTML = `
-          <div class="price-container flex flex-col leading-tight min-w-0 gap-0.5">
-            <div id="price-${tId}" data-raw-price="0" ${initStyleAttr} class="font-medium text-[14px] text-theme-text price-cell tracking-tighter block flex items-center min-w-0">
+          <div class="price-container flex flex-col leading-tight min-w-0 gap-0.5 w-full">
+            <div id="price-${tId}" data-raw-price="0" ${initStyleAttr} class="font-medium text-[14px] text-theme-text price-cell tracking-tighter block flex items-center min-w-0 w-full">
               <span class="price-num whitespace-nowrap">${formattedPrice}</span>
             </div>
             <div class="flex items-center gap-1.5 text-[10.5px] font-medium text-left mt-0.5 w-full min-w-0">
@@ -429,10 +429,9 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
     const displayVol = getRowDisplayVolume(row);
     const volBText =
       displayVol.volBFormatted &&
-        displayVol.volBFormatted !== "-" &&
         displayVol.volBFormatted !== "0"
         ? displayVol.volBFormatted
-        : (row.Volume_Formatted && row.Volume_Formatted !== "0" ? row.Volume_Formatted : "-");
+        : "-";
     const mcapText = row.isDelisted
       ? `uid : ${row.UID || "-"}`
       : row.MarketCap_Formatted || "-";
@@ -498,9 +497,9 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
       container = volUCell.querySelector(".vol-u-container");
       if (!container) {
         volUCell.innerHTML = `
-          <div class="vol-u-container flex flex-col h-full justify-center items-end leading-tight min-w-0 gap-0.5 text-right w-full">
-            <span id="vol-upbit-${tId}" class="text-upbit-color text-[11px] font-medium font-bold truncate w-full text-right"></span>
-            <span id="vmc-${tId}" class="text-[10px] font-bold opacity-60 mt-0.5 truncate w-full text-right ${vmcColorClass}"></span>
+          <div class="vol-u-container flex flex-col h-full justify-center items-start leading-tight min-w-0 gap-0.5 text-left w-full">
+            <span id="vol-upbit-${tId}" class="text-upbit-color text-[11px] font-medium font-bold truncate w-full text-left"></span>
+            <span id="vmc-${tId}" class="text-[10px] font-bold opacity-60 mt-0.5 truncate w-full text-left ${vmcColorClass}"></span>
           </div>
         `;
         container = volUCell.querySelector(".vol-u-container");

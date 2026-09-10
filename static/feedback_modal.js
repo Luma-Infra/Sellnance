@@ -10,8 +10,17 @@ export function toggleFeedbackModal(show) {
   if (!modal) return;
 
   if (show) {
-    modal.classList.remove("scale-0", "opacity-0", "pointer-events-none");
-    modal.classList.add("scale-100", "opacity-100");
+    modal.classList.remove(
+      "opacity-0",
+      "pointer-events-none",
+      "min-[1200px]:scale-0",
+      "max-[1199px]:translate-y-full"
+    );
+    modal.classList.add(
+      "opacity-100",
+      "min-[1200px]:scale-100",
+      "max-[1199px]:translate-y-0"
+    );
     if (floatingBtn) {
       floatingBtn.classList.add("scale-0", "opacity-0", "pointer-events-none");
     }
@@ -26,8 +35,17 @@ export function toggleFeedbackModal(show) {
     };
     document.addEventListener("keydown", handleEsc);
   } else {
-    modal.classList.remove("scale-100", "opacity-100");
-    modal.classList.add("scale-0", "opacity-0", "pointer-events-none");
+    modal.classList.remove(
+      "opacity-100",
+      "min-[1200px]:scale-100",
+      "max-[1199px]:translate-y-0"
+    );
+    modal.classList.add(
+      "opacity-0",
+      "pointer-events-none",
+      "min-[1200px]:scale-0",
+      "max-[1199px]:translate-y-full"
+    );
     if (floatingBtn) {
       floatingBtn.classList.remove("scale-0", "opacity-0", "pointer-events-none");
     }

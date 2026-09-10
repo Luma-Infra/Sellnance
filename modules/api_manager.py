@@ -10,8 +10,10 @@ import pytz
 import sys
 import os
 import re
+import asyncio
+import aiohttp
 
-# ✅ 수정 (옆방 부하들 호출하는 정석)
+# ✅ 수정
 from modules import builder, cmc_api, exchange_api, config_manager, utils
 from modules.exchange_api import capture_utc0_prices_bulk
 
@@ -127,39 +129,26 @@ _load_owner_cache_from_file()
 _load_market_data_cache_from_file()
 
 
-# 🚀 [추가] 9시 정밀 캡처 스케줄러
-def start_kst_9am_scheduler():
-    # 0초, 5초, 10초, 20초, 1분, 2분, 3분, 5분 정각에 안전하게 트리거
-    def run_scheduler():
-        print("⏰ [SYSTEM] 9시 정밀 시가 스케줄러 가동 중...")
-        last_captured_key = -1
-        while True:
-            try:
-                now = datetime.now(KST)
-                if now.hour == 9:
-                    is_trigger = False
-                    if now.minute == 0 and now.second in [0, 5, 10, 20]:
-                        is_trigger = True
-                    elif now.minute in [1, 2, 3, 5] and now.second == 0:
-                        is_trigger = True
-
-                    if is_trigger:
-                        current_key = now.minute * 60 + now.second
-                        if last_captured_key != current_key:
-                            capture_utc0_prices_bulk()
-                            last_captured_key = current_key
-                else:
-                    last_captured_key = -1
-            except Exception as e:
-                print(f"🚨 [SCHEDULER ERROR] {e}")
-            time.sleep(1)
-
-    thread = threading.Thread(target=run_scheduler, daemon=True)
-    thread.start()
+# 9시 정각 시가 초기화 & 원자적 캐시 갱신 원스톱 파이프라인
+def trigger_kst_9am_reset_atomic():
+    """
+    9시 정각 초기화 원스톱 파이프라인
+    1. 구 날짜 시가 캐시 초기화 (capture_utc0_prices_bulk)
+    2. 09:00 당일 시가 벌크 수집 + 마켓 데이터 캐시 즉시 갱신 (_fetch_and_process_data_and_cache)
+    """
+    print("🎯 [9AM PIPELINE] KST 09:00 시가 초기화 및 캐시 갱신 개시...")
+    try:
+        capture_utc0_prices_bulk()
+        _fetch_and_process_data_and_cache(silent_mode=True)
+        print("✅ [9AM PIPELINE] KST 09:00 동기화 완료!")
+        return True
+    except Exception as e:
+        print(f"🚨 [9AM PIPELINE ERROR] 9시 초기화 파이프라인 오류: {e}")
+        return False
 
 
-# 🚀 [추가] 15분 단위 벽시계 정각 동기화 백그라운드 Silent 자동 갱신 스케줄러
-# 유저 요청과 완전히 분리 - 서버가 :00, :15, :30, :45 정각에 정확히 수집
+# 🚀 [단일 지휘관 스케줄러] 15분 정각(:00, :15, :30, :45) 단일 스케줄러
+# 09:00 정각에는 9시 전담 파이프라인을 실행하고, 그 외 시각에는 일반 정기 갱신을 실행하여 중복 실행 0% 보장
 def get_seconds_until_next_15min():
     now = datetime.now(KST)
     current_minute = now.minute
@@ -172,20 +161,31 @@ def get_seconds_until_next_15min():
     return max(1, seconds_left)
 
 
-def start_silent_background_scheduler():
+def start_unified_background_scheduler():
+    """
+    🛡️ 단일 통합 백그라운드 스케줄러
+    - 스레드 1개로만 동작하여 09:00 중복 실행 및 락 경합 물리적 0% 차단
+    - 09:00:00 -> 9시 시가 초기화 + 당일 시가 벌크 수집 + 캐시 갱신 (원스톱)
+    - :15, :30, :45, 타 시간대 :00 -> 일반 15분 무음 정기 갱신
+    """
+
     def run():
-        print(
-            "🔄 [SYSTEM] 정각 동기화 백그라운드 스케줄러 가동 (:00, :15, :30, :45)..."
-        )
+        print("🔄 [SYSTEM] 단일 통합 백그라운드 스케줄러 가동 (:00, :15, :30, :45)...")
         while True:
             sleep_sec = get_seconds_until_next_15min()
             time.sleep(sleep_sec)
             try:
                 now = datetime.now(KST)
-                print(
-                    f"🔄 [BG SCHEDULER] {now.strftime('%H:%M:%S')} 정각 자동 갱신 시작..."
-                )
-                _fetch_and_process_data_and_cache(silent_mode=True)
+                if now.hour == 9 and now.minute == 0:
+                    print(
+                        "🎯 [BG SCHEDULER] KST 09:00 정각 9시 시가 초기화 파이프라인 단독 실행..."
+                    )
+                    trigger_kst_9am_reset_atomic()
+                else:
+                    print(
+                        f"🔄 [BG SCHEDULER] {now.strftime('%H:%M:%S')} 정각 자동 갱신 시작..."
+                    )
+                    _fetch_and_process_data_and_cache(silent_mode=True)
             except Exception as e:
                 print(f"🚨 [BG SCHEDULER ERROR] {e}")
 
@@ -216,9 +216,119 @@ def _fetch_and_process_data_and_cache(silent_mode=False):
         print(f"🚨 [BG CACHE ERROR] {e}")
 
 
-# 서버 로드 시 즉시 실행
-start_kst_9am_scheduler()
-start_silent_background_scheduler()
+# 서버 로드 시 단일 통합 스케줄러 즉시 실행 (스레드 1개로 중복 실행 100% 원천 방지)
+start_unified_background_scheduler()
+
+
+# [초경량 실시간 상장 감시 엔진] aiohttp 비동기 멀티플렉싱 10초 무음 폴러
+def start_realtime_listing_watcher():
+    """
+    ⚡ aiohttp 비동기 멀티플렉싱 초경량 무음 상장 감시 엔진 (5대 거래소 동시 병렬 수거)
+    """
+    targets = [
+        (
+            "UPBIT",
+            "https://api.upbit.com/v1/market/all?isDetails=false",
+            lambda d: {
+                m["market"] for m in d if m.get("market", "").startswith("KRW-")
+            },
+        ),
+        (
+            "BITHUMB",
+            "https://api.bithumb.com/v1/market/all?isDetails=false",
+            lambda d: {
+                m["market"] for m in d if m.get("market", "").startswith("KRW-")
+            },
+        ),
+        (
+            "BINANCE_FUTURES",
+            "https://fapi.binance.com/fapi/v1/ticker/price",
+            lambda d: {m["symbol"] for m in d if m.get("symbol", "").endswith("USDT")},
+        ),
+        (
+            "BINANCE_SPOT",
+            "https://api.binance.com/api/v3/ticker/price",
+            lambda d: {m["symbol"] for m in d if m.get("symbol", "").endswith("USDT")},
+        ),
+        (
+            "BYBIT_FUTURES",
+            "https://api.bybit.com/v5/market/tickers?category=linear",
+            lambda d: {
+                m["symbol"]
+                for m in d.get("result", {}).get("list", [])
+                if m.get("symbol", "").endswith("USDT")
+            },
+        ),
+    ]
+
+    async def async_watcher_loop():
+        timeout = aiohttp.ClientTimeout(total=3)
+        connector = aiohttp.TCPConnector(limit=10, ssl=False)
+        known = {ex: set() for ex, _, _ in targets}
+        initialized = False
+
+        async with aiohttp.ClientSession(
+            timeout=timeout, connector=connector
+        ) as session:
+            while True:
+                try:
+                    current = {}
+
+                    async def _fetch(ex, url, parser):
+                        try:
+                            async with session.get(url) as r:
+                                if r.status == 200:
+                                    current[ex] = parser(await r.json())
+                        except Exception:
+                            pass
+
+                    await asyncio.gather(
+                        *[_fetch(ex, url, parser) for ex, url, parser in targets]
+                    )
+
+                    if not initialized:
+                        for ex, mkts in current.items():
+                            if mkts:
+                                known[ex] = set(mkts)
+                        if any(known.values()):
+                            initialized = True
+                    else:
+                        new_diff = {
+                            ex: current[ex] - known[ex]
+                            for ex in current
+                            if known.get(ex) and (current[ex] - known[ex])
+                        }
+                        if new_diff:
+                            for ex, syms in new_diff.items():
+                                known[ex].update(syms)
+                            discovery_msgs = [
+                                f"[{ex}] {', '.join(sorted(syms))}"
+                                for ex, syms in new_diff.items()
+                            ]
+                            print(
+                                f"\n🚨 [신규 상장 감지] {' | '.join(discovery_msgs)} 신규 상장 포착! 긴급 0초 장부 동기화 가동..."
+                            )
+                            _fetch_and_process_data_and_cache(silent_mode=True)
+                            print(
+                                f"⚡ [신규 상장 동기화 완료] 신규 상장 코인이 장부에 즉시 입고되었습니다.\n"
+                            )
+                except Exception:
+                    pass
+                await asyncio.sleep(10)
+
+    def run():
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(async_watcher_loop())
+        finally:
+            loop.close()
+
+    threading.Thread(target=run, daemon=True).start()
+
+
+# 실시간 신규 상장 aiohttp 비동기 멀티플렉싱 와처 즉시 가동 (10초 주기)
+start_realtime_listing_watcher()
 
 # 🚀 [수정] 모듈 로드 시점에 즉시 실행하지 않고, 처음 호출될 때 초기화하도록 변경
 _INITIALIZED = False

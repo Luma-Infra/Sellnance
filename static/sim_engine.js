@@ -1,6 +1,7 @@
 // sim_engine.js 🎮 시뮬레이터 수학 & 로직
 import { store, tfSec } from "./_store.js";
 import { mapTime } from "./chart_data.js";
+import { performSyncPriceScaleWidths } from "./chart_sync.js";
 
 function changeDir(d) {
   const bodyInput = document.getElementById("input-body");
@@ -62,6 +63,11 @@ function addCandle() {
   store.mainData.push(n);
   store.candleSeries.setData(store.mainData);
 
+  // 🚀 [원자적 너비 동기화] 캔들 생성 즉시 동일 동기 틱에서 볼륨 차트 우측 너비 일치 (덜그럭 0%)
+  if (typeof performSyncPriceScaleWidths === "function") {
+    performSyncPriceScaleWidths(false);
+  }
+
   if (typeof updateStatus === "function") updateStatus();
   if (typeof updateLegend === "function") updateLegend(n);
   if (typeof updatePreview === "function") updatePreview();
@@ -71,6 +77,11 @@ function undoLast() {
   if (store.mainData && store.mainData.length > 1) {
     store.mainData.pop();
     store.candleSeries.setData(store.mainData);
+
+    // 🚀 [원자적 너비 동기화] 캔들 삭제 즉시 동일 동기 틱에서 볼륨 차트 우측 너비 일치
+    if (typeof performSyncPriceScaleWidths === "function") {
+      performSyncPriceScaleWidths(false);
+    }
 
     const lastCandle = store.mainData[store.mainData.length - 1];
     if (typeof updateStatus === "function") updateStatus();

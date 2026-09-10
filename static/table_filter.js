@@ -110,13 +110,23 @@ export function getFilteredData() {
   let delistedRows = [];
   if (store.currentTab === "FAV" || store.currentTab === "FAV2") {
     const favKey = store.currentTab === "FAV" ? "sellnance_favs" : "sellnance_favs2";
-    const favorites = JSON.parse(localStorage.getItem(favKey) || "[]");
+    const rawFavs = JSON.parse(localStorage.getItem(favKey) || "[]");
+    const favorites = Array.from(new Set(rawFavs.map(String)));
 
-    // 🚀 즐겨찾기 메타데이터 캐시 로드 & 현재 살아있는 코인 메타데이터 자동 동기화
-    let favMeta = JSON.parse(localStorage.getItem("sellnance_fav_meta") || "{}");
+    // 🚀 즐겨찾기 메타데이터 캐시 로드 (_meta 및 sellnance_fav_meta 양방향 완벽 병합)
+    let legacyMeta = {};
+    try {
+      legacyMeta = JSON.parse(localStorage.getItem("_meta") || "{}");
+    } catch (_) { }
+    let favMeta = {};
+    try {
+      favMeta = JSON.parse(localStorage.getItem("sellnance_fav_meta") || "{}");
+    } catch (_) { }
+    favMeta = { ...legacyMeta, ...favMeta };
+
     (store.currentTableData || []).forEach((d) => {
       if (d.UID && (d.Name || d.Name_KR)) {
-        favMeta[d.UID] = {
+        favMeta[String(d.UID)] = {
           name: d.Name || d.Symbol || d.Ticker,
           name_kr: d.Name_KR || d.Name || d.Symbol || d.Ticker,
           symbol: d.DisplayTicker || d.Symbol || d.Ticker,
@@ -125,12 +135,25 @@ export function getFilteredData() {
     });
     localStorage.setItem("sellnance_fav_meta", JSON.stringify(favMeta));
 
-    // 현재 서버 데이터에 존재하는 코인들만 1차 필터링
-    filteredData = filteredData.filter((d) => favorites.includes(d.UID));
+    // [중복 및 공백 구멍 박멸] UID 및 Ticker 중복 방지 단일 매핑 필터링
+    const seenUids = new Set();
+    const seenTickers = new Set();
+    const matchedRows = [];
+    for (const d of filteredData) {
+      const uidStr = String(d.UID);
+      const tickerStr = d.DisplayTicker || d.Symbol || d.Ticker;
+      if (favorites.includes(uidStr)) {
+        if (!seenUids.has(uidStr) && !seenTickers.has(tickerStr)) {
+          seenUids.add(uidStr);
+          seenTickers.add(tickerStr);
+          matchedRows.push(d);
+        }
+      }
+    }
+    filteredData = matchedRows;
 
     // 🚀 [이스터에그] 즐겨찾기에 남아있으나 현재 상장 폐지된 코인 껍데기(Ghost Row) 생성
-    const currentUids = new Set(store.currentTableData.map((d) => d.UID));
-    const delistedUids = favorites.filter((uid) => !currentUids.has(uid));
+    const delistedUids = favorites.filter((uid) => !seenUids.has(uid));
 
     delistedRows = delistedUids.map((uid) => {
       const meta = favMeta[uid] || {};
@@ -138,7 +161,7 @@ export function getFilteredData() {
         .replace(/^\d+_/, "")
         .replace(/_(BINANCE|UPBIT|BITHUMB|BYBIT)$/i, "")
         .toUpperCase();
-      const realName = meta.name || cleanSym;
+      const realName = meta.name ? `${meta.name}` : `UID : ${uid}`;
       const realNameKR = meta.name_kr || realName;
       const ghostTicker = `DELISTED_${uid}`;
 
@@ -162,12 +185,12 @@ export function getFilteredData() {
         Volume_Raw: 0,
         Upbit_Vol_Formatted: "-",
         Upbit_Vol: 0,
-        MarketCap_Formatted: "-",
+        MarketCap_Formatted: `uid : ${uid}`,
         MarketCap_Raw: 0,
         Funding_Formatted: "-",
         Listed_Exchanges: [],
         isDelisted: true,
-        Logo: `<span class="text-[18px] select-none flex items-center justify-center opacity-70 cursor-help" title="상장 폐지된 코인입니다. (FAV 이스터에그)">💀</span>`,
+        Logo: `<span class="text-[18px] select-none flex items-center justify-center opacity-70 cursor-help" title="상장 폐지된 코인 (UID: ${uid})">💀</span>`,
       };
 
       if (store.tickerRowMap) {
