@@ -394,7 +394,7 @@ function getStartScreenHTML() {
                 <input
                   type="text"
                   id="cmc-api-input"
-                  placeholder="Paste or enter CMC API Key (32-digit)..."
+                  placeholder="Paste your CMC API Key..."
                   class="w-full bg-theme-bg text-theme-text border-2 border-theme-border pl-4 pr-11 py-2.5 md:py-3.5 rounded-xl text-center font-medium text-sm focus:outline-none focus:border-theme-accent shadow-inner transition-colors cursor-text"
                   autocomplete="off"
                   spellcheck="false"

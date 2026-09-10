@@ -407,6 +407,7 @@ export function executeTabSwitch(mode) {
     btnQuick = document.getElementById("tab-btn-quickview"),
     controls = document.getElementById("sim-controls");
 
+  const prevTab = store.previousChartTab;
   if (mode === "chart" || mode === "sim") {
     store.previousChartTab = mode;
   }
@@ -427,8 +428,8 @@ export function executeTabSwitch(mode) {
       window.destroyQuickView();
     }
 
-    // 가격 축 너비를 fetchHistory 전에 완전 초기화 (시뮬 가격 기준 잔상 제거)
-    if (typeof window.resetPriceScaleWidthSync === "function") {
+    // 시뮬레이션에서 복귀할 때만 가격 축 너비 완전 초기화 (시뮬 가격 기준 잔상 제거)
+    if (prevTab === "sim" && typeof window.resetPriceScaleWidthSync === "function") {
       window.resetPriceScaleWidthSync();
     }
 

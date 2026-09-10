@@ -746,6 +746,7 @@ function renderOverlapLegend() {
 function updateQvCandleWithTrade(idx, newPrice, tradeTimeMs, tradeVolume = 0) {
   const series = qvState.series[idx];
   const chart = qvState.charts[idx];
+
   if (!series || !chart) return;
 
   if (!qvState.candlesData[idx]) {

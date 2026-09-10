@@ -477,6 +477,20 @@ export async function initChart() {
         } catch (_) { }
       }
 
+      // [원자적 1프레임 동기화] 휠 줌 즉시 메인/볼륨 십자선 마그네틱 자석 좌표 실시간 일치
+      try {
+        const curX = e.clientX - rect.left;
+        let postLogical = timeScale.coordinateToLogical(curX);
+        if (postLogical === null || isNaN(postLogical)) {
+          postLogical = cursorLogical;
+        }
+        const snappedX = timeScale.logicalToCoordinate(Math.round(postLogical));
+        if (snappedX !== null) {
+          if (store._mainCrosshair) store._mainCrosshair.setX(snappedX);
+          if (store._volCrosshair) store._volCrosshair.setX(snappedX);
+        }
+      } catch (_) { }
+
       store.isUserZoomed = true;
       store.savedZoomWidth = Math.round(newSpan);
 
