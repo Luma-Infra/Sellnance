@@ -27,6 +27,7 @@ export function syncTimeScales(sourceChart, targetChart) {
 // 3. Y축(Price Scale) 가로폭 락킹 & 동기화 엔진
 // ==========================================
 let currentMaxRight = 0;
+let currentMaxLeft = 0;
 let isSyncingWidth = false;
 let lastWidthSyncTime = 0;
 let widthSyncPending = false;
@@ -34,7 +35,7 @@ let widthSyncPending = false;
 export const performSyncPriceScaleWidths = (force = false) => {
   const c1 = store.chart;
   const c2 = store.chartVol;
-  if (!c1 && !c2 || isSyncingWidth) return;
+  if ((!c1 && !c2) || isSyncingWidth) return;
   isSyncingWidth = true;
 
   const isSmallMobile =
@@ -46,11 +47,18 @@ export const performSyncPriceScaleWidths = (force = false) => {
   try {
     if (force) {
       currentMaxRight = 0;
+      currentMaxLeft = 0;
       store.savedPriceScaleWidth = null;
+      store.savedLeftPriceScaleWidth = null;
       if (c1) {
         c1.priceScale("right").applyOptions({
           minimumWidth: 0,
           autoScale: !store.isPriceScaleUserZoomed,
+        });
+        c1.priceScale("left").applyOptions({
+          minimumWidth: 0,
+          visible: BASE_LEFT_WIDTH > 0,
+          autoScale: !store.isKimchiPriceScaleUserZoomed,
         });
       }
       if (c2) {
@@ -58,23 +66,28 @@ export const performSyncPriceScaleWidths = (force = false) => {
           minimumWidth: 0,
           autoScale: !store.isVolPriceScaleUserZoomed,
         });
+        c2.priceScale("left").applyOptions({
+          minimumWidth: 0,
+          visible: BASE_LEFT_WIDTH > 0,
+        });
       }
     }
 
-    let measuredRight = 0;
-    if (c1) {
-      const rWidth = c1.priceScale("right").width();
-      if (rWidth > measuredRight) measuredRight = rWidth;
-    }
-    if (c2) {
-      const rWidth = c2.priceScale("right").width();
-      if (rWidth > measuredRight) measuredRight = rWidth;
-    }
+    // 1. 우측 가격축 동기화
+    const w1 = c1 ? c1.priceScale("right").width() : 0;
+    const w2 = c2 ? c2.priceScale("right").width() : 0;
+    const measuredRight = Math.max(w1, w2);
 
     // 🚀 [원자적 상하 우측 너비 일치] 메인과 볼륨 중 더 넓은 너비로 단일 틱에서 양방향 완벽 동기화 (덜그럭 0%)
-    const targetWidth = Math.max(currentMaxRight, measuredRight);
+    const targetWidth = measuredRight > 0 ? measuredRight : currentMaxRight;
 
-    if (targetWidth > 0 && (targetWidth !== currentMaxRight || force)) {
+    if (
+      targetWidth > 0 &&
+      (targetWidth !== currentMaxRight ||
+        w1 !== targetWidth ||
+        w2 !== targetWidth ||
+        force)
+    ) {
       currentMaxRight = targetWidth;
       store.savedPriceScaleWidth = targetWidth;
       if (c1) {
@@ -91,12 +104,60 @@ export const performSyncPriceScaleWidths = (force = false) => {
       }
     }
 
-    // 🚀 좌측 김프 스케일: 메인/볼륨 모두 60px 완전 불변 고정하여 김프 데이터 유입 시 메인 차트 1px 흔들림 100% 원천 차단
-    if (c1 && c1.priceScale("left").width() !== BASE_LEFT_WIDTH && BASE_LEFT_WIDTH > 0) {
-      c1.priceScale("left").applyOptions({ minimumWidth: BASE_LEFT_WIDTH, visible: true });
+    // 2. 좌측 김프축 원자적 동기화
+    if (BASE_LEFT_WIDTH > 0) {
+      const lw1 = c1 ? c1.priceScale("left").width() : 0;
+      const lw2 = c2 ? c2.priceScale("left").width() : 0;
+      const measuredLeft = Math.max(BASE_LEFT_WIDTH, lw1, lw2);
+      const targetLeftWidth = measuredLeft > 0 ? measuredLeft : (currentMaxLeft || BASE_LEFT_WIDTH);
+
+      if (
+        targetLeftWidth > 0 &&
+        (targetLeftWidth !== currentMaxLeft ||
+          lw1 !== targetLeftWidth ||
+          lw2 !== targetLeftWidth ||
+          force)
+      ) {
+        currentMaxLeft = targetLeftWidth;
+        store.savedLeftPriceScaleWidth = targetLeftWidth;
+        if (c1) {
+          c1.priceScale("left").applyOptions({
+            minimumWidth: targetLeftWidth,
+            visible: true,
+            autoScale: !store.isKimchiPriceScaleUserZoomed,
+          });
+        }
+        if (c2) {
+          c2.priceScale("left").applyOptions({
+            minimumWidth: targetLeftWidth,
+            visible: true,
+          });
+        }
+      }
+    } else {
+      if (currentMaxLeft !== 0 || force) {
+        currentMaxLeft = 0;
+        store.savedLeftPriceScaleWidth = 0;
+        if (c1) {
+          c1.priceScale("left").applyOptions({
+            minimumWidth: 0,
+            visible: false,
+          });
+        }
+        if (c2) {
+          c2.priceScale("left").applyOptions({
+            minimumWidth: 0,
+            visible: false,
+          });
+        }
+      }
     }
-    if (c2 && c2.priceScale("left").width() !== BASE_LEFT_WIDTH && BASE_LEFT_WIDTH > 0) {
-      c2.priceScale("left").applyOptions({ minimumWidth: BASE_LEFT_WIDTH, visible: true });
+
+    // 🚀 초기 로드/새로고침 시 캔버스 첫 프레임 미완료로 너비가 0이었던 경우 다음 프레임에 즉시 2차 원자적 보정
+    if (targetWidth === 0 || (BASE_LEFT_WIDTH > 0 && currentMaxLeft === 0)) {
+      requestAnimationFrame(() => {
+        performSyncPriceScaleWidths(false);
+      });
     }
   } finally {
     isSyncingWidth = false;
@@ -112,7 +173,7 @@ export const syncPriceScaleWidths = (force = false) => {
 
   if (widthSyncPending) return;
   const now = performance.now();
-  if (now - lastWidthSyncTime < 100) return;
+  if (now - lastWidthSyncTime < 30) return; // 30ms로 반응성 극대화
   widthSyncPending = true;
 
   requestAnimationFrame(() => {
@@ -125,10 +186,12 @@ export const syncPriceScaleWidths = (force = false) => {
 export const resetPriceScaleWidthSync = () => {
   window.isResettingWidth = true;
   currentMaxRight = 0;
+  currentMaxLeft = 0;
   store.isPriceScaleUserZoomed = false;
   store.isVolPriceScaleUserZoomed = false;
   store.isKimchiPriceScaleUserZoomed = false;
   store.savedPriceScaleWidth = null;
+  store.savedLeftPriceScaleWidth = null;
 
   const isSmallMobile =
     typeof window !== "undefined" && window.innerWidth < 768;

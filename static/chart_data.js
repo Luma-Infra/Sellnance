@@ -240,6 +240,15 @@ export function mapTime(d, tf) {
 }
 
 export function clearChartData(isTfChange = false) {
+  // 🚀 [과거 데이터 Lazy 로딩 취소 및 인디케이터 은닉]
+  store.chartSessionId = ((store.chartSessionId || 0) + 1) % 10000;
+  store.isLoadingMoreHistory = false;
+  const lazyIndicator = document.getElementById("chart-lazy-loading-indicator");
+  if (lazyIndicator) {
+    lazyIndicator.classList.remove("opacity-100", "scale-100");
+    lazyIndicator.classList.add("opacity-0", "scale-95", "pointer-events-none");
+  }
+
   // 🚀 [우측 가격축 여백 유지] 데이터 페칭 중 0px로 찌그러지는 깜빡임을 방지하고, 데이터 도착 시 syncPriceScaleWidths(true)로 즉시 확정
   store.isUserZoomed = false;
   store._symbolToRowCache = null;
@@ -429,6 +438,23 @@ export async function loadMoreHistory() {
   lazyIndicator.classList.add("opacity-100", "scale-100");
 
   const params = store.lastFetchParams;
+  const currentSessionId = (store.chartSessionId = store.chartSessionId ?? 1);
+  const currentAsset = store.currentAsset;
+  const currentSymbol = store.currentSelectedSymbol;
+  const currentTf = store.currentTf;
+
+  const isStale = () => {
+    return (
+      (store.chartSessionId ?? 0) !== currentSessionId ||
+      store.currentAsset !== currentAsset ||
+      store.currentSelectedSymbol !== currentSymbol ||
+      store.currentTf !== currentTf ||
+      store.lastFetchParams !== params ||
+      store.isFetchingChart ||
+      window.isFetchingChart
+    );
+  };
+
   const oldestCandle = store.mainData[0];
   let toVal;
 
@@ -491,6 +517,8 @@ export async function loadMoreHistory() {
       }
     }
 
+    if (isStale()) return;
+
     if (!fetchedMain || fetchedMain.length === 0) {
       params.hasMoreHistory = false;
       store.isLoadingMoreHistory = false;
@@ -549,6 +577,8 @@ export async function loadMoreHistory() {
           };
         });
     }
+
+    if (isStale()) return;
 
     // 중복 제거 병합
     const mergedMap = new Map();
@@ -655,6 +685,8 @@ export async function loadMoreHistory() {
         );
       }
 
+      if (isStale()) return;
+
       if (Array.isArray(fetchedSub) && fetchedSub.length > 0) {
         const subMergedMap = new Map();
         const getSubKey = (d) => {
@@ -666,6 +698,8 @@ export async function loadMoreHistory() {
         }
         store.subRawData = Array.from(subMergedMap.values());
       }
+
+      if (isStale()) return;
 
       const newKimchiData = calculateKimchiData(
         newMainData,
@@ -692,6 +726,8 @@ export async function loadMoreHistory() {
     // 🚀 [핵심] 차트 캔들 추가 시 화면이 밀리는 현상을 원천 방어하기 위해 Visible Logical Range를 N만큼 밀어줌
     const timeScale = store.chart.timeScale();
     const visibleRange = timeScale.getVisibleLogicalRange();
+
+    if (isStale()) return;
 
     try {
       // 🚀 모든 시리즈 데이터를 동일한 틱 내에서 동기식으로 세팅하여
@@ -738,7 +774,9 @@ export async function loadMoreHistory() {
   } catch (err) {
     // Xconsole.error("🚨 과거 데이터 Lazy Loading 실패:", err);
   } finally {
-    store.isLoadingMoreHistory = false;
+    if (!isStale()) {
+      store.isLoadingMoreHistory = false;
+    }
     lazyIndicator.classList.remove("opacity-100", "scale-100");
     lazyIndicator.classList.add("opacity-0", "scale-95", "pointer-events-none");
   }

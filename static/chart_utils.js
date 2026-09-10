@@ -70,6 +70,7 @@ export function resetChartScale() {
   store.isVolPriceScaleUserZoomed = false;
   store.isKimchiPriceScaleUserZoomed = false;
   store.savedPriceScaleWidth = null;
+  store.savedLeftPriceScaleWidth = null;
   store.mainCustomPriceRange = null;
   store.volCustomPriceRange = null;
   store.kimchiCustomPriceRange = null;

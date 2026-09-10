@@ -257,7 +257,7 @@ function renderTimezoneItems(filterText = "") {
   if (filtered.length === 0) {
     container.innerHTML = `
       <div class="p-4 text-center text-theme-text/50 text-[11px]">
-        검색 결과가 없습니다.
+        검색 결과가 없어요
       </div>
     `;
     return;

@@ -1,5 +1,5 @@
 // chart.js - 순수 차트 엔진 코어
-import { store, tfSec, measureDOM } from "./_store.js";
+import { store, CONFIG, tfSec, measureDOM } from "./_store.js";
 import { fetchHistory } from "./chart_data.js";
 import { getUnixSeconds, formatCrosshairPrice } from "./chart_utils.js";
 import { getCandleThemeColors, applyCandleTheme } from "./theme_manager.js";
@@ -249,7 +249,9 @@ export async function initChart() {
       autoScale: true,
       visible: typeof window !== "undefined" && window.innerWidth >= 768,
       minimumWidth:
-        typeof window !== "undefined" && window.innerWidth < 768 ? 0 : 60,
+        typeof window !== "undefined" && window.innerWidth < 768
+          ? 0
+          : (store.savedLeftPriceScaleWidth || 60),
       borderColor: "transparent",
       // entireTextOnly: true,
     },
@@ -280,7 +282,9 @@ export async function initChart() {
       autoScale: true,
       visible: typeof window !== "undefined" && window.innerWidth >= 768,
       minimumWidth:
-        typeof window !== "undefined" && window.innerWidth < 768 ? 0 : 60,
+        typeof window !== "undefined" && window.innerWidth < 768
+          ? 0
+          : (store.savedLeftPriceScaleWidth || 60),
       borderColor: "transparent", // 🚀 [좌측 테두리 박멸] 메인 차트와 동일하게 좌측 테두리 선 투명화
       scaleMargins: { top: 0.1, bottom: 0.1 },
     },
@@ -342,7 +346,7 @@ export async function initChart() {
       if (userInteractionTimeout) clearTimeout(userInteractionTimeout);
       userInteractionTimeout = setTimeout(() => {
         isUserInteractingWithChart = false;
-      }, 1200); // 사용자 조작 멈춤 후 1.2초 뒤 비활성화
+      }, 1000); // 사용자 조작 멈춤 후에 비활성화
     };
 
     const handleFastChartWheel = (e) => {
@@ -400,8 +404,9 @@ export async function initChart() {
 
       const len = store.mainData.length;
       const margin = store.savedRightMargin ?? 10;
-      const MIN_SPAN = 10; // 🚀 최대 확대 한계: 최소 10개 봉 (캔들 과팽창 방지)
-      const MAX_SPAN = Math.min(Math.max(len + margin + 5, 25), 800);
+      const MIN_SPAN = CONFIG.CHART_CONFIG?.MIN_SPAN ?? 10; // 최대 확대 한계 (최소 N개 봉)
+      const MAX_SPAN_LIMIT = CONFIG.CHART_CONFIG?.MAX_SPAN_LIMIT ?? 800; // 최대 축소 한계
+      const MAX_SPAN = Math.min(Math.max(len + margin + 5, 25), MAX_SPAN_LIMIT);
       // 최대 축소 한계: (캔들 뭉개짐, 과압축, Hairline 방지)
       const maxTo = len - 1 + margin;
 

@@ -116,6 +116,7 @@ export const store = {
   savedZoomWidth: null, // 🚀 [UX 개선] 사용자가 스크롤/줌을 통해 설정한 캔들 개수(가로폭) 저장용
   savedRightMargin: null, // 🚀 [UX 개선] 사용자가 드래그해서 맞춘 마지막 캔들 우측 여백 칸 수 저장용
   savedPriceScaleWidth: null, // 🚀 [UX 개선] 우측 가격 축의 실시간 너비 저장용 (멀티 뷰포트 정밀 동기화용)
+  savedLeftPriceScaleWidth: null, // 🚀 [UX 개선] 좌측 김프 축의 실시간 너비 저장용 (멀티 뷰포트 정밀 동기화용)
   isUserZoomed: false, // 🚀 사용자가 시간축(가로) 줌/패닝을 직접 조작한 상태
   isPriceScaleUserZoomed: false, // 🚀 사용자가 메인 Y축 가격 스케일을 수동 드래그/줌한 상태 (autoScale 보존용)
   isVolPriceScaleUserZoomed: false, // 🚀 사용자가 하단 볼륨 Y축 스케일을 수동 조작한 상태
@@ -337,7 +338,13 @@ export const CONFIG = {
     COUNTDOWN_THROTTLE_MS: 250, // 🚀 카운트다운 타이머 DOM 갱신 쓰로틀 (기본 250ms)
   },
 
-  CHART_CONFIG: { GHOST_COUNT: 500, VISIBLE_COUNT: 200, RIGHT_PADDING: 10 },
+  CHART_CONFIG: {
+    GHOST_COUNT: 500,
+    VISIBLE_COUNT: 200,
+    RIGHT_PADDING: 10,
+    MIN_SPAN: 10,
+    MAX_SPAN_LIMIT: 1200,
+  },
   FONT_SCALE: {
     PRICE_THRESHOLD: 8,
     PRICE_MIN_SIZE: 8,

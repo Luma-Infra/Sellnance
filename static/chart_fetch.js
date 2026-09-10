@@ -32,9 +32,19 @@ export async function fetchHistory(
     store.isVolPriceScaleUserZoomed = false;
     store.isKimchiPriceScaleUserZoomed = false;
     store.savedPriceScaleWidth = null;
+    store.savedLeftPriceScaleWidth = null;
     if (typeof window.updateScaleModeButtonsUI === "function") {
       window.updateScaleModeButtonsUI();
     }
+  }
+
+  // [신규 차트 로딩 시 진행 중이던 과거 데이터 레이지 로딩 즉시 취소 및 인디케이터 은닉]
+  store.chartSessionId = ((store.chartSessionId || 0) + 1) % 10000;
+  store.isLoadingMoreHistory = false;
+  const lazyIndicator = document.getElementById("chart-lazy-loading-indicator");
+  if (lazyIndicator) {
+    lazyIndicator.classList.remove("opacity-100", "scale-100");
+    lazyIndicator.classList.add("opacity-0", "scale-95", "pointer-events-none");
   }
 
   store.isFetchingChart = true;
