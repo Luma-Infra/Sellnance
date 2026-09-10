@@ -683,9 +683,9 @@ function autoFit(isTabRestore = false) {
   }
   if (store.chart && store.mainData.length) {
     const len = store.mainData.length;
-    // 🚀 [UX 개선] 캔들 개수(len)가 적은 코인/타임프레임(예: 일봉 5개) 전환 시 이전 800봉 줌 크기가 적용되어 캔들이 극단적으로 쪼그라드는 현상 방지
+    // 🚀 [UX 개선] 캔들 개수(len)가 극단적으로 적은 신규 상장 코인(예: 일봉 5개) 전환 시에만 캔들 쪼그라듬 방지
     const rawZoomWidth = store.savedZoomWidth || defaultZoom;
-    const maxFittingSpan = Math.max(len + margin + 5, 20);
+    const maxFittingSpan = len < 50 ? Math.max(len + margin + 5, 20) : (CONFIG.CHART_CONFIG?.MAX_SPAN_LIMIT ?? 1200);
     const zoomWidth = Math.min(rawZoomWidth, maxFittingSpan);
     const logicalRange = {
       from: len - 1 - zoomWidth + margin,

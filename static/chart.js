@@ -307,7 +307,8 @@ export async function initChart() {
 
     // 🚀 [UX 개선] 사용자가 스크롤/줌을 통해 설정한 캔들 개수(가로폭)를 실시간으로 저장합니다.
     const width = range.to - range.from;
-    if (width > 0 && width < 1000) {
+    const maxLimit = (CONFIG.CHART_CONFIG?.MAX_SPAN_LIMIT ?? 1200) + 50;
+    if (width > 0 && width <= maxLimit) {
       store.savedZoomWidth = width;
     }
 
@@ -405,9 +406,7 @@ export async function initChart() {
       const len = store.mainData.length;
       const margin = store.savedRightMargin ?? 10;
       const MIN_SPAN = CONFIG.CHART_CONFIG?.MIN_SPAN ?? 10; // 최대 확대 한계 (최소 N개 봉)
-      const MAX_SPAN_LIMIT = CONFIG.CHART_CONFIG?.MAX_SPAN_LIMIT ?? 800; // 최대 축소 한계
-      const MAX_SPAN = Math.min(Math.max(len + margin + 5, 25), MAX_SPAN_LIMIT);
-      // 최대 축소 한계: (캔들 뭉개짐, 과압축, Hairline 방지)
+      const MAX_SPAN = CONFIG.CHART_CONFIG?.MAX_SPAN_LIMIT ?? 1200; // 최대 축소 한계 (200개 제한 해제)
       const maxTo = len - 1 + margin;
 
       // 🛑 [한계점 즉시 감지 & 0ms 조기 탈출]
@@ -454,9 +453,10 @@ export async function initChart() {
         newFrom = newTo - newSpan;
       }
 
-      // 🚀 [좌측 바운더리 보호]
-      if (newFrom < -margin) {
-        newFrom = -margin;
+      // 🚀 [좌측 바운더리 보호] 무한 과거 이탈 방지
+      const minFrom = -MAX_SPAN;
+      if (newFrom < minFrom) {
+        newFrom = minFrom;
         newTo = newFrom + newSpan;
       }
 
