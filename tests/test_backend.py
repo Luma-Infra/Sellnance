@@ -139,23 +139,40 @@ def test_mapping_json_integrity_and_safeguards():
 
 
 def test_bithumb_12h_resolution_mapping():
-    """7. 빗썸 12시간봉 해상도 매핑 검증 (240이 아닌 720)"""
-    tv_tf_map = {
-        "1m": "1",
-        "3m": "3",
-        "5m": "5",
-        "10m": "10",
-        "15m": "15",
-        "30m": "30",
-        "1h": "60",
-        "2h": "120",
-        "4h": "240",
-        "6h": "360",
-        "12h": "720",
-        "24h": "1D",
-        "1d": "1D",
-    }
-    assert tv_tf_map["12h"] == "720"
-    assert tv_tf_map["4h"] == "240"
+    """7. 빗썸 및 바이비트 12시간봉 인터벌 해상도 어댑터 검증"""
+    # 빗썸 API 규격: 12h는 12h 그대로, 1d는 24h로 변환
+    assert ExchangeAdapter.normalize_interval("bithumb", "12h") == "12h"
+    assert ExchangeAdapter.normalize_interval("bithumb", "1d") == "24h"
+    assert ExchangeAdapter.normalize_interval("bithumb", "1m") == "1m"
+
+    # 바이비트 API 규격: 12h는 720(분)으로 변환
+    assert ExchangeAdapter.normalize_interval("bybit_futures", "12h") == "720"
+    assert ExchangeAdapter.normalize_interval("bybit_futures", "4h") == "240"
+
+
+def test_cmc_key_validation_and_listing_security():
+    """8. 유저 CMC 키 유효성 검증 및 상장일 수정 보안 가드 테스트"""
+    from modules.api_manager import is_valid_cmc_key_format
+
+    # 정상 CMC 키 포맷 (32~64자리)
+    assert is_valid_cmc_key_format("b54bcf4d-1bca-4e8e-9a24-22ff2c3d462c") is True
+    assert is_valid_cmc_key_format("1234567890abcdef1234567890abcdef") is True
+
+    # 악의적인 / 비정상 키 차단
+    assert is_valid_cmc_key_format("short") is False
+    assert is_valid_cmc_key_format("random_injection'; DROP TABLE--") is False
+    assert is_valid_cmc_key_format("") is False
+    assert is_valid_cmc_key_format(None) is False
+
+    # 상장일 엔드포인트 보안 검증: 비인가 외부 쓰기 차단
+    client = TestClient(app)
+    # 1) 잘못된 날짜 포맷 (0000-00-00) 차단
+    res_bad_date = client.post(
+        "/api/listing-dates",
+        json={"symbol": "BTC", "exchange_key": "upbit_listing", "date": "0000-00-00"},
+        headers={"X-ADMIN-SECRET": "wrong_secret"},
+    )
+    assert res_bad_date.status_code in [400, 403, 422] or res_bad_date.json().get("status") == "error"
+
 
 

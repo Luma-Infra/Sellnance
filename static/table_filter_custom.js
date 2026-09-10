@@ -460,14 +460,18 @@ function handleOutsideCustomFilterClick(e) {
   toggleCustomFilter();
 }
 
-document.addEventListener("pointerdown", handleOutsideCustomFilterClick, true);
+if (typeof document !== "undefined") {
+  document.addEventListener("pointerdown", handleOutsideCustomFilterClick, true);
+}
 
-window.addEventListener("resize", () => {
-  const dropdown = document.getElementById("custom-filter-dropdown");
-  if (dropdown && !dropdown.classList.contains("hidden")) {
-    positionCustomFilterDropdown(dropdown);
-  }
-});
+if (typeof window !== "undefined") {
+  window.addEventListener("resize", () => {
+    const dropdown = document.getElementById("custom-filter-dropdown");
+    if (dropdown && !dropdown.classList.contains("hidden")) {
+      positionCustomFilterDropdown(dropdown);
+    }
+  });
+}
 
 // 글로벌 window 바인딩
 if (typeof window !== "undefined") {

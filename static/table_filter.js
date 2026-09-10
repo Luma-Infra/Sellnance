@@ -725,10 +725,12 @@ function initControlPanel() {
   updateFavoritesCount();
 }
 
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initControlPanel);
-} else {
-  initControlPanel();
+if (typeof document !== "undefined") {
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initControlPanel);
+  } else {
+    initControlPanel();
+  }
 }
 
 // 글로벌 window 바인딩 (인라인 HTML 및 타 모듈 호환)

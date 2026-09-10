@@ -389,14 +389,17 @@ export const tfSec = {
   "1y": 31104000,
 };
 
+const hasDoc = typeof document !== "undefined";
 export const measureDOM = {
-  box: document.createElement("div"),
-  startLabel: document.createElement("div"),
-  endLabel: document.createElement("div"),
-  rangeBar: document.createElement("div"),
+  box: hasDoc ? document.createElement("div") : null,
+  startLabel: hasDoc ? document.createElement("div") : null,
+  endLabel: hasDoc ? document.createElement("div") : null,
+  rangeBar: hasDoc ? document.createElement("div") : null,
 };
 
-measureDOM.box.style.cssText = `position: absolute; z-index: 50; pointer-events: none; display: none; border: 1px solid; transition: background-color 0.2s, border-color 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; text-align: center; line-height: 1.4;`;
-measureDOM.startLabel.style.cssText = `position: absolute; left: 0; width: 100%; box-sizing: border-box; z-index: 98; pointer-events: none; display: none; padding: 2px 6px; font-size: 10px; font-weight: bold; color: white; text-align: center; opacity: 1; white-space: nowrap;`;
-measureDOM.endLabel.style.cssText = `position: absolute; left: 0; width: 100%; box-sizing: border-box; z-index: 100; pointer-events: none; display: none; padding: 2px 6px; font-size: 10px; font-weight: bold; color: white; text-align: center; opacity: 1; white-space: nowrap; transition: background-color 0.2s;`;
-measureDOM.rangeBar.style.cssText = `position: absolute; left: 0; width: 100%; z-index: 90; pointer-events: none; display: none; transition: background-color 0.2s; background-color: var(--bg-chart, #131722); opacity: 0.3;`;
+if (hasDoc && measureDOM.box) {
+  measureDOM.box.style.cssText = `position: absolute; z-index: 50; pointer-events: none; display: none; border: 1px solid; transition: background-color 0.2s, border-color 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; text-align: center; line-height: 1.4;`;
+  measureDOM.startLabel.style.cssText = `position: absolute; left: 0; width: 100%; box-sizing: border-box; z-index: 98; pointer-events: none; display: none; padding: 2px 6px; font-size: 10px; font-weight: bold; color: white; text-align: center; opacity: 1; white-space: nowrap;`;
+  measureDOM.endLabel.style.cssText = `position: absolute; left: 0; width: 100%; box-sizing: border-box; z-index: 100; pointer-events: none; display: none; padding: 2px 6px; font-size: 10px; font-weight: bold; color: white; text-align: center; opacity: 1; white-space: nowrap; transition: background-color 0.2s;`;
+  measureDOM.rangeBar.style.cssText = `position: absolute; left: 0; width: 100%; z-index: 90; pointer-events: none; display: none; transition: background-color 0.2s; background-color: var(--bg-chart, #131722); opacity: 0.3;`;
+}

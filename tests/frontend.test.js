@@ -1,30 +1,55 @@
 import { describe, it, expect } from "vitest";
+import { TIMEZONE_LIST, getSavedTimezoneId } from "../static/chart_timezone.js";
+import { ensureSafeUnixSeconds, getUnixSeconds } from "../static/chart_utils.js";
+import { isValidPriceRatio } from "../static/stream_utils.js";
+import { resampleSubCandles } from "../static/chart_data_kimchi.js";
+import { CONFIG, tfSec } from "../static/_store.js";
 
-describe("Frontend Unit Tests (5 Types)", () => {
-  // 1. 타임존 변환 및 UTC 오프셋 계산 테스트
-  it("1. Timezone offset & Timestamp conversion", () => {
-    function parseTzOffsetHours(tzString) {
-      if (!tzString || tzString === "UTC") return 0;
-      const match = tzString.match(/UTC([+-]\d+)/i);
-      return match ? parseInt(match[1], 10) : 0;
-    }
+describe("Frontend Core Modules Direct Tests", () => {
+  // 1. 타임존 목록 및 변환 엔진 실제 모듈 검증
+  it("1. Real TIMEZONE_LIST & Unix Seconds Conversion", () => {
+    expect(TIMEZONE_LIST.length).toBeGreaterThan(20);
+    const kstTz = TIMEZONE_LIST.find((t) => t.id === "UTC+9");
+    expect(kstTz).toBeDefined();
+    expect(kstTz.offset).toBe(540); // 9시간 * 60분 = 540분
 
-    function convertUtcToLocalEpoch(utcSeconds, tzString) {
-      const offsetHours = parseTzOffsetHours(tzString);
-      return utcSeconds + offsetHours * 3600;
-    }
+    // 유닉스 초 변환 정밀도 테스트 (Object, String, Number)
+    expect(getUnixSeconds({ year: 2024, month: 1, day: 1 })).toBe(1704067200);
+    expect(getUnixSeconds("2024-01-01")).toBe(1704067200);
+    expect(getUnixSeconds(1700000000)).toBe(1700000000);
+    expect(ensureSafeUnixSeconds(1700000000)).toBe(1700000000);
+    expect(ensureSafeUnixSeconds(null)).toBe(0);
+  });
 
-    // UTC+9 (KST)
-    expect(parseTzOffsetHours("UTC+9")).toBe(9);
-    expect(convertUtcToLocalEpoch(1700000000, "UTC+9")).toBe(1700000000 + 9 * 3600);
+  // 2. 김프 이상치 필터 (isValidPriceRatio) & 서브캔들 합성 (resampleSubCandles) 검증
+  it("2. Real isValidPriceRatio & resampleSubCandles", () => {
+    // 정상 가격 비율 (오차 10% 내외)
+    expect(isValidPriceRatio(100_000, 100_000)).toBe(true);
+    expect(isValidPriceRatio(105_000, 100_000)).toBe(true);
+    expect(isValidPriceRatio(95_000, 100_000)).toBe(true);
 
-    // UTC-5 (EST)
-    expect(parseTzOffsetHours("UTC-5")).toBe(-5);
-    expect(convertUtcToLocalEpoch(1700000000, "UTC-5")).toBe(1700000000 - 5 * 3600);
+    // 극단적 이상치 방어 (99% 폭락 또는 10배 폭등)
+    expect(isValidPriceRatio(100, 100_000)).toBe(false); // 0.001
+    expect(isValidPriceRatio(100_000_000, 100_000)).toBe(false); // 1000배
 
-    // Default UTC
-    expect(parseTzOffsetHours("UTC")).toBe(0);
-    expect(convertUtcToLocalEpoch(1700000000, "UTC")).toBe(1700000000);
+    // 12h 서브캔들 리샘플링 검증
+    const rawCandles = [
+      { time: 1700000000, open: 100, high: 110, low: 95, close: 105, vol: 10 },
+      { time: 1700003600, open: 105, high: 115, low: 100, close: 112, vol: 15 },
+    ];
+    const resampled = resampleSubCandles(rawCandles, "12h", "binance");
+    expect(resampled.length).toBe(1);
+    expect(resampled[0].high).toBe(115);
+    expect(resampled[0].volume).toBe(25);
+  });
+
+  // 3. 전역 CONFIG 및 타임프레임 초단위 매핑 검증
+  it("3. Real CONFIG & tfSec Precision Mapping", () => {
+    expect(CONFIG.CHART_CONFIG.MIN_SPAN).toBe(10);
+    expect(CONFIG.CHART_CONFIG.MAX_SPAN_LIMIT).toBeGreaterThanOrEqual(800);
+    expect(tfSec["1m"]).toBe(60);
+    expect(tfSec["1h"]).toBe(3600);
+    expect(tfSec["1d"]).toBe(86400);
   });
 
   // 2. 검색 및 티커 필터 가중치 정렬 테스트

@@ -16,7 +16,7 @@ export const getUnixSeconds = (t) => {
   }
   return t; // 이미 숫자(타임스탬프)인 경우 그대로 반환
 };
-window.getUnixSeconds = getUnixSeconds;
+if (typeof window !== "undefined") window.getUnixSeconds = getUnixSeconds;
 
 export const getNextBarTime = (lastCandleTime, tf) => {
   const lastCandleUnix = getUnixSeconds(lastCandleTime);
@@ -48,7 +48,7 @@ export const getNextBarTime = (lastCandleTime, tf) => {
   const sec = tfSec[tf] || 60;
   return lastCandleUnix + sec;
 };
-window.getNextBarTime = getNextBarTime;
+if (typeof window !== "undefined") window.getNextBarTime = getNextBarTime;
 
 export const ensureSafeUnixSeconds = (t) => {
   try {
@@ -61,7 +61,7 @@ export const ensureSafeUnixSeconds = (t) => {
     return 0;
   }
 };
-window.ensureSafeUnixSeconds = ensureSafeUnixSeconds;
+if (typeof window !== "undefined") window.ensureSafeUnixSeconds = ensureSafeUnixSeconds;
 
 export function resetChartScale() {
   if (!store.chart || !store.candleSeries) return;
@@ -280,7 +280,7 @@ export function formatCrosshairPrice(price, p, isLeftScale = false) {
   // (DrawingPriceAxisView.visible()이 제어하므로 여기서는 항상 비워둠)
   return ""; // 좌측 스케일 등락률 크로스헤어 라벨 완전히 비활성화
 }
-window.formatCrosshairPrice = formatCrosshairPrice;
+if (typeof window !== "undefined") window.formatCrosshairPrice = formatCrosshairPrice;
 
 // 🚀 달러/원화 거래대금 포맷팅 (실시간 소켓용)
 export function formatVolumeDollar(vol) {
@@ -778,14 +778,16 @@ function calculateTimeRemaining(tf, serverMs, lastCandleTime) {
   return h > 0 ? `${hh}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
-window.resetChartScale = resetChartScale;
-window.formatSmartPrice = formatSmartPrice;
-window.formatVolumeDollar = formatVolumeDollar;
-window.formatVolumeKRW = formatVolumeKRW;
-window.updateLegend = updateLegend;
-window.updateStatus = updateStatus;
-window.autoFit = autoFit;
-window.calculateTimeRemaining = calculateTimeRemaining; // 🚀 이거 빠져있었음!
+if (typeof window !== "undefined") {
+  window.resetChartScale = resetChartScale;
+  window.formatSmartPrice = formatSmartPrice;
+  window.formatVolumeDollar = formatVolumeDollar;
+  window.formatVolumeKRW = formatVolumeKRW;
+  window.updateLegend = updateLegend;
+  window.updateStatus = updateStatus;
+  window.autoFit = autoFit;
+  window.calculateTimeRemaining = calculateTimeRemaining;
+}
 
 // 🚀 [추가] 백엔드 정규식 이식: 1000XEC, 1MBABYDOGE 등 단위 배수 추출기
 export function getMultiplier(sym) {
@@ -806,7 +808,7 @@ export function getPureBase(sym) {
 
 // ================== chart.js에서 이동됨 ==================
 // 🚀 김프 다채로운 색상 적용 엔진
-window.getKimchiColor = function (val) {
+export function getKimchiColor(val) {
   if (val < -4) return "#4B0082"; // 인디고
   if (val < -2) return "#1E3A8A"; // 딥 블루
   if (val < 0) return "#2E8B57"; // 씨그린
@@ -815,7 +817,10 @@ window.getKimchiColor = function (val) {
   if (val < 6) return "#B22222"; // 파이어브릭
   if (val < 8) return "#FF4500"; // 오렌지레드
   return "#8B0000"; // 다크레드
-};
+}
+if (typeof window !== "undefined") {
+  window.getKimchiColor = getKimchiColor;
+}
 
 export function toggleCountdown(forceVal) {
   if (forceVal !== undefined) {
@@ -1031,28 +1036,30 @@ export function toggleCrosshairPct(forceVal) {
   }
 }
 
-window.toggleCountdown = toggleCountdown;
-window.toggleOhlc = toggleOhlc;
-window.toggleCrosshairPct = toggleCrosshairPct;
-window.updateRealtimeCountdown = updateRealtimeCountdown;
+if (typeof window !== "undefined") {
+  window.toggleCountdown = toggleCountdown;
+  window.toggleOhlc = toggleOhlc;
+  window.toggleCrosshairPct = toggleCrosshairPct;
+  window.updateRealtimeCountdown = updateRealtimeCountdown;
 
-// 🚀 카운트다운 타이머 숫자(시간)만 실시간 갱신 (스케일 가격표 중복 ZERO)
-setInterval(() => {
-  if (store.showCountdown && store.lastServerMs > 0 && !store.isFetchingChart) {
-    updateRealtimeCountdown(store.lastServerMs);
-  }
-}, 500);
+  // 🚀 카운트다운 타이머 숫자(시간)만 실시간 갱신 (스케일 가격표 중복 ZERO)
+  setInterval(() => {
+    if (store.showCountdown && store.lastServerMs > 0 && !store.isFetchingChart) {
+      updateRealtimeCountdown(store.lastServerMs);
+    }
+  }, 500);
 
-// 🚀 페이지 로드 직후 토글 UI들의 슬라이더 슬라이딩 초기 위치 동기화
-setTimeout(() => {
-  const isOhlcHidden = localStorage.getItem("sellnance_ohlc_hidden") === "true";
-  if (typeof toggleOhlc === "function") toggleOhlc(!isOhlcHidden);
-  if (typeof toggleLogScale === "function") toggleLogScale(store.isLogMode);
-  if (typeof toggleCountdown === "function")
-    toggleCountdown(store.showCountdown);
-  if (typeof toggleCrosshairPct === "function")
-    toggleCrosshairPct(store.showCrosshairPct !== false);
-}, 200);
+  // 🚀 페이지 로드 직후 토글 UI들의 슬라이더 슬라이딩 초기 위치 동기화
+  setTimeout(() => {
+    const isOhlcHidden = localStorage.getItem("sellnance_ohlc_hidden") === "true";
+    if (typeof toggleOhlc === "function") toggleOhlc(!isOhlcHidden);
+    if (typeof toggleLogScale === "function") toggleLogScale(store.isLogMode);
+    if (typeof toggleCountdown === "function")
+      toggleCountdown(store.showCountdown);
+    if (typeof toggleCrosshairPct === "function")
+      toggleCrosshairPct(store.showCrosshairPct !== false);
+  }, 200);
+}
 
 // 🎯 브라우저 탭 제목 실시간 스위칭 통합 매니저 (소켓 중복 생성 ZERO, 메인 차트 소켓 100% 재활용)
 let lastTabTitleUpdateMs = 0;
@@ -1108,10 +1115,12 @@ export function updateTabTitleManager(price, symbol, isKor) {
       targetSymbol
     ).toUpperCase();
 
-    document.title = `${formatted} ${displayTitleTicker} | Sellnance`;
+    if (typeof document !== "undefined") {
+      document.title = `${formatted} ${displayTitleTicker} | Sellnance`;
+    }
   }
 }
-window.updateTabTitleManager = updateTabTitleManager;
+if (typeof window !== "undefined") window.updateTabTitleManager = updateTabTitleManager;
 
 export const sanitizeChartData = (dataArr, hasValueField = false) => {
   if (!Array.isArray(dataArr)) return [];
@@ -1221,7 +1230,7 @@ export const sanitizeChartData = (dataArr, hasValueField = false) => {
     return getTimeVal(a.time) - getTimeVal(b.time);
   });
 };
-window.sanitizeChartData = sanitizeChartData;
+if (typeof window !== "undefined") window.sanitizeChartData = sanitizeChartData;
 
 export function rebuildMainDataMap() {
   store.mainDataMap.clear();
@@ -1232,7 +1241,7 @@ export function rebuildMainDataMap() {
     });
   }
 }
-window.rebuildMainDataMap = rebuildMainDataMap;
+if (typeof window !== "undefined") window.rebuildMainDataMap = rebuildMainDataMap;
 
 export function rebuildVolumeDataMap() {
   store.volumeDataMap.clear();
@@ -1243,7 +1252,7 @@ export function rebuildVolumeDataMap() {
     });
   }
 }
-window.rebuildVolumeDataMap = rebuildVolumeDataMap;
+if (typeof window !== "undefined") window.rebuildVolumeDataMap = rebuildVolumeDataMap;
 
 export function rebuildKimchiDataMap() {
   store.kimchiDataMap.clear();
@@ -1254,4 +1263,4 @@ export function rebuildKimchiDataMap() {
     });
   }
 }
-window.rebuildKimchiDataMap = rebuildKimchiDataMap;
+if (typeof window !== "undefined") window.rebuildKimchiDataMap = rebuildKimchiDataMap;
