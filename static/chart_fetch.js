@@ -19,12 +19,13 @@ export async function fetchHistory(
   isTabRestore = false,
   isSubSwitch = false,
   targetUid = null,
+  isSilentSync = false,
 ) {
   const now = Date.now();
   if (now - store.lastFetchTime < 100) return;
   store.lastFetchTime = now;
 
-  if (!isSubSwitch) {
+  if (!isSubSwitch && !isSilentSync) {
     if (!isTfChange) {
       store.preferredKimchiSub = null;
     }
@@ -49,7 +50,7 @@ export async function fetchHistory(
 
   store.isFetchingChart = true;
   window.isFetchingChart = true;
-  if (!isSubSwitch) {
+  if (!isSubSwitch && !isSilentSync) {
     clearChartData(isTfChange);
   }
 
@@ -177,12 +178,12 @@ export async function fetchHistory(
 
   const loadingModal = document.getElementById("chart-loading-modal");
   const wrapper = document.getElementById("chart-wrapper");
-  if (wrapper && !isTfChange) wrapper.classList.add("chart-loading");
+  if (wrapper && !isTfChange && !isSilentSync) wrapper.classList.add("chart-loading");
 
   const pastGapMap = store.marketDataMap?.past_gap_map || {};
   let gapOverlay = document.getElementById("gap-recovery-overlay");
 
-  if (pastGapMap[pureBase] && !isTfChange) {
+  if (pastGapMap[pureBase] && !isTfChange && !isSilentSync) {
     if (!gapOverlay) {
       gapOverlay = document.createElement("div");
       gapOverlay.id = "gap-recovery-overlay";
@@ -762,7 +763,7 @@ export async function fetchHistory(
         // 🚀 [len 유동 보장] store.kimchiData가 실제로 채워진 경우, 내부 rAF(kimchiSeries.setData)가
         // 먼저 완료되도록 한 프레임 더 대기. 없으면 즉시 fit.
         const doFit = () => {
-          if (!store.isUserZoomed && typeof autoFit === "function") autoFit(isTabRestore); // 🚀 사용자가 이미 드래그/패닝 중이면 강제 점프 방지
+          if (!isSilentSync && !store.isUserZoomed && typeof autoFit === "function") autoFit(isTabRestore); // 🚀 사용자가 이미 드래그/패닝 중이거나 무깜빡임 동기화 시 강제 점프 방지
           if (typeof window.updateStatus === "function") window.updateStatus();
           if (typeof updateExchangeBadges === "function") updateExchangeBadges(displayName, rowInfo?.UID);
           if (typeof window.syncPriceScaleWidths === "function") window.syncPriceScaleWidths(true);

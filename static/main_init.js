@@ -600,23 +600,65 @@ export function setupRouteAndHistory() {
   window.addEventListener("hashchange", handleHistoryNavigation);
 }
 
-// 🔄 [장기 방치 자가치유]
+// 🔄 [장기 방치 자가치유 & 탭 복귀 시 무깜빡임 차트 갭 자동 복구]
 export function setupTabVisibilityRecovery() {
   let tabHiddenAt = 0;
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "hidden") {
-      tabHiddenAt = Date.now();
-    } else if (document.visibilityState === "visible") {
-      const elapsed = Date.now() - tabHiddenAt;
-      if (tabHiddenAt > 0 && elapsed > 30 * 60 * 1000) {
-        if (typeof window.refreshSniperTarget === "function") {
-          window.refreshSniperTarget();
-        }
-        if (typeof window.loadTableData === "function") {
-          window.loadTableData(false, true);
-        }
+
+  const triggerRecovery = () => {
+    if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+    const now = Date.now();
+    const elapsed = tabHiddenAt > 0 ? now - tabHiddenAt : 0;
+
+    // 1. 10초 이상 백그라운드 후 탭 복귀 시: 무깜빡임(0.01초) 차트 캔들 백필 동기화
+    if (elapsed > 10 * 1000) {
+      if (
+        store.currentAsset &&
+        store.candleSeries &&
+        !store.isFetchingChart &&
+        typeof window.fetchHistory === "function"
+      ) {
+        // isSilentSync = true 로 기존 차트/줌 상태를 보존한 채 누락 캔들만 번개같이 백필
+        window.fetchHistory(
+          store.currentAsset,
+          false,
+          false,
+          false,
+          store.currentUid,
+          true
+        );
       }
-      tabHiddenAt = 0;
+
+      // 백그라운드 절전으로 끊겼을 수 있는 실시간 틱/소켓 갱신
+      if (typeof window.refreshSniperTarget === "function") {
+        window.refreshSniperTarget();
+      }
     }
-  });
+
+    // 2. 60초 이상 방치 후 복귀 시: 마켓 테이블 시세 동기화
+    if (elapsed > 60 * 1000) {
+      if (typeof window.loadTableData === "function") {
+        window.loadTableData(false, true);
+      }
+    }
+
+    tabHiddenAt = 0;
+  };
+
+  if (typeof document !== "undefined") {
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") {
+        tabHiddenAt = Date.now();
+      } else if (document.visibilityState === "visible") {
+        triggerRecovery();
+      }
+    });
+  }
+
+  if (typeof window !== "undefined") {
+    window.addEventListener("focus", () => {
+      if (tabHiddenAt > 0) {
+        triggerRecovery();
+      }
+    });
+  }
 }
