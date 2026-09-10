@@ -255,11 +255,14 @@ export async function loadTableData(force = false, silent = false) {
   // 🚀 [1단계] 로컬 캐시 즉시 복원 및 선제 화면 출력 (0초 컷 최적화)
   const cachedDataStr = localStorage.getItem("sellnance_market_data_cache");
   let hasCache = false;
-  if (cachedDataStr) {
+  const isMemoryPopulated =
+    store.originalTableData && store.originalTableData.length > 50;
+
+  if (!isMemoryPopulated && cachedDataStr) {
     try {
       const cachedResult = JSON.parse(cachedDataStr);
       if (cachedResult && cachedResult.data && cachedResult.data.length > 0) {
-        // 🚀 [상위 30개 즉시 렌더] 마지막 정렬 기준으로 캐시 데이터를 빠르게 정렬 후 상위 30개만 선제 노출
+        // 🚀 [상위 30개 즉시 렌더] 최초 콜드 부팅 시에만 상위 30개 선제 노출 (기존 메모리 덮어쓰기 방지)
         const lastSortCol =
           localStorage.getItem("sellnance_last_sort_col") || "Volume";
         const lastSortState =

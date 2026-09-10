@@ -655,9 +655,11 @@ export function setupTabVisibilityRecovery() {
       }
     }
 
-    // 2. 60초 이상 방치 후 복귀 시: 마켓 테이블 시세 동기화
+    // 2. 60초 이상 방치 후 복귀 시: 마켓 테이블 사일런트 시세 동기화 (검색 목록 깜빡임 0%)
     if (elapsed > 60 * 1000) {
-      if (typeof window.loadTableData === "function") {
+      if (typeof window.loadTableDataSilent === "function") {
+        window.loadTableDataSilent();
+      } else if (typeof window.loadTableData === "function") {
         window.loadTableData(false, true);
       }
     }
