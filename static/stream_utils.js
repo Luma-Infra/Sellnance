@@ -43,8 +43,8 @@ export function isTimeValid(chartTime) {
  */
 export function isChartBusy() {
   return Boolean(
-    store.isFetchingChart ||
-    window.isFetchingChart ||
+    (store.isFetchingChart && !store.isSilentSyncing) ||
+    (window.isFetchingChart && !store.isSilentSyncing) ||
     store.isLoadingMoreHistory ||
     store.isRestoringTab
   );

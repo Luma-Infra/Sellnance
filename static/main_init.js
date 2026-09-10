@@ -626,15 +626,24 @@ export function setupTabVisibilityRecovery() {
     const now = Date.now();
     const elapsed = tabHiddenAt > 0 ? now - tabHiddenAt : 0;
 
-    // 1. 10초 이상 백그라운드 후 탭 복귀 시: 무깜빡임(0.01초) 차트 캔들 백필 동기화
+    // 탭 복귀 순간 브라우저 rAF 대기 없이 큐에 쌓인 최신 틱 즉시 강제 렌더링
+    if (typeof window.flushRealtimeRender === "function") {
+      window.flushRealtimeRender();
+    }
+    if (typeof window.refreshSniperTarget === "function") {
+      window.refreshSniperTarget();
+    }
+
+    // 1. 10초 이상 백그라운드 후 탭 복귀 시: 무깜빡임(0.01초) 차트 캔들 백그라운드 원자적 백필 동기화
     if (elapsed > 10 * 1000) {
       if (
         store.currentAsset &&
         store.candleSeries &&
         !store.isFetchingChart &&
+        !store.isSilentSyncing &&
         typeof window.fetchHistory === "function"
       ) {
-        // isSilentSync = true 로 기존 차트/줌 상태를 보존한 채 누락 캔들만 번개같이 백필
+        // isSilentSync = true 로 실시간 소켓 틱 중단 없이 누락 캔들만 뒤에서 조용히 백필
         window.fetchHistory(
           store.currentAsset,
           false,
@@ -643,11 +652,6 @@ export function setupTabVisibilityRecovery() {
           store.currentUid,
           true
         );
-      }
-
-      // 백그라운드 절전으로 끊겼을 수 있는 실시간 틱/소켓 갱신
-      if (typeof window.refreshSniperTarget === "function") {
-        window.refreshSniperTarget();
       }
     }
 

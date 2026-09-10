@@ -7,8 +7,11 @@ import { isChartBusy, isMatchingCurrentSymbol, isValidPriceRatio } from "./strea
 let pendingUpdate = null;
 let renderTickRaf = null;
 
-function flushRealtimeRender() {
-    renderTickRaf = null;
+export function flushRealtimeRender() {
+    if (renderTickRaf) {
+        cancelAnimationFrame(renderTickRaf);
+        renderTickRaf = null;
+    }
     if (!pendingUpdate) return;
     const { normalizedTime, currentCandle } = pendingUpdate;
     pendingUpdate = null;
@@ -178,4 +181,8 @@ function restoreVolumeDataSterilized() {
             console.error("🚨 볼륨 데이터 최종 재바인딩 실패:", rebindErr);
         }
     }
+}
+
+if (typeof window !== "undefined") {
+    window.flushRealtimeRender = flushRealtimeRender;
 }

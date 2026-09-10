@@ -48,8 +48,12 @@ export async function fetchHistory(
     lazyIndicator.classList.add("opacity-0", "scale-95", "pointer-events-none");
   }
 
-  store.isFetchingChart = true;
-  window.isFetchingChart = true;
+  if (!isSilentSync) {
+    store.isFetchingChart = true;
+    window.isFetchingChart = true;
+  } else {
+    store.isSilentSyncing = true;
+  }
   if (!isSubSwitch && !isSilentSync) {
     clearChartData(isTfChange);
   }
@@ -58,6 +62,7 @@ export async function fetchHistory(
   if (!displayName) {
     store.isFetchingChart = false;
     window.isFetchingChart = false;
+    store.isSilentSyncing = false;
     return;
   }
 
@@ -559,10 +564,26 @@ export async function fetchHistory(
     if (store.currentAsset !== snapshotAsset || store.currentTF !== snapshotTF) {
       store.isFetchingChart = false;
       window.isFetchingChart = false;
+      store.isSilentSyncing = false;
       return;
     }
 
     if (!canReuseMain) {
+      if (isSilentSync && store.mainData && store.mainData.length > 0 && newMainData.length > 0) {
+        const liveLast = store.mainData[store.mainData.length - 1];
+        const restLast = newMainData[newMainData.length - 1];
+        const liveSec = getUnixSeconds(liveLast.time);
+        const restSec = getUnixSeconds(restLast.time);
+        if (liveSec === restSec) {
+          // 🚀 실시간 소켓 틱(고가/저가/종가/거래량)을 보존하여 원자적 병합
+          restLast.high = Math.max(Number(restLast.high), Number(liveLast.high));
+          restLast.low = Math.min(Number(restLast.low), Number(liveLast.low));
+          restLast.close = Number(liveLast.close);
+          if (liveLast.volume) restLast.volume = Math.max(Number(restLast.volume || 0), Number(liveLast.volume));
+        } else if (liveSec > restSec) {
+          newMainData.push(liveLast);
+        }
+      }
       store.mainData = sanitizeChartData(newMainData.map((d) => mapTime(d)));
       store.volumeData = sanitizeChartData(
         newVolumeData.map((d) => mapTime(d)),
@@ -770,6 +791,7 @@ export async function fetchHistory(
 
           window.isFetchingChart = false;
           store.isFetchingChart = false;
+          store.isSilentSyncing = false;
         };
         if (store.kimchiData && store.kimchiData.length > 0) {
           requestAnimationFrame(doFit);
@@ -783,9 +805,11 @@ export async function fetchHistory(
     //Xconsole.error("차트 로드 실패:", e);
     window.isFetchingChart = false;
     store.isFetchingChart = false;
+    store.isSilentSyncing = false;
   } finally {
     window.isFetchingChart = false;
     store.isFetchingChart = false;
+    store.isSilentSyncing = false;
     if (typeof window.hideKimchiLoading === "function") {
       window.hideKimchiLoading();
     }

@@ -22,7 +22,7 @@ try {
   }
 } catch (e) { }
 
-// [신규] 마지막 정렬 기준 로컬 스토리지 복원
+//[신규] 마지막 정렬 기준 로컬 스토리지 복원
 let initialSortCol = "Volume";
 let initialSortState = "desc";
 try {
@@ -32,7 +32,7 @@ try {
   if (savedSortState) initialSortState = savedSortState;
 } catch (e) { }
 
-// [신규] control-panel-parent 세션 스토리지 복원
+//[신규] control-panel-parent 세션 스토리지 복원
 let sessionControlPanel = null;
 try {
   const savedCP =
@@ -54,43 +54,43 @@ export const store = {
   tickerCache: {},
   visibleSymbols: new Set(),
   intersectingSymbols: new Set(),
-  btcRateCache: {}, // 🚀 합성 환율 전용 메모리 캐시 엔진 추가
-  tickerRowMap: new Map(), // 🚀 [단일 진실 공급원] 전역 테이블 행 O(1) 광속 탐색 맵
+  btcRateCache: {}, // 합성 환율 전용 메모리 캐시 엔진 추가
+  tickerRowMap: new Map(), // [단일 진실 공급원] 전역 테이블 행 O(1) 광속 탐색 맵
   lastUpdatedRaw: null,
   nextUpdateRaw: null,
 
   currentAsset: null,
   currentSelectedSymbol: null,
   currentSelectedUid: null,
-  isScrolling: false, // 🚀 스크롤 중 여부 플래그
-  isEngineStarted: false, // 🚀 최초 코인 선택 시 소켓 및 차트 점화 여부 플래그
-  mcapMin: 0, // 🚀 시총 최소값 (기본 0)
-  mcapMax: 10000000000, // 🚀 시총 최대값 (기본 10B)
-  customMcapMin: sessionControlPanel?.customMcapMin ?? 0, // 🚀 커스텀 시총 최소값
-  customMcapMax: sessionControlPanel?.customMcapMax ?? 10000000000000, // 🚀 커스텀 시총 최대값 (기본 10T)
-  customVolMin: sessionControlPanel?.customVolMin ?? 0, // 🚀 커스텀 거래량 최소값
-  customVolMax: sessionControlPanel?.customVolMax ?? 100000000000, // 🚀 커스텀 거래량 최대값 (기본 100B)
-  customVolSource: sessionControlPanel?.customVolSource ?? "BINANCE", // 🚀 커스텀 거래량 소스 (BINANCE 또는 UPBIT)
+  isScrolling: false, // 스크롤 중 여부 플래그
+  isEngineStarted: false, // 최초 코인 선택 시 소켓 및 차트 점화 여부 플래그
+  mcapMin: 0, // 시총 최소값 (기본 0)
+  mcapMax: 10000000000, // 시총 최대값 (기본 10B)
+  customMcapMin: sessionControlPanel?.customMcapMin ?? 0, // 커스텀 시총 최소값
+  customMcapMax: sessionControlPanel?.customMcapMax ?? 10000000000000, // 커스텀 시총 최대값 (기본 10T)
+  customVolMin: sessionControlPanel?.customVolMin ?? 0, // 커스텀 거래량 최소값
+  customVolMax: sessionControlPanel?.customVolMax ?? 100000000000, // 커스텀 거래량 최대값 (기본 100B)
+  customVolSource: sessionControlPanel?.customVolSource ?? "BINANCE", // 커스텀 거래량 소스 (BINANCE 또는 UPBIT)
   tempMcapMin: sessionControlPanel?.customMcapMin ?? 0,
   tempMcapMax: sessionControlPanel?.customMcapMax ?? 10000000000000,
   tempVolMin: sessionControlPanel?.customVolMin ?? 0,
   tempVolMax: sessionControlPanel?.customVolMax ?? 100000000000,
   tempVolSource: sessionControlPanel?.customVolSource ?? "BINANCE",
-  useFlip: true, // 🚀 플립 애니메이션 사용 여부
-  chartZoomSpeed: 1.15, // 🚀 캔버스 휠 스크롤 줌 가속 배속 (1.0: 기본 트뷰 속도, 2.0~2.5: 초고속 쾌적 줌, 3.5: 초광속)
-  priceScaleZoomSpeed: 0.035, // 🚀 가격축 Y스케일 휠 감도 (기존 12~14% 과민 줌 -> 1휠 틱당 약 3.5% 트뷰 디폴트 감도: Math.min(abs(deltaY) / 100, 1.2) * 0.035)
-  hideSmallCap: sessionControlPanel?.hideSmallCap ?? false, // 🚀 시총 1M 미만 숨기기 여부
-  currentTab: sessionControlPanel?.currentTab || "ALL", // 🚀 카테고리 탭 (ALL, FAV, FAV2)
-  activePresetIndex: sessionControlPanel?.activePresetIndex, // 🚀 활성 프리셋 인덱스
-  lang: "EN", // 🚀 한/영 토글 (KR, EN)
-  filterMode: "BINANCE", // 🚀 [추가] ALL, BINANCE, UPBIT, FUTURES, SPOT
-  currentMarket: "ALL", // 🚀 테이블 활성 마켓 탭 상태 추적
-  currentChartMarket: "ALL", // 🚀 우측 차트/호가창 활성 마켓 상태 추적
-  currencyMode: "USD", // 🚀 [추가] USD, KRW 토글 모드
+  useFlip: true, // 플립 애니메이션 사용 여부
+  chartZoomSpeed: 1.15, // 캔버스 휠 스크롤 줌 가속 배속 (1.0: 기본 트뷰 속도, 2.0~2.5: 초고속 쾌적 줌, 3.5: 초광속)
+  priceScaleZoomSpeed: 0.035, // 가격축 Y스케일 휠 감도 (기존 12~14% 과민 줌 -> 1휠 틱당 약 3.5% 트뷰 디폴트 감도: Math.min(abs(deltaY) / 100, 1.2) * 0.035)
+  hideSmallCap: sessionControlPanel?.hideSmallCap ?? false, // 시총 1M 미만 숨기기 여부
+  currentTab: sessionControlPanel?.currentTab || "ALL", // 카테고리 탭 (ALL, FAV, FAV2)
+  activePresetIndex: sessionControlPanel?.activePresetIndex, // 활성 프리셋 인덱스
+  lang: "EN", // 한/영 토글 (KR, EN)
+  filterMode: "BINANCE", // [추가] ALL, BINANCE, UPBIT, FUTURES, SPOT
+  currentMarket: "ALL", // 테이블 활성 마켓 탭 상태 추적
+  currentChartMarket: "ALL", // 우측 차트/호가창 활성 마켓 상태 추적
+  currencyMode: "USD", // [추가] USD, KRW 토글 모드
   viewMode: "DETAILED",
   tableViewMode: "basic",
-  cmcStatus: "SERVER_CACHE", // 'OK' | 'INVALID_KEY' | 'SERVER_CACHE'
-  listingDates: {}, // 📅 거래소별 상장일 { BTC: { binance_listing: "2019-09-08", upbit_listing: "..." } }
+  cmcStatus: "SERVER_CACHE", //'OK' | 'INVALID_KEY' | 'SERVER_CACHE'
+  listingDates: {}, //📅 거래소별 상장일 { BTC: { binance_listing: "2019-09-08", upbit_listing: "..." } }
   settings: {
     CMC_API_KEY: "",
   },
@@ -114,22 +114,22 @@ export const store = {
   candleSeries: null,
   previewSeries: null,
   volumeSeries: null,
-  savedZoomWidth: null, // 🚀 [UX 개선] 사용자가 스크롤/줌을 통해 설정한 캔들 개수(가로폭) 저장용
-  savedRightMargin: null, // 🚀 [UX 개선] 사용자가 드래그해서 맞춘 마지막 캔들 우측 여백 칸 수 저장용
-  savedPriceScaleWidth: null, // 🚀 [UX 개선] 우측 가격 축의 실시간 너비 저장용 (멀티 뷰포트 정밀 동기화용)
-  savedLeftPriceScaleWidth: null, // 🚀 [UX 개선] 좌측 김프 축의 실시간 너비 저장용 (멀티 뷰포트 정밀 동기화용)
-  isUserZoomed: false, // 🚀 사용자가 시간축(가로) 줌/패닝을 직접 조작한 상태
-  isPriceScaleUserZoomed: false, // 🚀 사용자가 메인 Y축 가격 스케일을 수동 드래그/줌한 상태 (autoScale 보존용)
-  isVolPriceScaleUserZoomed: false, // 🚀 사용자가 하단 볼륨 Y축 스케일을 수동 조작한 상태
-  isKimchiPriceScaleUserZoomed: false, // 🚀 사용자가 하단 김프 Y축 스케일을 수동 조작한 상태
+  savedZoomWidth: null, // [UX 개선] 사용자가 스크롤/줌을 통해 설정한 캔들 개수(가로폭) 저장용
+  savedRightMargin: null, // [UX 개선] 사용자가 드래그해서 맞춘 마지막 캔들 우측 여백 칸 수 저장용
+  savedPriceScaleWidth: null, // [UX 개선] 우측 가격 축의 실시간 너비 저장용 (멀티 뷰포트 정밀 동기화용)
+  savedLeftPriceScaleWidth: null, // [UX 개선] 좌측 김프 축의 실시간 너비 저장용 (멀티 뷰포트 정밀 동기화용)
+  isUserZoomed: false, // 사용자가 시간축(가로) 줌/패닝을 직접 조작한 상태
+  isPriceScaleUserZoomed: false, // 사용자가 메인 Y축 가격 스케일을 수동 드래그/줌한 상태 (autoScale 보존용)
+  isVolPriceScaleUserZoomed: false, // 사용자가 하단 볼륨 Y축 스케일을 수동 조작한 상태
+  isKimchiPriceScaleUserZoomed: false, // 사용자가 하단 김프 Y축 스케일을 수동 조작한 상태
   kimchiSeries: null,
   chartVol: null,
   chartKimchi: null,
   kimchiData: null,
   mainData: [],
-  mainDataMap: new Map(), // 🚀 [최적화] O(1) 탐색용 해시맵
-  volumeDataMap: new Map(), // 🚀 [최적화] O(1) 탐색용 해시맵
-  kimchiDataMap: new Map(), // 🚀 [최적화] O(1) 탐색용 해시맵
+  mainDataMap: new Map(), // [최적화] O(1) 탐색용 해시맵
+  volumeDataMap: new Map(), // [최적화] O(1) 탐색용 해시맵
+  kimchiDataMap: new Map(), // [최적화] O(1) 탐색용 해시맵
   countdownPriceLine: null,
   paneConfig: { volume: true, kimchi: true },
   chartSplits: { s1: 0.65, s2: 0.85 },
@@ -145,34 +145,35 @@ export const store = {
     GATEIO: 0,
     COINBASE: 0,
   },
-  exchFilterMode: sessionControlPanel?.exchFilterMode ?? "AND", // 🚀 거래소 필터링 결합 모드 (AND, OR, ONLY)
+  exchFilterMode: sessionControlPanel?.exchFilterMode ?? "AND", // 거래소 필터링 결합 모드 (AND, OR, ONLY)
 
-  isFetchingChart: false, // 🚀 차트 데이터 호출 진행 상태 플래그
-  isKimchiLoading: false, // 🚀 서브 김프 데이터 호출/로딩 진행 상태 플래그
-  blockLeftDom: false, // 🚀 좌측 테이블 DOM 렌더링 최적화/차단 여부
-  blockRightDom: false, // 🚀 우측 패널 DOM 렌더링 최적화/차단 여부
-  blockChartDom: false, // 🚀 실시간 차트 갱신 렌더링 최적화/차단 여부
-  blockChartMouseEvent: false, // 🚀 우측 차트 영역 마우스 이벤트/십자선 렉 유발 차단 토글
-  blockOrderbook: true, // 🚀 실시간 호가창 렌더링 최적화/차단 여부
-  blockSort: false, // 🚀 테이블 실시간 순위 재배치 정렬 최적화/차단 여부
-  blockTableUpdate: false, // 🚀 좌측 테이블 실시간 셀/시세 갱신 차단 토글
-  blockKimchi: false, // 🚀 실시간 김프 연산 차단 여부
-  blockLegend: false, // 🚀 OHLC 레전드 갱신 차단 여부
-  blockChartResize: false, // 🚀 차트 리사이즈 동기화 차단 여부
-  blockTableTabScroll: false, // 🚀 테이블 스크롤/탭 갱신 차단 여부
-  blockRadarBatch: false, // 🚀 실시간 레이더 배치 처리 차단 여부
-  blockRowDynamicHTML: false, // 🚀 [신규] 김프 전파 동적 HTML 갱신 차단 토글 (기본값: TRUE)
-  aggTradeInterval: 0, // 🚀 aggTrade 주기 조절 (ms 단위, 0 = Raw)
-  lastFetchTime: 0, // 🚀 마지막 데이터 수집 시간 기록용
-  isLogMode: false, // 🚀 차트 로그 스케일 활성화 여부
-  chartTimezone: typeof localStorage !== "undefined" && localStorage.getItem("sellnance_chart_timezone") || "UTC+9", // 🚀 차트 시간대 (기본 KST: UTC+9)
-  isKimchiDisabled: typeof localStorage !== "undefined" && localStorage.getItem("sellnance_kimchi_disabled") === "true", // 🚀 김프 비교 끄기 여부
-  traceRowCaller: false, // 🚀 [디버그 토글] 단 1줄로 좌측 1번 행(Index 0) callerId 전광판 추적 및 확장 영역 보이기/사라지기 제어!
-  enableOrderbookVisual: true, // 호가창 보기
-  showCountdown: true, // 🚀 차트 카운트다운 표시 여부
-  currentRenderLimit: 1000, // 🚀 최대 렌더링 캔들 제한 개수
+  isFetchingChart: false, // 차트 데이터 호출 진행 상태 플래그
+  isSilentSyncing: false, // 무깜빡임 탭 복귀 백필 진행 중 상태 플래그 (실시간 소켓 틱 렌더링 유지)
+  isKimchiLoading: false, // 서브 김프 데이터 호출/로딩 진행 상태 플래그
+  blockLeftDom: false, // 좌측 테이블 DOM 렌더링 최적화/차단 여부
+  blockRightDom: false, // 우측 패널 DOM 렌더링 최적화/차단 여부
+  blockChartDom: false, // 실시간 차트 갱신 렌더링 최적화/차단 여부
+  blockChartMouseEvent: false, // 우측 차트 영역 마우스 이벤트/십자선 렉 유발 차단 토글
+  blockOrderbook: true, // 실시간 호가창 렌더링 최적화/차단 여부
+  blockSort: false, // 테이블 실시간 순위 재배치 정렬 최적화/차단 여부
+  blockTableUpdate: false, // 좌측 테이블 실시간 셀/시세 갱신 차단 토글
+  blockKimchi: false, // 실시간 김프 연산 차단 여부
+  blockLegend: false, // OHLC 레전드 갱신 차단 여부
+  blockChartResize: false, // 차트 리사이즈 동기화 차단 여부
+  blockTableTabScroll: false, // 테이블 스크롤/탭 갱신 차단 여부
+  blockRadarBatch: false, // 실시간 레이더 배치 처리 차단 여부
+  blockRowDynamicHTML: false, // [신규] 김프 전파 동적 HTML 갱신 차단 토글 (기본값: TRUE)
+  aggTradeInterval: 0, // aggTrade 주기 조절 (ms 단위, 0 = Raw)
+  lastFetchTime: 0, // 마지막 데이터 수집 시간 기록용
+  isLogMode: false, // 차트 로그 스케일 활성화 여부
+  chartTimezone: typeof localStorage !== "undefined" && localStorage.getItem("sellnance_chart_timezone") || "UTC+9", // 차트 시간대 (기본 KST: UTC+9)
+  isKimchiDisabled: typeof localStorage !== "undefined" && localStorage.getItem("sellnance_kimchi_disabled") === "true", // 김프 비교 끄기 여부
+  traceRowCaller: false, // [디버그 토글] 단 1줄로 좌측 1번 행(Index 0) callerId 전광판 추적 및 확장 영역 보이기/사라지기 제어!
+  enableOrderbookVisual: true, //호가창 보기
+  showCountdown: true, // 차트 카운트다운 표시 여부
+  currentRenderLimit: 1000, // 최대 렌더링 캔들 제한 개수
 
-  // 🚀 [성능 통계 카운터] 차단 가드에 의해 연산/갱신이 바이패스(빠꾸)처리된 실시간 카운트 집계기
+  // [성능 통계 카운터] 차단 가드에 의해 연산/갱신이 바이패스(빠꾸)처리된 실시간 카운트 집계기
   bypassCounters: {
     rightDom: 0,
     chartDom: 0,
@@ -187,8 +188,8 @@ export const store = {
     kimchi: 0,
     radarBatch: 0,
     dynamicHtml: 0,
-    throttleBypass: 0, // 🚀 [신규] 100ms 진입 쓰로틀링 걸려 빠꾸먹은 건수
-    throttlePass: 0, // 🚀 [신규] 100ms 가드 통과해서 실제 처리된 건수
+    throttleBypass: 0, // [신규] 100ms 진입 쓰로틀링 걸려 빠꾸먹은 건수
+    throttlePass: 0, // [신규] 100ms 가드 통과해서 실제 처리된 건수
   },
 
   curDir: "bull",
@@ -204,7 +205,7 @@ export const store = {
   currentBithumbStream: null,
   currentBybitStream: null,
   binanceRadarWs: null,
-  binanceFuturesRadarWs: null, // 🚀 선물 레이더 소켓 변수 추가
+  binanceFuturesRadarWs: null, // 선물 레이더 소켓 변수 추가
   upbitRadarWs: null,
   sniperWs: null,
   sniperWsFutures: null,
@@ -227,7 +228,7 @@ export const store = {
   currentSortCol: "Volume",
   sortState: "desc",
   tableObserver: null,
-  isCrosshairActive: false, // 🚀 십자선(크로스헤어) 활성화 상태 추적용
+  isCrosshairActive: false, // 십자선(크로스헤어) 활성화 상태 추적용
 
   isMeasuring: false,
   measureStart: null,
@@ -235,18 +236,18 @@ export const store = {
   cachedChartTd: null,
   cachedPriceTd: null,
 
-  // 🚀 그리기 관련 전역 상태 변수들
+  // 그리기 관련 전역 상태 변수들
   activeTool: "cursor",
   drawings: { trendlines: [], horizontals: [], fibs: [], brushes: [] },
   drawingStart: null,
   drawingTempEnd: null,
-  drawingBrush: null, // 임시 브러시 궤적
+  drawingBrush: null, //임시 브러시 궤적
   drawingsHidden: false,
   drawingsLocked: false,
   magnetActive: false,
   _drawingPrimitive: null,
 
-  // 🚀 [단일 진실 공급원] 조건식 제거용 전역 정밀도 캐시 맵 및 헬퍼
+  // [단일 진실 공급원] 조건식 제거용 전역 정밀도 캐시 맵 및 헬퍼
   precisionMap: new Map(),
   getPrecision: function (sym) {
     if (!sym) return store.currentPrecision || 2;
@@ -320,7 +321,7 @@ export const store = {
       return p;
     }
 
-    // 🚀 [캐시 오염 방지] row를 아직 찾지 못한 초기 로딩 단계에서는 precisionMap을 2로 영구 오염시키지 않고 임시 폴백만 반환
+    // [캐시 오염 방지] row를 아직 찾지 못한 초기 로딩 단계에서는 precisionMap을 2로 영구 오염시키지 않고 임시 폴백만 반환
     return store.currentPrecision || 2;
   },
 };
@@ -331,12 +332,12 @@ export const CONFIG = {
   UI_UPDATE_INTERVAL: 1000,
   RENDER_CHUNK: 50,
 
-  // ⚙️ [차트 전용 실시간 성능/쓰로틀 제어 콘솔 - 수동 조절 가능]
+  //⚙️ [차트 전용 실시간 성능/쓰로틀 제어 콘솔 - 수동 조절 가능]
   CHART_PERF: {
-    REALTIME_THROTTLE_MS: 50, // 🚀 캔들/볼륨 실시간 차트 렌더링 쓰로틀 (기본 50ms)
-    STATUS_DOM_THROTTLE_MS: 100, // 🚀 OHLC 레전드 및 헤더 상태창 DOM 갱신 쓰로틀 (기본 100ms)
-    TITLE_UPDATE_THROTTLE_MS: 1000, // 🚀 브라우저 탭 타이틀 실시간 시세 갱신 쓰로틀 (기본 1000ms)
-    COUNTDOWN_THROTTLE_MS: 250, // 🚀 카운트다운 타이머 DOM 갱신 쓰로틀 (기본 250ms)
+    REALTIME_THROTTLE_MS: 50, // 캔들/볼륨 실시간 차트 렌더링 쓰로틀 (기본 50ms)
+    STATUS_DOM_THROTTLE_MS: 100, // OHLC 레전드 및 헤더 상태창 DOM 갱신 쓰로틀 (기본 100ms)
+    TITLE_UPDATE_THROTTLE_MS: 1000, // 브라우저 탭 타이틀 실시간 시세 갱신 쓰로틀 (기본 1000ms)
+    COUNTDOWN_THROTTLE_MS: 250, // 카운트다운 타이머 DOM 갱신 쓰로틀 (기본 250ms)
   },
 
   CHART_CONFIG: {
@@ -378,7 +379,7 @@ export const tfSec = {
   "15m": 900,
   "30m": 1800,
   "1h": 3600,
-  // "2h": 7200,
+  //"2h": 7200,
   "4h": 14400,
   "6h": 21600,
   "8h": 28800,
