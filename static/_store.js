@@ -86,7 +86,12 @@ export const store = {
   filterMode: "BINANCE", // [추가] ALL, BINANCE, UPBIT, FUTURES, SPOT
   currentMarket: "ALL", // 테이블 활성 마켓 탭 상태 추적
   currentChartMarket: "ALL", // 우측 차트/호가창 활성 마켓 상태 추적
-  currencyMode: "USD", // [추가] USD, KRW 토글 모드
+  currencyMode: "RECOMMENDED", // 통화/지표 기준 모드: "RECOMMENDED" (추천), "USD" (달러), "KRW" (원화)
+  CURRENCY_MODES: {
+    RECOMMENDED: "RECOMMENDED", // 🌟 추천 모드 (바낸 선물 24h/Day ↔ 업비트 현물 24h/Day 직접 맞비교)
+    USD: "USD",                 // 💵 달러 모드 (순수 글로벌 해외 거래소 기준)
+    KRW: "KRW",                 // 🇰🇷 원화 모드 (순수 국내 업비트/원화 기준)
+  },
   viewMode: "DETAILED",
   tableViewMode: "basic",
   cmcStatus: "SERVER_CACHE", //'OK' | 'INVALID_KEY' | 'SERVER_CACHE'

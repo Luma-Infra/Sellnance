@@ -19,6 +19,8 @@ import {
   switchFilter,
   switchView,
   toggleCurrency,
+  setCurrencyMode,
+  updateCurrencyUI,
   toggleSmallCap,
   openSettingsModal,
   closeSettingsModal,
@@ -162,6 +164,8 @@ window.switchTab = switchTab;
 window.switchFilter = switchFilter;
 window.switchView = switchView;
 window.toggleCurrency = toggleCurrency;
+window.setCurrencyMode = setCurrencyMode;
+window.updateCurrencyUI = updateCurrencyUI;
 window.toggleSmallCap = toggleSmallCap;
 window.updateVisibleSymbols = updateVisibleSymbols;
 window.openSettingsModal = openSettingsModal;

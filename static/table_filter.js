@@ -632,14 +632,17 @@ export function switchView(mode) {
   renderTable();
 }
 
-export function toggleCurrency() {
-  store.currencyMode = store.currencyMode === "USD" ? "KRW" : "USD";
-  store.lang = store.currencyMode === "USD" ? "EN" : "KR";
-  const btn = document.getElementById("currency-toggle");
-  if (btn) {
-    btn.innerText =
-      store.currencyMode === "USD" ? "USD ($) / EN" : "KRW (₩) / KR";
+export function setCurrencyMode(mode) {
+  if (
+    mode !== "USD" &&
+    mode !== "KRW" &&
+    mode !== "RECOMMENDED"
+  ) {
+    return;
   }
+  store.currencyMode = mode;
+  store.lang = mode === "KRW" ? "KR" : "EN";
+  updateCurrencyUI();
   renderTable();
 
   if (store.currentSelectedSymbol) {
@@ -654,6 +657,32 @@ export function toggleCurrency() {
       window.updateHeaderDisplay(row, undefined, p);
     }
   }
+}
+
+export function updateCurrencyUI() {
+  const btn = document.getElementById("currency-toggle");
+  if (btn) {
+    if (store.currencyMode === "RECOMMENDED") {
+      btn.innerText = "RECOMMENDED (추천)";
+    } else if (store.currencyMode === "USD") {
+      btn.innerText = "USD ($) / EN";
+    } else if (store.currencyMode === "KRW") {
+      btn.innerText = "KRW (₩) / KR";
+    }
+  }
+}
+
+export function toggleCurrency() {
+  // 🚀 3단 순환: RECOMMENDED (추천) ➔ USD (달러) ➔ KRW (원화) ➔ RECOMMENDED
+  let nextMode = "RECOMMENDED";
+  if (store.currencyMode === "RECOMMENDED") {
+    nextMode = "USD";
+  } else if (store.currencyMode === "USD") {
+    nextMode = "KRW";
+  } else {
+    nextMode = "RECOMMENDED";
+  }
+  setCurrencyMode(nextMode);
 }
 
 export function toggleSmallCap() {
@@ -746,6 +775,8 @@ if (typeof window !== "undefined") {
   window.switchFilter = switchFilter;
   window.switchView = switchView;
   window.toggleCurrency = toggleCurrency;
+  window.setCurrencyMode = setCurrencyMode;
+  window.updateCurrencyUI = updateCurrencyUI;
   window.toggleSmallCap = toggleSmallCap;
   window.updateFavoritesCount = updateFavoritesCount;
   window.restoreControlPanelUI = restoreControlPanelUI;

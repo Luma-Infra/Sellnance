@@ -655,8 +655,14 @@ export function setupTabVisibilityRecovery() {
       }
     }
 
-    // 2. 60초 이상 방치 후 복귀 시: 마켓 테이블 사일런트 시세 동기화 (검색 목록 깜빡임 0%)
-    if (elapsed > 60 * 1000) {
+    // 2. 30초 이상 방치 후 복귀 시: 소켓 피드 점검 및 마켓 테이블 사일런트 시세 동기화
+    if (elapsed > 30 * 1000) {
+      if (typeof window.syncSniperSubscriptions === "function") {
+        window.syncSniperSubscriptions();
+      }
+      if (typeof window.initAllExchangeFeeds === "function") {
+        window.initAllExchangeFeeds();
+      }
       if (typeof window.loadTableDataSilent === "function") {
         window.loadTableDataSilent();
       } else if (typeof window.loadTableData === "function") {

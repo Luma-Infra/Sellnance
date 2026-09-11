@@ -423,35 +423,8 @@ export async function loadTableDataSilent() {
 
             needReRender = true;
           } else {
-            row.Funding_Raw = fresh.Funding_Raw;
-            row.Funding_Formatted = fresh.Funding_Formatted;
-            row.MarketCap_Raw = fresh.MarketCap_Raw;
-            row.MarketCap_Formatted = fresh.MarketCap_Formatted;
-            row.VMC_Raw = fresh.VMC_Raw;
-            row.VMC_Formatted = fresh.VMC_Formatted;
-            row.Basis_Raw = fresh.Basis_Raw;
-            row.Basis_Formatted = fresh.Basis_Formatted;
-
-            // 🚀 실시간 소켓이 없는 코인들을 위해, 백엔드로부터 최신 시세와 변동률(24h/Day) 데이터도 강제 갱신합니다.
-            row.Price_Raw = fresh.Price_Raw;
-            row.Price_KRW = fresh.Price_KRW;
-            row.Change_24h_Raw = fresh.Change_24h_Raw;
-            row.Change_Today_Raw = fresh.Change_Today_Raw;
-
-            // 거래소별 개별 속성들도 함께 머징하여 지표 정합성 보장
-            row.Upbit_Price = fresh.Upbit_Price;
-            row.Bithumb_Price = fresh.Bithumb_Price;
-            row.Binance_Price_Spot = fresh.Binance_Price_Spot;
-            row.Binance_Price_Futures = fresh.Binance_Price_Futures;
-            row.Change_24h_Upbit = fresh.Change_24h_Upbit;
-            row.Change_Today_Upbit = fresh.Change_Today_Upbit;
-            row.Change_24h_Bithumb = fresh.Change_24h_Bithumb;
-            row.Change_24h_Spot = fresh.Change_24h_Spot ?? fresh.Change_24h_Binance;
-            row.Change_Today_Spot = fresh.Change_Today_Spot ?? fresh.Change_Today_Binance;
-            row.Change_24h_Binance = fresh.Change_24h_Binance;
-            row.Change_Today_Binance = fresh.Change_Today_Binance;
-            row.Change_24h_Futures = fresh.Change_24h_Futures;
-            row.Change_Today_Futures = fresh.Change_Today_Futures;
+            // 🚀 [Single Source of Truth] 백엔드 최신 데이터를 통째로 머징하여 업비트/바이낸스 메인 및 빗썸/바이비트 보조 지표 100% 동기화
+            Object.assign(row, fresh);
           }
         }
       });
@@ -534,9 +507,13 @@ export async function loadTableDataSilent() {
         });
       }
 
-      // 3. 신규 주입이 이루어졌다면 테이블 즉각 갱신
-      if (needReRender && typeof window.renderTable === "function") {
-        window.renderTable();
+      // 3. 신규 주입 시 전체 갱신, 기존 데이터 머징 시 인플레이스 DOM 수치 최신화
+      if (typeof window.renderTable === "function") {
+        if (needReRender) {
+          window.renderTable();
+        } else {
+          window.renderTable(true);
+        }
       }
 
       // 🚀 [신규] 사일런트 갱신 시 상태 바 업데이트
