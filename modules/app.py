@@ -458,6 +458,50 @@ def track_user_session(request: Request):
         return len(ACTIVE_SESSIONS)
 
 
+# 🔒 [L7 트래픽 보호 / DDoS 방어] IP별 분당 요청 제한 (33회/분)
+RATE_LIMIT_LOCK = threading.Lock()
+MARKET_DATA_REQUEST_HISTORY = {}  # { "ip": [ts1, ts2, ...] }
+
+
+def check_market_data_rate_limit(
+    request: Request, max_requests: int = 33, window_seconds: int = 60
+) -> bool:
+    """IP당 60초 내 max_requests(기본 20회) 초과 시 False 반환 (429 차단)."""
+    if os.environ.get("TESTING") == "1":
+        return True
+
+    client_ip = (
+        request.headers.get("cf-connecting-ip")
+        or request.headers.get("x-forwarded-for")
+        or (request.client.host if request.client else "unknown")
+    )
+    if "," in client_ip:
+        client_ip = client_ip.split(",")[0].strip()
+
+    now = time.time()
+    with RATE_LIMIT_LOCK:
+        cutoff = now - window_seconds
+        history = MARKET_DATA_REQUEST_HISTORY.get(client_ip, [])
+        valid_history = [t for t in history if t > cutoff]
+
+        if len(valid_history) >= max_requests:
+            MARKET_DATA_REQUEST_HISTORY[client_ip] = valid_history
+            return False
+
+        valid_history.append(now)
+        MARKET_DATA_REQUEST_HISTORY[client_ip] = valid_history
+
+        # 메모리 가비지 컬렉션: 1,000개 IP 초과 시 만료된 IP 정리
+        if len(MARKET_DATA_REQUEST_HISTORY) > 1000:
+            for ip in list(MARKET_DATA_REQUEST_HISTORY.keys()):
+                recent = [t for t in MARKET_DATA_REQUEST_HISTORY[ip] if t > cutoff]
+                if not recent:
+                    del MARKET_DATA_REQUEST_HISTORY[ip]
+                else:
+                    MARKET_DATA_REQUEST_HISTORY[ip] = recent
+        return True
+
+
 def get_next_update_timestamp(
     is_user_key: bool = False, last_raw_ts: float = 0.0
 ) -> float:
@@ -492,12 +536,19 @@ def get_next_update_timestamp(
 @app.get("/api/market-data")
 def get_market_data(request: Request, force: bool = False):
     """프론트엔드의 표(Table)를 그리기 위한 데이터를 JSON으로 반환합니다."""
+    # 🔒 [DDoS / 트래픽 고갈 방어] IP당 분당 33회 초과 시 즉시 차단
+    if not check_market_data_rate_limit(request, max_requests=33, window_seconds=60):
+        raise HTTPException(
+            status_code=429,
+            detail="Too Many Requests. Rate limit exceeded (33 req/min). Please try again later.",
+        )
+
     # [CMC API 키 Stateless 동기화] 클라이언트 헤더에 전달된 키가 있으면 메모리에 반영
     cmc_key = request.headers.get("X-CMC-API-KEY")
     is_user_key = bool(cmc_key and isinstance(cmc_key, str) and cmc_key.strip() != "")
 
     user_count = track_user_session(request)
-    # 🔒 [DDoS / API 쿼터 고갈 방어] 외부 유저의 ?force=true 무차별 캐시 무효화 차단 (서버 15분 스케줄러 캐시만 제공)
+    # [DDoS / API 쿼터 고갈 방어] 외부 유저의 ?force=true 무차별 캐시 무효화 차단 (서버 15분 스케줄러 캐시만 제공)
     data, last_updated = api_manager.get_cached_data(
         force_reload=False, user_api_key=cmc_key
     )
@@ -559,6 +610,13 @@ def get_market_data_silent(request: Request):
     """[캐시 즉시 반환] 유저 요청 시 수집 없이 GLOBAL_CACHE만 뿌림.
     수집은 서버 자체 15분 백그라운드 스케줄러가 전담 (유저 500명 와도 수집 0번).
     """
+    # 🔒 [DDoS / 트래픽 고갈 방어] IP당 분당 20회 초과 시 즉시 차단
+    if not check_market_data_rate_limit(request, max_requests=33, window_seconds=60):
+        raise HTTPException(
+            status_code=429,
+            detail="Too Many Requests. Rate limit exceeded (33 req/min).",
+        )
+
     cmc_key = request.headers.get("X-CMC-API-KEY")
     is_user_key = bool(cmc_key and isinstance(cmc_key, str) and cmc_key.strip() != "")
     user_count = track_user_session(request)
