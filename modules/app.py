@@ -446,7 +446,7 @@ SESSION_LOCK = threading.Lock()
 
 
 def track_user_session(request: Request):
-    """요청자 IP를 기반으로 최근 30초 내에 활동한 세션 수를 카운트합니다."""
+    """요청자 IP를 기반으로 최근 1시간(3600초) 내에 활동한 활성 세션 수를 카운트합니다."""
     # 프록시(Cloudflare, Railway 등)를 거친 경우 원래 IP 획득 시도
     client_ip = request.headers.get("x-forwarded-for") or (
         request.client.host if request.client else "unknown"
@@ -457,8 +457,8 @@ def track_user_session(request: Request):
     now = time.time()
     with SESSION_LOCK:
         ACTIVE_SESSIONS[client_ip] = now
-        # 30초 이상 지난 세션 제거
-        expired = [ip for ip, t in ACTIVE_SESSIONS.items() if now - t > 30]
+        # 1시간(3600초) 이상 지난 세션 제거
+        expired = [ip for ip, t in ACTIVE_SESSIONS.items() if now - t > 3600]
         for ip in expired:
             del ACTIVE_SESSIONS[ip]
         return len(ACTIVE_SESSIONS)
