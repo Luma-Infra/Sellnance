@@ -377,6 +377,9 @@ export function saveControlPanelSession() {
       customVolMin: store.customVolMin,
       customVolMax: store.customVolMax,
       customVolSource: store.customVolSource,
+      currentSortCol: store.currentSortCol || "Volume",
+      sortState: store.sortState || "desc",
+      currencyMode: store.currencyMode || "RECOMMENDED",
     };
     sessionStorage.setItem(
       "sellnance_session_control_panel",
@@ -388,6 +391,11 @@ export function saveControlPanelSession() {
 }
 
 export function restoreControlPanelUI() {
+  // 0. 정렬 상태 UI 화살표 및 강조 복원
+  if (typeof window.updateSortUI === "function") {
+    window.updateSortUI(store.currentSortCol, store.sortState);
+  }
+
   // 1. hideSmallCap 버튼 스타일 복원
   const smallCapButtons = document.querySelectorAll(
     "#btn-small-cap, #btn-small-cap-custom",

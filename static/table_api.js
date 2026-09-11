@@ -156,11 +156,15 @@ export function processTableData(result) {
     });
   }
 
+  // 🚀 [신규] 복원된 마지막 정렬 기준에 맞춰 데이터 선제 정렬 및 렌더링
   if (store.currentSortCol && store.sortState !== "") {
-    if (typeof window.applyRealtimeSort === "function")
-      window.applyRealtimeSort();
-  } else {
-    if (typeof window.renderTable === "function") window.renderTable();
+    if (typeof window.simpleSortData === "function") {
+      window.simpleSortData();
+    }
+  }
+
+  if (typeof window.renderTable === "function") {
+    window.renderTable(false);
   }
 
   // 🚀 [신규] 장부 수신 및 렌더 후 세션 컨트롤 패널 UI 즉시 동기화

@@ -22,13 +22,18 @@ try {
   }
 } catch (e) { }
 
-//[신규] 마지막 정렬 기준 로컬 스토리지 복원
+//[신규] 마지막 정렬 기준 로컬/세션 스토리지 복원
 let initialSortCol = "Volume";
 let initialSortState = "desc";
 try {
-  const savedSortCol = localStorage.getItem("sellnance_last_sort_col");
+  const savedSortCol =
+    (typeof localStorage !== "undefined" && localStorage.getItem("sellnance_last_sort_col")) ||
+    (typeof sessionStorage !== "undefined" && sessionStorage.getItem("sellnance_last_sort_col"));
   if (savedSortCol) initialSortCol = savedSortCol;
-  const savedSortState = localStorage.getItem("sellnance_last_sort_state");
+
+  const savedSortState =
+    (typeof localStorage !== "undefined" && localStorage.getItem("sellnance_last_sort_state")) ||
+    (typeof sessionStorage !== "undefined" && sessionStorage.getItem("sellnance_last_sort_state"));
   if (savedSortState) initialSortState = savedSortState;
 } catch (e) { }
 
@@ -40,6 +45,12 @@ try {
     sessionStorage.getItem("sellnance_session_control_panel");
   if (savedCP) {
     sessionControlPanel = JSON.parse(savedCP);
+    if (sessionControlPanel.currentSortCol) {
+      initialSortCol = sessionControlPanel.currentSortCol;
+    }
+    if (sessionControlPanel.sortState) {
+      initialSortState = sessionControlPanel.sortState;
+    }
   }
 } catch (e) { }
 
@@ -238,8 +249,6 @@ export const store = {
   localTimeAtUpdate: typeof performance !== "undefined" ? performance.now() : 0,
   lastServerMs: Date.now(),
   displayTime: "Wait...",
-  currentSortCol: "Volume",
-  sortState: "desc",
   tableObserver: null,
   isCrosshairActive: false, // 십자선(크로스헤어) 활성화 상태 추적용
 

@@ -32,10 +32,15 @@ export function sortTable(colKey) {
     store.currentSortCol = colKey;
     store.sortState = "desc";
   }
-  // 🚀 [UX 복원] 마지막 정렬 기준 로컬 저장
+  // 🚀 [UX 복원] 마지막 정렬 기준 로컬 및 세션 저장 (새로고침 시 PC/모바일 100% 유지)
   try {
     localStorage.setItem("sellnance_last_sort_col", store.currentSortCol);
     localStorage.setItem("sellnance_last_sort_state", store.sortState);
+    sessionStorage.setItem("sellnance_last_sort_col", store.currentSortCol);
+    sessionStorage.setItem("sellnance_last_sort_state", store.sortState);
+    if (typeof window.saveControlPanelSession === "function") {
+      window.saveControlPanelSession();
+    }
   } catch (e) { }
 
   // 🚀 [UI 갱신] 활성 정렬 화살표 및 버튼 강조 효과 동기화
@@ -179,7 +184,7 @@ export function simpleSortData() {
     if (a.isEmpty) return 1;
     if (b.isEmpty) return -1;
 
-    // 🚨 Caution(유의) 정렬 시: 상폐/유의 위험 종목들이 무조건 최상단에 우선 집결한 뒤, 알파벳/가나다 순으로 정렬
+    // 🚨 Caution(유의) 정렬 시: 상폐/유의 위험 종목들이 무조건 최상단, 알파벳/가나다 순으로 정렬
     if (store.currentSortCol === "Caution") {
       const hasWarnA = a.d.Warnings && Object.keys(a.d.Warnings).length > 0;
       const hasWarnB = b.d.Warnings && Object.keys(b.d.Warnings).length > 0;
@@ -266,4 +271,7 @@ export function updateSortUI(colKey = store.currentSortCol, sortState = store.so
   }
 }
 window.updateSortUI = updateSortUI;
+window.simpleSortData = simpleSortData;
+window.sortTable = sortTable;
+window.applyRealtimeSort = applyRealtimeSort;
 
