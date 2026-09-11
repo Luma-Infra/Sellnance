@@ -31,6 +31,7 @@ export function startBinanceSpotFeed() {
     if (!Array.isArray(data)) return;
 
     data.forEach((ticker) => {
+      if (!ticker.s.endsWith("USDT")) return;
       const pureSymbol = ticker.s.replace("USDT", "");
       const bufferKey = ticker.s; // Spot key: SymbolUSDT
 
@@ -39,21 +40,8 @@ export function startBinanceSpotFeed() {
 
       // 🚀 [HTS Spot 전용 격리 적재] 오직 현물 가격 및 거래량 변수만 정밀 주입 (O(1) 해시 색인 탐색)
       const row = store.tickerRowMap.get(ticker.s) || store.tickerRowMap.get(pureSymbol);
-      if (row) {
-        if (row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE")) {
-          row.Binance_Price_Spot = parseFloat(ticker.c);
-          row.Binance_Vol_Spot = parseFloat(ticker.q);
-        }
-      }
-
-      // 화면에 노출 중일 경우 렌더링 큐 위임 (setTimeout 오버헤드 제거)
-      if (
-        store.visibleSymbols &&
-        (store.visibleSymbols.has(pureSymbol) || store.visibleSymbols.has(ticker.s))
-      ) {
-        if (typeof window.renderRealtimeRow === "function") {
-          window.renderRealtimeRow(ticker.s, ticker, false);
-        }
+      if (row && typeof window.renderRealtimeRow === "function") {
+        window.renderRealtimeRow(ticker.s, ticker, false);
       }
     });
   };

@@ -177,6 +177,13 @@ export function applyTradeToCandle(lastCandle, newPrice, tradeQty, currentUnix, 
       barStartTime = Math.floor(currentUnix / tfSeconds) * tfSeconds;
     }
     const normTime = getNormalizedTime({ time: barStartTime });
+    if (lastCandle && getUnixSeconds(lastCandle.time) === getUnixSeconds(normTime)) {
+      lastCandle.close = newPrice;
+      lastCandle.high = Math.max(lastCandle.high, newPrice);
+      lastCandle.low = Math.min(lastCandle.low, newPrice);
+      lastCandle.volume = (lastCandle.volume || 0) + (tradeQty || 0);
+      return { isNewCandle: false, activeCandle: lastCandle };
+    }
     const activeCandle = {
       time: normTime,
       open: newPrice,

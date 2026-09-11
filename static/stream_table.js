@@ -165,6 +165,7 @@ export function calculateRowKimchi(r, rate) {
     return;
   }
 
+
   let priceKor = 0;
   if (hasUpbit || hasBithumb) {
     const krwRow = store.uidToKrwRowMap ? store.uidToKrwRowMap.get(String(r.UID)) : null;
@@ -247,15 +248,17 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
   // 🚀 [초고속 진입로 쓰로틀 차단] 소켓 데이터가 너무 빈번하게 들이닥치는 경우
   // 객체 갱신 및 김프 연산 자체를 스킵하여 렉(메모리 힙 할당 및 GC)을 원천 차단
   const now = Date.now();
+  const source = data.isUpbitRealtime ? "upbit" : data.isBithumbRealtime ? "bithumb" : (isFutures ? "binance_futures" : "binance_spot");
+  const tickKey = `${source}:${data.s || tId}:${data.e || "ticker"}`;
   if (data && data.s) {
     if (!store._lastRowTickMap) store._lastRowTickMap = new Map();
-    const lastTick = store._lastRowTickMap.get(data.s) || 0;
+    const lastTick = store._lastRowTickMap.get(tickKey) || 0;
     if (now - lastTick < 500) { // 500ms 쓰로틀 (이전 100ms에서 복원: aggTrade 등 고빈도 소켓 폭주 방지)
       if (store.bypassCounters) store.bypassCounters.throttleBypass++;
       return;
     }
     if (store.bypassCounters) store.bypassCounters.throttlePass++;
-    store._lastRowTickMap.set(data.s, now);
+    store._lastRowTickMap.set(tickKey, now);
   }
   const dataSym = (data.s || tId).toUpperCase();
   const cleanDataSym = dataSym.replace("-", "").toUpperCase();
@@ -297,13 +300,6 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
 
   if (!row) return;
 
-  const lastRender = lastRenderRowMap.get(row.Ticker) || 0;
-
-  if (data && (data.e === "aggTrade" || data.isUpbitRealtime)) {
-    if (now - lastRender < 500) return;
-    lastRenderRowMap.set(row.Ticker, now);
-  }
-
   if (!row.Ticker.endsWith("KRW") && getMultiplier(dataSym) !== getMultiplier(row.Ticker)) return;
 
   const newPrice = parseFloat(data.c || data.p || data.trade_price || data.price);
@@ -320,11 +316,11 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
   const hasGlobal = row.Binance === "O" || row.Binance_Futures === "O" || row.Listed_Exchanges?.includes("BINANCE_SPOT") || row.Listed_Exchanges?.includes("BINANCE") || row.Listed_Exchanges?.includes("BINANCE_FUTURES");
 
   if (isKoreaSocket) {
-    row.Price_KRW = newPrice;
+    if (data.isUpbitRealtime || row.Upbit !== "O") row.Price_KRW = newPrice;
     if (!hasGlobal) {
       row.Price_Raw = newPrice / rate;
     }
-    if (data.isUpbitRealtime || tId.startsWith("KRW-") || tId.endsWith("KRW")) {
+    if (data.isUpbitRealtime) {
       row.Upbit_Price = newPrice;
     } else if (data.isBithumbRealtime || tId.endsWith("_KRW")) {
       row.Bithumb_Price = newPrice;
@@ -492,6 +488,12 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
       if (shouldUpdateChg && !(isKoreaSocket && hasGlobal)) {
         row.Change_Today_Raw = todayKrw;
       }
+    } else if (data.isUpbitRealtime && data.P !== undefined) {
+      const todayKrw = parseFloat(data.P);
+      row.Change_Today_Upbit = todayKrw;
+      if (shouldUpdateChg && !(isKoreaSocket && hasGlobal)) {
+        row.Change_Today_Raw = todayKrw;
+      }
     }
   } else {
     let openPrice = 0;
@@ -516,6 +518,7 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
           row.Change_Today_Bybit_Futures = todayUsd;
         }
       } else if (row.Listed_Exchanges?.includes("BINANCE") || row.Exact_Spot) {
+        row.Change_Today_Spot = todayUsd;
         row.Change_Today_Binance = todayUsd;
       } else {
         row.Change_Today_Bybit = todayUsd;
@@ -540,7 +543,7 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
         const partners = store.pureBaseToRowsMap ? store.pureBaseToRowsMap.get(pureBase) : null;
         if (partners) {
           partners.forEach((r) => {
-            if (r !== row && r.Ticker.endsWith("KRW")) {
+            if (r !== row && String(r.UID) === String(row.UID) && r.Ticker.endsWith("KRW")) {
               r.Price_KRW = newPrice;
               if (data.isUpbitRealtime || tId.startsWith("KRW-") || tId.endsWith("KRW")) {
                 r.Upbit_Price = newPrice;
@@ -688,8 +691,7 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
 
   const rowEl =
     store.rowDomMap?.get(row.Ticker) ||
-    (row.UID ? store.rowDomMap?.get(String(row.UID)) : null) ||
-    (row.DisplayTicker ? store.rowDomMap?.get(row.DisplayTicker) : null);
+    (row.UID ? store.rowDomMap?.get(String(row.UID)) : null);
   if (rowEl && typeof window.updateRowDynamicHTML === "function") {
     window.updateRowDynamicHTML(rowEl, row, !isSelected);
   }

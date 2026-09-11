@@ -355,7 +355,8 @@ export function selectSymbol(
           const pureSym = getPureBase(
             rowInfo.Symbol || rowInfo.DisplayTicker || rowInfo.Ticker,
           );
-          const nameStr = (store.lang === "KR" ? rowInfo.Name_KR || rowInfo.Name : rowInfo.Name) || "";
+          const rawName = (store.lang === "KR" ? rowInfo.Name_KR || rowInfo.Name : rowInfo.Name) || "";
+          const nameStr = rawName.replace(/\s*[\(\（\[][^\)\）\]]*[\)\）\]]/g, "").trim();
           const fullText = nameStr ? `${pureSym} (${nameStr})` : pureSym;
           const len = fullText.length;
           // 수학적 로그 방식 적용: 10글자 초과 시 길이에 반비례하여 부드럽게 폰트 크기 축소 (기본 1.125rem, 최소 0.65rem)

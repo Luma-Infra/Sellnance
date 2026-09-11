@@ -59,21 +59,12 @@ export function startUpbitFeed() {
       const localRow = store.tickerRowMap?.get(krwTicker) || store.tickerRowMap?.get(pureSym);
       const matchedUid = (localRow && localRow.Upbit === "O") ? localRow.UID : "";
 
-      if (localRow && localRow.Upbit === "O") {
+      if (localRow && (localRow.Upbit === "O" || localRow.Ticker?.endsWith("KRW"))) {
         localRow.Upbit_Price = newPriceKrw;
         localRow.Price_KRW = newPriceKrw;
-
-        const hasGlobal = localRow.Binance === "O" || localRow.Binance_Futures === "O" ||
-          localRow.Listed_Exchanges?.includes("BINANCE") || localRow.Listed_Exchanges?.includes("BINANCE_FUTURES");
-        if (!hasGlobal) {
-          const rate = store.marketDataMap?.krw_usd_rate || 0;
-          if (rate > 0) {
-            localRow.Price_Raw = newPriceKrw / rate;
-            if (localRow.utc0_open_Raw) {
-              const openPrice = parseFloat(localRow.utc0_open_Raw);
-              localRow.Change_Today_Raw = ((localRow.Price_Raw - openPrice) / openPrice) * 100;
-            }
-          }
+        if (ticker.signed_change_rate !== undefined) {
+          localRow.Change_Today_Upbit = ticker.signed_change_rate * 100;
+          localRow.Change_24h_Upbit = ticker.signed_change_rate * 100;
         }
       }
 
@@ -94,7 +85,7 @@ export function startUpbitFeed() {
         store.visibleSymbols?.has(krwTicker) ||
         store.visibleSymbols?.has(ticker.code);
 
-      if (hasSymbol && typeof window.renderRealtimeRow === "function") {
+      if (matchedUid && typeof window.renderRealtimeRow === "function") {
         const isFutures = store.currentMarket === "FUTURES";
         window.renderRealtimeRow(ticker.code, normalizedTicker, isFutures);
       }

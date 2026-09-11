@@ -541,6 +541,7 @@ def fetch_binance_futures_spot(bybit_data=None):
         ]
 
         def fetch_url_safe(base_url):
+            cf_proxy = os.getenv("CF_WORKER_PROXY_URL", "").strip()
             urls_to_try = [base_url]
             if "api.binance.com" in base_url:
                 urls_to_try = [
@@ -555,12 +556,29 @@ def fetch_binance_futures_spot(bybit_data=None):
                     r = api_session.get(url, timeout=5)
                     if r.status_code == 200:
                         return r.json()
-                    elif r.status_code == 429:
+                    elif r.status_code in [429, 451, 403]:
                         print(
-                            f"⚠️ [API 429 제한] {url} 접속 지연. 백업 클러스터로 우회합니다..."
+                            f"⚠️ [API {r.status_code} 제한] {url} 접속 제한. 백업 우회를 시도합니다..."
                         )
+                        if cf_proxy:
+                            proxy_url = (
+                                f"{cf_proxy.rstrip('/')}/?url={urllib.parse.quote(url)}"
+                            )
+                            r_proxy = api_session.get(proxy_url, timeout=7)
+                            if r_proxy.status_code == 200:
+                                return r_proxy.json()
                         continue
                 except Exception as e:
+                    if cf_proxy:
+                        try:
+                            proxy_url = (
+                                f"{cf_proxy.rstrip('/')}/?url={urllib.parse.quote(url)}"
+                            )
+                            r_proxy = api_session.get(proxy_url, timeout=7)
+                            if r_proxy.status_code == 200:
+                                return r_proxy.json()
+                        except Exception:
+                            pass
                     print(f"⚠️ [API 개별 실패] {url}: {e}")
             return None
 
@@ -604,6 +622,36 @@ def fetch_binance_futures_spot(bybit_data=None):
                         }
                     )
             info_f["symbols"] = info_f_symbols
+
+        # [추가] 바이낸스 현물 API 밴 감지 및 바이비트 현물 Fallback 이식
+        if not prices_s or len(prices_s) < 10:
+            print(
+                "[IP Banned 감지] 바이낸스 현물 API 접속 불가. Bybit 현물 데이터를 보조로 결합합니다."
+            )
+            prices_s = prices_s or []
+            info_s_symbols = list(info_s.get("symbols", []))
+            existing_syms = {s.get("symbol") for s in prices_s}
+            for base, b_inf in bybit_data.items():
+                if b_inf.get("spot_price", 0) > 0:
+                    sym = f"{base}USDT"
+                    if sym not in existing_syms:
+                        info_s_symbols.append(
+                            {
+                                "symbol": sym,
+                                "status": "TRADING",
+                                "quoteAsset": "USDT",
+                                "baseAsset": base,
+                            }
+                        )
+                        prices_s.append(
+                            {
+                                "symbol": sym,
+                                "lastPrice": b_inf.get("spot_price", 0),
+                                "priceChangePercent": b_inf.get("change_24h", 0.0),
+                                "quoteVolume": b_inf.get("volume_24h", 0.0),
+                            }
+                        )
+            info_s["symbols"] = info_s_symbols
 
         # 2. 마켓 필터링 및 경고/상폐/모니터링 태그 수집
         global EXCHANGE_WARNINGS

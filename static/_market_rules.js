@@ -8,15 +8,13 @@ import { store } from "./_store.js";
 import { getMultiplier } from "./chart_utils.js";
 
 /**
- * 1. 선물 코인 여부 판별 (선물 상장되어 있는가?)
+ * 1. 선물 코인 여부 판별 (선물 상장되어 있는가? - 바이낸스 선물 기준)
  */
 export function isFuturesCoin(row) {
   if (!row) return false;
   return (
     row.Binance_Futures === "O" ||
     row.Listed_Exchanges?.includes("BINANCE_FUTURES") ||
-    row.Listed_Exchanges?.includes("BYBIT_FUTURES") ||
-    row.Bybit_Futures === "O" ||
     !!row.Exact_Futures
   );
 }
@@ -83,6 +81,9 @@ export function getRowKimchiGlobalPrice(row) {
   } else if (row.Bybit_Price_Spot && row.Bybit_Price_Spot > 0) {
     rawGlb = row.Bybit_Price_Spot;
     ovsMult = getMultiplier(row.Exact_Spot || row.Ticker || row.Symbol);
+  } else if (!isFuturesCoin(row) && row.Binance_Price && row.Binance_Price > 0) {
+    rawGlb = row.Binance_Price;
+    ovsMult = getMultiplier(row.Exact_Spot || row.Ticker || row.Symbol);
   }
 
   return { rawGlb, ovsMult };
@@ -119,9 +120,13 @@ export function getRowDisplayMetrics(row, isKrwMode = null, rate = null) {
     row.Binance_Price_Futures ||
     (isFutures ? row.Price_Raw : null);
   const upbitP = row.Upbit_Price ?? (row.Upbit === "O" ? row.Price_KRW : null);
+  const bithumbP = row.Bithumb_Price ?? (row.Bithumb === "O" ? row.Price_KRW : null);
   const binanceSpotP =
     row.Binance_Price_Spot ||
     (!isFutures && (row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE_SPOT") || row.Listed_Exchanges?.includes("BINANCE")) ? row.Price_Raw : null);
+  const bybitFuturesP =
+    row.Bybit_Price_Futures ||
+    (isFutures && (row.Bybit_Futures === "O" || row.Listed_Exchanges?.includes("BYBIT_FUTURES")) ? row.Price_Raw : null);
   const bybitSpotP =
     row.Bybit_Price_Spot ||
     (!isFutures && (row.Bybit === "O" || row.Listed_Exchanges?.includes("BYBIT_SPOT") || row.Listed_Exchanges?.includes("BYBIT")) ? row.Price_Raw : null);
@@ -133,12 +138,18 @@ export function getRowDisplayMetrics(row, isKrwMode = null, rate = null) {
     if (upbitP !== null && upbitP > 0) {
       activeExchange = "upbit";
       displayPrice = upbitP;
+    } else if (bithumbP !== null && bithumbP > 0) {
+      activeExchange = "bithumb";
+      displayPrice = bithumbP;
     } else if (binanceFuturesP !== null && binanceFuturesP > 0) {
       activeExchange = "binance";
       displayPrice = binanceFuturesP * rate;
     } else if (binanceSpotP !== null && binanceSpotP > 0) {
       activeExchange = "binance";
       displayPrice = binanceSpotP * rate;
+    } else if (bybitFuturesP !== null && bybitFuturesP > 0) {
+      activeExchange = "bybit";
+      displayPrice = bybitFuturesP * rate;
     } else if (bybitSpotP !== null && bybitSpotP > 0) {
       activeExchange = "bybit";
       displayPrice = bybitSpotP * rate;
@@ -147,16 +158,22 @@ export function getRowDisplayMetrics(row, isKrwMode = null, rate = null) {
       displayPrice = row.Price_KRW || (row.Price_Raw || 0) * rate;
     }
   } else {
-    // 🚀 [USD 모드: 1.바낸 선물 ➔ 2.업비트 현물 ➔ 3.바낸 현물 ➔ 4.바이빗 현물]
+    // [USD 모드: 1.바낸 선물 ➔ 2.업비트 현물(환산가) ➔ 3.빗썸 현물(환산가) ➔ 4.바낸 현물 ➔ 5.바이빗(선물/현물)]
     if (binanceFuturesP !== null && binanceFuturesP > 0) {
       activeExchange = "binance";
       displayPrice = binanceFuturesP;
     } else if (upbitP !== null && upbitP > 0) {
       activeExchange = "upbit";
       displayPrice = rate > 0 ? upbitP / rate : upbitP;
+    } else if (bithumbP !== null && bithumbP > 0) {
+      activeExchange = "bithumb";
+      displayPrice = rate > 0 ? bithumbP / rate : bithumbP;
     } else if (binanceSpotP !== null && binanceSpotP > 0) {
       activeExchange = "binance";
       displayPrice = binanceSpotP;
+    } else if (bybitFuturesP !== null && bybitFuturesP > 0) {
+      activeExchange = "bybit";
+      displayPrice = bybitFuturesP;
     } else if (bybitSpotP !== null && bybitSpotP > 0) {
       activeExchange = "bybit";
       displayPrice = bybitSpotP;
@@ -171,22 +188,22 @@ export function getRowDisplayMetrics(row, isKrwMode = null, rate = null) {
   let nDay = 0;
 
   if (activeExchange === "upbit") {
-    n24h = row.Change_24h_Upbit || row.Change_24h_Raw || 0;
-    nDay = row.Change_Today_Upbit || row.Change_Today_Raw || 0;
+    n24h = row.Change_24h_Upbit ?? row.Change_24h_Raw ?? 0;
+    nDay = row.Change_Today_Upbit ?? row.Change_Today_Raw ?? 0;
   } else if (activeExchange === "binance") {
     if (binanceFuturesP !== null && binanceFuturesP > 0) {
-      n24h = row.Change_24h_Futures || row.Change_24h_Raw || 0;
-      nDay = row.Change_Today_Futures || row.Change_Today_Raw || 0;
+      n24h = row.Change_24h_Futures ?? row.Change_24h_Raw ?? 0;
+      nDay = row.Change_Today_Futures ?? row.Change_Today_Raw ?? 0;
     } else {
-      n24h = (row.Change_24h_Spot ?? row.Change_24h_Binance) || row.Change_24h_Raw || 0;
-      nDay = (row.Change_Today_Spot ?? row.Change_Today_Binance) || row.Change_Today_Raw || 0;
+      n24h = (row.Change_24h_Spot ?? row.Change_24h_Binance) ?? row.Change_24h_Raw ?? 0;
+      nDay = (row.Change_Today_Spot ?? row.Change_Today_Binance) ?? row.Change_Today_Raw ?? 0;
     }
   } else if (activeExchange === "bybit") {
-    n24h = row.Change_24h_Bybit || row.Change_24h_Raw || 0;
-    nDay = row.Change_Today_Bybit || row.Change_Today_Raw || 0;
+    n24h = row.Change_24h_Bybit ?? row.Change_24h_Raw ?? 0;
+    nDay = row.Change_Today_Bybit ?? row.Change_Today_Raw ?? 0;
   } else {
-    n24h = row.Change_24h_Raw || 0;
-    nDay = row.Change_Today_Raw || 0;
+    n24h = row.Change_24h_Raw ?? 0;
+    nDay = row.Change_Today_Raw ?? 0;
   }
 
   return {
@@ -358,13 +375,14 @@ export function getRowDisplayVolume(
 }
 
 /**
- * 6. 티커명 뒤에 .P 표기 HTML 생성
+ * 6. 티커명 뒤에 .P 표기 HTML 생성 (말줄임 시에도 .P 항상 노출 보장)
  */
 export function getDisplayTickerHtml(row) {
   if (!row) return "";
-  const ticker = row.DisplayTicker || row.Symbol || row.Ticker || "";
-  const isFutures = isFuturesCoin(row);
-  return `${ticker}${isFutures ? `<span class="text-theme-accent font-bold">.P</span>` : ""}`;
+  let ticker = row.DisplayTicker || row.Symbol || row.Ticker || "";
+  ticker = ticker.replace(/\s*[\(\（\[][^\)\）\]]*[\)\）\]]/g, "").trim();
+  const isBinanceFutures = isFuturesCoin(row);
+  return `<span class="inline-flex items-center min-w-0 max-w-full"><span class="truncate">${ticker}</span>${isBinanceFutures ? `<span class="shrink-0 ml-0.5 text-theme-accent font-bold">.P</span>` : ""}</span>`;
 }
 
 /**

@@ -91,9 +91,10 @@ describe("Frontend Core Modules Direct Tests", () => {
 
   // 5. 마켓 룰 및 거래소 메타 실제 모듈(_market_rules.js) 검증
   it("5. Real Market Rules & Exchange Meta (_market_rules.js)", () => {
-    // 선물 전용 코인 검증
+    // 선물 코인 검증 (바이낸스 선물 기준)
     expect(isFuturesCoin({ Binance_Futures: "O" })).toBe(true);
-    expect(isFuturesCoin({ Bybit_Futures: "O" })).toBe(true);
+    expect(isFuturesCoin({ Listed_Exchanges: ["BINANCE_FUTURES"] })).toBe(true);
+    expect(isFuturesCoin({ Bybit_Futures: "O" })).toBe(false); // 바이빗 선물 단독은 .P 미부여
     expect(isFuturesCoin({ Binance_Futures: "X", Bybit_Futures: "X", Upbit: "O" })).toBe(false);
 
     // 거래소 지원 타임프레임(Native TF) 판별
@@ -130,5 +131,40 @@ describe("Frontend Core Modules Direct Tests", () => {
     expect(isStockCoin({ Is_Stock: true })).toBe(true);
     expect(isStockCoin({ Name: "Rootstock Smart Bitcoin" })).toBe(false); // Rootstock 예외 필터링
     expect(isStockCoin({ Name: "Bitcoin", Symbol: "BTC" })).toBe(false);
+  });
+
+  // 8. 스팟 전용 코인(TFUEL 등) USD/KRW 대표가 및 김프 단가 검증
+  it("8. Spot Coin (TFUEL) USD/KRW Metrics & Kimchi Calculation", async () => {
+    const { getRowDisplayMetrics, getRowKimchiGlobalPrice } = await import("../static/_market_rules.js");
+    const tfuelRow = {
+      UID: "3822",
+      Symbol: "TFUEL",
+      Ticker: "TFUELUSDT",
+      Upbit: "O",
+      Upbit_Price: 17.0,
+      Price_KRW: 17.0,
+      Binance: "O",
+      Binance_Futures: "X",
+      Binance_Price_Spot: 0.01256,
+      Price_Raw: 0.01256,
+      Change_Today_Spot: 38.63,
+      Change_Today_Upbit: 37.09,
+    };
+
+    // USD 모드에서 선물 없는 코인은 업비트(환산가) 우선 선택 검증
+    const usdMetrics = getRowDisplayMetrics(tfuelRow, false, 1340.78);
+    expect(usdMetrics.activeExchange).toBe("upbit");
+    expect(usdMetrics.displayPrice).toBeCloseTo(17.0 / 1340.78, 5);
+    expect(usdMetrics.nDay).toBe(37.09);
+
+    // KRW 모드에서 업비트 원화가 우선 선택 검증
+    const krwMetrics = getRowDisplayMetrics(tfuelRow, true, 1340.78);
+    expect(krwMetrics.activeExchange).toBe("upbit");
+    expect(krwMetrics.displayPrice).toBe(17.0);
+    expect(krwMetrics.nDay).toBe(37.09);
+
+    // 김프 해외 단가 연산 검증 (바이낸스 현물가 정상 추출)
+    const { rawGlb } = getRowKimchiGlobalPrice(tfuelRow);
+    expect(rawGlb).toBe(0.01256);
   });
 });

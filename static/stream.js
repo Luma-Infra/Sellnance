@@ -193,8 +193,6 @@ export function syncRowPrioritizedMetrics(row) {
   if (p24h !== null && p24h !== undefined) row.Change_24h_Raw = p24h;
   if (pToday !== null && pToday !== undefined) row.Change_Today_Raw = pToday;
   if (pOpen !== null && pOpen !== undefined && parseFloat(pOpen) > 0) {
-    row.spot_utc0_open_Raw = parseFloat(pOpen);
-    row.futures_utc0_open_Raw = parseFloat(pOpen);
     row.utc0_open_Raw = parseFloat(pOpen);
   }
   row.Inflow_Path = pInflow;

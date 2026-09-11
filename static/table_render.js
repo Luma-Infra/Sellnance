@@ -351,7 +351,7 @@ export function renderTable(isRealtime = false) {
   for (const child of tbody.children) {
     const sym = child.dataset.sym;
     const isDelistedDom = child.dataset.delisted === "true";
-    
+
     // FAV 탭이 아닐 때는 상폐 Ghost DOM 무조건 은닉
     if (isDelistedDom && !isFavTab) {
       if (child.style.display !== "none") {

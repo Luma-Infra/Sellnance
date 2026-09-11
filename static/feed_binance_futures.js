@@ -30,6 +30,7 @@ export function startBinanceFuturesFeed() {
     if (!Array.isArray(data)) return;
 
     data.forEach((ticker) => {
+      if (!ticker.s.endsWith("USDT")) return;
       const pureSymbol = ticker.s.replace("USDT", "");
       const baseSym = getPureBase(pureSymbol);
       const bufferKey = ticker.s + "_FUTURES"; // Futures key: SymbolUSDT_FUTURES
@@ -43,25 +44,8 @@ export function startBinanceFuturesFeed() {
         store.tickerRowMap.get(pureSymbol) ||
         (baseSym ? store.tickerRowMap.get(baseSym) : null);
 
-      if (row) {
-        if (row.Binance_Futures === "O" || row.Listed_Exchanges?.includes("BINANCE_FUTURES")) {
-          row.Binance_Price_Futures = parseFloat(ticker.c);
-          row.Binance_Vol_Futures = parseFloat(ticker.q);
-          if (ticker.P !== undefined) row.Change_24h_Futures = parseFloat(ticker.P);
-          if (!row.Exact_Futures) {
-            row.Exact_Futures = pureSymbol;
-          }
-        }
-      }
-
-      // 화면 노출 대상 행 렌더링 위임
-      if (
-        store.visibleSymbols &&
-        (store.visibleSymbols.has(pureSymbol) || store.visibleSymbols.has(ticker.s) || (baseSym && store.visibleSymbols.has(baseSym)))
-      ) {
-        if (typeof window.renderRealtimeRow === "function") {
-          window.renderRealtimeRow(ticker.s, ticker, true);
-        }
+      if (row && typeof window.renderRealtimeRow === "function") {
+        window.renderRealtimeRow(ticker.s, ticker, true);
       }
     });
   };

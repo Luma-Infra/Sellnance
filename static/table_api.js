@@ -10,7 +10,7 @@ export { ENABLE_SELLNANCE_TEST_ROW };
 export function processTableData(result) {
   if (!result || !result.data) return;
 
-  // 🚀 [초고속 0ms 복제] JSON 문자열 직렬화 2연타 제거 및 얕은 매핑으로 CPU 블로킹 0 달성
+  // 🚀 [초고속 0ms 복제] JSON 문자열 직렬화 2연타 제거 및 얕은 매핑으로 CPU 블로킹 방지
   let rawList = result.data.map((r) => ({ ...r }));
   if (ENABLE_SELLNANCE_TEST_ROW) {
     rawList = injectSellnanceTestRow(rawList);
@@ -36,6 +36,7 @@ export function processTableData(result) {
     store.nextUpdateRaw = result.next_update_raw;
   }
 
+  store.uidRowMap = new Map(store.currentTableData.map(r => [String(r.UID), r]));
   store.tickerRowMap.clear();
   store.uidToKrwRowMap = new Map();
   store.pureBaseToRowsMap = new Map();
@@ -376,15 +377,13 @@ export async function loadTableDataSilent() {
     if (result && result.data) {
       store.originalTableData = JSON.parse(JSON.stringify(result.data));
 
-      const freshUidMap = new Map(result.data.map((item) => [item.UID, item]));
+      const freshUidMap = new Map(result.data.map((item) => [String(item.UID), item]));
       let needReRender = false;
 
       // 1. 기존 장부 순회하며 값 업데이트 및 Ticker 교체 처리
       store.currentTableData.forEach((row) => {
-        let fresh = freshUidMap.get(row.UID);
-        if (!fresh && row.Symbol) {
-          fresh = result.data.find((item) => item.Symbol === row.Symbol);
-        }
+        let fresh = freshUidMap.get(String(row.UID));
+
 
         if (fresh) {
           if (row.Ticker !== fresh.Ticker) {
@@ -508,6 +507,9 @@ export async function loadTableDataSilent() {
           needReRender = true;
         }
       });
+
+      store.uidRowMap = new Map(store.currentTableData.map(r => [String(r.UID), r]));
+      store.originalTableData = store.currentTableData.map(r => ({ ...r }));
 
       // Rebuild store.uidToKrwRowMap and store.pureBaseToRowsMap
       store.uidToKrwRowMap = new Map();

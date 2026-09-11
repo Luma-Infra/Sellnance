@@ -123,15 +123,16 @@ export function updateRowStaticHTML(rowEl, row) {
       
       <!-- 3. 티커 & 이름 (상폐 시 회색조 처리) -->
       <div class="flex flex-col leading-[1.1] min-w-0 flex-1 ${delistMutedClass}">
-        <b class="text-[12px] text-theme-text truncate font-medium tracking-tighter">
+        <b class="text-[12px] text-theme-text font-medium tracking-tighter flex items-center min-w-0 max-w-full">
           ${getDisplayTickerHtml(row)}
         </b>
         <span class="text-[9px] text-theme-text opacity-60 truncate font-medium tracking-tighter">
           ${(() => {
-      const n =
+      let n =
         store.lang === "KR"
           ? row.Name_KR || row.Name || ""
           : row.Name || "";
+      n = n.replace(/\s*[\(\（\[][^\)\）\]]*[\)\）\]]/g, "").trim();
       return n.length > 8 ? n.substring(0, 8) + ".." : n;
     })()}
         </span>

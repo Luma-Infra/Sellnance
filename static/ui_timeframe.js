@@ -47,26 +47,26 @@ export function renderTimeframeButtons(currentTF = "1d") {
 
   const visibleVals = getVisibleTfs();
 
-    timeframes
-      .slice()
-      .reverse()
-      .forEach((tf) => {
-        if (!visibleVals.includes(tf.value)) return;
-        const btn = document.createElement("button");
-        const activeClass =
-          tf.value === currentTF
-            ? "active !opacity-100 border-theme-accent font-bold"
-            : "border-transparent";
-        btn.className = `tf-btn outline-none focus:outline-none focus:ring-0 focus-visible:outline-none px-2.5 py-1 text-[11px] font-medium bg-transparent text-theme-text opacity-50 border rounded hover:bg-theme-border/50 hover:opacity-100 transition-all select-none cursor-pointer ${activeClass}`;
-        btn.dataset.tf = tf.value;
-        btn.innerText = tf.label;
-        btn.onclick = () => {
-          btn.blur();
-          setTF(tf.value);
-        };
+  timeframes
+    .slice()
+    .reverse()
+    .forEach((tf) => {
+      if (!visibleVals.includes(tf.value)) return;
+      const btn = document.createElement("button");
+      const activeClass =
+        tf.value === currentTF
+          ? "active !opacity-100 border-theme-accent font-bold"
+          : "border-transparent";
+      btn.className = `tf-btn outline-none focus:outline-none focus:ring-0 focus-visible:outline-none px-2.5 py-1 text-[11px] font-medium bg-transparent text-theme-text opacity-50 border rounded hover:bg-theme-border/50 hover:opacity-100 transition-all select-none cursor-pointer ${activeClass}`;
+      btn.dataset.tf = tf.value;
+      btn.innerText = tf.label;
+      btn.onclick = () => {
+        btn.blur();
+        setTF(tf.value);
+      };
 
-        container.prepend(btn);
-      });
+      container.prepend(btn);
+    });
 
   if (typeof window.updateElementScrollMask === "function") {
     requestAnimationFrame(() => window.updateElementScrollMask(container));
@@ -236,6 +236,8 @@ export function executeSetTF(tf) {
   try {
     localStorage.setItem("sellnance_last_tf", tf);
   } catch (e) { }
+
+  if (typeof window.flushRealtimeBuffers === "function") window.flushRealtimeBuffers();
 
   // 🚀 [0ms 즉시 피드백] DOM 전체를 파괴하고 다시 만들지 않고, 활성 클래스만 0ms 즉각 전환
   let activeBtn = null;
