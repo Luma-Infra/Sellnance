@@ -359,12 +359,6 @@ def update_listing_date(request: Request, data: dict = Body(...)):
                 status_code=403,
                 detail="Unauthorized listing date update: Invalid X-ADMIN-SECRET",
             )
-    else:
-        if IS_PRODUCTION or not is_local:
-            raise HTTPException(
-                status_code=403,
-                detail="Listing date modification is forbidden for non-local requests without ADMIN_SECRET",
-            )
 
     symbol = str(data.get("symbol") or "").upper().strip()
     exchange_key = str(data.get("exchange_key") or "").strip()
