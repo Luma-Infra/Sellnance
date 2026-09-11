@@ -5,6 +5,7 @@ import { store } from "./_store.js";
 import { renderTable } from "./table_render.js";
 import { saveControlPanelSession } from "./table_filter.js";
 import { showToast } from "./ui_dialog.js";
+import { getExchangeLogo } from "./table_tooltips.js";
 
 // 🚀 거래소 필터링 개별 사이클 조절 함수
 export function toggleExchFilter(exchId, event) {
@@ -112,7 +113,7 @@ export function updateExchFilterUI() {
           typeBadge = `<div class="absolute -bottom-1 -right-1 bg-blue-600 text-white text-[8px] px-0.5 rounded leading-none font-black shadow-sm">ST</div>`;
         }
 
-        const imgUrl = `https://s2.coinmarketcap.com/static/img/exchanges/64x64/${ex.cmcId}.png`;
+        const imgUrl = getExchangeLogo(ex.cmcId);
         const imgStyle = ex.id === "BINANCE_STOCK" ? "filter: hue-rotate(180deg);" : "";
 
         return `
@@ -183,7 +184,7 @@ export function updateExchFilterUI() {
           typeBadge = `<div class="absolute -bottom-1 -right-1 bg-blue-600 text-white text-[8px] px-0.5 rounded leading-none font-black shadow-sm">ST</div>`;
         }
 
-        const imgUrl = `https://s2.coinmarketcap.com/static/img/exchanges/64x64/${ex.cmcId}.png`;
+        const imgUrl = getExchangeLogo(ex.cmcId);
         const imgStyle = ex.id === "BINANCE_STOCK" ? "filter: hue-rotate(180deg);" : "";
 
         return `

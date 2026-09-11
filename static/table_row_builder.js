@@ -13,6 +13,7 @@ import {
   getRowDisplayVolume,
 } from "./_market_rules.js";
 import { getWarningBadgeHtml, getListingDate, formatListingDateWithExchange } from "./table_badges.js";
+import { getExchangeLogo } from "./table_tooltips.js";
 
 export function createRowElement(row) {
   const rowEl = document.createElement("div");
@@ -704,7 +705,7 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
                   </div>
                 `;
               }
-              const imgUrl = `https://s2.coinmarketcap.com/static/img/exchanges/64x64/${ex.cmcId}.png`;
+              const imgUrl = getExchangeLogo(ex.cmcId);
               return `
                 <div class="relative w-[14px] h-[14px] flex items-center justify-center rounded-[2px] overflow-hidden bg-white/5 transition-all flex-shrink-0"
                      style="${isListed ? "filter: none; opacity: 1;" : "filter: grayscale(1); opacity: 0.1;"}">

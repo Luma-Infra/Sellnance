@@ -4,11 +4,30 @@
 // 2. 상장 거래소 그리드 마우스 호버 시 3배 확대 프리뷰 전역 팝오버
 
 export const EXCH_LOGO_MAP = {
-  UPBIT: "https://s2.coinmarketcap.com/static/img/exchanges/64x64/351.png",
-  BITHUMB: "https://s2.coinmarketcap.com/static/img/exchanges/64x64/200.png",
-  BINANCE: "https://s2.coinmarketcap.com/static/img/exchanges/64x64/270.png",
-  BYBIT: "https://s2.coinmarketcap.com/static/img/exchanges/64x64/521.png",
+  UPBIT: "/static/exchanges/upbit.png",
+  BITHUMB: "/static/exchanges/bithumb.png",
+  BINANCE: "/static/exchanges/binance.png",
+  BYBIT: "/static/exchanges/bybit.png",
+  OKX: "/static/exchanges/okx.png",
+  BITGET: "/static/exchanges/bitget.png",
+  GATEIO: "/static/exchanges/gateio.png",
+  COINBASE: "/static/exchanges/coinbase.png",
 };
+
+export const EXCH_CMC_ICON_MAP = {
+  270: "/static/exchanges/binance.png",
+  351: "/static/exchanges/upbit.png",
+  200: "/static/exchanges/bithumb.png",
+  521: "/static/exchanges/bybit.png",
+  294: "/static/exchanges/okx.png",
+  513: "/static/exchanges/bitget.png",
+  302: "/static/exchanges/gateio.png",
+  89: "/static/exchanges/coinbase.png",
+};
+
+export function getExchangeLogo(cmcId) {
+  return EXCH_CMC_ICON_MAP[cmcId] || `https://s2.coinmarketcap.com/static/img/exchanges/64x64/${cmcId}.png`;
+}
 
 let globalCautionTooltip = null;
 
