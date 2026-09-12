@@ -6,6 +6,7 @@ import {
   sanitizeChartData,
   rebuildMainDataMap,
   rebuildVolumeDataMap,
+  autoFit,
 } from "./chart_utils.js";
 import { findRowInfo, determineListingDate } from "./chart_history_helper.js";
 import { updateExchangeBadges } from "./ui_control.js";
@@ -171,6 +172,31 @@ export async function fetchHistory(
       }
     }
   }
+
+  const listedEx = rowInfo ? rowInfo.Listed_Exchanges || [] : [];
+  const isGlobalBase = !isUpbit && !isBithumb;
+  let hasSubTarget = false;
+  if (isGlobalBase) {
+    hasSubTarget =
+      listedEx.includes("UPBIT") ||
+      listedEx.includes("BITHUMB") ||
+      rowInfo?.Upbit === "O" ||
+      rowInfo?.UPBIT ||
+      rowInfo?.BITHUMB;
+  } else {
+    hasSubTarget =
+      listedEx.includes("BINANCE") ||
+      listedEx.includes("BINANCE_FUTURES") ||
+      listedEx.includes("BINANCE_SPOT") ||
+      listedEx.includes("BYBIT") ||
+      listedEx.includes("BYBIT_FUTURES") ||
+      listedEx.includes("BYBIT_SPOT") ||
+      rowInfo?.Binance === "O" ||
+      rowInfo?.Binance_Futures === "O";
+  }
+
+  // [레이아웃 선제 결정] 첫 렌더링 전 김프 가능 여부 확정
+  store.paneConfig.kimchi = !store.isKimchiDisabled && hasSubTarget;
 
   const binanceTicker = isFutures ? `${exactFutures}USDT` : `${exactSpot}USDT`;
   const krwTicker = isBithumb ? `${exactBithumb}_KRW` : `KRW-${exactUpbit}`;
@@ -788,20 +814,27 @@ export async function fetchHistory(
         snapshotTF,
         applyChartLayout
       }).then(() => {
-        // 🚀 [len 유동 보장] store.kimchiData가 실제로 채워진 경우, 내부 rAF(kimchiSeries.setData)가
-        // 먼저 완료되도록 한 프레임 더 대기. 없으면 즉시 fit.
+        // store.kimchiData가 실제로 채워진 경우, 내부 rAF(kimchiSeries.setData)가 먼저 완료되도록 한 프레임 더 대기, 없으면 즉시 fit
         const doFit = () => {
           if (typeof window.updateStatus === "function") window.updateStatus();
           if (typeof updateExchangeBadges === "function") updateExchangeBadges(displayName, rowInfo?.UID);
           if (typeof window.syncPriceScaleWidths === "function") window.syncPriceScaleWidths(true);
 
+          if (!isSubSwitch) {
+            if (typeof autoFit === "function") {
+              autoFit(isTabRestore);
+            } else if (typeof window.autoFit === "function") {
+              window.autoFit(isTabRestore);
+            }
+          }
+
           if (store.chart && store.chartVol) {
             const curRange = store.chart.timeScale().getVisibleLogicalRange();
             if (curRange) {
-              try { store.chartVol.timeScale().setVisibleLogicalRange(curRange); } catch (e) {}
+              try { store.chartVol.timeScale().setVisibleLogicalRange(curRange); } catch (e) { }
             }
             if (!store.isVolPriceScaleUserZoomed) {
-              try { store.chartVol.priceScale("right").applyOptions({ autoScale: true }); } catch (e) {}
+              try { store.chartVol.priceScale("right").applyOptions({ autoScale: true }); } catch (e) { }
             }
           }
 
@@ -809,11 +842,9 @@ export async function fetchHistory(
           store.isFetchingChart = false;
           store.isSilentSyncing = false;
         };
-        if (store.kimchiData && store.kimchiData.length > 0) {
-          requestAnimationFrame(doFit);
-        } else {
-          doFit();
-        }
+
+        // [원자적 동기화] DOM 리사이즈 및 레이아웃 변경이 완전히 안착된 후 1프레임 지연하여 최종 뷰포트 고정
+        requestAnimationFrame(doFit);
       });
     });
 

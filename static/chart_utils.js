@@ -634,7 +634,7 @@ function updateStatus(d, p) {
   }
 }
 
-function autoFit(isTabRestore = false) {
+export function autoFit(isTabRestore = false) {
   // 🚀 [비동기/동기 로딩] 사용자가 맞춰둔 커스텀 여백(savedRightMargin)을 우선 준수, 없으면 10
   const margin = store.savedRightMargin ?? 10;
   const defaultZoom =
