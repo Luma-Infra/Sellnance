@@ -373,7 +373,8 @@ export const CONFIG = {
 
   //⚙️ [차트 전용 실시간 성능/쓰로틀 제어 콘솔 - 수동 조절 가능]
   CHART_PERF: {
-    REALTIME_THROTTLE_MS: 100, // 캔들/볼륨 실시간 차트 렌더링 쓰로틀
+    REALTIME_THROTTLE_MS: 33, // 캔들/볼륨 실시간 차트 렌더링 쓰로틀
+    KIMCHI_THROTTLE_MS: 100, // 실시간 김프 보조지표 선 렌더링 쓰로틀
     STATUS_DOM_THROTTLE_MS: 100, // OHLC 레전드 및 헤더 상태창 DOM 갱신 쓰로틀
     TITLE_UPDATE_THROTTLE_MS: 1000, // 브라우저 탭 타이틀 실시간 시세 갱신 쓰로틀
     COUNTDOWN_THROTTLE_MS: 500, // 카운트다운 타이머 DOM 갱신 쓰로틀

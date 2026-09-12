@@ -1,5 +1,5 @@
 // stream_korea.js
-import { store, tfSec } from "./_store.js";
+import { store, tfSec, CONFIG } from "./_store.js";
 import { getMultiplier, getPureBase, getUnixSeconds, getNextBarTime } from "./chart_utils.js";
 import {
   isChartBusy,
@@ -320,7 +320,7 @@ export function updateRealtimeKimchiThrottled(liveData, symbol, chartTime) {
 
   const now = performance.now();
   const timeElapsed = now - lastKimchiUpdateTime;
-  const throttleInterval = 155; // 실시간 김프 렌더링 쓰로틀링
+  const throttleInterval = CONFIG?.CHART_PERF?.KIMCHI_THROTTLE_MS ?? 100; // 실시간 김프 렌더링 쓰로틀링
 
   if (timeElapsed >= throttleInterval) {
     kimchiUpdatePending = true;
