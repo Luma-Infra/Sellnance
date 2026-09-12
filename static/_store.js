@@ -23,12 +23,13 @@ try {
 } catch (e) { }
 
 //[신규] 마지막 정렬 기준 로컬/세션 스토리지 복원
-let initialSortCol = "Volume";
+let initialSortCol = "VolumeBinance";
 let initialSortState = "desc";
 try {
-  const savedSortCol =
+  let savedSortCol =
     (typeof localStorage !== "undefined" && localStorage.getItem("sellnance_last_sort_col")) ||
     (typeof sessionStorage !== "undefined" && sessionStorage.getItem("sellnance_last_sort_col"));
+  if (savedSortCol === "Volume") savedSortCol = "VolumeBinance";
   if (savedSortCol) initialSortCol = savedSortCol;
 
   const savedSortState =
@@ -46,6 +47,9 @@ try {
   if (savedCP) {
     sessionControlPanel = JSON.parse(savedCP);
     if (sessionControlPanel.currentSortCol) {
+      if (sessionControlPanel.currentSortCol === "Volume") {
+        sessionControlPanel.currentSortCol = "VolumeBinance";
+      }
       initialSortCol = sessionControlPanel.currentSortCol;
     }
     if (sessionControlPanel.sortState) {
@@ -62,6 +66,7 @@ export const store = {
   allSymbols: [],
   originalTableData: [],
   currentTableData: [],
+  isTableLoaded: false,
   tickerBuffer: {},
   tickerCache: {},
   visibleSymbols: new Set(),

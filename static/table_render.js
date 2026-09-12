@@ -167,7 +167,7 @@ export function renderTable(isRealtime = false) {
               if (!isNaN(targetIdx)) {
                 const counterEl = rowEl.querySelector(".row-counter");
                 if (counterEl) {
-                  counterEl.textContent = targetIdx + 1;
+                  counterEl.textContent = rowData.isDelisted && rowData.fixedRank ? rowData.fixedRank : targetIdx + 1;
                 }
               }
 
@@ -241,18 +241,12 @@ export function renderTable(isRealtime = false) {
       const rowData = allSource[i];
       if (rowData) {
         rowEl.dataset.sym = rowData.Ticker;
-        store.rowDomMap.set(rowData.Ticker, rowEl);
+        if (rowData.UID) rowEl.dataset.uid = String(rowData.UID);
         if (rowData.UID) store.rowDomMap.set(String(rowData.UID), rowEl);
         if (rowData.DisplayTicker)
           store.rowDomMap.set(rowData.DisplayTicker, rowEl);
-        if (rowData.Symbol) store.rowDomMap.set(rowData.Symbol, rowEl);
-        if (rowData.Exact_Futures)
-          store.rowDomMap.set(rowData.Exact_Futures, rowEl);
-        if (rowData.Exact_Spot)
-          store.rowDomMap.set(rowData.Exact_Spot, rowEl);
-        if (rowData.Ticker && rowData.Ticker.endsWith("KRW")) {
-          store.rowDomMap.set(rowData.Ticker.replace("KRW", "USDT"), rowEl);
-          store.rowDomMap.set(rowData.Ticker.replace("KRW", ""), rowEl);
+        if (!store.rowDomMap.has(rowData.Ticker)) {
+          store.rowDomMap.set(rowData.Ticker, rowEl);
         }
 
         if (i < INITIAL_SYNC_ROWS) {
@@ -291,7 +285,7 @@ export function renderTable(isRealtime = false) {
       const allUids = new Set(allSource.map((d) => String(d.UID)));
       const fav1 = JSON.parse(localStorage.getItem("sellnance_favs") || "[]");
       const fav2 = JSON.parse(localStorage.getItem("sellnance_favs2") || "[]");
-      const isDataLoaded = allSource && allSource.length > 50;
+      const isDataLoaded = store.isTableLoaded || (allSource && allSource.length > 0);
       const delistedFavUids = isDataLoaded
         ? Array.from(new Set([...fav1, ...fav2])).filter((uid) => !allUids.has(String(uid)))
         : [];
@@ -350,6 +344,7 @@ export function renderTable(isRealtime = false) {
   const isFavTab = store.currentTab === "FAV" || store.currentTab === "FAV2";
   for (const child of tbody.children) {
     const sym = child.dataset.sym;
+    const uid = child.dataset.uid;
     const isDelistedDom = child.dataset.delisted === "true";
 
     // FAV 탭이 아닐 때는 상폐 Ghost DOM 무조건 은닉
@@ -360,7 +355,10 @@ export function renderTable(isRealtime = false) {
       continue;
     }
 
-    if (!sym || !currentVisibleSet.has(sym)) {
+    const isVisible =
+      (uid && currentVisibleSet.has(uid)) ||
+      (sym && currentVisibleSet.has(sym));
+    if (!isVisible) {
       if (child.style.display !== "none") {
         child.style.setProperty("display", "none", "important");
       }
@@ -370,12 +368,12 @@ export function renderTable(isRealtime = false) {
   for (let i = 0; i < totalCount; i++) {
     const rowData = filteredData[i];
     if (rowData) {
-      // 🚀 [자가 치유 DOM 풀: 8등, 14등 구멍 뚫림 영구 방어]
-      let rowEl = store.rowDomMap.get(rowData.Ticker);
-      if (!rowEl && rowData.UID)
-        rowEl = store.rowDomMap.get(String(rowData.UID));
+      // 🚀 [동명이인/중복 티커 영구 방어] 고유 식별자 UID 0순위 탐색!
+      let rowEl = rowData.UID ? store.rowDomMap.get(String(rowData.UID)) : null;
       if (!rowEl && rowData.DisplayTicker)
         rowEl = store.rowDomMap.get(rowData.DisplayTicker);
+      if (!rowEl && rowData.Ticker)
+        rowEl = store.rowDomMap.get(rowData.Ticker);
 
       // 풀에 아예 없는 신규 코인이 상위권으로 진입한 경우 즉시 상자 1개 생성 보충
       if (!rowEl) {
@@ -388,10 +386,13 @@ export function renderTable(isRealtime = false) {
         rowEl.style.transform = `translateY(${i === 0 || !store.traceRowCaller ? i * 52 : 221 + (i - 1) * 52}px)`;
         rowEl.style.contain = "content";
         rowEl.dataset.sym = rowData.Ticker;
-        store.rowDomMap.set(rowData.Ticker, rowEl);
+        if (rowData.UID) rowEl.dataset.uid = String(rowData.UID);
         if (rowData.UID) store.rowDomMap.set(String(rowData.UID), rowEl);
         if (rowData.DisplayTicker)
           store.rowDomMap.set(rowData.DisplayTicker, rowEl);
+        if (!store.rowDomMap.has(rowData.Ticker)) {
+          store.rowDomMap.set(rowData.Ticker, rowEl);
+        }
         updateRowInnerHTML(rowEl, rowData);
         store.tableObserver.observe(rowEl);
         tbody.appendChild(rowEl);
@@ -401,6 +402,11 @@ export function renderTable(isRealtime = false) {
         if (rowData.isDelisted) {
           rowEl.dataset.delisted = "true";
           rowEl.style.cursor = "default";
+          if (rowData.fixedRank) rowEl.dataset.fixedRank = String(rowData.fixedRank);
+        } else {
+          delete rowEl.dataset.delisted;
+          delete rowEl.dataset.fixedRank;
+          rowEl.style.cursor = "";
         }
         rowEl.style.removeProperty("display");
         const oldIndex = parseInt(rowEl.dataset.index);
@@ -425,7 +431,7 @@ export function renderTable(isRealtime = false) {
           // 🚀 자바스크립트로 절대 순위 실시간 주입
           const counterEl = rowEl.querySelector(".row-counter");
           if (counterEl) {
-            counterEl.textContent = i + 1;
+            counterEl.textContent = rowData.isDelisted && rowData.fixedRank ? rowData.fixedRank : i + 1;
           }
         }
 
@@ -460,7 +466,7 @@ export function renderTable(isRealtime = false) {
             // 🚀 HTML 재할당으로 밀렸을 수도 있는 순위 카운터 다시 복구
             const reCounterEl = rowEl.querySelector(".row-counter");
             if (reCounterEl) {
-              reCounterEl.textContent = i + 1;
+              reCounterEl.textContent = rowData.isDelisted && rowData.fixedRank ? rowData.fixedRank : i + 1;
             }
           }
 
@@ -655,7 +661,7 @@ export function toggleFavorite(uid, event, forceImmediate = false) {
 
     const row = store.currentTableData.find((r) => r.UID === uid) || (store.tickerRowMap && store.tickerRowMap.get(String(uid)));
     if (row) {
-      const rowEl = store.rowDomMap.get(row.Ticker) || store.rowDomMap.get(String(row.UID));
+      const rowEl = (row.UID ? store.rowDomMap.get(String(row.UID)) : null) || store.rowDomMap.get(row.Ticker);
       if (rowEl) {
         updateRowInnerHTML(rowEl, row);
       }
@@ -694,7 +700,7 @@ export function toggleFavorite(uid, event, forceImmediate = false) {
 
   const row = store.currentTableData.find((r) => r.UID === uid) || (store.tickerRowMap && store.tickerRowMap.get(String(uid)));
   if (row) {
-    const rowEl = store.rowDomMap.get(row.Ticker) || store.rowDomMap.get(String(row.UID));
+    const rowEl = (row.UID ? store.rowDomMap.get(String(row.UID)) : null) || store.rowDomMap.get(row.Ticker);
     if (rowEl) {
       updateRowInnerHTML(rowEl, row);
     }

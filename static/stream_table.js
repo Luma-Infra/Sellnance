@@ -725,8 +725,8 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
   const oldPrice = priceCell ? parseFloat(priceCell.getAttribute("data-raw-price")) || 0 : 0;
 
   const rowEl =
-    store.rowDomMap?.get(row.Ticker) ||
-    (row.UID ? store.rowDomMap?.get(String(row.UID)) : null);
+    (row.UID ? store.rowDomMap?.get(String(row.UID)) : null) ||
+    store.rowDomMap?.get(row.Ticker);
   if (rowEl && typeof window.updateRowDynamicHTML === "function") {
     window.updateRowDynamicHTML(rowEl, row, !isSelected);
   }

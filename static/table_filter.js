@@ -74,11 +74,13 @@ export function getFilteredData() {
     filteredData = filteredData.filter((r) => {
       const disp = (r.DisplayTicker || "").toUpperCase();
       const name = (r.Name || "").toUpperCase();
+      const nameKR = (r.Name_KR || "").toUpperCase();
       const sym = (r.Symbol || "").toUpperCase();
       const raw = (r.Ticker || "").toUpperCase();
       return (
         disp.includes(q) ||
         name.includes(q) ||
+        nameKR.includes(q) ||
         sym.includes(q) ||
         raw.includes(q)
       );
@@ -91,12 +93,13 @@ export function getFilteredData() {
         const sym = (r.Symbol || "").toUpperCase();
         const raw = (r.Ticker || "").toUpperCase();
         const name = (r.Name || "").toUpperCase();
+        const nameKR = (r.Name_KR || "").toUpperCase();
 
         if (disp === q || sym === q || raw === q) return 0; // 완전일치 티커
         if (disp.startsWith(q) || sym.startsWith(q) || raw.startsWith(q)) return 1; // 전방일치 티커
         if (disp.includes(q) || sym.includes(q) || raw.includes(q)) return 2; // 부분일치 티커
-        if (name.startsWith(q)) return 3; // 전방일치 코인명
-        if (name.includes(q)) return 4; // 부분일치 코인명
+        if (name.startsWith(q) || nameKR.startsWith(q)) return 3; // 전방일치 코인명
+        if (name.includes(q) || nameKR.includes(q)) return 4; // 부분일치 코인명
         return 5;
       };
 
@@ -154,13 +157,21 @@ export function getFilteredData() {
 
     // [이스터에그] 즐겨찾기에 남아있으나 현재 상장 폐지된 코인 껍데기(Ghost Row) 생성
     // [상폐 오인 방어] 전체 테이블 데이터가 아직 로드되지 않은 초기/로딩 상태(50개 이하)일 때는 정상 코인을 상폐로 오인하지 않도록 방어
-    const totalLoadedCount =
-      (store.originalTableData ? store.originalTableData.length : 0) ||
-      (store.currentTableData ? store.currentTableData.length : 0);
-    const delistedUids =
-      totalLoadedCount > 50 ? favorites.filter((uid) => !seenUids.has(uid)) : [];
+    const allLoadedSource =
+      (store.originalTableData && store.originalTableData.length > 0)
+        ? store.originalTableData
+        : (store.currentTableData || []);
+    const allLoadedUids = new Set(allLoadedSource.map((d) => String(d.UID)));
+    const totalLoadedCount = allLoadedSource.length;
 
-    delistedRows = delistedUids.map((uid) => {
+    // [핵심 버그 수정] 검색어 필터링 결과(seenUids)가 아니라, 실제 전체 원본 데이터(allLoadedUids)에 존재하지 않는 것만 상폐 코인으로 판정!
+    const delistedUids = store.isTableLoaded
+      ? favorites.filter((uid) => !allLoadedUids.has(String(uid)))
+      : [];
+
+    const totalFavNormalCount = favorites.filter((uid) => allLoadedUids.has(String(uid))).length;
+
+    delistedRows = delistedUids.map((uid, idx) => {
       const meta = favMeta[uid] || {};
       const cleanSym = meta.symbol || String(uid)
         .replace(/^\d+_/, "")
@@ -195,15 +206,27 @@ export function getFilteredData() {
         Funding_Formatted: "-",
         Listed_Exchanges: [],
         isDelisted: true,
+        fixedRank: totalFavNormalCount + idx + 1,
         Logo: `<span class="text-[18px] select-none flex items-center justify-center opacity-70 cursor-help" title="상장 폐지된 코인 (UID: ${uid})">💀</span>`,
       };
 
-      if (store.tickerRowMap) {
+      if (store.tickerRowMap && !allLoadedUids.has(String(uid))) {
         store.tickerRowMap.set(ghostTicker, ghost);
         store.tickerRowMap.set(String(uid), ghost);
       }
       return ghost;
     });
+
+    // 🎯 [검색어 연동] 사용자가 검색 중일 때는 상폐 코인도 검색어와 일치하는 것만 노출!
+    if (store.searchQuery && store.searchQuery.trim() !== "") {
+      const q = store.searchQuery.trim().toUpperCase();
+      delistedRows = delistedRows.filter((ghost) => {
+        const disp = (ghost.DisplayTicker || "").toUpperCase();
+        const name = (ghost.Name || "").toUpperCase();
+        const sym = (ghost.Symbol || "").toUpperCase();
+        return disp.includes(q) || name.includes(q) || sym.includes(q);
+      });
+    }
   }
 
   // 2. 시총 필터링 (1M 미만 숨기기 토글)
@@ -377,7 +400,7 @@ export function saveControlPanelSession() {
       customVolMin: store.customVolMin,
       customVolMax: store.customVolMax,
       customVolSource: store.customVolSource,
-      currentSortCol: store.currentSortCol || "Volume",
+      currentSortCol: store.currentSortCol || "VolumeBinance",
       sortState: store.sortState || "desc",
       currencyMode: store.currencyMode || "RECOMMENDED",
     };

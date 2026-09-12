@@ -191,7 +191,7 @@ export function updateRowStaticHTML(rowEl, row) {
   const counterEl = rowEl.querySelector(".row-counter");
   const targetIdx = parseInt(rowEl.dataset.index);
   if (counterEl && !isNaN(targetIdx)) {
-    counterEl.textContent = targetIdx + 1;
+    counterEl.textContent = row.isDelisted && row.fixedRank ? row.fixedRank : (rowEl.dataset.fixedRank || targetIdx + 1);
   }
 
   // 🚀 정적 데이터 갱신 시 Trace 기록 트리거 (1번 행일 경우)

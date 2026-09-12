@@ -610,10 +610,6 @@ export async function initChart() {
 
     // .setData() 통로 가로채기 및 완전 소독
     store.volumeSeries.setData = (dataArr) => {
-      const currentRange = store.chart
-        ? store.chart.timeScale().getVisibleLogicalRange()
-        : null;
-
       if (!Array.isArray(dataArr)) {
         rawVolumeSetData([]);
         return;
@@ -636,13 +632,6 @@ export async function initChart() {
           ? window.sanitizeChartData(sterilized, true)
           : sterilized,
       );
-
-      if (currentRange && store.chartVol) {
-        try { store.chartVol.timeScale().setVisibleLogicalRange(currentRange); } catch (e) {}
-      }
-      if (store.chartVol && !store.isVolPriceScaleUserZoomed) {
-        try { store.chartVol.priceScale("right").applyOptions({ autoScale: true }); } catch (e) {}
-      }
     };
 
     // .update() 통로 가로채기 및 완전 소독
@@ -695,18 +684,8 @@ export async function initChart() {
     const rawKimchiUpdate = store.kimchiSeries.update.bind(store.kimchiSeries);
 
     store.kimchiSeries.setData = (dataArr) => {
-      const currentRange = store.chart
-        ? store.chart.timeScale().getVisibleLogicalRange()
-        : (store.chartVol ? store.chartVol.timeScale().getVisibleLogicalRange() : null);
-
-      if (!Array.isArray(dataArr)) {
+      if (!Array.isArray(dataArr) || dataArr.length === 0) {
         rawKimchiSetData([]);
-        if (currentRange && store.chartVol) {
-          try { store.chartVol.timeScale().setVisibleLogicalRange(currentRange); } catch (e) {}
-        }
-        if (store.chartVol && !store.isVolPriceScaleUserZoomed) {
-          try { store.chartVol.priceScale("right").applyOptions({ autoScale: true }); } catch (e) {}
-        }
         return;
       }
       const sterilized = dataArr
@@ -724,12 +703,6 @@ export async function initChart() {
           ? window.sanitizeChartData(sterilized, true)
           : sterilized,
       );
-      if (currentRange && store.chartVol) {
-        try { store.chartVol.timeScale().setVisibleLogicalRange(currentRange); } catch (e) {}
-      }
-      if (store.chartVol && !store.isVolPriceScaleUserZoomed) {
-        try { store.chartVol.priceScale("right").applyOptions({ autoScale: true }); } catch (e) {}
-      }
     };
 
     store.kimchiSeries.update = (dataObj) => {

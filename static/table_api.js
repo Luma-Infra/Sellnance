@@ -18,6 +18,7 @@ export function processTableData(result) {
 
   store.originalTableData = rawList;
   store.currentTableData = rawList.map((r) => ({ ...r }));
+  store.isTableLoaded = true;
 
   // 🚀 [신규] 상태 데이터 동기화
   if (result.cmc_status !== undefined) {
@@ -268,8 +269,9 @@ export async function loadTableData(force = false, silent = false) {
       const cachedResult = JSON.parse(cachedDataStr);
       if (cachedResult && cachedResult.data && cachedResult.data.length > 0) {
         // 🚀 [상위 30개 즉시 렌더] 최초 콜드 부팅 시에만 상위 30개 선제 노출 (기존 메모리 덮어쓰기 방지)
-        const lastSortCol =
-          localStorage.getItem("sellnance_last_sort_col") || "Volume";
+        let lastSortCol =
+          localStorage.getItem("sellnance_last_sort_col") || "VolumeBinance";
+        if (lastSortCol === "Volume") lastSortCol = "VolumeBinance";
         const lastSortState =
           localStorage.getItem("sellnance_last_sort_state") || "desc";
 
@@ -278,6 +280,7 @@ export async function loadTableData(force = false, silent = false) {
           Price: "Price_Raw",
           Change_24h: "Change_24h_Raw",
           Change_Today: "Change_Today_Raw",
+          VolumeBinance: "Volume_Raw",
           Volume: "Volume_Raw",
           VolumeUpbit: "Upbit_Vol",
           Ticker: "DisplayTicker",

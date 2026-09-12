@@ -16,6 +16,7 @@ export function flushRealtimeRender() {
     const { normalizedTime, currentCandle } = pendingUpdate;
     pendingUpdate = null;
 
+    if (isChartBusy()) return;
     if (!store.candleSeries || !currentCandle || normalizedTime === null) return;
 
     // 1️⃣ 메인 봉 차트 & 좌측 스케일 보조 라인 업데이트
@@ -79,6 +80,10 @@ export function flushRealtimeRender() {
                         volObj.time = String(lastVolItem.time);
                     } else if (typeof lastVolItem.time === "number" && typeof normalizedTime === "string") {
                         volObj.time = getUnixSeconds(normalizedTime);
+                    }
+
+                    if (!store.chartVol?.timeScale().getVisibleLogicalRange()) {
+                        return;
                     }
 
                     store.volumeSeries.update(volObj);

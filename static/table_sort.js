@@ -6,7 +6,7 @@ import {
   applySelectedHighlight,
   getListingDate,
 } from "./table_render.js";
-import { getRowDisplayMetrics } from "./_market_rules.js";
+import { getRowDisplayMetrics, getRowDisplayVolume } from "./_market_rules.js";
 
 let lastSortTime = 0;
 
@@ -75,6 +75,7 @@ export function simpleSortData() {
     Price: "Price_Raw",
     Change_24h: "Change_24h_Raw",
     Change_Today: "Change_Today_Raw",
+    VolumeBinance: "Volume_Raw",
     Volume: "Volume_Raw",
     VolumeUpbit: "Upbit_Vol",
     Ticker: "DisplayTicker",
@@ -117,6 +118,12 @@ export function simpleSortData() {
       val = getRowDisplayMetrics(d, isKrwMode, rate).nDay;
     } else if (store.currentSortCol === "Price") {
       val = getRowDisplayMetrics(d, isKrwMode, rate).displayPrice;
+    } else if (store.currentSortCol === "VolumeBinance" || store.currentSortCol === "Volume") {
+      const volInfo = getRowDisplayVolume(d);
+      val = volInfo.volBRaw;
+    } else if (store.currentSortCol === "VolumeUpbit") {
+      const volInfo = getRowDisplayVolume(d);
+      val = volInfo.volURaw || d.Upbit_Vol || 0;
     } else {
       val = d[key];
     }
@@ -126,30 +133,33 @@ export function simpleSortData() {
       isEmpty = true;
     } else {
       // 🚀 화면에 하이픈(-)으로 노출되거나 유효값(볼륨/시총 등)이 0인 무효 데이터를 최하단 배치하기 위한 정밀 감지
-      if (
-        store.currentSortCol === "VolumeUpbit" &&
-        (val === 0 ||
-          val === 0.0 ||
-          val === "0" ||
-          d.Upbit_Vol_Formatted === "-")
-      ) {
-        isEmpty = true;
-      } else if (
-        store.currentSortCol === "Volume" &&
-        (val === 0 || val === 0.0 || val === "0" || d.Volume_Formatted === "-")
-      ) {
-        isEmpty = true;
+      if (store.currentSortCol === "VolumeBinance" || store.currentSortCol === "Volume") {
+        const num = Number(val);
+        if (
+          isNaN(num) ||
+          num <= 0 ||
+          d.Binance_Vol_Formatted === "-" ||
+          d.Volume_Formatted === "-"
+        ) {
+          isEmpty = true;
+        }
+      } else if (store.currentSortCol === "VolumeUpbit") {
+        const num = Number(val);
+        if (isNaN(num) || num <= 0 || d.Upbit_Vol_Formatted === "-") {
+          isEmpty = true;
+        }
       } else if (
         store.currentSortCol === "MarketCap" &&
         (val === 0 ||
           val === 0.0 ||
           val === "0" ||
+          Number(val) <= 0 ||
           d.MarketCap_Formatted === "-")
       ) {
         isEmpty = true;
       } else if (
         store.currentSortCol === "VMC" &&
-        (val === 0 || val === 0.0 || val === "0" || d.VMC_Formatted === "-")
+        (val === 0 || val === 0.0 || val === "0" || Number(val) <= 0 || d.VMC_Formatted === "-")
       ) {
         isEmpty = true;
       } else if (
