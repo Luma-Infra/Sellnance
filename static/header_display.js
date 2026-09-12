@@ -206,7 +206,12 @@ export const realUpdateHeaderDisplay = (
     );
   }
 
-  const pNormalized = p;
+  const pNormalized =
+    p !== undefined && p !== null
+      ? p
+      : (row && row.precision !== undefined && row.precision !== null)
+        ? Number(row.precision)
+        : store.getPrecision(row?.Ticker || row?.DisplayTicker || row?.Symbol || store.currentAsset);
 
   let displayPrice = 0;
   let subPrice = null;

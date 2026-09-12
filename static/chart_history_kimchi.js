@@ -227,8 +227,11 @@ export function toggleKimchiComparison(forceVal) {
 window.toggleKimchiComparison = toggleKimchiComparison;
 window.updateKimchiComparisonUI = updateKimchiComparisonUI;
 
+let currentKimchiReqId = 0;
+
 // 🚀 [역할 분리] 김프 데이터 백그라운드 Lazy 수집 및 차트 렌더링 전담
 export async function lazyRenderKimchiData(params) {
+  const reqId = ++currentKimchiReqId;
   const {
     rowInfo,
     uniqueTicker,
@@ -280,6 +283,35 @@ export async function lazyRenderKimchiData(params) {
     return; // 🎯 네트워크 통신 즉시 차단 (Early Return)
   }
 
+  // [국내 미지원 코인] 해외 전용 코인은 업비트/빗썸이 없으므로 통신 대기 없이 즉시 정리
+  const listedEx = rowInfo ? rowInfo.Listed_Exchanges || [] : [];
+  const isGlobalBase = store.currentChartMarket !== "UPBIT" && store.currentChartMarket !== "BITHUMB";
+  const hasDomestic =
+    listedEx.includes("UPBIT") ||
+    listedEx.includes("BITHUMB") ||
+    rowInfo?.Upbit === "O" ||
+    rowInfo?.UPBIT ||
+    rowInfo?.BITHUMB;
+
+  if (isGlobalBase && rowInfo && !hasDomestic) {
+    hideKimchiLoading();
+    store.paneConfig.kimchi = false;
+    const curRange = store.chart ? store.chart.timeScale().getVisibleLogicalRange() : null;
+    if (store.kimchiSeries) {
+      try { store.kimchiSeries.setData([]); } catch (e) { }
+    }
+    store.kimchiData = [];
+    if (store.kimchiDataMap) store.kimchiDataMap.clear();
+    if (typeof effectiveApplyLayout === "function") effectiveApplyLayout();
+    if (curRange && store.chartVol) {
+      try { store.chartVol.timeScale().setVisibleLogicalRange(curRange); } catch (e) {}
+    }
+    if (store.chartVol && !store.isVolPriceScaleUserZoomed) {
+      try { store.chartVol.priceScale("right").applyOptions({ autoScale: true }); } catch (e) {}
+    }
+    return;
+  }
+
   try {
     let subExchange = null;
     let subSymbol = null;
@@ -297,6 +329,8 @@ export async function lazyRenderKimchiData(params) {
         store._coinInfoCache.set(querySym, d);
         return d;
       });
+
+    if (reqId !== currentKimchiReqId) return;
 
     const listedEx = rowInfo ? rowInfo.Listed_Exchanges || [] : [];
     const wrapper = document.getElementById("chart-wrapper");
@@ -553,6 +587,7 @@ export async function lazyRenderKimchiData(params) {
       // [1차 즉시 렌더링 헬퍼]: 1회차(200개)가 들어오자마자 현재 화면에 먼저 표시!
       const renderKimchiBatch = (rawBatch) => {
         if (
+          reqId !== currentKimchiReqId ||
           store.currentAsset !== snapshotAsset ||
           store.currentTF !== snapshotTF ||
           !rawBatch ||
@@ -661,6 +696,7 @@ export async function lazyRenderKimchiData(params) {
       );
 
       if (
+        reqId !== currentKimchiReqId ||
         store.currentAsset !== snapshotAsset ||
         store.currentTF !== snapshotTF
       ) {
@@ -677,10 +713,14 @@ export async function lazyRenderKimchiData(params) {
 
         requestAnimationFrame(() => {
           try {
-            const currentRange = store.chart.timeScale().getVisibleLogicalRange();
+            const currentRange = store.chart ? store.chart.timeScale().getVisibleLogicalRange() : null;
             store.kimchiSeries.setData(sanitizeChartData(store.kimchiData, true));
-            if (currentRange)
-              store.chart.timeScale().setVisibleLogicalRange(currentRange);
+            if (currentRange && store.chartVol) {
+              try { store.chartVol.timeScale().setVisibleLogicalRange(currentRange); } catch (e) {}
+            }
+            if (store.chartVol && !store.isVolPriceScaleUserZoomed) {
+              try { store.chartVol.priceScale("right").applyOptions({ autoScale: true }); } catch (e) {}
+            }
 
             // 🎯 김프 선이 차트에 완전히 렌더링된 순간 로딩 종료!
             hideKimchiLoading();
@@ -704,6 +744,7 @@ export async function lazyRenderKimchiData(params) {
     } else {
       hideKimchiLoading();
       store.paneConfig.kimchi = false;
+      const curRange = store.chart ? store.chart.timeScale().getVisibleLogicalRange() : null;
       if (store.kimchiSeries) {
         try {
           store.kimchiSeries.setData([]);
@@ -728,6 +769,12 @@ export async function lazyRenderKimchiData(params) {
       requestAnimationFrame(() => {
         try {
           if (typeof applyChartLayout === "function") applyChartLayout();
+          if (curRange && store.chartVol) {
+            try { store.chartVol.timeScale().setVisibleLogicalRange(curRange); } catch (e) {}
+          }
+          if (store.chartVol && !store.isVolPriceScaleUserZoomed) {
+            try { store.chartVol.priceScale("right").applyOptions({ autoScale: true }); } catch (e) {}
+          }
         } catch (layoutErr) {
           // Xconsole.warn("fetchHistory (no-data) applyChartLayout 예외 우회:", layoutErr);
         }

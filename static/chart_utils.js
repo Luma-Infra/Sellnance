@@ -554,10 +554,6 @@ function updateStatus(d, p) {
 
   if (!last) return;
 
-  // 🚀 [수정] 정밀도(p)가 있으면 사용하고, 없으면 단일 진실 공급원인 store.getPrecision에서 가져옴!
-  const precision =
-    p !== undefined ? p : store.getPrecision(store.currentAsset);
-
   // 가격 업데이트
   const asset = store.currentAsset || store.currentSelectedSymbol;
   const allSource = store.currentTableData || store.originalTableData || [];
@@ -577,6 +573,14 @@ function updateStatus(d, p) {
           (effUid && String(r.UID) === String(effUid)),
       );
   }
+
+  // [수정] 정밀도(p)가 있으면 사용하고, 없으면 row.precision 또는 store.getPrecision에서 안전하게 참조
+  const precision =
+    p !== undefined && p !== null
+      ? p
+      : (row && row.precision !== undefined && row.precision !== null)
+        ? Number(row.precision)
+        : store.getPrecision(row?.Ticker || row?.Symbol || asset);
   if (row && typeof window.updateHeaderDisplay === "function") {
     const btnSim = document.getElementById("tab-btn-sim");
     const isSimMode = btnSim ? btnSim.classList.contains("active") : false;
@@ -804,6 +808,44 @@ export function getMultiplier(sym) {
 export function getPureBase(sym) {
   if (!sym) return "";
   return sym.replace(/^(10+|1[MB])(?=[A-Z])/i, "").toUpperCase();
+}
+
+/**
+ * [전역 유틸리티] 순수 코인 심볼 추출기
+ * - BTTC(BitTorrent) > BTTC
+ * - 1MBABYDOGE > BABYDOGE
+ * - 1000PEPEUSDT > PEPE
+ * - 龙虾USDT > 龙虾
+ *
+ * @param {string|object} input - 심볼 문자열 또는 테이블 row 객체
+ * @returns {string} 100% 정제된 대문자 순수 심볼
+ */
+export function getCleanSymbol(input) {
+  if (!input) return "";
+
+  let raw = "";
+  if (typeof input === "object" && input !== null) {
+    raw = input.DisplayTicker || input.Symbol || input.Ticker || "";
+  } else if (typeof input === "string") {
+    raw = input;
+  }
+
+  if (!raw) return "";
+
+  // 1) 괄호 제거: "BTTC(BitTorrent)" -> "BTTC"
+  const withoutParen = raw.split("(")[0].trim();
+
+  // 2) 마켓 접미사 제거: "BTTCUSDT" -> "BTTC", "BTC_UPBIT" -> "BTC"
+  const withoutMarket = withoutParen
+    .replace(/_(BINANCE|UPBIT|BITHUMB|BYBIT|GATEIO|FUTURES|SPOT)$/i, "")
+    .replace(/(USDT|KRW|BUSD|USDC)$/i, "");
+
+  // 3) 선물 배수 접두사 제거: "1MBABYDOGE" -> "BABYDOGE", "1000PEPE" -> "PEPE"
+  const pure = getPureBase(withoutMarket) || withoutMarket;
+  return pure.toUpperCase();
+}
+if (typeof window !== "undefined") {
+  window.getCleanSymbol = getCleanSymbol;
 }
 
 // ================== chart.js에서 이동됨 ==================
@@ -1090,7 +1132,9 @@ export function updateTabTitleManager(price, symbol, isKor) {
         c.Symbol === symbol ||
         c.DisplayTicker === symbol,
     );
-    const targetSymbol = row?.Symbol || symbol;
+    const displayTitleTicker =
+      getCleanSymbol(row) || getCleanSymbol(symbol) || (symbol || "").toUpperCase();
+
     const scaledPrice = price;
 
     const isMainKrw = store.currencyMode === "KRW" || isKor;
@@ -1108,12 +1152,6 @@ export function updateTabTitleManager(price, symbol, isKor) {
       const p = store.getPrecision(store.currentSelectedSymbol || symbol);
       formatted = `${formatSmartPrice(scaledPrice, p)}`;
     }
-
-    const displayTitleTicker = (
-      row?.Symbol ||
-      getPureBase(targetSymbol) ||
-      targetSymbol
-    ).toUpperCase();
 
     if (typeof document !== "undefined") {
       document.title = `${formatted} ${displayTitleTicker} | Sellnance`;

@@ -85,33 +85,6 @@ export async function fetchCandlesSmart(
         directUrl = `https://api.bybit.com/v5/market/kline?category=${category}&symbol=${symbol}&interval=${bInt}&limit=1000`; // 바이빗 최대 한도: 1000개
       }
 
-      // } else if (exchange === "upbit") {
-      //   let uPath = "days";
-      //   if (interval.startsWith("minutes/")) {
-      //     uPath = interval;
-      //   } else if (interval.endsWith("m")) {
-      //     const mNum = interval.replace("m", "");
-      //     uPath = `minutes/${mNum}`;
-      //   } else if (interval.endsWith("h")) {
-      //     const hNum = Number(interval.replace("h", "")) * 60;
-      //     uPath = `minutes/${hNum}`;
-      //   } else if (interval === "weeks" || interval === "1w" || interval === "w") {
-      //     uPath = "weeks";
-      //   } else if (interval === "months" || interval === "1M" || interval === "M") {
-      //     uPath = "months";
-      //   } else {
-      //     uPath = "days";
-      //   }
-      //   const cleanSym = symbol.startsWith("KRW-")
-      //     ? symbol
-      //     : `KRW-${symbol.replace(/USDT|KRW|_KRW/gi, "")}`;
-      //   const toQuery = toVal ? `&to=${encodeURIComponent(toVal)}` : "";
-      //   directUrl = `https://api.upbit.com/v1/candles/${uPath}?market=${cleanSym}&count=${Math.min(limit || 200, 200)}${toQuery}`;
-      // }
-
-      // Note: Upbit is excluded from direct browser fetch due to strict rate-limits (8 req/s)
-      // and lack of CORS headers on 429 responses. Upbit candles route through backend proxy.
-
       if (directUrl) {
         const fetchSignal =
           typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function"
@@ -241,7 +214,6 @@ export function mapTime(d, tf) {
 
 export function clearChartData(isTfChange = false) {
   // 🚀 [과거 데이터 Lazy 로딩 취소 및 인디케이터 은닉]
-  store.chartSessionId = ((store.chartSessionId || 0) + 1) % 10000;
   store.isLoadingMoreHistory = false;
   const lazyIndicator = document.getElementById("chart-lazy-loading-indicator");
   if (lazyIndicator) {
@@ -441,14 +413,14 @@ export async function loadMoreHistory() {
   const currentSessionId = (store.chartSessionId = store.chartSessionId ?? 1);
   const currentAsset = store.currentAsset;
   const currentSymbol = store.currentSelectedSymbol;
-  const currentTf = store.currentTf;
+  const currentTf = store.currentTF;
 
   const isStale = () => {
     return (
       (store.chartSessionId ?? 0) !== currentSessionId ||
       store.currentAsset !== currentAsset ||
       store.currentSelectedSymbol !== currentSymbol ||
-      store.currentTf !== currentTf ||
+      store.currentTF !== currentTf ||
       store.lastFetchParams !== params ||
       store.isFetchingChart ||
       window.isFetchingChart
@@ -756,6 +728,7 @@ export async function loadMoreHistory() {
       // 🔥 [핵심] 모든 시리즈 데이터가 동기적으로 세팅된 뒤, 화면 범위 이동을 처리합니다.
       requestAnimationFrame(() => {
         try {
+          if (isStale()) return;
           if (visibleRange && N > 0) {
             timeScale.setVisibleLogicalRange({
               from: visibleRange.from + N,

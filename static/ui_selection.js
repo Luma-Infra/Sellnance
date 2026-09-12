@@ -6,6 +6,9 @@ import { getPureBase } from "./chart_utils.js";
 import { getChartDefaultMarket, getRowExchangeMeta } from "./_market_rules.js";
 import { getExchangeLogo } from "./table_tooltips.js";
 
+let pendingSelectRaf = null;
+let pendingSelectTimeout = null;
+
 export function selectSymbol(
   s,
   forceMarket = null,
@@ -13,6 +16,15 @@ export function selectSymbol(
   isRowClick = false,
   shouldScroll = false,
 ) {
+  if (pendingSelectRaf) {
+    cancelAnimationFrame(pendingSelectRaf);
+    pendingSelectRaf = null;
+  }
+  if (pendingSelectTimeout) {
+    clearTimeout(pendingSelectTimeout);
+    pendingSelectTimeout = null;
+  }
+
   let allSourceData =
     store.originalTableData && store.originalTableData.length > 0
       ? store.originalTableData
@@ -318,8 +330,10 @@ export function selectSymbol(
   }
 
   // 🚀 [INP 최적화 Phase 2] 무거운 배열 탐색, DOM 재생성, API 통신, 차트 렌더링(fetchHistory)을 다음 페인트 이후로 양보(Yielding)
-  requestAnimationFrame(() => {
-    setTimeout(() => {
+  pendingSelectRaf = requestAnimationFrame(() => {
+    pendingSelectTimeout = setTimeout(() => {
+      pendingSelectRaf = null;
+      pendingSelectTimeout = null;
       // 마켓 우선순위 결정
       store.currentChartMarket = tempMarket || getChartDefaultMarket(rowInfo);
 
@@ -358,9 +372,10 @@ export function selectSymbol(
           );
           const rawName = (store.lang === "KR" ? rowInfo.Name_KR || rowInfo.Name : rowInfo.Name) || "";
           const nameStr = rawName.replace(/\s*[\(\（\[][^\)\）\]]*[\)\）\]]/g, "").trim();
-          const fullText = nameStr ? `${pureSym} (${nameStr})` : pureSym;
-          const len = fullText.length;
-          // 수학적 로그 방식 적용: 10글자 초과 시 길이에 반비례하여 부드럽게 폰트 크기 축소 (기본 1.125rem, 최소 0.65rem)
+          // 🚀 전용: [Symbol | Name] (예: 龙虾 | LONGXIA(lobster)) 원본 괄호 포함 표기
+          const pcText = rawName ? `${pureSym} | ${rawName}` : pureSym;
+          const len = pcText.length;
+          // 수학적 로그 방식 적용: 10글자 초과 시 길이에 반비례하여 부드럽게 폰트 크기 축소
           let fontSizeStyle = "";
           const fs = CONFIG.FONT_SCALE;
 
@@ -370,7 +385,7 @@ export function selectSymbol(
               fs.ASSET_BASE_REM -
               Math.log10(len / fs.ASSET_THRESHOLD) * fs.ASSET_LOG_MULT,
             );
-            fontSizeStyle = `style="font-size: ${sizeRem.toFixed(3)}rem; line-height: 1.1; word-break: break-all; white-space: normal;"`;
+            fontSizeStyle = `style="font-size: ${sizeRem.toFixed(3)}rem; line-height: 1.1; white-space: nowrap;"`;
           } else {
             fontSizeStyle = `style="white-space: nowrap;"`;
           }
@@ -383,8 +398,8 @@ export function selectSymbol(
               <div class="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-white/5 rounded-full overflow-hidden">
                 ${logoHtml}
               </div>
-              <!-- 🚀 PC 전용 (>=1200px): 기존 1줄 표기 100% 원본 유지 -->
-              <span class="hidden min-[1200px]:inline" ${fontSizeStyle}>${fullText}</span>
+              <!-- 🚀 PC 전용 (>=1200px): [Symbol | Name] 단일 라인 표기 -->
+              <span class="hidden min-[1200px]:inline truncate font-extrabold text-theme-accent" title="${pcText}" ${fontSizeStyle}>${pcText}</span>
               <!-- 🚀 모바일 전용 (<1200px): 코인 이름을 무조건 아랫줄 2단으로 정렬 -->
               <div class="flex flex-col min-[1200px]:hidden leading-none min-w-0">
                 <span class="text-base sm:text-lg font-extrabold tracking-wide truncate leading-tight text-theme-accent">${pureSym}</span>
@@ -467,15 +482,16 @@ export function selectSymbol(
                     ? rowInfo.Logo
                     : `<img src="${document.body?.classList.contains('theme-upbit') ? '/static/luma-deer-svg-light.svg' : '/static/luma-deer-svg-dark.svg'}" class="fallback-logo" loading="lazy" style="width: 24px; height: 24px; vertical-align: middle; border-radius: 50%;">`;
                 const nameStr2 = infoData.name || "";
-                const fullText2 = nameStr2 ? `${displaySym} (${nameStr2})` : displaySym;
-                const len2 = fullText2.length;
+                // 🚀 PC 전용: [Symbol | Name] 원본 표기
+                const pcText2 = nameStr2 ? `${displaySym} | ${nameStr2}` : displaySym;
+                const len2 = pcText2.length;
                 let fontSizeStyle2 = "";
                 if (len2 > 10) {
                   const sizeRem = Math.max(
                     0.65,
                     1.125 - Math.log10(len2 / 10) * 0.6,
                   );
-                  fontSizeStyle2 = `style="font-size: ${sizeRem.toFixed(3)}rem; line-height: 1.1; word-break: break-all; white-space: normal;"`;
+                  fontSizeStyle2 = `style="font-size: ${sizeRem.toFixed(3)}rem; line-height: 1.1; white-space: nowrap;"`;
                 } else {
                   fontSizeStyle2 = `style="white-space: nowrap;"`;
                 }
@@ -488,8 +504,8 @@ export function selectSymbol(
                     <div class="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-white/5 rounded-full overflow-hidden">
                       ${logoHtml}
                     </div>
-                    <!-- 🚀 PC 전용 (>=1200px): 기존 1줄 표기 100% 원본 유지 -->
-                    <span class="hidden min-[1200px]:inline" ${fontSizeStyle2}>${fullText2}</span>
+                    <!-- 🚀 PC 전용 (>=1200px): [Symbol | Name] 단일 라인 표기 -->
+                    <span class="hidden min-[1200px]:inline truncate font-extrabold text-theme-accent" title="${pcText2}" ${fontSizeStyle2}>${pcText2}</span>
                     <!-- 🚀 모바일 전용 (<1200px): 코인 이름을 무조건 아랫줄 2단으로 정렬 -->
                     <div class="flex flex-col min-[1200px]:hidden leading-none min-w-0">
                       <span class="text-base sm:text-lg font-extrabold tracking-wide truncate leading-tight text-theme-accent">${displaySym}</span>

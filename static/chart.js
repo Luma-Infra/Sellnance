@@ -389,8 +389,10 @@ export async function initChart() {
         e.preventDefault();
         e.stopPropagation();
 
-        const cursorY = rect ? e.clientY - rect.top : null;
-        zoomPriceScale(!isOverVol, isOverRightScale, e.deltaY, cursorY, activeEl);
+        if (typeof window.zoomPriceScale === "function") {
+          const cursorY = rect ? e.clientY - rect.top : null;
+          window.zoomPriceScale(!isOverVol, isOverRightScale, e.deltaY, cursorY, activeEl);
+        }
         return;
       }
 
@@ -608,7 +610,14 @@ export async function initChart() {
 
     // .setData() 통로 가로채기 및 완전 소독
     store.volumeSeries.setData = (dataArr) => {
-      if (!Array.isArray(dataArr)) return rawVolumeSetData([]);
+      const currentRange = store.chart
+        ? store.chart.timeScale().getVisibleLogicalRange()
+        : null;
+
+      if (!Array.isArray(dataArr)) {
+        rawVolumeSetData([]);
+        return;
+      }
 
       const sterilized = dataArr
         .map((d) => {
@@ -627,6 +636,13 @@ export async function initChart() {
           ? window.sanitizeChartData(sterilized, true)
           : sterilized,
       );
+
+      if (currentRange && store.chartVol) {
+        try { store.chartVol.timeScale().setVisibleLogicalRange(currentRange); } catch (e) {}
+      }
+      if (store.chartVol && !store.isVolPriceScaleUserZoomed) {
+        try { store.chartVol.priceScale("right").applyOptions({ autoScale: true }); } catch (e) {}
+      }
     };
 
     // .update() 통로 가로채기 및 완전 소독
@@ -679,7 +695,20 @@ export async function initChart() {
     const rawKimchiUpdate = store.kimchiSeries.update.bind(store.kimchiSeries);
 
     store.kimchiSeries.setData = (dataArr) => {
-      if (!Array.isArray(dataArr)) return rawKimchiSetData([]);
+      const currentRange = store.chart
+        ? store.chart.timeScale().getVisibleLogicalRange()
+        : (store.chartVol ? store.chartVol.timeScale().getVisibleLogicalRange() : null);
+
+      if (!Array.isArray(dataArr)) {
+        rawKimchiSetData([]);
+        if (currentRange && store.chartVol) {
+          try { store.chartVol.timeScale().setVisibleLogicalRange(currentRange); } catch (e) {}
+        }
+        if (store.chartVol && !store.isVolPriceScaleUserZoomed) {
+          try { store.chartVol.priceScale("right").applyOptions({ autoScale: true }); } catch (e) {}
+        }
+        return;
+      }
       const sterilized = dataArr
         .map((d) => {
           if (!d) return null;
@@ -695,6 +724,12 @@ export async function initChart() {
           ? window.sanitizeChartData(sterilized, true)
           : sterilized,
       );
+      if (currentRange && store.chartVol) {
+        try { store.chartVol.timeScale().setVisibleLogicalRange(currentRange); } catch (e) {}
+      }
+      if (store.chartVol && !store.isVolPriceScaleUserZoomed) {
+        try { store.chartVol.priceScale("right").applyOptions({ autoScale: true }); } catch (e) {}
+      }
     };
 
     store.kimchiSeries.update = (dataObj) => {

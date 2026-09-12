@@ -10,10 +10,47 @@ export { syncCrosshair };
 // 2. 가로 시간축(TimeScale) 1:1 상호 동기화 엔진
 // ==========================================
 let isSyncingRange = false;
+let activePointerChart = null;
+
+export function resetActivePointerChart() {
+  activePointerChart = null;
+}
+if (typeof window !== "undefined") {
+  window.resetActivePointerChart = resetActivePointerChart;
+}
+
 export function syncTimeScales(sourceChart, targetChart) {
   if (!sourceChart || !targetChart) return;
   sourceChart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
     if (isSyncingRange || !range) return;
+
+    // 🛡️ [데이터 정합성 & 인터랙션 기반 무결점 동기화]
+    // 1. 차트 페칭 중이거나 데이터 교체 중에는 동기화 이벤트 차단
+    if (store.isFetchingChart || window.isFetchingChart) return;
+
+    // 2. 도메인 데이터 무결성 검증: 양쪽 차트 데이터가 존재하고 동일 캔들 타임라인(최신 봉 시간 일치)일 때만 허용
+    const mainData = store.mainData;
+    const volData = store.volumeData;
+    if (!mainData || mainData.length === 0 || !volData || volData.length === 0) {
+      return;
+    }
+    const mainLast = mainData[mainData.length - 1];
+    const volLast = volData[volData.length - 1];
+    if (mainLast?.time !== volLast?.time) {
+      return; // 코인 전환 과도기이거나 타임라인 불일치 시 동기화 차단
+    }
+
+    // 3. 사용자 인터랙션 주도권 (User Interaction Leadership)
+    // - 사용자가 마우스/터치로 특정 차트를 직접 조작 중이라면 해당 차트(sourceChart)의 움직임만 상대에게 전파
+    // - 사용자의 직접 조작이 없는 상태(백그라운드 틱 수신 등)에서는 서브 패널(볼륨)이 메인 차트를 역주행 조작하는 것 차단
+    if (activePointerChart) {
+      if (sourceChart !== activePointerChart) return;
+    } else {
+      if (sourceChart === store.chartVol && targetChart === store.chart) {
+        return;
+      }
+    }
+
     isSyncingRange = true;
     try {
       targetChart.timeScale().setVisibleLogicalRange(range);
@@ -299,6 +336,26 @@ export function setupScaleModeButtons() {
 // 5. 차트 전체 동기화 초기화 바인더
 // ==========================================
 export function initChartSync(elMain, elVol) {
+  // 0. 사용자 포인터/인터랙션 활성 차트 추적 (직접 조작 중인 패널이 마스터 주도권 보유)
+  if (elMain) {
+    elMain.addEventListener("pointerenter", () => { activePointerChart = store.chart; });
+    elMain.addEventListener("pointerleave", (e) => {
+      if (!elVol || !elVol.contains(e.relatedTarget)) {
+        if (activePointerChart === store.chart) activePointerChart = null;
+      }
+    });
+    elMain.addEventListener("pointerdown", () => { activePointerChart = store.chart; });
+  }
+  if (elVol) {
+    elVol.addEventListener("pointerenter", () => { activePointerChart = store.chartVol; });
+    elVol.addEventListener("pointerleave", (e) => {
+      if (!elMain || !elMain.contains(e.relatedTarget)) {
+        if (activePointerChart === store.chartVol) activePointerChart = null;
+      }
+    });
+    elVol.addEventListener("pointerdown", () => { activePointerChart = store.chartVol; });
+  }
+
   // 1. 크로스헤어 상호 연동
   syncCrosshair(store.chart, [
     { chart: store.chartVol, series: store.volumeSeries },

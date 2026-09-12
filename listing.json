@@ -1089,6 +1089,9 @@
   "COOKIEUSDT": {
     "binance_listing": "2025-01-14"
   },
+  "COPPER": {
+    "binance_listing": "2026-09-11"
+  },
   "COS": {
     "binance_listing": "2024-09-30"
   },
@@ -2685,6 +2688,9 @@
   "NATGASUSDT": {
     "binance_listing": "2026-05-31"
   },
+  "NBISB": {
+    "binance_listing": "2026-09-11"
+  },
   "NBISUSDT": {
     "binance_listing": "2026-05-26"
   },
@@ -3312,7 +3318,8 @@
     "binance_listing": "2023-10-16"
   },
   "RIVER": {
-    "binance_listing": "2025-10-17"
+    "binance_listing": "2025-10-17",
+    "bybit_listing": "2026-09-10"
   },
   "RIVERUSDT": {
     "binance_listing": "2025-10-17"

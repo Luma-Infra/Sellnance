@@ -274,7 +274,17 @@ export const store = {
   precisionMap: new Map(),
   getPrecision: function (sym) {
     if (!sym) return store.currentPrecision || 2;
-    const key = String(sym).toUpperCase();
+    let key = String(sym).toUpperCase().trim();
+
+    // 트레이딩뷰 라우팅 스타일 (BINANCE:BTC_FUTURES 등) 정규화
+    if (key.includes(":")) {
+      key = key.split(":")[1].trim();
+    }
+    key = key
+      .replace(/_FUTURES$/i, "")
+      .replace(/_SPOT$/i, "")
+      .replace(/_UPBIT$/i, "")
+      .replace(/_BITHUMB$/i, "");
 
     if (store.precisionMap.has(key)) {
       return store.precisionMap.get(key);
@@ -331,6 +341,10 @@ export const store = {
           cleanT === cleanKey || cleanDt === cleanKey || cleanS === cleanKey
         );
       });
+    }
+
+    if (!row && store.currentSelectedUid && store.tickerRowMap) {
+      row = store.tickerRowMap.get(String(store.currentSelectedUid));
     }
 
     if (row && row.precision !== undefined && row.precision !== null) {

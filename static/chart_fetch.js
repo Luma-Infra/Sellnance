@@ -48,6 +48,10 @@ export async function fetchHistory(
     lazyIndicator.classList.add("opacity-0", "scale-95", "pointer-events-none");
   }
 
+  if (typeof window.resetActivePointerChart === "function") {
+    window.resetActivePointerChart();
+  }
+
   if (!isSilentSync) {
     store.isFetchingChart = true;
     window.isFetchingChart = true;
@@ -632,7 +636,10 @@ export async function fetchHistory(
     store.subRawData = [];
 
     if (store.mainData.length > 0 && store.candleSeries) {
-      const p = store.getPrecision(displayName);
+      const p =
+        rowInfo && rowInfo.precision !== undefined && rowInfo.precision !== null
+          ? Number(rowInfo.precision)
+          : store.getPrecision(rowInfo?.Ticker || rowInfo?.Symbol || displayName);
 
       const lastCandle = store.mainData[store.mainData.length - 1];
       if (lastCandle && rowInfo) {
@@ -784,10 +791,19 @@ export async function fetchHistory(
         // 🚀 [len 유동 보장] store.kimchiData가 실제로 채워진 경우, 내부 rAF(kimchiSeries.setData)가
         // 먼저 완료되도록 한 프레임 더 대기. 없으면 즉시 fit.
         const doFit = () => {
-          if (!isSilentSync && !store.isUserZoomed && typeof autoFit === "function") autoFit(isTabRestore); // 🚀 사용자가 이미 드래그/패닝 중이거나 무깜빡임 동기화 시 강제 점프 방지
           if (typeof window.updateStatus === "function") window.updateStatus();
           if (typeof updateExchangeBadges === "function") updateExchangeBadges(displayName, rowInfo?.UID);
           if (typeof window.syncPriceScaleWidths === "function") window.syncPriceScaleWidths(true);
+
+          if (store.chart && store.chartVol) {
+            const curRange = store.chart.timeScale().getVisibleLogicalRange();
+            if (curRange) {
+              try { store.chartVol.timeScale().setVisibleLogicalRange(curRange); } catch (e) {}
+            }
+            if (!store.isVolPriceScaleUserZoomed) {
+              try { store.chartVol.priceScale("right").applyOptions({ autoScale: true }); } catch (e) {}
+            }
+          }
 
           window.isFetchingChart = false;
           store.isFetchingChart = false;

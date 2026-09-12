@@ -67,27 +67,32 @@ export function flushRealtimeRender() {
         };
 
         try {
-            const lastVolItem = store.volumeData && store.volumeData.length > 0
-                ? store.volumeData[store.volumeData.length - 1]
-                : null;
+            const volData = store.volumeData;
+            if (volData && volData.length > 0) {
+                const lastVolItem = volData[volData.length - 1];
+                const normSec = getUnixSeconds(normalizedTime);
+                const lastSec = lastVolItem ? getUnixSeconds(lastVolItem.time) : -1;
 
-            const normSec = getUnixSeconds(normalizedTime);
-            const lastSec = lastVolItem ? getUnixSeconds(lastVolItem.time) : -1;
+                if (normSec >= lastSec) {
+                    // [타입 정합성] 기존 볼륨 배열의 time 형식(문자열 vs 숫자)과 일치시켜 Lightweight Charts 예외 차단
+                    if (typeof lastVolItem.time === "string" && typeof normalizedTime === "number") {
+                        volObj.time = String(lastVolItem.time);
+                    } else if (typeof lastVolItem.time === "number" && typeof normalizedTime === "string") {
+                        volObj.time = getUnixSeconds(normalizedTime);
+                    }
 
-            if (!lastVolItem || normSec >= lastSec) {
-                store.volumeSeries.update(volObj);
-                if (store.volumeData && store.volumeData.length > 0) {
+                    store.volumeSeries.update(volObj);
                     if (normSec > lastSec) {
-                        store.volumeData.push(volObj);
+                        volData.push(volObj);
                     } else if (normSec === lastSec) {
-                        store.volumeData[store.volumeData.length - 1] = volObj;
+                        volData[volData.length - 1] = volObj;
                     }
                     store.volumeDataMap.set(normSec, volObj);
                 }
             }
         } catch (e) {
-            // Xconsole.warn("🚨 volumeSeries.update 예외 발생, 완전 삭제 후 재바인딩 복구 가동:", e);
-            restoreVolumeDataSterilized();
+            // 🛡️ 틱 단위 예외 발생 시에도 차트를 0개로 날리는 깜빡임 없이 다음 프레임에서 자연스럽게 갱신
+            // Xconsole.debug("volumeSeries.update bypass:", e);
         }
     }
 }
@@ -122,7 +127,10 @@ export function renderRealtimeUpdate(normalizedTime, currentCandle, tickSymbol) 
         return;
     }
 
-    // 🚀 [방어 코드] 차트 캔들 데이터가 없거나 완전히 비어 있는 상태인 경우 실시간 업데이트 차단
+    // [방어 코드] 차트 데이터 페칭/교체 중이거나 캔들 데이터가 완전히 비어 있는 상태인 경우 실시간 업데이트 차단
+    if (store.isFetchingChart || window.isFetchingChart) {
+        return;
+    }
     const chartData = store.mainData || [];
     if (chartData.length === 0) {
         return;
@@ -167,11 +175,10 @@ function restoreVolumeDataSterilized() {
                 };
             });
 
-            // 🔥 [필수 추가] 메모리 원본 소독: 전역 스토어 배열 자체를 깨끗한 놈으로 갈아끼웁니다.
+            // 메모리 원본 소독: 전역 스토어 배열 자체를 깨끗한 놈으로 갈아끼웁니다.
             store.volumeData = sterileVolumeData;
             rebuildVolumeDataMap();
 
-            store.volumeSeries.setData([]);
             if (typeof window.sanitizeChartData === "function") {
                 store.volumeSeries.setData(window.sanitizeChartData(sterileVolumeData, true));
             } else {

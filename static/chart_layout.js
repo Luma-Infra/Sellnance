@@ -124,6 +124,15 @@ export function applyChartLayout() {
                 store.volWidthCache = rw;
                 store.volHeightCache = rh;
                 store.chartVol.resize(rw, rh);
+                if (store.chart) {
+                  const r = store.chart.timeScale().getVisibleLogicalRange();
+                  if (r) {
+                    try { store.chartVol.timeScale().setVisibleLogicalRange(r); } catch (e) {}
+                  }
+                }
+                if (!store.isVolPriceScaleUserZoomed) {
+                  try { store.chartVol.priceScale("right").applyOptions({ autoScale: true }); } catch (e) {}
+                }
               }
             }
           }, 50);
@@ -135,6 +144,15 @@ export function applyChartLayout() {
           store.volWidthCache = w;
           store.volHeightCache = h;
           store.chartVol.resize(w, h);
+          if (store.chart) {
+            const r = store.chart.timeScale().getVisibleLogicalRange();
+            if (r) {
+              try { store.chartVol.timeScale().setVisibleLogicalRange(r); } catch (e) {}
+            }
+          }
+          if (!store.isVolPriceScaleUserZoomed) {
+            try { store.chartVol.priceScale("right").applyOptions({ autoScale: true }); } catch (e) {}
+          }
         }
       }
     });
