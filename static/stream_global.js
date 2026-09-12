@@ -1,5 +1,5 @@
 // stream_global.js
-import { store, tfSec } from "./_store.js";
+import { store, tfSec, CONFIG } from "./_store.js";
 import { getUnixSeconds, getNextBarTime, updateTabTitleManager, getPureBase } from "./chart_utils.js";
 import {
   getUpbitMessageHandler,
@@ -115,12 +115,7 @@ export function startRealtimeCandle(
     latestSymbol = symbol;
     latestServerMs = serverMs;
 
-    const perfConfig = (typeof CONFIG !== "undefined" && CONFIG.CHART_PERF) || {
-      REALTIME_THROTTLE_MS: 50,
-      STATUS_DOM_THROTTLE_MS: 100,
-      TITLE_UPDATE_THROTTLE_MS: 1000,
-      COUNTDOWN_THROTTLE_MS: 250,
-    };
+    const perfConfig = CONFIG.CHART_PERF;
 
     const now = performance.now();
 

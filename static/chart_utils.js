@@ -204,10 +204,10 @@ export function formatSmartPrice(price, p, isKrw = false) {
         maximumFractionDigits: d,
       });
     }
-    if (!price || isNaN(price)) return "";
+    if (!price || isNaN(price) || !Number.isFinite(Number(price))) return "";
 
     let numPrice = parseFloat(price);
-    if (isNaN(numPrice)) return "";
+    if (isNaN(numPrice) || !Number.isFinite(numPrice)) return "";
 
     // 🚀 [부동소수점 오차(IEEE 754 epsilon) 0 보정]
     // 0.2 - 0.2 연산 등으로 발생하는 2.7755e-17 같은 부동소수점 쓰레기값을 순수 0으로 정규화!

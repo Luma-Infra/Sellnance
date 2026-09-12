@@ -51,6 +51,7 @@ try {
     if (sessionControlPanel.sortState) {
       initialSortState = sessionControlPanel.sortState;
     }
+    sessionControlPanel.currencyMode = "RECOMMENDED";
   }
 } catch (e) { }
 
@@ -99,9 +100,9 @@ export const store = {
   currentChartMarket: "ALL", // 우측 차트/호가창 활성 마켓 상태 추적
   currencyMode: "RECOMMENDED", // 통화/지표 기준 모드: "RECOMMENDED" (추천), "USD" (달러), "KRW" (원화)
   CURRENCY_MODES: {
-    RECOMMENDED: "RECOMMENDED", // 🌟 추천 모드 (바낸 선물 24h/Day ↔ 업비트 현물 24h/Day 직접 맞비교)
-    USD: "USD",                 // 💵 달러 모드 (순수 글로벌 해외 거래소 기준)
-    KRW: "KRW",                 // 🇰🇷 원화 모드 (순수 국내 업비트/원화 기준)
+    RECOMMENDED: "RECOMMENDED", // 추천 모드 (바낸 선물 24h/Day ↔ 업비트 현물 24h/Day 직접 맞비교)
+    USD: "USD",                 // 달러 모드 (순수 글로벌 해외 거래소 기준)
+    KRW: "KRW",                 // 원화 모드 (순수 국내 업비트/원화 기준)
   },
   viewMode: "DETAILED",
   tableViewMode: "basic",
@@ -154,7 +155,7 @@ export const store = {
       if (!isNaN(saved) && saved >= 0.2 && saved <= 0.9) {
         return { s1: saved, s2: 0.85 };
       }
-    } catch (e) {}
+    } catch (e) { }
     return { s1: 0.75, s2: 0.85 };
   })(),
   exchFilterStates: sessionControlPanel?.exchFilterStates ?? {
@@ -354,12 +355,28 @@ export const CONFIG = {
   UI_UPDATE_INTERVAL: 1000,
   RENDER_CHUNK: 50,
 
+  // [테이블 실시간 성능 & 갱신 주기 제어 콘솔 - 단일 진실 공급원]
+  TABLE_PERF: {
+    // 1. 행(Row) 순위 재정렬 주기 (DOM 순서 재배치)
+    SORT_INTERVAL_NORMAL_MS: 1000, // 평상시 행 정렬 주기
+    SORT_INTERVAL_TURBO_MS: 500,   // 경주마 시간대(08:59:30~09:02:00) 고속 정렬 주기 (2배 가속)
+    SORT_THROTTLE_WAIT_NORMAL_MS: 500, // 평상시 정렬 연산 디바운스 락
+    SORT_THROTTLE_WAIT_TURBO_MS: 250,  // 경주마 시간대 정렬 연산 디바운스 락
+
+    // 2. 글자(셀 텍스트: 현재가, 등락률, 볼륨, 김프) DOM 렌더 쓰로틀
+    CELL_RENDER_THROTTLE_NORMAL_MS: 1000, // 평상시 개별 셀 글자 갱신 제한
+    CELL_RENDER_THROTTLE_TURBO_MS: 500,  // 경주마 시간대 개별 셀 글자 갱신 제한
+
+    // 3. 소켓 인입 안전 밸브 (고빈도 aggTrade 틱 폭주 및 브라우저 프리징 방어)
+    SOCKET_MICRO_THROTTLE_MS: 30, // 동일 코인 초고빈도 틱 압축 쓰로틀
+  },
+
   //⚙️ [차트 전용 실시간 성능/쓰로틀 제어 콘솔 - 수동 조절 가능]
   CHART_PERF: {
-    REALTIME_THROTTLE_MS: 50, // 캔들/볼륨 실시간 차트 렌더링 쓰로틀 (기본 50ms)
-    STATUS_DOM_THROTTLE_MS: 100, // OHLC 레전드 및 헤더 상태창 DOM 갱신 쓰로틀 (기본 100ms)
-    TITLE_UPDATE_THROTTLE_MS: 1000, // 브라우저 탭 타이틀 실시간 시세 갱신 쓰로틀 (기본 1000ms)
-    COUNTDOWN_THROTTLE_MS: 250, // 카운트다운 타이머 DOM 갱신 쓰로틀 (기본 250ms)
+    REALTIME_THROTTLE_MS: 100, // 캔들/볼륨 실시간 차트 렌더링 쓰로틀
+    STATUS_DOM_THROTTLE_MS: 100, // OHLC 레전드 및 헤더 상태창 DOM 갱신 쓰로틀
+    TITLE_UPDATE_THROTTLE_MS: 1000, // 브라우저 탭 타이틀 실시간 시세 갱신 쓰로틀
+    COUNTDOWN_THROTTLE_MS: 500, // 카운트다운 타이머 DOM 갱신 쓰로틀
   },
 
   CHART_CONFIG: {
@@ -392,6 +409,8 @@ export const CONFIG = {
     VMC_REDUCE_STEP: 0.4,
   },
 };
+
+store.tablePerf = CONFIG.TABLE_PERF;
 
 export const tfSec = {
   "1m": 60,

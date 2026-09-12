@@ -1025,6 +1025,21 @@
                 <!-- <div class="p-2 col-listing overflow-hidden"></div> -->
               </div>
             </div>
+
+            <!-- 🏇 경주마 터보 모드 슬림 안내 바 (경주마 시간대에만 활성화) -->
+            <div id="turbo-mode-banner"
+              class="hidden w-full h-5 px-2 bg-theme-bg/60 border-b border-theme-border/30 flex items-center justify-between text-[10px] select-none shrink-0 font-sans transition-colors duration-200">
+              <div class="flex items-center gap-1.5 min-w-0">
+                <span id="turbo-status-dot"
+                  class="w-1.5 h-1.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.9)] animate-pulse"></span>
+                <span class="font-bold text-theme-text/90 tracking-tight text-[9.5px]">🏇 경주마 터보 모드</span>
+                <span class="opacity-50 text-[9px]">(08:59:30 ~ 09:02:00)</span>
+              </div>
+              <div id="turbo-mode-status-text" class="text-[9px] font-bold font-mono tracking-tight text-rose-400">
+                🔥 고속 정렬 터보 가동 중
+              </div>
+            </div>
+
             <div class="relative flex flex-col flex-1 min-h-0 w-full overflow-hidden">
               <div id="coin-list-body"
                 class="flex flex-col h-full overflow-y-auto min-h-0 w-full max-[1199px]:pb-[96px]"></div>

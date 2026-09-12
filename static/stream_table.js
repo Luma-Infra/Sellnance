@@ -184,7 +184,7 @@ export function calculateRowKimchi(r, rate) {
 
   let unitGlbPrice = rawGlb;
   if (ovsMult > 1 && unitGlbPrice > 0 && unitKorPrice > 0) {
-    const approxUsd = unitKorPrice / rate;
+    const approxUsd = rate > 0 ? unitKorPrice / rate : 0;
     if (Math.abs(unitGlbPrice / ovsMult - approxUsd) < Math.abs(unitGlbPrice - approxUsd)) {
       unitGlbPrice = unitGlbPrice / ovsMult;
     }
@@ -245,15 +245,21 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
   }
   if (store.isTabHidden || store.isRestoringTab) return;
 
-  // 🚀 [초고속 진입로 쓰로틀 차단] 소켓 데이터가 너무 빈번하게 들이닥치는 경우
-  // 객체 갱신 및 김프 연산 자체를 스킵하여 렉(메모리 힙 할당 및 GC)을 원천 차단
-  const now = Date.now();
+  // [초고속 메모리 진입로] 메모리 갱신(Price_Raw 등)은 0ms 무손실로 즉시 수행
+  const serverTs = data.trade_timestamp || data.timestamp || data.tms || data.ttms || data.E || data.T;
+  if (serverTs && typeof window.calibrateTrueTime === "function") {
+    window.calibrateTrueTime(serverTs);
+  }
+  const now = typeof window.getTrueEpochNow === "function" ? window.getTrueEpochNow() : Date.now();
   const source = data.isUpbitRealtime ? "upbit" : data.isBithumbRealtime ? "bithumb" : (isFutures ? "binance_futures" : "binance_spot");
   const tickKey = `${source}:${data.s || tId}:${data.e || "ticker"}`;
-  if (data && data.s) {
+
+  // [소켓 고빈도 폭주 방어 안전 밸브: 30ms 마이크로 쓰로틀 (초당 최대 33회)]
+  if (data && (data.s || tId)) {
     if (!store._lastRowTickMap) store._lastRowTickMap = new Map();
     const lastTick = store._lastRowTickMap.get(tickKey) || 0;
-    if (now - lastTick < 500) { // 500ms 쓰로틀 (이전 100ms에서 복원: aggTrade 등 고빈도 소켓 폭주 방지)
+    const microLimit = CONFIG.TABLE_PERF?.SOCKET_MICRO_THROTTLE_MS ?? 30;
+    if (microLimit > 0 && now - lastTick < microLimit) {
       if (store.bypassCounters) store.bypassCounters.throttleBypass++;
       return;
     }
@@ -318,7 +324,7 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
   if (isKoreaSocket) {
     if (data.isUpbitRealtime || row.Upbit !== "O") row.Price_KRW = newPrice;
     if (!hasGlobal) {
-      row.Price_Raw = newPrice / rate;
+      row.Price_Raw = rate > 0 ? newPrice / rate : 0;
     }
     if (data.isUpbitRealtime) {
       row.Upbit_Price = newPrice;
@@ -468,18 +474,31 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
     }
   }
 
+  // [KST 일봉 리셋 & 과거 데이터 무효화]
+  const currentUtcDay = new Date(typeof window.getTrueEpochNow === "function" ? window.getTrueEpochNow() : Date.now()).toISOString().slice(0, 10);
+  if (row._lastUtcDay && row._lastUtcDay !== currentUtcDay) {
+    row.Change_Today_Raw = 0;
+    row.Change_Today_Futures = 0;
+    row.Change_Today_Spot = 0;
+    row.Change_Today_Upbit = 0;
+    row.Change_Today_Bithumb = 0;
+    row.futures_utc0_open_Raw = null;
+    row.spot_utc0_open_Raw = null;
+    row.utc0_open_Raw = null;
+    row.utc0_open_KRW = null;
+  }
+  row._lastUtcDay = currentUtcDay;
+
   if (isKoreaSocket) {
     let openPriceKRW = row.utc0_open_KRW ? parseFloat(row.utc0_open_KRW) : 0;
     if (openPriceKRW <= 0 && row.utc0_open_Raw && rate > 0) {
       openPriceKRW = parseFloat(row.utc0_open_Raw) * rate;
     }
-    // 시가 데이터가 0 이하로 오염되거나 빈 경우, 현재 꽂힌 실시간 시세로 강제 보정 복구 (0% 고착 버그로 인해 주석 처리)
-    /*
-    if (openPriceKRW <= 0) {
+    // 9시 이후 첫 틱 수신 시 해당 틱을 당일 시가로 초기화하여 0초부터 실시간 연산 지원
+    if (openPriceKRW <= 0 && newPrice > 0) {
       openPriceKRW = newPrice;
       row.utc0_open_KRW = newPrice;
     }
-    */
     if (openPriceKRW > 0) {
       const todayKrw = ((newPrice - openPriceKRW) / openPriceKRW) * 100;
       if (data.isUpbitRealtime) row.Change_Today_Upbit = todayKrw;
@@ -501,6 +520,17 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
       openPrice = parseFloat(row.futures_utc0_open_Raw || row.utc0_open_Raw || 0);
     } else {
       openPrice = parseFloat(row.spot_utc0_open_Raw || row.utc0_open_Raw || 0);
+    }
+
+    // 9시 이후 첫 틱 수신 시 해당 틱을 당일 시가로 초기화하여 0초부터 실시간 연산 지원
+    if (openPrice <= 0 && newPrice > 0) {
+      openPrice = newPrice;
+      if (isFutures) {
+        row.futures_utc0_open_Raw = newPrice;
+      } else {
+        row.spot_utc0_open_Raw = newPrice;
+      }
+      row.utc0_open_Raw = newPrice;
     }
 
     if (openPrice > 0 && newPrice > 0) {
@@ -530,8 +560,8 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
     }
   }
 
-  // 🚀 [신규 방어막] 실시간 소켓 갱신 시각 기록 (3초 레이더의 낡은 캐시 덮어쓰기 원천 차단용)
-  row._LastRealtimeUpdate = Date.now();
+  // [신규 방어막] 실시간 소켓 갱신 시각 기록 (3초 레이더의 낡은 캐시 덮어쓰기 원천 차단용)
+  row._LastRealtimeUpdate = typeof window.getTrueEpochNow === "function" ? window.getTrueEpochNow() : Date.now();
   row.Last_Updated_Source = '🔌 실시간소켓';
 
   if (!store.blockKimchi) {
@@ -666,11 +696,16 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
 
   if (!isVisible) return;
 
-  // 🚀 [상시 100ms 쓰로틀링 가드] 렉 유발 디버깅 방지 및 메모리 압축을 위해,
-  // 100ms 이내에 과도하게 밀려오는 화면 그리기 요청을 원천 차단하고 바이패스시킴
+  // [스마트 DOM 렌더 쓰로틀: 글자 갱신 주기]
+  const isTurbo = typeof window.isTurboWindow === "function" && window.isTurboWindow();
+  const perf = CONFIG.TABLE_PERF || {};
+  const throttleLimit = isTurbo
+    ? (perf.CELL_RENDER_THROTTLE_TURBO_MS || 500)
+    : (perf.CELL_RENDER_THROTTLE_NORMAL_MS || 500);
+
   const renderNow = Date.now();
   if (!row._lastCellRenderTime) row._lastCellRenderTime = 0;
-  if (renderNow - row._lastCellRenderTime < 250) {
+  if (throttleLimit > 0 && renderNow - row._lastCellRenderTime < throttleLimit) {
     if (store.bypassCounters) store.bypassCounters.tableUpdate++;
     return;
   }

@@ -501,6 +501,10 @@ export function restoreControlPanelUI() {
   if (typeof updateCustomFilterUI === "function") {
     updateCustomFilterUI();
   }
+
+  // 7. 통화 모드는 항상 RECOMMENDED로 고정 및 UI 동기화
+  store.currencyMode = "RECOMMENDED";
+  updateCurrencyUI();
 }
 
 // ==========================================
@@ -567,12 +571,12 @@ export function switchFilter(mode) {
 
   if (mode === "BINANCE") {
     store.filterMode = "BINANCE";
-    store.currencyMode = "USD";
+    store.currencyMode = "RECOMMENDED";
     store.lang = "EN";
     updateUI(btnBinance, "4px");
   } else if (mode === "UPBIT") {
     store.filterMode = "UPBIT";
-    store.currencyMode = "KRW";
+    store.currencyMode = "RECOMMENDED";
     store.lang = "KR";
     updateUI(btnUpbit, "calc(50% + 2px)");
   } else {
@@ -640,16 +644,8 @@ export function switchView(mode) {
   renderTable();
 }
 
-export function setCurrencyMode(mode) {
-  if (
-    mode !== "USD" &&
-    mode !== "KRW" &&
-    mode !== "RECOMMENDED"
-  ) {
-    return;
-  }
-  store.currencyMode = mode;
-  store.lang = mode === "KRW" ? "KR" : "EN";
+export function setCurrencyMode(mode = "RECOMMENDED") {
+  store.currencyMode = "RECOMMENDED";
   updateCurrencyUI();
   renderTable();
 
@@ -670,27 +666,12 @@ export function setCurrencyMode(mode) {
 export function updateCurrencyUI() {
   const btn = document.getElementById("currency-toggle");
   if (btn) {
-    if (store.currencyMode === "RECOMMENDED") {
-      btn.innerText = "RECOMMENDED (추천)";
-    } else if (store.currencyMode === "USD") {
-      btn.innerText = "USD ($) / EN";
-    } else if (store.currencyMode === "KRW") {
-      btn.innerText = "KRW (₩) / KR";
-    }
+    btn.innerText = "RECOMMENDED (추천)";
   }
 }
 
 export function toggleCurrency() {
-  // 🚀 3단 순환: RECOMMENDED (추천) ➔ USD (달러) ➔ KRW (원화) ➔ RECOMMENDED
-  let nextMode = "RECOMMENDED";
-  if (store.currencyMode === "RECOMMENDED") {
-    nextMode = "USD";
-  } else if (store.currencyMode === "USD") {
-    nextMode = "KRW";
-  } else {
-    nextMode = "RECOMMENDED";
-  }
-  setCurrencyMode(nextMode);
+  setCurrencyMode("RECOMMENDED");
 }
 
 export function toggleSmallCap() {

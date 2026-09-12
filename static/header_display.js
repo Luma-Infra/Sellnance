@@ -235,7 +235,8 @@ export const realUpdateHeaderDisplay = (
     }
   } else if (activeExchange === "upbit") {
     const rawP = upbitP || 0;
-    const actualUsd = binanceP || bybitP || null;
+    const validUsd = (binanceP && Number.isFinite(binanceP)) ? binanceP : ((bybitP && Number.isFinite(bybitP)) ? bybitP : null);
+    const actualUsd = validUsd;
     if (isMainKrw) {
       displayPrice = rawP;
       subPrice = actualUsd || (rate > 0 ? rawP / rate : null);
@@ -245,7 +246,8 @@ export const realUpdateHeaderDisplay = (
     }
   } else if (activeExchange === "bithumb") {
     const rawP = bithumbP || 0;
-    const actualUsd = binanceP || bybitP || null;
+    const validUsd = (binanceP && Number.isFinite(binanceP)) ? binanceP : ((bybitP && Number.isFinite(bybitP)) ? bybitP : null);
+    const actualUsd = validUsd;
     if (isMainKrw) {
       displayPrice = rawP;
       subPrice = actualUsd || (rate > 0 ? rawP / rate : null);
@@ -265,7 +267,7 @@ export const realUpdateHeaderDisplay = (
     });
   }
 
-  const hasSubPrice = subPrice !== null && subPrice > 0;
+  const hasSubPrice = subPrice !== null && Number.isFinite(subPrice) && subPrice > 0;
   const formattedSubPrice = hasSubPrice
     ? (isMainKrw
       ? `≈ $ ${window.formatSmartPrice ? window.formatSmartPrice(subPrice, pNormalized) : formatSmartPrice(subPrice, pNormalized)}`

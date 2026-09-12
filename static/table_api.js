@@ -335,7 +335,9 @@ export async function loadTableData(force = false, silent = false) {
     const res = await fetch(`/api/market-data?force=${force}`, { headers });
     // Xconsole.log("2. 파이썬 서버가 응답 완료!"); // ⭐️ 추가
     const result = await res.json();
-    // updateTimeSpan.innerText = `마지막 업데이트: ${result.last_updated}`;
+    if (result && result.last_updated_raw && typeof window.calibrateTrueTime === "function") {
+      window.calibrateTrueTime(result.last_updated_raw * 1000);
+    }
 
     // 로컬 스토리지에 데이터 캐시 (비동기 백그라운드 지연으로 메인 스레드 렌더링 블로킹 방지)
     setTimeout(() => {
@@ -377,6 +379,9 @@ export async function loadTableDataSilent() {
     const res = await fetch("/api/market-data-silent", { headers });
     if (!res.ok) return;
     const result = await res.json();
+    if (result && result.last_updated_raw && typeof window.calibrateTrueTime === "function") {
+      window.calibrateTrueTime(result.last_updated_raw * 1000);
+    }
 
     if (result && result.data) {
       store.originalTableData = JSON.parse(JSON.stringify(result.data));
