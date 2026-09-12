@@ -4,6 +4,7 @@ import { store, CONFIG } from "./_store.js";
 import { fetchHistory } from "./chart_data.js";
 import { getPureBase } from "./chart_utils.js";
 import { getChartDefaultMarket, getRowExchangeMeta } from "./_market_rules.js";
+import { getExchangeLogo } from "./table_tooltips.js";
 
 export function selectSymbol(
   s,
@@ -668,7 +669,7 @@ export function updateExchangeBadges(s, targetUid = null) {
     ];
 
     sortedList.forEach((item) => {
-      const imgUrl = `https://s2.coinmarketcap.com/static/img/exchanges/64x64/${item.cmcId}.png`;
+      const imgUrl = getExchangeLogo(item.cmcId);
       const isCurrentActive = store.currentChartMarket === item.market;
 
       if (item.condition) {

@@ -274,3 +274,35 @@ def test_cmc_key_validation_and_listing_security():
         assert res_authorized.json().get("status") in ["updated", "success", "skipped"]
     finally:
         os.environ.pop("ADMIN_SECRET", None)
+
+
+def test_market_data_rate_limit():
+    """10. /api/market-data 엔드포인트 분당 20회 초과 시 429 차단 가드 테스트"""
+    from modules.app import check_market_data_rate_limit, MARKET_DATA_REQUEST_HISTORY
+    from fastapi import Request
+
+    # Mock request
+    scope = {
+        "type": "http",
+        "method": "GET",
+        "path": "/api/market-data",
+        "headers": [(b"x-forwarded-for", b"203.0.113.199")],
+        "client": ("203.0.113.199", 12345),
+    }
+    mock_req = Request(scope)
+
+    # 테스트 환경 플래그 임시 해제
+    os.environ["TESTING"] = "0"
+    try:
+        MARKET_DATA_REQUEST_HISTORY.clear()
+        # 1~20회: 허용
+        for i in range(20):
+            allowed = check_market_data_rate_limit(mock_req, max_requests=20, window_seconds=60)
+            assert allowed is True, f"{i+1}번째 요청은 허용되어야 합니다."
+
+        # 21번째 요청: 429 차단
+        blocked = check_market_data_rate_limit(mock_req, max_requests=20, window_seconds=60)
+        assert blocked is False, "21번째 요청은 분당 20회 한도로 인해 차단(False)되어야 합니다."
+    finally:
+        os.environ["TESTING"] = "1"
+        MARKET_DATA_REQUEST_HISTORY.clear()
