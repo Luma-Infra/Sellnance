@@ -681,18 +681,69 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
       container._fundingEl ||
       (container._fundingEl = container.querySelector(".funding-val"));
     if (fundingEl) {
-      const fundingEl =
-        container._fundingEl ||
-        (container._fundingEl = container.querySelector(".funding-val"));
-      if (fundingEl) {
-        const fundVal = row.Funding_Formatted || "-";
-        if (fundingEl.textContent !== fundVal) fundingEl.textContent = fundVal;
-        if (fundVal === "-") {
-          fundingEl.className =
-            "funding-val text-theme-accent opacity-30 truncate";
+      const rawFund = row.Funding_Raw;
+      const interval =
+        row.Funding_Interval || row.Binance_Funding_Interval || 8;
+
+      let rateText = "";
+      let hasValidFund = false;
+
+      if (
+        rawFund !== null &&
+        rawFund !== undefined &&
+        rawFund !== 0 &&
+        !isNaN(rawFund)
+      ) {
+        const num = Number(rawFund) * 100;
+        const sign = num > 0 ? "+" : "";
+        rateText = `${sign}${num.toFixed(4)} `;
+        hasValidFund = true;
+      } else if (row.Funding_Formatted && row.Funding_Formatted !== "-") {
+        const match = row.Funding_Formatted.match(/^([+-]?\d+(?:\.\d+)?)/);
+        if (match) {
+          rateText = match[1];
+          hasValidFund = true;
+        }
+      }
+
+      if (!hasValidFund) {
+        if (fundingEl.textContent !== "-") fundingEl.textContent = "-";
+        fundingEl.className =
+          "funding-val text-theme-accent opacity-30 truncate whitespace-nowrap text-[9.5px] tracking-tighter";
+        fundingEl._rateEl = null;
+        fundingEl._intervalEl = null;
+      } else {
+        const intervalText = `/${interval}h`;
+
+        // 🚀 수치(truncate) + 주기(flex-shrink-0 고정) 구조: 너비 축소 시에도 /1h, /4h, /8h 무조건 고정 노출!
+        if (!fundingEl._rateEl || !fundingEl._intervalEl) {
+          fundingEl.innerHTML = `<span class="funding-rate-text truncate min-w-0"></span><span class="funding-interval-text flex-shrink-0 font-bold"></span>`;
+          fundingEl._rateEl = fundingEl.querySelector(".funding-rate-text");
+          fundingEl._intervalEl = fundingEl.querySelector(
+            ".funding-interval-text",
+          );
+        }
+
+        if (fundingEl._rateEl.textContent !== rateText) {
+          fundingEl._rateEl.textContent = rateText;
+        }
+        if (fundingEl._intervalEl.textContent !== intervalText) {
+          fundingEl._intervalEl.textContent = intervalText;
+        }
+
+        // 🚀 펀딩 주기 3단계 색상 차등 (다크/라이트 시인성 최적화)
+        const baseClass =
+          "funding-val flex items-center min-w-0 max-w-full text-[9.5px] tracking-tighter whitespace-nowrap";
+
+        if (interval <= 1) {
+          // 3단계: 1시간 (고위험/초과열 - 레드/로즈)
+          fundingEl.className = `${baseClass} text-rose-600 dark:text-rose-400 font-bold`;
+        } else if (interval <= 4) {
+          // 2단계: 2~4시간 (주의/경고 - 주황/앰버)
+          fundingEl.className = `${baseClass} text-amber-600 dark:text-amber-400 font-semibold`;
         } else {
-          fundingEl.className =
-            "funding-val text-theme-accent opacity-70 truncate";
+          // 1단계: 8시간 (기본 정상 - 기존 테마 액센트 유지)
+          fundingEl.className = `${baseClass} text-theme-accent opacity-70`;
         }
       }
     }

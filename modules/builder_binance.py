@@ -157,6 +157,7 @@ def _aggregate_binance_market(
     binance_spot_change_today = 0.0
     binance_futures_change_today = 0.0
     binance_futures_funding = 0.0
+    binance_futures_funding_interval = 8
     exact_spot_ticker = ""
     exact_futures_ticker = ""
     spot_utc0 = 0.0
@@ -262,6 +263,11 @@ def _aggregate_binance_market(
                 ) or b_inf.get("change_24h", 0.0)
                 exact_futures_ticker = b_tick.replace("USDT", "")
                 binance_futures_funding = b_inf.get("funding_rate", 0.0)
+                binance_futures_funding_interval = (
+                    b_inf.get("binance_futures_funding_interval")
+                    or b_inf.get("funding_interval")
+                    or 8
+                )
                 futures_utc0 = (
                     b_inf.get("futures_utc0_open") or b_inf.get("utc0_open") or 0.0
                 )
@@ -283,6 +289,7 @@ def _aggregate_binance_market(
         "binance_spot_change_today": binance_spot_change_today,
         "binance_futures_change_today": binance_futures_change_today,
         "binance_futures_funding": binance_futures_funding,
+        "binance_futures_funding_interval": binance_futures_funding_interval,
         "exact_spot_ticker": exact_spot_ticker,
         "exact_futures_ticker": exact_futures_ticker,
         "spot_utc0": spot_utc0,
@@ -469,6 +476,7 @@ def build_binance_row(
     binance_spot_change_today = agg["binance_spot_change_today"]
     binance_futures_change_today = agg["binance_futures_change_today"]
     binance_futures_funding = agg["binance_futures_funding"]
+    binance_futures_funding_interval = agg.get("binance_futures_funding_interval", 8)
     exact_spot_ticker = agg["exact_spot_ticker"]
     exact_futures_ticker = agg["exact_futures_ticker"]
     spot_utc0 = agg["spot_utc0"]
@@ -656,8 +664,18 @@ def build_binance_row(
 
     vmc_raw = (binance_vol / mcap * 100) if (mcap is not None and mcap > 0) else 0.0
     funding_rate = binance_futures_funding or b_info.get("funding_rate", 0.0)
+    binance_futures_funding_interval = (
+        binance_futures_funding_interval
+        or b_info.get("binance_futures_funding_interval")
+        or b_info.get("funding_interval")
+        or 8
+    )
+    bybit_futures_funding_interval = bybit_data.get(base, {}).get(
+        "bybit_futures_funding_interval", 8
+    )
+    funding_interval = binance_futures_funding_interval
     funding_f = (
-        f"{funding_rate*100:.4f}%"
+        f"{funding_rate*100:.4f}/{funding_interval}h"
         if "FUTURES" in str(listed_on) and funding_rate != 0
         else "-"
     )
@@ -814,6 +832,9 @@ def build_binance_row(
         "Change_Today_Futures": binance_futures_change_today,
         "Funding_Raw": funding_rate,
         "Funding_Formatted": funding_f,
+        "Funding_Interval": funding_interval,
+        "Binance_Funding_Interval": binance_futures_funding_interval,
+        "Bybit_Funding_Interval": bybit_futures_funding_interval,
         "futures_utc0_open_Raw": futures_utc0 if futures_utc0 > 0 else None,
         "Binance_Vol_Futures": total_vol_futures,
         "Exact_Futures": exact_futures_ticker,

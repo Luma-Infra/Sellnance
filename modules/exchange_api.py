@@ -531,13 +531,14 @@ def fetch_binance_futures_spot(bybit_data=None):
         bybit_data = {}
 
     try:
-        # 1. 기초 데이터 수집 (선물/현물 마켓 정보, 24시간 시세, 펀딩비 병렬 타격)
+        # 1. 기초 데이터 수집 (선물/현물 마켓 정보, 24시간 시세, 펀딩비, 펀딩 주기 병렬 타격)
         urls = [
             "https://fapi.binance.com/fapi/v1/exchangeInfo",
             "https://fapi.binance.com/fapi/v1/ticker/24hr",
             "https://api.binance.com/api/v3/exchangeInfo",
             "https://api.binance.com/api/v3/ticker/24hr",
             "https://fapi.binance.com/fapi/v1/premiumIndex",  # 🚀 펀딩비 추가
+            "https://fapi.binance.com/fapi/v1/fundingInfo",   # 🚀 펀딩 주기(fundingIntervalHours) 추가
         ]
 
         def fetch_url_safe(base_url):
@@ -582,7 +583,7 @@ def fetch_binance_futures_spot(bybit_data=None):
                     print(f"⚠️ [API 개별 실패] {url}: {e}")
             return None
 
-        with ThreadPoolExecutor(max_workers=5) as executor:
+        with ThreadPoolExecutor(max_workers=6) as executor:
             # 🚀 [수정] map 대신 직접 submit 하여 에러 발생 시에도 개별 제어 가능하게 변경
             futures = [executor.submit(fetch_url_safe, url) for url in urls]
             results = [f.result() for f in futures]
@@ -592,6 +593,7 @@ def fetch_binance_futures_spot(bybit_data=None):
             info_s = results[2] or {"symbols": []}
             prices_s = results[3] or []
             premium_f = results[4] or []
+            funding_info_f = results[5] or []
 
         # 🚀 [추가] 바이낸스 선물 API 밴 감지 및 바이비트 선물 Fallback 이식
         if not prices_f or len(prices_f) < 10:
@@ -600,6 +602,7 @@ def fetch_binance_futures_spot(bybit_data=None):
             )
             prices_f = []
             premium_f = []
+            funding_info_f = []
             info_f_symbols = []
             for base, b_inf in bybit_data.items():
                 if b_inf.get("futures_price", 0) > 0:
@@ -743,14 +746,22 @@ def fetch_binance_futures_spot(bybit_data=None):
                     "contract_type": s.get("contractType", ""),
                 }
 
-        # 🚀 펀딩비 맵
+        # 🚀 펀딩비 및 펀딩 주기 맵
         funding_map = {}
+        funding_interval_map = {}
         if isinstance(premium_f, list):
             funding_map = {
                 item["symbol"]: float(item["lastFundingRate"])
                 for item in premium_f
                 if "lastFundingRate" in item
             }
+        if isinstance(funding_info_f, list):
+            for item in funding_info_f:
+                if isinstance(item, dict) and "symbol" in item and "fundingIntervalHours" in item:
+                    try:
+                        funding_interval_map[item["symbol"]] = int(item["fundingIntervalHours"])
+                    except (ValueError, TypeError):
+                        pass
 
         # 3. 딕셔너리 정리 (데이터 타입 검증 추가)
         f_dict = {}
@@ -869,6 +880,8 @@ def fetch_binance_futures_spot(bybit_data=None):
                 "futures_utc0_open": utc0_open_dict.get(f"{sym}_FUTURES"),
                 "utc0_open": utc0_open_dict.get(sym),
                 "funding_rate": funding_map.get(ticker, 0.0),  # 🚀 펀딩비 꽂아넣기
+                "binance_futures_funding_interval": funding_interval_map.get(ticker, 8),
+                "funding_interval": funding_interval_map.get(ticker, 8),
                 "underlying_type": t_details.get("underlying_type", ""),
                 "contract_type": t_details.get("contract_type", ""),
             }
@@ -994,6 +1007,7 @@ def fetch_bybit_prices():
                 bybit_data[base]["futures_volume_24h"] = f_vol
                 bybit_data[base]["volume_24h"] += f_vol
                 bybit_data[base]["funding_rate"] = float(item.get("fundingRate", 0))
+                bybit_data[base]["bybit_futures_funding_interval"] = 8  # 🚀 [예약] Bybit 선물 주기 확장 대비 (기본 8h)
                 chg_24 = float(item.get("price24hPcnt", 0.0)) * 100
                 bybit_data[base]["futures_change_24h"] = chg_24
                 if "change_24h" not in bybit_data[base] or not bybit_data[base].get(
