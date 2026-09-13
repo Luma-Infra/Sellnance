@@ -12,7 +12,11 @@ import {
   getRowExchangeMeta,
   getRowDisplayVolume,
 } from "./_market_rules.js";
-import { getWarningBadgeHtml, getListingDate, formatListingDateWithExchange } from "./table_badges.js";
+import {
+  getWarningBadgeHtml,
+  getListingDate,
+  formatListingDateWithExchange,
+} from "./table_badges.js";
 import { getExchangeLogo } from "./table_tooltips.js";
 
 export function createRowElement(row) {
@@ -86,13 +90,14 @@ export function updateRowStaticHTML(rowEl, row) {
   // 동적 수치 데이터 영역은 빈 Placeholder div 구조로 생성하여 레이아웃 깨짐을 방지하고 스크롤 시 공백(하얀 칸) 노출을 방어합니다.
   rowEl.innerHTML = `
   <div class="p-2 col-asset overflow-visible">
-    ${pendingAction
-      ? `
+    ${
+      pendingAction
+        ? `
       <div class="row-progress-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 2.5px; z-index: 50; pointer-events: none;">
          <div id="progress-bar-${row.Ticker}" class="row-progress-bar" style="height: 100%; width: 100%; background: linear-gradient(90deg, var(--accent) 0%, #3b82f6 100%); transition: width 50ms linear;"></div>
       </div>
     `
-      : ""
+        : ""
     }
     <div class="flex items-center gap-0.5 min-w-0 w-full">
       <!-- 0. 절대 순위 번호 (CSS 카운터로 1부터 800까지 순차 자동 렌더링) -->
@@ -104,8 +109,9 @@ export function updateRowStaticHTML(rowEl, row) {
         <button onclick="toggleFavorite('${uId}', event)" class="star-btn text-[14px] transition-all hover:scale-125 flex-shrink-0 ${starClass}" style="color: ${starColor}">
           ${starText}
         </button>
-        ${pendingAction
-      ? `
+        ${
+          pendingAction
+            ? `
           <button onclick="window.confirmFavoriteChange('${uId}', event)" class="confirm-fav-btn text-[9px] font-medium px-1.5 py-0.5 rounded transition-all flex-shrink-0 mr-1">
             확인
           </button>
@@ -113,13 +119,13 @@ export function updateRowStaticHTML(rowEl, row) {
             취소
           </button>
         `
-      : ""
-    }
+            : ""
+        }
       </div>
       
       <!-- 2. 티커 이미지 (상폐 시 회색조 처리) -->
       <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-white/1 overflow-hidden ${delistMutedClass}">
-        ${row.Logo || `<img src="${document.body?.classList.contains('theme-upbit') ? '/static/luma-deer-svg-light.svg' : '/static/luma-deer-svg-dark.svg'}" class="fallback-logo" loading="lazy" style="width: 24px; height: 24px; vertical-align: middle; border-radius: 50%;">`}
+        ${row.Logo || `<img src="${document.body?.classList.contains("theme-upbit") ? "/static/luma-deer-svg-light.svg" : "/static/luma-deer-svg-dark.svg"}" class="fallback-logo" loading="lazy" style="width: 24px; height: 24px; vertical-align: middle; border-radius: 50%;">`}
       </div>
       
       <!-- 3. 티커 & 이름 (상폐 시 회색조 처리) -->
@@ -129,13 +135,13 @@ export function updateRowStaticHTML(rowEl, row) {
         </b>
         <span class="text-[9px] text-theme-text opacity-60 truncate font-medium tracking-tighter">
           ${(() => {
-      let n =
-        store.lang === "KR"
-          ? row.Name_KR || row.Name || ""
-          : row.Name || "";
-      n = n.replace(/\s*[\(\（\[][^\)\）\]]*[\)\）\]]/g, "").trim();
-      return n.length > 8 ? n.substring(0, 8) + ".." : n;
-    })()}
+            let n =
+              store.lang === "KR"
+                ? row.Name_KR || row.Name || ""
+                : row.Name || "";
+            n = n.replace(/\s*[\(\（\[][^\)\）\]]*[\)\）\]]/g, "").trim();
+            return n.length > 8 ? n.substring(0, 8) + ".." : n;
+          })()}
         </span>
       </div>
       <!-- 4. 유의/상폐 경고 뱃지 (셀 우측 끝에 배치) -->
@@ -191,7 +197,10 @@ export function updateRowStaticHTML(rowEl, row) {
   const counterEl = rowEl.querySelector(".row-counter");
   const targetIdx = parseInt(rowEl.dataset.index);
   if (counterEl && !isNaN(targetIdx)) {
-    counterEl.textContent = row.isDelisted && row.fixedRank ? row.fixedRank : (rowEl.dataset.fixedRank || targetIdx + 1);
+    counterEl.textContent =
+      row.isDelisted && row.fixedRank
+        ? row.fixedRank
+        : rowEl.dataset.fixedRank || targetIdx + 1;
   }
 
   // 🚀 정적 데이터 갱신 시 Trace 기록 트리거 (1번 행일 경우)
@@ -293,7 +302,12 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
   const rate = store.marketDataMap?.krw_usd_rate || 0;
   const isKrw = store.currencyMode === "KRW";
 
-  const { displayPrice: nPrice, n24h, nDay, activeExchange } = getRowDisplayMetrics(row, isKrw, rate);
+  const {
+    displayPrice: nPrice,
+    n24h,
+    nDay,
+    activeExchange,
+  } = getRowDisplayMetrics(row, isKrw, rate);
   const formattedPrice = formatSmartPrice(nPrice, p, isKrw);
 
   const color24h =
@@ -328,10 +342,18 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
         const initialLen = formattedPrice.length;
         const initFs = CONFIG.FONT_SCALE;
         const initThreshold = initFs?.PRICE_THRESHOLD || 8;
-        const initSizePx = initialLen > initThreshold
-          ? Math.max(initFs?.PRICE_MIN_SIZE || 11, (initFs?.PRICE_BASE_SIZE || 14) - (initialLen - initThreshold) * (initFs?.PRICE_REDUCE_STEP || 0.6))
-          : null;
-        const initStyleAttr = initSizePx ? `style="font-size: ${initSizePx}px;"` : "";
+        const initSizePx =
+          initialLen > initThreshold
+            ? Math.max(
+                initFs?.PRICE_MIN_SIZE || 11,
+                (initFs?.PRICE_BASE_SIZE || 14) -
+                  (initialLen - initThreshold) *
+                    (initFs?.PRICE_REDUCE_STEP || 0.6),
+              )
+            : null;
+        const initStyleAttr = initSizePx
+          ? `style="font-size: ${initSizePx}px;"`
+          : "";
 
         priceCell.innerHTML = `
           <div class="price-container flex flex-col leading-tight min-w-0 gap-0.5 w-full">
@@ -352,15 +374,24 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
     // 🚀 가격 수치 및 data-raw-price 실시간 갱신 (플래시 애니메이션 및 폰트 축소 연동)
     const priceDiv =
       container._priceDiv ||
-      (container._priceDiv = container.querySelector(".price-cell") || document.getElementById(`price-${tId}`));
+      (container._priceDiv =
+        container.querySelector(".price-cell") ||
+        document.getElementById(`price-${tId}`));
     if (priceDiv) {
       const numEl =
         priceDiv._numEl ||
         (priceDiv._numEl = priceDiv.querySelector(".price-num"));
       if (numEl) {
-        const oldPrice = parseFloat(priceDiv.getAttribute("data-raw-price") || "0");
+        const oldPrice = parseFloat(
+          priceDiv.getAttribute("data-raw-price") || "0",
+        );
         if (numEl.textContent !== formattedPrice) {
-          if (oldPrice > 0 && nPrice > 0 && oldPrice !== nPrice && typeof window.applyPriceFlash === "function") {
+          if (
+            oldPrice > 0 &&
+            nPrice > 0 &&
+            oldPrice !== nPrice &&
+            typeof window.applyPriceFlash === "function"
+          ) {
             window.applyPriceFlash(numEl, nPrice, oldPrice);
           }
           numEl.textContent = formattedPrice;
@@ -373,7 +404,8 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
         if (len > threshold) {
           const sizePx = Math.max(
             fs?.PRICE_MIN_SIZE || 11,
-            (fs?.PRICE_BASE_SIZE || 14) - (len - threshold) * (fs?.PRICE_REDUCE_STEP || 0.6),
+            (fs?.PRICE_BASE_SIZE || 14) -
+              (len - threshold) * (fs?.PRICE_REDUCE_STEP || 0.6),
           );
           const targetFont = `${sizePx}px`;
           if (priceDiv.style.fontSize !== targetFont)
@@ -383,7 +415,10 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
         }
       }
       priceDiv.setAttribute("data-raw-price", nPrice);
-      priceDiv.setAttribute("data-active-exchange", activeExchange || "binance");
+      priceDiv.setAttribute(
+        "data-active-exchange",
+        activeExchange || "binance",
+      );
     }
 
     // Direct textContent 및 클래스 갱신 (리플로우 방지)
@@ -392,7 +427,9 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
 
     const changeEl =
       container._changeEl ||
-      (container._changeEl = container.querySelector('[id^="change-"]') || document.getElementById(`change-${tId}`));
+      (container._changeEl =
+        container.querySelector('[id^="change-"]') ||
+        document.getElementById(`change-${tId}`));
     if (changeEl) {
       changeEl.textContent = chgText;
       changeEl.className = `${color24h} ${chgText.length > 8 ? "text-[9.5px]" : "text-[10.5px]"} flex-1 min-w-0 text-left tracking-tighter whitespace-nowrap`;
@@ -400,7 +437,9 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
 
     const todayEl =
       container._todayEl ||
-      (container._todayEl = container.querySelector('[id^="today-"]') || document.getElementById(`today-${tId}`));
+      (container._todayEl =
+        container.querySelector('[id^="today-"]') ||
+        document.getElementById(`today-${tId}`));
     if (todayEl) {
       todayEl.textContent = todayText;
       todayEl.className = `${colorDay} ${todayText.length > 8 ? "text-[9.5px]" : "text-[10.5px]"} flex-1 min-w-0 text-left tracking-tighter whitespace-nowrap`;
@@ -430,8 +469,7 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
 
     const displayVol = getRowDisplayVolume(row);
     const volBText =
-      displayVol.volBFormatted &&
-        displayVol.volBFormatted !== "0"
+      displayVol.volBFormatted && displayVol.volBFormatted !== "0"
         ? displayVol.volBFormatted
         : "-";
     const mcapText = row.isDelisted
@@ -440,7 +478,9 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
 
     const volBEl =
       container._volBEl ||
-      (container._volBEl = container.querySelector('[id^="vol-binance-"]') || document.getElementById(`vol-binance-${tId}`));
+      (container._volBEl =
+        container.querySelector('[id^="vol-binance-"]') ||
+        document.getElementById(`vol-binance-${tId}`));
     if (volBEl && volBEl.textContent !== volBText) {
       volBEl.textContent = volBText;
       if (displayVol.volBColorClass) {
@@ -451,7 +491,7 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
         const size = Math.max(
           fs.VOL_MIN_SIZE,
           fs.VOL_BASE_SIZE -
-          (volBText.length - fs.VOL_THRESHOLD) * fs.VOL_REDUCE_STEP,
+            (volBText.length - fs.VOL_THRESHOLD) * fs.VOL_REDUCE_STEP,
         );
         if (volBEl.style.fontSize !== `${size}px`)
           volBEl.style.fontSize = `${size}px`;
@@ -462,24 +502,28 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
 
     const mcapEl =
       container._mcapEl ||
-      (container._mcapEl = container.querySelector('[id^="mcap-"]') || document.getElementById(`mcap-${tId}`));
+      (container._mcapEl =
+        container.querySelector('[id^="mcap-"]') ||
+        document.getElementById(`mcap-${tId}`));
     if (mcapEl) {
       mcapEl.textContent = mcapText;
       if (row.isDelisted) {
         volBCell.style.overflow = "visible";
-        mcapEl.className = "text-[10px] font-bold opacity-80 text-left mt-0.5 whitespace-nowrap text-theme-accent z-10 pointer-events-none";
+        mcapEl.className =
+          "text-[10px] font-bold opacity-80 text-left mt-0.5 whitespace-nowrap text-theme-accent z-10 pointer-events-none";
         mcapEl.style.whiteSpace = "nowrap";
       } else {
         volBCell.style.overflow = "";
         mcapEl.style.whiteSpace = "";
-        mcapEl.className = "text-[10px] font-bold opacity-60 text-left mt-0.5 truncate";
+        mcapEl.className =
+          "text-[10px] font-bold opacity-60 text-left mt-0.5 truncate";
       }
       const fs = CONFIG.FONT_SCALE;
       if (!row.isDelisted && fs && mcapText.length > fs.MCAP_THRESHOLD) {
         const size = Math.max(
           fs.MCAP_MIN_SIZE,
           fs.MCAP_BASE_SIZE -
-          (mcapText.length - fs.MCAP_THRESHOLD) * fs.MCAP_REDUCE_STEP,
+            (mcapText.length - fs.MCAP_THRESHOLD) * fs.MCAP_REDUCE_STEP,
         );
         mcapEl.style.fontSize = `${size}px`;
       } else {
@@ -512,15 +556,17 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
     const volUText = row.isDelisted
       ? ""
       : row.Upbit_Vol_Formatted &&
-        row.Upbit_Vol_Formatted !== "-" &&
-        row.Upbit_Vol_Formatted !== "0"
+          row.Upbit_Vol_Formatted !== "-" &&
+          row.Upbit_Vol_Formatted !== "0"
         ? row.Upbit_Vol_Formatted
         : "-";
     const vmcText = row.isDelisted ? "" : vmcFormatted;
 
     const volUEl =
       container._volUEl ||
-      (container._volUEl = container.querySelector('[id^="vol-upbit-"]') || document.getElementById(`vol-upbit-${tId}`));
+      (container._volUEl =
+        container.querySelector('[id^="vol-upbit-"]') ||
+        document.getElementById(`vol-upbit-${tId}`));
     if (volUEl && volUEl.textContent !== volUText) {
       volUEl.textContent = volUText;
       const fs = CONFIG.FONT_SCALE;
@@ -528,7 +574,7 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
         const size = Math.max(
           fs.VOL_MIN_SIZE,
           fs.VOL_BASE_SIZE -
-          (volUText.length - fs.VOL_THRESHOLD) * fs.VOL_REDUCE_STEP,
+            (volUText.length - fs.VOL_THRESHOLD) * fs.VOL_REDUCE_STEP,
         );
         volUEl.style.fontSize = `${size}px`;
       } else {
@@ -538,7 +584,9 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
 
     const vmcEl =
       container._vmcEl ||
-      (container._vmcEl = container.querySelector('[id^="vmc-"]') || document.getElementById(`vmc-${tId}`));
+      (container._vmcEl =
+        container.querySelector('[id^="vmc-"]') ||
+        document.getElementById(`vmc-${tId}`));
     if (vmcEl && vmcEl.textContent !== vmcText) {
       vmcEl.textContent = vmcText;
       const fs = CONFIG.FONT_SCALE;
@@ -546,7 +594,7 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
         const size = Math.max(
           fs.VMC_MIN_SIZE,
           fs.VMC_BASE_SIZE -
-          (vmcFormatted.length - fs.VMC_THRESHOLD) * fs.VMC_REDUCE_STEP,
+            (vmcFormatted.length - fs.VMC_THRESHOLD) * fs.VMC_REDUCE_STEP,
         );
         vmcEl.style.fontSize = `${size}px`;
       } else {
@@ -640,9 +688,11 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
         const fundVal = row.Funding_Formatted || "-";
         if (fundingEl.textContent !== fundVal) fundingEl.textContent = fundVal;
         if (fundVal === "-") {
-          fundingEl.className = "funding-val text-theme-accent opacity-30 truncate";
+          fundingEl.className =
+            "funding-val text-theme-accent opacity-30 truncate";
         } else {
-          fundingEl.className = "funding-val text-theme-accent opacity-70 truncate";
+          fundingEl.className =
+            "funding-val text-theme-accent opacity-70 truncate";
         }
       }
     }
@@ -669,53 +719,58 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
       exchCell.innerHTML = `
         <div class="grid grid-cols-4 content-center h-full gap-[2px] w-fit text-left min-w-0 cursor-pointer exch-grid-trigger">
           ${(() => {
-          const exchanges = row.Listed_Exchanges || [];
-          const list = [
-            { id: "BINANCE", cmcId: 270 },
-            { id: "UPBIT", cmcId: 351 },
-            { id: "BITHUMB", cmcId: 200 },
-            { id: "BYBIT", cmcId: 521 },
-            { id: "OKX", cmcId: 294 },
-            { id: "BITGET", cmcId: 513 },
-            { id: "GATEIO", cmcId: 302 },
-            { id: "COINBASE", cmcId: 89 },
-          ];
-          return list
-            .map((ex) => {
-              const isSpot =
-                exchanges.includes(`${ex.id}_SPOT`) ||
-                exchanges.includes(ex.id) ||
-                (ex.id === "BINANCE" && row.Binance === "O") ||
-                (ex.id === "BYBIT" && row.Bybit === "O") ||
-                (ex.id === "UPBIT" && row.Upbit === "O");
+            const exchanges = row.Listed_Exchanges || [];
+            const list = [
+              { id: "BINANCE", cmcId: 270 },
+              { id: "UPBIT", cmcId: 351 },
+              { id: "BITHUMB", cmcId: 200 },
+              { id: "COINBASE", cmcId: 89 },
+              { id: "BYBIT", cmcId: 521 },
+              { id: "BITGET", cmcId: 513 },
+              { id: "OKX", cmcId: 294 },
+              { id: "GATEIO", cmcId: 302 },
+            ];
+            return list
+              .map((ex) => {
+                const isSpot =
+                  exchanges.includes(`${ex.id}_SPOT`) ||
+                  exchanges.includes(ex.id) ||
+                  (ex.id === "BINANCE" && row.Binance === "O") ||
+                  (ex.id === "BYBIT" && row.Bybit === "O") ||
+                  (ex.id === "UPBIT" && row.Upbit === "O");
 
-              const isFutures =
-                exchanges.includes(`${ex.id}_FUTURES`) ||
-                (ex.id === "BINANCE" && (row.Binance_Futures === "O" || !!row.Exact_Futures)) ||
-                (ex.id === "BYBIT" && (row.Bybit_Futures === "O" || !!row.Exact_Futures));
+                const isFutures =
+                  exchanges.includes(`${ex.id}_FUTURES`) ||
+                  (ex.id === "BINANCE" &&
+                    (row.Binance_Futures === "O" || !!row.Exact_Futures)) ||
+                  (ex.id === "BYBIT" &&
+                    (row.Bybit_Futures === "O" || !!row.Exact_Futures));
 
-              const isListed = isSpot || isFutures || exchanges.some((e) => e.startsWith(ex.id));
+                const isListed =
+                  isSpot ||
+                  isFutures ||
+                  exchanges.some((e) => e.startsWith(ex.id));
 
-              let badgeHtml = "";
-              if (isListed && (isFutures || isSpot)) {
-                badgeHtml = `
+                let badgeHtml = "";
+                if (isListed && (isFutures || isSpot)) {
+                  badgeHtml = `
                   <div class="absolute bottom-0 right-0 flex items-center gap-[0.5px] z-10 scale-[0.55] origin-bottom-right">
                     ${isSpot ? `<div class="badge-spot bg-[#0ecb81]/90 text-white text-[9px] font-black px-[1px] rounded-[1px] leading-none">S</div>` : ""}
                     ${isFutures ? `<div class="badge-futures bg-[#f0b90b]/90 text-black text-[9px] font-black px-[1px] rounded-[1px] leading-none">F</div>` : ""}
                   </div>
                 `;
-              }
-              const imgUrl = getExchangeLogo(ex.cmcId);
-              return `
+                }
+                const imgUrl = getExchangeLogo(ex.cmcId);
+                return `
                 <div class="relative w-[14px] h-[14px] flex items-center justify-center rounded-[2px] overflow-hidden bg-white/5 transition-all flex-shrink-0"
                      style="${isListed ? "filter: none; opacity: 1;" : "filter: grayscale(1); opacity: 0.1;"}">
                   <img src="${imgUrl}" alt="${ex.id}" class="w-full h-full object-contain rounded-[2px]" />
                   ${badgeHtml}
                 </div>
               `;
-            })
-            .join("");
-        })()}
+              })
+              .join("");
+          })()}
         </div>
       `;
     }
@@ -761,7 +816,6 @@ export function updateRowInnerHTML(rowEl, row) {
 // 🚀 [신규 아키텍처] 고정 DOM 풀 및 Lazy 렌더링 상태 관리
 store.tablePoolInitialized = false;
 
-
 export function applyPriceFlash(element, newPrice, oldPrice) {
   if (store.blockLeftDom || store.blockTableUpdate) return;
   if (!element || newPrice === oldPrice) return;
@@ -803,7 +857,10 @@ window.updateRowPriceDisplay = (target, row) => {
 
   const tId = row.Ticker || row.Symbol;
   const parentEl =
-    rowEl._priceEl || (rowEl._priceEl = rowEl.querySelector(".price-cell") || document.getElementById(`price-${tId}`));
+    rowEl._priceEl ||
+    (rowEl._priceEl =
+      rowEl.querySelector(".price-cell") ||
+      document.getElementById(`price-${tId}`));
   if (!parentEl) return;
 
   const rate = store.marketDataMap?.krw_usd_rate || 0;
@@ -814,11 +871,16 @@ window.updateRowPriceDisplay = (target, row) => {
       : store.getPrecision(row.Ticker || row.DisplayTicker || row.Symbol);
 
   const oldPrice = parseFloat(parentEl.getAttribute("data-raw-price") || "0");
-  const { displayPrice, activeExchange } = getRowDisplayMetrics(row, isKrwMode, rate);
+  const { displayPrice, activeExchange } = getRowDisplayMetrics(
+    row,
+    isKrwMode,
+    rate,
+  );
   const isKrw = isKrwMode;
   const formattedPrice = window.formatSmartPrice(displayPrice, p, isKrw);
 
-  const numEl = parentEl._numEl || (parentEl._numEl = parentEl.querySelector(".price-num"));
+  const numEl =
+    parentEl._numEl || (parentEl._numEl = parentEl.querySelector(".price-num"));
   if (numEl) {
     if (numEl.textContent !== formattedPrice) {
       // 🚀 가격 변동 시 글자 번쩍임(Flash) 애니메이션 활성화
@@ -835,7 +897,8 @@ window.updateRowPriceDisplay = (target, row) => {
     if (len > threshold) {
       const sizePx = Math.max(
         fs?.PRICE_MIN_SIZE || 11,
-        (fs?.PRICE_BASE_SIZE || 14) - (len - threshold) * (fs?.PRICE_REDUCE_STEP || 0.6),
+        (fs?.PRICE_BASE_SIZE || 14) -
+          (len - threshold) * (fs?.PRICE_REDUCE_STEP || 0.6),
       );
       const targetFont = `${sizePx}px`;
       if (parentEl.style.fontSize !== targetFont)
@@ -868,4 +931,3 @@ window.updateRowPriceDisplay = (target, row) => {
     }
   }
 };
-
