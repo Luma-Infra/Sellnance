@@ -478,7 +478,10 @@ function updateLegend(d, v, k) {
     if (targetKim && targetKim.value !== undefined) {
       kimValue =
         (targetKim.value > 0 ? "+" : "") + targetKim.value.toFixed(2) + "%";
-      kimColorStyle = targetKim.color || "#57a4fc";
+      kimColorStyle =
+        typeof getKimchiColor === "function"
+          ? getKimchiColor(targetKim.value)
+          : targetKim.color || "#57a4fc";
     }
     if (kimchiContainer) kimchiContainer.classList.remove("hidden");
 
@@ -849,16 +852,41 @@ if (typeof window !== "undefined") {
 }
 
 // ================== chart.js에서 이동됨 ==================
-// 🚀 김프 다채로운 색상 적용 엔진
+// 🚀 김프 다채로운 색상 적용 엔진 (라이트/다크 테마 최적화 분기)
 export function getKimchiColor(val) {
-  if (val < -4) return "#4B0082"; // 인디고
-  if (val < -2) return "#1E3A8A"; // 딥 블루
-  if (val < 0) return "#2E8B57"; // 씨그린
-  if (val < 2) return "#57a4fc"; // 하늘색
-  if (val < 4) return "#FF69B4"; // 핫핑크
-  if (val < 6) return "#B22222"; // 파이어브릭
-  if (val < 8) return "#FF4500"; // 오렌지레드
-  return "#8B0000"; // 다크레드
+  const isLight =
+    store?.currentTheme === "upbit" ||
+    (typeof document !== "undefined" &&
+      (document.body?.classList.contains("theme-upbit") ||
+        document.documentElement?.classList.contains("theme-upbit") ||
+        (typeof localStorage !== "undefined" &&
+          localStorage.getItem("sellnance_theme") === "upbit")));
+
+  // 1. 라이트 테마 (밝은 배경 최적화)
+  if (isLight) {
+    if (val < -10) return "#0F172A"; // 초심해 네이비블랙 (극단 역프 경고)
+    if (val < -4) return "#4B0082"; // 인디고
+    if (val < -2) return "#1E3A8A"; // 딥 블루
+    if (val < 0) return "#2E8B57"; // 씨그린
+    if (val < 2) return "#57a4fc"; // 하늘색
+    if (val < 4) return "#FF69B4"; // 핫핑크
+    if (val < 6) return "#FB923C"; // 비비드 오렌지 (밝고 선명한 주황)
+    if (val < 8) return "#EF4444"; // 화사한 비비드 레드
+    if (val < 10) return "#FF2D55"; // 강렬한 브라이트 핑크레드
+    return "#FF0055"; // 최고조 네온 하이퍼 크림슨 (극단 고김프 폭주)
+  }
+
+  // 2. 다크 테마 (검은 배경 최적화)
+  if (val < -10) return "#00FFFF"; // 네온 시안 / 빙하 화이트 (극단 역프 경고)
+  if (val < -4) return "#C084FC"; // 밝은 바이올렛
+  if (val < -2) return "#38BDF8"; // 맑은 스카이블루
+  if (val < 0) return "#4ADE80"; // 에메랄드 그린
+  if (val < 2) return "#60A5FA"; // 소프트 블루
+  if (val < 4) return "#F472B6"; // 네온 핑크
+  if (val < 6) return "#FB923C"; // 비비드 오렌지
+  if (val < 8) return "#F87171"; // 코랄 레드
+  if (val < 10) return "#EF4444"; // 선명한 네온 레드
+  return "#FF0055"; // 초강렬 네온 체리 크림슨 (극단 고김프 폭주)
 }
 if (typeof window !== "undefined") {
   window.getKimchiColor = getKimchiColor;
