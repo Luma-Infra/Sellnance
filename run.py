@@ -3,6 +3,13 @@ import sys
 import subprocess
 import socket
 
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except:
+        pass
+
 
 def get_lan_ip():
     """현재 활성화된 네트워크 인터페이스의 실제 로컬 LAN IP를 가져옵니다."""

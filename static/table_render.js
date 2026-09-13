@@ -86,10 +86,12 @@ export function renderTable(isRealtime = false) {
 
   // 🚀 [추가] 정렬/필터링/탭전환 등 테이블 레이아웃 변화 시 1회성 우선순위 동기화 실행
   if (!isRealtime && typeof window.syncRowPrioritizedMetrics === "function") {
-    const allSource = store.originalTableData || store.currentTableData || [];
-    allSource.forEach((row) => {
-      window.syncRowPrioritizedMetrics(row);
-    });
+    if (!window.isSandboxActive || !window.isSandboxActive()) {
+      const allSource = store.originalTableData || store.currentTableData || [];
+      allSource.forEach((row) => {
+        window.syncRowPrioritizedMetrics(row);
+      });
+    }
   }
 
   tbody.dataset.sortCol = store.currentSortCol || "";
@@ -341,26 +343,35 @@ export function renderTable(isRealtime = false) {
   }
 
   // 🚀 [스마트 숨김] 전체를 껐다 켜지 않고, 이번 필터에 없는 행들만 골라서 숨김 (화면 점멸/깜빡임 0% 원천 차단)
-  const isFavTab = store.currentTab === "FAV" || store.currentTab === "FAV2";
-  for (const child of tbody.children) {
-    const sym = child.dataset.sym;
-    const uid = child.dataset.uid;
-    const isDelistedDom = child.dataset.delisted === "true";
-
-    // FAV 탭이 아닐 때는 상폐 Ghost DOM 무조건 은닉
-    if (isDelistedDom && !isFavTab) {
-      if (child.style.display !== "none") {
-        child.style.setProperty("display", "none", "important");
+  if (typeof window !== "undefined" && window.isSandboxActive && window.isSandboxActive()) {
+    if (store._sandboxVisibleDoms && store._sandboxVisibleDoms.length > 0) {
+      for (let j = 0; j < store._sandboxVisibleDoms.length; j++) {
+        store._sandboxVisibleDoms[j].style.setProperty("display", "none", "important");
       }
-      continue;
     }
+    store._sandboxVisibleDoms = [];
+  } else {
+    const isFavTab = store.currentTab === "FAV" || store.currentTab === "FAV2";
+    for (const child of tbody.children) {
+      const sym = child.dataset.sym;
+      const uid = child.dataset.uid;
+      const isDelistedDom = child.dataset.delisted === "true";
 
-    const isVisible =
-      (uid && currentVisibleSet.has(uid)) ||
-      (sym && currentVisibleSet.has(sym));
-    if (!isVisible) {
-      if (child.style.display !== "none") {
-        child.style.setProperty("display", "none", "important");
+      // FAV 탭이 아닐 때는 상폐 Ghost DOM 무조건 은닉
+      if (isDelistedDom && !isFavTab) {
+        if (child.style.display !== "none") {
+          child.style.setProperty("display", "none", "important");
+        }
+        continue;
+      }
+
+      const isVisible =
+        (uid && currentVisibleSet.has(uid)) ||
+        (sym && currentVisibleSet.has(sym));
+      if (!isVisible) {
+        if (child.style.display !== "none") {
+          child.style.setProperty("display", "none", "important");
+        }
       }
     }
   }
@@ -409,6 +420,10 @@ export function renderTable(isRealtime = false) {
           rowEl.style.cursor = "";
         }
         rowEl.style.removeProperty("display");
+        if (typeof window !== "undefined" && window.isSandboxActive && window.isSandboxActive()) {
+          if (!store._sandboxVisibleDoms) store._sandboxVisibleDoms = [];
+          store._sandboxVisibleDoms.push(rowEl);
+        }
         const oldIndex = parseInt(rowEl.dataset.index);
         // 🚀 실시간 정렬 시 30위 이하(31등~) 코인은 불필요한 연속 렌더링 방지를 위해 위치를 고정시키되,
         // 현재 위치(oldIndex)가 실제 정렬 순위(i)와 달라질 때만 딱 1번 올바른 목적지(31위든 300위든)에 공백/겹침 없이 정밀 배치하고 고정시킵니다.
@@ -489,10 +504,14 @@ export function renderTable(isRealtime = false) {
   updateBoundaryClass(tbody);
   applySelectedHighlight();
   if (typeof window.refreshSniperTarget === "function") {
-    setTimeout(() => window.refreshSniperTarget(), 10);
+    if (!window.isSandboxActive || !window.isSandboxActive()) {
+      setTimeout(() => window.refreshSniperTarget(), 10);
+    }
   }
   if (typeof window.syncSniperSubscriptions === "function") {
-    window.syncSniperSubscriptions();
+    if (!window.isSandboxActive || !window.isSandboxActive()) {
+      window.syncSniperSubscriptions();
+    }
   }
 }
 

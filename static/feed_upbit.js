@@ -48,6 +48,7 @@ export function startUpbitFeed() {
 
   const decoder = new TextDecoder("utf-8");
   upbitRadarWs.onmessage = (event) => {
+    if (typeof window !== "undefined" && window.isSandboxActive && window.isSandboxActive()) return;
     try {
       const ticker = JSON.parse(decoder.decode(event.data));
       if (!ticker || !ticker.code) return;

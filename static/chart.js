@@ -6,6 +6,7 @@ import {
   formatCrosshairPrice,
   getKimchiColor,
   rebuildKimchiDataMap,
+  mainCandleAutoscaleProvider,
 } from "./chart_utils.js";
 import { getCandleThemeColors, applyCandleTheme } from "./theme_manager.js";
 import {
@@ -249,6 +250,10 @@ export async function initChart() {
       borderColor: gridColor,
       mode: store.isLogMode ? 1 : 0,
       minimumWidth: store.savedPriceScaleWidth || 0, // 🚀 [UX 개선] 저장된 가격 축의 너비를 레이아웃 생성 시점에 복구하여 레이아웃 꿀렁임 제거
+      scaleMargins: {
+        top: store.mainChartScaleMargins?.top ?? 0.1,
+        bottom: store.mainChartScaleMargins?.bottom ?? 0,
+      }, // 🚀 0원 및 음수 가격 노출 원천 차단 (하단 여백은 autoscaleInfoProvider가 안전 클램핑)
     },
     leftPriceScale: {
       autoScale: true,
@@ -258,6 +263,10 @@ export async function initChart() {
           ? 0
           : (store.savedLeftPriceScaleWidth || 60),
       borderColor: "transparent",
+      scaleMargins: {
+        top: store.mainChartScaleMargins?.top ?? 0.1,
+        bottom: store.mainChartScaleMargins?.bottom ?? 0,
+      },
       // entireTextOnly: true,
     },
   });
@@ -566,6 +575,7 @@ export async function initChart() {
       lastValueVisible: !store.showCountdown, // 🚀 카운트다운 활성화 시 카운트다운 일체형 바 단독 노출 (중복 뱃지 방지)
       priceLineVisible: !store.showCountdown, // 🚀 카운트다운 활성화 시 카운트다운 선 단독 노출 (중복 점선 방지)
       priceFormat: customPriceFormat,
+      autoscaleInfoProvider: mainCandleAutoscaleProvider,
     },
   );
 
@@ -579,6 +589,7 @@ export async function initChart() {
       lastValueVisible: false,
       priceLineVisible: false,
       priceFormat: leftPriceFormat,
+      autoscaleInfoProvider: mainCandleAutoscaleProvider,
     },
   );
 
@@ -593,6 +604,7 @@ export async function initChart() {
       lastValueVisible: false,
       priceLineVisible: false,
       priceFormat: customPriceFormat,
+      autoscaleInfoProvider: mainCandleAutoscaleProvider,
     },
   );
 

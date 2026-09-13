@@ -63,6 +63,36 @@ export const ensureSafeUnixSeconds = (t) => {
 };
 if (typeof window !== "undefined") window.ensureSafeUnixSeconds = ensureSafeUnixSeconds;
 
+export function mainCandleAutoscaleProvider(original) {
+  const res = original ? original() : null;
+  if (!res || !res.priceRange) return res;
+  const min = res.priceRange.minValue;
+  const max = res.priceRange.maxValue;
+  if (min <= 0 || !isFinite(min) || !isFinite(max)) return res;
+
+  const cfg = store.mainChartScaleMargins || {};
+  const bufferRatio = cfg.bottomBufferRatio ?? 0.08;
+  const maxGapRatio = cfg.bottomMaxGapRatio ?? 0.2;
+  const minFloorRatio = cfg.bottomMinFloorRatio ?? 0.5;
+
+  const delta = max - min;
+  // 바닥과 최저점 캔들 사이의 시각적 여백 확보 (store 설정 비율 기반 동적 계산)
+  const margin = delta > 0 ? Math.min(delta * bufferRatio, min * maxGapRatio) : min * 0.05;
+  // 0원/음수로 내려가지 않도록 바닥 최솟값을 안전하게 클램핑 (최저가의 floorRatio 이상, 최소 1e-8 이상)
+  const safeMin = Math.max(min * minFloorRatio, Math.max(0.00000001, min - margin));
+
+  return {
+    priceRange: {
+      minValue: safeMin,
+      maxValue: max,
+    },
+    margins: res.margins,
+  };
+}
+if (typeof window !== "undefined") {
+  window.mainCandleAutoscaleProvider = mainCandleAutoscaleProvider;
+}
+
 export function resetChartScale() {
   if (!store.chart || !store.candleSeries) return;
 
@@ -76,13 +106,13 @@ export function resetChartScale() {
   store.kimchiCustomPriceRange = null;
 
   if (store.candleSeries) {
-    store.candleSeries.applyOptions({ autoscaleInfoProvider: (original) => (original ? original() : null) });
+    store.candleSeries.applyOptions({ autoscaleInfoProvider: mainCandleAutoscaleProvider });
   }
   if (store.previewSeries) {
-    store.previewSeries.applyOptions({ autoscaleInfoProvider: (original) => (original ? original() : null) });
+    store.previewSeries.applyOptions({ autoscaleInfoProvider: mainCandleAutoscaleProvider });
   }
   if (store.leftScaleSeries) {
-    store.leftScaleSeries.applyOptions({ autoscaleInfoProvider: (original) => (original ? original() : null) });
+    store.leftScaleSeries.applyOptions({ autoscaleInfoProvider: mainCandleAutoscaleProvider });
   }
   if (store.volumeSeries) {
     store.volumeSeries.applyOptions({ autoscaleInfoProvider: (original) => (original ? original() : null) });
@@ -881,17 +911,17 @@ export function getKimchiColor(val) {
     return "#FF0055"; // 최고조 네온 하이퍼 크림슨 (극단 고김프 폭주)
   }
 
-  // 2. 다크 테마 (검은 배경 최적화)
-  if (val < -10) return "#00FFFF"; // 네온 시안 / 빙하 화이트 (극단 역프 경고)
-  if (val < -4) return "#C084FC"; // 밝은 바이올렛
-  if (val < -2) return "#38BDF8"; // 맑은 스카이블루
-  if (val < 0) return "#4ADE80"; // 에메랄드 그린
-  if (val < 2) return "#60A5FA"; // 소프트 블루
-  if (val < 4) return "#F472B6"; // 네온 핑크
-  if (val < 6) return "#FB923C"; // 비비드 오렌지
-  if (val < 8) return "#F87171"; // 코랄 레드
-  if (val < 10) return "#EF4444"; // 선명한 네온 레드
-  return "#FF0055"; // 초강렬 네온 체리 크림슨 (극단 고김프 폭주)
+  // 2. 다크 테마 (검은 배경 최적화 - 명도 30% 감소)
+  if (val < -10) return "#94A3B8"; // 네온 시안 / 빙하 화이트 (극단 역프 경고)
+  if (val < -4) return "#865CB0"; // 밝은 바이올렛
+  if (val < -2) return "#2784AE"; // 맑은 스카이블루
+  if (val < 0) return "#349B5A"; // 에메랄드 그린
+  if (val < 2) return "#4373AF"; // 소프트 블루
+  if (val < 4) return "#AB507F"; // 네온 핑크
+  if (val < 6) return "#B0662A"; // 비비드 오렌지
+  if (val < 8) return "#AE4F4F"; // 코랄 레드
+  if (val < 10) return "#A73030"; // 선명한 네온 레드
+  return "#B2003B"; // 초강렬 네온 체리 크림슨 (극단 고김프 폭주)
 }
 if (typeof window !== "undefined") {
   window.getKimchiColor = getKimchiColor;

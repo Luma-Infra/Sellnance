@@ -546,7 +546,7 @@
   },
   "B3": {
     "binance_listing": "2025-02-13",
-    "upbit_listing": "2026-05-04",
+    "upbit_listing": "2026-05-01",
     "bithumb_listing": "2026-05-18"
   },
   "BABA": {
@@ -1181,7 +1181,7 @@
     "binance_listing": "2025-07-01"
   },
   "CVC": {
-    "binance_listing": "2025-05-16"
+    "binance_listing": "2025-05-01"
   },
   "CVCUSDT": {
     "binance_listing": "2025-05-16"
@@ -1399,7 +1399,7 @@
     "binance_listing": "2026-05-09"
   },
   "EGG": {
-    "bithumb_listing": "2026-07-22"
+    "bithumb_listing": "2023-12-18"
   },
   "EGLD": {
     "binance_listing": "2019-09-25"

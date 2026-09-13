@@ -32,6 +32,7 @@ export function startBithumbFeed() {
   };
 
   bithumbRadarWs.onmessage = (event) => {
+    if (typeof window !== "undefined" && window.isSandboxActive && window.isSandboxActive()) return;
     const res = JSON.parse(event.data);
     if (res.type !== "transaction" || !res.content?.list) return;
 

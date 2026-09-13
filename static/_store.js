@@ -142,6 +142,14 @@ export const store = {
   savedLeftPriceScaleWidth: null, // [UX 개선] 좌측 김프 축의 실시간 너비 저장용 (멀티 뷰포트 정밀 동기화용)
   isUserZoomed: false, // 사용자가 시간축(가로) 줌/패닝을 직접 조작한 상태
   isPriceScaleUserZoomed: false, // 사용자가 메인 Y축 가격 스케일을 수동 드래그/줌한 상태 (autoScale 보존용)
+  // 메인 차트 상/하단 여백 및 0원/음수 방지 오토스케일 제어 설정
+  mainChartScaleMargins: {
+    top: 0.08, // 상단 10% 여백 (최고가 캔들 윗꼬리 천장 여백)
+    bottom: 0, // 하단 0% (캔들 오토스케일 프로바이더에서 안전 여백 동적 제어)
+    bottomBufferRatio: 0.08, // 저점 캔들과 바닥 사이 안전 여백 비율
+    bottomMaxGapRatio: 0.8, // 저점 가격 대비 최대 여백 허용 비율
+    bottomMinFloorRatio: 0.08, // 최저가 대비 절대 바닥 하한
+  },
   isVolPriceScaleUserZoomed: false, // 사용자가 하단 볼륨 Y축 스케일을 수동 조작한 상태
   isKimchiPriceScaleUserZoomed: false, // 사용자가 하단 김프 Y축 스케일을 수동 조작한 상태
   kimchiSeries: null,

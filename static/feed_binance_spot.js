@@ -27,6 +27,7 @@ export function startBinanceSpotFeed() {
   };
 
   binanceSpotRadarWs.onmessage = (event) => {
+    if (typeof window !== "undefined" && window.isSandboxActive && window.isSandboxActive()) return;
     const data = JSON.parse(event.data);
     if (!Array.isArray(data)) return;
 

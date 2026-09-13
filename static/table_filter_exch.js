@@ -36,6 +36,7 @@ export function updateExchFilterUI() {
   const list = [
     { id: "BINANCE_SPOT", cmcId: 270, label: "S", name: "B-SPOT" },
     { id: "BINANCE_FUTURES", cmcId: 270, label: "F", name: "B-FUT" },
+    { id: "BINANCE_ALPHA", cmcId: 270, label: "α", name: "B-ALPHA" },
     { id: "BINANCE_STOCK", cmcId: 270, label: "ST", name: "B-STOCK" },
     { id: "UPBIT", cmcId: 351, name: "UPBIT" },
     { id: "BITHUMB", cmcId: 200, name: "BITHUMB" },
@@ -109,6 +110,8 @@ export function updateExchFilterUI() {
           typeBadge = `<div class="absolute -bottom-1 -right-1 bg-gray-600 text-white text-[8px] px-0.5 rounded leading-none font-black shadow-sm">S</div>`;
         } else if (ex.id === "BINANCE_FUTURES" || ex.id === "BYBIT_FUTURES") {
           typeBadge = `<div class="absolute -bottom-1 -right-1 bg-[#f0b90b] text-black text-[8px] px-0.5 rounded leading-none font-black shadow-sm">F</div>`;
+        } else if (ex.id === "BINANCE_ALPHA") {
+          typeBadge = `<div class="absolute -bottom-1 -right-1 bg-purple-600 text-white text-[8px] px-0.5 rounded leading-none font-black shadow-sm">α</div>`;
         } else if (ex.id === "BINANCE_STOCK") {
           typeBadge = `<div class="absolute -bottom-1 -right-1 bg-blue-600 text-white text-[8px] px-0.5 rounded leading-none font-black shadow-sm">ST</div>`;
         }
@@ -180,6 +183,8 @@ export function updateExchFilterUI() {
           typeBadge = `<div class="absolute -bottom-1 -right-1 bg-gray-600 text-white text-[8px] px-0.5 rounded leading-none font-black shadow-sm">S</div>`;
         } else if (ex.id === "BINANCE_FUTURES" || ex.id === "BYBIT_FUTURES") {
           typeBadge = `<div class="absolute -bottom-1 -right-1 bg-[#f0b90b] text-black text-[8px] px-0.5 rounded leading-none font-black shadow-sm">F</div>`;
+        } else if (ex.id === "BINANCE_ALPHA") {
+          typeBadge = `<div class="absolute -bottom-1 -right-1 bg-purple-600 text-white text-[8px] px-0.5 rounded leading-none font-black shadow-sm">α</div>`;
         } else if (ex.id === "BINANCE_STOCK") {
           typeBadge = `<div class="absolute -bottom-1 -right-1 bg-blue-600 text-white text-[8px] px-0.5 rounded leading-none font-black shadow-sm">ST</div>`;
         }
@@ -294,14 +299,26 @@ export function updateExchFilterUI() {
       </div>
     `;
 
+    const isSandboxOn = typeof window.isSandboxActive === "function" && window.isSandboxActive();
+    const sandboxBtnHtml = `
+      <button onclick="window.toggleSandboxMode()" 
+              class="flex items-center gap-1 px-2 py-0.5 border rounded-md text-[10px] font-bold transition-all duration-200 shrink-0 cursor-pointer active:scale-95 ml-auto ${isSandboxOn ? "bg-purple-600/30 border-purple-500 text-purple-300 ring-1 ring-purple-500/50 shadow-sm" : "border-theme-border/50 text-theme-text/70 bg-theme-panel/20 hover:border-purple-500/60 hover:text-purple-300"}"
+              title="9대 거래소 + 바이낸스 알파 4,365개 전수조사 샌드박스 ON/OFF">
+        <span>🧪</span><span>${isSandboxOn ? "샌드박스 ON" : "샌드박스 전수"}</span>
+      </button>
+    `;
+
     if (pcPresetsContainer) {
       pcPresetsContainer.innerHTML = `
-        <div class="flex items-center gap-1.5 shrink-0">
-          <span class="text-[9px] font-bold opacity-60 mr-0.5 uppercase tracking-wider text-theme-text whitespace-nowrap">프리셋</span>
-          ${presetButtonsHtml}
-          <div class="ml-1.5 flex items-center">
-            ${actionGroupHtml}
+        <div class="flex items-center justify-between w-full">
+          <div class="flex items-center gap-1.5 shrink-0">
+            <span class="text-[9px] font-bold opacity-60 mr-0.5 uppercase tracking-wider text-theme-text whitespace-nowrap">프리셋</span>
+            ${presetButtonsHtml}
+            <div class="ml-1.5 flex items-center">
+              ${actionGroupHtml}
+            </div>
           </div>
+          ${sandboxBtnHtml}
         </div>
       `;
     }
@@ -313,8 +330,9 @@ export function updateExchFilterUI() {
             <span class="text-[9px] font-bold opacity-60 mr-1 uppercase tracking-wider text-theme-text whitespace-nowrap">프리셋</span>
             ${presetButtonsHtml}
           </div>
-          <div class="flex items-center shrink-0">
+          <div class="flex items-center gap-1 shrink-0">
             ${actionGroupHtml}
+            ${sandboxBtnHtml}
           </div>
         </div>
       `;

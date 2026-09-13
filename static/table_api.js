@@ -10,6 +10,11 @@ export { ENABLE_SELLNANCE_TEST_ROW };
 export function processTableData(result) {
   if (!result || !result.data) return;
 
+  if (typeof window !== "undefined" && window.isSandboxActive && window.isSandboxActive()) {
+    window._latestServerResult = result;
+    return;
+  }
+
   // 🚀 [초고속 0ms 복제] JSON 문자열 직렬화 2연타 제거 및 얕은 매핑으로 CPU 블로킹 방지
   let rawList = result.data.map((r) => ({ ...r }));
   if (ENABLE_SELLNANCE_TEST_ROW) {

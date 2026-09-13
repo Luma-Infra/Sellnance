@@ -21,6 +21,7 @@ import "./table.js";
 import "./start.js";
 import "./quickview.js";
 import "./feedback_modal.js";
+import "./sandbox_injector.js";
 
 // 분리된 3대 모듈
 import {

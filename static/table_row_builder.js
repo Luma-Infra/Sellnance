@@ -90,14 +90,13 @@ export function updateRowStaticHTML(rowEl, row) {
   // 동적 수치 데이터 영역은 빈 Placeholder div 구조로 생성하여 레이아웃 깨짐을 방지하고 스크롤 시 공백(하얀 칸) 노출을 방어합니다.
   rowEl.innerHTML = `
   <div class="p-2 col-asset overflow-visible">
-    ${
-      pendingAction
-        ? `
+    ${pendingAction
+      ? `
       <div class="row-progress-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 2.5px; z-index: 50; pointer-events: none;">
          <div id="progress-bar-${row.Ticker}" class="row-progress-bar" style="height: 100%; width: 100%; background: linear-gradient(90deg, var(--accent) 0%, #3b82f6 100%); transition: width 50ms linear;"></div>
       </div>
     `
-        : ""
+      : ""
     }
     <div class="flex items-center gap-0.5 min-w-0 w-full">
       <!-- 0. 절대 순위 번호 (CSS 카운터로 1부터 800까지 순차 자동 렌더링) -->
@@ -109,9 +108,8 @@ export function updateRowStaticHTML(rowEl, row) {
         <button onclick="toggleFavorite('${uId}', event)" class="star-btn text-[14px] transition-all hover:scale-125 flex-shrink-0 ${starClass}" style="color: ${starColor}">
           ${starText}
         </button>
-        ${
-          pendingAction
-            ? `
+        ${pendingAction
+      ? `
           <button onclick="window.confirmFavoriteChange('${uId}', event)" class="confirm-fav-btn text-[9px] font-medium px-1.5 py-0.5 rounded transition-all flex-shrink-0 mr-1">
             확인
           </button>
@@ -119,8 +117,8 @@ export function updateRowStaticHTML(rowEl, row) {
             취소
           </button>
         `
-            : ""
-        }
+      : ""
+    }
       </div>
       
       <!-- 2. 티커 이미지 (상폐 시 회색조 처리) -->
@@ -135,13 +133,13 @@ export function updateRowStaticHTML(rowEl, row) {
         </b>
         <span class="text-[9px] text-theme-text opacity-60 truncate font-medium tracking-tighter">
           ${(() => {
-            let n =
-              store.lang === "KR"
-                ? row.Name_KR || row.Name || ""
-                : row.Name || "";
-            n = n.replace(/\s*[\(\（\[][^\)\）\]]*[\)\）\]]/g, "").trim();
-            return n.length > 8 ? n.substring(0, 8) + ".." : n;
-          })()}
+      let n =
+        store.lang === "KR"
+          ? row.Name_KR || row.Name || ""
+          : row.Name || "";
+      n = n.replace(/\s*[\(\（\[][^\)\）\]]*[\)\）\]]/g, "").trim();
+      return n.length > 8 ? n.substring(0, 8) + ".." : n;
+    })()}
         </span>
       </div>
       <!-- 4. 유의/상폐 경고 뱃지 (셀 우측 끝에 배치) -->
@@ -345,11 +343,11 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
         const initSizePx =
           initialLen > initThreshold
             ? Math.max(
-                initFs?.PRICE_MIN_SIZE || 11,
-                (initFs?.PRICE_BASE_SIZE || 14) -
-                  (initialLen - initThreshold) *
-                    (initFs?.PRICE_REDUCE_STEP || 0.6),
-              )
+              initFs?.PRICE_MIN_SIZE || 11,
+              (initFs?.PRICE_BASE_SIZE || 14) -
+              (initialLen - initThreshold) *
+              (initFs?.PRICE_REDUCE_STEP || 0.6),
+            )
             : null;
         const initStyleAttr = initSizePx
           ? `style="font-size: ${initSizePx}px;"`
@@ -405,7 +403,7 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
           const sizePx = Math.max(
             fs?.PRICE_MIN_SIZE || 11,
             (fs?.PRICE_BASE_SIZE || 14) -
-              (len - threshold) * (fs?.PRICE_REDUCE_STEP || 0.6),
+            (len - threshold) * (fs?.PRICE_REDUCE_STEP || 0.6),
           );
           const targetFont = `${sizePx}px`;
           if (priceDiv.style.fontSize !== targetFont)
@@ -491,7 +489,7 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
         const size = Math.max(
           fs.VOL_MIN_SIZE,
           fs.VOL_BASE_SIZE -
-            (volBText.length - fs.VOL_THRESHOLD) * fs.VOL_REDUCE_STEP,
+          (volBText.length - fs.VOL_THRESHOLD) * fs.VOL_REDUCE_STEP,
         );
         if (volBEl.style.fontSize !== `${size}px`)
           volBEl.style.fontSize = `${size}px`;
@@ -523,7 +521,7 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
         const size = Math.max(
           fs.MCAP_MIN_SIZE,
           fs.MCAP_BASE_SIZE -
-            (mcapText.length - fs.MCAP_THRESHOLD) * fs.MCAP_REDUCE_STEP,
+          (mcapText.length - fs.MCAP_THRESHOLD) * fs.MCAP_REDUCE_STEP,
         );
         mcapEl.style.fontSize = `${size}px`;
       } else {
@@ -556,8 +554,8 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
     const volUText = row.isDelisted
       ? ""
       : row.Upbit_Vol_Formatted &&
-          row.Upbit_Vol_Formatted !== "-" &&
-          row.Upbit_Vol_Formatted !== "0"
+        row.Upbit_Vol_Formatted !== "-" &&
+        row.Upbit_Vol_Formatted !== "0"
         ? row.Upbit_Vol_Formatted
         : "-";
     const vmcText = row.isDelisted ? "" : vmcFormatted;
@@ -574,7 +572,7 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
         const size = Math.max(
           fs.VOL_MIN_SIZE,
           fs.VOL_BASE_SIZE -
-            (volUText.length - fs.VOL_THRESHOLD) * fs.VOL_REDUCE_STEP,
+          (volUText.length - fs.VOL_THRESHOLD) * fs.VOL_REDUCE_STEP,
         );
         volUEl.style.fontSize = `${size}px`;
       } else {
@@ -594,7 +592,7 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
         const size = Math.max(
           fs.VMC_MIN_SIZE,
           fs.VMC_BASE_SIZE -
-            (vmcFormatted.length - fs.VMC_THRESHOLD) * fs.VMC_REDUCE_STEP,
+          (vmcFormatted.length - fs.VMC_THRESHOLD) * fs.VMC_REDUCE_STEP,
         );
         vmcEl.style.fontSize = `${size}px`;
       } else {
@@ -715,9 +713,9 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
       } else {
         const intervalText = `/${interval}h`;
 
-        // 🚀 수치(truncate) + 주기(flex-shrink-0 고정) 구조: 너비 축소 시에도 /1h, /4h, /8h 무조건 고정 노출!
+        // 수치(truncate) + 주기(flex-shrink-0 고정) 구조: 너비 축소 시에도 /1h, /4h, /8h 무조건 고정 노출!
         if (!fundingEl._rateEl || !fundingEl._intervalEl) {
-          fundingEl.innerHTML = `<span class="funding-rate-text truncate min-w-0"></span><span class="funding-interval-text flex-shrink-0 font-bold"></span>`;
+          fundingEl.innerHTML = `<span class="funding-rate-text truncate min-w-0"></span><span class="funding-interval-text flex-shrink-0"></span>`;
           fundingEl._rateEl = fundingEl.querySelector(".funding-rate-text");
           fundingEl._intervalEl = fundingEl.querySelector(
             ".funding-interval-text",
@@ -737,10 +735,10 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
 
         if (interval <= 1) {
           // 3단계: 1시간 (고위험/초과열 - 레드/로즈)
-          fundingEl.className = `${baseClass} text-rose-600 dark:text-rose-400 font-bold`;
+          fundingEl.className = `${baseClass} text-rose-600 dark:text-rose-400`;
         } else if (interval <= 4) {
           // 2단계: 2~4시간 (주의/경고 - 주황/앰버)
-          fundingEl.className = `${baseClass} text-amber-600 dark:text-amber-400 font-semibold`;
+          fundingEl.className = `${baseClass} text-amber-600 dark:text-amber-400`;
         } else {
           // 1단계: 8시간 (기본 정상 - 기존 테마 액센트 유지)
           fundingEl.className = `${baseClass} text-theme-accent opacity-70`;
@@ -770,58 +768,64 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
       exchCell.innerHTML = `
         <div class="grid grid-cols-4 content-center h-full gap-[2px] w-fit text-left min-w-0 cursor-pointer exch-grid-trigger">
           ${(() => {
-            const exchanges = row.Listed_Exchanges || [];
-            const list = [
-              { id: "BINANCE", cmcId: 270 },
-              { id: "UPBIT", cmcId: 351 },
-              { id: "BITHUMB", cmcId: 200 },
-              { id: "COINBASE", cmcId: 89 },
-              { id: "BYBIT", cmcId: 521 },
-              { id: "BITGET", cmcId: 513 },
-              { id: "OKX", cmcId: 294 },
-              { id: "GATEIO", cmcId: 302 },
-            ];
-            return list
-              .map((ex) => {
-                const isSpot =
-                  exchanges.includes(`${ex.id}_SPOT`) ||
-                  exchanges.includes(ex.id) ||
-                  (ex.id === "BINANCE" && row.Binance === "O") ||
-                  (ex.id === "BYBIT" && row.Bybit === "O") ||
-                  (ex.id === "UPBIT" && row.Upbit === "O");
+          const exchanges = row.Listed_Exchanges || [];
+          const list = [
+            { id: "BINANCE", cmcId: 270 },
+            { id: "UPBIT", cmcId: 351 },
+            { id: "BITHUMB", cmcId: 200 },
+            { id: "COINBASE", cmcId: 89 },
+            { id: "BYBIT", cmcId: 521 },
+            { id: "BITGET", cmcId: 513 },
+            { id: "OKX", cmcId: 294 },
+            { id: "GATEIO", cmcId: 302 },
+          ];
+          return list
+            .map((ex) => {
+              const isSpot =
+                exchanges.includes(`${ex.id}_SPOT`) ||
+                exchanges.includes(ex.id) ||
+                (ex.id === "BINANCE" && row.Binance === "O") ||
+                (ex.id === "BYBIT" && row.Bybit === "O") ||
+                (ex.id === "UPBIT" && row.Upbit === "O");
 
-                const isFutures =
-                  exchanges.includes(`${ex.id}_FUTURES`) ||
-                  (ex.id === "BINANCE" &&
-                    (row.Binance_Futures === "O" || !!row.Exact_Futures)) ||
-                  (ex.id === "BYBIT" &&
-                    (row.Bybit_Futures === "O" || !!row.Exact_Futures));
+              const isFutures =
+                exchanges.includes(`${ex.id}_FUTURES`) ||
+                (ex.id === "BINANCE" &&
+                  (row.Binance_Futures === "O" || !!row.Exact_Futures)) ||
+                (ex.id === "BYBIT" &&
+                  (row.Bybit_Futures === "O" || !!row.Exact_Futures));
 
-                const isListed =
-                  isSpot ||
-                  isFutures ||
-                  exchanges.some((e) => e.startsWith(ex.id));
+              const isAlpha =
+                ex.id === "BINANCE" &&
+                (exchanges.includes("BINANCE_ALPHA") || row.Binance_Alpha === "O");
 
-                let badgeHtml = "";
-                if (isListed && (isFutures || isSpot)) {
-                  badgeHtml = `
+              const isListed =
+                isSpot ||
+                isFutures ||
+                isAlpha ||
+                exchanges.some((e) => e.startsWith(ex.id));
+
+              let badgeHtml = "";
+              if (isListed && (isFutures || isSpot || isAlpha)) {
+                badgeHtml = `
                   <div class="absolute bottom-0 right-0 flex items-center gap-[0.5px] z-10 scale-[0.55] origin-bottom-right">
                     ${isSpot ? `<div class="badge-spot bg-[#0ecb81]/90 text-white text-[9px] font-black px-[1px] rounded-[1px] leading-none">S</div>` : ""}
                     ${isFutures ? `<div class="badge-futures bg-[#f0b90b]/90 text-black text-[9px] font-black px-[1px] rounded-[1px] leading-none">F</div>` : ""}
+                    ${isAlpha ? `<div class="badge-alpha bg-purple-600/95 text-white text-[9px] font-black px-[1px] rounded-[1px] leading-none">α</div>` : ""}
                   </div>
                 `;
-                }
-                const imgUrl = getExchangeLogo(ex.cmcId);
-                return `
+              }
+              const imgUrl = getExchangeLogo(ex.cmcId);
+              return `
                 <div class="relative w-[14px] h-[14px] flex items-center justify-center rounded-[2px] overflow-hidden bg-white/5 transition-all flex-shrink-0"
                      style="${isListed ? "filter: none; opacity: 1;" : "filter: grayscale(1); opacity: 0.1;"}">
                   <img src="${imgUrl}" alt="${ex.id}" class="w-full h-full object-contain rounded-[2px]" />
                   ${badgeHtml}
                 </div>
               `;
-              })
-              .join("");
-          })()}
+            })
+            .join("");
+        })()}
         </div>
       `;
     }
@@ -949,7 +953,7 @@ window.updateRowPriceDisplay = (target, row) => {
       const sizePx = Math.max(
         fs?.PRICE_MIN_SIZE || 11,
         (fs?.PRICE_BASE_SIZE || 14) -
-          (len - threshold) * (fs?.PRICE_REDUCE_STEP || 0.6),
+        (len - threshold) * (fs?.PRICE_REDUCE_STEP || 0.6),
       );
       const targetFont = `${sizePx}px`;
       if (parentEl.style.fontSize !== targetFont)

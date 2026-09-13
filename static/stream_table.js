@@ -25,6 +25,7 @@ export function initSniperSocket() {
 
 // 🔄 [핵심] visibleSymbols와 연동하여 바이낸스/업비트 구독 리스트 동시 동기화
 export function syncSniperSubscriptions() {
+  if (typeof window !== "undefined" && window.isSandboxActive && window.isSandboxActive()) return;
   if (!store.visibleSymbols) return;
   const getNextId = () => Math.floor(Date.now() + Math.random() * 1000);
 

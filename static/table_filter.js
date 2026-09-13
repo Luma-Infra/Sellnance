@@ -306,6 +306,7 @@ export function getFilteredData() {
         const targetExchs = [
           "BINANCE_SPOT",
           "BINANCE_FUTURES",
+          "BINANCE_ALPHA",
           "BINANCE_STOCK",
           "UPBIT",
           "BITHUMB",
@@ -342,6 +343,7 @@ export function getFilteredData() {
         const checkMatch = ([exchId, state]) => {
           if (exchId === "BINANCE_SPOT") return (listed.includes("BINANCE_SPOT") || listed.includes("BINANCE")) && !isStockCoin(row);
           if (exchId === "BINANCE_FUTURES") return listed.includes("BINANCE_FUTURES") && !isStockCoin(row);
+          if (exchId === "BINANCE_ALPHA") return listed.includes("BINANCE_ALPHA") || row.Binance_Alpha === "O";
           if (exchId === "BINANCE_STOCK") return isStockCoin(row);
           if (exchId === "BYBIT_SPOT") return listed.includes("BYBIT_SPOT") || listed.includes("BYBIT");
           if (exchId === "BYBIT_FUTURES") return listed.includes("BYBIT_FUTURES");

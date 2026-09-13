@@ -7,6 +7,7 @@ import {
   rebuildMainDataMap,
   rebuildVolumeDataMap,
   autoFit,
+  mainCandleAutoscaleProvider,
 } from "./chart_utils.js";
 import { findRowInfo, determineListingDate } from "./chart_history_helper.js";
 import { updateExchangeBadges } from "./ui_control.js";
@@ -698,10 +699,10 @@ export async function fetchHistory(
           store.volCustomPriceRange = null;
           store.kimchiCustomPriceRange = null;
           if (store.candleSeries) {
-            store.candleSeries.applyOptions({ autoscaleInfoProvider: (original) => (original ? original() : null) });
+            store.candleSeries.applyOptions({ autoscaleInfoProvider: mainCandleAutoscaleProvider });
           }
           if (store.previewSeries) {
-            store.previewSeries.applyOptions({ autoscaleInfoProvider: (original) => (original ? original() : null) });
+            store.previewSeries.applyOptions({ autoscaleInfoProvider: mainCandleAutoscaleProvider });
           }
         }
 
