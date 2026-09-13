@@ -1,7 +1,12 @@
 // chart.js - 순수 차트 엔진 코어
 import { store, CONFIG, tfSec, measureDOM } from "./_store.js";
 import { fetchHistory } from "./chart_data.js";
-import { getUnixSeconds, formatCrosshairPrice } from "./chart_utils.js";
+import {
+  getUnixSeconds,
+  formatCrosshairPrice,
+  getKimchiColor,
+  rebuildKimchiDataMap,
+} from "./chart_utils.js";
 import { getCandleThemeColors, applyCandleTheme } from "./theme_manager.js";
 import {
   formatChartTickMark,
@@ -827,6 +832,68 @@ export function updateChartTheme() {
     } catch (volThemeErr) {
       // Xconsole.warn("🚨 volumeSeries.setData in updateChartTheme 예외 우회 완료:", volThemeErr,);
     }
+  }
+
+  // 🚀 4. 김프(Kimchi) 데이터 및 무지개 라인 시리즈, 범례 색상 즉시 테마 동기화 (새로고침 없이 0초 즉시 반영)
+  if (store.kimchiData && store.kimchiData.length > 0) {
+    const getKCol = typeof getKimchiColor === "function" ? getKimchiColor : window.getKimchiColor;
+    if (typeof getKCol === "function") {
+      for (let i = 0; i < store.kimchiData.length; i++) {
+        const item = store.kimchiData[i];
+        if (item && item.value !== undefined) {
+          item.color = getKCol(item.value);
+        }
+      }
+    }
+
+    if (typeof rebuildKimchiDataMap === "function") {
+      try {
+        rebuildKimchiDataMap();
+      } catch (e) { }
+    }
+
+    // 🎯 차트 캔버스 상의 무지개 김프 라인 즉각 다시 그리기 (Volume과 동일한 방식)
+    if (store.kimchiSeries && !store.isKimchiDisabled) {
+      try {
+        store.kimchiSeries.setData(
+          window.sanitizeChartData
+            ? window.sanitizeChartData(store.kimchiData, true)
+            : store.kimchiData,
+        );
+      } catch (kimchiErr) {
+        // Xconsole.warn("🚨 kimchiSeries.setData in updateChartTheme 예외 우회 완료:", kimchiErr);
+      }
+    }
+  }
+  if (
+    store.realtimeKimchi &&
+    store.realtimeKimchi.value !== undefined
+  ) {
+    const getKCol = typeof getKimchiColor === "function" ? getKimchiColor : window.getKimchiColor;
+    if (typeof getKCol === "function") {
+      store.realtimeKimchi.color = getKCol(store.realtimeKimchi.value);
+    }
+  }
+
+  const kimchiEl = document.getElementById("ohlc-kimchi");
+  if (kimchiEl) {
+    const getKCol = typeof getKimchiColor === "function" ? getKimchiColor : window.getKimchiColor;
+    if (typeof getKCol === "function") {
+      const targetKim =
+        store.realtimeKimchi ||
+        (store.kimchiData && store.kimchiData.length > 0
+          ? store.kimchiData[store.kimchiData.length - 1]
+          : null);
+      if (targetKim && targetKim.value !== undefined) {
+        kimchiEl.style.color = getKCol(targetKim.value);
+      }
+    }
+  }
+
+  if (typeof window.updateStatus === "function") {
+    try {
+      window.updateStatus();
+    } catch (e) { }
   }
 
   applyChartLayout();

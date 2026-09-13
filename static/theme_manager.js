@@ -185,10 +185,11 @@ export function toggleTheme() {
   // 🚀 캔들, 볼륨(vol), 프리뷰 차트 색상 일괄 동기화
   applyCandleTheme(store.candleTheme || "binance");
 
-  // 🚀 [딜레이 제거] 차트 그리드선/경계선/배경색을 RAF로 미루지 않고 동기적으로 즉시 실행하여 0초 동시 전환
-  updateChartTheme();
-
+  // 🚀 테마 상태를 localStorage에 먼저 저장하여 차트 테마 및 김프 엔진이 최신 테마를 즉각 참조 가능하도록 보장
   localStorage.setItem("sellnance_theme", store.currentTheme);
+
+  // 🚀 차트 그리드선/경계선/배경색을 RAF로 미루지 않고 동기적으로 즉시 실행하여 0초 동시 전환
+  updateChartTheme();
 
   // 무거운 이미지 DOM 교체만 다음 프레임에 비동기 처리
   requestAnimationFrame(() => {
