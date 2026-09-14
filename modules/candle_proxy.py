@@ -194,10 +194,14 @@ class PersistentTVClient:
                                             str(p["v"][2]),
                                             str(p["v"][3]),
                                             str(p["v"][4]),
-                                            str(p["v"][5]),
+                                            (
+                                                str(p["v"][5])
+                                                if len(p.get("v", [])) >= 6
+                                                else "0"
+                                            ),
                                         ]
                                         for p in plots
-                                        if len(p.get("v", [])) >= 6
+                                        if len(p.get("v", [])) >= 5
                                     ]
                                     if candles:
                                         fut.set_result(candles)
@@ -280,8 +284,8 @@ class PersistentTVClient:
                     )
                 )
 
-                # Future 완료 대기 (최대 2.8초 단일 타임아웃)
-                candles = await asyncio.wait_for(fut, timeout=2.8)
+                # Future 완료 대기 (최대 3.5초 단일 타임아웃)
+                candles = await asyncio.wait_for(fut, timeout=3.5)
                 return candles if candles else []
             except Exception:
                 return []
@@ -365,7 +369,7 @@ async def get_tv_candles_aiohttp(symbol="BINANCE:AIAUSDT", timeframe="1D", n_bar
                                 )
                                 for p in plots:
                                     v = p.get("v", [])
-                                    if len(v) >= 6:
+                                    if len(v) >= 5:
                                         candles.append(
                                             [
                                                 int(v[0] * 1000),
@@ -373,7 +377,7 @@ async def get_tv_candles_aiohttp(symbol="BINANCE:AIAUSDT", timeframe="1D", n_bar
                                                 str(v[2]),
                                                 str(v[3]),
                                                 str(v[4]),
-                                                str(v[5]),
+                                                str(v[5]) if len(v) >= 6 else "0",
                                             ]
                                         )
                                 if candles:
@@ -542,6 +546,60 @@ async def _raw_fetch_candles(
         except Exception as e:
             print(f"⚠️ [GATEIO 공식 API 에러] {clean_sym}: {e}")
 
+    # [바이낸스 알파 코인 직행]: 알파 전용 코인은 바이낸스 REST(400 에러)를 건너뛰고 트레이딩뷰 aiohttp 웹소켓으로 처음부터 즉시 서빙!
+    clean_base = (
+        symbol.replace("USDT", "").replace("BUSD", "").replace("USDC", "").upper()
+    )
+    is_alpha_coin = False
+    if exchange in ("binance", "binance_spot") and api_manager.MAPPING_DATA:
+        t_data = api_manager.MAPPING_DATA.get("TICKER_DATA", {}).get(clean_base)
+        if (
+            isinstance(t_data, list)
+            and len(t_data) >= 6
+            and str(t_data[5]).upper() == "ALPHA"
+        ):
+            is_alpha_coin = True
+
+    if is_alpha_coin:
+        tv_tf_map = {
+            "1m": "1",
+            "3m": "3",
+            "5m": "5",
+            "15m": "15",
+            "30m": "30",
+            "1h": "60",
+            "2h": "120",
+            "4h": "240",
+            "6h": "360",
+            "12h": "720",
+            "1d": "1D",
+            "days": "1D",
+            "3d": "3D",
+            "1w": "1W",
+            "weeks": "1W",
+            "1M": "1M",
+            "months": "1M",
+        }
+        tv_tf = tv_tf_map.get(interval, interval.upper())
+        n_bars = int(limit) if limit else 500
+
+        sym_candidates = [
+            f"BYBIT:{clean_base}USDT",
+            f"BITGET:{clean_base}USDT",
+            f"GATEIO:{clean_base}USDT",
+        ]
+        for tv_sym in sym_candidates:
+            try:
+                tv_cand = await PERSISTENT_TV_CLIENT.get_candles(
+                    symbol=tv_sym, timeframe=tv_tf, n_bars=n_bars
+                )
+                if tv_cand and isinstance(tv_cand, list) and len(tv_cand) > 0:
+                    sorted_cand = sorted(tv_cand, key=lambda x: x[0])
+                    # print(f"✅ [알파 캔들 TV 직행 수신] {symbol} -> {tv_sym} ({len(sorted_cand)}개)")
+                    return sorted_cand
+            except Exception:
+                pass
+
     try:
         url = ExchangeAdapter.get_candle_url(
             exchange, symbol, interval, limit, to, start
@@ -598,6 +656,55 @@ async def _raw_fetch_candles(
 
         if data is None:
             data = []
+
+        # 🚀 [바이낸스 캔들 스마트 폴백]: 바이낸스 현물 400/빈 캔들 시 트레이딩뷰 aiohttp 폴백 가동
+        if exchange in ("binance", "binance_spot") and (not data or len(data) == 0):
+            clean_base = (
+                symbol.replace("USDT", "")
+                .replace("BUSD", "")
+                .replace("USDC", "")
+                .upper()
+            )
+            tv_tf_map = {
+                "1m": "1",
+                "3m": "3",
+                "5m": "5",
+                "15m": "15",
+                "30m": "30",
+                "1h": "60",
+                "2h": "120",
+                "4h": "240",
+                "6h": "360",
+                "12h": "720",
+                "1d": "1D",
+                "days": "1D",
+                "3d": "3D",
+                "1w": "1W",
+                "weeks": "1W",
+                "1M": "1M",
+                "months": "1M",
+            }
+            tv_tf = tv_tf_map.get(interval, interval.upper())
+            n_bars = int(limit) if limit else 500
+
+            sym_candidates = [
+                f"BYBIT:{clean_base}USDT",
+                f"BITGET:{clean_base}USDT",
+                f"GATEIO:{clean_base}USDT",
+            ]
+            for tv_sym in sym_candidates:
+                try:
+                    tv_cand = await PERSISTENT_TV_CLIENT.get_candles(
+                        symbol=tv_sym, timeframe=tv_tf, n_bars=n_bars
+                    )
+                    if tv_cand and isinstance(tv_cand, list) and len(tv_cand) > 0:
+                        data = sorted(tv_cand, key=lambda x: x[0])
+                        print(
+                            f"✅ [알파 캔들 TV 폴백 수신] {symbol} -> {tv_sym} ({len(data)}개)"
+                        )
+                        break
+                except Exception:
+                    pass
 
         # 빗썸 전체 캔들 반환 시 요청한 limit만큼 백엔드에서 즉시 슬라이싱하여 전송 속도 극대화
         if (

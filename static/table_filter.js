@@ -317,9 +317,22 @@ export function getFilteredData() {
           "GATEIO_SPOT",
           "COINBASE_SPOT",
         ];
-        const unselectedExchs = targetExchs.filter(
-          (exId) => !includeFilters.some(([incId]) => incId === exId),
-        );
+        const unselectedExchs = targetExchs.filter((exId) => {
+          if (exId === "BINANCE_ALPHA") {
+            return !includeFilters.some(
+              ([incId, incState]) =>
+                incId === "BINANCE_ALPHA" ||
+                (incId === "BINANCE_SPOT" && incState === 2),
+            );
+          }
+          if (exId === "BINANCE_SPOT") {
+            return !includeFilters.some(
+              ([incId, incState]) =>
+                incId === "BINANCE_SPOT" && incState === 1,
+            );
+          }
+          return !includeFilters.some(([incId]) => incId === exId);
+        });
 
         const hasUnselectedExch = unselectedExchs.some((exchId) => {
           if (exchId === "UPBIT") return hasUpbit;
@@ -341,9 +354,22 @@ export function getFilteredData() {
       // [C] 포함(Include) 필터 검사
       if (includeFilters.length > 0) {
         const checkMatch = ([exchId, state]) => {
-          if (exchId === "BINANCE_SPOT") return (listed.includes("BINANCE_SPOT") || listed.includes("BINANCE")) && !isStockCoin(row);
+          if (exchId === "BINANCE_SPOT") {
+            if (state === 2) {
+              return (
+                listed.includes("BINANCE_ALPHA") ||
+                row.Binance_Alpha === "O" ||
+                Boolean(row.is_alpha)
+              );
+            }
+            return (
+              (listed.includes("BINANCE_SPOT") || listed.includes("BINANCE")) &&
+              !isStockCoin(row)
+            );
+          }
           if (exchId === "BINANCE_FUTURES") return listed.includes("BINANCE_FUTURES") && !isStockCoin(row);
-          if (exchId === "BINANCE_ALPHA") return listed.includes("BINANCE_ALPHA") || row.Binance_Alpha === "O";
+          if (exchId === "BINANCE_ALPHA") return listed.includes("BINANCE_ALPHA") || row.Binance_Alpha === "O" || Boolean(row.is_alpha);
+
           if (exchId === "BINANCE_STOCK") return isStockCoin(row);
           if (exchId === "BYBIT_SPOT") return listed.includes("BYBIT_SPOT") || listed.includes("BYBIT");
           if (exchId === "BYBIT_FUTURES") return listed.includes("BYBIT_FUTURES");

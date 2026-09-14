@@ -119,8 +119,12 @@ export async function fetchCandlesSmart(
             store._upbitDirectBlockUntil = Date.now() + 30000;
           }
         } else if (res.status === 404 || res.status === 400) {
-          // 🚀 거래소 API에서 404/400 (심볼/마켓 없음) 반환 시 백엔드 프록시로 재요청하는 낭비/지연 원천 차단
-          return [];
+          // 바이낸스 현물 400 에러(마켓 미상장)는 알파 코인 트레이딩뷰 백엔드 서빙을 위해 서버 프록시로 통과
+          if (exchange === "binance_spot") {
+            // pass through to server proxy fallback
+          } else {
+            return [];
+          }
         }
       }
     } catch (err) {

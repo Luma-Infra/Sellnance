@@ -807,11 +807,18 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
 
               let badgeHtml = "";
               if (isListed && (isFutures || isSpot || isAlpha)) {
+                let spotBadge = "";
+                if (isAlpha) {
+                  // 알파 전용 특수 코인: Spot 배지를 별도 추가하지 않고 보라색 (α)로 통합 표기
+                  spotBadge = `<div class="badge-spot badge-alpha bg-purple-600/95 text-white text-[9px] font-black px-[1px] rounded-[1px] leading-none">α</div>`;
+                } else if (isSpot) {
+                  spotBadge = `<div class="badge-spot bg-[#0ecb81]/90 text-white text-[9px] font-black px-[1px] rounded-[1px] leading-none">S</div>`;
+                }
+
                 badgeHtml = `
                   <div class="absolute bottom-0 right-0 flex items-center gap-[0.5px] z-10 scale-[0.55] origin-bottom-right">
-                    ${isSpot ? `<div class="badge-spot bg-[#0ecb81]/90 text-white text-[9px] font-black px-[1px] rounded-[1px] leading-none">S</div>` : ""}
+                    ${spotBadge}
                     ${isFutures ? `<div class="badge-futures bg-[#f0b90b]/90 text-black text-[9px] font-black px-[1px] rounded-[1px] leading-none">F</div>` : ""}
-                    ${isAlpha ? `<div class="badge-alpha bg-purple-600/95 text-white text-[9px] font-black px-[1px] rounded-[1px] leading-none">α</div>` : ""}
                   </div>
                 `;
               }

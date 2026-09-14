@@ -419,6 +419,42 @@ def update_listing_date(request: Request, data: dict = Body(...)):
     return {"status": "skipped"}
 
 
+@app.get("/api/alpha/realtime")
+async def get_alpha_realtime():
+    """
+    [Alpha Realtime API] 바이낸스 알파 실시간 시세 초경량 엔드포인트
+    """
+    global _ALPHA_PRICE_CACHE
+    now = time.time()
+    if "_ALPHA_PRICE_CACHE" not in globals():
+        globals()["_ALPHA_PRICE_CACHE"] = {"timestamp": 0, "data": {}}
+
+    cache = globals()["_ALPHA_PRICE_CACHE"]
+    if now - cache["timestamp"] < 1.5 and cache["data"]:
+        return cache["data"]
+
+    from . import alpha_rules
+
+    alpha_map = alpha_rules.fetch_binance_alpha_raw()
+    light_map = {}
+    for sym, item in alpha_map.items():
+        try:
+            p = float(item.get("price") or 0.0)
+            chg = float(item.get("percentChange24h") or 0.0)
+            vol = float(item.get("volume24h") or 0.0)
+            light_map[sym] = {
+                "price": p,
+                "change_24h": chg,
+                "vol": vol,
+            }
+        except:
+            pass
+
+    cache["timestamp"] = now
+    cache["data"] = light_map
+    return light_map
+
+
 @app.get("/.well-known/appspecific/com.chrome.devtools.json")
 def chrome_devtools_dummy():
     """Chrome DevTools F12 404 콘솔 로그 방어용 더미 핸들러"""

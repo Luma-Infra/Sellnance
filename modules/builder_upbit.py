@@ -277,13 +277,18 @@ def build_upbit_row(
             or ticker_info[4] != "COIN"
         )
     ):
+        extra_args = (
+            ticker_info[5:]
+            if (isinstance(ticker_info, list) and len(ticker_info) >= 6)
+            else []
+        )
         TICKER_DATA[display_name] = [
             final_ucid,
             ch_sym,
             coin_name,
             base,
             "COIN",
-        ]
+        ] + extra_args
         is_updated = True
         print(
             f"✅ [족보 세탁] {display_name} UID 및 타입 복구 완료: {final_ucid} (COIN)"

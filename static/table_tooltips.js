@@ -218,9 +218,11 @@ if (typeof window !== "undefined") {
 
               const sEl = badge.querySelector(".badge-spot");
               if (sEl) {
-                sEl.innerText = "SPOT";
-                sEl.className =
-                  "bg-[#0ecb81] text-black font-black leading-none tracking-tight rounded-[1px]";
+                const isAlpha = sEl.classList.contains("badge-alpha");
+                sEl.innerText = isAlpha ? "SPOT (α)" : "SPOT";
+                sEl.className = isAlpha
+                  ? "bg-purple-600 text-white font-black leading-none tracking-tight rounded-[1px]"
+                  : "bg-[#0ecb81] text-black font-black leading-none tracking-tight rounded-[1px]";
                 sEl.style.fontSize = `${3.1 * scale}px`;
                 sEl.style.padding = `${1 * scale}px ${1.2 * scale}px`;
               }

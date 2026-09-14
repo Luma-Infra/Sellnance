@@ -81,8 +81,18 @@ def _determine_final_ucid_and_info(
     market_data_map,
 ):
     existing_uid = (
-        ticker_info[0] if isinstance(ticker_info, list) and len(ticker_info) > 0 else ""
+        ticker_info[0]
+        if isinstance(ticker_info, list) and len(ticker_info) > 0 and ticker_info[0]
+        else ""
     )
+    # 티커 문자열이 들어가 있는 경우 UID 미발급 상태로 간주하여 CMC 수집된 실제 숫자 ID로 세탁되도록 유도
+    if (
+        existing_uid
+        and not str(existing_uid).isdigit()
+        and not str(existing_uid).startswith("STOCK_")
+    ):
+        existing_uid = ""
+
     hardcoded_id = str(
         SYMBOL_TO_ID_MAP.get(base, "") or SYMBOL_TO_ID_MAP.get(raw_symbol, "")
     )
@@ -253,6 +263,11 @@ def _aggregate_binance_market(
                     binance_spot_change_today = utils.js_round(
                         ((binance_spot_price - spot_utc0) / spot_utc0 * 100), 2
                     )
+            if b_inf.get("is_alpha"):
+                listed_on.add("BINANCE_ALPHA")
+                listed_on.add("BINANCE_SPOT")
+                listed_on.add("BINANCE")
+
             if b_inf.get("is_futures"):
                 listed_on.add("BINANCE_FUTURES")
                 binance_futures_price = b_inf.get("futures_price") or b_inf.get(
@@ -449,7 +464,18 @@ def build_binance_row(
             )
         )
     ):
-        TICKER_DATA[display_name] = [final_ucid, ch_sym, coin_name, base, asset_type]
+        extra_args = (
+            ticker_info[5:]
+            if (isinstance(ticker_info, list) and len(ticker_info) >= 6)
+            else []
+        )
+        TICKER_DATA[display_name] = [
+            final_ucid,
+            ch_sym,
+            coin_name,
+            base,
+            asset_type,
+        ] + extra_args
         is_updated = True
         print(
             f"✅ [족보 세탁] {display_name} UID 및 타입 복구 완료: {final_ucid} ({asset_type})"
@@ -695,11 +721,16 @@ def build_binance_row(
         "precision": precision,
         "Upbit": "O" if target_up_base else "X",
         "Upbit_Symbol": target_up_base,
-        "Binance": "O" if binance_spot_price > 0 else "X",
+        "Binance": "O" if (binance_spot_price > 0 or b_info.get("is_alpha")) else "X",
         "Binance_Futures": "O" if binance_futures_price > 0 else "X",
+        "Binance_Alpha": "O" if b_info.get("is_alpha") else "X",
         "Bithumb_Symbol": bithumb_symbol,
         "Price": utils.format_dynamic_price(b_info["price"], precision),
-        "Price_KRW": up_price_krw if up_price_krw > 0 else None,
+        "Price_KRW": (
+            up_price_krw
+            if up_price_krw > 0
+            else (bithumb_price if bithumb_price > 0 else None)
+        ),
         "Binance_Price": (
             binance_futures_price
             if b_info.get("is_futures") and binance_futures_price > 0
@@ -750,6 +781,8 @@ def build_binance_row(
         "Bybit_Price_Spot": by_spot_p if by_spot_p > 0 else None,
         "Change_24h_Spot": binance_spot_change_24h,
         "Change_24h_Binance": binance_spot_change_24h,
+        "Change_Today_Spot": binance_spot_change_today,
+        "Change_Today_Binance": binance_spot_change_today,
         "Change_24h_Bybit": float(
             bybit_data.get(raw_symbol, {}).get("change_24h")
             or bybit_data.get(base, {}).get("change_24h")
@@ -819,9 +852,7 @@ def build_binance_row(
             else "-"
         ),
         "Bithumb_Vol_KRW_Formatted": (
-            utils.format_volume_krw_string(bithumb_vol)
-            if bithumb_vol > 0
-            else "-"
+            utils.format_volume_krw_string(bithumb_vol) if bithumb_vol > 0 else "-"
         ),
         "Bithumb_Vol": bithumb_vol,
         "Binance_Price_Futures": (

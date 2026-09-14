@@ -609,6 +609,12 @@ export function updateExchangeBadges(s, targetUid = null) {
   }
   let badges = "";
   if (rowInfo) {
+    const isAlpha = Boolean(
+      rowInfo.Binance_Alpha === "O" ||
+      rowInfo.Listed_Exchanges?.includes("BINANCE_ALPHA") ||
+      rowInfo.is_alpha,
+    );
+
     const list = [
       {
         id: "B-SPOT",
@@ -617,6 +623,7 @@ export function updateExchangeBadges(s, targetUid = null) {
         market: "SPOT",
         type: "SPOT",
         condition: Boolean(rowInfo.Listed_Exchanges?.includes("BINANCE_SPOT")),
+        isAlpha: isAlpha,
       },
       {
         id: "B-FUT",
@@ -701,17 +708,19 @@ export function updateExchangeBadges(s, targetUid = null) {
           typeBadge = `<div class="absolute -bottom-1 -right-1.5 bg-[#f0b90b] text-black text-[8px] px-1.5 py-0.5 rounded-[3px] leading-none font-black shadow-[0_1px_3px_rgba(0,0,0,0.5)] whitespace-nowrap select-none tracking-tight">FUTURE</div>`;
         }
 
-        let betaBadge = "";
+        let topBadge = "";
         if (item.isBeta) {
-          betaBadge = `<div class="absolute -top-1.5 -right-1.5 bg-blue-600 text-white text-[8px] px-1.5 py-0.5 rounded-full flex items-center justify-center font-bold leading-none shadow-[0_1px_3px_rgba(0,0,0,0.5)] select-none z-10 border border-blue-400/50 whitespace-nowrap">beta</div>`;
+          topBadge = `<div class="absolute -top-1.5 -right-1.5 bg-blue-600 text-white text-[8px] px-1.5 py-0.5 rounded-full flex items-center justify-center font-bold leading-none shadow-[0_1px_3px_rgba(0,0,0,0.5)] select-none z-10 border border-blue-400/50 whitespace-nowrap">beta</div>`;
+        } else if (item.isAlpha) {
+          topBadge = `<div class="absolute -top-1.5 -right-1.5 bg-purple-600 text-white text-[8px] px-1.5 py-0.5 rounded-full flex items-center justify-center font-bold leading-none shadow-[0_1px_3px_rgba(0,0,0,0.5)] select-none z-10 border border-purple-400/50 whitespace-nowrap">alpha</div>`;
         }
 
         badges += `
           <button onclick="selectSymbol('${rowInfo.Ticker}', '${item.market}', '${rowInfo.UID}')" 
-                  title="${item.name}${item.isBeta ? ' (Beta)' : ''}"
+                  title="${item.name}${item.isBeta ? ' (Beta)' : ''}${item.isAlpha ? ' (Alpha)' : ''}"
                   class="relative flex items-center justify-center p-1 border border-theme-border/30 rounded-xl transition-all duration-200 w-8 h-8 min-w-[32px] min-h-[32px] shrink-0 flex-shrink-0 cursor-pointer select-none active:scale-95 ${ringClass}">
             <img src="${imgUrl}" alt="${item.id}" class="w-full h-full object-contain rounded" />
-            ${betaBadge}
+            ${topBadge}
             ${typeBadge}
           </button>
         `;

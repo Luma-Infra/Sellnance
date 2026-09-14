@@ -77,7 +77,7 @@ export function formatChartTickMark(time, tickMarkType, tf) {
   if (isNaN(d.getTime())) return "";
 
   // 🚀 연도 (0) 단위 스마트 표시
-  if (tickMarkType === 0) return `${d.getUTCFullYear()}년`;
+  if (tickMarkType === 0) return `${d.getUTCFullYear()}`;
 
   const isDayUnit = !(tf || store.currentTF || "1h").match(/[hm]/);
   if (isDayUnit) {

@@ -462,8 +462,10 @@ def _fetch_and_process_data(silent_mode=False, api_key=None):
                 "🛡️ [2/3 CMC 유저 캐시 재활용] API 크레딧 소모 0, 기존 시가총액 장부 유지"
             )
         else:
-            market_data_map, asset_to_lookup_key, is_invalid_key = cmc_api.fetch_cmc_market_data(
-                binance_data, upbit_only_assets, MAPPING_DATA, api_key=api_key
+            market_data_map, asset_to_lookup_key, is_invalid_key = (
+                cmc_api.fetch_cmc_market_data(
+                    binance_data, upbit_only_assets, MAPPING_DATA, api_key=api_key
+                )
             )
             with user_cache_lock:
                 if is_invalid_key:
@@ -573,9 +575,29 @@ def _fetch_and_process_data(silent_mode=False, api_key=None):
     if "TICKER_DATA" not in MAPPING_DATA:
         MAPPING_DATA["TICKER_DATA"] = {}
 
+    alpha_active_bases = {
+        str(item.get("Base_Asset", item.get("Asset", ""))).upper()
+        for item in final_results
+        if isinstance(item, dict) and item.get("Binance_Alpha") == "O"
+    }
+
     for saved_name in list(MAPPING_DATA["TICKER_DATA"].keys()):
         # 🚀 [추가] (STOCK) 접미사가 붙은 주식 자산의 경우, 접미사 제거한 base 심볼로 실시간 수집 리스트(live_bases)와 매칭 체크
         clean_name = re.sub(r"\(STOCK\)$", "", saved_name, flags=re.IGNORECASE)
+        ticker_val = MAPPING_DATA["TICKER_DATA"].get(saved_name)
+
+        # [알파 코인 청소 예외]: 6번째 인자가 ALPHA이거나 대시보드 활성 알파 자산은 절대 청소 대상에서 제외!
+        if (
+            (
+                isinstance(ticker_val, list)
+                and len(ticker_val) >= 6
+                and str(ticker_val[5]).upper() == "ALPHA"
+            )
+            or clean_name in alpha_active_bases
+            or saved_name in alpha_active_bases
+        ):
+            continue
+
         if (
             clean_name not in live_bases
             and saved_name not in SPECIAL_SYMBOL_MAP
@@ -693,7 +715,9 @@ def get_cached_data(force_reload=False, silent_mode=False, user_api_key=None):
                 # 무효 키 / 빈 응답 시 네거티브 캐시에 등록하여 반복 DoS 차단 및 기본 캐시 반환
                 with user_cache_lock:
                     FAILED_CMC_KEYS[key_hash] = now_kst
-                return GLOBAL_CACHE.get("data", []), GLOBAL_CACHE.get("last_updated_str", "")
+                return GLOBAL_CACHE.get("data", []), GLOBAL_CACHE.get(
+                    "last_updated_str", ""
+                )
 
             with user_cache_lock:
                 _prune_user_cmc_caches()
@@ -776,4 +800,3 @@ def get_user_cmc_status(api_key: str | None) -> str:
         if user_cache:
             return user_cache.get("status", "OK")
     return "OK"
-
