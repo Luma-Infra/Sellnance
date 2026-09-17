@@ -14,7 +14,7 @@
     "__MEMO__12": "DUPLICATED_LIST: 동일 티커 다른 코인(동명이인) 또는 거래소별 티커 상이 코인의 UID/거래소별 티커 매핑",
     "__MEMO__13": "TICKER_DATA: 전체 자산 마스터 메타데이터: [0: CMC_ID, 1: 체인/메인넷, 2: 영문명, 3: 표준티커, 4: 자산타입(COIN/STOCK), 5: 특수구분(ALPHA 등)]",
     "__MEMO__14": "-------------------------------------------------------------",
-    "DEFAULT_KRW_USD_RATE": 1358.75,
+    "DEFAULT_KRW_USD_RATE": 1380.2,
     "CHAIN_LOGO_MAP": {
         "ETH": "https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png",
         "BNB": "https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png",
@@ -309,6 +309,24 @@
             "",
             "CAT",
             "binance_stock"
+        ],
+        "ONE(Harmony)_binance": [
+            "3945",
+            "",
+            "ONE",
+            "binance"
+        ],
+        "ONE(ONEchain)_binance": [
+            "37166",
+            "",
+            "CROSS",
+            "binance"
+        ],
+        "ONE(ONEchain)_bybit": [
+            "37166",
+            "",
+            "CROSS",
+            "bybit"
         ]
     },
     "TICKER_DATA": {
@@ -2628,6 +2646,13 @@
             "GPRO",
             "STOCK"
         ],
+        "GPROB(STOCK)": [
+            "42303",
+            null,
+            "GPROB (Derivatives)",
+            "GPROB",
+            "STOCK"
+        ],
         "GPS": [
             "35268",
             null,
@@ -3075,6 +3100,13 @@
             "JPM (Derivatives)",
             "JPM",
             "STOCK"
+        ],
+        "JPYC": [
+            "40123",
+            "ETH",
+            "JPY Coin",
+            "JPYC",
+            "COIN"
         ],
         "JST": [
             "5488",
@@ -4056,11 +4088,18 @@
             "ONDS",
             "STOCK"
         ],
-        "ONE": [
+        "ONE(Harmony)": [
+            "3945",
+            null,
+            "Harmony",
+            "ONE",
+            "COIN"
+        ],
+        "ONE(ONEchain)": [
             "37166",
             null,
             "ONEchain",
-            "ONE",
+            "CROSS",
             "COIN"
         ],
         "ONG": [
@@ -4457,6 +4496,13 @@
             "PYTH",
             "COIN"
         ],
+        "PYUSD": [
+            "27772",
+            "ETH",
+            "PayPal USD",
+            "PYUSD",
+            "COIN"
+        ],
         "Q": [
             "38236",
             null,
@@ -4595,6 +4641,13 @@
             null,
             "RDDT (Derivatives)",
             "RDDT",
+            "STOCK"
+        ],
+        "RDDTB(STOCK)": [
+            "42302",
+            null,
+            "RDDTB (Derivatives)",
+            "RDDTB",
             "STOCK"
         ],
         "RE": [
