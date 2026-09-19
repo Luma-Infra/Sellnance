@@ -20,23 +20,27 @@ try {
   ) {
     initialTF = savedTF;
   }
-} catch (e) { }
+} catch (e) {}
 
 //[신규] 마지막 정렬 기준 로컬/세션 스토리지 복원
 let initialSortCol = "VolumeBinance";
 let initialSortState = "desc";
 try {
   let savedSortCol =
-    (typeof localStorage !== "undefined" && localStorage.getItem("sellnance_last_sort_col")) ||
-    (typeof sessionStorage !== "undefined" && sessionStorage.getItem("sellnance_last_sort_col"));
+    (typeof localStorage !== "undefined" &&
+      localStorage.getItem("sellnance_last_sort_col")) ||
+    (typeof sessionStorage !== "undefined" &&
+      sessionStorage.getItem("sellnance_last_sort_col"));
   if (savedSortCol === "Volume") savedSortCol = "VolumeBinance";
   if (savedSortCol) initialSortCol = savedSortCol;
 
   const savedSortState =
-    (typeof localStorage !== "undefined" && localStorage.getItem("sellnance_last_sort_state")) ||
-    (typeof sessionStorage !== "undefined" && sessionStorage.getItem("sellnance_last_sort_state"));
+    (typeof localStorage !== "undefined" &&
+      localStorage.getItem("sellnance_last_sort_state")) ||
+    (typeof sessionStorage !== "undefined" &&
+      sessionStorage.getItem("sellnance_last_sort_state"));
   if (savedSortState) initialSortState = savedSortState;
-} catch (e) { }
+} catch (e) {}
 
 //[신규] control-panel-parent 세션 스토리지 복원
 let sessionControlPanel = null;
@@ -57,7 +61,7 @@ try {
     }
     sessionControlPanel.currencyMode = "RECOMMENDED";
   }
-} catch (e) { }
+} catch (e) {}
 
 export const store = {
   currentSortCol: initialSortCol,
@@ -106,8 +110,8 @@ export const store = {
   currencyMode: "RECOMMENDED", // 통화/지표 기준 모드: "RECOMMENDED" (추천), "USD" (달러), "KRW" (원화)
   CURRENCY_MODES: {
     RECOMMENDED: "RECOMMENDED", // 추천 모드 (바낸 선물 24h/Day ↔ 업비트 현물 24h/Day 직접 맞비교)
-    USD: "USD",                 // 달러 모드 (순수 글로벌 해외 거래소 기준)
-    KRW: "KRW",                 // 원화 모드 (순수 국내 업비트/원화 기준)
+    USD: "USD", // 달러 모드 (순수 글로벌 해외 거래소 기준)
+    KRW: "KRW", // 원화 모드 (순수 국내 업비트/원화 기준)
   },
   viewMode: "DETAILED",
   tableViewMode: "basic",
@@ -132,6 +136,15 @@ export const store = {
     "1M",
   ],
 
+  // 메인 차트 상/하단 여백 및 0원/음수 방지 오토스케일 제어 설정
+  mainChartScaleMargins: {
+    top: 0.1, // 상단 여백 (최고가 캔들 윗꼬리 천장 여백)
+    bottom: 0, // 하단 여백 (캔들 오토스케일 프로바이더에서 안전 여백 동적 제어)
+    bottomBufferRatio: 0.08, // 저점 캔들과 바닥 사이 안전 여백 비율
+    bottomMaxGapRatio: 0.8, // 저점 가격 대비 최대 여백 허용 비율
+    bottomMinFloorRatio: 0.08, // 최저가 대비 절대 바닥 하한
+  },
+
   chart: null,
   candleSeries: null,
   previewSeries: null,
@@ -142,14 +155,6 @@ export const store = {
   savedLeftPriceScaleWidth: null, // [UX 개선] 좌측 김프 축의 실시간 너비 저장용 (멀티 뷰포트 정밀 동기화용)
   isUserZoomed: false, // 사용자가 시간축(가로) 줌/패닝을 직접 조작한 상태
   isPriceScaleUserZoomed: false, // 사용자가 메인 Y축 가격 스케일을 수동 드래그/줌한 상태 (autoScale 보존용)
-  // 메인 차트 상/하단 여백 및 0원/음수 방지 오토스케일 제어 설정
-  mainChartScaleMargins: {
-    top: 0.08, // 상단 10% 여백 (최고가 캔들 윗꼬리 천장 여백)
-    bottom: 0, // 하단 0% (캔들 오토스케일 프로바이더에서 안전 여백 동적 제어)
-    bottomBufferRatio: 0.08, // 저점 캔들과 바닥 사이 안전 여백 비율
-    bottomMaxGapRatio: 0.8, // 저점 가격 대비 최대 여백 허용 비율
-    bottomMinFloorRatio: 0.08, // 최저가 대비 절대 바닥 하한
-  },
   isVolPriceScaleUserZoomed: false, // 사용자가 하단 볼륨 Y축 스케일을 수동 조작한 상태
   isKimchiPriceScaleUserZoomed: false, // 사용자가 하단 김프 Y축 스케일을 수동 조작한 상태
   kimchiSeries: null,
@@ -164,11 +169,13 @@ export const store = {
   paneConfig: { volume: true, kimchi: true },
   chartSplits: (() => {
     try {
-      const saved = parseFloat(localStorage.getItem("sellnance_chart_split_s1"));
+      const saved = parseFloat(
+        localStorage.getItem("sellnance_chart_split_s1"),
+      );
       if (!isNaN(saved) && saved >= 0.2 && saved <= 0.9) {
         return { s1: saved, s2: 0.85 };
       }
-    } catch (e) { }
+    } catch (e) {}
     return { s1: 0.75, s2: 0.85 };
   })(),
   exchFilterStates: sessionControlPanel?.exchFilterStates ?? {
@@ -204,8 +211,13 @@ export const store = {
   aggTradeInterval: 0, // aggTrade 주기 조절 (ms 단위, 0 = Raw)
   lastFetchTime: 0, // 마지막 데이터 수집 시간 기록용
   isLogMode: false, // 차트 로그 스케일 활성화 여부
-  chartTimezone: typeof localStorage !== "undefined" && localStorage.getItem("sellnance_chart_timezone") || "UTC+9", // 차트 시간대 (기본 KST: UTC+9)
-  isKimchiDisabled: typeof localStorage !== "undefined" && localStorage.getItem("sellnance_kimchi_disabled") === "true", // 김프 비교 끄기 여부
+  chartTimezone:
+    (typeof localStorage !== "undefined" &&
+      localStorage.getItem("sellnance_chart_timezone")) ||
+    "UTC+9", // 차트 시간대 (기본 KST: UTC+9)
+  isKimchiDisabled:
+    typeof localStorage !== "undefined" &&
+    localStorage.getItem("sellnance_kimchi_disabled") === "true", // 김프 비교 끄기 여부
   traceRowCaller: false, // [디버그 토글] 단 1줄로 좌측 1번 행(Index 0) callerId 전광판 추적 및 확장 영역 보이기/사라지기 제어!
   enableOrderbookVisual: true, //호가창 보기
   showCountdown: true, // 차트 카운트다운 표시 여부
@@ -386,13 +398,13 @@ export const CONFIG = {
   TABLE_PERF: {
     // 1. 행(Row) 순위 재정렬 주기 (DOM 순서 재배치)
     SORT_INTERVAL_NORMAL_MS: 1000, // 평상시 행 정렬 주기
-    SORT_INTERVAL_TURBO_MS: 500,   // 경주마 시간대(08:59:30~09:02:00) 고속 정렬 주기 (2배 가속)
+    SORT_INTERVAL_TURBO_MS: 500, // 경주마 시간대(08:59:30~09:02:00) 고속 정렬 주기 (2배 가속)
     SORT_THROTTLE_WAIT_NORMAL_MS: 500, // 평상시 정렬 연산 디바운스 락
-    SORT_THROTTLE_WAIT_TURBO_MS: 250,  // 경주마 시간대 정렬 연산 디바운스 락
+    SORT_THROTTLE_WAIT_TURBO_MS: 250, // 경주마 시간대 정렬 연산 디바운스 락
 
     // 2. 글자(셀 텍스트: 현재가, 등락률, 볼륨, 김프) DOM 렌더 쓰로틀
     CELL_RENDER_THROTTLE_NORMAL_MS: 1000, // 평상시 개별 셀 글자 갱신 제한
-    CELL_RENDER_THROTTLE_TURBO_MS: 500,  // 경주마 시간대 개별 셀 글자 갱신 제한
+    CELL_RENDER_THROTTLE_TURBO_MS: 500, // 경주마 시간대 개별 셀 글자 갱신 제한
 
     // 3. 소켓 인입 안전 밸브 (고빈도 aggTrade 틱 폭주 및 브라우저 프리징 방어)
     SOCKET_MICRO_THROTTLE_MS: 30, // 동일 코인 초고빈도 틱 압축 쓰로틀

@@ -76,6 +76,21 @@ export const realUpdateHeaderDisplay = (
   isRealtimeStream = false,
   callerId = "UNKNOWN",
 ) => {
+  // [시뮬레이터 가격 침범 차단] 시뮬레이션 모드 활성화 중 실시간 소켓 스트림이 아닌 가상 가격 주입 시 즉시 return
+  const btnSim =
+    typeof document !== "undefined"
+      ? document.getElementById("tab-btn-sim")
+      : null;
+  const isSimMode = btnSim ? btnSim.classList.contains("active") : false;
+  if (
+    isSimMode &&
+    !isRealtimeStream &&
+    newPrice !== undefined &&
+    newPrice !== null
+  ) {
+    return;
+  }
+
   const dom = getHeaderDom();
 
   if (dom.headCallerEl && dom.headCallerEl.textContent !== ` [${callerId}]`) {

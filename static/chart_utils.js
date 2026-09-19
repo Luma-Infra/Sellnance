@@ -32,14 +32,14 @@ export const getNextBarTime = (lastCandleTime, tf) => {
     const diff = day === 0 ? 1 : 8 - day;
     return Math.floor(
       Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate() + diff) /
-      1000,
+        1000,
     );
   }
   if (tf === "1d") {
     const dt = new Date(lastCandleUnix * 1000);
     return Math.floor(
       Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate() + 1) /
-      1000,
+        1000,
     );
   }
   if (tf === "3d") {
@@ -61,7 +61,8 @@ export const ensureSafeUnixSeconds = (t) => {
     return 0;
   }
 };
-if (typeof window !== "undefined") window.ensureSafeUnixSeconds = ensureSafeUnixSeconds;
+if (typeof window !== "undefined")
+  window.ensureSafeUnixSeconds = ensureSafeUnixSeconds;
 
 export function mainCandleAutoscaleProvider(original) {
   const res = original ? original() : null;
@@ -77,9 +78,10 @@ export function mainCandleAutoscaleProvider(original) {
 
   const delta = max - min;
   // 바닥과 최저점 캔들 사이의 시각적 여백 확보 (store 설정 비율 기반 동적 계산)
-  const margin = delta > 0 ? Math.min(delta * bufferRatio, min * maxGapRatio) : min * 0.05;
-  // 0원/음수로 내려가지 않도록 바닥 최솟값을 안전하게 클램핑 (최저가의 floorRatio 이상, 최소 1e-8 이상)
-  const safeMin = Math.max(min * minFloorRatio, Math.max(0.00000001, min - margin));
+  const margin =
+    delta > 0 ? Math.min(delta * bufferRatio, min * maxGapRatio) : min * 0.05;
+  // 0원/음수로 내려가지 않도록 바닥 최솟값을 안전하게 클램핑 (최저가의 floorRatio 이상, 하드코딩 없는 수학적 스케일링)
+  const safeMin = Math.max(min * minFloorRatio, min - margin);
 
   return {
     priceRange: {
@@ -106,30 +108,48 @@ export function resetChartScale() {
   store.kimchiCustomPriceRange = null;
 
   if (store.candleSeries) {
-    store.candleSeries.applyOptions({ autoscaleInfoProvider: mainCandleAutoscaleProvider });
+    store.candleSeries.applyOptions({
+      autoscaleInfoProvider: mainCandleAutoscaleProvider,
+    });
   }
   if (store.previewSeries) {
-    store.previewSeries.applyOptions({ autoscaleInfoProvider: mainCandleAutoscaleProvider });
+    store.previewSeries.applyOptions({
+      autoscaleInfoProvider: mainCandleAutoscaleProvider,
+    });
   }
   if (store.leftScaleSeries) {
-    store.leftScaleSeries.applyOptions({ autoscaleInfoProvider: mainCandleAutoscaleProvider });
+    store.leftScaleSeries.applyOptions({
+      autoscaleInfoProvider: mainCandleAutoscaleProvider,
+    });
   }
   if (store.volumeSeries) {
-    store.volumeSeries.applyOptions({ autoscaleInfoProvider: (original) => (original ? original() : null) });
+    store.volumeSeries.applyOptions({
+      autoscaleInfoProvider: (original) => (original ? original() : null),
+    });
   }
   if (store.kimchiSeries) {
-    store.kimchiSeries.applyOptions({ autoscaleInfoProvider: (original) => (original ? original() : null) });
+    store.kimchiSeries.applyOptions({
+      autoscaleInfoProvider: (original) => (original ? original() : null),
+    });
   }
 
   // 🚀 [원자적 리셋] 메인 및 볼륨/김프 스케일 일괄 autoScale 복구
-  store.chart.priceScale("right").applyOptions({ minimumWidth: 0, autoScale: true });
+  store.chart
+    .priceScale("right")
+    .applyOptions({ minimumWidth: 0, autoScale: true });
   if (store.leftScaleSeries) {
-    store.chart.priceScale("left").applyOptions({ minimumWidth: 0, autoScale: true });
+    store.chart
+      .priceScale("left")
+      .applyOptions({ minimumWidth: 0, autoScale: true });
   }
 
   if (store.chartVol) {
-    store.chartVol.priceScale("right").applyOptions({ minimumWidth: 0, autoScale: true });
-    store.chartVol.priceScale("left").applyOptions({ minimumWidth: 0, autoScale: true });
+    store.chartVol
+      .priceScale("right")
+      .applyOptions({ minimumWidth: 0, autoScale: true });
+    store.chartVol
+      .priceScale("left")
+      .applyOptions({ minimumWidth: 0, autoScale: true });
   }
 
   const margin = 10; // 🚀 [수동 오토핏 버튼] 우측 마진 고정값 10으로 강제 세팅
@@ -150,7 +170,7 @@ export function resetChartScale() {
   } catch (e) {
     try {
       store.chart.timeScale().scrollToRealtime();
-    } catch (err) { }
+    } catch (err) {}
   }
 
   if (store.chartVol) {
@@ -170,7 +190,7 @@ export function resetChartScale() {
     } catch (e) {
       try {
         store.chartVol.timeScale().scrollToRealtime();
-      } catch (err) { }
+      } catch (err) {}
     }
   }
 
@@ -190,7 +210,8 @@ export function getUpbitKrwPrecision(price) {
     ? 0
     : Math.min(8, Math.max(0, 2 - Math.floor(Math.log10(price))));
 }
-if (typeof window !== "undefined") window.getUpbitKrwPrecision = getUpbitKrwPrecision;
+if (typeof window !== "undefined")
+  window.getUpbitKrwPrecision = getUpbitKrwPrecision;
 
 // 🟧 빗썸 최신 공식 호가단위 동기화: (100원 이상 0, 10~100원 2, 1~10원 3, 1원 미만 4)
 export function getBithumbKrwPrecision(price) {
@@ -200,11 +221,16 @@ export function getBithumbKrwPrecision(price) {
   if (price >= 1) return 3;
   return 4;
 }
-if (typeof window !== "undefined") window.getBithumbKrwPrecision = getBithumbKrwPrecision;
+if (typeof window !== "undefined")
+  window.getBithumbKrwPrecision = getBithumbKrwPrecision;
 
 // 🎯 원화 거래소(업비트/빗썸) 통합 precision 라우터
 export function getKrwPrecision(price, exchange = "upbit") {
-  const exch = (exchange || (store && store.currentExchange) || "upbit").toLowerCase();
+  const exch = (
+    exchange ||
+    (store && store.currentExchange) ||
+    "upbit"
+  ).toLowerCase();
   if (exch.includes("bithumb")) {
     return getBithumbKrwPrecision(price);
   }
@@ -310,7 +336,8 @@ export function formatCrosshairPrice(price, p, isLeftScale = false) {
   // (DrawingPriceAxisView.visible()이 제어하므로 여기서는 항상 비워둠)
   return ""; // 좌측 스케일 등락률 크로스헤어 라벨 완전히 비활성화
 }
-if (typeof window !== "undefined") window.formatCrosshairPrice = formatCrosshairPrice;
+if (typeof window !== "undefined")
+  window.formatCrosshairPrice = formatCrosshairPrice;
 
 // 🚀 달러/원화 거래대금 포맷팅 (실시간 소켓용)
 export function formatVolumeDollar(vol) {
@@ -498,10 +525,10 @@ function updateLegend(d, v, k) {
       store.isCrosshairActive && !isLatest
         ? k
         : store.realtimeKimchi ||
-        k ||
-        (store.kimchiData && store.kimchiData.length > 0
-          ? store.kimchiData[store.kimchiData.length - 1]
-          : null);
+          k ||
+          (store.kimchiData && store.kimchiData.length > 0
+            ? store.kimchiData[store.kimchiData.length - 1]
+            : null);
 
     let kimValue = "-";
     let kimColorStyle = "";
@@ -611,16 +638,18 @@ function updateStatus(d, p) {
   const precision =
     p !== undefined && p !== null
       ? p
-      : (row && row.precision !== undefined && row.precision !== null)
+      : row && row.precision !== undefined && row.precision !== null
         ? Number(row.precision)
         : store.getPrecision(row?.Ticker || row?.Symbol || asset);
   if (row && typeof window.updateHeaderDisplay === "function") {
     const btnSim = document.getElementById("tab-btn-sim");
     const isSimMode = btnSim ? btnSim.classList.contains("active") : false;
-    // 🚀 [수정] 실시간 aggTrade 틱(d)이 있거나 시뮬레이터 모드일 때만 실시간 전광판 갱신을 허용하여,
-    // 초기 로드 시 느린 역사 데이터 종가가 전광판 가격을 덮어쓰지 않도록 차단합니다.
-    if (d || isSimMode) {
-      window.updateHeaderDisplay(row, last.close, precision);
+    // [침범 방어] 시뮬레이터 모드(isSimMode)이거나 실시간 틱(d)이 없을 때는
+    // 가상 시뮬레이션 캔들 가격이 상단 메인 전광판(#head-price-main)을 침범하지 못하도록 return (차단)
+    if (isSimMode && !d) {
+      // 가상 시뮬 가격의 메인 전광판 침범 방어 (스킵)
+    } else if (d) {
+      window.updateHeaderDisplay(row, d.close ?? last.close, precision);
     }
   }
 
@@ -715,14 +744,17 @@ export function autoFit(isTabRestore = false) {
           store.chartVol.priceScale("left").applyOptions({ autoScale: true });
         }
       }
-    } catch (e) { }
+    } catch (e) {}
     return;
   }
   if (store.chart && store.mainData.length) {
     const len = store.mainData.length;
     // 🚀 [UX 개선] 캔들 개수(len)가 극단적으로 적은 신규 상장 코인(예: 일봉 5개) 전환 시에만 캔들 쪼그라듬 방지
     const rawZoomWidth = store.savedZoomWidth || defaultZoom;
-    const maxFittingSpan = len < 50 ? Math.max(len + margin + 5, 20) : (CONFIG.CHART_CONFIG?.MAX_SPAN_LIMIT ?? 1200);
+    const maxFittingSpan =
+      len < 50
+        ? Math.max(len + margin + 5, 20)
+        : (CONFIG.CHART_CONFIG?.MAX_SPAN_LIMIT ?? 1200);
     const zoomWidth = Math.min(rawZoomWidth, maxFittingSpan);
     const logicalRange = {
       from: len - 1 - zoomWidth + margin,
@@ -744,7 +776,7 @@ export function autoFit(isTabRestore = false) {
         if (!store.isKimchiPriceScaleUserZoomed && store.kimchiSeries) {
           store.chartVol.priceScale("left").applyOptions({ autoScale: true });
         }
-      } catch (e) { }
+      } catch (e) {}
     }
   }
 }
@@ -888,9 +920,15 @@ export function getKimchiColor(val) {
   if (store && store.currentTheme) {
     isLight = store.currentTheme === "upbit";
   } else if (typeof document !== "undefined") {
-    if (document.body?.classList.contains("theme-upbit") || document.documentElement?.classList.contains("theme-upbit")) {
+    if (
+      document.body?.classList.contains("theme-upbit") ||
+      document.documentElement?.classList.contains("theme-upbit")
+    ) {
       isLight = true;
-    } else if (document.body?.classList.contains("theme-binance") || document.documentElement?.classList.contains("theme-binance")) {
+    } else if (
+      document.body?.classList.contains("theme-binance") ||
+      document.documentElement?.classList.contains("theme-binance")
+    ) {
       isLight = false;
     } else if (typeof localStorage !== "undefined") {
       isLight = localStorage.getItem("sellnance_theme") === "upbit";
@@ -965,7 +1003,7 @@ export function toggleCountdown(forceVal) {
   } else if (store.countdownPriceLine && store.candleSeries) {
     try {
       store.candleSeries.removePriceLine(store.countdownPriceLine);
-    } catch (e) { }
+    } catch (e) {}
     store.countdownPriceLine = null;
   }
 
@@ -1024,7 +1062,7 @@ export function updateRealtimeCountdown(serverMs, overridePrice) {
     if (store.countdownPriceLine) {
       try {
         store.candleSeries.removePriceLine(store.countdownPriceLine);
-      } catch (e) { }
+      } catch (e) {}
       store.countdownPriceLine = null;
     }
     return;
@@ -1058,9 +1096,12 @@ export function updateRealtimeCountdown(serverMs, overridePrice) {
   const isSimActive = btnSim && btnSim.classList.contains("active");
   const showTitle = store.showCountdown && !isSimActive;
 
-  const currentClose = (overridePrice !== undefined && overridePrice !== null && !isNaN(overridePrice))
-    ? Number(overridePrice)
-    : Number(lastCandle.close);
+  const currentClose =
+    overridePrice !== undefined &&
+    overridePrice !== null &&
+    !isNaN(overridePrice)
+      ? Number(overridePrice)
+      : Number(lastCandle.close);
   const isDown = currentClose < Number(lastCandle.open);
 
   if (!store.upColorCache || !store.downColorCache) {
@@ -1086,14 +1127,15 @@ export function updateRealtimeCountdown(serverMs, overridePrice) {
 
   if (showTitle) {
     if (!store.countdownPriceLine) {
-      store.countdownPriceLine = store.candleSeries.createPriceLine(lineOptions);
+      store.countdownPriceLine =
+        store.candleSeries.createPriceLine(lineOptions);
     } else {
       store.countdownPriceLine.applyOptions(lineOptions);
     }
   } else if (store.countdownPriceLine) {
     try {
       store.candleSeries.removePriceLine(store.countdownPriceLine);
-    } catch (e) { }
+    } catch (e) {}
     store.countdownPriceLine = null;
   }
 }
@@ -1149,14 +1191,19 @@ if (typeof window !== "undefined") {
 
   // 🚀 카운트다운 타이머 숫자(시간)만 실시간 갱신 (스케일 가격표 중복 ZERO)
   setInterval(() => {
-    if (store.showCountdown && store.lastServerMs > 0 && !store.isFetchingChart) {
+    if (
+      store.showCountdown &&
+      store.lastServerMs > 0 &&
+      !store.isFetchingChart
+    ) {
       updateRealtimeCountdown(store.lastServerMs);
     }
   }, 500);
 
   // 🚀 페이지 로드 직후 토글 UI들의 슬라이더 슬라이딩 초기 위치 동기화
   setTimeout(() => {
-    const isOhlcHidden = localStorage.getItem("sellnance_ohlc_hidden") === "true";
+    const isOhlcHidden =
+      localStorage.getItem("sellnance_ohlc_hidden") === "true";
     if (typeof toggleOhlc === "function") toggleOhlc(!isOhlcHidden);
     if (typeof toggleLogScale === "function") toggleLogScale(store.isLogMode);
     if (typeof toggleCountdown === "function")
@@ -1196,7 +1243,9 @@ export function updateTabTitleManager(price, symbol, isKor) {
         c.DisplayTicker === symbol,
     );
     const displayTitleTicker =
-      getCleanSymbol(row) || getCleanSymbol(symbol) || (symbol || "").toUpperCase();
+      getCleanSymbol(row) ||
+      getCleanSymbol(symbol) ||
+      (symbol || "").toUpperCase();
 
     const scaledPrice = price;
 
@@ -1209,7 +1258,10 @@ export function updateTabTitleManager(price, symbol, isKor) {
         const rate = store.marketDataMap?.krw_usd_rate || 0;
         if (rate > 0) krwPrice = scaledPrice * rate;
       }
-      formatted = formatKrwPrice(krwPrice, isKor ? (store.currentChartMarket || "upbit") : "upbit");
+      formatted = formatKrwPrice(
+        krwPrice,
+        isKor ? store.currentChartMarket || "upbit" : "upbit",
+      );
     } else {
       // 바이낸스/바이빗 USDT 마켓 정밀도 참조
       const p = store.getPrecision(store.currentSelectedSymbol || symbol);
@@ -1221,7 +1273,8 @@ export function updateTabTitleManager(price, symbol, isKor) {
     }
   }
 }
-if (typeof window !== "undefined") window.updateTabTitleManager = updateTabTitleManager;
+if (typeof window !== "undefined")
+  window.updateTabTitleManager = updateTabTitleManager;
 
 export const sanitizeChartData = (dataArr, hasValueField = false) => {
   if (!Array.isArray(dataArr)) return [];
@@ -1310,8 +1363,8 @@ export const sanitizeChartData = (dataArr, hasValueField = false) => {
         close: Number(d.close),
         volume:
           d.volume !== undefined &&
-            d.volume !== null &&
-            !isNaN(Number(d.volume))
+          d.volume !== null &&
+          !isNaN(Number(d.volume))
             ? Number(d.volume)
             : 0,
       });
@@ -1342,7 +1395,8 @@ export function rebuildMainDataMap() {
     });
   }
 }
-if (typeof window !== "undefined") window.rebuildMainDataMap = rebuildMainDataMap;
+if (typeof window !== "undefined")
+  window.rebuildMainDataMap = rebuildMainDataMap;
 
 export function rebuildVolumeDataMap() {
   store.volumeDataMap.clear();
@@ -1353,7 +1407,8 @@ export function rebuildVolumeDataMap() {
     });
   }
 }
-if (typeof window !== "undefined") window.rebuildVolumeDataMap = rebuildVolumeDataMap;
+if (typeof window !== "undefined")
+  window.rebuildVolumeDataMap = rebuildVolumeDataMap;
 
 export function rebuildKimchiDataMap() {
   store.kimchiDataMap.clear();
@@ -1364,4 +1419,5 @@ export function rebuildKimchiDataMap() {
     });
   }
 }
-if (typeof window !== "undefined") window.rebuildKimchiDataMap = rebuildKimchiDataMap;
+if (typeof window !== "undefined")
+  window.rebuildKimchiDataMap = rebuildKimchiDataMap;

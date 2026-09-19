@@ -37,7 +37,7 @@ function changeDir(d) {
     if (btnGen) btnGen.style.backgroundColor = "var(--down)";
   }
 
-  // 🚀 슬라이더 콩나물 대가리 및 % 수치 색상 - 차트 캔들 상승/하락 컬러에 100% 귀속
+  // 슬라이더 콩나물 대가리 및 % 수치 색상 - 차트 캔들 상승/하락 컬러에 100% 귀속
   const simControls = document.getElementById("sim-controls");
   const simColor = d === "bull" ? "var(--up)" : "var(--down)";
   if (simControls) {
@@ -60,6 +60,7 @@ function changeDir(d) {
 function addCandle() {
   if (!store.mainData || !store.mainData.length) return;
   const n = getNext();
+  if (!n || !n.close || n.close <= 0) return;
   store.mainData.push(n);
   store.candleSeries.setData(store.mainData);
 
@@ -96,10 +97,16 @@ function getNext() {
 
   const last = store.mainData[store.mainData.length - 1];
   const o = last.close;
+  // 유효한 양수 시가가 아니면 안전 리턴
+  if (!o || o <= 0 || !Number.isFinite(o)) return { close: 0 };
 
-  let b = parseFloat(document.getElementById("input-body").value) / 100;
-  const t = parseFloat(document.getElementById("input-top").value) / 100;
-  const bt = parseFloat(document.getElementById("input-bottom").value) / 100;
+  const bodyEl = document.getElementById("input-body");
+  const topEl = document.getElementById("input-top");
+  const bottomEl = document.getElementById("input-bottom");
+
+  let b = Math.max(0, parseFloat(bodyEl ? bodyEl.value : 0) || 0) / 100;
+  const t = Math.max(0, parseFloat(topEl ? topEl.value : 0) || 0) / 100;
+  const bt = Math.max(0, parseFloat(bottomEl ? bottomEl.value : 0) || 0) / 100;
 
   if (store.curDir === "bear") b = Math.min(b, 0.99);
 
@@ -114,12 +121,21 @@ function getNext() {
         : last.time;
   const nextTime = lastTime + (tfSec[store.currentTF] || 86400);
 
+  // [수학적 비율 기반 꼬리 산출 - 절대 0 이하/음수 불가 & 무한 극소수점 완벽 대응]
+  // 1. 상단 꼬리: 몸통 최고점(highLimit) 기준 t% 비율 확장
+  const safeHigh = Math.max(highLimit, highLimit * (1 + t));
+
+  // 2. 하단 꼬리: 몸통 최저점(lowLimit) 기준 bt% 비율 감쇄 (선형 뺄셈이 아닌 기하학적 비율 감소)
+  // bt가 최대(100%)여도 최저점의 99%까지만 하락하도록 클램핑하여 0.000000... 무한 점근 수렴 보장 (음수 불가)
+  const clampedBt = Math.min(bt, 0.99);
+  const safeLow = Math.max(Number.MIN_VALUE, lowLimit * (1 - clampedBt));
+
   const rawCandle = {
     time: nextTime,
     open: o,
-    high: highLimit + o * t,
-    low: lowLimit - o * bt,
-    close: c,
+    high: safeHigh,
+    low: Math.min(safeLow, lowLimit),
+    close: Math.max(Number.MIN_VALUE, c),
   };
 
   return mapTime(rawCandle, store.currentTF);
@@ -135,7 +151,10 @@ export function updatePreview() {
     store.mainData.length &&
     store.isHover &&
     typeof window.getNext === "function"
-  )
-    store.previewSeries.setData([window.getNext()]);
+  ) {
+    const nextCandle = window.getNext();
+    if (!nextCandle || !nextCandle.close || nextCandle.close <= 0) return;
+    store.previewSeries.setData([nextCandle]);
+  }
 }
 window.updatePreview = updatePreview;
