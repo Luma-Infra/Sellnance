@@ -805,20 +805,20 @@ export function updateExchangeBadges(s, targetUid = null) {
           badges += `
             <button onclick="selectSymbol('${rowInfo.Ticker}', '${item.market}', '${rowInfo.UID}')" 
                     title="바이낸스(알파) 미지원 ➔ ${metaB.name} 캔들 폴백"
-                    class="relative flex items-center gap-1.5 px-2 py-0.5 border rounded-xl transition-all duration-200 h-8 min-h-[32px] shrink-0 flex-shrink-0 cursor-pointer select-none active:scale-95 ${ringClass}">
+                    class="fallback-exchange-badge relative flex items-center gap-1.5 max-[1199px]:gap-2 px-2 max-[1199px]:px-2.5 py-0.5 border rounded-xl transition-all duration-200 h-8 min-h-[32px] shrink-0 flex-shrink-0 cursor-pointer select-none active:scale-95 whitespace-nowrap overflow-visible ${ringClass}">
               <!-- A: 바이낸스 -->
               <div class="relative w-5 h-5 shrink-0 flex items-center justify-center">
                 <img src="${imgUrl}" alt="BINANCE" class="w-full h-full object-contain rounded" />
-                <span class="absolute -top-1.5 -right-1.5 bg-zinc-700 text-zinc-200 text-[7px] px-1 py-0.2 rounded-full font-bold leading-none shadow-sm border border-zinc-500/50">α</span>
+                <span class="absolute min-[1200px]:-top-1.5 min-[1200px]:-right-1.5 max-[1199px]:-top-1 max-[1199px]:right-0 bg-zinc-700 max-[1199px]:bg-purple-600 text-zinc-200 max-[1199px]:text-white text-[7px] max-[1199px]:text-[7.5px] px-1 py-0.2 rounded-full font-bold leading-none shadow-sm border border-zinc-500/50 max-[1199px]:border-purple-400/50 select-none">α</span>
               </div>
 
               <!-- A to B 연결 화살표 -->
-              <span class="text-theme-text opacity-40 font-bold text-[10px] leading-none select-none tracking-tighter">➔</span>
+              <span class="text-theme-text/40 font-bold text-[10px] max-[1199px]:text-[11px] leading-none select-none tracking-tighter shrink-0 max-[1199px]:px-0.5">➔</span>
 
               <!-- B: 폴백 거래소 -->
-              <div class="flex items-center gap-1 shrink-0">
-                ${fallbackLogo ? `<img src="${fallbackLogo}" alt="${metaB.short}" class="w-4 h-4 object-contain rounded" />` : ""}
-                <span class="text-[10px] font-semibold tracking-tight text-theme-text opacity-90 uppercase">${metaB.short}</span>
+              <div class="flex items-center gap-1 max-[1199px]:gap-1.5 shrink-0 whitespace-nowrap">
+                ${fallbackLogo ? `<img src="${fallbackLogo}" alt="${metaB.short}" class="w-4 h-4 max-[1199px]:w-5 max-[1199px]:h-5 object-contain rounded shrink-0" />` : ""}
+                <span class="text-[10px] max-[1199px]:text-[11px] font-semibold max-[1199px]:font-bold tracking-tight text-theme-text opacity-90 uppercase whitespace-nowrap leading-none">${metaB.short}</span>
               </div>
             </button>
           `;

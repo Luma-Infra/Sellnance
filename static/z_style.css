@@ -1486,12 +1486,22 @@ body.theme-upbit #coin-list-body.table-loading {
     background: var(--accent) !important;
   }
 
-  #exchange-badges > button {
+  #exchange-badges > button:not(.fallback-exchange-badge) {
     flex-shrink: 0 !important;
     min-width: 32px !important;
     min-height: 32px !important;
     width: 32px !important;
     height: 32px !important;
+  }
+
+  #exchange-badges > button.fallback-exchange-badge {
+    flex-shrink: 0 !important;
+    width: auto !important;
+    min-width: 135px !important;
+    height: 32px !important;
+    min-height: 32px !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
   }
 
   /* 🚀 [모바일 전용] 가로 스크롤 끝단 블러/페이드 UX 마스크 효과 (양 끝 사이드 존재 시 선명한 시각 안내) */
