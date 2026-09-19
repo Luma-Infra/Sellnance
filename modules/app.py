@@ -301,7 +301,7 @@ def _init_listing_dates():
     print(f"📅 [LISTING] listing.json에서 {len(saved)}개 상장일 로드")
 
 
-# 모듈 임포트 즉시 메모리에 listing.json 100% 로드
+# 모듈 임포트 즉시 메모리에 listing.json 로드
 _init_listing_dates()
 
 # [비활성화] 요금 절감 및 기동 시간 최적화를 위해 바이낸스 API 호출 주석 처리
@@ -417,6 +417,42 @@ def update_listing_date(request: Request, data: dict = Body(...)):
             "date": new_date,
         }
     return {"status": "skipped"}
+
+
+@app.get("/api/alpha/realtime")
+async def get_alpha_realtime():
+    """
+    [Alpha Realtime API] 바이낸스 알파 실시간 시세 초경량 엔드포인트
+    """
+    global _ALPHA_PRICE_CACHE
+    now = time.time()
+    if "_ALPHA_PRICE_CACHE" not in globals():
+        globals()["_ALPHA_PRICE_CACHE"] = {"timestamp": 0, "data": {}}
+
+    cache = globals()["_ALPHA_PRICE_CACHE"]
+    if now - cache["timestamp"] < 1.5 and cache["data"]:
+        return cache["data"]
+
+    from . import alpha_rules
+
+    alpha_map = alpha_rules.fetch_binance_alpha_raw()
+    light_map = {}
+    for sym, item in alpha_map.items():
+        try:
+            p = float(item.get("price") or 0.0)
+            chg = float(item.get("percentChange24h") or 0.0)
+            vol = float(item.get("volume24h") or 0.0)
+            light_map[sym] = {
+                "price": p,
+                "change_24h": chg,
+                "vol": vol,
+            }
+        except:
+            pass
+
+    cache["timestamp"] = now
+    cache["data"] = light_map
+    return light_map
 
 
 @app.get("/.well-known/appspecific/com.chrome.devtools.json")
@@ -782,6 +818,7 @@ def get_coin_info(asset: str):
 
 @app.get("/api/candles")
 async def get_proxy_candles(
+    response: Response,
     exchange: str,
     symbol: str,
     interval: str,
@@ -790,7 +827,14 @@ async def get_proxy_candles(
     start: str = "",
 ):
     """중앙 통제된 candle_proxy 모듈(세마포어 20 + Single-Flight 합승 + 30초 LRU 캐시)을 통해 통합 조회"""
-    return await fetch_candles_guarded(exchange, symbol, interval, limit, to, start)
+    result = await fetch_candles_guarded(exchange, symbol, interval, limit, to, start)
+    if isinstance(result, tuple) and len(result) == 2:
+        data, fallback_source = result
+        if fallback_source:
+            response.headers["X-Fallback-Exchange"] = str(fallback_source)
+            response.headers["Access-Control-Expose-Headers"] = "X-Fallback-Exchange"
+        return data
+    return result
 
 
 # 메모리 캐시 변수 추가

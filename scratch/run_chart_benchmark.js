@@ -1,8 +1,8 @@
 // scratch/run_chart_benchmark.js
 /**
- * 🚀 차트 실시간 렌더링 & 드래그/인터랙션 단위 벤치마크 샌드박스 (외부 API 0회, 100% 로컬)
+ * 🚀 차트 실시간 렌더링 & 드래그/인터랙션 단위 벤치마크 샌드박스 (외부 API 0회, 로컬 환경)
  */
-import { performance } from 'perf_hooks';
+import { performance } from "perf_hooks";
 
 // 가상 차트 및 시리즈 모의 객체 (Lightweight Charts 네이티브 동작 모사)
 class MockPriceScale {
@@ -46,9 +46,15 @@ class MockTimeScale {
     this.range = newRange;
     for (const fn of this.rangeListeners) fn(newRange);
   }
-  coordinateToLogical(x) { return x / 10; }
-  logicalToCoordinate(l) { return l * 10; }
-  coordinateToTime(x) { return 1700000000 + Math.floor(x * 60); }
+  coordinateToLogical(x) {
+    return x / 10;
+  }
+  logicalToCoordinate(l) {
+    return l * 10;
+  }
+  coordinateToTime(x) {
+    return 1700000000 + Math.floor(x * 60);
+  }
 }
 
 class MockSeries {
@@ -79,9 +85,15 @@ class MockChart {
     };
     this.crosshairListeners = [];
   }
-  timeScale() { return this._timeScale; }
-  priceScale(side) { return this.scales[side] || this.scales.right; }
-  subscribeCrosshairMove(fn) { this.crosshairListeners.push(fn); }
+  timeScale() {
+    return this._timeScale;
+  }
+  priceScale(side) {
+    return this.scales[side] || this.scales.right;
+  }
+  subscribeCrosshairMove(fn) {
+    this.crosshairListeners.push(fn);
+  }
   triggerCrosshairMove(param) {
     for (const fn of this.crosshairListeners) fn(param);
   }
@@ -94,9 +106,15 @@ class MockChart {
 
 // 벤치마크 러너
 async function runBenchmark() {
-  console.log("================================================================================");
-  console.log("📊 [실제 단위 벤치마크 테스트 시작] (외부 API 호출 ZERO, 100% 로컬 샌드박스)");
-  console.log("================================================================================\n");
+  console.log(
+    "================================================================================",
+  );
+  console.log(
+    "📊 [실제 단위 벤치마크 테스트 시작] (외부 API 호출 ZERO, 로컬 샌드박스)",
+  );
+  console.log(
+    "================================================================================\n",
+  );
 
   const store = {
     chart: new MockChart("MainChart"),
@@ -118,7 +136,7 @@ async function runBenchmark() {
     isUserZoomed: false,
   };
 
-  store.mainData.forEach(d => store.mainDataMap.set(d.time, d));
+  store.mainData.forEach((d) => store.mainDataMap.set(d.time, d));
 
   // 계측기
   const stats = {};
@@ -160,14 +178,21 @@ async function runBenchmark() {
 
     if (maxRight > 0 && maxRight !== currentMaxRight) {
       currentMaxRight = maxRight;
-      charts.forEach((c) => c.priceScale("right").applyOptions({ minimumWidth: maxRight }));
+      charts.forEach((c) =>
+        c.priceScale("right").applyOptions({ minimumWidth: maxRight }),
+      );
     }
     if (maxLeft > 0 && maxLeft !== currentMaxLeft) {
       currentMaxLeft = maxLeft;
-      charts.forEach((c) => c.priceScale("left").applyOptions({ minimumWidth: maxLeft }));
+      charts.forEach((c) =>
+        c.priceScale("left").applyOptions({ minimumWidth: maxLeft }),
+      );
     }
   };
-  const syncPriceScaleWidths = track("syncPriceScaleWidths", rawSyncPriceScaleWidths);
+  const syncPriceScaleWidths = track(
+    "syncPriceScaleWidths",
+    rawSyncPriceScaleWidths,
+  );
 
   // 2. syncTimeScales 로직
   let isSyncing = false;
@@ -180,7 +205,10 @@ async function runBenchmark() {
       isSyncing = false;
     }
   };
-  const syncTimeScales = track("syncTimeScales (차트간 시간축 동기화)", rawSyncTime);
+  const syncTimeScales = track(
+    "syncTimeScales (차트간 시간축 동기화)",
+    rawSyncTime,
+  );
 
   store.chart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
     syncTimeScales(range);
@@ -193,11 +221,16 @@ async function runBenchmark() {
     const t0 = performance.now();
     // 마그네틱 계산
     const logical = store.chart.timeScale().coordinateToLogical(param.point.x);
-    const snap = store.chart.timeScale().logicalToCoordinate(Math.round(logical));
+    const snap = store.chart
+      .timeScale()
+      .logicalToCoordinate(Math.round(logical));
     // 레전드 및 타겟 차트 갱신
     store.chartVol.timeScale().coordinateToTime(param.point.x);
   };
-  const syncCrosshair = track("syncCrosshair (크로스헤어 마우스 무브)", rawCrosshairMove);
+  const syncCrosshair = track(
+    "syncCrosshair (크로스헤어 마우스 무브)",
+    rawCrosshairMove,
+  );
   store.chart.subscribeCrosshairMove(syncCrosshair);
 
   // 4. 실시간 웹소켓 틱 주입 로직
@@ -208,16 +241,23 @@ async function runBenchmark() {
     store.candleSeries.update(last);
     store.volumeSeries.update({ time: last.time, value: last.volume });
   };
-  const renderRealtimeUpdate = track("renderRealtimeUpdate (실시간 틱 캔들 렌더링)", rawRealtimeUpdate);
+  const renderRealtimeUpdate = track(
+    "renderRealtimeUpdate (실시간 틱 캔들 렌더링)",
+    rawRealtimeUpdate,
+  );
 
   // ------------------ 🧪 시나리오 실행 ------------------
 
-  console.log("▶ [시나리오 1] 초고빈도 웹소켓 틱 500회 연속 주입 (초당 100틱 스트레스 가정)...");
+  console.log(
+    "▶ [시나리오 1] 초고빈도 웹소켓 틱 500회 연속 주입 (초당 100틱 스트레스 가정)...",
+  );
   for (let i = 0; i < 500; i++) {
     renderRealtimeUpdate(100 + (Math.random() - 0.5) * 2, Math.random() * 5);
   }
 
-  console.log("▶ [시나리오 2] 마우스 좌클릭 와리가리 고속 드래그 300회 시뮬레이션...");
+  console.log(
+    "▶ [시나리오 2] 마우스 좌클릭 와리가리 고속 드래그 300회 시뮬레이션...",
+  );
   for (let i = 0; i < 300; i++) {
     const from = 50 + Math.sin(i * 0.1) * 30;
     store.chart.timeScale().triggerRangeChange({ from, to: from + 100 });
@@ -229,7 +269,9 @@ async function runBenchmark() {
   }
 
   // ------------------ 📊 결과 집계 및 출력 ------------------
-  console.log("\n================================ 📊 [단위 벤치마크 계측 결과표] ================================");
+  console.log(
+    "\n================================ 📊 [단위 벤치마크 계측 결과표] ================================",
+  );
 
   const report = Object.keys(stats).map((name) => {
     const s = stats[name];
@@ -245,15 +287,24 @@ async function runBenchmark() {
 
   report.sort((a, b) => b["총 소요시간 (ms)"] - a["총 소요시간 (ms)"]);
   console.table(report);
-  console.log("================================================================================================\n");
+  console.log(
+    "================================================================================================\n",
+  );
 
-  const totalTime = report.reduce((acc, cur) => acc + cur["총 소요시간 (ms)"], 0);
+  const totalTime = report.reduce(
+    (acc, cur) => acc + cur["총 소요시간 (ms)"],
+    0,
+  );
   console.log(`📌 총 CPU 렌더링 점유 시간: ${totalTime.toFixed(2)}ms`);
   report.forEach((r, idx) => {
     const pct = ((r["총 소요시간 (ms)"] / totalTime) * 100).toFixed(1);
-    console.log(`   ${idx + 1}위: [${r["모듈/함수명"]}] → ${r["총 소요시간 (ms)"]}ms (전체의 ${pct}%)`);
+    console.log(
+      `   ${idx + 1}위: [${r["모듈/함수명"]}] → ${r["총 소요시간 (ms)"]}ms (전체의 ${pct}%)`,
+    );
   });
-  console.log("================================================================================================");
+  console.log(
+    "================================================================================================",
+  );
 }
 
 runBenchmark();

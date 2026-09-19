@@ -217,6 +217,11 @@ def build_cmc_lookup_lists(binance_data, upbit_krw_set, MAPPING_DATA):
     for base in upbit_krw_set:
         process_asset(base, "UPBIT")
 
+    # 🚀 바이낸스 알파 코인 명단도 CMC 대기열에 포함! (6번째 인자가 ALPHA인 코인)
+    for base, v in TICKER_DATA.items():
+        if isinstance(v, list) and len(v) >= 6 and str(v[5]).upper() == "ALPHA":
+            process_asset(base, "BINANCE")
+
     return list(set(id_lookup)), list(set(sym_lookup)), asset_to_lookup_key
 
 

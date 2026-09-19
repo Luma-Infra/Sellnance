@@ -1,8 +1,8 @@
 # exchange_api.py
 from concurrent.futures import ThreadPoolExecutor, wait
-from modules.utils import is_valid_ticker
+from modules import config_manager, utils, alpha_rules
 from requests.adapters import HTTPAdapter
-from modules import config_manager, utils
+from modules.utils import is_valid_ticker
 from datetime import datetime, timezone
 import urllib.parse
 import requests
@@ -265,8 +265,7 @@ def fetch_global_listings():
             futures = [executor.submit(func) for func in target_funcs]
             wait(futures)
     except RuntimeError:
-        # 종료 중이면 조용히 리턴
-        return listings
+        pass
 
     return listings
 
@@ -369,7 +368,9 @@ def capture_utc0_prices_bulk():
         for old_k in list(UTC0_OPEN_CACHE.keys()):
             if old_k != today_str:
                 del UTC0_OPEN_CACHE[old_k]
-        UTC0_OPEN_CACHE.setdefault(today_str, {}).clear()
+        today_cache = UTC0_OPEN_CACHE.setdefault(today_str, {})
+        today_cache.clear()
+
         save_utc0_cache()
         print(
             f"✅ [SUCCESS] {today_str} 시가 캐시 초기화 완료 (메인 루프에서 무결점 1d 시가로 자동 수집됩니다)"
@@ -538,7 +539,7 @@ def fetch_binance_futures_spot(bybit_data=None):
             "https://api.binance.com/api/v3/exchangeInfo",
             "https://api.binance.com/api/v3/ticker/24hr",
             "https://fapi.binance.com/fapi/v1/premiumIndex",  # 🚀 펀딩비 추가
-            "https://fapi.binance.com/fapi/v1/fundingInfo",   # 🚀 펀딩 주기(fundingIntervalHours) 추가
+            "https://fapi.binance.com/fapi/v1/fundingInfo",  # 🚀 펀딩 주기(fundingIntervalHours) 추가
         ]
 
         def fetch_url_safe(base_url):
@@ -757,9 +758,15 @@ def fetch_binance_futures_spot(bybit_data=None):
             }
         if isinstance(funding_info_f, list):
             for item in funding_info_f:
-                if isinstance(item, dict) and "symbol" in item and "fundingIntervalHours" in item:
+                if (
+                    isinstance(item, dict)
+                    and "symbol" in item
+                    and "fundingIntervalHours" in item
+                ):
                     try:
-                        funding_interval_map[item["symbol"]] = int(item["fundingIntervalHours"])
+                        funding_interval_map[item["symbol"]] = int(
+                            item["fundingIntervalHours"]
+                        )
                     except (ValueError, TypeError):
                         pass
 
@@ -1007,7 +1014,9 @@ def fetch_bybit_prices():
                 bybit_data[base]["futures_volume_24h"] = f_vol
                 bybit_data[base]["volume_24h"] += f_vol
                 bybit_data[base]["funding_rate"] = float(item.get("fundingRate", 0))
-                bybit_data[base]["bybit_futures_funding_interval"] = 8  # 🚀 [예약] Bybit 선물 주기 확장 대비 (기본 8h)
+                bybit_data[base][
+                    "bybit_futures_funding_interval"
+                ] = 8  # 🚀 [예약] Bybit 선물 주기 확장 대비 (기본 8h)
                 chg_24 = float(item.get("price24hPcnt", 0.0)) * 100
                 bybit_data[base]["futures_change_24h"] = chg_24
                 if "change_24h" not in bybit_data[base] or not bybit_data[base].get(
@@ -1034,9 +1043,15 @@ def fetch_bithumb_prices():
                 if sym == "date":
                     continue
                 try:
+                    p = float(item.get("closing_price", 0))
+                    op = float(item.get("opening_price", 0))
+                    chg_24 = float(item.get("fluctate_rate_24H", 0))
+                    chg_today = ((p - op) / op * 100) if op > 0 else chg_24
                     bithumb_data[sym.upper()] = {
-                        "price": float(item.get("closing_price", 0)),
-                        # "utc0_open": float(item.get("opening_price", 0)),
+                        "price": p,
+                        "opening_price": op,
+                        "change_24h": chg_24,
+                        "change_today": chg_today,
                         "volume_24h": float(item.get("acc_trade_value_24H", 0)),
                     }
                 except:

@@ -2,13 +2,13 @@
 # ==========================================
 # 🧱 모듈 3: 데이터 조립 및 변동률 계산기
 # ==========================================
-import re
-import requests
-from tvDatafeed import TvDatafeed, Interval
-from modules import utils, config_manager
-from modules.exchange_api import EXCHANGE_WARNINGS
+from modules import utils, config_manager, exchange_api, alpha_rules
 from modules.builder_binance import build_binance_row
+from modules.exchange_api import EXCHANGE_WARNINGS
 from modules.builder_upbit import build_upbit_row
+from tvDatafeed import TvDatafeed, Interval
+import requests
+import re
 
 
 def clean_stale_tickers(binance_data, upbit_krw_set, mapping):
@@ -34,11 +34,12 @@ def clean_stale_tickers(binance_data, upbit_krw_set, mapping):
 
     keys_to_delete = [
         k
-        for k in TICKER_DATA.keys()
+        for k, v in TICKER_DATA.items()
         if k not in live_bases
         and k not in SPECIAL_SYMBOL_MAP
         and k not in SYMBOL_TO_ID_MAP
         and k not in dup_names
+        and not (isinstance(v, list) and len(v) >= 6 and str(v[5]).upper() == "ALPHA")
     ]
 
     for k in keys_to_delete:
@@ -127,6 +128,14 @@ def assemble_final_dashboard(
         print(
             f"⚠️ TradingView 실시간 환율 수집 실패, 족보 기본값 {krw_usd_rate}원 사용 ({e})"
         )
+
+    # 🚀 [Alpha Rules Engine] 바이낸스 알파 코인 자동 동적 선별 및 현물(Spot) 주입
+    alpha_rules.inject_alpha_gems_into_pipeline(
+        binance_data,
+        global_listings,
+        upbit_krw_set,
+        bithumb_krw_set,
+    )
 
     # 1. 바이낸스 투입
     for ticker, b_info in binance_data.items():

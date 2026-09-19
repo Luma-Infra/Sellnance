@@ -81,8 +81,18 @@ def _determine_final_ucid_and_info(
     market_data_map,
 ):
     existing_uid = (
-        ticker_info[0] if isinstance(ticker_info, list) and len(ticker_info) > 0 else ""
+        ticker_info[0]
+        if isinstance(ticker_info, list) and len(ticker_info) > 0 and ticker_info[0]
+        else ""
     )
+    # 티커 문자열이 들어가 있는 경우 UID 미발급 상태로 간주하여 CMC 수집된 실제 숫자 ID로 세탁되도록 유도
+    if (
+        existing_uid
+        and not str(existing_uid).isdigit()
+        and not str(existing_uid).startswith("STOCK_")
+    ):
+        existing_uid = ""
+
     hardcoded_id = str(
         SYMBOL_TO_ID_MAP.get(base, "") or SYMBOL_TO_ID_MAP.get(raw_symbol, "")
     )
@@ -253,6 +263,13 @@ def _aggregate_binance_market(
                     binance_spot_change_today = utils.js_round(
                         ((binance_spot_price - spot_utc0) / spot_utc0 * 100), 2
                     )
+            if b_inf.get("is_alpha"):
+                listed_on.add("BINANCE_ALPHA")
+                listed_on.add("BINANCE_SPOT")
+                listed_on.add("BINANCE")
+                if not spot_utc0 or spot_utc0 <= 0:
+                    binance_spot_change_today = None
+
             if b_inf.get("is_futures"):
                 listed_on.add("BINANCE_FUTURES")
                 binance_futures_price = b_inf.get("futures_price") or b_inf.get(
@@ -449,7 +466,18 @@ def build_binance_row(
             )
         )
     ):
-        TICKER_DATA[display_name] = [final_ucid, ch_sym, coin_name, base, asset_type]
+        extra_args = (
+            ticker_info[5:]
+            if (isinstance(ticker_info, list) and len(ticker_info) >= 6)
+            else []
+        )
+        TICKER_DATA[display_name] = [
+            final_ucid,
+            ch_sym,
+            coin_name,
+            base,
+            asset_type,
+        ] + extra_args
         is_updated = True
         print(
             f"✅ [족보 세탁] {display_name} UID 및 타입 복구 완료: {final_ucid} ({asset_type})"
@@ -588,31 +616,33 @@ def build_binance_row(
     change_today = (
         utils.js_round(((price - utc0_open) / utc0_open * 100), 2)
         if utc0_open > 0
-        else 0.0
+        else (None if b_info.get("is_alpha") else 0.0)
     )
 
     bithumb_symbol = None
     bithumb_price = 0.0
     bithumb_open = 0.0
     bithumb_vol = 0.0
+    bithumb_chg_24 = None
+    bithumb_chg_today = None
 
     if bithumb_direct_match:
         bithumb_symbol = target_bi_base
-        bithumb_price = bithumb_data.get(target_bi_base, {}).get("price", 0.0)
-        bithumb_open = bithumb_data.get(target_bi_base, {}).get("utc0_open", 0.0)
-        bithumb_vol = bithumb_data.get(target_bi_base, {}).get("volume_24h", 0.0)
+        bi_item = bithumb_data.get(target_bi_base, {})
+        bithumb_price = bi_item.get("price", 0.0)
+        bithumb_open = bi_item.get("opening_price") or bi_item.get("utc0_open", 0.0)
+        bithumb_vol = bi_item.get("volume_24h", 0.0)
+        bithumb_chg_24 = bi_item.get("change_24h")
+        bithumb_chg_today = bi_item.get("change_today")
 
     if bithumb_price == 0 and bithumb_aliases:
         bithumb_symbol = bithumb_aliases[0]
-        bithumb_price = bithumb_data.get(bithumb_aliases[0].upper(), {}).get(
-            "price", 0.0
-        )
-        bithumb_open = bithumb_data.get(bithumb_aliases[0].upper(), {}).get(
-            "utc0_open", 0.0
-        )
-        bithumb_vol = bithumb_data.get(bithumb_aliases[0].upper(), {}).get(
-            "volume_24h", 0.0
-        )
+        bi_item = bithumb_data.get(bithumb_aliases[0].upper(), {})
+        bithumb_price = bi_item.get("price", 0.0)
+        bithumb_open = bi_item.get("opening_price") or bi_item.get("utc0_open", 0.0)
+        bithumb_vol = bi_item.get("volume_24h", 0.0)
+        bithumb_chg_24 = bi_item.get("change_24h")
+        bithumb_chg_today = bi_item.get("change_today")
 
     kimchi_raw = None
     kimchi_label = "-"
@@ -695,11 +725,17 @@ def build_binance_row(
         "precision": precision,
         "Upbit": "O" if target_up_base else "X",
         "Upbit_Symbol": target_up_base,
-        "Binance": "O" if binance_spot_price > 0 else "X",
+        "Binance": "O" if (binance_spot_price > 0 or b_info.get("is_alpha")) else "X",
         "Binance_Futures": "O" if binance_futures_price > 0 else "X",
+        "Binance_Alpha": "O" if b_info.get("is_alpha") else "X",
+        "fallback_exchange": b_info.get("fallback_exchange"),
         "Bithumb_Symbol": bithumb_symbol,
         "Price": utils.format_dynamic_price(b_info["price"], precision),
-        "Price_KRW": up_price_krw if up_price_krw > 0 else None,
+        "Price_KRW": (
+            up_price_krw
+            if up_price_krw > 0
+            else (bithumb_price if bithumb_price > 0 else None)
+        ),
         "Binance_Price": (
             binance_futures_price
             if b_info.get("is_futures") and binance_futures_price > 0
@@ -713,7 +749,9 @@ def build_binance_row(
         "Upbit_Price": up_price_krw if up_price_krw > 0 else None,
         "Bithumb_Price": bithumb_price if bithumb_price > 0 else None,
         "Change_24h": utils.format_change(change_24h),
-        "Change_Today": utils.format_change(change_today),
+        "Change_Today": (
+            utils.format_change(change_today) if change_today is not None else "-"
+        ),
         "Kimchi_Formatted": f"{kimchi_raw:+.2f}%" if kimchi_raw is not None else "-",
         "Kimchi_Label": kimchi_label,
         "Basis_Formatted": f"{basis_raw:+.2f}%" if basis_raw != 0 else "0.00%",
@@ -750,6 +788,14 @@ def build_binance_row(
         "Bybit_Price_Spot": by_spot_p if by_spot_p > 0 else None,
         "Change_24h_Spot": binance_spot_change_24h,
         "Change_24h_Binance": binance_spot_change_24h,
+        "Change_Today_Spot": (
+            None if b_info.get("is_alpha") else binance_spot_change_today
+        ),
+        "Change_Today_Binance": (
+            None if b_info.get("is_alpha") else binance_spot_change_today
+        ),
+        "Change_24h_Bithumb": bithumb_chg_24,
+        "Change_Today_Bithumb": bithumb_chg_today,
         "Change_24h_Bybit": float(
             bybit_data.get(raw_symbol, {}).get("change_24h")
             or bybit_data.get(base, {}).get("change_24h")
@@ -819,9 +865,7 @@ def build_binance_row(
             else "-"
         ),
         "Bithumb_Vol_KRW_Formatted": (
-            utils.format_volume_krw_string(bithumb_vol)
-            if bithumb_vol > 0
-            else "-"
+            utils.format_volume_krw_string(bithumb_vol) if bithumb_vol > 0 else "-"
         ),
         "Bithumb_Vol": bithumb_vol,
         "Binance_Price_Futures": (

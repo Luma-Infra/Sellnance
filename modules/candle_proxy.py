@@ -47,7 +47,7 @@ def get_candle_ttl(interval: str, to: str = "") -> float:
     - 15분~30분봉: 60초 (1분)
     - 3분~5분봉: 30초
     - 1분봉 등 초단기봉: 15초
-    (💡 실시간 최신가는 프론트엔드 웹소켓이 매초 보정하므로 과거 캔들 배열 캐싱은 길어도 100% 안전)
+    (💡 실시간 최신가는 프론트엔드 웹소켓이 매초 보정하므로 과거 캔들 배열 캐싱은 길어도 안전하게)
     """
     if to:
         return 600.0
@@ -138,7 +138,7 @@ def _construct_tv_msg(func, param_list):
 class PersistentTVClient:
     """
     [초고속 락-프리 트레이딩뷰 비동기 멀티플렉서]
-    - 전역 락 완전 제거: 백그라운드 리더가 1개의 웹소켓 안에서 여러 코인/봉을 병렬 라우팅 (0.1~0.2초 컷)
+    - 전역 락 완전 제거: 백그라운드 리더가 1개의 웹소켓 안에서 여러 코인/봉을 병렬 라우팅
     - GC 원자성 (Zero-Leak): finally 블록에서 pending_futures를 원자적 pop()하여 메모리 누수 0% 보장
     - 트레이딩뷰 밴 방어: 동시 6개 세션 세마포어 캡 + 데이터 수신 즉시 chart_delete_session 전송
     """
@@ -194,10 +194,14 @@ class PersistentTVClient:
                                             str(p["v"][2]),
                                             str(p["v"][3]),
                                             str(p["v"][4]),
-                                            str(p["v"][5]),
+                                            (
+                                                str(p["v"][5])
+                                                if len(p.get("v", [])) >= 6
+                                                else "0"
+                                            ),
                                         ]
                                         for p in plots
-                                        if len(p.get("v", [])) >= 6
+                                        if len(p.get("v", [])) >= 5
                                     ]
                                     if candles:
                                         fut.set_result(candles)
@@ -280,8 +284,8 @@ class PersistentTVClient:
                     )
                 )
 
-                # Future 완료 대기 (최대 2.8초 단일 타임아웃)
-                candles = await asyncio.wait_for(fut, timeout=2.8)
+                # Future 완료 대기 (최대 3.5초 단일 타임아웃)
+                candles = await asyncio.wait_for(fut, timeout=3.5)
                 return candles if candles else []
             except Exception:
                 return []
@@ -365,7 +369,7 @@ async def get_tv_candles_aiohttp(symbol="BINANCE:AIAUSDT", timeframe="1D", n_bar
                                 )
                                 for p in plots:
                                     v = p.get("v", [])
-                                    if len(v) >= 6:
+                                    if len(v) >= 5:
                                         candles.append(
                                             [
                                                 int(v[0] * 1000),
@@ -373,7 +377,7 @@ async def get_tv_candles_aiohttp(symbol="BINANCE:AIAUSDT", timeframe="1D", n_bar
                                                 str(v[2]),
                                                 str(v[3]),
                                                 str(v[4]),
-                                                str(v[5]),
+                                                str(v[5]) if len(v) >= 6 else "0",
                                             ]
                                         )
                                 if candles:
@@ -448,64 +452,59 @@ async def _raw_fetch_candles(
                         for c in tv_candles
                     ],
                 }
-                return formatted_bithumb
+                return formatted_bithumb, None
         except Exception as e:
             print(f"⚠️ [BITHUMB 폴백 전환] {clean_sym}: {e}")
 
+    # 🚀 [BITGET 공식 API 직통]
+    if exchange in ("bitget", "bitget_spot", "bitget_futures"):
+        try:
+            url = ExchangeAdapter.get_candle_url(
+                exchange, symbol, interval, limit, to, start
+            )
+            if url:
+                session = await get_aio_session()
+                async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
+                    if resp.status == 200:
+                        res_json = await resp.json()
+                        raw_data = res_json.get("data", [])
+                        if isinstance(raw_data, list) and len(raw_data) > 0:
+                            # 비트겟: [ts, open, high, low, close, volume, quoteVol]
+                            candles = [
+                                [
+                                    int(c[0]),
+                                    str(c[1]),
+                                    str(c[2]),
+                                    str(c[3]),
+                                    str(c[4]),
+                                    str(c[5]),
+                                ]
+                                for c in raw_data
+                                if len(c) >= 6
+                            ]
+                            return sorted(candles, key=lambda x: x[0]), None
+        except Exception as e:
+            print(f"⚠️ [BITGET 공식 API 에러] {symbol}: {e}")
+
     # 🚀 [GATEIO 공식 API 직통]
     if exchange in ("gateio", "gateio_spot", "gateio_futures"):
-        clean_sym = (
-            symbol.replace("USDT.P", "")
-            .replace(".P", "")
-            .replace("USDT", "")
-            .replace("_USDT", "")
-            .upper()
-        )
-        gate_tf_map = {
-            "1m": "1m",
-            "3m": "5m",
-            "5m": "5m",
-            "10m": "15m",
-            "15m": "15m",
-            "30m": "30m",
-            "1h": "1h",
-            "2h": "4h",
-            "4h": "4h",
-            "6h": "4h",
-            "12h": "4h",
-            "24h": "1d",
-            "1d": "1d",
-            "d": "1d",
-            "days": "1d",
-            "3d": "1d",
-            "1w": "7d",
-            "w": "7d",
-            "weeks": "7d",
-            "1M": "30d",
-            "M": "30d",
-            "months": "30d",
-        }
-        gate_interval = gate_tf_map.get(
-            interval, gate_tf_map.get(interval.lower(), "1d")
-        )
-        is_futures = (
-            exchange == "gateio_futures"
-            or symbol.endswith(".P")
-            or "futures" in symbol.lower()
-        )
-        limit_num = min(limit, 1000)
-
         try:
-            async with aiohttp.ClientSession() as session:
-                if is_futures:
-                    contract = f"{clean_sym}_USDT"
-                    url = f"https://api.gateio.ws/api/v4/futures/usdt/candlesticks?contract={contract}&interval={gate_interval}&limit={limit_num}"
-                    async with session.get(
-                        url, timeout=aiohttp.ClientTimeout(total=5)
-                    ) as resp:
-                        if resp.status == 200:
-                            data = await resp.json()
-                            if isinstance(data, list) and len(data) > 0:
+            url = ExchangeAdapter.get_candle_url(
+                exchange, symbol, interval, limit, to, start
+            )
+            if url:
+                session = await get_aio_session()
+                async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        if isinstance(data, list) and len(data) > 0:
+                            is_futures = (
+                                exchange == "gateio_futures"
+                                or symbol.endswith(".P")
+                                or "futures" in symbol.lower()
+                            )
+                            if is_futures:
+                                # 선물: [{"t": 1789464420, "o": "...", "h": "...", "l": "...", "c": "...", "v": ...}]
                                 return [
                                     [
                                         int(c["t"]) * 1000,
@@ -516,17 +515,10 @@ async def _raw_fetch_candles(
                                         str(c["v"]),
                                     ]
                                     for c in data
-                                    if "t" in c
-                                ]
-                else:
-                    currency_pair = f"{clean_sym}_USDT"
-                    url = f"https://api.gateio.ws/api/v4/spot/candlesticks?currency_pair={currency_pair}&interval={gate_interval}&limit={limit_num}"
-                    async with session.get(
-                        url, timeout=aiohttp.ClientTimeout(total=5)
-                    ) as resp:
-                        if resp.status == 200:
-                            data = await resp.json()
-                            if isinstance(data, list) and len(data) > 0:
+                                    if isinstance(c, dict) and "t" in c
+                                ], None
+                            else:
+                                # 현물: [[ts, quoteVol, close, high, low, open, baseVol, isClosed], ...]
                                 return [
                                     [
                                         int(c[0]) * 1000,
@@ -537,17 +529,73 @@ async def _raw_fetch_candles(
                                         str(c[6]),
                                     ]
                                     for c in data
-                                    if len(c) >= 7
-                                ]
+                                    if isinstance(c, list) and len(c) >= 7
+                                ], None
         except Exception as e:
-            print(f"⚠️ [GATEIO 공식 API 에러] {clean_sym}: {e}")
+            print(f"⚠️ [GATEIO 공식 API 에러] {symbol}: {e}")
+
+    # [바이낸스 알파 코인 직행]: 알파 전용 코인은 바이낸스 REST(400 에러)를 건너뛰고 트레이딩뷰 aiohttp 웹소켓으로 처음부터 즉시 서빙!
+    clean_base = (
+        symbol.replace("USDT", "").replace("BUSD", "").replace("USDC", "").upper()
+    )
+    fallback_source = None
+    is_alpha_coin = False
+    if exchange in ("binance", "binance_spot") and api_manager.MAPPING_DATA:
+        t_data = api_manager.MAPPING_DATA.get("TICKER_DATA", {}).get(clean_base)
+        if (
+            isinstance(t_data, list)
+            and len(t_data) >= 6
+            and str(t_data[5]).upper() == "ALPHA"
+        ):
+            is_alpha_coin = True
+
+    if is_alpha_coin:
+        tv_tf_map = {
+            "1m": "1",
+            "3m": "3",
+            "5m": "5",
+            "15m": "15",
+            "30m": "30",
+            "1h": "60",
+            "2h": "120",
+            "4h": "240",
+            "6h": "360",
+            "12h": "720",
+            "1d": "1D",
+            "days": "1D",
+            "3d": "3D",
+            "1w": "1W",
+            "weeks": "1W",
+            "1M": "1M",
+            "months": "1M",
+        }
+        tv_tf = tv_tf_map.get(interval, interval.upper())
+        n_bars = int(limit) if limit else 500
+
+        sym_candidates = [
+            ("BYBIT", f"BYBIT:{clean_base}USDT"),
+            ("BITGET", f"BITGET:{clean_base}USDT"),
+            ("GATEIO", f"GATEIO:{clean_base}USDT"),
+            ("BITHUMB", f"BITHUMB:{clean_base}KRW"),
+        ]
+        for ex_source, tv_sym in sym_candidates:
+            try:
+                tv_cand = await PERSISTENT_TV_CLIENT.get_candles(
+                    symbol=tv_sym, timeframe=tv_tf, n_bars=n_bars
+                )
+                if tv_cand and isinstance(tv_cand, list) and len(tv_cand) > 0:
+                    sorted_cand = sorted(tv_cand, key=lambda x: x[0])
+                    # print(f"✅ [알파 캔들 TV 직행 수신] {symbol} -> {tv_sym} ({len(sorted_cand)}개)")
+                    return sorted_cand, ex_source
+            except Exception:
+                pass
 
     try:
         url = ExchangeAdapter.get_candle_url(
             exchange, symbol, interval, limit, to, start
         )
         if not url:
-            return {"error": "지원하지 않는 거래소입니다."}
+            return {"error": "지원하지 않는 거래소입니다."}, None
 
         if exchange == "upbit":
             await UPBIT_RATE_LIMITER.wait()
@@ -599,6 +647,57 @@ async def _raw_fetch_candles(
         if data is None:
             data = []
 
+        # [바이낸스 캔들 스마트 폴백]: 바이낸스 현물 400/빈 캔들 시 트레이딩뷰 aiohttp 폴백 가동
+        if exchange in ("binance", "binance_spot") and (not data or len(data) == 0):
+            clean_base = (
+                symbol.replace("USDT", "")
+                .replace("BUSD", "")
+                .replace("USDC", "")
+                .upper()
+            )
+            tv_tf_map = {
+                "1m": "1",
+                "3m": "3",
+                "5m": "5",
+                "15m": "15",
+                "30m": "30",
+                "1h": "60",
+                "2h": "120",
+                "4h": "240",
+                "6h": "360",
+                "12h": "720",
+                "1d": "1D",
+                "days": "1D",
+                "3d": "3D",
+                "1w": "1W",
+                "weeks": "1W",
+                "1M": "1M",
+                "months": "1M",
+            }
+            tv_tf = tv_tf_map.get(interval, interval.upper())
+            n_bars = int(limit) if limit else 500
+
+            sym_candidates = [
+                ("BYBIT", f"BYBIT:{clean_base}USDT"),
+                ("BITGET", f"BITGET:{clean_base}USDT"),
+                ("GATEIO", f"GATEIO:{clean_base}USDT"),
+                ("BITHUMB", f"BITHUMB:{clean_base}KRW"),
+            ]
+            for ex_source, tv_sym in sym_candidates:
+                try:
+                    tv_cand = await PERSISTENT_TV_CLIENT.get_candles(
+                        symbol=tv_sym, timeframe=tv_tf, n_bars=n_bars
+                    )
+                    if tv_cand and isinstance(tv_cand, list) and len(tv_cand) > 0:
+                        data = sorted(tv_cand, key=lambda x: x[0])
+                        fallback_source = ex_source
+                        print(
+                            f"✅ [알파 캔들 TV 폴백 수신] {symbol} -> {tv_sym} ({len(data)}개)"
+                        )
+                        break
+                except Exception:
+                    pass
+
         # 빗썸 전체 캔들 반환 시 요청한 limit만큼 백엔드에서 즉시 슬라이싱하여 전송 속도 극대화
         if (
             exchange == "bithumb"
@@ -627,7 +726,7 @@ async def _raw_fetch_candles(
                 or interval.endswith("w")
                 or interval.endswith("M")
             ):
-                return data
+                return data, fallback_source
 
             if len(data) < limit:
                 cache_key = f"{base_sym}_{interval}_{exchange}"
@@ -645,8 +744,8 @@ async def _raw_fetch_candles(
 
                     needed = limit - len(data)
                     if needed > 0:
-                        return filtered_fallback[-needed:] + data
-                    return data
+                        return filtered_fallback[-needed:] + data, fallback_source
+                    return data, fallback_source
 
                 tv_exch = recovery_map[base_sym]
                 print(
@@ -706,18 +805,18 @@ async def _raw_fetch_candles(
 
                         needed = limit - len(data)
                         if needed > 0:
-                            return filtered_fallback[-needed:] + data
-                        return data
+                            return filtered_fallback[-needed:] + data, fallback_source
+                        return data, fallback_source
                 except Exception as tv_err:
                     print(f"🚨 aiohttp TV 복구 실패 ({base_sym}): {tv_err}")
 
-        return data
+        return data, fallback_source
     except Exception as e:
         if "429" in str(e):
             print(f"⚠️ [업비트 429 레이트 리밋 임시 스킵] ({symbol}): {e}")
-            return []
+            return [], None
         print(f"🚨 통합 프록시 에러 ({exchange} - {symbol}): {e}")
-        return {"error": str(e)}
+        return {"error": str(e)}, None
 
 
 async def fetch_candles_guarded(
@@ -745,9 +844,14 @@ async def fetch_candles_guarded(
 
     # [적응형 캐시 검사 (0ms 즉시 반환)]
     if req_cache_key in CANDLE_CACHE:
-        cached_time, cached_data = CANDLE_CACHE[req_cache_key]
+        cached_entry = CANDLE_CACHE[req_cache_key]
+        if len(cached_entry) == 3:
+            cached_time, cached_data, cached_source = cached_entry
+        else:
+            cached_time, cached_data = cached_entry
+            cached_source = None
         if now - cached_time < ttl:
-            return cached_data
+            return cached_data, cached_source
 
     # [Single-Flight 합승]
     if req_cache_key in IN_FLIGHT_CANDLE_REQUESTS:
@@ -760,26 +864,31 @@ async def fetch_candles_guarded(
     async def _guarded_worker():
         # 1. 빗썸은 자체 전용 20개 세마포어가 있으므로 바깥 20개 세마포어를 점유하지 않음 (역전 현상 0%)
         if exchange == "bithumb":
-            data = await _raw_fetch_candles(
+            data, source = await _raw_fetch_candles(
                 exchange, symbol, interval, limit, to, start
             )
         else:
             # 2. 업비트/바이낸스/바이비트 등 일반 HTTP 거래소만 바깥 20개 세마포어로 보호
             async with CANDLE_SEMAPHORE:
                 if req_cache_key in CANDLE_CACHE:
-                    c_time, c_data = CANDLE_CACHE[req_cache_key]
+                    cached_entry = CANDLE_CACHE[req_cache_key]
+                    if len(cached_entry) == 3:
+                        c_time, c_data, c_source = cached_entry
+                    else:
+                        c_time, c_data = cached_entry
+                        c_source = None
                     if time.time() - c_time < ttl:
-                        return c_data
-                data = await _raw_fetch_candles(
+                        return c_data, c_source
+                data, source = await _raw_fetch_candles(
                     exchange, symbol, interval, limit, to, start
                 )
 
         # 🚀 [유효성 검증] 유효한 캔들 데이터(len > 0)만 캐시 저장 (빈 배열 [] 캐싱 차단)
         if isinstance(data, list) and len(data) > 0:
-            CANDLE_CACHE[req_cache_key] = (time.time(), data)
+            CANDLE_CACHE[req_cache_key] = (time.time(), data, source)
         elif isinstance(data, dict) and "error" not in data and bool(data):
-            CANDLE_CACHE[req_cache_key] = (time.time(), data)
-        return data
+            CANDLE_CACHE[req_cache_key] = (time.time(), data, source)
+        return data, source
 
     task = asyncio.create_task(_guarded_worker())
     IN_FLIGHT_CANDLE_REQUESTS[req_cache_key] = task
