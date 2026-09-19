@@ -38,17 +38,19 @@ export function getRowExchangeMeta(row) {
 
   const ex = row.Listed_Exchanges || [];
   const hasBinanceFutures =
-    ex.includes("BINANCE_FUTURES") || row.Binance_Futures === "O" || !!row.Exact_Futures;
+    ex.includes("BINANCE_FUTURES") ||
+    row.Binance_Futures === "O" ||
+    !!row.Exact_Futures;
   const hasBinanceSpot =
-    ex.includes("BINANCE_SPOT") || ex.includes("BINANCE") || row.Binance === "O";
+    ex.includes("BINANCE_SPOT") ||
+    ex.includes("BINANCE") ||
+    row.Binance === "O";
   const hasBybitFutures =
     ex.includes("BYBIT_FUTURES") || row.Bybit_Futures === "O";
   const hasBybitSpot =
     ex.includes("BYBIT_SPOT") || ex.includes("BYBIT") || row.Bybit === "O";
-  const hasUpbit =
-    ex.includes("UPBIT") || row.Upbit === "O";
-  const hasBithumb =
-    ex.includes("BITHUMB");
+  const hasUpbit = ex.includes("UPBIT") || row.Upbit === "O";
+  const hasBithumb = ex.includes("BITHUMB");
 
   const isFutures = hasBinanceFutures || hasBybitFutures;
   const isSpot = hasBinanceSpot || hasBybitSpot || hasUpbit || hasBithumb;
@@ -81,7 +83,11 @@ export function getRowKimchiGlobalPrice(row) {
   } else if (row.Bybit_Price_Spot && row.Bybit_Price_Spot > 0) {
     rawGlb = row.Bybit_Price_Spot;
     ovsMult = getMultiplier(row.Exact_Spot || row.Ticker || row.Symbol);
-  } else if (!isFuturesCoin(row) && row.Binance_Price && row.Binance_Price > 0) {
+  } else if (
+    !isFuturesCoin(row) &&
+    row.Binance_Price &&
+    row.Binance_Price > 0
+  ) {
     rawGlb = row.Binance_Price;
     ovsMult = getMultiplier(row.Exact_Spot || row.Ticker || row.Symbol);
   }
@@ -117,19 +123,33 @@ export function getRowDisplayMetrics(row, isKrwMode = null, rate = null) {
 
   // 🚀 [테이블 4단 분리: 1.바낸 선물 ➔ 2.업비트 현물 ➔ 3.바낸 현물 ➔ 4.바이빗 현물]
   const binanceFuturesP =
-    row.Binance_Price_Futures ||
-    (isFutures ? row.Price_Raw : null);
+    row.Binance_Price_Futures || (isFutures ? row.Price_Raw : null);
   const upbitP = row.Upbit_Price ?? (row.Upbit === "O" ? row.Price_KRW : null);
-  const bithumbP = row.Bithumb_Price ?? (row.Bithumb === "O" ? row.Price_KRW : null);
+  const bithumbP =
+    row.Bithumb_Price ?? (row.Bithumb === "O" ? row.Price_KRW : null);
   const binanceSpotP =
     row.Binance_Price_Spot ||
-    (!isFutures && (row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE_SPOT") || row.Listed_Exchanges?.includes("BINANCE")) ? row.Price_Raw : null);
+    (!isFutures &&
+    (row.Binance === "O" ||
+      row.Listed_Exchanges?.includes("BINANCE_SPOT") ||
+      row.Listed_Exchanges?.includes("BINANCE"))
+      ? row.Price_Raw
+      : null);
   const bybitFuturesP =
     row.Bybit_Price_Futures ||
-    (isFutures && (row.Bybit_Futures === "O" || row.Listed_Exchanges?.includes("BYBIT_FUTURES")) ? row.Price_Raw : null);
+    (isFutures &&
+    (row.Bybit_Futures === "O" ||
+      row.Listed_Exchanges?.includes("BYBIT_FUTURES"))
+      ? row.Price_Raw
+      : null);
   const bybitSpotP =
     row.Bybit_Price_Spot ||
-    (!isFutures && (row.Bybit === "O" || row.Listed_Exchanges?.includes("BYBIT_SPOT") || row.Listed_Exchanges?.includes("BYBIT")) ? row.Price_Raw : null);
+    (!isFutures &&
+    (row.Bybit === "O" ||
+      row.Listed_Exchanges?.includes("BYBIT_SPOT") ||
+      row.Listed_Exchanges?.includes("BYBIT"))
+      ? row.Price_Raw
+      : null);
 
   let activeExchange = "binance";
   let displayPrice = 0;
@@ -185,25 +205,42 @@ export function getRowDisplayMetrics(row, isKrwMode = null, rate = null) {
 
   // 🚀 [등락률 1:1 매핑] activeExchange 및 선택된 단가 기준 1:1 동기화
   let n24h = 0;
-  let nDay = 0;
+  let nDay = null;
 
-  if (activeExchange === "upbit") {
+  const isAlpha = row.Binance_Alpha === "O" || Boolean(row.is_alpha);
+
+  if (isAlpha && activeExchange !== "bithumb") {
+    // 🚀 알파 코인은 당일 시가(UTC 0시)가 없으므로 빗썸 상장이 아닌 한 Day 등락률은 null (-)
+    nDay = null;
+    n24h = row.Change_24h_Raw ?? 0;
+  } else if (activeExchange === "upbit") {
     n24h = row.Change_24h_Upbit ?? row.Change_24h_Raw ?? 0;
-    nDay = row.Change_Today_Upbit ?? row.Change_Today_Raw ?? 0;
+    nDay = row.Change_Today_Upbit ?? row.Change_Today_Raw ?? null;
   } else if (activeExchange === "binance") {
     if (binanceFuturesP !== null && binanceFuturesP > 0) {
       n24h = row.Change_24h_Futures ?? row.Change_24h_Raw ?? 0;
-      nDay = row.Change_Today_Futures ?? row.Change_Today_Raw ?? 0;
+      nDay = row.Change_Today_Futures ?? row.Change_Today_Raw ?? null;
     } else {
-      n24h = (row.Change_24h_Spot ?? row.Change_24h_Binance) ?? row.Change_24h_Raw ?? 0;
-      nDay = (row.Change_Today_Spot ?? row.Change_Today_Binance) ?? row.Change_Today_Raw ?? 0;
+      n24h =
+        row.Change_24h_Spot ??
+        row.Change_24h_Binance ??
+        row.Change_24h_Raw ??
+        0;
+      nDay =
+        row.Change_Today_Spot ??
+        row.Change_Today_Binance ??
+        row.Change_Today_Raw ??
+        null;
     }
   } else if (activeExchange === "bybit") {
     n24h = row.Change_24h_Bybit ?? row.Change_24h_Raw ?? 0;
-    nDay = row.Change_Today_Bybit ?? row.Change_Today_Raw ?? 0;
+    nDay = row.Change_Today_Bybit ?? row.Change_Today_Raw ?? null;
+  } else if (activeExchange === "bithumb") {
+    n24h = row.Change_24h_Bithumb ?? row.Change_24h_Raw ?? 0;
+    nDay = row.Change_Today_Bithumb ?? row.Change_Today_Raw ?? null;
   } else {
     n24h = row.Change_24h_Raw ?? 0;
-    nDay = row.Change_Today_Raw ?? 0;
+    nDay = row.Change_Today_Raw ?? null;
   }
 
   return {
@@ -217,10 +254,10 @@ export function getRowDisplayMetrics(row, isKrwMode = null, rate = null) {
 
 /**
  * 5. 행(Row) 및 차트 탑존의 거래량(Volume) 단일 산출 규칙
- * 
+ *
  * [A. 테이블 Row (고정형)]
  *  - ALL / 일반 탭: 선물 코인은 선물 24h 대금, 현물 전용은 현물 24h 대금
- * 
+ *
  * [B. 차트 탑존 (유동적)]
  *  - 메인 마켓(activeMarket) + 하단 서브 김프 파트너(subMarket) 1:1 페어링
  *  - 1) 국내 메인 선택 시 (UPBIT, BITHUMB):
@@ -252,7 +289,9 @@ export function getRowDisplayVolume(
   if (!rate) rate = store.marketDataMap?.krw_usd_rate || 1;
 
   const isFutures = isFuturesCoin(row);
-  const normActive = String(activeMarket || "").toUpperCase().replace(/-/g, "_");
+  const normActive = String(activeMarket || "")
+    .toUpperCase()
+    .replace(/-/g, "_");
   const isKoreaMain = normActive === "UPBIT" || normActive === "BITHUMB";
 
   // 좌측 해외 거래소 볼륨 & 색상 산출 (하단 서브 김프 노출 순서 & ID 완벽 동기화)
@@ -260,9 +299,11 @@ export function getRowDisplayVolume(
   let volBColorClass = "text-[#f0b90b]"; // 바낸 기본
 
   const rawGlobalMkt = isKoreaMain
-    ? (subMarket || (isFutures ? "BINANCE_FUTURES" : "BINANCE"))
+    ? subMarket || (isFutures ? "BINANCE_FUTURES" : "BINANCE")
     : activeMarket;
-  const normGlobal = String(rawGlobalMkt || "").toUpperCase().replace(/-/g, "_");
+  const normGlobal = String(rawGlobalMkt || "")
+    .toUpperCase()
+    .replace(/-/g, "_");
 
   const isBybit = normGlobal.includes("BYBIT") || normGlobal.includes("BYB");
   const isBybitFutures =
@@ -309,7 +350,10 @@ export function getRowDisplayVolume(
         row.Binance_Vol_Futures > 0
           ? row.Binance_Vol_Futures
           : row.Binance_Vol_Spot || 0;
-    } else if (row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE")) {
+    } else if (
+      row.Binance === "O" ||
+      row.Listed_Exchanges?.includes("BINANCE")
+    ) {
       volBColorClass = "text-[#f0b90b]";
       volBRaw =
         row.Binance_Vol_Spot > 0
@@ -331,9 +375,7 @@ export function getRowDisplayVolume(
   let volURaw = 0;
   let volUColorClass = "text-upbit-color";
 
-  const rawKoreaMkt = isKoreaMain
-    ? activeMarket
-    : (subMarket || "UPBIT");
+  const rawKoreaMkt = isKoreaMain ? activeMarket : subMarket || "UPBIT";
   const normKorea = String(rawKoreaMkt || "").toUpperCase();
 
   if (normKorea.includes("BITHUMB")) {
@@ -390,28 +432,139 @@ export function getDisplayTickerHtml(row) {
  */
 export function getChartDefaultMarket(row) {
   if (!row) return "FUTURES";
-  const { isFutures, hasUpbit, hasBithumb, hasBinanceSpot, hasBybitSpot } = getRowExchangeMeta(row);
+  const {
+    isFutures,
+    hasBinanceFutures,
+    hasBinanceSpot,
+    hasUpbit,
+    hasBithumb,
+    hasBybitSpot,
+    hasBybitFutures,
+  } = getRowExchangeMeta(row);
+
+  // 🚀 순수 알파 코인은 바이낸스 선물이 절대 없으므로 SPOT으로 직행
+  const isAlpha = Boolean(
+    (row.Binance_Alpha === "O" ||
+      row.Listed_Exchanges?.includes("BINANCE_ALPHA") ||
+      row.is_alpha) &&
+    row.Binance_Futures !== "O" &&
+    !row.is_futures,
+  );
+  if (isAlpha) return "SPOT";
 
   if (store.filterMode === "UPBIT" && hasUpbit) return "UPBIT";
-  if (isFutures) return "FUTURES";
+  if (hasBinanceFutures) return "FUTURES";
   if (hasBinanceSpot) return "SPOT";
   if (hasUpbit) return "UPBIT";
   if (hasBithumb) return "BITHUMB";
+  if (hasBybitFutures) return "BYBIT_FUTURES";
   if (hasBybitSpot) return "BYBIT";
 
-  return "FUTURES";
+  return hasBinanceFutures ? "FUTURES" : hasBinanceSpot ? "SPOT" : "FUTURES";
 }
 
 /**
  * 8. 거래소별 네이티브 타임프레임(캔들 봉) 지원 여부 판별 (3D/12H 등 리샘플링 여부 결정)
  */
 export const NATIVE_TF_MAP = {
-  binance: new Set(["1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h", "1d", "3d", "1w", "1M"]),
-  bybit: new Set(["1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "12h", "1d", "1w", "1M"]), // 3d는 1d 3개 리샘플링
-  upbit: new Set(["1m", "3m", "5m", "10m", "15m", "30m", "1h", "4h", "1d", "1w", "1M"]), // 12h, 3d 리샘플링
+  binance: new Set([
+    "1m",
+    "3m",
+    "5m",
+    "15m",
+    "30m",
+    "1h",
+    "2h",
+    "4h",
+    "6h",
+    "8h",
+    "12h",
+    "1d",
+    "3d",
+    "1w",
+    "1M",
+  ]),
+  bybit: new Set([
+    "1m",
+    "3m",
+    "5m",
+    "15m",
+    "30m",
+    "1h",
+    "2h",
+    "4h",
+    "6h",
+    "12h",
+    "1d",
+    "1w",
+    "1M",
+  ]), // 3d는 1d 3개 리샘플링
+  upbit: new Set([
+    "1m",
+    "3m",
+    "5m",
+    "10m",
+    "15m",
+    "30m",
+    "1h",
+    "4h",
+    "1d",
+    "1w",
+    "1M",
+  ]), // 12h, 3d 리샘플링
   bithumb: new Set(["1m", "3m", "5m", "10m", "30m", "1h", "6h", "12h", "1d"]), // 3d 리샘플링
-  gate: new Set(["1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h", "1d", "1w", "1M"]),
-  gateio: new Set(["1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h", "1d", "1w", "1M"]),
+  gate: new Set([
+    "1m",
+    "3m",
+    "5m",
+    "15m",
+    "30m",
+    "1h",
+    "2h",
+    "4h",
+    "6h",
+    "8h",
+    "12h",
+    "1d",
+    "3d",
+    "1w",
+    "1M",
+  ]),
+  gateio: new Set([
+    "1m",
+    "3m",
+    "5m",
+    "15m",
+    "30m",
+    "1h",
+    "2h",
+    "4h",
+    "6h",
+    "8h",
+    "12h",
+    "1d",
+    "3d",
+    "1w",
+    "1M",
+  ]),
+  bitget: new Set([
+    "1m",
+    "3m",
+    "5m",
+    "10m",
+    "15m",
+    "30m",
+    "1h",
+    "2h",
+    "4h",
+    "6h",
+    "8h",
+    "12h",
+    "1d",
+    "3d",
+    "1w",
+    "1M",
+  ]),
 };
 
 export function isExchangeNativeTF(exchange, tf) {

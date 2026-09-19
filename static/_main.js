@@ -22,6 +22,7 @@ import "./start.js";
 import "./quickview.js";
 import "./feedback_modal.js";
 import "./sandbox_injector.js";
+import "./stream_alpha.js";
 
 // 분리된 3대 모듈
 import {
@@ -85,6 +86,7 @@ setInterval(updateStatusBadge, 1000);
 setupRouteAndHistory();
 scheduleDailyReset();
 setupTabVisibilityRecovery();
+initAlphaStreamPipeline();
 
 // 🚀 초기 필터 UI 상태 동기화 (3단 토글 슬라이더 위치 등)
 if (typeof window.switchFilter === "function") {
