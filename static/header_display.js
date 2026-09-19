@@ -50,11 +50,21 @@ function getHeaderDom() {
     domCache.headVolU = document.getElementById("head-vol-upbit");
     domCache.headCallerEl = document.getElementById("head-caller-id");
     domCache.headCaller24hEl = document.getElementById("head-caller-id-24h");
-    domCache.headCallerPriceEl = document.getElementById("head-caller-id-price");
-    domCache.topEls = Array.from(document.querySelectorAll("#head-price-main, .head-price-main-sync"));
-    domCache.bottomEls = Array.from(document.querySelectorAll("#head-price-sub, .head-price-sub-sync"));
-    domCache.headChg24hEls = Array.from(document.querySelectorAll("#head-chg-24h, .head-chg-24h-sync"));
-    domCache.headChgDayEls = Array.from(document.querySelectorAll("#head-chg-day, .head-chg-day-sync"));
+    domCache.headCallerPriceEl = document.getElementById(
+      "head-caller-id-price",
+    );
+    domCache.topEls = Array.from(
+      document.querySelectorAll("#head-price-main, .head-price-main-sync"),
+    );
+    domCache.bottomEls = Array.from(
+      document.querySelectorAll("#head-price-sub, .head-price-sub-sync"),
+    );
+    domCache.headChg24hEls = Array.from(
+      document.querySelectorAll("#head-chg-24h, .head-chg-24h-sync"),
+    );
+    domCache.headChgDayEls = Array.from(
+      document.querySelectorAll("#head-chg-day, .head-chg-day-sync"),
+    );
   }
   return domCache;
 }
@@ -71,10 +81,16 @@ export const realUpdateHeaderDisplay = (
   if (dom.headCallerEl && dom.headCallerEl.textContent !== ` [${callerId}]`) {
     dom.headCallerEl.textContent = ` [${callerId}]`;
   }
-  if (dom.headCaller24hEl && dom.headCaller24hEl.textContent !== ` [${callerId}]`) {
+  if (
+    dom.headCaller24hEl &&
+    dom.headCaller24hEl.textContent !== ` [${callerId}]`
+  ) {
     dom.headCaller24hEl.textContent = ` [${callerId}]`;
   }
-  if (dom.headCallerPriceEl && dom.headCallerPriceEl.textContent !== ` [${callerId}]`) {
+  if (
+    dom.headCallerPriceEl &&
+    dom.headCallerPriceEl.textContent !== ` [${callerId}]`
+  ) {
     dom.headCallerPriceEl.textContent = ` [${callerId}]`;
   }
 
@@ -83,13 +99,16 @@ export const realUpdateHeaderDisplay = (
 
   const activeMarket =
     store.currentTab === "quickview" ||
-      store.currentTab === "quickview-container"
+    store.currentTab === "quickview-container"
       ? store.qvMarket || "ALL"
       : store.currentChartMarket || "ALL";
 
   const isFuturesMode =
     activeMarket === "FUTURES" || activeMarket === "BYBIT_FUTURES";
-  const isSpotMode = activeMarket === "SPOT" || activeMarket === "BYBIT" || activeMarket === "BYBIT_SPOT";
+  const isSpotMode =
+    activeMarket === "SPOT" ||
+    activeMarket === "BYBIT" ||
+    activeMarket === "BYBIT_SPOT";
 
   // 🚀 모든 코인 통용 공통: Ticker/Symbol 기준의 대표 배수 추출 (하드코딩 0%)
   const storeMult = getMultiplier(row.Symbol || row.Ticker);
@@ -103,7 +122,9 @@ export const realUpdateHeaderDisplay = (
   let upbitP = row.Upbit_Price || row.Price_KRW || null;
   let bithumbP = row.Bithumb_Price || row.Price_KRW || null;
 
-  const ovsFutMult = getMultiplier(row.Exact_Futures || row.Ticker || row.Symbol);
+  const ovsFutMult = getMultiplier(
+    row.Exact_Futures || row.Ticker || row.Symbol,
+  );
   const ovsSpotMult = getMultiplier(row.Exact_Spot || row.Ticker || row.Symbol);
   const domMult = getMultiplier(
     row.Upbit_Symbol || row.Bithumb_Symbol || row.Symbol || row.Ticker,
@@ -112,14 +133,15 @@ export const realUpdateHeaderDisplay = (
   // 🚀 활성 차트/심볼의 배수
   const chartSymbolMult = getMultiplier(
     store.currentAsset ||
-    store.currentSelectedSymbol ||
-    row.Exact_Futures ||
-    row.Ticker,
+      store.currentSelectedSymbol ||
+      row.Exact_Futures ||
+      row.Ticker,
   );
 
   if (isFuturesMode) {
     const rawP = row.Binance_Price_Futures ?? row.Price_Raw ?? null;
-    binanceP = rawP !== null ? (rawP / (ovsFutMult || 1)) * (storeMult || 1) : null;
+    binanceP =
+      rawP !== null ? (rawP / (ovsFutMult || 1)) * (storeMult || 1) : null;
     bybitP = row.Bybit_Price_Futures
       ? (row.Bybit_Price_Futures / (ovsFutMult || 1)) * (storeMult || 1)
       : row.Price_Raw
@@ -127,7 +149,8 @@ export const realUpdateHeaderDisplay = (
         : null;
   } else if (isSpotMode) {
     const rawP = row.Binance_Price_Spot ?? row.Price_Raw ?? null;
-    binanceP = rawP !== null ? (rawP / (ovsSpotMult || 1)) * (storeMult || 1) : null;
+    binanceP =
+      rawP !== null ? (rawP / (ovsSpotMult || 1)) * (storeMult || 1) : null;
     bybitP = row.Bybit_Price_Spot
       ? (row.Bybit_Price_Spot / (ovsSpotMult || 1)) * (storeMult || 1)
       : row.Price_Raw
@@ -142,9 +165,11 @@ export const realUpdateHeaderDisplay = (
       row.Listed_Exchanges?.includes("BINANCE_FUTURES");
 
     if (hasFutures && row.Binance_Price_Futures) {
-      binanceP = (row.Binance_Price_Futures / (ovsFutMult || 1)) * (storeMult || 1);
+      binanceP =
+        (row.Binance_Price_Futures / (ovsFutMult || 1)) * (storeMult || 1);
     } else if (hasSpot && row.Binance_Price_Spot) {
-      binanceP = (row.Binance_Price_Spot / (ovsSpotMult || 1)) * (storeMult || 1);
+      binanceP =
+        (row.Binance_Price_Spot / (ovsSpotMult || 1)) * (storeMult || 1);
     } else if (row.Price_Raw) {
       const activeMult = hasFutures && !hasSpot ? ovsFutMult : ovsSpotMult;
       binanceP = (row.Price_Raw / (activeMult || 1)) * (storeMult || 1);
@@ -157,7 +182,9 @@ export const realUpdateHeaderDisplay = (
     } else if (row.Bybit_Price_Spot) {
       bybitP = (row.Bybit_Price_Spot / (ovsSpotMult || 1)) * (storeMult || 1);
     } else {
-      bybitP = row.Price_Raw ? (row.Price_Raw / (ovsSpotMult || 1)) * (storeMult || 1) : null;
+      bybitP = row.Price_Raw
+        ? (row.Price_Raw / (ovsSpotMult || 1)) * (storeMult || 1)
+        : null;
     }
   }
 
@@ -209,9 +236,14 @@ export const realUpdateHeaderDisplay = (
   const pNormalized =
     p !== undefined && p !== null
       ? p
-      : (row && row.precision !== undefined && row.precision !== null)
+      : row && row.precision !== undefined && row.precision !== null
         ? Number(row.precision)
-        : store.getPrecision(row?.Ticker || row?.DisplayTicker || row?.Symbol || store.currentAsset);
+        : store.getPrecision(
+            row?.Ticker ||
+              row?.DisplayTicker ||
+              row?.Symbol ||
+              store.currentAsset,
+          );
 
   let displayPrice = 0;
   let subPrice = null;
@@ -240,7 +272,12 @@ export const realUpdateHeaderDisplay = (
     }
   } else if (activeExchange === "upbit") {
     const rawP = upbitP || 0;
-    const validUsd = (binanceP && Number.isFinite(binanceP)) ? binanceP : ((bybitP && Number.isFinite(bybitP)) ? bybitP : null);
+    const validUsd =
+      binanceP && Number.isFinite(binanceP)
+        ? binanceP
+        : bybitP && Number.isFinite(bybitP)
+          ? bybitP
+          : null;
     const actualUsd = validUsd;
     if (isMainKrw) {
       displayPrice = rawP;
@@ -251,7 +288,12 @@ export const realUpdateHeaderDisplay = (
     }
   } else if (activeExchange === "bithumb") {
     const rawP = bithumbP || 0;
-    const validUsd = (binanceP && Number.isFinite(binanceP)) ? binanceP : ((bybitP && Number.isFinite(bybitP)) ? bybitP : null);
+    const validUsd =
+      binanceP && Number.isFinite(binanceP)
+        ? binanceP
+        : bybitP && Number.isFinite(bybitP)
+          ? bybitP
+          : null;
     const actualUsd = validUsd;
     if (isMainKrw) {
       displayPrice = rawP;
@@ -264,25 +306,30 @@ export const realUpdateHeaderDisplay = (
 
   const formattedMainPrice = isMainKrw
     ? formatKrwPrice(displayPrice, activeExchange)
-    : (window.formatSmartPrice ? window.formatSmartPrice(displayPrice, pNormalized) : formatSmartPrice(displayPrice, pNormalized));
+    : window.formatSmartPrice
+      ? window.formatSmartPrice(displayPrice, pNormalized)
+      : formatSmartPrice(displayPrice, pNormalized);
 
   if (dom.topEls) {
     dom.topEls.forEach((el) => {
-      if (el.textContent !== formattedMainPrice) el.textContent = formattedMainPrice;
+      if (el.textContent !== formattedMainPrice)
+        el.textContent = formattedMainPrice;
     });
   }
 
-  const hasSubPrice = subPrice !== null && Number.isFinite(subPrice) && subPrice > 0;
+  const hasSubPrice =
+    subPrice !== null && Number.isFinite(subPrice) && subPrice > 0;
   const formattedSubPrice = hasSubPrice
-    ? (isMainKrw
+    ? isMainKrw
       ? `≈ $ ${window.formatSmartPrice ? window.formatSmartPrice(subPrice, pNormalized) : formatSmartPrice(subPrice, pNormalized)}`
-      : `≈ ${formatKrwPrice(subPrice, activeExchange)}`)
+      : `≈ ${formatKrwPrice(subPrice, activeExchange)}`
     : "";
 
   if (dom.bottomEls) {
     dom.bottomEls.forEach((el) => {
       if (hasSubPrice) {
-        if (el.textContent !== formattedSubPrice) el.textContent = formattedSubPrice;
+        if (el.textContent !== formattedSubPrice)
+          el.textContent = formattedSubPrice;
         el.classList.remove("hidden");
       } else {
         el.classList.add("hidden");
@@ -290,11 +337,28 @@ export const realUpdateHeaderDisplay = (
     });
   }
 
-  // 🚀 최종 대표 등락률(Raw) 값을 다이렉트로 매핑하여 좌측 테이블과 우측 전광판의 싱크를 완전히 일치시킵니다.
+  // 최종 대표 등락률(Raw) 값을 다이렉트로 매핑하여 좌측 테이블과 우측 전광판의 싱크를 완전히 일치시킵니다.
   let n24 = 0;
   let nDay = 0;
+  let isDayNull = false;
 
-  if (activeMarket === "UPBIT") {
+  const isPureAlpha = Boolean(
+    (row.Binance_Alpha === "O" || row.is_alpha) &&
+    row.Binance_Futures !== "O" &&
+    !row.is_futures,
+  );
+
+  if (isPureAlpha) {
+    if (activeMarket === "BITHUMB") {
+      n24 = row.Change_24h_Bithumb ?? row.Change_24h_Raw ?? 0;
+      nDay = row.Change_Today_Bithumb ?? null;
+      if (nDay === null) isDayNull = true;
+    } else {
+      n24 = row.Change_24h_Raw ?? 0;
+      nDay = null;
+      isDayNull = true;
+    }
+  } else if (activeMarket === "UPBIT") {
     n24 = row.Change_24h_Upbit ?? row.Change_24h_Raw ?? 0;
     nDay = row.Change_Today_Upbit ?? row.Change_Today_Raw ?? 0;
   } else if (activeMarket === "BITHUMB") {
@@ -303,29 +367,48 @@ export const realUpdateHeaderDisplay = (
   } else if (activeMarket === "FUTURES" || activeMarket === "BYBIT_FUTURES") {
     n24 =
       (activeMarket === "BYBIT_FUTURES"
-        ? (row.Change_24h_Bybit_Futures || row.Change_24h_Bybit || row.Change_24h_Futures)
-        : (row.Change_24h_Futures || row.Change_24h_Bybit_Futures || row.Change_24h_Bybit)) ||
+        ? row.Change_24h_Bybit_Futures ||
+          row.Change_24h_Bybit ||
+          row.Change_24h_Futures
+        : row.Change_24h_Futures ||
+          row.Change_24h_Bybit_Futures ||
+          row.Change_24h_Bybit) ||
       row.Change_24h_Raw ||
       0;
     nDay =
       (activeMarket === "BYBIT_FUTURES"
-        ? (row.Change_Today_Bybit_Futures || row.Change_Today_Bybit || row.Change_Today_Futures)
-        : (row.Change_Today_Futures || row.Change_Today_Bybit_Futures || row.Change_Today_Bybit)) ||
+        ? row.Change_Today_Bybit_Futures ||
+          row.Change_Today_Bybit ||
+          row.Change_Today_Futures
+        : row.Change_Today_Futures ||
+          row.Change_Today_Bybit_Futures ||
+          row.Change_Today_Bybit) ||
       row.Change_Today_Raw ||
       0;
-  } else if (activeMarket === "SPOT" || activeMarket === "BYBIT" || activeMarket === "BYBIT_SPOT") {
+  } else if (
+    activeMarket === "SPOT" ||
+    activeMarket === "BYBIT" ||
+    activeMarket === "BYBIT_SPOT"
+  ) {
     n24 =
       (activeMarket === "SPOT"
         ? (row.Change_24h_Spot ?? row.Change_24h_Binance)
-        : (row.Change_24h_Bybit || row.Change_24h_Spot || row.Change_24h_Binance || row.Change_24h_Raw)) ??
+        : row.Change_24h_Bybit ||
+          row.Change_24h_Spot ||
+          row.Change_24h_Binance ||
+          row.Change_24h_Raw) ??
       row.Change_24h_Raw ??
       0;
     nDay =
       (activeMarket === "SPOT"
         ? (row.Change_Today_Spot ?? row.Change_Today_Binance)
-        : (row.Change_Today_Bybit || row.Change_Today_Spot || row.Change_Today_Binance || row.Change_Today_Raw)) ??
+        : row.Change_Today_Bybit ||
+          row.Change_Today_Spot ||
+          row.Change_Today_Binance ||
+          row.Change_Today_Raw) ??
       row.Change_Today_Raw ??
       0;
+    if (nDay === null || nDay === undefined) isDayNull = true;
   } else {
     // ALL, KIMCHI, NEW 등 기본 탭 모드에서의 우선순위 분기
     const hasFutures =
@@ -337,12 +420,24 @@ export const realUpdateHeaderDisplay = (
       n24 = row.Change_24h_Futures || row.Change_24h_Raw || 0;
       nDay = row.Change_Today_Futures || row.Change_Today_Raw || 0;
     } else if (hasSpot) {
-      n24 = (row.Change_24h_Spot ?? row.Change_24h_Binance) ?? row.Change_24h_Raw ?? 0;
-      nDay = (row.Change_Today_Spot ?? row.Change_Today_Binance) ?? row.Change_Today_Raw ?? 0;
+      n24 =
+        row.Change_24h_Spot ??
+        row.Change_24h_Binance ??
+        row.Change_24h_Raw ??
+        0;
+      nDay =
+        row.Change_Today_Spot ??
+        row.Change_Today_Binance ??
+        row.Change_Today_Raw ??
+        0;
+      if (nDay === null || nDay === undefined) isDayNull = true;
     } else if (row.Upbit === "O" || row.Listed_Exchanges?.includes("UPBIT")) {
       n24 = row.Change_24h_Upbit ?? row.Change_24h_Raw ?? 0;
       nDay = row.Change_Today_Upbit ?? row.Change_Today_Raw ?? 0;
-    } else if (row.Bithumb === "O" || row.Listed_Exchanges?.includes("BITHUMB")) {
+    } else if (
+      row.Bithumb === "O" ||
+      row.Listed_Exchanges?.includes("BITHUMB")
+    ) {
       n24 = row.Change_24h_Bithumb ?? row.Change_24h_Raw ?? 0;
       nDay = row.Change_Today_Bithumb ?? row.Change_Today_Raw ?? 0;
     } else {
@@ -360,11 +455,7 @@ export const realUpdateHeaderDisplay = (
   }
 
   const c24 =
-    n24 > 0
-      ? "text-theme-up"
-      : n24 < 0
-        ? "text-theme-down"
-        : "text-theme-text";
+    n24 > 0 ? "text-theme-up" : n24 < 0 ? "text-theme-down" : "text-theme-text";
   const text24 = `${n24 > 0 ? "+" : ""}${Number(n24).toFixed(2)}%`;
 
   if (dom.headChg24hEls) {
@@ -375,13 +466,16 @@ export const realUpdateHeaderDisplay = (
     });
   }
 
-  const cDay =
-    nDay > 0
+  const cDay = isDayNull
+    ? "text-theme-text opacity-40"
+    : nDay > 0
       ? "text-theme-up"
       : nDay < 0
         ? "text-theme-down"
         : "text-theme-text";
-  const textDay = `${nDay > 0 ? "+" : ""}${Number(nDay).toFixed(2)}%`;
+  const textDay = isDayNull
+    ? "-"
+    : `${nDay > 0 ? "+" : ""}${Number(nDay).toFixed(2)}%`;
 
   if (dom.headChgDayEls) {
     dom.headChgDayEls.forEach((el) => {
@@ -413,28 +507,26 @@ export const realUpdateHeaderDisplay = (
     dom.headMcap.textContent = displayMcap;
   }
   // 🚀 [단일 룰북 연동] 좌측(해외) & 우측(국내) 거래량 및 브랜드 색상 연산 (서브 김프 페어링)
-  const {
-    volBFormatted,
-    volUFormatted,
-    volBColorClass,
-    volUColorClass,
-  } = getRowDisplayVolume(
-    row,
-    activeMarket,
-    store.preferredKimchiSub,
-    isKrwMode,
-    rate,
-  );
+  const { volBFormatted, volUFormatted, volBColorClass, volUColorClass } =
+    getRowDisplayVolume(
+      row,
+      activeMarket,
+      store.preferredKimchiSub,
+      isKrwMode,
+      rate,
+    );
 
   if (dom.headVolB) {
-    if (dom.headVolB.textContent !== volBFormatted) dom.headVolB.textContent = volBFormatted;
+    if (dom.headVolB.textContent !== volBFormatted)
+      dom.headVolB.textContent = volBFormatted;
     const baseCls =
       "text-[12px] md:text-[13px] min-[1200px]:text-[13px] font-sans tabular-nums mt-0.5 min-[1200px]:mt-[3px] font-normal text-right min-[1200px]:leading-none";
     dom.headVolB.className = `${baseCls} ${volBColorClass}`;
   }
 
   if (dom.headVolU) {
-    if (dom.headVolU.textContent !== volUFormatted) dom.headVolU.textContent = volUFormatted;
+    if (dom.headVolU.textContent !== volUFormatted)
+      dom.headVolU.textContent = volUFormatted;
     const baseCls =
       "text-[12px] md:text-[13px] min-[1200px]:text-[13px] font-sans tabular-nums mt-0.5 min-[1200px]:mt-[3px] font-normal text-right min-[1200px]:leading-none";
     dom.headVolU.className = `${baseCls} ${volUColorClass}`;
@@ -453,7 +545,12 @@ export function clearHeaderThrottle() {
 }
 window.clearHeaderThrottle = clearHeaderThrottle;
 
-export const updateHeaderDisplay = (row, newPrice, p, isRealtimeStream = false) => {
+export const updateHeaderDisplay = (
+  row,
+  newPrice,
+  p,
+  isRealtimeStream = false,
+) => {
   if (!row || !row.Ticker) return;
   const tKey = row.Ticker;
 
@@ -473,7 +570,13 @@ export const updateHeaderDisplay = (row, newPrice, p, isRealtimeStream = false) 
 
   let state = pooledStateMap.get(tKey);
   if (!state) {
-    state = { row: null, price: undefined, p: undefined, isRealtimeStream: false, caller: "STREAM" };
+    state = {
+      row: null,
+      price: undefined,
+      p: undefined,
+      isRealtimeStream: false,
+      caller: "STREAM",
+    };
     pooledStateMap.set(tKey, state);
   }
 

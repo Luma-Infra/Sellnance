@@ -96,7 +96,8 @@ export function getFilteredData() {
         const nameKR = (r.Name_KR || "").toUpperCase();
 
         if (disp === q || sym === q || raw === q) return 0; // 완전일치 티커
-        if (disp.startsWith(q) || sym.startsWith(q) || raw.startsWith(q)) return 1; // 전방일치 티커
+        if (disp.startsWith(q) || sym.startsWith(q) || raw.startsWith(q))
+          return 1; // 전방일치 티커
         if (disp.includes(q) || sym.includes(q) || raw.includes(q)) return 2; // 부분일치 티커
         if (name.startsWith(q) || nameKR.startsWith(q)) return 3; // 전방일치 코인명
         if (name.includes(q) || nameKR.includes(q)) return 4; // 부분일치 코인명
@@ -112,7 +113,8 @@ export function getFilteredData() {
   // 1. 탭 필터링 (ALL, FAV, FAV2)
   let delistedRows = [];
   if (store.currentTab === "FAV" || store.currentTab === "FAV2") {
-    const favKey = store.currentTab === "FAV" ? "sellnance_favs" : "sellnance_favs2";
+    const favKey =
+      store.currentTab === "FAV" ? "sellnance_favs" : "sellnance_favs2";
     const rawFavs = JSON.parse(localStorage.getItem(favKey) || "[]");
     const favorites = Array.from(new Set(rawFavs.map(String)));
 
@@ -120,11 +122,11 @@ export function getFilteredData() {
     let legacyMeta = {};
     try {
       legacyMeta = JSON.parse(localStorage.getItem("_meta") || "{}");
-    } catch (_) { }
+    } catch (_) {}
     let favMeta = {};
     try {
       favMeta = JSON.parse(localStorage.getItem("sellnance_fav_meta") || "{}");
-    } catch (_) { }
+    } catch (_) {}
     favMeta = { ...legacyMeta, ...favMeta };
 
     (store.currentTableData || []).forEach((d) => {
@@ -158,9 +160,9 @@ export function getFilteredData() {
     // [이스터에그] 즐겨찾기에 남아있으나 현재 상장 폐지된 코인 껍데기(Ghost Row) 생성
     // [상폐 오인 방어] 전체 테이블 데이터가 아직 로드되지 않은 초기/로딩 상태(50개 이하)일 때는 정상 코인을 상폐로 오인하지 않도록 방어
     const allLoadedSource =
-      (store.originalTableData && store.originalTableData.length > 0)
+      store.originalTableData && store.originalTableData.length > 0
         ? store.originalTableData
-        : (store.currentTableData || []);
+        : store.currentTableData || [];
     const allLoadedUids = new Set(allLoadedSource.map((d) => String(d.UID)));
     const totalLoadedCount = allLoadedSource.length;
 
@@ -169,14 +171,18 @@ export function getFilteredData() {
       ? favorites.filter((uid) => !allLoadedUids.has(String(uid)))
       : [];
 
-    const totalFavNormalCount = favorites.filter((uid) => allLoadedUids.has(String(uid))).length;
+    const totalFavNormalCount = favorites.filter((uid) =>
+      allLoadedUids.has(String(uid)),
+    ).length;
 
     delistedRows = delistedUids.map((uid, idx) => {
       const meta = favMeta[uid] || {};
-      const cleanSym = meta.symbol || String(uid)
-        .replace(/^\d+_/, "")
-        .replace(/_(BINANCE|UPBIT|BITHUMB|BYBIT)$/i, "")
-        .toUpperCase();
+      const cleanSym =
+        meta.symbol ||
+        String(uid)
+          .replace(/^\d+_/, "")
+          .replace(/_(BINANCE|UPBIT|BITHUMB|BYBIT)$/i, "")
+          .toUpperCase();
       const realName = meta.name ? `${meta.name}` : `UID : ${uid}`;
       const realNameKR = meta.name_kr || realName;
       const ghostTicker = `DELISTED_${uid}`;
@@ -241,7 +247,8 @@ export function getFilteredData() {
     const mcap = d.MarketCap_Raw || 0;
     if (
       mcap < store.customMcapMin ||
-      mcap > (store.customMcapMax >= 10000000000000 ? Infinity : store.customMcapMax)
+      mcap >
+        (store.customMcapMax >= 10000000000000 ? Infinity : store.customMcapMax)
     ) {
       return false;
     }
@@ -278,7 +285,9 @@ export function getFilteredData() {
 
   if (activeExchFilters.length > 0 || filterMode === "ONLY") {
     const includeFilters = activeExchFilters.filter(([_, state]) => state > 0);
-    const excludeFilters = activeExchFilters.filter(([_, state]) => state === -1);
+    const excludeFilters = activeExchFilters.filter(
+      ([_, state]) => state === -1,
+    );
 
     filteredData = filteredData.filter((row) => {
       const listed = row.Listed_Exchanges || [];
@@ -289,14 +298,26 @@ export function getFilteredData() {
         if (exchId === "UPBIT") return hasUpbit;
         if (exchId === "BITHUMB") return listed.includes("BITHUMB");
         if (exchId === "BINANCE_STOCK") return isStockCoin(row);
-        if (exchId === "BINANCE_SPOT") return (listed.includes("BINANCE_SPOT") || listed.includes("BINANCE")) && !isStockCoin(row);
-        if (exchId === "BINANCE_FUTURES") return listed.includes("BINANCE_FUTURES") && !isStockCoin(row);
-        if (exchId === "BYBIT_SPOT") return listed.includes("BYBIT_SPOT") || listed.includes("BYBIT");
+        if (exchId === "BINANCE_SPOT")
+          return (
+            (listed.includes("BINANCE_SPOT") || listed.includes("BINANCE")) &&
+            !isStockCoin(row)
+          );
+        if (exchId === "BINANCE_FUTURES")
+          return listed.includes("BINANCE_FUTURES") && !isStockCoin(row);
+        if (exchId === "BYBIT_SPOT")
+          return listed.includes("BYBIT_SPOT") || listed.includes("BYBIT");
         if (exchId === "BYBIT_FUTURES") return listed.includes("BYBIT_FUTURES");
-        if (exchId === "OKX_SPOT") return listed.includes("OKX_SPOT") || listed.includes("OKX");
-        if (exchId === "BITGET_SPOT") return listed.includes("BITGET_SPOT") || listed.includes("BITGET");
-        if (exchId === "GATEIO_SPOT") return listed.includes("GATEIO_SPOT") || listed.includes("GATEIO");
-        if (exchId === "COINBASE_SPOT") return listed.includes("COINBASE_SPOT") || listed.includes("COINBASE");
+        if (exchId === "OKX_SPOT")
+          return listed.includes("OKX_SPOT") || listed.includes("OKX");
+        if (exchId === "BITGET_SPOT")
+          return listed.includes("BITGET_SPOT") || listed.includes("BITGET");
+        if (exchId === "GATEIO_SPOT")
+          return listed.includes("GATEIO_SPOT") || listed.includes("GATEIO");
+        if (exchId === "COINBASE_SPOT")
+          return (
+            listed.includes("COINBASE_SPOT") || listed.includes("COINBASE")
+          );
         return listed.includes(exchId);
       });
       if (isExcluded) return false;
@@ -317,22 +338,47 @@ export function getFilteredData() {
           "GATEIO_SPOT",
           "COINBASE_SPOT",
         ];
-        const unselectedExchs = targetExchs.filter(
-          (exId) => !includeFilters.some(([incId]) => incId === exId),
-        );
+        const unselectedExchs = targetExchs.filter((exId) => {
+          if (exId === "BINANCE_ALPHA") {
+            return !includeFilters.some(
+              ([incId, incState]) =>
+                incId === "BINANCE_ALPHA" ||
+                (incId === "BINANCE_SPOT" && incState === 2),
+            );
+          }
+          if (exId === "BINANCE_SPOT") {
+            return !includeFilters.some(
+              ([incId, incState]) => incId === "BINANCE_SPOT" && incState === 1,
+            );
+          }
+          return !includeFilters.some(([incId]) => incId === exId);
+        });
 
         const hasUnselectedExch = unselectedExchs.some((exchId) => {
           if (exchId === "UPBIT") return hasUpbit;
           if (exchId === "BITHUMB") return listed.includes("BITHUMB");
           if (exchId === "BINANCE_STOCK") return isStockCoin(row);
-          if (exchId === "BINANCE_SPOT") return (listed.includes("BINANCE_SPOT") || listed.includes("BINANCE")) && !isStockCoin(row);
-          if (exchId === "BINANCE_FUTURES") return listed.includes("BINANCE_FUTURES") && !isStockCoin(row);
-          if (exchId === "BYBIT_SPOT") return listed.includes("BYBIT_SPOT") || listed.includes("BYBIT");
-          if (exchId === "BYBIT_FUTURES") return listed.includes("BYBIT_FUTURES");
-          if (exchId === "OKX_SPOT") return listed.includes("OKX_SPOT") || listed.includes("OKX");
-          if (exchId === "BITGET_SPOT") return listed.includes("BITGET_SPOT") || listed.includes("BITGET");
-          if (exchId === "GATEIO_SPOT") return listed.includes("GATEIO_SPOT") || listed.includes("GATEIO");
-          if (exchId === "COINBASE_SPOT") return listed.includes("COINBASE_SPOT") || listed.includes("COINBASE");
+          if (exchId === "BINANCE_SPOT")
+            return (
+              (listed.includes("BINANCE_SPOT") || listed.includes("BINANCE")) &&
+              !isStockCoin(row)
+            );
+          if (exchId === "BINANCE_FUTURES")
+            return listed.includes("BINANCE_FUTURES") && !isStockCoin(row);
+          if (exchId === "BYBIT_SPOT")
+            return listed.includes("BYBIT_SPOT") || listed.includes("BYBIT");
+          if (exchId === "BYBIT_FUTURES")
+            return listed.includes("BYBIT_FUTURES");
+          if (exchId === "OKX_SPOT")
+            return listed.includes("OKX_SPOT") || listed.includes("OKX");
+          if (exchId === "BITGET_SPOT")
+            return listed.includes("BITGET_SPOT") || listed.includes("BITGET");
+          if (exchId === "GATEIO_SPOT")
+            return listed.includes("GATEIO_SPOT") || listed.includes("GATEIO");
+          if (exchId === "COINBASE_SPOT")
+            return (
+              listed.includes("COINBASE_SPOT") || listed.includes("COINBASE")
+            );
           return listed.includes(exchId);
         });
         if (hasUnselectedExch) return false;
@@ -341,16 +387,51 @@ export function getFilteredData() {
       // [C] 포함(Include) 필터 검사
       if (includeFilters.length > 0) {
         const checkMatch = ([exchId, state]) => {
-          if (exchId === "BINANCE_SPOT") return (listed.includes("BINANCE_SPOT") || listed.includes("BINANCE")) && !isStockCoin(row);
-          if (exchId === "BINANCE_FUTURES") return listed.includes("BINANCE_FUTURES") && !isStockCoin(row);
-          if (exchId === "BINANCE_ALPHA") return listed.includes("BINANCE_ALPHA") || row.Binance_Alpha === "O";
+          if (exchId === "BINANCE_SPOT") {
+            if (state === 2) {
+              return (
+                row.Binance_Futures !== "O" &&
+                !row.is_futures &&
+                (listed.includes("BINANCE_ALPHA") ||
+                  row.Binance_Alpha === "O" ||
+                  Boolean(row.is_alpha))
+              );
+            }
+            return (
+              (listed.includes("BINANCE_SPOT") || listed.includes("BINANCE")) &&
+              !isStockCoin(row)
+            );
+          }
+          if (exchId === "BINANCE_FUTURES")
+            return (
+              (listed.includes("BINANCE_FUTURES") ||
+                row.Binance_Futures === "O") &&
+              !isStockCoin(row)
+            );
+          if (exchId === "BINANCE_ALPHA")
+            return (
+              row.Binance_Futures !== "O" &&
+              !row.is_futures &&
+              (listed.includes("BINANCE_ALPHA") ||
+                row.Binance_Alpha === "O" ||
+                Boolean(row.is_alpha))
+            );
+
           if (exchId === "BINANCE_STOCK") return isStockCoin(row);
-          if (exchId === "BYBIT_SPOT") return listed.includes("BYBIT_SPOT") || listed.includes("BYBIT");
-          if (exchId === "BYBIT_FUTURES") return listed.includes("BYBIT_FUTURES");
-          if (exchId === "OKX_SPOT") return listed.includes("OKX_SPOT") || listed.includes("OKX");
-          if (exchId === "BITGET_SPOT") return listed.includes("BITGET_SPOT") || listed.includes("BITGET");
-          if (exchId === "GATEIO_SPOT") return listed.includes("GATEIO_SPOT") || listed.includes("GATEIO");
-          if (exchId === "COINBASE_SPOT") return listed.includes("COINBASE_SPOT") || listed.includes("COINBASE");
+          if (exchId === "BYBIT_SPOT")
+            return listed.includes("BYBIT_SPOT") || listed.includes("BYBIT");
+          if (exchId === "BYBIT_FUTURES")
+            return listed.includes("BYBIT_FUTURES");
+          if (exchId === "OKX_SPOT")
+            return listed.includes("OKX_SPOT") || listed.includes("OKX");
+          if (exchId === "BITGET_SPOT")
+            return listed.includes("BITGET_SPOT") || listed.includes("BITGET");
+          if (exchId === "GATEIO_SPOT")
+            return listed.includes("GATEIO_SPOT") || listed.includes("GATEIO");
+          if (exchId === "COINBASE_SPOT")
+            return (
+              listed.includes("COINBASE_SPOT") || listed.includes("COINBASE")
+            );
           if (exchId === "UPBIT") return hasUpbit;
           if (exchId === "BITHUMB") return listed.includes("BITHUMB");
           return listed.includes(exchId);
@@ -371,12 +452,13 @@ export function getFilteredData() {
     });
   }
 
-  let finalResult = delistedRows.length > 0
-    ? [...filteredData, ...delistedRows]
-    : filteredData;
+  let finalResult =
+    delistedRows.length > 0 ? [...filteredData, ...delistedRows] : filteredData;
 
   // 테스트 코인은 항상 테이블 맨 위에 고정
-  const testRowIdx = finalResult.findIndex((r) => r.Ticker === "SELLNANCE" || r._isTestRow);
+  const testRowIdx = finalResult.findIndex(
+    (r) => r.Ticker === "SELLNANCE" || r._isTestRow,
+  );
   if (testRowIdx > 0) {
     const [testRow] = finalResult.splice(testRowIdx, 1);
     finalResult.unshift(testRow);
@@ -447,11 +529,7 @@ export function restoreControlPanelUI() {
         "shadow-md",
         "opacity-100",
       );
-      btn.classList.add(
-        "text-theme-text",
-        "opacity-50",
-        "border-theme-border",
-      );
+      btn.classList.add("text-theme-text", "opacity-50", "border-theme-border");
     }
     btn.innerHTML = `<svg class="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg><span>Mcap &lt; 1M</span>`;
   });
@@ -634,8 +712,12 @@ export function switchFilter(mode) {
 
 export function switchView(mode) {
   store.viewMode = mode;
-  const detailedBtn = document.getElementById("view-detailed") || document.getElementById("view-mode-basic-btn");
-  const simpleBtn = document.getElementById("view-simple") || document.getElementById("view-mode-simple-btn");
+  const detailedBtn =
+    document.getElementById("view-detailed") ||
+    document.getElementById("view-mode-basic-btn");
+  const simpleBtn =
+    document.getElementById("view-simple") ||
+    document.getElementById("view-mode-simple-btn");
 
   if (detailedBtn) {
     detailedBtn.className =
@@ -741,8 +823,12 @@ export function toggleSmallCap() {
 }
 
 export function updateFavoritesCount() {
-  const f1Set = new Set(JSON.parse(localStorage.getItem("sellnance_favs") || "[]"));
-  const f2Set = new Set(JSON.parse(localStorage.getItem("sellnance_favs2") || "[]"));
+  const f1Set = new Set(
+    JSON.parse(localStorage.getItem("sellnance_favs") || "[]"),
+  );
+  const f2Set = new Set(
+    JSON.parse(localStorage.getItem("sellnance_favs2") || "[]"),
+  );
 
   if (store && store.pendingFavActions && store.pendingFavActions.size > 0) {
     store.pendingFavActions.forEach((action, uid) => {
@@ -760,8 +846,14 @@ export function updateFavoritesCount() {
   const f2 = f2Set.size;
   const tabFav = document.getElementById("tab-fav");
   const tabFav2 = document.getElementById("tab-fav2");
-  if (tabFav) tabFav.innerHTML = `<span style="color: #e3b30a; margin-right: 2px">★</span>` + (f1 > 0 ? `FAV 1 (${f1})` : "FAV 1");
-  if (tabFav2) tabFav2.innerHTML = `<span style="color: #3b82f6; margin-right: 2px">★</span>` + (f2 > 0 ? `FAV 2 (${f2})` : "FAV 2");
+  if (tabFav)
+    tabFav.innerHTML =
+      `<span style="color: #e3b30a; margin-right: 2px">★</span>` +
+      (f1 > 0 ? `FAV 1 (${f1})` : "FAV 1");
+  if (tabFav2)
+    tabFav2.innerHTML =
+      `<span style="color: #3b82f6; margin-right: 2px">★</span>` +
+      (f2 > 0 ? `FAV 2 (${f2})` : "FAV 2");
 }
 
 // ==========================================

@@ -13,10 +13,18 @@ export function toggleExchFilter(exchId, event) {
 
   const current = store.exchFilterStates[exchId] || 0;
 
-  // 모든 버튼은 동일하게 해제(0) -> 포함(1) -> 제외(-1) -> 해제(0)
-  if (current === 0) store.exchFilterStates[exchId] = 1;
-  else if (current === 1) store.exchFilterStates[exchId] = -1;
-  else store.exchFilterStates[exchId] = 0;
+  // 🚀 B-SPOT 버튼은 4단계 순환: 해제(0) -> 현물(1) -> 알파(2) -> 제외(-1) -> 해제(0)
+  if (exchId === "BINANCE_SPOT") {
+    if (current === 0) store.exchFilterStates[exchId] = 1;
+    else if (current === 1) store.exchFilterStates[exchId] = 2;
+    else if (current === 2) store.exchFilterStates[exchId] = -1;
+    else store.exchFilterStates[exchId] = 0;
+  } else {
+    // 모든 일반 버튼은 동일하게 해제(0) -> 포함(1) -> 제외(-1) -> 해제(0)
+    if (current === 0) store.exchFilterStates[exchId] = 1;
+    else if (current === 1) store.exchFilterStates[exchId] = -1;
+    else store.exchFilterStates[exchId] = 0;
+  }
 
   // 렌더러 리밋 초기화 후 테이블 갱신
   store.currentRenderLimit = 1000;
@@ -30,13 +38,14 @@ export function toggleExchFilter(exchId, event) {
 // 🚀 상단 거래소 필터바 및 프리셋 상태 표시 업데이트
 export function updateExchFilterUI() {
   const mainContainer = document.getElementById("exchange-filter-container");
-  const customContainer = document.getElementById("custom-exchange-filter-container");
+  const customContainer = document.getElementById(
+    "custom-exchange-filter-container",
+  );
   if (!mainContainer && !customContainer) return;
 
   const list = [
     { id: "BINANCE_SPOT", cmcId: 270, label: "S", name: "B-SPOT" },
     { id: "BINANCE_FUTURES", cmcId: 270, label: "F", name: "B-FUT" },
-    { id: "BINANCE_ALPHA", cmcId: 270, label: "α", name: "B-ALPHA" },
     { id: "BINANCE_STOCK", cmcId: 270, label: "ST", name: "B-STOCK" },
     { id: "UPBIT", cmcId: 351, name: "UPBIT" },
     { id: "BITHUMB", cmcId: 200, name: "BITHUMB" },
@@ -54,11 +63,14 @@ export function updateExchFilterUI() {
 
   let modeBtnClass = "bg-theme-panel/10 border-theme-border/30 text-theme-text";
   if (currentMode === "AND") {
-    modeBtnClass = "bg-theme-accent/20 border-theme-accent text-theme-accent font-bold";
+    modeBtnClass =
+      "bg-theme-accent/20 border-theme-accent text-theme-accent font-bold";
   } else if (currentMode === "OR") {
-    modeBtnClass = "bg-green-500/10 border-green-500/50 text-green-400 font-bold";
+    modeBtnClass =
+      "bg-green-500/10 border-green-500/50 text-green-400 font-bold";
   } else if (currentMode === "ONLY") {
-    modeBtnClass = "bg-orange-500/25 border-orange-500/80 text-orange-400 font-bold";
+    modeBtnClass =
+      "bg-orange-500/25 border-orange-500/80 text-orange-400 font-bold";
   }
 
   // 1️⃣ [PC 상단 메인 필터바 (#exchange-filter-container)] - 스크롤 원천 차단 & 1줄 균등/쾌적 배치
@@ -90,7 +102,13 @@ export function updateExchFilterUI() {
 
         if (state === 1) {
           borderStyle = "border-theme-accent";
-          bgStyle = "background: color-mix(in srgb, var(--accent) 12%, transparent);";
+          bgStyle =
+            "background: color-mix(in srgb, var(--accent) 12%, transparent);";
+          filterStyle = "filter: none; opacity: 1;";
+        } else if (state === 2) {
+          borderStyle =
+            "border-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.35)]";
+          bgStyle = "background: rgba(168, 85, 247, 0.15);";
           filterStyle = "filter: none; opacity: 1;";
         } else if (state === -1) {
           borderStyle = "border-theme-down";
@@ -101,12 +119,23 @@ export function updateExchFilterUI() {
         let stateBadge = "";
         if (state === 1) {
           stateBadge = `<div class="absolute -top-1 -right-1 bg-green-500 text-white text-[8px] w-3 h-3 flex items-center justify-center rounded-full leading-none font-bold scale-[0.85] shadow-sm">✓</div>`;
+        } else if (state === 2) {
+          stateBadge = `<div class="absolute -top-1 -right-1 bg-purple-600 text-white text-[8px] w-3 h-3 flex items-center justify-center rounded-full leading-none font-bold scale-[0.85] shadow-sm">α</div>`;
         } else if (state === -1) {
           stateBadge = `<div class="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] w-3 h-3 flex items-center justify-center rounded-full leading-none font-bold scale-[0.85] shadow-sm">✕</div>`;
         }
 
         let typeBadge = "";
-        if (ex.id === "BINANCE_SPOT" || ex.id === "BYBIT_SPOT") {
+        if (ex.id === "BINANCE_SPOT" && state === 2) {
+          typeBadge = `<div class="absolute -bottom-1 -right-1 bg-purple-600 text-white text-[8px] px-0.5 rounded leading-none font-black shadow-sm">α</div>`;
+        } else if (
+          ex.id === "BINANCE_SPOT" ||
+          ex.id === "BYBIT_SPOT" ||
+          ex.id === "OKX_SPOT" ||
+          ex.id === "BITGET_SPOT" ||
+          ex.id === "GATEIO_SPOT" ||
+          ex.id === "COINBASE_SPOT"
+        ) {
           typeBadge = `<div class="absolute -bottom-1 -right-1 bg-gray-600 text-white text-[8px] px-0.5 rounded leading-none font-black shadow-sm">S</div>`;
         } else if (ex.id === "BINANCE_FUTURES" || ex.id === "BYBIT_FUTURES") {
           typeBadge = `<div class="absolute -bottom-1 -right-1 bg-[#f0b90b] text-black text-[8px] px-0.5 rounded leading-none font-black shadow-sm">F</div>`;
@@ -116,15 +145,26 @@ export function updateExchFilterUI() {
           typeBadge = `<div class="absolute -bottom-1 -right-1 bg-blue-600 text-white text-[8px] px-0.5 rounded leading-none font-black shadow-sm">ST</div>`;
         }
 
+        let titleText = ex.name || ex.id;
+        if (ex.id === "BINANCE_SPOT") {
+          if (state === 1) titleText = "B-SPOT (바이낸스 현물)";
+          else if (state === 2) titleText = "B-ALPHA (바이낸스 알파)";
+        } else if (ex.id.endsWith("_SPOT")) {
+          titleText = `${ex.name || ex.id} (현물)`;
+        } else if (ex.id.endsWith("_FUTURES")) {
+          titleText = `${ex.name || ex.id} (선물)`;
+        }
+
         const imgUrl = getExchangeLogo(ex.cmcId);
-        const imgStyle = ex.id === "BINANCE_STOCK" ? "filter: hue-rotate(180deg);" : "";
+        const imgStyle =
+          ex.id === "BINANCE_STOCK" ? "filter: hue-rotate(180deg);" : "";
 
         return `
         <button onclick="window.toggleExchFilter('${ex.id}', event)" 
                 oncontextmenu="event.preventDefault(); window.toggleExchExclude('${ex.id}');"
                 class="relative flex items-center justify-center p-1 border rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 shrink-0 ${borderStyle}"
-                style="width: 34px; min-width: 34px; max-width: 34px; height: 34px; ${bgStyle} ${filterStyle}" title="${ex.name || ex.id} (클릭: 순환 토글 / 우클릭: 제외 토글)">
-          <img src="${imgUrl}" alt="${ex.name || ex.id}" class="w-full h-full object-contain rounded" style="${imgStyle}" />
+                style="width: 34px; min-width: 34px; max-width: 34px; height: 34px; ${bgStyle} ${filterStyle}" title="${titleText} (클릭: 순환 토글 / 우클릭: 제외 토글)">
+          <img src="${imgUrl}" alt="${titleText}" class="w-full h-full object-contain rounded" style="${imgStyle}" />
           ${stateBadge}
           ${typeBadge}
         </button>
@@ -163,7 +203,13 @@ export function updateExchFilterUI() {
 
         if (state === 1) {
           borderStyle = "border-theme-accent";
-          bgStyle = "background: color-mix(in srgb, var(--accent) 12%, transparent);";
+          bgStyle =
+            "background: color-mix(in srgb, var(--accent) 12%, transparent);";
+          filterStyle = "filter: none; opacity: 1;";
+        } else if (state === 2) {
+          borderStyle =
+            "border-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.35)]";
+          bgStyle = "background: rgba(168, 85, 247, 0.15);";
           filterStyle = "filter: none; opacity: 1;";
         } else if (state === -1) {
           borderStyle = "border-theme-down";
@@ -174,12 +220,23 @@ export function updateExchFilterUI() {
         let stateBadge = "";
         if (state === 1) {
           stateBadge = `<div class="absolute -top-1 -right-1 bg-green-500 text-white text-[8px] w-3 h-3 flex items-center justify-center rounded-full leading-none font-bold scale-[0.85] shadow-sm">✓</div>`;
+        } else if (state === 2) {
+          stateBadge = `<div class="absolute -top-1 -right-1 bg-purple-600 text-white text-[8px] w-3 h-3 flex items-center justify-center rounded-full leading-none font-bold scale-[0.85] shadow-sm">α</div>`;
         } else if (state === -1) {
           stateBadge = `<div class="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] w-3 h-3 flex items-center justify-center rounded-full leading-none font-bold scale-[0.85] shadow-sm">✕</div>`;
         }
 
         let typeBadge = "";
-        if (ex.id === "BINANCE_SPOT" || ex.id === "BYBIT_SPOT") {
+        if (ex.id === "BINANCE_SPOT" && state === 2) {
+          typeBadge = `<div class="absolute -bottom-1 -right-1 bg-purple-600 text-white text-[8px] px-0.5 rounded leading-none font-black shadow-sm">α</div>`;
+        } else if (
+          ex.id === "BINANCE_SPOT" ||
+          ex.id === "BYBIT_SPOT" ||
+          ex.id === "OKX_SPOT" ||
+          ex.id === "BITGET_SPOT" ||
+          ex.id === "GATEIO_SPOT" ||
+          ex.id === "COINBASE_SPOT"
+        ) {
           typeBadge = `<div class="absolute -bottom-1 -right-1 bg-gray-600 text-white text-[8px] px-0.5 rounded leading-none font-black shadow-sm">S</div>`;
         } else if (ex.id === "BINANCE_FUTURES" || ex.id === "BYBIT_FUTURES") {
           typeBadge = `<div class="absolute -bottom-1 -right-1 bg-[#f0b90b] text-black text-[8px] px-0.5 rounded leading-none font-black shadow-sm">F</div>`;
@@ -189,15 +246,26 @@ export function updateExchFilterUI() {
           typeBadge = `<div class="absolute -bottom-1 -right-1 bg-blue-600 text-white text-[8px] px-0.5 rounded leading-none font-black shadow-sm">ST</div>`;
         }
 
+        let titleText = ex.name || ex.id;
+        if (ex.id === "BINANCE_SPOT") {
+          if (state === 1) titleText = "B-SPOT (바이낸스 현물)";
+          else if (state === 2) titleText = "B-ALPHA (바이낸스 알파)";
+        } else if (ex.id.endsWith("_SPOT")) {
+          titleText = `${ex.name || ex.id} (현물)`;
+        } else if (ex.id.endsWith("_FUTURES")) {
+          titleText = `${ex.name || ex.id} (선물)`;
+        }
+
         const imgUrl = getExchangeLogo(ex.cmcId);
-        const imgStyle = ex.id === "BINANCE_STOCK" ? "filter: hue-rotate(180deg);" : "";
+        const imgStyle =
+          ex.id === "BINANCE_STOCK" ? "filter: hue-rotate(180deg);" : "";
 
         return `
         <button onclick="window.toggleExchFilter('${ex.id}', event)" 
                 oncontextmenu="event.preventDefault(); window.toggleExchExclude('${ex.id}');"
                 class="relative flex items-center justify-center p-1.5 border rounded-xl transition-all duration-300 w-full h-9 hover:scale-105 active:scale-95 shrink-0 col-span-1 ${borderStyle}"
-                style="${bgStyle} ${filterStyle}" title="${ex.name || ex.id} (클릭: 순환 토글 / 우클릭: 제외 토글)">
-          <img src="${imgUrl}" alt="${ex.name || ex.id}" class="w-full h-full object-contain rounded" style="${imgStyle}" />
+                style="${bgStyle} ${filterStyle}" title="${titleText} (클릭: 순환 토글 / 우클릭: 제외 토글)">
+          <img src="${imgUrl}" alt="${titleText}" class="w-full h-full object-contain rounded" style="${imgStyle}" />
           ${stateBadge}
           ${typeBadge}
         </button>
@@ -205,7 +273,8 @@ export function updateExchFilterUI() {
       })
       .join("");
 
-    customContainer.innerHTML = mobButtonsHtml + mobModeToggleHtml + mobResetBtnHtml;
+    customContainer.innerHTML =
+      mobButtonsHtml + mobModeToggleHtml + mobResetBtnHtml;
   }
 
   // 🚀 아랫줄의 #exchange-presets-container 프리셋 제어바 렌더링
@@ -268,8 +337,12 @@ export function updateExchFilterUI() {
       })
       .join("");
 
-    const pcPresetsContainer = document.getElementById("exchange-presets-container");
-    const mobPresetsContainer = document.getElementById("custom-exchange-presets-container");
+    const pcPresetsContainer = document.getElementById(
+      "exchange-presets-container",
+    );
+    const mobPresetsContainer = document.getElementById(
+      "custom-exchange-presets-container",
+    );
 
     const isPresetActive = store.activePresetIndex !== undefined;
     const currentPresetNum = (store.activePresetIndex ?? 0) + 1;
@@ -299,12 +372,12 @@ export function updateExchFilterUI() {
       </div>
     `;
 
-    const isSandboxOn = typeof window.isSandboxActive === "function" && window.isSandboxActive();
+    const isSandboxOn =
+      typeof window.isSandboxActive === "function" && window.isSandboxActive();
     const sandboxBtnHtml = `
-      <button onclick="window.toggleSandboxMode()" 
-              class="flex items-center gap-1 px-2 py-0.5 border rounded-md text-[10px] font-bold transition-all duration-200 shrink-0 cursor-pointer active:scale-95 ml-auto ${isSandboxOn ? "bg-purple-600/30 border-purple-500 text-purple-300 ring-1 ring-purple-500/50 shadow-sm" : "border-theme-border/50 text-theme-text/70 bg-theme-panel/20 hover:border-purple-500/60 hover:text-purple-300"}"
-              title="9대 거래소 + 바이낸스 알파 4,365개 전수조사 샌드박스 ON/OFF">
-        <span>🧪</span><span>${isSandboxOn ? "샌드박스 ON" : "샌드박스 전수"}</span>
+      <button id="sandbox-toggle-btn" onclick="window.toggleSandboxMode()" 
+              class="hidden" style="display: none !important;"
+              title="샌드박스">
       </button>
     `;
 
@@ -393,7 +466,8 @@ export function selectExchPreset(index) {
     store.currentRenderLimit = 1000;
     if (typeof renderTable === "function") renderTable();
     updateExchFilterUI();
-    if (typeof saveControlPanelSession === "function") saveControlPanelSession();
+    if (typeof saveControlPanelSession === "function")
+      saveControlPanelSession();
     return;
   }
 

@@ -134,6 +134,10 @@
   "ADXUSDT": {
     "binance_listing": "2025-01-17"
   },
+  "AEON": {
+    "bithumb_listing": "2026-07-29",
+    "binance_listing": "2026-07-27"
+  },
   "AERGO": {
     "binance_listing": "2025-04-16"
   },
@@ -492,6 +496,9 @@
   },
   "AVAAIUSDT": {
     "binance_listing": "2025-01-17"
+  },
+  "AVAIL": {
+    "binance_listing": "2024-07-22"
   },
   "AVAUSDT": {
     "binance_listing": "2025-01-19"
@@ -998,6 +1005,9 @@
   "CGPTUSDT": {
     "binance_listing": "2024-12-16"
   },
+  "CHECK": {
+    "bithumb_listing": "2026-07-22"
+  },
   "CHEEMSUSDT": {
     "binance_listing": "2025-01-25"
   },
@@ -1175,7 +1185,7 @@
     "binance_listing": "2026-04-28"
   },
   "CUDIS": {
-    "binance_listing": "2025-08-20"
+    "binance_listing": "2025-06-05"
   },
   "CUSDT": {
     "binance_listing": "2025-07-01"
@@ -1230,6 +1240,10 @@
   "DCRUSDT": {
     "binance_listing": "2026-05-31"
   },
+  "DEBIT": {
+    "binance_listing": "2026-08-26",
+    "bithumb_listing": "2026-09-10"
+  },
   "DEEP": {
     "binance_listing": "2025-04-22"
   },
@@ -1240,7 +1254,7 @@
     "binance_listing": "2019-09-25"
   },
   "DEGEN": {
-    "binance_listing": "2024-11-15"
+    "binance_listing": "2023-04-17"
   },
   "DEGO": {
     "binance_listing": "2024-12-13"
@@ -1686,7 +1700,7 @@
     "binance_listing": "2024-08-12"
   },
   "GAIB": {
-    "binance_listing": "2025-11-20"
+    "binance_listing": "2025-11-19"
   },
   "GALA": {
     "binance_listing": "2021-09-17"
@@ -2226,6 +2240,9 @@
   "KGSTUSDT": {
     "binance_listing": "2025-12-24"
   },
+  "KII": {
+    "binance_listing": "2026-08-14"
+  },
   "KITE": {
     "binance_listing": "2025-10-29"
   },
@@ -2247,6 +2264,9 @@
   },
   "KNCUSDT": {
     "binance_listing": "2026-03-19"
+  },
+  "KO": {
+    "binance_listing": "2026-08-06"
   },
   "KOMA": {
     "binance_listing": "2024-12-10"
@@ -2625,6 +2645,9 @@
   "MOVRUSDT": {
     "binance_listing": "2023-12-26"
   },
+  "MPLX": {
+    "binance_listing": "2022-09-19"
+  },
   "MRVL": {
     "binance_listing": "2026-05-15"
   },
@@ -2726,7 +2749,8 @@
     "binance_listing": "2025-06-19"
   },
   "NEX": {
-    "bithumb_listing": "2026-08-23"
+    "bithumb_listing": "2026-08-23",
+    "binance_listing": "2026-05-18"
   },
   "NEXOUSDT": {
     "binance_listing": "2026-05-10"
@@ -2736,6 +2760,9 @@
   },
   "NFPUSDT": {
     "binance_listing": "2023-12-01"
+  },
+  "NFT": {
+    "binance_listing": "2025-05-04"
   },
   "NIGHT": {
     "binance_listing": "2025-12-10"
@@ -2801,6 +2828,11 @@
   },
   "OBOL": {
     "binance_listing": "2025-05-07"
+  },
+  "OBT": {
+    "bithumb_listing": "2025-03-14",
+    "bybit_listing": "2025-01-20",
+    "binance_listing": "2021-11-08"
   },
   "OCEAN": {
     "binance_listing": "2019-09-25"
@@ -2938,6 +2970,10 @@
   },
   "PAYPUSDT": {
     "binance_listing": "2026-03-23"
+  },
+  "PEAQ": {
+    "bithumb_listing": "2025-01-02",
+    "binance_listing": "2025-05-04"
   },
   "PENDLE": {
     "binance_listing": "2023-07-28"
@@ -3334,11 +3370,14 @@
     "binance_listing": "2026-04-28"
   },
   "RLS": {
-    "binance_listing": "2025-12-02"
+    "binance_listing": "2025-12-01"
   },
   "RLUSD": {
     "binance_listing": "2026-01-22",
     "upbit_listing": "2026-07-28"
+  },
+  "RNBW": {
+    "binance_listing": "2026-02-05"
   },
   "ROBO": {
     "binance_listing": "2026-02-23",
@@ -3637,6 +3676,9 @@
   "SOXLUSDT": {
     "binance_listing": "2026-05-15"
   },
+  "SPA": {
+    "binance_listing": "2020-08-24"
+  },
   "SPACE": {
     "binance_listing": "2026-01-23"
   },
@@ -3784,6 +3826,9 @@
   },
   "SUN": {
     "binance_listing": "2024-08-22"
+  },
+  "SUNDOG": {
+    "binance_listing": "2025-05-04"
   },
   "SUNUSDT": {
     "binance_listing": "2025-01-14"
@@ -4068,6 +4113,9 @@
   "TWTUSDT": {
     "binance_listing": "2025-01-18"
   },
+  "U": {
+    "binance_listing": "2026-01-12"
+  },
   "UAI": {
     "binance_listing": "2025-11-01"
   },
@@ -4098,6 +4146,10 @@
   "UNIUSDT": {
     "binance_listing": "2025-01-14"
   },
+  "UP": {
+    "binance_listing": "2023-12-18",
+    "upbit_listing": "2026-05-13"
+  },
   "UP2": {
     "upbit_listing": "2026-05-01",
     "bithumb_listing": "2026-05-13"
@@ -4116,6 +4168,9 @@
   },
   "USDCUSDT": {
     "binance_listing": "2025-01-19"
+  },
+  "USDS": {
+    "binance_listing": "2026-04-06"
   },
   "USDT": {
     "upbit_listing": "2024-06-03"
@@ -4292,6 +4347,9 @@
   },
   "WMTUSDT": {
     "binance_listing": "2026-05-18"
+  },
+  "WMTX": {
+    "binance_listing": "2021-12-20"
   },
   "WOO": {
     "binance_listing": "2022-04-07"
@@ -4517,7 +4575,7 @@
     "binance_listing": "2025-07-21"
   },
   "ZRC": {
-    "binance_listing": "2025-07-29"
+    "binance_listing": "2024-11-04"
   },
   "ZRO": {
     "binance_listing": "2024-06-20"

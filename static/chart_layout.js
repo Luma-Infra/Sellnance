@@ -127,11 +127,17 @@ export function applyChartLayout() {
                 if (store.chart) {
                   const r = store.chart.timeScale().getVisibleLogicalRange();
                   if (r) {
-                    try { store.chartVol.timeScale().setVisibleLogicalRange(r); } catch (e) {}
+                    try {
+                      store.chartVol.timeScale().setVisibleLogicalRange(r);
+                    } catch (e) {}
                   }
                 }
                 if (!store.isVolPriceScaleUserZoomed) {
-                  try { store.chartVol.priceScale("right").applyOptions({ autoScale: true }); } catch (e) {}
+                  try {
+                    store.chartVol
+                      .priceScale("right")
+                      .applyOptions({ autoScale: true });
+                  } catch (e) {}
                 }
               }
             }
@@ -147,11 +153,17 @@ export function applyChartLayout() {
           if (store.chart) {
             const r = store.chart.timeScale().getVisibleLogicalRange();
             if (r) {
-              try { store.chartVol.timeScale().setVisibleLogicalRange(r); } catch (e) {}
+              try {
+                store.chartVol.timeScale().setVisibleLogicalRange(r);
+              } catch (e) {}
             }
           }
           if (!store.isVolPriceScaleUserZoomed) {
-            try { store.chartVol.priceScale("right").applyOptions({ autoScale: true }); } catch (e) {}
+            try {
+              store.chartVol
+                .priceScale("right")
+                .applyOptions({ autoScale: true });
+            } catch (e) {}
           }
         }
       }
@@ -210,11 +222,15 @@ export function initResizers() {
     handleDragMove(e.clientY);
   });
 
-  window.addEventListener("touchmove", (e) => {
-    if (isDraggingResizer && e.touches && e.touches.length > 0) {
-      handleDragMove(e.touches[0].clientY);
-    }
-  }, { passive: true });
+  window.addEventListener(
+    "touchmove",
+    (e) => {
+      if (isDraggingResizer && e.touches && e.touches.length > 0) {
+        handleDragMove(e.touches[0].clientY);
+      }
+    },
+    { passive: true },
+  );
 
   const endDrag = () => {
     if (isDraggingResizer) {
@@ -222,9 +238,12 @@ export function initResizers() {
       document.body.style.cursor = "default";
       try {
         if (store.chartSplits?.s1) {
-          localStorage.setItem("sellnance_chart_split_s1", String(store.chartSplits.s1));
+          localStorage.setItem(
+            "sellnance_chart_split_s1",
+            String(store.chartSplits.s1),
+          );
         }
-      } catch (e) { }
+      } catch (e) {}
     }
   };
 

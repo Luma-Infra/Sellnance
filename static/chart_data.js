@@ -58,9 +58,41 @@ export async function fetchCandlesSmart(
   if (!isGapRecovery && !toVal && !startVal && !isUpbitDirectBlocked) {
     try {
       let directUrl = null;
-      if (exchange === "binance_spot") {
+      const cleanSymbol = symbol
+        .replace("USDT", "")
+        .replace("KRW-", "")
+        .replace("_KRW", "")
+        .split("(")[0]
+        .toUpperCase();
+      const isAlphaCoin = Boolean(
+        store.currentTableData?.some(
+          (c) =>
+            (c.Symbol?.toUpperCase() === cleanSymbol ||
+              c.Ticker?.toUpperCase() === `${cleanSymbol}USDT` ||
+              c.Exact_Spot?.toUpperCase() === cleanSymbol) &&
+            (c.Binance_Alpha === "O" ||
+              c.is_alpha ||
+              c.Listed_Exchanges?.includes("BINANCE_ALPHA")) &&
+            c.Binance_Futures !== "O" &&
+            !c.is_futures,
+        ),
+      );
+
+      const isBinanceFuturesCoin = Boolean(
+        store.currentTableData?.some(
+          (c) =>
+            (c.Symbol?.toUpperCase() === cleanSymbol ||
+              c.Ticker?.toUpperCase() === `${cleanSymbol}USDT` ||
+              c.Exact_Futures?.toUpperCase() === cleanSymbol) &&
+            (c.Binance_Futures === "O" ||
+              c.is_futures ||
+              c.Listed_Exchanges?.includes("BINANCE_FUTURES")),
+        ),
+      );
+
+      if (exchange === "binance_spot" && !isAlphaCoin) {
         directUrl = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
-      } else if (exchange === "binance_futures") {
+      } else if (exchange === "binance_futures" && !isAlphaCoin && isBinanceFuturesCoin) {
         directUrl = `https://fapi.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
       } else if (exchange === "bybit_spot" || exchange === "bybit_futures") {
         const category = exchange === "bybit_spot" ? "spot" : "linear";
@@ -87,7 +119,8 @@ export async function fetchCandlesSmart(
 
       if (directUrl) {
         const fetchSignal =
-          typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function"
+          typeof AbortSignal !== "undefined" &&
+          typeof AbortSignal.timeout === "function"
             ? AbortSignal.timeout(500)
             : undefined;
         const res = await fetch(directUrl, { signal: fetchSignal });
@@ -119,8 +152,12 @@ export async function fetchCandlesSmart(
             store._upbitDirectBlockUntil = Date.now() + 30000;
           }
         } else if (res.status === 404 || res.status === 400) {
-          // 🚀 거래소 API에서 404/400 (심볼/마켓 없음) 반환 시 백엔드 프록시로 재요청하는 낭비/지연 원천 차단
-          return [];
+          // 바이낸스 현물 400 에러(마켓 미상장)는 알파 코인 트레이딩뷰 백엔드 서빙을 위해 서버 프록시로 통과
+          if (exchange === "binance_spot") {
+            // pass through to server proxy fallback
+          } else {
+            return [];
+          }
         }
       }
     } catch (err) {
@@ -140,6 +177,23 @@ export async function fetchCandlesSmart(
   const res = await fetch(
     `/api/candles?exchange=${exchange}&symbol=${symbol}&interval=${interval}&limit=${limit}${queryTo}${queryStart}`,
   );
+  const fallbackExchange = res.headers.get("X-Fallback-Exchange");
+  const cleanSym = symbol
+    .replace("USDT", "")
+    .replace("KRW-", "")
+    .replace("_KRW", "")
+    .split("(")[0]
+    .toUpperCase();
+  if (fallbackExchange) {
+    store.activeCandleFallback = fallbackExchange.toUpperCase();
+    if (!store.fallbackExchanges) store.fallbackExchanges = {};
+    store.fallbackExchanges[cleanSym] = fallbackExchange.toUpperCase();
+    if (typeof updateExchangeBadges === "function") {
+      updateExchangeBadges(symbol);
+    }
+  } else if (exchange.startsWith("binance")) {
+    store.activeCandleFallback = null;
+  }
   return await res.json();
 }
 
@@ -174,7 +228,7 @@ export async function fetchPaginated(
     if (onFirstBatch && result.length === data.length && remaining > 0) {
       try {
         onFirstBatch([...result]);
-      } catch (e) { }
+      } catch (e) {}
     }
 
     if (remaining > 0) {
@@ -257,7 +311,11 @@ export function clearChartData(isTfChange = false) {
 export { fetchHistory };
 
 window.switchKimchiSub = function (newSubId) {
-  if (store.isFetchingChart || window.isFetchingChart || store.isKimchiLoading) {
+  if (
+    store.isFetchingChart ||
+    window.isFetchingChart ||
+    store.isKimchiLoading
+  ) {
     return; // 🚀 차트/김프 데이터 로딩 중에는 중복 클릭 및 교체 차단
   }
   const currentSub =
@@ -275,35 +333,61 @@ window.switchKimchiSub = function (newSubId) {
     btns.forEach((btn) => {
       const onclickAttr = btn.getAttribute("onclick") || "";
       if (onclickAttr.includes(`'${newSubId}'`)) {
-        btn.classList.add("ring-1.5", "ring-theme-text/80", "scale-105", "opacity-100", "shadow-md", "brightness-110", "font-black");
+        btn.classList.add(
+          "ring-1.5",
+          "ring-theme-text/80",
+          "scale-105",
+          "opacity-100",
+          "shadow-md",
+          "brightness-110",
+          "font-black",
+        );
         btn.classList.remove("opacity-50", "font-bold");
       } else {
-        btn.classList.remove("ring-1.5", "ring-theme-text/80", "scale-105", "opacity-100", "shadow-md", "brightness-110", "font-black");
+        btn.classList.remove(
+          "ring-1.5",
+          "ring-theme-text/80",
+          "scale-105",
+          "opacity-100",
+          "shadow-md",
+          "brightness-110",
+          "font-black",
+        );
         btn.classList.add("opacity-50", "font-bold");
       }
     });
   }
 
-  const cleanSym = String(store.currentAsset || store.currentSelectedSymbol || "")
+  const cleanSym = String(
+    store.currentAsset || store.currentSelectedSymbol || "",
+  )
     .replace(/^.*:/, "")
     .replace(/_FUTURES|_SPOT|_UPBIT|_BITHUMB/g, "")
     .toUpperCase();
   const row =
-    (store.currentSelectedUid && store.tickerRowMap?.get(store.currentSelectedUid)) ||
+    (store.currentSelectedUid &&
+      store.tickerRowMap?.get(store.currentSelectedUid)) ||
     store.tickerRowMap?.get(cleanSym) ||
     store.tickerRowMap?.get(store.currentSelectedSymbol) ||
     store.currentTableData?.find(
       (r) =>
-        (store.currentSelectedUid && String(r.UID) === String(store.currentSelectedUid)) ||
+        (store.currentSelectedUid &&
+          String(r.UID) === String(store.currentSelectedUid)) ||
         r.Symbol === cleanSym ||
         r.Ticker === cleanSym ||
         r.DisplayTicker === cleanSym ||
         r.Exact_Futures === cleanSym ||
-        r.Exact_Spot === cleanSym
+        r.Exact_Spot === cleanSym,
     );
   if (row) {
     if (typeof window.realUpdateHeaderDisplay === "function") {
-      window.realUpdateHeaderDisplay(row, undefined, undefined, false, "KIMCHI_SWITCH");
+      window.realUpdateHeaderDisplay(
+        row,
+        undefined,
+        undefined,
+        false,
+        "KIMCHI_SWITCH",
+      );
     } else if (typeof window.updateHeaderDisplay === "function") {
       window.updateHeaderDisplay(row);
     }
@@ -514,16 +598,26 @@ export async function loadMoreHistory() {
         if (tf === "15m") return Math.floor(t / 900) * 900;
         // if (tf === "2h") return Math.floor(t / 7200) * 7200;
         if (tf === "3d") {
-          const dayTs = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) / 1000;
+          const dayTs =
+            Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) /
+            1000;
           return Math.floor((dayTs - 86400) / 259200) * 259200 + 86400;
         }
-        if (tf === "1d") return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) / 1000;
+        if (tf === "1d")
+          return (
+            Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) / 1000
+          );
         if (tf === "1w") {
           const day = d.getUTCDay();
           const diff = d.getUTCDate() - day + (day === 0 ? -6 : 1);
-          return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), diff, 0, 0, 0) / 1000;
+          return (
+            Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), diff, 0, 0, 0) / 1000
+          );
         }
-        if (tf === "1M") return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1, 0, 0, 0) / 1000;
+        if (tf === "1M")
+          return (
+            Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1, 0, 0, 0) / 1000
+          );
         return t;
       };
 
@@ -610,9 +704,17 @@ export async function loadMoreHistory() {
       if (Array.isArray(store.subRawData) && store.subRawData.length > 0) {
         for (const d of store.subRawData) {
           let t = 0;
-          if (typeof d.time === "number") t = d.time > 1e11 ? Math.floor(d.time / 1000) : d.time;
-          else if (d.candle_date_time_utc) t = Math.floor(new Date(d.candle_date_time_utc + "Z").getTime() / 1000);
-          else if (Array.isArray(d)) t = Number(d[0]) > 1e11 ? Math.floor(Number(d[0]) / 1000) : Number(d[0]);
+          if (typeof d.time === "number")
+            t = d.time > 1e11 ? Math.floor(d.time / 1000) : d.time;
+          else if (d.candle_date_time_utc)
+            t = Math.floor(
+              new Date(d.candle_date_time_utc + "Z").getTime() / 1000,
+            );
+          else if (Array.isArray(d))
+            t =
+              Number(d[0]) > 1e11
+                ? Math.floor(Number(d[0]) / 1000)
+                : Number(d[0]);
           if (t > 0 && (oldestSubTimeSec === null || t < oldestSubTimeSec)) {
             oldestSubTimeSec = t;
           }
@@ -621,7 +723,7 @@ export async function loadMoreHistory() {
 
       const currentSubOldest = oldestSubTimeSec || oldestTimeSec;
       // 🚀 3d/12h 등 1:N 합성 타임프레임은 메인 캔들 수 대비 N배의 서브 캔들을 수집해야 공백(Hole)이 생기지 않음
-      const subStepMult = (params.tf === "3d" || params.tf === "12h") ? 3 : 1;
+      const subStepMult = params.tf === "3d" || params.tf === "12h" ? 3 : 1;
       const targetSubLimit = Math.max(500, N * subStepMult);
 
       let subToVal;
