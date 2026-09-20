@@ -20,7 +20,7 @@ try {
   ) {
     initialTF = savedTF;
   }
-} catch (e) {}
+} catch (e) { }
 
 //[신규] 마지막 정렬 기준 로컬/세션 스토리지 복원
 let initialSortCol = "VolumeBinance";
@@ -40,7 +40,7 @@ try {
     (typeof sessionStorage !== "undefined" &&
       sessionStorage.getItem("sellnance_last_sort_state"));
   if (savedSortState) initialSortState = savedSortState;
-} catch (e) {}
+} catch (e) { }
 
 //[신규] control-panel-parent 세션 스토리지 복원
 let sessionControlPanel = null;
@@ -61,7 +61,7 @@ try {
     }
     sessionControlPanel.currencyMode = "RECOMMENDED";
   }
-} catch (e) {}
+} catch (e) { }
 
 export const store = {
   currentSortCol: initialSortCol,
@@ -139,10 +139,18 @@ export const store = {
   // 메인 차트 상/하단 여백 및 0원/음수 방지 오토스케일 제어 설정
   mainChartScaleMargins: {
     top: 0.1, // 상단 여백 (최고가 캔들 윗꼬리 천장 여백)
-    bottom: 0, // 하단 여백 (캔들 오토스케일 프로바이더에서 안전 여백 동적 제어)
-    bottomBufferRatio: 0.08, // 저점 캔들과 바닥 사이 안전 여백 비율
-    bottomMaxGapRatio: 0.8, // 저점 가격 대비 최대 여백 허용 비율
-    bottomMinFloorRatio: 0.08, // 최저가 대비 절대 바닥 하한
+    bottom: 0.025, // 하단 여백 (캔들 오토스케일 프로바이더에서 안전 여백 동적 제어)
+    bottomBufferRatio: 0.05, // 저점 캔들과 바닥 사이 안전 여백 비율
+    bottomMaxGapRatio: 0.5, // 저점 가격 대비 최대 여백 허용 비율
+    bottomMinFloorRatio: 0.05, // 최저가 대비 절대 바닥 하한
+  },
+
+  // 하단 볼륨 차트 상/하단 스케일 여백 설정 (우측 거래량 및 좌측 김프)
+  volChartScaleMargins: {
+    top: 0.2, // 우측 거래량 상단 여백
+    bottom: 0, // 우측 거래량 하단 여백
+    kimchiTop: 0.1, // 좌측 김프 라인 상단 여백
+    kimchiBottom: 0.1, // 좌측 김프 라인 하단 여백
   },
 
   chart: null,
@@ -175,7 +183,7 @@ export const store = {
       if (!isNaN(saved) && saved >= 0.2 && saved <= 0.9) {
         return { s1: saved, s2: 0.85 };
       }
-    } catch (e) {}
+    } catch (e) { }
     return { s1: 0.75, s2: 0.85 };
   })(),
   exchFilterStates: sessionControlPanel?.exchFilterStates ?? {

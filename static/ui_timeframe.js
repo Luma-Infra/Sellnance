@@ -46,6 +46,9 @@ export function renderTimeframeButtons(currentTF = "1d") {
   existingButtons.forEach((btn) => btn.remove());
 
   const visibleVals = getVisibleTfs();
+  if (!visibleVals.includes(currentTF)) {
+    currentTF = visibleVals.includes("1d") ? "1d" : (visibleVals[0] || "1d");
+  }
 
   timeframes
     .slice()
@@ -153,7 +156,7 @@ export function renderTfCheckboxList() {
   const container = document.getElementById("tf-checkbox-container");
   if (!container) return;
   container.innerHTML = "";
-  const visibleVals = pendingTfSettings || getVisibleTfs();
+  const visibleVals = getVisibleTfs();
 
   timeframes.forEach((tf) => {
     const btn = document.createElement("button");
@@ -167,14 +170,40 @@ export function renderTfCheckboxList() {
 
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
-      const newChecked = !visibleVals.includes(tf.value);
-      if (newChecked) {
-        pendingTfSettings.push(tf.value);
-      } else {
-        pendingTfSettings = pendingTfSettings.filter((v) => v !== tf.value);
-      }
-      if (pendingTfSettings.length === 0) pendingTfSettings = [tf.value];
+      let currentVisible = getVisibleTfs();
+      const isCurrentlyChecked = currentVisible.includes(tf.value);
 
+      let nextVisible;
+      if (isCurrentlyChecked) {
+        // 이미 켜져있는 것을 끌 때: 최소 1개는 유지
+        if (currentVisible.length <= 1) {
+          return;
+        }
+        nextVisible = currentVisible.filter((v) => v !== tf.value);
+      } else {
+        // 새로 켤 때: 원본 timeframes 순서대로 정렬 유지
+        const allKeys = timeframes.map((t) => t.value);
+        nextVisible = allKeys.filter((v) => currentVisible.includes(v) || v === tf.value);
+      }
+
+      // 1. 즉시 저장
+      saveVisibleTfs(nextVisible);
+      pendingTfSettings = [...nextVisible];
+
+      // 2. 현재 선택된 활성 TF 확인 및 Fallback 처리
+      let activeTf = store.currentTF || "1d";
+      const renderFn = window.renderTimeframeButtons || renderTimeframeButtons;
+
+      if (!nextVisible.includes(activeTf)) {
+        // 현재 보고 있던 TF가 숨겨졌다면 남아있는 것 중 1d 우선, 없으면 첫 번째로 자동 전환
+        const fallbackTf = nextVisible.includes("1d") ? "1d" : nextVisible[0];
+        renderFn(fallbackTf);
+        executeSetTF(fallbackTf);
+      } else {
+        renderFn(activeTf);
+      }
+
+      // 3. 모달 내부 체크박스 UI 즉시 갱신
       renderTfCheckboxList();
     });
 
@@ -193,16 +222,16 @@ export function renderTfCheckboxList() {
 }
 
 export function applyTfSettings() {
-  if (pendingTfSettings && pendingTfSettings.length > 0) {
-    saveVisibleTfs(pendingTfSettings);
+  const currentVisible = getVisibleTfs();
+  let activeTf = store.currentTF || "1d";
+  const renderFn = window.renderTimeframeButtons || renderTimeframeButtons;
 
-    const activeBtn = document.querySelector("#tf-container .tf-btn.active");
-    let curTf = "1d";
-    if (activeBtn) {
-      const match = timeframes.find((t) => t.label === activeBtn.innerText);
-      if (match) curTf = match.value;
-    }
-    renderTimeframeButtons(curTf);
+  if (!currentVisible.includes(activeTf)) {
+    const fallbackTf = currentVisible.includes("1d") ? "1d" : currentVisible[0];
+    renderFn(fallbackTf);
+    executeSetTF(fallbackTf);
+  } else {
+    renderFn(activeTf);
   }
   toggleTfSettings();
 }

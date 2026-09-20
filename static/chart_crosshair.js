@@ -320,18 +320,6 @@ export function renderTargetCharts(
       }
 
       let targetX = magnetX;
-      if (
-        logical !== null &&
-        tChart.timeScale &&
-        typeof tChart.timeScale().logicalToCoordinate === "function"
-      ) {
-        const snappedTarget = tChart
-          .timeScale()
-          .logicalToCoordinate(Math.round(logical));
-        if (snappedTarget !== null) {
-          targetX = snappedTarget;
-        }
-      }
 
       if (tChart === store.chartVol && store._volCrosshair) {
         store._volCrosshair.setX(targetX, timeStr);

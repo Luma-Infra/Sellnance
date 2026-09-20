@@ -289,7 +289,10 @@ export async function initChart() {
       autoScale: true,
       visible: true,
       borderColor: gridColor,
-      scaleMargins: { top: 0.5, bottom: 0 },
+      scaleMargins: {
+        top: store.volChartScaleMargins?.top ?? 0.5,
+        bottom: store.volChartScaleMargins?.bottom ?? 0,
+      },
       minimumWidth: store.savedPriceScaleWidth || 0, // 🚀 [UX 개선] 저장된 가격 축의 너비를 레이아웃 생성 시점에 복구하여 레이아웃 꿀렁임 제거
     },
     leftPriceScale: {
@@ -300,7 +303,10 @@ export async function initChart() {
           ? 0
           : (store.savedLeftPriceScaleWidth || 60),
       borderColor: "transparent", // 🚀 [좌측 테두리 박멸] 메인 차트와 동일하게 좌측 테두리 선 투명화
-      scaleMargins: { top: 0.1, bottom: 0.1 },
+      scaleMargins: {
+        top: store.volChartScaleMargins?.kimchiTop ?? 0.1,
+        bottom: store.volChartScaleMargins?.kimchiBottom ?? 0.1,
+      },
     },
   });
 

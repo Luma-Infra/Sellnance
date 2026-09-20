@@ -120,11 +120,12 @@ async function tickAlphaStream() {
 export function initAlphaStreamPipeline() {
   if (alphaStreamTimer) clearInterval(alphaStreamTimer);
 
+  // 동시 접속자 증가 시  HTTP 요청 방지
   // 1. 초기 1회 즉시 호출
-  setTimeout(tickAlphaStream, 1000);
+  // setTimeout(tickAlphaStream, 1000);
 
   // 2. 2.5초 주기 독립 폴링 가동
-  alphaStreamTimer = setInterval(tickAlphaStream, POLLING_INTERVAL_MS);
+  // alphaStreamTimer = setInterval(tickAlphaStream, POLLING_INTERVAL_MS);
   // Xconsole.log("[Alpha Pipeline] 💎 독립 알파 실시간 스트림 파이프라인 가동 완료",);
 }
 

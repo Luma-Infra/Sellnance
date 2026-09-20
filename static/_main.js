@@ -86,7 +86,7 @@ setInterval(updateStatusBadge, 1000);
 setupRouteAndHistory();
 scheduleDailyReset();
 setupTabVisibilityRecovery();
-initAlphaStreamPipeline();
+// initAlphaStreamPipeline(); // 서버 부하 방지를 위해 비활성화
 
 // 🚀 초기 필터 UI 상태 동기화 (3단 토글 슬라이더 위치 등)
 if (typeof window.switchFilter === "function") {
