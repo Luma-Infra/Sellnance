@@ -263,6 +263,9 @@
   "ALCXUSDT": {
     "binance_listing": "2026-05-10"
   },
+  "ALEO": {
+    "binance_listing": "2025-05-09"
+  },
   "ALGO": {
     "binance_listing": "2019-09-25"
   },
@@ -4220,6 +4223,9 @@
   "VANRYUSDT": {
     "binance_listing": "2025-09-21"
   },
+  "VELO": {
+    "binance_listing": "2025-05-09"
+  },
   "VELODROME": {
     "binance_listing": "2024-12-13"
   },
@@ -4513,6 +4519,9 @@
   },
   "ZEN": {
     "binance_listing": "2019-09-25"
+  },
+  "ZENT": {
+    "binance_listing": "2025-05-09"
   },
   "ZENUSDT": {
     "binance_listing": "2026-04-19"

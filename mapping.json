@@ -8116,22 +8116,7 @@
             "UNITREE",
             "STOCK"
         ],
-        "UP": [
-            "39552",
-            null,
-            "Superform",
-            "UP",
-            "COIN",
-            "ALPHA"
-        ],
         "UP(Superform)": [
-            "39552",
-            "ETH",
-            "Superform",
-            "UP2",
-            "COIN"
-        ],
-        "UP2": [
             "39552",
             "ETH",
             "Superform",
@@ -8290,8 +8275,7 @@
             null,
             "Velodrome Finance",
             "VELO",
-            "COIN",
-            "ALPHA"
+            "COIN"
         ],
         "VELODROME": [
             "20435",

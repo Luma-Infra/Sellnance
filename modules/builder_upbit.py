@@ -302,9 +302,12 @@ def build_upbit_row(
     if base not in duplicated_bases:
         listed_on = set(global_listings.get(base, set()))
     else:
+        # 1. 족보(DUPLICATED_LIST)에 등록된 해당 UID의 모든 거래소 태그 수집
+        dup_symbols = set()
         for k, v in DUPLICATED_LIST.items():
-            if len(v) >= 4 and v[0] == final_ucid:
-                ex_name = v[3].upper()
+            if len(v) >= 4 and str(v[0]) == str(final_ucid):
+                ex_name = str(v[3]).upper().strip()
+                dup_symbols.add(str(v[2]).upper().strip())
                 if ex_name in ("BYBIT", "BYBIT_SPOT"):
                     listed_on.add("BYBIT_SPOT")
                 elif ex_name == "BYBIT_FUTURES":
@@ -313,6 +316,36 @@ def build_upbit_row(
                     listed_on.add("BINANCE_SPOT")
                 elif ex_name == "BINANCE_FUTURES":
                     listed_on.add("BINANCE_FUTURES")
+                elif "ALPHA" in ex_name:
+                    listed_on.add("BINANCE_ALPHA")
+                    listed_on.add("BINANCE_SPOT")
+                    listed_on.add("BINANCE")
+                elif ex_name:
+                    tag = (
+                        f"{ex_name}_SPOT"
+                        if not ex_name.endswith("_SPOT")
+                        and not ex_name.endswith("_FUTURES")
+                        else ex_name
+                    )
+                    listed_on.add(tag)
+
+        # 2. 동명이인의 실제 해외 심볼(예: UP2 -> UP)의 글로벌 상장(BITGET, COINBASE 등) 연동 (가격 검증 적용)
+        ref_upbit_usd = (
+            current_p / krw_usd_rate if (current_p > 0 and krw_usd_rate > 0) else 0.0
+        )
+        for s in dup_symbols:
+            ext_tags = global_listings.get(s, set())
+            for tag in ext_tags:
+                if "BYBIT" in tag:
+                    by_p = (
+                        bybit_data.get(s, {}).get("spot_price")
+                        or bybit_data.get(s, {}).get("price")
+                        or 0.0
+                    )
+                    if by_p > 0 and ref_upbit_usd > 0:
+                        if not utils.is_valid_price_ratio(by_p, ref_upbit_usd):
+                            continue
+                listed_on.add(tag)
 
     bin_agg = _aggregate_binance_for_upbit(
         base, display_name, binance_data, REVERSE_LOOKUP, listed_on

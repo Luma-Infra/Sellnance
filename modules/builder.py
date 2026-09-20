@@ -129,12 +129,16 @@ def assemble_final_dashboard(
             f"⚠️ TradingView 실시간 환율 수집 실패, 족보 기본값 {krw_usd_rate}원 사용 ({e})"
         )
 
-    # 🚀 [Alpha Rules Engine] 바이낸스 알파 코인 자동 동적 선별 및 현물(Spot) 주입
+    # [Alpha Rules Engine] 바이낸스 알파 코인 자동 동적 선별 및 현물(Spot) 주입 (족보 우선 체크 + 2배수 가격 검증)
     alpha_rules.inject_alpha_gems_into_pipeline(
         binance_data,
         global_listings,
         upbit_krw_set,
         bithumb_krw_set,
+        bithumb_data=bithumb_data,
+        krw_usd_rate=krw_usd_rate,
+        bybit_data=bybit_data,
+        duplicated_list=DUPLICATED_LIST,
     )
 
     # 1. 바이낸스 투입
@@ -259,10 +263,16 @@ def assemble_final_dashboard(
                         dom_unit_price = row["Price_KRW"] / dom_mult
                         ovs_unit_price = target_overseas_p / ovs_mult
 
-                        overseas_krw = ovs_unit_price * krw_usd_rate
-                        kimchi = ((dom_unit_price / overseas_krw) - 1) * 100
-                        final_results[uid]["Kimchi_Raw"] = kimchi
-                        final_results[uid]["Kimchi_Formatted"] = f"{kimchi:+.2f}%"
+                        # [가격 괴리율 검증]: 해외 시세와 국내 시세가 0.5배 ~ 2.0배 범위를 벗어나는 개잡코는 김프 왜곡 차단!
+                        ref_dom_usd = dom_unit_price / krw_usd_rate
+                        if utils.is_valid_price_ratio(ovs_unit_price, ref_dom_usd):
+                            overseas_krw = ovs_unit_price * krw_usd_rate
+                            kimchi = ((dom_unit_price / overseas_krw) - 1) * 100
+                            final_results[uid]["Kimchi_Raw"] = kimchi
+                            final_results[uid]["Kimchi_Formatted"] = f"{kimchi:+.2f}%"
+                        else:
+                            final_results[uid]["Kimchi_Raw"] = None
+                            final_results[uid]["Kimchi_Formatted"] = "-"
 
                 final_results[uid]["Upbit_Symbol"] = base
             else:

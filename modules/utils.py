@@ -258,3 +258,31 @@ def is_valid_ticker(ticker, skip_list=None):
     if re.match(r"^[A-Z0-9]+$", ticker):
         return True
     return False
+
+
+# ⚖️ [가격 괴리율 및 동명이인 검증 기본 안전 마진 설정 (단일 출처)]
+DEFAULT_PRICE_MIN_RATIO = 0.5  # 하방 50% 하락 (0.5배)
+DEFAULT_PRICE_MAX_RATIO = 2.0  # 상방 2배 상승 (+100%, 2.0배)
+
+
+def is_valid_price_ratio(
+    target_price,
+    ref_price,
+    min_ratio: float = DEFAULT_PRICE_MIN_RATIO,
+    max_ratio: float = DEFAULT_PRICE_MAX_RATIO,
+) -> bool:
+    """
+    [가격 괴리율 및 동명이인 판별 공통 모듈]
+    기준 가격(ref_price) 대비 대상 가격(target_price)의 비율이 안전 허용 범위 내인지 검증합니다.
+    - 기본 설정: DEFAULT_PRICE_MIN_RATIO ~ DEFAULT_PRICE_MAX_RATIO
+    - 한쪽 가격이 없거나 0 이하이면 비교 불가로 True 반환
+    """
+    try:
+        t_p = float(target_price or 0.0)
+        r_p = float(ref_price or 0.0)
+        if t_p <= 0 or r_p <= 0:
+            return True
+        ratio = t_p / r_p
+        return min_ratio <= ratio <= max_ratio
+    except Exception:
+        return True
