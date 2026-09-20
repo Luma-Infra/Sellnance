@@ -236,7 +236,7 @@
     "binance_listing": "2026-04-28"
   },
   "AKE": {
-    "binance_listing": "2025-09-22",
+    "binance_listing": "2025-09-01",
     "bybit_listing": "2025-09-26"
   },
   "AKEUSDT": {
@@ -1655,7 +1655,8 @@
     "binance_listing": "2026-01-10"
   },
   "FOLD": {
-    "upbit_listing": "2026-08-23"
+    "upbit_listing": "2026-08-23",
+    "bithumb_listing": "2026-08-28"
   },
   "FOLKS": {
     "binance_listing": "2025-11-06"
@@ -3767,7 +3768,7 @@
     "binance_listing": "2025-01-17"
   },
   "STG": {
-    "binance_listing": "2022-08-24"
+    "binance_listing": "2022-08-22"
   },
   "STGUSDT": {
     "binance_listing": "2022-08-01"
