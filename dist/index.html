@@ -135,10 +135,6 @@
     <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" /> -->
     <!-- 📱 모바일 확대 차단 및 터치 개선 -->
     <style>
-      body {
-        /* touch-action: manipulation; */
-      }
-
       @media (max-width: 1199px) {
         input[type="text"],
         input[type="password"],
@@ -196,12 +192,12 @@
       src="https://static.cloudflareinsights.com/beacon.min.js"
       data-cf-beacon='{"token": "1c7917a73feb458db846dbdb1a40786d"}'
     ></script>
-    <script type="module" crossorigin src="/assets/app-Oo0iIDfR.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/c1-CPztYX43.js">
-    <link rel="modulepreload" crossorigin href="/assets/c2-BH-Qq3lJ.js">
-    <link rel="modulepreload" crossorigin href="/assets/c4-GUQ4DWVZ.js">
-    <link rel="modulepreload" crossorigin href="/assets/c3-Dn8Ymee4.js">
-    <link rel="stylesheet" crossorigin href="/assets/main-C7In0pJB.css">
+    <script type="module" crossorigin src="/assets/app-CfBuTbXX.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/c1-DtIqeCFu.js">
+    <link rel="modulepreload" crossorigin href="/assets/c2-DdOAO1RQ.js">
+    <link rel="modulepreload" crossorigin href="/assets/c4-DjTLoHkK.js">
+    <link rel="modulepreload" crossorigin href="/assets/c3-vdGFCkUE.js">
+    <link rel="stylesheet" crossorigin href="/assets/main-Cq2McIr4.css">
   </head>
 
   <body
@@ -1804,6 +1800,9 @@
                       -webkit-mask:
                         linear-gradient(#fff 0 0) content-box,
                         linear-gradient(#fff 0 0);
+                      mask:
+                        linear-gradient(#fff 0 0) content-box,
+                        linear-gradient(#fff 0 0);
                       -webkit-mask-composite: xor;
                       mask-composite: exclude;
                     "
@@ -2254,7 +2253,7 @@
                 >
                   <!-- 메인 차트용 A/L 오버레이 -->
                   <div
-                    class="scale-mode-container absolute bottom-[4px] right-[80px] z-50 flex gap-1 bg-theme-panel/95 p-0.5 rounded border border-theme-border select-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-auto shadow-md"
+                    class="scale-mode-container absolute bottom-[4px] right-[80px] z-[110] flex gap-1 bg-theme-panel/95 p-0.5 rounded border border-theme-border select-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-auto shadow-md"
                   >
                     <div class="scale-mode-btn-wrap">
                       <button
@@ -2278,7 +2277,7 @@
                 <!-- 조절바 (메인-볼륨) -->
                 <div
                   id="resizer-vol"
-                  class="w-full h-[4px] bg-theme-border/50 cursor-row-resize z-[100] hidden hover:bg-theme-accent transition-colors"
+                  class="w-full h-[4px] bg-theme-border/50 cursor-row-resize z-[100] hidden hover:bg-theme-accent transition-colors relative touch-none select-none before:absolute before:-top-1.5 before:-bottom-1.5 before:left-0 before:right-0 before:content-['']"
                 ></div>
 
                 <!-- 2. 볼륨 차트 -->

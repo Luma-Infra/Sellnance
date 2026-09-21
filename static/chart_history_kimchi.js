@@ -1,5 +1,9 @@
 import { store, tfSec } from "./_store.js";
-import { getMultiplier, sanitizeChartData, rebuildKimchiDataMap } from "./chart_utils.js";
+import {
+  getMultiplier,
+  sanitizeChartData,
+  rebuildKimchiDataMap,
+} from "./chart_utils.js";
 import { fetchCandlesSmart, fetchPaginated, mapTime } from "./chart_data.js";
 import { calculateKimchiData } from "./chart_data_kimchi.js";
 import { applyChartLayout } from "./chart_layout.js";
@@ -160,10 +164,13 @@ export function updateKimchiComparisonUI() {
     store.kimchiSeries.applyOptions({ visible: !isDisabled });
     if (isDisabled) {
       try {
-        const visibleRange = store.chart ? store.chart.timeScale().getVisibleLogicalRange() : null;
+        const visibleRange = store.chart
+          ? store.chart.timeScale().getVisibleLogicalRange()
+          : null;
         store.kimchiSeries.setData([]);
-        if (visibleRange && store.chartVol) store.chartVol.timeScale().setVisibleLogicalRange(visibleRange);
-      } catch (e) { }
+        if (visibleRange && store.chartVol)
+          store.chartVol.timeScale().setVisibleLogicalRange(visibleRange);
+      } catch (e) {}
     }
   }
   if (typeof applyChartLayout === "function") {
@@ -185,7 +192,7 @@ export function toggleKimchiComparison(forceVal) {
       "sellnance_kimchi_disabled",
       store.isKimchiDisabled ? "true" : "false",
     );
-  } catch (e) { }
+  } catch (e) {}
 
   updateKimchiComparisonUI();
 
@@ -193,10 +200,13 @@ export function toggleKimchiComparison(forceVal) {
     // 🎯 [김프 끄기] 전체 재조회(fetchHistory) 없이 캔들과 볼륨은 100% 실시간 스트리밍 유지하고 김프만 즉시 정화
     if (store.kimchiSeries) {
       try {
-        const visibleRange = store.chart ? store.chart.timeScale().getVisibleLogicalRange() : null;
+        const visibleRange = store.chart
+          ? store.chart.timeScale().getVisibleLogicalRange()
+          : null;
         store.kimchiSeries.setData([]);
-        if (visibleRange && store.chartVol) store.chartVol.timeScale().setVisibleLogicalRange(visibleRange);
-      } catch (e) { }
+        if (visibleRange && store.chartVol)
+          store.chartVol.timeScale().setVisibleLogicalRange(visibleRange);
+      } catch (e) {}
     }
     store.kimchiData = [];
     if (store.kimchiDataMap) store.kimchiDataMap.clear();
@@ -254,10 +264,13 @@ export async function lazyRenderKimchiData(params) {
   if (store.isKimchiDisabled) {
     if (store.kimchiSeries) {
       try {
-        const visibleRange = store.chart ? store.chart.timeScale().getVisibleLogicalRange() : null;
+        const visibleRange = store.chart
+          ? store.chart.timeScale().getVisibleLogicalRange()
+          : null;
         store.kimchiSeries.setData([]);
-        if (visibleRange && store.chartVol) store.chartVol.timeScale().setVisibleLogicalRange(visibleRange);
-      } catch (e) { }
+        if (visibleRange && store.chartVol)
+          store.chartVol.timeScale().setVisibleLogicalRange(visibleRange);
+      } catch (e) {}
     }
     store.kimchiData = [];
     if (store.kimchiDataMap) store.kimchiDataMap.clear();
@@ -285,7 +298,9 @@ export async function lazyRenderKimchiData(params) {
 
   // [국내 미지원 코인] 해외 전용 코인은 업비트/빗썸이 없으므로 통신 대기 없이 즉시 정리
   const listedEx = rowInfo ? rowInfo.Listed_Exchanges || [] : [];
-  const isGlobalBase = store.currentChartMarket !== "UPBIT" && store.currentChartMarket !== "BITHUMB";
+  const isGlobalBase =
+    store.currentChartMarket !== "UPBIT" &&
+    store.currentChartMarket !== "BITHUMB";
   const hasDomestic =
     listedEx.includes("UPBIT") ||
     listedEx.includes("BITHUMB") ||
@@ -296,18 +311,26 @@ export async function lazyRenderKimchiData(params) {
   if (isGlobalBase && rowInfo && !hasDomestic) {
     hideKimchiLoading();
     store.paneConfig.kimchi = false;
-    const curRange = store.chart ? store.chart.timeScale().getVisibleLogicalRange() : null;
+    const curRange = store.chart
+      ? store.chart.timeScale().getVisibleLogicalRange()
+      : null;
     if (store.kimchiSeries) {
-      try { store.kimchiSeries.setData([]); } catch (e) { }
+      try {
+        store.kimchiSeries.setData([]);
+      } catch (e) {}
     }
     store.kimchiData = [];
     if (store.kimchiDataMap) store.kimchiDataMap.clear();
     if (typeof effectiveApplyLayout === "function") effectiveApplyLayout();
     if (curRange && store.chartVol) {
-      try { store.chartVol.timeScale().setVisibleLogicalRange(curRange); } catch (e) {}
+      try {
+        store.chartVol.timeScale().setVisibleLogicalRange(curRange);
+      } catch (e) {}
     }
     if (store.chartVol && !store.isVolPriceScaleUserZoomed) {
-      try { store.chartVol.priceScale("right").applyOptions({ autoScale: true }); } catch (e) {}
+      try {
+        store.chartVol.priceScale("right").applyOptions({ autoScale: true });
+      } catch (e) {}
     }
     return;
   }
@@ -325,10 +348,12 @@ export async function lazyRenderKimchiData(params) {
     const _cachedInfo = store._coinInfoCache.get(querySym);
     const _fetchCoinInfo = _cachedInfo
       ? Promise.resolve(_cachedInfo)
-      : fetch(`/api/coin-info/${querySym}`).then((res) => res.json()).then((d) => {
-        store._coinInfoCache.set(querySym, d);
-        return d;
-      });
+      : fetch(`/api/coin-info/${querySym}`)
+          .then((res) => res.json())
+          .then((d) => {
+            store._coinInfoCache.set(querySym, d);
+            return d;
+          });
 
     if (reqId !== currentKimchiReqId) return;
 
@@ -429,18 +454,26 @@ export async function lazyRenderKimchiData(params) {
 
       if (rowInfo) {
         if (typeof window.realUpdateHeaderDisplay === "function") {
-          window.realUpdateHeaderDisplay(rowInfo, undefined, undefined, false, "KIMCHI_RESOLVED");
+          window.realUpdateHeaderDisplay(
+            rowInfo,
+            undefined,
+            undefined,
+            false,
+            "KIMCHI_RESOLVED",
+          );
         } else if (typeof window.updateHeaderDisplay === "function") {
           window.updateHeaderDisplay(rowInfo);
         }
       }
 
-      let loadingMessageContainer = document.getElementById("kimchi-loading-message");
+      let loadingMessageContainer = document.getElementById(
+        "kimchi-loading-message",
+      );
       if (!loadingMessageContainer) {
         loadingMessageContainer = document.createElement("div");
         loadingMessageContainer.id = "kimchi-loading-message";
         loadingMessageContainer.className =
-          "absolute right-3 z-[110] flex gap-1.5 transition-all duration-300 pointer-events-none";
+          "absolute right-[80px] z-[110] flex gap-1.5 transition-all duration-300 pointer-events-none";
         if (wrapper) wrapper.appendChild(loadingMessageContainer);
       } else if (wrapper && loadingMessageContainer.parentElement !== wrapper) {
         wrapper.appendChild(loadingMessageContainer);
@@ -451,11 +484,11 @@ export async function lazyRenderKimchiData(params) {
         switcherContainer = document.createElement("div");
         switcherContainer.id = "kimchi-switcher";
         switcherContainer.className =
-          "absolute right-3 z-[110] flex flex-col items-end gap-1 transition-all duration-300 pointer-events-auto select-none";
+          "absolute right-[80px] z-[110] flex flex-col items-end gap-1 transition-all duration-300 pointer-events-auto select-none";
         if (wrapper) wrapper.appendChild(switcherContainer);
       } else {
         switcherContainer.className =
-          "absolute right-3 z-[110] flex flex-col items-end gap-1 transition-all duration-300 pointer-events-auto select-none";
+          "absolute right-[80px] z-[110] flex flex-col items-end gap-1 transition-all duration-300 pointer-events-auto select-none";
         if (wrapper && switcherContainer.parentElement !== wrapper) {
           wrapper.appendChild(switcherContainer);
         }
@@ -469,12 +502,12 @@ export async function lazyRenderKimchiData(params) {
             const ringClass = isActive
               ? "opacity-100 ring-1.5 ring-theme-text/80 scale-105 shadow-md brightness-110 font-black"
               : "opacity-50 hover:opacity-100 hover:scale-105 font-bold";
-            return `<button class="text-[10px] px-2 py-0.5 rounded-md bg-theme-panel/90 border border-theme-border/60 shadow-sm transition-all cursor-pointer select-none active:scale-95 ${ringClass}" style="color: ${s.color};" onclick="switchKimchiSub('${s.id}')">${s.name}</button>`;
+            return `<button class="text-[10px] px-2 py-0.5 rounded-md bg-theme-panel/50 border border-theme-border/50 shadow-sm transition-all cursor-pointer select-none active:scale-95 ${ringClass}" style="color: ${s.color};" onclick="switchKimchiSub('${s.id}')">${s.name}</button>`;
           })
           .join("");
       } else {
         const s = availableSubs[0];
-        buttonsHtml = `<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-theme-panel/90 border border-theme-border/60 opacity-70 pointer-events-none shadow-sm" style="color: ${s.color};">${s.name}</span>`;
+        buttonsHtml = `<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-theme-panel/50 border border-theme-border/50 opacity-50 pointer-events-none shadow-sm" style="color: ${s.color};">${s.name}</span>`;
       }
 
       switcherContainer.innerHTML = `
@@ -549,22 +582,29 @@ export async function lazyRenderKimchiData(params) {
               const liveRate = store.marketDataMap?.krw_usd_rate;
               if (liveRate && Number(liveRate) > 0) {
                 const nowSec = Math.floor(Date.now() / 1000);
-                fiatTimeline.push({ time: nowSec, price: Number(liveRate), source: "live_fiat" });
+                fiatTimeline.push({
+                  time: nowSec,
+                  price: Number(liveRate),
+                  source: "live_fiat",
+                });
               }
               fiatTimeline.sort((a, b) => a.time - b.time);
               store.fiatRateCache[rateCacheKey] = fiatTimeline;
               loadedFromLocal = true;
             }
           }
-        } catch (e) { }
+        } catch (e) {}
 
         if (!loadedFromLocal) {
           const res = await fetch("/api/usdkrw");
           const usdkrwRaw = await res.json();
           if (usdkrwRaw && !usdkrwRaw.error) {
             try {
-              localStorage.setItem("sellnance_usdkrw_cache", JSON.stringify(usdkrwRaw));
-            } catch (e) { }
+              localStorage.setItem(
+                "sellnance_usdkrw_cache",
+                JSON.stringify(usdkrwRaw),
+              );
+            } catch (e) {}
             let fiatTimeline = [];
             for (let [ts, price] of Object.entries(usdkrwRaw)) {
               fiatTimeline.push({
@@ -576,7 +616,11 @@ export async function lazyRenderKimchiData(params) {
             const liveRate = store.marketDataMap?.krw_usd_rate;
             if (liveRate && Number(liveRate) > 0) {
               const nowSec = Math.floor(Date.now() / 1000);
-              fiatTimeline.push({ time: nowSec, price: Number(liveRate), source: "live_fiat" });
+              fiatTimeline.push({
+                time: nowSec,
+                price: Number(liveRate),
+                source: "live_fiat",
+              });
             }
             fiatTimeline.sort((a, b) => a.time - b.time);
             store.fiatRateCache[rateCacheKey] = fiatTimeline;
@@ -604,16 +648,28 @@ export async function lazyRenderKimchiData(params) {
           store.kimchiData = batchKimchi.map((d) => mapTime(d));
           rebuildKimchiDataMap();
           if (store.kimchiSeries) {
-            const visibleRange = store.chart ? store.chart.timeScale().getVisibleLogicalRange() : null;
+            const visibleRange = store.chart
+              ? store.chart.timeScale().getVisibleLogicalRange()
+              : null;
             if (store.paneConfig.kimchi) {
               if (store.isCrosshairActive) {
                 requestAnimationFrame(() => {
-                  store.kimchiSeries.setData(sanitizeChartData(store.kimchiData, true));
-                  if (visibleRange && store.chartVol) store.chartVol.timeScale().setVisibleLogicalRange(visibleRange);
+                  store.kimchiSeries.setData(
+                    sanitizeChartData(store.kimchiData, true),
+                  );
+                  if (visibleRange && store.chartVol)
+                    store.chartVol
+                      .timeScale()
+                      .setVisibleLogicalRange(visibleRange);
                 });
               } else {
-                store.kimchiSeries.setData(sanitizeChartData(store.kimchiData, true));
-                if (visibleRange && store.chartVol) store.chartVol.timeScale().setVisibleLogicalRange(visibleRange);
+                store.kimchiSeries.setData(
+                  sanitizeChartData(store.kimchiData, true),
+                );
+                if (visibleRange && store.chartVol)
+                  store.chartVol
+                    .timeScale()
+                    .setVisibleLogicalRange(visibleRange);
               }
             } else {
               store.kimchiSeries.setData([]);
@@ -713,13 +769,23 @@ export async function lazyRenderKimchiData(params) {
 
         requestAnimationFrame(() => {
           try {
-            const currentRange = store.chart ? store.chart.timeScale().getVisibleLogicalRange() : null;
-            store.kimchiSeries.setData(sanitizeChartData(store.kimchiData, true));
+            const currentRange = store.chart
+              ? store.chart.timeScale().getVisibleLogicalRange()
+              : null;
+            store.kimchiSeries.setData(
+              sanitizeChartData(store.kimchiData, true),
+            );
             if (currentRange && store.chartVol) {
-              try { store.chartVol.timeScale().setVisibleLogicalRange(currentRange); } catch (e) {}
+              try {
+                store.chartVol.timeScale().setVisibleLogicalRange(currentRange);
+              } catch (e) {}
             }
             if (store.chartVol && !store.isVolPriceScaleUserZoomed) {
-              try { store.chartVol.priceScale("right").applyOptions({ autoScale: true }); } catch (e) {}
+              try {
+                store.chartVol
+                  .priceScale("right")
+                  .applyOptions({ autoScale: true });
+              } catch (e) {}
             }
 
             // 🎯 김프 선이 차트에 완전히 렌더링된 순간 로딩 종료!
@@ -744,11 +810,13 @@ export async function lazyRenderKimchiData(params) {
     } else {
       hideKimchiLoading();
       store.paneConfig.kimchi = false;
-      const curRange = store.chart ? store.chart.timeScale().getVisibleLogicalRange() : null;
+      const curRange = store.chart
+        ? store.chart.timeScale().getVisibleLogicalRange()
+        : null;
       if (store.kimchiSeries) {
         try {
           store.kimchiSeries.setData([]);
-        } catch (e) { }
+        } catch (e) {}
       }
       store.kimchiData = [];
       if (store.kimchiDataMap) {
@@ -756,24 +824,31 @@ export async function lazyRenderKimchiData(params) {
       }
       store.realtimeKimchi = null;
 
-      if (wrapper)
-        wrapper.style.setProperty("--kimchi-color", "transparent");
+      if (wrapper) wrapper.style.setProperty("--kimchi-color", "transparent");
 
       const noDataMsg = document.getElementById("kimchi-no-data");
       if (noDataMsg && !isTfChange) {
         noDataMsg.classList.remove("hidden");
       }
-      let loadingMessageContainer = document.getElementById("kimchi-loading-message");
+      let loadingMessageContainer = document.getElementById(
+        "kimchi-loading-message",
+      );
       if (loadingMessageContainer)
         loadingMessageContainer.style.display = "none";
       requestAnimationFrame(() => {
         try {
           if (typeof applyChartLayout === "function") applyChartLayout();
           if (curRange && store.chartVol) {
-            try { store.chartVol.timeScale().setVisibleLogicalRange(curRange); } catch (e) {}
+            try {
+              store.chartVol.timeScale().setVisibleLogicalRange(curRange);
+            } catch (e) {}
           }
           if (store.chartVol && !store.isVolPriceScaleUserZoomed) {
-            try { store.chartVol.priceScale("right").applyOptions({ autoScale: true }); } catch (e) {}
+            try {
+              store.chartVol
+                .priceScale("right")
+                .applyOptions({ autoScale: true });
+            } catch (e) {}
           }
         } catch (layoutErr) {
           // Xconsole.warn("fetchHistory (no-data) applyChartLayout 예외 우회:", layoutErr);
@@ -782,9 +857,10 @@ export async function lazyRenderKimchiData(params) {
     }
   } catch (err) {
     // Xconsole.error("김프 백그라운드 렌더링 실패:", err);
-    let loadingMessageContainer = document.getElementById("kimchi-loading-message");
-    if (loadingMessageContainer)
-      loadingMessageContainer.style.display = "none";
+    let loadingMessageContainer = document.getElementById(
+      "kimchi-loading-message",
+    );
+    if (loadingMessageContainer) loadingMessageContainer.style.display = "none";
   }
 }
 

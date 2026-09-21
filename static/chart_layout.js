@@ -199,11 +199,15 @@ export function initResizers() {
   const startDrag = (e) => {
     isDraggingResizer = true;
     document.body.style.cursor = "row-resize";
+    document.body.style.userSelect = "none";
+    if (e.cancelable && e.type === "touchstart") {
+      e.preventDefault();
+    }
   };
 
   if (rVol) {
     rVol.addEventListener("mousedown", startDrag);
-    rVol.addEventListener("touchstart", startDrag, { passive: true });
+    rVol.addEventListener("touchstart", startDrag, { passive: false });
   }
 
   const handleDragMove = (clientY) => {
@@ -226,16 +230,20 @@ export function initResizers() {
     "touchmove",
     (e) => {
       if (isDraggingResizer && e.touches && e.touches.length > 0) {
+        if (e.cancelable) {
+          e.preventDefault();
+        }
         handleDragMove(e.touches[0].clientY);
       }
     },
-    { passive: true },
+    { passive: false },
   );
 
   const endDrag = () => {
     if (isDraggingResizer) {
       isDraggingResizer = false;
       document.body.style.cursor = "default";
+      document.body.style.userSelect = "";
       try {
         if (store.chartSplits?.s1) {
           localStorage.setItem(

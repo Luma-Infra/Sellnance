@@ -49,12 +49,12 @@ export function updateExchFilterUI() {
     { id: "BINANCE_STOCK", cmcId: 270, label: "ST", name: "B-STOCK" },
     { id: "UPBIT", cmcId: 351, name: "UPBIT" },
     { id: "BITHUMB", cmcId: 200, name: "BITHUMB" },
+    { id: "COINBASE_SPOT", cmcId: 89, name: "COINBASE" },
     { id: "BYBIT_SPOT", cmcId: 521, label: "S", name: "BYB-S" },
     { id: "BYBIT_FUTURES", cmcId: 521, label: "F", name: "BYB-F" },
-    { id: "OKX_SPOT", cmcId: 294, name: "OKX" },
     { id: "BITGET_SPOT", cmcId: 513, name: "BITGET" },
+    { id: "OKX_SPOT", cmcId: 294, name: "OKX" },
     { id: "GATEIO_SPOT", cmcId: 302, name: "GATEIO" },
-    { id: "COINBASE_SPOT", cmcId: 89, name: "COINBASE" },
   ];
 
   // 🚀 3단 스위치 모드 토글 HTML (AND / OR / ONLY)

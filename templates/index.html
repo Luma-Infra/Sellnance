@@ -135,10 +135,6 @@
     <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" /> -->
     <!-- 📱 모바일 확대 차단 및 터치 개선 -->
     <style>
-      body {
-        /* touch-action: manipulation; */
-      }
-
       @media (max-width: 1199px) {
         input[type="text"],
         input[type="password"],
@@ -1806,6 +1802,9 @@
                       -webkit-mask:
                         linear-gradient(#fff 0 0) content-box,
                         linear-gradient(#fff 0 0);
+                      mask:
+                        linear-gradient(#fff 0 0) content-box,
+                        linear-gradient(#fff 0 0);
                       -webkit-mask-composite: xor;
                       mask-composite: exclude;
                     "
@@ -2256,7 +2255,7 @@
                 >
                   <!-- 메인 차트용 A/L 오버레이 -->
                   <div
-                    class="scale-mode-container absolute bottom-[4px] right-[80px] z-50 flex gap-1 bg-theme-panel/95 p-0.5 rounded border border-theme-border select-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-auto shadow-md"
+                    class="scale-mode-container absolute bottom-[4px] right-[80px] z-[110] flex gap-1 bg-theme-panel/95 p-0.5 rounded border border-theme-border select-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-auto shadow-md"
                   >
                     <div class="scale-mode-btn-wrap">
                       <button
@@ -2280,7 +2279,7 @@
                 <!-- 조절바 (메인-볼륨) -->
                 <div
                   id="resizer-vol"
-                  class="w-full h-[4px] bg-theme-border/50 cursor-row-resize z-[100] hidden hover:bg-theme-accent transition-colors"
+                  class="w-full h-[4px] bg-theme-border/50 cursor-row-resize z-[100] hidden hover:bg-theme-accent transition-colors relative touch-none select-none before:absolute before:-top-1.5 before:-bottom-1.5 before:left-0 before:right-0 before:content-['']"
                 ></div>
 
                 <!-- 2. 볼륨 차트 -->
