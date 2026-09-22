@@ -3,10 +3,10 @@
 # 🧱 모듈 3: 데이터 조립 및 변동률 계산기
 # ==========================================
 from modules import utils, config_manager, exchange_api, alpha_rules
+from modules.tv_singleton import get_cached_usdkrw_rate
 from modules.builder_binance import build_binance_row
 from modules.exchange_api import EXCHANGE_WARNINGS
 from modules.builder_upbit import build_upbit_row
-from tvDatafeed import TvDatafeed, Interval
 import requests
 import re
 
@@ -107,26 +107,14 @@ def assemble_final_dashboard(
             if ex.startswith("BYBIT"):
                 REVERSE_LOOKUP[f"{sym_key}_BYBIT"] = k
 
-    # 🚀 법정 환율 (USD/KRW) 실시간 수집 (tvDatafeed 단일 연동)
-    krw_usd_rate = float(mapping.get("DEFAULT_KRW_USD_RATE", 0.0))
-    try:
-        tv = TvDatafeed()
-        df = tv.get_hist(
-            symbol="USDKRW", exchange="FX_IDC", interval=Interval.in_1_minute, n_bars=1
-        )
-        if df is not None and not df.empty:
-            new_rate = float(df["close"].iloc[-1])
-            if new_rate > 0:
-                krw_usd_rate = new_rate
-                if mapping.get("DEFAULT_KRW_USD_RATE") != krw_usd_rate:
-                    mapping["DEFAULT_KRW_USD_RATE"] = krw_usd_rate
-                    any_update = True
-                    print(
-                        f"🔄 [실시간 환율 갱신] TradingView USD/KRW ({krw_usd_rate}원) mapping.json 족보에 갱신 완료!"
-                    )
-    except Exception as e:
+    # 법정 환율 (USD/KRW) 실시간 수집 (TvDatafeed 싱글톤 + 60초 캐시 연동으로 메모리 누수 방지)
+    old_rate = float(mapping.get("DEFAULT_KRW_USD_RATE", 0.0))
+    krw_usd_rate = get_cached_usdkrw_rate(fallback_rate=old_rate)
+    if krw_usd_rate > 0 and krw_usd_rate != old_rate:
+        mapping["DEFAULT_KRW_USD_RATE"] = krw_usd_rate
+        any_update = True
         print(
-            f"⚠️ TradingView 실시간 환율 수집 실패, 족보 기본값 {krw_usd_rate}원 사용 ({e})"
+            f"🔄 [실시간 환율 갱신] TradingView USD/KRW ({krw_usd_rate}원) mapping.json 족보에 갱신 완료!"
         )
 
     # [Alpha Rules Engine] 바이낸스 알파 코인 자동 동적 선별 및 현물(Spot) 주입 (족보 우선 체크 + 2배수 가격 검증)

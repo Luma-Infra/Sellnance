@@ -3,11 +3,12 @@ from fastapi import FastAPI, Request, Body, Response, HTTPException
 from starlette.middleware.gzip import GZipMiddleware
 from datetime import datetime, timezone, timedelta
 from fastapi.middleware.cors import CORSMiddleware
+from modules.tv_singleton import get_tv_datafeed
 from fastapi.responses import StreamingResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-from tvDatafeed import TvDatafeed, Interval
 from contextlib import asynccontextmanager
+from tvDatafeed import Interval
 from dotenv import load_dotenv
 from pathlib import Path
 import pandas as pd
@@ -869,12 +870,16 @@ def get_usdkrw_history():
         # 3. 디스크에도 없으면 트레이딩뷰에서 1회 수집 후 디스크 영구 보관
         if history_map is None:
             try:
-                tv = TvDatafeed()
-                df_fx = tv.get_hist(
-                    symbol="USDKRW",
-                    exchange="FX_IDC",
-                    interval=Interval.in_daily,
-                    n_bars=5000,
+                tv = get_tv_datafeed()
+                df_fx = (
+                    tv.get_hist(
+                        symbol="USDKRW",
+                        exchange="FX_IDC",
+                        interval=Interval.in_daily,
+                        n_bars=5000,
+                    )
+                    if tv is not None
+                    else None
                 )
 
                 raw_map = {}
