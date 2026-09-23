@@ -379,23 +379,22 @@ def capture_utc0_prices_bulk():
         print(f"🚨 [ERROR] 시가 벌크 초기화 실패: {e}")
 
 
-# 🚀 [수정] 서버 중간 시작 시 정확한 UTC 0시 시가를 병렬로 고속 수집하는 전담 함수 추가!
+#  [수정] 서버 중간 시작 시 정확한 UTC 0시 시가를 병렬로 고속 수집하는 전담 함수
 def fetch_missing_utc0_opens_parallel(tasks):
     """
-    🚀 [IP 밴 위험 0% 궁극의 시가 보정기]
-    1. 현물 tradingDay 벌크 API 단 1번 호출로 현물 전 종목 당일 09시 시가 확보 (Weight 4)
-    2. 선물 코인은 현물 시가를 1차 복사(도킹)하여 klines 호출 대상 90% 소각
-    3. 남은 극소수 선물 단독 코인만 max_workers=3으로 안전하게 캡처하여 밴 위험 원천 차단!
+    [현선 시가 독립 ~ 고속 보정기]
+    - 현물 시가와 선물 시가는 시장 구조와 베이시스가 다르므로 100% 독립적으로 각각 수집/보존합니다.
+    1. 현물: tradingDay 벌크 API(100개씩 청크)로 바이낸스 현물 09시 시가 0.3초 컷 확보
+    2. 선물: fapi 1d klines (요청당 weight 단 1, 한도 2400)를 max_workers=25 병렬로 1초대 초고속 수집
+    3. 바이낸스 미상장 코인: 바이비트(spot / linear)로 독립 백업
     """
     global UTC0_OPEN_CACHE
     today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     today_cache = UTC0_OPEN_CACHE.setdefault(today_str, {})
 
-    print(
-        f"⏳ [시가 정밀 보정] 캐시 누락 감지. IP 밴 위험 0% 하이브리드 벌크 캡처 개시..."
-    )
+    print(f"⏳ [시가 정밀 보정] 캐시 누락 감지. 현선 독립 고속 벌크/병렬 캡처 개시...")
 
-    # 1. 현물 tradingDay 100개씩 벌크 타격 (현물 당일 09시 시가 초고속 확보)
+    # 1. 현물 tradingDay 100개씩 벌크 타격 (현물 당일 09시 시가 독립 확보)
     spot_missing = [
         f"{sym}USDT" for sym, is_fut in tasks if not is_fut and sym not in today_cache
     ]
@@ -420,19 +419,12 @@ def fetch_missing_utc0_opens_parallel(tasks):
                                 docked_count += 1
             if docked_count > 0:
                 print(
-                    f"✅ [벌크 도킹] 현물 tradingDay API로 {docked_count}개 종목 09시 시가 확보 완료!"
+                    f"✅ [벌크 현물 시가] tradingDay API로 현물 {docked_count}개 종목 09시 시가 독립 확보 완료!"
                 )
         except Exception as e:
             print(f"⚠️ tradingDay 벌크 실패, 백업 로직 전환: {e}")
 
-    # 2. 🚀 선물 코인은 현물 09시 시가를 1차 도킹하여 klines 호출 대상 대폭 소각
-    for sym, is_futures in tasks:
-        if is_futures:
-            f_key = f"{sym}_FUTURES"
-            if f_key not in today_cache and sym in today_cache:
-                today_cache[f_key] = today_cache[sym]
-
-    # 3. 남은 누락분 필터링 (현물에 없는 선물 전용 코인 등)
+    # 2. [현선 무조건 독립] 남은 누락분 (선물 전량 + tradingDay 누락 현물) 독립 병렬 수집
     remaining_tasks = []
     for sym, is_futures in tasks:
         cache_key = f"{sym}_FUTURES" if is_futures else sym
@@ -440,8 +432,10 @@ def fetch_missing_utc0_opens_parallel(tasks):
             remaining_tasks.append((sym, is_futures))
 
     if remaining_tasks:
+        futures_count = sum(1 for _, is_fut in remaining_tasks if is_fut)
+        spot_count = len(remaining_tasks) - futures_count
         print(
-            f"🔍 [잔여 타격] 시가 누락 종목 {len(remaining_tasks)}건 감지. (max_workers=5 안전 캡처 진행)"
+            f"🔍 [시가 수집] 잔여 누락 종목 {len(remaining_tasks)}건 감지 (선물 {futures_count}건, 현물 {spot_count}건 독립 캡처 진행)"
         )
 
         def _fetch(task):
@@ -452,29 +446,50 @@ def fetch_missing_utc0_opens_parallel(tasks):
                 else f"https://api.binance.com/api/v3/klines?symbol={sym}USDT&interval=1d&limit=1"
             )
             try:
-                r = api_session.get(url, timeout=5).json()
-                if r and isinstance(r, list) and len(r) > 0:
-                    return sym, is_fut, float(r[0][1])
-            except:
+                resp = api_session.get(url, timeout=5)
+                # 429 감지 시 즉시 백오프 대기 후 재시도 (IP 차단 방지)
+                if resp.status_code == 429:
+                    retry_after = int(resp.headers.get("Retry-After", 5))
+                    print(
+                        f"⚠️ [Binance 429 쿨다운] {sym} - {retry_after}초 대기 후 안전 재시도"
+                    )
+                    time.sleep(retry_after)
+                    resp = api_session.get(url, timeout=5)
+
+                # Used weight 모니터링: 실제 한도(선물 2400, 현물 6000) 90% 이상 근접 시에만 안전 스로틀링
+                used_w = resp.headers.get("x-mbx-used-weight-1m")
+                max_w = 2200 if is_fut else 5600
+                if used_w and int(used_w) > max_w:
+                    print(
+                        f"⚠️ [Binance 레이트 경고] Used weight: {used_w} (안전 스로틀링 1초 작동)"
+                    )
+                    time.sleep(1.0)
+
+                if resp.status_code == 200:
+                    r = resp.json()
+                    if r and isinstance(r, list) and len(r) > 0:
+                        return sym, is_fut, float(r[0][1])
+            except Exception:
                 pass
 
-            # 🚀 [FIX] 바이낸스에 없는 바이비트 단독 코인은 바이비트 klines API로 시가를 백업 수집합니다.
+            # 바이낸스에 없는 코인은 바이비트 klines API(현물/선물 구분)로 독립 백업 수집
             try:
                 category = "linear" if is_fut else "spot"
                 bybit_url = f"https://api.bybit.com/v5/market/kline?category={category}&symbol={sym}USDT&interval=D&limit=1"
-                res = api_session.get(bybit_url, timeout=5).json()
-                k_list = res.get("result", {}).get("list", [])
-                if k_list and len(k_list) > 0:
-                    # 바이비트 klines D 응답: [startTime, openPrice, highPrice, lowPrice, closePrice, volume, turnover]
-                    # list[0][1]이 당일 시가(openPrice)를 나타냅니다.
-                    return sym, is_fut, float(k_list[0][1])
-            except:
+                res = api_session.get(bybit_url, timeout=5)
+                if res.status_code == 200:
+                    res_json = res.json()
+                    k_list = res_json.get("result", {}).get("list", [])
+                    if k_list and len(k_list) > 0:
+                        # 바이비트 klines D 응답: [startTime, openPrice, highPrice, lowPrice, closePrice, volume, turnover]
+                        return sym, is_fut, float(k_list[0][1])
+            except Exception:
                 pass
 
             return sym, is_fut, None
 
-        # 🚀 사령관님 보호를 위해 max_workers=5으로 철벽 스로틀링!
-        with ThreadPoolExecutor(max_workers=5) as executor:
+        # 선물 weight=1, IP한도 2400이므로 max_workers=25로 안전하게 1초대 초고속 수집
+        with ThreadPoolExecutor(max_workers=25) as executor:
             futures = [executor.submit(_fetch, t) for t in remaining_tasks]
             for f in futures:
                 sym, is_fut, val = f.result()
@@ -595,67 +610,6 @@ def fetch_binance_futures_spot(bybit_data=None):
             prices_s = results[3] or []
             premium_f = results[4] or []
             funding_info_f = results[5] or []
-
-        # 🚀 [추가] 바이낸스 선물 API 밴 감지 및 바이비트 선물 Fallback 이식
-        if not prices_f or len(prices_f) < 10:
-            print(
-                "🚨 [IP Banned 감지] 바이낸스 선물 API 접속 불가. 임시 조치로 바이비트 선물을 가볍게 찌릅니다!!!"
-            )
-            prices_f = []
-            premium_f = []
-            funding_info_f = []
-            info_f_symbols = []
-            for base, b_inf in bybit_data.items():
-                if b_inf.get("futures_price", 0) > 0:
-                    sym = f"{base}USDT"
-                    info_f_symbols.append(
-                        {"symbol": sym, "status": "TRADING", "quoteAsset": "USDT"}
-                    )
-                    prices_f.append(
-                        {
-                            "symbol": sym,
-                            "lastPrice": b_inf.get("futures_price", 0),
-                            "priceChangePercent": b_inf.get("change_24h", 0.0),
-                            "quoteVolume": b_inf.get("volume_24h", 0.0),
-                        }
-                    )
-                    premium_f.append(
-                        {
-                            "symbol": sym,
-                            "lastFundingRate": b_inf.get("funding_rate", 0.0),
-                        }
-                    )
-            info_f["symbols"] = info_f_symbols
-
-        # [추가] 바이낸스 현물 API 밴 감지 및 바이비트 현물 Fallback 이식
-        if not prices_s or len(prices_s) < 10:
-            print(
-                "[IP Banned 감지] 바이낸스 현물 API 접속 불가. Bybit 현물 데이터를 보조로 결합합니다."
-            )
-            prices_s = prices_s or []
-            info_s_symbols = list(info_s.get("symbols", []))
-            existing_syms = {s.get("symbol") for s in prices_s}
-            for base, b_inf in bybit_data.items():
-                if b_inf.get("spot_price", 0) > 0:
-                    sym = f"{base}USDT"
-                    if sym not in existing_syms:
-                        info_s_symbols.append(
-                            {
-                                "symbol": sym,
-                                "status": "TRADING",
-                                "quoteAsset": "USDT",
-                                "baseAsset": base,
-                            }
-                        )
-                        prices_s.append(
-                            {
-                                "symbol": sym,
-                                "lastPrice": b_inf.get("spot_price", 0),
-                                "priceChangePercent": b_inf.get("change_24h", 0.0),
-                                "quoteVolume": b_inf.get("volume_24h", 0.0),
-                            }
-                        )
-            info_s["symbols"] = info_s_symbols
 
         # 2. 마켓 필터링 및 경고/상폐/모니터링 태그 수집
         global EXCHANGE_WARNINGS
@@ -885,7 +839,11 @@ def fetch_binance_futures_spot(bybit_data=None):
                 "is_spot": ticker in active_s,
                 "spot_utc0_open": utc0_open_dict.get(sym),
                 "futures_utc0_open": utc0_open_dict.get(f"{sym}_FUTURES"),
-                "utc0_open": utc0_open_dict.get(sym),
+                "utc0_open": (
+                    utc0_open_dict.get(f"{sym}_FUTURES")
+                    if ticker in active_f
+                    else utc0_open_dict.get(sym)
+                ),
                 "funding_rate": funding_map.get(ticker, 0.0),  # 🚀 펀딩비 꽂아넣기
                 "binance_futures_funding_interval": funding_interval_map.get(ticker, 8),
                 "funding_interval": funding_interval_map.get(ticker, 8),

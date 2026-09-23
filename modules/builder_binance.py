@@ -258,7 +258,7 @@ def _aggregate_binance_market(
                     "change_24h", 0.0
                 )
                 exact_spot_ticker = b_tick.replace("USDT", "")
-                spot_utc0 = b_inf.get("spot_utc0_open") or b_inf.get("utc0_open") or 0.0
+                spot_utc0 = b_inf.get("spot_utc0_open") or 0.0
                 if spot_utc0 > 0:
                     binance_spot_change_today = utils.js_round(
                         ((binance_spot_price - spot_utc0) / spot_utc0 * 100), 2
@@ -285,9 +285,7 @@ def _aggregate_binance_market(
                     or b_inf.get("funding_interval")
                     or 8
                 )
-                futures_utc0 = (
-                    b_inf.get("futures_utc0_open") or b_inf.get("utc0_open") or 0.0
-                )
+                futures_utc0 = b_inf.get("futures_utc0_open") or 0.0
                 if futures_utc0 > 0:
                     binance_futures_change_today = utils.js_round(
                         ((binance_futures_price - futures_utc0) / futures_utc0 * 100), 2
@@ -603,11 +601,19 @@ def build_binance_row(
     vol_24h = binance_vol + up_vol_24h_usd + by_vol_24h
     change_24h = b_info.get("change_24h", 0.0)
     precision = b_info.get("precision", 2)
-    utc0_open = (
-        utils.js_round(b_info.get("utc0_open", 0), 8)
-        if b_info.get("utc0_open")
-        else 0.0
-    )
+    # [현선 독립] 선물 코인은 선물 시가, 현물 코인은 현물 시가만 사용 (서로 침범 금지)
+    if b_info.get("is_futures") and futures_utc0 > 0:
+        utc0_open = utils.js_round(futures_utc0, 8)
+    elif b_info.get("is_spot") and spot_utc0 > 0:
+        utc0_open = utils.js_round(spot_utc0, 8)
+    else:
+        raw_open = (
+            b_info.get("futures_utc0_open")
+            if b_info.get("is_futures")
+            else b_info.get("spot_utc0_open")
+        )
+        utc0_open = utils.js_round(raw_open, 8) if raw_open else 0.0
+
     ticker_mult = utils.get_multiplier(ticker)
     if ticker_mult > 1 and utc0_open > 0 and price > 0:
         if utc0_open > price * 10:

@@ -14,7 +14,7 @@
     "__MEMO__12": "DUPLICATED_LIST: 동일 티커 다른 코인(동명이인) 또는 거래소별 티커 상이 코인의 UID/거래소별 티커 매핑",
     "__MEMO__13": "TICKER_DATA: 전체 자산 마스터 메타데이터: [0: CMC_ID, 1: 체인/메인넷, 2: 영문명, 3: 표준티커, 4: 자산타입(COIN/STOCK), 5: 특수구분(ALPHA 등)]",
     "__MEMO__14": "-------------------------------------------------------------",
-    "DEFAULT_KRW_USD_RATE": 1385.95,
+    "DEFAULT_KRW_USD_RATE": 1368.35,
     "CHAIN_LOGO_MAP": {
         "ETH": "https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png",
         "BNB": "https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png",
@@ -548,6 +548,13 @@
             "AGPU",
             "STOCK"
         ],
+        "AGPUB(STOCK)": [
+            "42353",
+            null,
+            "AGPUB (Derivatives)",
+            "AGPUB",
+            "STOCK"
+        ],
         "AGT": [
             "36195",
             null,
@@ -750,6 +757,13 @@
             null,
             "AMC (Derivatives)",
             "AMC",
+            "STOCK"
+        ],
+        "AMCB(STOCK)": [
+            "42355",
+            null,
+            "AMCB (Derivatives)",
+            "AMCB",
             "STOCK"
         ],
         "AMDB": [
@@ -2548,6 +2562,13 @@
             null,
             "CYPH (Derivatives)",
             "CYPH",
+            "STOCK"
+        ],
+        "CYPHB(STOCK)": [
+            "42354",
+            null,
+            "CYPHB (Derivatives)",
+            "CYPHB",
             "STOCK"
         ],
         "CYS": [
@@ -5126,6 +5147,13 @@
             "MOONSHOT",
             "COIN"
         ],
+        "MOONSHOT(STOCK)": [
+            "42356",
+            null,
+            "MOONSHOT (Derivatives)",
+            "MOONSHOT",
+            "STOCK"
+        ],
         "MORPHO": [
             "34104",
             null,
@@ -5858,6 +5886,13 @@
             "Osmosis",
             "OSMO",
             "COIN"
+        ],
+        "OURA(STOCK)": [
+            "42363",
+            null,
+            "OURA (Derivatives)",
+            "OURA",
+            "STOCK"
         ],
         "OUST": [
             "41868",
@@ -8165,6 +8200,13 @@
             "USD1",
             "COIN"
         ],
+        "USDBRL(STOCK)": [
+            "42335",
+            null,
+            "USDBRL (Derivatives)",
+            "USDBRL",
+            "STOCK"
+        ],
         "USDC": [
             "3408",
             null,
@@ -8191,13 +8233,6 @@
             null,
             "USDJPY",
             "USDJPY",
-            "COIN"
-        ],
-        "USDP": [
-            "3330",
-            null,
-            "Pax Dollar",
-            "USDP",
             "COIN"
         ],
         "USDS": [

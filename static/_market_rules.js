@@ -68,31 +68,66 @@ export function getRowExchangeMeta(row) {
 }
 
 /**
- * 3. 김프 해외 기준 단가 산출 규칙 (순수 현물 100% 매칭)
- * [철학] 국내(업비트 ➔ 빗썸) ↔ 해외(바낸 현물 ➔ 바이빗 현물) 오직 현물만 비교 (선물 폴백 일체 제거)
+ * 3. 김프 해외 기준 단가 산출 규칙 (4단계 우선순위 매칭)
+ * [철학] 1순위: 바낸 현물(S) ➔ 2순위: 바이빗 현물(S) ➔ 3순위: 바낸 선물(F) ➔ 4순위: 바이빗 선물(F)
  */
 export function getRowKimchiGlobalPrice(row) {
-  if (!row) return { rawGlb: 0, ovsMult: 1 };
+  if (!row) return { rawGlb: 0, ovsMult: 1, source: null };
 
   let rawGlb = 0;
   let ovsMult = 1;
+  let source = null;
 
+  // 1순위: 바이낸스 현물 (Spot)
   if (row.Binance_Price_Spot && row.Binance_Price_Spot > 0) {
     rawGlb = row.Binance_Price_Spot;
     ovsMult = getMultiplier(row.Exact_Spot || row.Ticker || row.Symbol);
-  } else if (row.Bybit_Price_Spot && row.Bybit_Price_Spot > 0) {
+    source = {
+      exchange: "binance",
+      type: "spot",
+      tag: "S",
+      color: "#f0b90b",
+      title: "바이낸스 현물",
+    };
+  }
+  // 2순위: 바이비트 현물 (Spot)
+  else if (row.Bybit_Price_Spot && row.Bybit_Price_Spot > 0) {
     rawGlb = row.Bybit_Price_Spot;
     ovsMult = getMultiplier(row.Exact_Spot || row.Ticker || row.Symbol);
-  } else if (
-    !isFuturesCoin(row) &&
-    row.Binance_Price &&
-    row.Binance_Price > 0
-  ) {
-    rawGlb = row.Binance_Price;
-    ovsMult = getMultiplier(row.Exact_Spot || row.Ticker || row.Symbol);
+    source = {
+      exchange: "bybit",
+      type: "spot",
+      tag: "S",
+      color: "#00d2ba",
+      title: "바이비트 현물",
+    };
+  }
+  // 3순위: 바이낸스 선물 (Futures)
+  else if (row.Binance_Price_Futures && row.Binance_Price_Futures > 0) {
+    rawGlb = row.Binance_Price_Futures;
+    ovsMult = getMultiplier(row.Exact_Futures || row.Ticker || row.Symbol);
+    source = {
+      exchange: "binance",
+      type: "futures",
+      tag: "F",
+      color: "#f0b90b",
+      title: "바이낸스 선물",
+    };
+  }
+  // 4순위: 바이비트 선물 (Futures)
+  else if (row.Bybit_Price_Futures && row.Bybit_Price_Futures > 0) {
+    rawGlb = row.Bybit_Price_Futures;
+    ovsMult = getMultiplier(row.Exact_Futures || row.Ticker || row.Symbol);
+    source = {
+      exchange: "bybit",
+      type: "futures",
+      tag: "F",
+      color: "#00d2ba",
+      title: "바이비트 선물",
+    };
   }
 
-  return { rawGlb, ovsMult };
+  return { rawGlb, ovsMult, source };
 }
 
 /**
@@ -116,7 +151,7 @@ export function getRowDisplayMetrics(row, isKrwMode = null, rate = null) {
     isKrwMode = store.currencyMode === "KRW";
   }
   if (!rate) {
-    rate = store.marketDataMap?.krw_usd_rate || 0;
+    rate = store.marketDataMap?.krw_usd_rate || 1000;
   }
 
   const isFutures = isFuturesCoin(row);
@@ -130,24 +165,24 @@ export function getRowDisplayMetrics(row, isKrwMode = null, rate = null) {
   const binanceSpotP =
     row.Binance_Price_Spot ||
     (!isFutures &&
-    (row.Binance === "O" ||
-      row.Listed_Exchanges?.includes("BINANCE_SPOT") ||
-      row.Listed_Exchanges?.includes("BINANCE"))
+      (row.Binance === "O" ||
+        row.Listed_Exchanges?.includes("BINANCE_SPOT") ||
+        row.Listed_Exchanges?.includes("BINANCE"))
       ? row.Price_Raw
       : null);
   const bybitFuturesP =
     row.Bybit_Price_Futures ||
     (isFutures &&
-    (row.Bybit_Futures === "O" ||
-      row.Listed_Exchanges?.includes("BYBIT_FUTURES"))
+      (row.Bybit_Futures === "O" ||
+        row.Listed_Exchanges?.includes("BYBIT_FUTURES"))
       ? row.Price_Raw
       : null);
   const bybitSpotP =
     row.Bybit_Price_Spot ||
     (!isFutures &&
-    (row.Bybit === "O" ||
-      row.Listed_Exchanges?.includes("BYBIT_SPOT") ||
-      row.Listed_Exchanges?.includes("BYBIT"))
+      (row.Bybit === "O" ||
+        row.Listed_Exchanges?.includes("BYBIT_SPOT") ||
+        row.Listed_Exchanges?.includes("BYBIT"))
       ? row.Price_Raw
       : null);
 
@@ -209,10 +244,10 @@ export function getRowDisplayMetrics(row, isKrwMode = null, rate = null) {
 
   const isAlpha = row.Binance_Alpha === "O" || Boolean(row.is_alpha);
 
-  if (isAlpha && activeExchange !== "bithumb") {
-    // 🚀 알파 코인은 당일 시가(UTC 0시)가 없으므로 빗썸 상장이 아닌 한 Day 등락률은 null (-)
+  if (isAlpha) {
+    // 🚀 알파 코인은 빗썸/업비트 등 타 거래소 상장 여부와 무관하게 Day 등락률 무조건 null (-) 고정!
     nDay = null;
-    n24h = row.Change_24h_Raw ?? 0;
+    n24h = row.Change_24h_Raw ?? row.Change_24h_Binance ?? 0;
   } else if (activeExchange === "upbit") {
     n24h = row.Change_24h_Upbit ?? row.Change_24h_Raw ?? 0;
     nDay = row.Change_Today_Upbit ?? row.Change_Today_Raw ?? null;
@@ -286,7 +321,7 @@ export function getRowDisplayVolume(
   }
 
   if (isKrwMode === null) isKrwMode = store.currencyMode === "KRW";
-  if (!rate) rate = store.marketDataMap?.krw_usd_rate || 1;
+  if (!rate) rate = store.marketDataMap?.krw_usd_rate || 1000;
 
   const isFutures = isFuturesCoin(row);
   const normActive = String(activeMarket || "")
@@ -573,6 +608,107 @@ export function isExchangeNativeTF(exchange, tf) {
   return NATIVE_TF_MAP[exKey]?.has(tf) ?? false;
 }
 
+/**
+ * 9. 거래소별 공식 REST API 캔들 인터벌 규격 정규화 (Single Source of Truth)
+ * 프론트엔드 전역(차트 페칭, 퀵뷰, 김프 서브, 과거 데이터)에서 거래소 API 호출 시 단 1곳에서 인터벌을 안전하게 변환합니다.
+ */
+export function normalizeExchangeInterval(exchange, interval) {
+  if (!exchange || !interval) return interval;
+  const ex = exchange.toLowerCase().replace(/_spot|_futures/g, "");
+  const intStr = String(interval).trim();
+
+  // 1. UPBIT (업비트: candles/minutes/{unit}, candles/days, candles/weeks, candles/months)
+  if (ex === "upbit") {
+    if (intStr.startsWith("minutes/")) return intStr;
+    if (["days", "weeks", "months"].includes(intStr)) return intStr;
+
+    // 일/주/월봉 변환
+    if (intStr === "1d" || intStr === "3d" || intStr === "d" || intStr === "day" || intStr === "D") return "days";
+    if (intStr === "1w" || intStr === "w" || intStr === "week" || intStr === "W") return "weeks";
+    if (intStr === "1M" || intStr === "M" || intStr === "month" || intStr === "months") return "months";
+
+    // 분봉/시간봉 변환: 1, 3, 5, 10, 15, 30, 60, 240
+    const upbitUnits = [1, 3, 5, 10, 15, 30, 60, 240];
+    if (/^\d+$/.test(intStr)) {
+      const num = parseInt(intStr, 10);
+      if (upbitUnits.includes(num)) return `minutes/${num}`;
+      const matched = upbitUnits.slice().reverse().find((u) => num % u === 0) || 1;
+      return `minutes/${matched}`;
+    }
+
+    const mMatch = intStr.match(/^(\d+)m$/i);
+    if (mMatch) {
+      const m = parseInt(mMatch[1], 10);
+      return upbitUnits.includes(m) ? `minutes/${m}` : `minutes/1`;
+    }
+
+    const hMatch = intStr.match(/^(\d+)h$/i);
+    if (hMatch) {
+      const h = parseInt(hMatch[1], 10);
+      const totalMin = h * 60;
+      if (upbitUnits.includes(totalMin)) return `minutes/${totalMin}`;
+      const matched = upbitUnits.slice().reverse().find((u) => totalMin % u === 0) || 60;
+      return `minutes/${matched}`;
+    }
+
+    return "days";
+  }
+
+  // 2. BYBIT (바이비트: 1, 3, 5, 15, 30, 60, 120, 240, 360, 720, D, W, M)
+  if (ex === "bybit") {
+    const bybitMap = {
+      "1m": "1",
+      "3m": "3",
+      "5m": "5",
+      "15m": "15",
+      "30m": "30",
+      "1h": "60",
+      "2h": "120",
+      "4h": "240",
+      "6h": "360",
+      "12h": "720",
+      "1d": "D",
+      days: "D",
+      "3d": "D",
+      "1w": "W",
+      weeks: "W",
+      "1M": "M",
+      months: "M",
+    };
+    if (intStr.startsWith("minutes/")) return intStr.split("/")[1];
+    return bybitMap[intStr] || intStr;
+  }
+
+  // 3. BINANCE (바이낸스: 1m, 3m, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d, 3d, 1w, 1M)
+  if (ex === "binance") {
+    const binanceMap = {
+      days: "1d",
+      weeks: "1w",
+      months: "1M",
+    };
+    if (intStr.startsWith("minutes/")) return `${intStr.split("/")[1]}m`;
+    return binanceMap[intStr] || intStr;
+  }
+
+  // 4. BITHUMB (빗썸: 1m, 3m, 5m, 10m, 30m, 1h, 6h, 12h, 24h, 1w, 1M)
+  if (ex === "bithumb") {
+    const bithumbMap = {
+      "1d": "24h",
+      days: "24h",
+      "3d": "24h",
+      "4h": "6h",
+      "1w": "1w",
+      weeks: "1w",
+      "1M": "1M",
+      months: "1M",
+    };
+    if (intStr.startsWith("minutes/")) return `${intStr.split("/")[1]}m`;
+    return bithumbMap[intStr] || intStr;
+  }
+
+  return intStr;
+}
+
 // 전역 window 등록 (HTML 인라인 및 레거시 스크립트 호환)
 window.MarketRules = {
   isFuturesCoin,
@@ -583,5 +719,6 @@ window.MarketRules = {
   getDisplayTickerHtml,
   getChartDefaultMarket,
   isExchangeNativeTF,
+  normalizeExchangeInterval,
   NATIVE_TF_MAP,
 };

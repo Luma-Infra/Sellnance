@@ -148,9 +148,9 @@ def _aggregate_binance_for_upbit(
                 if b_inf.get("is_spot"):
                     listed_on.add("BINANCE_SPOT")
                     exact_spot_ticker = b_tick.replace("USDT", "")
-                    binance_spot_price = float(b_inf.get("price") or 0.0)
-                    binance_spot_change_24h = float(b_inf.get("change_24h") or 0.0)
-                    spot_utc0 = b_inf.get("utc0_open") or 0.0
+                    binance_spot_price = float(b_inf.get("spot_price") or b_inf.get("price") or 0.0)
+                    binance_spot_change_24h = float(b_inf.get("spot_change_24h") or b_inf.get("change_24h") or 0.0)
+                    spot_utc0 = float(b_inf.get("spot_utc0_open") or 0.0)
                     if spot_utc0 > 0:
                         binance_spot_change_today = utils.js_round(
                             ((binance_spot_price - spot_utc0) / spot_utc0 * 100), 2
@@ -160,9 +160,9 @@ def _aggregate_binance_for_upbit(
                     listed_on.add("BINANCE_FUTURES")
                     has_binance_futures = True
                     exact_futures_ticker = b_tick.replace("USDT", "")
-                    binance_futures_price = float(b_inf.get("price") or 0.0)
-                    binance_futures_change_24h = float(b_inf.get("change_24h") or 0.0)
-                    futures_utc0 = b_inf.get("utc0_open") or 0.0
+                    binance_futures_price = float(b_inf.get("futures_price") or b_inf.get("price") or 0.0)
+                    binance_futures_change_24h = float(b_inf.get("futures_change_24h") or b_inf.get("change_24h") or 0.0)
+                    futures_utc0 = float(b_inf.get("futures_utc0_open") or 0.0)
                     if futures_utc0 > 0:
                         binance_futures_change_today = utils.js_round(
                             (
