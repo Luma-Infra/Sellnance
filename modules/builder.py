@@ -2,9 +2,9 @@
 # ==========================================
 # 🧱 모듈 3: 데이터 조립 및 변동률 계산기
 # ==========================================
+from modules.builder_binance import build_binance_row, build_binance_index
 from modules import utils, config_manager, exchange_api, alpha_rules
 from modules.tv_singleton import get_cached_usdkrw_rate
-from modules.builder_binance import build_binance_row
 from modules.exchange_api import EXCHANGE_WARNINGS
 from modules.builder_upbit import build_upbit_row
 import requests
@@ -129,7 +129,8 @@ def assemble_final_dashboard(
         duplicated_list=DUPLICATED_LIST,
     )
 
-    # 1. 바이낸스 투입
+    # 1. 바이낸스 투입 (마켓 데이터 사전 해시 인덱싱으로 O(1) 초고속 조회)
+    binance_index = build_binance_index(binance_data)
     for ticker, b_info in binance_data.items():
         base = utils.get_pure_base_asset(ticker).upper()
         if base in EXCLUSION_LIST:
@@ -151,6 +152,7 @@ def assemble_final_dashboard(
             krw_usd_rate,
             bybit_data,
             bithumb_data,
+            binance_index=binance_index,
         )
         if is_updated:
             any_update = True

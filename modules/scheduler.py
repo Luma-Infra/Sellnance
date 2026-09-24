@@ -8,11 +8,27 @@
 """
 import pytz
 import time
-import orjson
 import asyncio
 import aiohttp
 import threading
 from datetime import datetime
+
+try:
+    import orjson
+
+    def _json_dumps_bytes(data):
+        return orjson.dumps(data)
+
+    def _json_loads(data):
+        return orjson.loads(data)
+except ImportError:
+    import json
+
+    def _json_dumps_bytes(data):
+        return json.dumps(data).encode("utf-8")
+
+    def _json_loads(data):
+        return json.loads(data)
 
 KST = pytz.timezone("Asia/Seoul")
 
@@ -118,11 +134,11 @@ async def wait_for_exchanges_9am_crossing(
                     {"ticket": "9am_sync"},
                     {"type": "trade", "codes": upbit_codes},
                 ]
-                await ws.send_bytes(orjson.dumps(payload))
+                await ws.send_bytes(_json_dumps_bytes(payload))
                 while not upbit_passed:
                     msg = await ws.receive()
                     if msg.type in (aiohttp.WSMsgType.BINARY, aiohttp.WSMsgType.TEXT):
-                        data = orjson.loads(msg.data)
+                        data = _json_loads(msg.data)
                         ts = data.get("trade_timestamp") or data.get("timestamp") or 0
                         if ts >= target_ms:
                             upbit_passed = True
@@ -150,7 +166,7 @@ async def wait_for_exchanges_9am_crossing(
                 while not binance_passed:
                     msg = await ws.receive()
                     if msg.type in (aiohttp.WSMsgType.TEXT, aiohttp.WSMsgType.BINARY):
-                        d = orjson.loads(msg.data)
+                        d = _json_loads(msg.data)
                         data = d.get("data", d)
                         ts = data.get("T") or data.get("E") or 0
                         if ts >= target_ms:

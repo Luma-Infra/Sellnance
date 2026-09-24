@@ -1,4 +1,4 @@
-﻿fastapi
+fastapi
 uvicorn
 requests
 pandas
@@ -7,5 +7,8 @@ python-binance
 websockets
 Jinja2
 sentry-sdk
+orjson
+aiohttp
+pytz
 
 tvdatafeed @ git+https://github.com/rongardF/tvdatafeed.git

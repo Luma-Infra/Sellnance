@@ -155,8 +155,58 @@ def _determine_final_ucid_and_info(
     return final_ucid, info
 
 
+def build_binance_index(binance_data):
+    """
+    바이낸스 전체 마켓 데이터를 base 심볼별로 1회 사전 인덱싱 (O(1) 해시맵)
+    84만 번의 무차별 전수 순회 및 정규식 평가를 1회(950개)로 단축하여 조립 속도 대폭 향상
+    """
+    import collections
+    crypto_index = collections.defaultdict(list)
+    stock_index = collections.defaultdict(list)
+
+    for b_tick, b_inf in binance_data.items():
+        b_base = utils.get_pure_base_asset(b_tick.replace("USDT", "")).upper()
+        b_u_type = (
+            str(b_inf.get("underlying_type", "")) if isinstance(b_inf, dict) else ""
+        )
+        b_c_type = (
+            str(b_inf.get("contract_type", "")) if isinstance(b_inf, dict) else ""
+        )
+        b_is_stock = ("EQUITY" in b_u_type) or (b_c_type == "TRADIFI_PERPETUAL")
+
+        if not b_is_stock and b_base.endswith("B") and len(b_base) > 2:
+            b_cand_futures = f"{b_base[:-1]}USDT"
+            if b_cand_futures in binance_data:
+                b_fut_info = binance_data[b_cand_futures]
+                b_fut_u_type = (
+                    str(b_fut_info.get("underlying_type", ""))
+                    if isinstance(b_fut_info, dict)
+                    else ""
+                )
+                b_fut_c_type = (
+                    str(b_fut_info.get("contract_type", ""))
+                    if isinstance(b_fut_info, dict)
+                    else ""
+                )
+                if ("EQUITY" in b_fut_u_type) or (
+                    b_fut_c_type == "TRADIFI_PERPETUAL"
+                ):
+                    b_is_stock = True
+
+        if b_is_stock:
+            if not b_base.endswith("B"):
+                b_spot_cand = f"{b_base}BUSDT"
+                if b_spot_cand in binance_data:
+                    b_base = f"{b_base}B"
+            stock_index[b_base].append((b_tick, b_inf))
+        else:
+            crypto_index[b_base].append((b_tick, b_inf))
+
+    return crypto_index, stock_index
+
+
 def _aggregate_binance_market(
-    base, is_stock, binance_data, listed_on, final_ucid="", DUPLICATED_LIST=None
+    base, is_stock, binance_data, listed_on, final_ucid="", DUPLICATED_LIST=None, binance_index=None
 ):
     total_vol_futures = 0.0
     total_vol_spot = 0.0
@@ -183,73 +233,82 @@ def _aggregate_binance_market(
             ):
                 target_bases.add(v[2].upper())
 
-    for b_tick, b_inf in binance_data.items():
-        b_base = utils.get_pure_base_asset(b_tick.replace("USDT", "")).upper()
+    if binance_index is not None:
+        target_index = binance_index[1] if is_stock else binance_index[0]
+        items_to_process = []
+        for t_base in target_bases:
+            items_to_process.extend(target_index.get(t_base, []))
+    else:
+        # 하위 호환 안전 폴백
+        items_to_process = []
+        for b_tick, b_inf in binance_data.items():
+            b_base = utils.get_pure_base_asset(b_tick.replace("USDT", "")).upper()
+            if is_stock:
+                b_u_type = (
+                    str(b_inf.get("underlying_type", "")) if isinstance(b_inf, dict) else ""
+                )
+                b_c_type = (
+                    str(b_inf.get("contract_type", "")) if isinstance(b_inf, dict) else ""
+                )
+                b_is_stock = ("EQUITY" in b_u_type) or (b_c_type == "TRADIFI_PERPETUAL")
 
-        if is_stock:
-            b_u_type = (
-                str(b_inf.get("underlying_type", "")) if isinstance(b_inf, dict) else ""
-            )
-            b_c_type = (
-                str(b_inf.get("contract_type", "")) if isinstance(b_inf, dict) else ""
-            )
-            b_is_stock = ("EQUITY" in b_u_type) or (b_c_type == "TRADIFI_PERPETUAL")
+                if not b_is_stock and b_base.endswith("B") and len(b_base) > 2:
+                    b_cand_futures = f"{b_base[:-1]}USDT"
+                    if b_cand_futures in binance_data:
+                        b_fut_info = binance_data[b_cand_futures]
+                        b_fut_u_type = (
+                            str(b_fut_info.get("underlying_type", ""))
+                            if isinstance(b_fut_info, dict)
+                            else ""
+                        )
+                        b_fut_c_type = (
+                            str(b_fut_info.get("contract_type", ""))
+                            if isinstance(b_fut_info, dict)
+                            else ""
+                        )
+                        if ("EQUITY" in b_fut_u_type) or (
+                            b_fut_c_type == "TRADIFI_PERPETUAL"
+                        ):
+                            b_is_stock = True
 
-            if not b_is_stock and b_base.endswith("B") and len(b_base) > 2:
-                b_cand_futures = f"{b_base[:-1]}USDT"
-                if b_cand_futures in binance_data:
-                    b_fut_info = binance_data[b_cand_futures]
-                    b_fut_u_type = (
-                        str(b_fut_info.get("underlying_type", ""))
-                        if isinstance(b_fut_info, dict)
-                        else ""
-                    )
-                    b_fut_c_type = (
-                        str(b_fut_info.get("contract_type", ""))
-                        if isinstance(b_fut_info, dict)
-                        else ""
-                    )
-                    if ("EQUITY" in b_fut_u_type) or (
-                        b_fut_c_type == "TRADIFI_PERPETUAL"
-                    ):
-                        b_is_stock = True
+                if b_is_stock:
+                    if not b_base.endswith("B"):
+                        b_spot_cand = f"{b_base}BUSDT"
+                        if b_spot_cand in binance_data:
+                            b_base = f"{b_base}B"
 
-            if b_is_stock:
-                if not b_base.endswith("B"):
-                    b_spot_cand = f"{b_base}BUSDT"
-                    if b_spot_cand in binance_data:
-                        b_base = f"{b_base}B"
+            if b_base in target_bases:
+                b_u_type = (
+                    str(b_inf.get("underlying_type", "")) if isinstance(b_inf, dict) else ""
+                )
+                b_c_type = (
+                    str(b_inf.get("contract_type", "")) if isinstance(b_inf, dict) else ""
+                )
+                b_is_stock = ("EQUITY" in b_u_type) or (b_c_type == "TRADIFI_PERPETUAL")
 
-        if b_base in target_bases:
-            b_u_type = (
-                str(b_inf.get("underlying_type", "")) if isinstance(b_inf, dict) else ""
-            )
-            b_c_type = (
-                str(b_inf.get("contract_type", "")) if isinstance(b_inf, dict) else ""
-            )
-            b_is_stock = ("EQUITY" in b_u_type) or (b_c_type == "TRADIFI_PERPETUAL")
+                if not b_is_stock and b_base.endswith("B") and len(b_base) > 2:
+                    b_cand_futures = f"{b_base[:-1]}USDT"
+                    if b_cand_futures in binance_data:
+                        b_fut_info = binance_data[b_cand_futures]
+                        b_fut_u_type = (
+                            str(b_fut_info.get("underlying_type", ""))
+                            if isinstance(b_fut_info, dict)
+                            else ""
+                        )
+                        b_fut_c_type = (
+                            str(b_fut_info.get("contract_type", ""))
+                            if isinstance(b_fut_info, dict)
+                            else ""
+                        )
+                        if ("EQUITY" in b_fut_u_type) or (
+                            b_fut_c_type == "TRADIFI_PERPETUAL"
+                        ):
+                            b_is_stock = True
 
-            if not b_is_stock and b_base.endswith("B") and len(b_base) > 2:
-                b_cand_futures = f"{b_base[:-1]}USDT"
-                if b_cand_futures in binance_data:
-                    b_fut_info = binance_data[b_cand_futures]
-                    b_fut_u_type = (
-                        str(b_fut_info.get("underlying_type", ""))
-                        if isinstance(b_fut_info, dict)
-                        else ""
-                    )
-                    b_fut_c_type = (
-                        str(b_fut_info.get("contract_type", ""))
-                        if isinstance(b_fut_info, dict)
-                        else ""
-                    )
-                    if ("EQUITY" in b_fut_u_type) or (
-                        b_fut_c_type == "TRADIFI_PERPETUAL"
-                    ):
-                        b_is_stock = True
+                if b_is_stock == is_stock:
+                    items_to_process.append((b_tick, b_inf))
 
-            if b_is_stock != is_stock:
-                continue
+    for b_tick, b_inf in items_to_process:
 
             if b_inf.get("is_spot"):
                 listed_on.add("BINANCE_SPOT")
@@ -374,6 +433,7 @@ def build_binance_row(
     krw_usd_rate,
     bybit_data,
     bithumb_data,
+    binance_index=None,
 ):
     (
         NOTE_MAP,
@@ -492,6 +552,7 @@ def build_binance_row(
         listed_on,
         final_ucid=final_ucid,
         DUPLICATED_LIST=DUPLICATED_LIST,
+        binance_index=binance_index,
     )
     total_vol_futures = agg["total_vol_futures"]
     total_vol_spot = agg["total_vol_spot"]

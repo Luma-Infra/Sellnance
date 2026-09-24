@@ -324,16 +324,26 @@ def fetch_exchange_market_data(mapping):
         HARDCODE_VERIFY_SKIP_LIST,
     ) = config_manager.get_mapping_parts(mapping)
 
-    # 1. 기초 마켓 리스트 확보
-    upbit_krw_set, bithumb_krw_set = get_korean_exchange_markets()
+    # 1. 4대 거래소(업비트/빗썸, 바이비트, 바이낸스, 빗썸시세) 고성능 병렬 수집
+    def _fetch_upbit_pipeline():
+        upbit_krw_set, bithumb_krw_set = get_korean_exchange_markets()
+        upbit_data = fetch_upbit_prices(upbit_krw_set)
+        return upbit_krw_set, bithumb_krw_set, upbit_data
 
-    # 2. 거래소 타격 (병렬 처리 가능하면 좋겠지만 일단 순차로!)
-    bybit_data = fetch_bybit_prices()  # 🚀 [추가] 바이비트 데이터 긁어오기
-    binance_data, binance_base_assets = fetch_binance_futures_spot(bybit_data)
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        fut_upbit = executor.submit(_fetch_upbit_pipeline)
+        fut_bybit = executor.submit(fetch_bybit_prices)
+        fut_binance = executor.submit(fetch_binance_futures_spot)
+        fut_bithumb = executor.submit(fetch_bithumb_prices)
+
+        upbit_krw_set, bithumb_krw_set, upbit_data = fut_upbit.result()
+        bybit_data = fut_bybit.result()
+        binance_data, binance_base_assets = fut_binance.result()
+        bithumb_data = fut_bithumb.result()
 
     binance_pure = {utils.get_pure_base_asset(a) for a in binance_base_assets}
 
-    # 3. 족보 생성 및 업비트 전용 자산 필터링 (2단계 등록으로 충돌 방지)
+    # 2. 족보 생성 및 업비트 전용 자산 필터링 (2단계 등록으로 충돌 방지)
     REVERSE_LOOKUP = {}
     # 1단계: 가상 키 먼저 등록 (우선순위 낮음)
     for k, v in DUPLICATED_LIST.items():
@@ -365,10 +375,6 @@ def fetch_exchange_market_data(mapping):
 
         if k not in binance_pure or alias_upbit != alias_binance:
             upbit_only_assets.add(k)
-
-    # 4. 업비트 시세 타격 (KRW 마켓 전체 수집)
-    upbit_data = fetch_upbit_prices(upbit_krw_set)
-    bithumb_data = fetch_bithumb_prices()
 
     return (
         binance_data,
