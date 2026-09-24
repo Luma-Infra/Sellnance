@@ -109,12 +109,14 @@ async function _fetchCandlesSmartInternal(
     ),
   );
 
-  // 1. 브라우저 직접 호출 (업비트 토큰 버킷 연동 및 바이낸스/바이비트 직통)
+  // 1. 브라우저 직접 호출 (바이낸스/바이비트 직통)
+  // ⚠️ 주의: 업비트는 브라우저 Origin 헤더 감지 시 '10초당 1회'로 극단적 제한을 걸기 때문에
+  // 업비트는 브라우저 직접 fetch를 하지 않고 서버 백엔드 프록시(/api/candles)를 경유합니다.
   const isUpbit = exchange === "upbit";
-  const upbitAllowed = isUpbit ? upbitBrowserLimiter.canRequest() : false;
   const canDirectFetch =
     !isGapRecovery &&
-    (isUpbit ? upbitAllowed : (!toVal && !startVal));
+    !isUpbit &&
+    (!toVal && !startVal);
 
   if (canDirectFetch) {
     try {
@@ -201,13 +203,7 @@ async function _fetchCandlesSmartInternal(
         }
       }
     } catch (err) {
-      if (exchange === "upbit") {
-        upbitBrowserLimiter.triggerCooldown(2.0);
-      }
-    } finally {
-      if (upbitAllowed) {
-        upbitBrowserLimiter.release();
-      }
+      // direct fetch error -> will fallback to server proxy
     }
   }
 

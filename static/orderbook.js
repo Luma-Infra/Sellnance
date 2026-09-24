@@ -104,7 +104,9 @@ export function resetOrderbookPrecision() {
 
 export function stopOrderbookStream() {
   if (store.orderbookWs) {
-    store.orderbookWs.close();
+    try {
+      store.orderbookWs.close();
+    } catch (e) { }
     store.orderbookWs = null;
   }
   obState.asks = [];
@@ -115,9 +117,11 @@ export function stopOrderbookStream() {
 }
 
 export function startOrderbookStream(symbol, market) {
-  stopOrderbookStream();
   const panel = document.getElementById("orderbook-panel");
-  if (!panel || panel.classList.contains("hidden")) return;
+  if (!panel || panel.classList.contains("hidden")) {
+    stopOrderbookStream();
+    return;
+  }
 
   obState.precisionModifier = 0;
 
@@ -146,11 +150,22 @@ export function startOrderbookStream(symbol, market) {
       { format: "SIMPLE" },
     ]);
 
-    if (store.orderbookWs && store.orderbookWs.readyState === WebSocket.OPEN && store.orderbookWs._market === "UPBIT") {
-      try {
-        store.orderbookWs.send(payload);
+    // [업비트 10초 연결 rule] 이미 연결된 웹소켓이 있으면 절대 끊지 않고 payload만 덮어씌워 구독 갱신
+    if (
+      store.orderbookWs &&
+      store.orderbookWs._market === "UPBIT" &&
+      (store.orderbookWs.readyState === WebSocket.OPEN || store.orderbookWs.readyState === WebSocket.CONNECTING)
+    ) {
+      if (store.orderbookWs.readyState === WebSocket.OPEN) {
+        try {
+          store.orderbookWs.send(payload);
+          return;
+        } catch (e) { }
+      } else {
+        // 아직 연결 중이면 onopen 때 최신 payload 전송
+        store.orderbookWs._pendingPayload = payload;
         return;
-      } catch (e) { }
+      }
     }
 
     if (store.orderbookWs) {
@@ -167,7 +182,9 @@ export function startOrderbookStream(symbol, market) {
     ws.binaryType = "blob";
     ws.onopen = () => {
       try {
-        ws.send(payload);
+        const toSend = ws._pendingPayload || payload;
+        ws._pendingPayload = null;
+        ws.send(toSend);
       } catch (e) { }
     };
     ws.onmessage = async (e) => {

@@ -83,7 +83,7 @@ def get_candle_ttl(interval: str, to: str = "") -> float:
     return 15.0  # 15초
 
 
-# 🛡️ [업비트 429 방어 고속 토큰 버킷 레이트 리미터 (버스트 8개 허용 / 초당 8개 충전, 429 쿨다운)]
+# [업비트 429 방어 고속 토큰 버킷 레이트 리미터 (버스트 8개 허용 / 초당 8개 충전, 429 쿨다운)]
 class UpbitTokenBucketLimiter:
     def __init__(self, capacity: float = 8.0, refill_rate: float = 8.0):
         self.capacity = capacity  # 최대 버스트 허용량 (업비트 10req/s 한도 내 8개)
@@ -91,6 +91,7 @@ class UpbitTokenBucketLimiter:
         self.refill_rate = refill_rate  # 초당 토큰 충전량
         self.last_refill = time.time()
         self.cooldown_until = 0.0
+        self.last_request_time = 0.0
         self.lock = asyncio.Lock()
 
     def trigger_cooldown(self, seconds: float = 1.5):
@@ -114,6 +115,7 @@ class UpbitTokenBucketLimiter:
             pass
 
     async def wait(self):
+        min_pacing = 1.0 / self.refill_rate  # 125ms (초당 8회 안전 간격)
         while True:
             sleep_time = 0.0
             async with self.lock:
@@ -129,14 +131,19 @@ class UpbitTokenBucketLimiter:
                     )
                     self.last_refill = now
 
-                    # 3. 토큰이 1개 이상이면 대기 없이 즉시 통과 (0ms)
-                    if self.tokens >= 1.0:
+                    # 3. 최소 125ms 페이싱(간격) 체크 (8개 방어)
+                    elapsed_since_last = now - self.last_request_time
+                    pacing_wait = max(0.0, min_pacing - elapsed_since_last)
+
+                    # 4. 토큰 1개 이상이고 페이싱 통과 시 즉시 발송
+                    if self.tokens >= 1.0 and pacing_wait <= 0.0:
                         self.tokens -= 1.0
+                        self.last_request_time = now
                         return
 
-                    # 4. 토큰 부족 시 필요한 만큼만 최소 대기
-                    needed = 1.0 - self.tokens
-                    sleep_time = needed / self.refill_rate
+                    # 5. 토큰 또는 페이싱 대기 시간 산출
+                    token_wait = max(0.0, (1.0 - self.tokens) / self.refill_rate)
+                    sleep_time = max(pacing_wait, token_wait)
 
             if sleep_time > 0:
                 await asyncio.sleep(sleep_time)
