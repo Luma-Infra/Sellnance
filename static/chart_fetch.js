@@ -9,12 +9,13 @@ import {
   autoFit,
   mainCandleAutoscaleProvider,
   getUnixSeconds,
+  getKrwPrecision,
 } from "./chart_utils.js";
 import { findRowInfo, determineListingDate } from "./chart_history_helper.js";
 import { updateExchangeBadges } from "./ui_control.js";
 import { applyChartLayout } from "./chart_layout.js";
 import { fetchCandlesSmart, clearChartData, mapTime } from "./chart_data.js";
-import { isExchangeNativeTF } from "./_market_rules.js";
+import { isExchangeNativeTF, normalizeExchangeInterval } from "./_market_rules.js";
 
 // ============================================================================
 // [1단계] 페칭 전 초기 상태 준비 및 가드
@@ -263,11 +264,21 @@ async function fetchRawCandles(ctx, isSubSwitch, isSilentSync) {
   if (isSilentSync && store.mainData && store.mainData.length > 0) {
     const stepSec = tfSec[store.currentTF] || (mainStep * 60) || 60;
     const lastCandle = store.mainData[store.mainData.length - 1];
-    const lastSec = getUnixSeconds(lastCandle.time);
+    let lastSec = getUnixSeconds(lastCandle.time);
+
+    // [캔들 & 볼륨 동시 보정] 볼륨 데이터가 캔들보다 과거에 멈춰있다면(백그라운드 누락 등) 더 과거 시점을 기준으로 갭 백필
+    if (store.volumeData && store.volumeData.length > 0) {
+      const lastVol = store.volumeData[store.volumeData.length - 1];
+      const lastVolSec = getUnixSeconds(lastVol.time);
+      if (lastVolSec > 0 && lastVolSec < lastSec) {
+        lastSec = lastVolSec;
+      }
+    }
+
     const nowSec = Math.floor(Date.now() / 1000);
     const gapSec = Math.max(0, nowSec - lastSec);
-    const neededBars = Math.ceil(gapSec / stepSec) + 5; // 여유분 5개
-    fetchLimit = Math.min(500, Math.max(10, neededBars));
+    const neededBars = Math.ceil(gapSec / stepSec) + 10; // 여유분 확보
+    fetchLimit = Math.min(500, Math.max(15, neededBars));
     silentStartTime = (lastSec - stepSec * 2) * 1000;
   }
 
@@ -360,7 +371,8 @@ async function fetchRawCandles(ctx, isSubSwitch, isSilentSync) {
     } else {
       mainStep = 1;
     }
-    const bData = await fetchCandlesSmart("bithumb", krwTicker, bFetchTf, 1000);
+    const bLimit = Math.min(fetchLimit, 300);
+    const bData = await fetchCandlesSmart("bithumb", krwTicker, bFetchTf, bLimit);
     const rawList = Array.isArray(bData?.data) ? bData.data : (Array.isArray(bData) ? bData : []);
     rawMain = rawList
       .map((d) => ({
@@ -404,24 +416,24 @@ async function fetchRawCandles(ctx, isSubSwitch, isSilentSync) {
       })).sort((a, b) => a.time - b.time);
     }
   } else if (isUpbit) {
-    const supportedMin = [1, 3, 5, 10, 15, 30, 60, 240];
-    const totalSec = tfSec[store.currentTF] || 60;
-    const u = store.currentTF.replace(/[0-9]/g, "");
-    if (u === "d" || u === "w" || u === "M") {
-      fetchInterval = u === "w" ? "weeks" : u === "M" ? "months" : "days";
-      mainStep = store.currentTF === "3d" ? 3 : 1;
-    } else {
+    fetchInterval = normalizeExchangeInterval("upbit", store.currentTF);
+    if (store.currentTF === "3d") {
+      mainStep = 3;
+    } else if (fetchInterval.startsWith("minutes/")) {
+      const baseMin = parseInt(fetchInterval.replace("minutes/", ""), 10) || 1;
+      const totalSec = tfSec[store.currentTF] || 60;
       const targetMin = totalSec / 60;
-      const baseMin =
-        supportedMin.reverse().find((m) => targetMin % m === 0) || 1;
-      fetchInterval = `minutes/${baseMin}`;
-      mainStep = targetMin / baseMin;
+      mainStep = Math.max(1, Math.round(targetMin / baseMin));
+    } else {
+      mainStep = 1;
     }
+    // 1회차 ~ 최신 200개 봉을 즉시 가져와 차트를 먼저 초고속 렌더링
+    const upbitFirstBatchLimit = Math.min(fetchLimit, 200);
     const raw = await fetchCandlesSmart(
       "upbit",
       krwTicker,
       fetchInterval,
-      fetchLimit,
+      upbitFirstBatchLimit,
     );
     if (Array.isArray(raw)) {
       rawMain = raw
@@ -742,12 +754,26 @@ function applySeriesAndLayout(ctx, isSubSwitch, isTfChange, isSilentSync, isTabR
   const { rowInfo, displayName, mainTickerStr, isFutures, isSpot, isUpbit, isBithumb } = ctx;
 
   if (store.mainData.length > 0 && store.candleSeries) {
-    const p =
-      rowInfo && rowInfo.precision !== undefined && rowInfo.precision !== null
-        ? Number(rowInfo.precision)
-        : store.getPrecision(rowInfo?.Ticker || rowInfo?.Symbol || displayName);
-
+    const isKor =
+      isUpbit ||
+      isBithumb ||
+      ["UPBIT", "BITHUMB"].includes(store.currentChartMarket);
     const lastCandle = store.mainData[store.mainData.length - 1];
+
+    let p;
+    if (isKor) {
+      const latestPrice = lastCandle
+        ? Number(lastCandle.close ?? lastCandle.trade_price ?? 0)
+        : 0;
+      const exch = isBithumb ? "bithumb" : "upbit";
+      p = getKrwPrecision(latestPrice, exch);
+    } else {
+      p =
+        rowInfo && rowInfo.precision !== undefined && rowInfo.precision !== null
+          ? Number(rowInfo.precision)
+          : store.getPrecision(rowInfo?.Ticker || rowInfo?.Symbol || displayName);
+    }
+
     if (lastCandle && rowInfo) {
       if (typeof window.updateHeaderDisplay === "function") {
         window.updateHeaderDisplay(
@@ -759,17 +785,17 @@ function applySeriesAndLayout(ctx, isSubSwitch, isTfChange, isSilentSync, isTabR
     }
 
     try {
-      // 🚀 [네이티브 단일 동기 배치 교체] 포맷 + 스케일 리셋 + 캔들/볼륨 주입 + 뷰포트 피팅을 단 1회의 동기 틱에서 일괄 처리
+      // [네이티브 단일 동기 배치 교체] 포맷 + 스케일 리셋 + 캔들/볼륨 주입 + 뷰포트 피팅을 단 1회의 동기 틱에서 일괄 처리
       store.candleSeries.applyOptions({
         priceFormat: {
           type: "custom",
           precision: p,
           minMove: p > 0 ? Number((1 / Math.pow(10, p)).toFixed(p)) : 1,
-          formatter: (price) => formatCrosshairPrice(price, p, false),
+          formatter: (price) => formatCrosshairPrice(price, p, false, isKor),
         },
       });
 
-      // 🚀 [신규 코인 로드 시 오토스케일 완벽 보장] 이전 코인의 커스텀 스케일 락을 해제하여 캔들 증발 방지
+      // [신규 코인 로드 시 오토스케일 완벽 보장] 이전 코인의 커스텀 스케일 락을 해제하여 캔들 증발 방지
       if (!isSubSwitch && !isTfChange) {
         store.isPriceScaleUserZoomed = false;
         store.isVolPriceScaleUserZoomed = false;
@@ -824,8 +850,10 @@ function applySeriesAndLayout(ctx, isSubSwitch, isTfChange, isSilentSync, isTabR
       store.realtimeKimchi = null;
 
       // 🚀 [원자적 상하 너비 완벽 동기화] 캔들/볼륨 주입 직후 단 1회의 동기 틱에서 상하 우측 너비를 일치시켜 덜그럭 원천 차단
-      if (typeof syncPriceScaleWidths === "function") {
-        syncPriceScaleWidths(!isSubSwitch);
+      if (typeof window.syncPriceScaleWidths === "function") {
+        window.syncPriceScaleWidths(true);
+      } else if (typeof syncPriceScaleWidths === "function") {
+        syncPriceScaleWidths(true);
       }
 
       if (typeof applyChartLayout === "function") applyChartLayout();
@@ -920,6 +948,13 @@ function finalizeKimchiAndRendering(ctx, isSubSwitch, isSilentSync, isTfChange, 
         }
 
         if (store.chart && store.chartVol) {
+          // 사일런트 복귀 시 유저가 줌/스크롤하지 않은 상태(실시간 앵커링)라면 최신 봉으로 이동 보장
+          if (isSilentSync && !store.isUserZoomed) {
+            try {
+              store.chart.timeScale().scrollToRealtime();
+              store.chartVol.timeScale().scrollToRealtime();
+            } catch (e) { }
+          }
           const curRange = store.chart.timeScale().getVisibleLogicalRange();
           if (curRange) {
             try { store.chartVol.timeScale().setVisibleLogicalRange(curRange); } catch (e) { }
@@ -1037,6 +1072,7 @@ export async function fetchHistory(
       snapshotAsset,
       snapshotTF,
     );
+    // 초기 캔들 로딩 완료 (과거 캔들은 유저가 차트를 과거로 스크롤/줌아웃할 때만 온디맨드로 로딩)
   } catch (e) {
     window.isFetchingChart = false;
     store.isFetchingChart = false;

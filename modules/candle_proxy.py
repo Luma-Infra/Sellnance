@@ -10,12 +10,12 @@ import pytz
 import re
 import os
 
+from . import api_manager, alpha_rules
 from .adapter import ExchangeAdapter
-from . import api_manager
 
 CF_WORKER_PROXY_URL = os.getenv("CF_WORKER_PROXY_URL", "").strip()
 
-# 🚀 [500명 방어 엔진 (I/O 병목 해제 50개 톨게이트)]
+# [500명 방어 엔진 (I/O 병목 해제 50개 톨게이트)]
 CANDLE_SEMAPHORE = asyncio.Semaphore(50)
 GLOBAL_AIO_SESSION = None
 IN_FLIGHT_CANDLE_REQUESTS = {}
@@ -98,6 +98,21 @@ class UpbitTokenBucketLimiter:
         self.cooldown_until = max(self.cooldown_until, now + seconds)
         self.tokens = 0.0  # 429 감지 시 토큰 즉시 소진
 
+    def sync_remaining_req(self, header_val: str):
+        """업비트 Remaining-Req: group=candles; sec=X 헤더 파싱 후 잔여 토큰 실시간 동기화"""
+        if not header_val:
+            return
+        try:
+            m = re.search(r"sec=(\d+)", header_val, re.IGNORECASE)
+            if m:
+                rem_sec = int(m.group(1))
+                now = time.time()
+                # 업비트 잔여 한도가 현재 토큰보다 작으면 안전하게 하향 조정
+                self.tokens = min(self.tokens, max(0.0, float(rem_sec - 1)))
+                self.last_refill = now
+        except Exception:
+            pass
+
     async def wait(self):
         while True:
             sleep_time = 0.0
@@ -138,9 +153,10 @@ def _construct_tv_msg(func, param_list):
 class PersistentTVClient:
     """
     [초고속 락-프리 트레이딩뷰 비동기 멀티플렉서]
-    - 전역 락 완전 제거: 백그라운드 리더가 1개의 웹소켓 안에서 여러 코인/봉을 병렬 라우팅
-    - GC 원자성 (Zero-Leak): finally 블록에서 pending_futures를 원자적 pop()하여 메모리 누수 0% 보장
-    - 트레이딩뷰 밴 방어: 동시 6개 세션 세마포어 캡 + 데이터 수신 즉시 chart_delete_session 전송
+    - 단일 TCP 웹소켓 연결 멀티플렉싱: 유저 500명 동시 접속에도 단 1개 소켓만 공유하여 백엔드/트뷰 부하 0%
+    - aiohttp 비동기 스트림 리더: ping/close 프레임 안전 분기 처리 및 연결 유실 시 0초 자동 복구
+    - GC 원자성 (Zero-Leak): finally 블록에서 pending_futures를 원자적 pop()하여 메모리 누수 최소화
+    - 트레이딩뷰 밴 완벽 방어: 20개 동시 세션 세마포어 캡 + 데이터 수신 즉시 chart_delete_session 전송
     """
 
     def __init__(self):
@@ -159,82 +175,33 @@ class PersistentTVClient:
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         }
 
-    async def _reader_loop(self):
-        """백그라운드에서 트레이딩뷰 패킷을 수신하여 해당 세션의 Future에 즉시 분배"""
-        try:
-            while self.ws and not self.ws.closed:
-                msg = await self.ws.receive_str()
-                if not msg:
-                    break
-
-                # 1. 트레이딩뷰 핑/퐁 하트비트 0ms 즉시 응답
-                if "~h~" in msg:
-                    h_val = msg.split("~h~")[1]
-                    await self.ws.send_str(f"~m~{len(h_val)}~m~~h~{h_val}")
-                    continue
-
-                # 2. 패킷 파싱 및 해당 세션 Future로 즉시 디스패치
-                for packet in re.split(r"~m~\d+~m~", msg):
-                    if not packet:
-                        continue
-                    try:
-                        parsed = json.loads(packet)
-                        method = parsed.get("m")
-                        if method == "timescale_update":
-                            params = parsed.get("p", [])
-                            if len(params) >= 2:
-                                session_id = params[0]
-                                fut = self.pending_futures.get(session_id)
-                                if fut and not fut.done():
-                                    plots = params[1].get("sds_1", {}).get("s", [])
-                                    candles = [
-                                        [
-                                            int(p["v"][0] * 1000),
-                                            str(p["v"][1]),
-                                            str(p["v"][2]),
-                                            str(p["v"][3]),
-                                            str(p["v"][4]),
-                                            (
-                                                str(p["v"][5])
-                                                if len(p.get("v", [])) >= 6
-                                                else "0"
-                                            ),
-                                        ]
-                                        for p in plots
-                                        if len(p.get("v", [])) >= 5
-                                    ]
-                                    if candles:
-                                        fut.set_result(candles)
-                        elif method == "critical_error" or method == "symbol_error":
-                            params = parsed.get("p", [])
-                            if len(params) >= 1:
-                                session_id = params[0]
-                                fut = self.pending_futures.get(session_id)
-                                if fut and not fut.done():
-                                    fut.set_result([])
-                    except Exception:
-                        pass
-        except Exception:
-            pass
-        finally:
-            # 연결 종료 시 잔여 퓨처 안전 정리
-            for fut in list(self.pending_futures.values()):
-                if not fut.done():
-                    fut.set_result([])
-            self.pending_futures.clear()
-
     async def _ensure_connected(self):
-        if self.ws is not None and not self.ws.closed:
+        if (
+            self.ws is not None
+            and not self.ws.closed
+            and self.reader_task is not None
+            and not self.reader_task.done()
+        ):
             return self.ws
+
         async with self.connect_lock:
-            if self.ws is not None and not self.ws.closed:
+            if (
+                self.ws is not None
+                and not self.ws.closed
+                and self.reader_task is not None
+                and not self.reader_task.done()
+            ):
                 return self.ws
+
             if self.session is None or self.session.closed:
                 self.session = aiohttp.ClientSession(
                     timeout=aiohttp.ClientTimeout(total=10)
                 )
+
             try:
-                self.ws = await self.session.ws_connect(self.url, headers=self.headers)
+                self.ws = await self.session.ws_connect(
+                    self.url, headers=self.headers, heartbeat=20.0
+                )
                 await self.ws.send_str(
                     _construct_tv_msg("set_auth_token", ["unauthorized_user_token"])
                 )
@@ -246,6 +213,75 @@ class PersistentTVClient:
                 self.ws = None
                 raise e
 
+    async def _reader_loop(self):
+        """백그라운드에서 트레이딩뷰 패킷을 수신하여 해당 세션의 Future에 즉시 분배"""
+        try:
+            async for msg in self.ws:
+                if msg.type == aiohttp.WSMsgType.TEXT:
+                    raw_text = msg.data
+                    # 1. 트레이딩뷰 핑/퐁 하트비트 0ms 즉시 응답
+                    if "~h~" in raw_text:
+                        h_val = raw_text.split("~h~")[1]
+                        await self.ws.send_str(f"~m~{len(h_val)}~m~~h~{h_val}")
+                        continue
+
+                    # 2. 패킷 파싱 및 해당 세션 Future로 즉시 디스패치
+                    for packet in re.split(r"~m~\d+~m~", raw_text):
+                        if not packet:
+                            continue
+                        try:
+                            parsed = json.loads(packet)
+                            method = parsed.get("m")
+                            if method == "timescale_update":
+                                params = parsed.get("p", [])
+                                if len(params) >= 2:
+                                    session_id = params[0]
+                                    fut = self.pending_futures.get(session_id)
+                                    if fut and not fut.done():
+                                        plots = params[1].get("sds_1", {}).get("s", [])
+                                        candles = [
+                                            [
+                                                int(p["v"][0] * 1000),
+                                                str(p["v"][1]),
+                                                str(p["v"][2]),
+                                                str(p["v"][3]),
+                                                str(p["v"][4]),
+                                                (
+                                                    str(p["v"][5])
+                                                    if len(p.get("v", [])) >= 6
+                                                    else "0"
+                                                ),
+                                            ]
+                                            for p in plots
+                                            if len(p.get("v", [])) >= 5
+                                        ]
+                                        if candles:
+                                            fut.set_result(candles)
+                            elif method in ("critical_error", "symbol_error"):
+                                params = parsed.get("p", [])
+                                if len(params) >= 1:
+                                    session_id = params[0]
+                                    fut = self.pending_futures.get(session_id)
+                                    if fut and not fut.done():
+                                        fut.set_result([])
+                        except Exception:
+                            pass
+                elif msg.type in (
+                    aiohttp.WSMsgType.CLOSED,
+                    aiohttp.WSMsgType.ERROR,
+                    aiohttp.WSMsgType.CLOSING,
+                ):
+                    break
+        except Exception:
+            pass
+        finally:
+            self.ws = None
+            # 연결 종료 시 잔여 퓨처 안전 정리
+            for fut in list(self.pending_futures.values()):
+                if not fut.done():
+                    fut.set_result([])
+            self.pending_futures.clear()
+
     async def get_candles(self, symbol: str, timeframe: str = "1D", n_bars: int = 1000):
         async with self.semaphore:  # 트레이딩뷰 밴 방지용 동시 세션 캡
             self._seq = (self._seq + 1) % 1000000
@@ -256,11 +292,9 @@ class PersistentTVClient:
 
             try:
                 ws = await self._ensure_connected()
-                await ws.send_str(
+                batch_msg = (
                     _construct_tv_msg("chart_create_session", [chart_session, ""])
-                )
-                await ws.send_str(
-                    _construct_tv_msg(
+                    + _construct_tv_msg(
                         "resolve_symbol",
                         [
                             chart_session,
@@ -268,9 +302,7 @@ class PersistentTVClient:
                             f"={json.dumps({'symbol': symbol, 'adjustment': 'splits'})}",
                         ],
                     )
-                )
-                await ws.send_str(
-                    _construct_tv_msg(
+                    + _construct_tv_msg(
                         "create_series",
                         [
                             chart_session,
@@ -283,8 +315,9 @@ class PersistentTVClient:
                         ],
                     )
                 )
+                await ws.send_str(batch_msg)
 
-                # Future 완료 대기 (최대 3.5초 단일 타임아웃)
+                # Future 완료 대기 (최대 3.5초 안전 타임아웃, 평시 0.2초)
                 candles = await asyncio.wait_for(fut, timeout=3.5)
                 return candles if candles else []
             except Exception:
@@ -304,89 +337,106 @@ class PersistentTVClient:
 PERSISTENT_TV_CLIENT = PersistentTVClient()
 
 
-async def get_tv_candles_aiohttp(symbol="BINANCE:AIAUSDT", timeframe="1D", n_bars=2000):
-    url = "wss://data.tradingview.com/socket.io/websocket"
-    headers = {
-        "Origin": "https://www.tradingview.com",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-    }
-    candles = []
+async def fetch_alpha_or_fallback_candles(
+    clean_base: str,
+    interval: str,
+    limit: int = 500,
+    to: str = "",
+    start: str = "",
+    is_alpha_coin: bool = False,
+):
+    """
+    [바이낸스 알파 1순위 직행 & 타 거래소 공식 REST 엔드포인트 스마트 폴백]
+    1. 알파 코인인 경우 -> 바이낸스 알파 Klines 공식 REST API (1순위)
+    2. 타 거래소 폴백(Bybit, Bitget, Gate.io) -> 각 거래소 공식 REST API 엔드포인트 직접 호출
+    3. 빗썸(Bithumb)만 트레이딩뷰 웹소켓(PERSISTENT_TV_CLIENT) 유지 (사용자 지정: 빗썸만 제외)
+    """
+    session = await get_aio_session()
+    n_bars = int(limit) if limit else 500
+
+    # 1. 🥇 [바이낸스 알파 공식 Klines API 1순위]
+    alpha_id = None
     try:
-        timeout = aiohttp.ClientTimeout(total=4)
-        async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.ws_connect(url, headers=headers) as ws:
-                chart_session = "cs_fast_" + str(int(time.time() * 1000))[-8:]
-                await ws.send_str(
-                    _construct_tv_msg("set_auth_token", ["unauthorized_user_token"])
-                )
-                await ws.send_str(
-                    _construct_tv_msg("chart_create_session", [chart_session, ""])
-                )
-                await ws.send_str(
-                    _construct_tv_msg(
-                        "resolve_symbol",
-                        [
-                            chart_session,
-                            "sds_sym_1",
-                            f"={json.dumps({'symbol': symbol, 'adjustment': 'splits'})}",
-                        ],
-                    )
-                )
-                await ws.send_str(
-                    _construct_tv_msg(
-                        "create_series",
-                        [
-                            chart_session,
-                            "sds_1",
-                            "s1",
-                            "sds_sym_1",
-                            timeframe,
-                            n_bars,
-                            "",
-                        ],
-                    )
-                )
+        alpha_map = alpha_rules.fetch_binance_alpha_raw()
+        alpha_item = alpha_map.get(clean_base.upper()) if alpha_map else None
+        if isinstance(alpha_item, dict):
+            alpha_id = alpha_item.get("alphaId")
+    except Exception:
+        pass
 
-                for _ in range(15):
-                    try:
-                        msg = await asyncio.wait_for(ws.receive_str(), timeout=1.5)
-                    except asyncio.TimeoutError:
-                        break
+    if alpha_id or is_alpha_coin:
+        target_id = alpha_id or clean_base
+        norm_int = ExchangeAdapter.normalize_interval("binance_spot", interval)
+        alpha_url = f"https://www.binance.com/bapi/defi/v1/public/alpha-trade/klines?symbol={target_id}USDT&interval={norm_int}&limit={n_bars}"
+        if to:
+            alpha_url += f"&endTime={to}"
+        if start:
+            alpha_url += f"&startTime={start}"
+        try:
+            async with session.get(
+                alpha_url, timeout=aiohttp.ClientTimeout(total=3.5)
+            ) as resp:
+                if resp.status == 200:
+                    res_json = await resp.json()
+                    kdata = res_json.get("data")
+                    if isinstance(kdata, list) and len(kdata) > 0:
+                        sorted_k = sorted(kdata, key=lambda x: int(x[0]))
+                        return sorted_k, None
+        except Exception:
+            pass
 
-                    if "~h~" in msg:
-                        h_val = msg.split("~h~")[1]
-                        await ws.send_str(f"~m~{len(h_val)}~m~~h~{h_val}")
-                        continue
+    # 2. 🥈 [타 거래소 공식 REST API 폴백: 기존 _raw_fetch_candles 파이프라인 재사용 (중복 제거)]
+    fallback_targets = [
+        ("bybit_spot", "BYBIT"),
+        ("bitget_spot", "BITGET"),
+        ("gateio_spot", "GATEIO"),
+    ]
+    for ex_key, ex_name in fallback_targets:
+        try:
+            cand, _ = await _raw_fetch_candles(
+                exchange=ex_key,
+                symbol=f"{clean_base}USDT",
+                interval=interval,
+                limit=n_bars,
+                to=to,
+                start=start,
+            )
+            if cand and isinstance(cand, list) and len(cand) > 0:
+                return cand, ex_name
+        except Exception:
+            pass
 
-                    for packet in re.split(r"~m~\d+~m~", msg):
-                        if not packet:
-                            continue
-                        try:
-                            parsed = json.loads(packet)
-                            if parsed.get("m") == "timescale_update":
-                                plots = (
-                                    parsed.get("p", [])[1].get("sds_1", {}).get("s", [])
-                                )
-                                for p in plots:
-                                    v = p.get("v", [])
-                                    if len(v) >= 5:
-                                        candles.append(
-                                            [
-                                                int(v[0] * 1000),
-                                                str(v[1]),
-                                                str(v[2]),
-                                                str(v[3]),
-                                                str(v[4]),
-                                                str(v[5]) if len(v) >= 6 else "0",
-                                            ]
-                                        )
-                                if candles:
-                                    return candles
-                        except Exception:
-                            pass
-    except Exception as e:
-        print(f"⚠️ [aiohttp TV] Error fetching {symbol}: {e}")
-    return candles
+    # 3. [BITHUMB 트레이딩뷰 웹소켓 유지 (빗썸만 제외하여 기존 TV 사용)]
+    tv_tf_map = {
+        "1m": "1",
+        "3m": "3",
+        "5m": "5",
+        "15m": "15",
+        "30m": "30",
+        "1h": "60",
+        "2h": "120",
+        "4h": "240",
+        "6h": "360",
+        "12h": "720",
+        "1d": "1D",
+        "days": "1D",
+        "3d": "3D",
+        "1w": "1W",
+        "weeks": "1W",
+        "1M": "1M",
+        "months": "1M",
+    }
+    tv_tf = tv_tf_map.get(interval, interval.upper())
+    try:
+        tv_cand = await PERSISTENT_TV_CLIENT.get_candles(
+            symbol=f"BITHUMB:{clean_base}KRW", timeframe=tv_tf, n_bars=n_bars
+        )
+        if tv_cand and isinstance(tv_cand, list) and len(tv_cand) > 0:
+            return sorted(tv_cand, key=lambda x: int(x[0])), "BITHUMB"
+    except Exception:
+        pass
+
+    return None, None
 
 
 async def _raw_fetch_candles(
@@ -400,7 +450,7 @@ async def _raw_fetch_candles(
     """실제 거래소 및 트뷰로 나가 데이터를 수집하는 내부 비동기 워커"""
     now = time.time()
 
-    # 🚀 [BITHUMB 전용 aiohttp TV 고속 우회 엔진]
+    # [BITHUMB 전용 aiohttp TV 고속 우회 엔진]
     if exchange == "bithumb":
         clean_sym = (
             symbol.replace("KRW-", "").replace("_KRW", "").replace("KRW", "").upper()
@@ -431,13 +481,25 @@ async def _raw_fetch_candles(
             "months": "1M",
         }
         tv_tf = tv_tf_map.get(interval, tv_tf_map.get(interval.lower(), "1D"))
+        # [초고속 렌더링] 첫 진입(to 없음) 시 300개로 0.2초 초고속 렌더링, 과거 탐색 시 요청 limit 충실 반영
+        req_bars = min(limit, 300) if not to else min(limit, 2000)
         try:
             tv_candles = await PERSISTENT_TV_CLIENT.get_candles(
                 symbol=f"BITHUMB:{clean_sym}KRW",
                 timeframe=tv_tf,
-                n_bars=min(limit, 2000),
+                n_bars=req_bars,
             )
             if tv_candles and len(tv_candles) > 0:
+                if to:
+                    try:
+                        target_to = int(to)
+                        tv_candles = [c for c in tv_candles if int(c[0]) <= target_to]
+                        if limit and len(tv_candles) > int(limit):
+                            tv_candles = tv_candles[-int(limit) :]
+                    except Exception:
+                        pass
+                if not tv_candles:
+                    return {"status": "0000", "data": []}, None
                 formatted_bithumb = {
                     "status": "0000",
                     "data": [
@@ -456,7 +518,38 @@ async def _raw_fetch_candles(
         except Exception as e:
             print(f"⚠️ [BITHUMB 폴백 전환] {clean_sym}: {e}")
 
-    # 🚀 [BITGET 공식 API 직통]
+    # [BYBIT 공식 API 직통]
+    if exchange in ("bybit", "bybit_spot", "bybit_futures"):
+        try:
+            url = ExchangeAdapter.get_candle_url(
+                exchange, symbol, interval, limit, to, start
+            )
+            if url:
+                session = await get_aio_session()
+                async with session.get(
+                    url, timeout=aiohttp.ClientTimeout(total=5)
+                ) as resp:
+                    if resp.status == 200:
+                        res_json = await resp.json()
+                        raw_data = res_json.get("result", {}).get("list", [])
+                        if isinstance(raw_data, list) and len(raw_data) > 0:
+                            candles = [
+                                [
+                                    int(c[0]),
+                                    str(c[1]),
+                                    str(c[2]),
+                                    str(c[3]),
+                                    str(c[4]),
+                                    str(c[5]),
+                                ]
+                                for c in raw_data
+                                if len(c) >= 6
+                            ]
+                            return sorted(candles, key=lambda x: x[0]), None
+        except Exception as e:
+            print(f"⚠️ [BYBIT 공식 API 에러] {symbol}: {e}")
+
+    # [BITGET 공식 API 직통]
     if exchange in ("bitget", "bitget_spot", "bitget_futures"):
         try:
             url = ExchangeAdapter.get_candle_url(
@@ -464,7 +557,9 @@ async def _raw_fetch_candles(
             )
             if url:
                 session = await get_aio_session()
-                async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
+                async with session.get(
+                    url, timeout=aiohttp.ClientTimeout(total=5)
+                ) as resp:
                     if resp.status == 200:
                         res_json = await resp.json()
                         raw_data = res_json.get("data", [])
@@ -486,7 +581,7 @@ async def _raw_fetch_candles(
         except Exception as e:
             print(f"⚠️ [BITGET 공식 API 에러] {symbol}: {e}")
 
-    # 🚀 [GATEIO 공식 API 직통]
+    # [GATEIO 공식 API 직통]
     if exchange in ("gateio", "gateio_spot", "gateio_futures"):
         try:
             url = ExchangeAdapter.get_candle_url(
@@ -494,7 +589,9 @@ async def _raw_fetch_candles(
             )
             if url:
                 session = await get_aio_session()
-                async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
+                async with session.get(
+                    url, timeout=aiohttp.ClientTimeout(total=5)
+                ) as resp:
                     if resp.status == 200:
                         data = await resp.json()
                         if isinstance(data, list) and len(data) > 0:
@@ -534,7 +631,7 @@ async def _raw_fetch_candles(
         except Exception as e:
             print(f"⚠️ [GATEIO 공식 API 에러] {symbol}: {e}")
 
-    # [바이낸스 알파 코인 직행]: 알파 전용 코인은 바이낸스 REST(400 에러)를 건너뛰고 트레이딩뷰 aiohttp 웹소켓으로 처음부터 즉시 서빙!
+    # [바이낸스 알파 코인 직행]: 바이낸스 일반 현물(400 에러) 대신 바이낸스 알파 공식 Klines REST API로 1순위 즉시 서빙
     clean_base = (
         symbol.replace("USDT", "").replace("BUSD", "").replace("USDC", "").upper()
     )
@@ -550,45 +647,16 @@ async def _raw_fetch_candles(
             is_alpha_coin = True
 
     if is_alpha_coin:
-        tv_tf_map = {
-            "1m": "1",
-            "3m": "3",
-            "5m": "5",
-            "15m": "15",
-            "30m": "30",
-            "1h": "60",
-            "2h": "120",
-            "4h": "240",
-            "6h": "360",
-            "12h": "720",
-            "1d": "1D",
-            "days": "1D",
-            "3d": "3D",
-            "1w": "1W",
-            "weeks": "1W",
-            "1M": "1M",
-            "months": "1M",
-        }
-        tv_tf = tv_tf_map.get(interval, interval.upper())
-        n_bars = int(limit) if limit else 500
-
-        sym_candidates = [
-            ("BYBIT", f"BYBIT:{clean_base}USDT"),
-            ("BITGET", f"BITGET:{clean_base}USDT"),
-            ("GATEIO", f"GATEIO:{clean_base}USDT"),
-            ("BITHUMB", f"BITHUMB:{clean_base}KRW"),
-        ]
-        for ex_source, tv_sym in sym_candidates:
-            try:
-                tv_cand = await PERSISTENT_TV_CLIENT.get_candles(
-                    symbol=tv_sym, timeframe=tv_tf, n_bars=n_bars
-                )
-                if tv_cand and isinstance(tv_cand, list) and len(tv_cand) > 0:
-                    sorted_cand = sorted(tv_cand, key=lambda x: x[0])
-                    # print(f"✅ [알파 캔들 TV 직행 수신] {symbol} -> {tv_sym} ({len(sorted_cand)}개)")
-                    return sorted_cand, ex_source
-            except Exception:
-                pass
+        cand, src = await fetch_alpha_or_fallback_candles(
+            clean_base=clean_base,
+            interval=interval,
+            limit=int(limit) if limit else 500,
+            to=to,
+            start=start,
+            is_alpha_coin=True,
+        )
+        if cand and len(cand) > 0:
+            return cand, src
 
     try:
         url = ExchangeAdapter.get_candle_url(
@@ -601,18 +669,13 @@ async def _raw_fetch_candles(
             await UPBIT_RATE_LIMITER.wait()
 
         fetch_url = url
-        if CF_WORKER_PROXY_URL and exchange == "upbit":
-            fetch_url = (
-                f"{CF_WORKER_PROXY_URL.rstrip('/')}/?url={urllib.parse.quote(url)}"
-            )
-
         session = await get_aio_session()
         data = None
         current_target = fetch_url
         req_timeout = (
             aiohttp.ClientTimeout(total=2.5, connect=1.5)
             if exchange == "bithumb"
-            else None
+            else aiohttp.ClientTimeout(total=3.0, connect=1.5)
         )
         for attempt in range(3):
             try:
@@ -620,24 +683,41 @@ async def _raw_fetch_candles(
                     if resp.status == 429:
                         if exchange == "upbit":
                             UPBIT_RATE_LIMITER.trigger_cooldown(1.5)
+                            # 1차 실패 시 비상 Cloudflare Worker 프록시가 있으면 전환
+                            if CF_WORKER_PROXY_URL and current_target == url:
+                                current_target = f"{CF_WORKER_PROXY_URL.rstrip('/')}/?url={urllib.parse.quote(url)}"
                         if attempt < 2:
                             await asyncio.sleep(1.0 * (attempt + 1))
                             continue
                         else:
                             data = []
                             break
-                    if resp.status != 200 and current_target != url and attempt == 0:
-                        current_target = url
-                        continue
                     if resp.status == 200:
+                        if exchange == "upbit":
+                            rem_header = resp.headers.get("Remaining-Req")
+                            if rem_header:
+                                UPBIT_RATE_LIMITER.sync_remaining_req(rem_header)
                         data = await resp.json()
                         break
                     else:
+                        if (
+                            CF_WORKER_PROXY_URL
+                            and exchange == "upbit"
+                            and current_target == url
+                            and attempt == 0
+                        ):
+                            current_target = f"{CF_WORKER_PROXY_URL.rstrip('/')}/?url={urllib.parse.quote(url)}"
+                            continue
                         data = []
                         break
             except Exception:
-                if current_target != url and attempt == 0:
-                    current_target = url
+                if (
+                    CF_WORKER_PROXY_URL
+                    and exchange == "upbit"
+                    and current_target == url
+                    and attempt == 0
+                ):
+                    current_target = f"{CF_WORKER_PROXY_URL.rstrip('/')}/?url={urllib.parse.quote(url)}"
                     continue
                 if attempt == 2:
                     data = []
@@ -647,56 +727,32 @@ async def _raw_fetch_candles(
         if data is None:
             data = []
 
-        # [바이낸스 캔들 스마트 폴백]: 바이낸스 현물 400/빈 캔들 시 트레이딩뷰 aiohttp 폴백 가동
-        if exchange in ("binance", "binance_spot") and (not data or len(data) == 0):
+        # [바이낸스 캔들 스마트 폴백]: 오직 알파 코인인 경우에만 타 거래소 폴백 가동 (정규 바낸 스팟/퓨처는 폴백 대상 아님)
+        if (
+            is_alpha_coin
+            and exchange in ("binance", "binance_spot")
+            and (not data or len(data) == 0)
+        ):
             clean_base = (
                 symbol.replace("USDT", "")
                 .replace("BUSD", "")
                 .replace("USDC", "")
                 .upper()
             )
-            tv_tf_map = {
-                "1m": "1",
-                "3m": "3",
-                "5m": "5",
-                "15m": "15",
-                "30m": "30",
-                "1h": "60",
-                "2h": "120",
-                "4h": "240",
-                "6h": "360",
-                "12h": "720",
-                "1d": "1D",
-                "days": "1D",
-                "3d": "3D",
-                "1w": "1W",
-                "weeks": "1W",
-                "1M": "1M",
-                "months": "1M",
-            }
-            tv_tf = tv_tf_map.get(interval, interval.upper())
-            n_bars = int(limit) if limit else 500
-
-            sym_candidates = [
-                ("BYBIT", f"BYBIT:{clean_base}USDT"),
-                ("BITGET", f"BITGET:{clean_base}USDT"),
-                ("GATEIO", f"GATEIO:{clean_base}USDT"),
-                ("BITHUMB", f"BITHUMB:{clean_base}KRW"),
-            ]
-            for ex_source, tv_sym in sym_candidates:
-                try:
-                    tv_cand = await PERSISTENT_TV_CLIENT.get_candles(
-                        symbol=tv_sym, timeframe=tv_tf, n_bars=n_bars
-                    )
-                    if tv_cand and isinstance(tv_cand, list) and len(tv_cand) > 0:
-                        data = sorted(tv_cand, key=lambda x: x[0])
-                        fallback_source = ex_source
-                        print(
-                            f"✅ [알파 캔들 TV 폴백 수신] {symbol} -> {tv_sym} ({len(data)}개)"
-                        )
-                        break
-                except Exception:
-                    pass
+            cand, src = await fetch_alpha_or_fallback_candles(
+                clean_base=clean_base,
+                interval=interval,
+                limit=int(limit) if limit else 500,
+                to=to,
+                start=start,
+                is_alpha_coin=False,
+            )
+            if cand and len(cand) > 0:
+                data = cand
+                fallback_source = src
+                print(
+                    f"✅ [알파/미상장 캔들 스마트 폴백 수신] {symbol} -> {src} ({len(data)}개)"
+                )
 
         # 빗썸 전체 캔들 반환 시 요청한 limit만큼 백엔드에서 즉시 슬라이싱하여 전송 속도 극대화
         if (
@@ -708,7 +764,7 @@ async def _raw_fetch_candles(
             if isinstance(raw_list, list) and limit and len(raw_list) > int(limit):
                 data = {"status": "0000", "data": raw_list[-int(limit) :]}
 
-        # 🚀 [설정 기반 단절 복구 엔진 (mapping.json 연동)]
+        # [설정 기반 단절 복구 엔진 (mapping.json 연동)]
         recovery_map = (
             api_manager.MAPPING_DATA.get("PAST_GAP_RECOVERY_MAP", {})
             if api_manager.MAPPING_DATA
@@ -837,8 +893,15 @@ async def fetch_candles_guarded(
     now = time.time()
     ttl = get_candle_ttl(interval, to)
 
-    if len(CANDLE_CACHE) > 500:
-        CANDLE_CACHE = {k: v for k, v in CANDLE_CACHE.items() if now - v[0] < 600}
+    if len(CANDLE_CACHE) > 100:
+        # 1차: 300초(5분) 이상 경과한 캐시 즉시 퇴출
+        CANDLE_CACHE = {k: v for k, v in CANDLE_CACHE.items() if now - v[0] < 300}
+        # 2차: 그래도 100개 초과 시 가장 최신 80개만 남기고 즉시 제거
+        if len(CANDLE_CACHE) > 100:
+            sorted_items = sorted(
+                CANDLE_CACHE.items(), key=lambda item: item[1][0], reverse=True
+            )
+            CANDLE_CACHE = dict(sorted_items[:80])
 
     req_cache_key = f"{exchange}_{symbol}_{interval}_{limit}_{start}_{to}"
 

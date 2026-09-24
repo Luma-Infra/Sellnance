@@ -32,14 +32,14 @@ export const getNextBarTime = (lastCandleTime, tf) => {
     const diff = day === 0 ? 1 : 8 - day;
     return Math.floor(
       Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate() + diff) /
-        1000,
+      1000,
     );
   }
   if (tf === "1d") {
     const dt = new Date(lastCandleUnix * 1000);
     return Math.floor(
       Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate() + 1) /
-        1000,
+      1000,
     );
   }
   if (tf === "3d") {
@@ -170,7 +170,7 @@ export function resetChartScale() {
   } catch (e) {
     try {
       store.chart.timeScale().scrollToRealtime();
-    } catch (err) {}
+    } catch (err) { }
   }
 
   if (store.chartVol) {
@@ -190,7 +190,7 @@ export function resetChartScale() {
     } catch (e) {
       try {
         store.chartVol.timeScale().scrollToRealtime();
-      } catch (err) {}
+      } catch (err) { }
     }
   }
 
@@ -277,9 +277,10 @@ export function formatSmartPrice(price, p, isKrw = false) {
       });
     }
 
-    // 1️⃣ 원화(KRW) 가격 규칙: 업비트 최신 공식 호가단위 100% 동기화
+    // 원화(KRW) 가격 규칙: 업비트/빗썸 최신 공식 호가단위 100% 동기화
     if (isKrw) {
-      return formatKrwPrice(numPrice);
+      const exch = (store?.currentChartMarket || "upbit").toLowerCase();
+      return formatKrwPrice(numPrice, exch);
     }
 
     // 2️⃣ 달러(USD) 가격 규칙: 소수점 이하 유효숫자 4자리 보장 (0.00000001080 등 극소수 코인 0/잘림 방어)
@@ -327,10 +328,19 @@ export function formatSmartPrice(price, p, isKrw = false) {
   }
 }
 
-// 🚀 크로스헤어 전용 가격표 포맷팅 (플마 퍼센트 및 가격차이 표시)
-export function formatCrosshairPrice(price, p, isLeftScale = false) {
+// 크로스헤어 및 가격축 눈금 전용 가격표 포맷팅 (원화 호가단위 자동 연동)
+export function formatCrosshairPrice(
+  price,
+  p,
+  isLeftScale = false,
+  isKrw = null,
+) {
   if (!isLeftScale) {
-    return formatSmartPrice(price, p);
+    const krwMode =
+      isKrw !== null
+        ? isKrw
+        : ["UPBIT", "BITHUMB"].includes(store?.currentChartMarket);
+    return formatSmartPrice(price, p, krwMode);
   }
   // 좌측 스케일: showCrosshairPct 플래그가 켜진 경우에만 퍼센트 표시
   // (DrawingPriceAxisView.visible()이 제어하므로 여기서는 항상 비워둠)
@@ -490,9 +500,11 @@ function updateLegend(d, v, k) {
         store.currencyMode === "KRW" &&
         typeof window.formatVolumeKRW === "function"
       ) {
-        const rate = store.marketDataMap?.krw_usd_rate || 1;
-        const volToFormat =
-          store.currentMarket === "BINANCE" ? rawVol * rate : rawVol;
+        const rate = store.marketDataMap?.krw_usd_rate || 1000;
+        const isKorChart =
+          store.currentChartMarket === "UPBIT" ||
+          store.currentChartMarket === "BITHUMB";
+        const volToFormat = !isKorChart ? rawVol * rate : rawVol;
         volValue = window.formatVolumeKRW(volToFormat);
       } else {
         volValue = window.formatVolumeDollar
@@ -525,10 +537,10 @@ function updateLegend(d, v, k) {
       store.isCrosshairActive && !isLatest
         ? k
         : store.realtimeKimchi ||
-          k ||
-          (store.kimchiData && store.kimchiData.length > 0
-            ? store.kimchiData[store.kimchiData.length - 1]
-            : null);
+        k ||
+        (store.kimchiData && store.kimchiData.length > 0
+          ? store.kimchiData[store.kimchiData.length - 1]
+          : null);
 
     let kimValue = "-";
     let kimColorStyle = "";
@@ -744,7 +756,7 @@ export function autoFit(isTabRestore = false) {
           store.chartVol.priceScale("left").applyOptions({ autoScale: true });
         }
       }
-    } catch (e) {}
+    } catch (e) { }
     return;
   }
   if (store.chart && store.mainData.length) {
@@ -776,7 +788,7 @@ export function autoFit(isTabRestore = false) {
         if (!store.isKimchiPriceScaleUserZoomed && store.kimchiSeries) {
           store.chartVol.priceScale("left").applyOptions({ autoScale: true });
         }
-      } catch (e) {}
+      } catch (e) { }
     }
   }
 }
@@ -900,9 +912,10 @@ export function getCleanSymbol(input) {
   // 1) 괄호 제거: "BTTC(BitTorrent)" -> "BTTC"
   const withoutParen = raw.split("(")[0].trim();
 
-  // 2) 마켓 접미사 제거: "BTTCUSDT" -> "BTTC", "BTC_UPBIT" -> "BTC"
+  // 2) 마켓 접두사/접미사 제거: "KRW-BTC" -> "BTC", "BTC_KRW" -> "BTC", "BTTCUSDT" -> "BTTC", "BTC_UPBIT" -> "BTC"
   const withoutMarket = withoutParen
-    .replace(/_(BINANCE|UPBIT|BITHUMB|BYBIT|GATEIO|FUTURES|SPOT)$/i, "")
+    .replace(/^KRW-/i, "")
+    .replace(/_(BINANCE|UPBIT|BITHUMB|BYBIT|GATEIO|FUTURES|SPOT|KRW)$/i, "")
     .replace(/(USDT|KRW|BUSD|USDC)$/i, "");
 
   // 3) 선물 배수 접두사 제거: "1MBABYDOGE" -> "BABYDOGE", "1000PEPE" -> "PEPE"
@@ -1003,7 +1016,7 @@ export function toggleCountdown(forceVal) {
   } else if (store.countdownPriceLine && store.candleSeries) {
     try {
       store.candleSeries.removePriceLine(store.countdownPriceLine);
-    } catch (e) {}
+    } catch (e) { }
     store.countdownPriceLine = null;
   }
 
@@ -1062,7 +1075,7 @@ export function updateRealtimeCountdown(serverMs, overridePrice) {
     if (store.countdownPriceLine) {
       try {
         store.candleSeries.removePriceLine(store.countdownPriceLine);
-      } catch (e) {}
+      } catch (e) { }
       store.countdownPriceLine = null;
     }
     return;
@@ -1098,8 +1111,8 @@ export function updateRealtimeCountdown(serverMs, overridePrice) {
 
   const currentClose =
     overridePrice !== undefined &&
-    overridePrice !== null &&
-    !isNaN(overridePrice)
+      overridePrice !== null &&
+      !isNaN(overridePrice)
       ? Number(overridePrice)
       : Number(lastCandle.close);
   const isDown = currentClose < Number(lastCandle.open);
@@ -1135,7 +1148,7 @@ export function updateRealtimeCountdown(serverMs, overridePrice) {
   } else if (store.countdownPriceLine) {
     try {
       store.candleSeries.removePriceLine(store.countdownPriceLine);
-    } catch (e) {}
+    } catch (e) { }
     store.countdownPriceLine = null;
   }
 }
@@ -1255,7 +1268,7 @@ export function updateTabTitleManager(price, symbol, isKor) {
     if (isMainKrw) {
       let krwPrice = scaledPrice;
       if (!isKor) {
-        const rate = store.marketDataMap?.krw_usd_rate || 0;
+        const rate = store.marketDataMap?.krw_usd_rate || 1000;
         if (rate > 0) krwPrice = scaledPrice * rate;
       }
       formatted = formatKrwPrice(
@@ -1363,8 +1376,8 @@ export const sanitizeChartData = (dataArr, hasValueField = false) => {
         close: Number(d.close),
         volume:
           d.volume !== undefined &&
-          d.volume !== null &&
-          !isNaN(Number(d.volume))
+            d.volume !== null &&
+            !isNaN(Number(d.volume))
             ? Number(d.volume)
             : 0,
       });

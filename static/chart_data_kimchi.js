@@ -9,17 +9,77 @@ export function resampleSubCandles(subCandles, targetTF, subExchange) {
 
   const getTs = (c) => {
     if (!c) return 0;
-    if (typeof c.time === "number") return c.time > 1e11 ? Math.floor(c.time / 1000) : c.time;
-    if (c.candle_date_time_utc) return Math.floor(new Date(c.candle_date_time_utc + "Z").getTime() / 1000);
-    if (Array.isArray(c)) return Number(c[0]) > 1e11 ? Math.floor(Number(c[0]) / 1000) : Number(c[0]);
+    if (typeof c.time === "number")
+      return c.time > 1e11 ? Math.floor(c.time / 1000) : c.time;
+    if (c.candle_date_time_utc)
+      return Math.floor(
+        new Date(c.candle_date_time_utc + "Z").getTime() / 1000,
+      );
+    if (Array.isArray(c))
+      return Number(c[0]) > 1e11
+        ? Math.floor(Number(c[0]) / 1000)
+        : Number(c[0]);
     return Number(c.time || c[0]) || 0;
   };
 
-  const getO = (c) => Number(c.open !== undefined ? c.open : (c.opening_price !== undefined ? c.opening_price : (Array.isArray(c) ? c[1] : 0))) || 0;
-  const getH = (c) => Number(c.high !== undefined ? c.high : (c.high_price !== undefined ? c.high_price : (Array.isArray(c) ? (subExchange === "bithumb" ? c[3] : c[2]) : 0))) || 0;
-  const getL = (c) => Number(c.low !== undefined ? c.low : (c.low_price !== undefined ? c.low_price : (Array.isArray(c) ? (subExchange === "bithumb" ? c[4] : c[3]) : 0))) || 0;
-  const getC = (c) => Number(c.close !== undefined ? c.close : (c.trade_price !== undefined ? c.trade_price : (Array.isArray(c) ? (subExchange === "bithumb" ? c[2] : c[4]) : 0))) || 0;
-  const getV = (c) => Number(c.vol !== undefined ? c.vol : (c.volume !== undefined ? c.volume : (c.candle_acc_trade_volume !== undefined ? c.candle_acc_trade_volume : (Array.isArray(c) ? c[5] : 0)))) || 0;
+  const getO = (c) =>
+    Number(
+      c.open !== undefined
+        ? c.open
+        : c.opening_price !== undefined
+          ? c.opening_price
+          : Array.isArray(c)
+            ? c[1]
+            : 0,
+    ) || 0;
+  const getH = (c) =>
+    Number(
+      c.high !== undefined
+        ? c.high
+        : c.high_price !== undefined
+          ? c.high_price
+          : Array.isArray(c)
+            ? subExchange === "bithumb"
+              ? c[3]
+              : c[2]
+            : 0,
+    ) || 0;
+  const getL = (c) =>
+    Number(
+      c.low !== undefined
+        ? c.low
+        : c.low_price !== undefined
+          ? c.low_price
+          : Array.isArray(c)
+            ? subExchange === "bithumb"
+              ? c[4]
+              : c[3]
+            : 0,
+    ) || 0;
+  const getC = (c) =>
+    Number(
+      c.close !== undefined
+        ? c.close
+        : c.trade_price !== undefined
+          ? c.trade_price
+          : Array.isArray(c)
+            ? subExchange === "bithumb"
+              ? c[2]
+              : c[4]
+            : 0,
+    ) || 0;
+  const getV = (c) =>
+    Number(
+      c.vol !== undefined
+        ? c.vol
+        : c.volume !== undefined
+          ? c.volume
+          : c.candle_acc_trade_volume !== undefined
+            ? c.candle_acc_trade_volume
+            : Array.isArray(c)
+              ? c[5]
+              : 0,
+    ) || 0;
 
   const bucketMap = new Map();
   const sorted = [...subCandles].sort((a, b) => getTs(a) - getTs(b));
@@ -62,7 +122,7 @@ export function calculateKimchiData(mainData, subRaw, params) {
   const { subExchange, subMulti, mainMulti, tf, isKor, rateCacheKey } = params;
   if (!store.fiatRateCache) store.fiatRateCache = {};
   const fiatRateMap = store.fiatRateCache[rateCacheKey] || [];
-  const currentFiatRate = store.marketDataMap.krw_usd_rate || 1;
+  const currentFiatRate = store.marketDataMap.krw_usd_rate || 1000;
 
   // 🚀 [12h / 3d 정밀 합성] 서브 거래소 캔들이 4h나 1d로 들어온 경우 타겟 타임프레임(12h, 3d)으로 에포크 정밀 합성
   const processedSubRaw = resampleSubCandles(subRaw, tf, subExchange);
@@ -81,7 +141,9 @@ export function calculateKimchiData(mainData, subRaw, params) {
         return Math.floor(Date.parse(item.candle_date_time_utc + "Z") / 1000);
       }
       if (Array.isArray(item)) {
-        return Math.floor(Number(item[0]) > 1e11 ? Number(item[0]) / 1000 : Number(item[0]));
+        return Math.floor(
+          Number(item[0]) > 1e11 ? Number(item[0]) / 1000 : Number(item[0]),
+        );
       }
       const t = item.time !== undefined ? item.time : item[0];
       return Math.floor(Number(t) > 1e11 ? Number(t) / 1000 : Number(t));
@@ -96,11 +158,19 @@ export function calculateKimchiData(mainData, subRaw, params) {
       if (Array.isArray(item)) {
         return subExchange === "bithumb" ? Number(item[2]) : Number(item[4]);
       }
-      return Number(item.close !== undefined ? item.close : item[4] !== undefined ? item[4] : item[2]);
+      return Number(
+        item.close !== undefined
+          ? item.close
+          : item[4] !== undefined
+            ? item[4]
+            : item[2],
+      );
     };
 
     // 🚀 서브 데이터를 타임스탬프 기준 시간 오름차순으로 완벽 정렬 (12h/3d 에포크 합성본 사용)
-    const sortedSub = [...processedSubRaw].sort((a, b) => getSubTime(a) - getSubTime(b));
+    const sortedSub = [...processedSubRaw].sort(
+      (a, b) => getSubTime(a) - getSubTime(b),
+    );
     const firstSubTime = sortedSub.length > 0 ? getSubTime(sortedSub[0]) : 0;
 
     let subIndex = 0;
@@ -114,7 +184,10 @@ export function calculateKimchiData(mainData, subRaw, params) {
       const candleTimeSec = ensureSafeUnixSeconds(candle.time);
 
       // [서브 거래소 상장 이전 구간 가드] 서브 캔들이 존재하지 않는 과거 구간은 김프 계산 스킵 (대폭락 갭 원천 차단)
-      if (firstSubTime > 0 && candleTimeSec < firstSubTime - intervalSec * 1.5) {
+      if (
+        firstSubTime > 0 &&
+        candleTimeSec < firstSubTime - intervalSec * 1.5
+      ) {
         return;
       }
 
@@ -136,9 +209,10 @@ export function calculateKimchiData(mainData, subRaw, params) {
       // 순방향 포인터를 돌며 현재 메인 캔들 시각(candleTimeSec) 이하(과거/동일) 또는 미세 오차 이내의 서브 캔들을 탐색합니다.
       while (
         subIndex < sortedSub.length - 1 &&
-        getSubTime(sortedSub[subIndex + 1]) <= candleTimeSec + intervalSec * 0.2 &&
+        getSubTime(sortedSub[subIndex + 1]) <=
+          candleTimeSec + intervalSec * 0.2 &&
         Math.abs(getSubTime(sortedSub[subIndex + 1]) - candleTimeSec) <=
-        Math.abs(getSubTime(sortedSub[subIndex]) - candleTimeSec)
+          Math.abs(getSubTime(sortedSub[subIndex]) - candleTimeSec)
       ) {
         subIndex++;
       }
