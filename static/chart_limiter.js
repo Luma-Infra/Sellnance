@@ -1,6 +1,8 @@
 // static/chart_limiter.js
 // [업비트 공식 가이드 준수: 초당 10회 제한 중 8회 버킷, Remaining-Req 헤더 피드백, 429 서킷 브레이커]
 
+export const UPBIT_PACING_MS = 125; // 1000ms / 8회 = 125ms (초당 8회 안전 간격)
+
 export class UpbitBrowserLimiter {
   constructor(capacity = 8, refillRate = 8) {
     this.capacity = capacity;
@@ -30,6 +32,19 @@ export class UpbitBrowserLimiter {
       this.tokens -= 1.0;
       this.activeRequests++;
       return true;
+    }
+    return false;
+  }
+
+  // 토큰이 충전될 때까지 안전하게 대기하는 비동기 메서드 (기본 500ms 상한)
+  async waitForToken(maxWaitMs = 500) {
+    const start = performance.now();
+    while (performance.now() - start < maxWaitMs) {
+      if (this.canRequest()) {
+        return true;
+      }
+      // 토큰 1개 충전 주기만큼 대기
+      await new Promise((r) => setTimeout(r, UPBIT_PACING_MS));
     }
     return false;
   }

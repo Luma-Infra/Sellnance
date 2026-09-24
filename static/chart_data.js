@@ -23,9 +23,13 @@ import {
 // import { fetchBithumbUnifiedCandles } from "./chart_bithumb_sync.js"; // 빗썸 정신차릴 때까지 임시 대기
 
 // [업비트 토큰 버킷 & 서킷 브레이커 모듈 분리 연동]
-import { UpbitBrowserLimiter, upbitBrowserLimiter } from "./chart_limiter.js";
+import {
+  UpbitBrowserLimiter,
+  upbitBrowserLimiter,
+  UPBIT_PACING_MS,
+} from "./chart_limiter.js";
 import { normalizeExchangeInterval } from "./_market_rules.js";
-export { UpbitBrowserLimiter, upbitBrowserLimiter };
+export { UpbitBrowserLimiter, upbitBrowserLimiter, UPBIT_PACING_MS };
 
 // 브라우저 레벨 In-Flight 중복 호출 합승 맵
 const inFlightCandleRequests = new Map();
@@ -281,9 +285,13 @@ export async function fetchPaginated(
     }
 
     if (remaining > 0) {
-      const delayMs = exchange === "upbit" ? 150 : 100;
-      await new Promise((resolve) => setTimeout(resolve, delayMs));
-      // 🛡️ 백엔드/브라우저 토큰 버킷과 연동하여 안전하고 빠른 백그라운드 페이징 보장
+      if (exchange === "upbit") {
+        // 업비트 연속 요청 시 토큰 버킷에서 토큰이 충전될 때까지 비동기 대기
+        await upbitBrowserLimiter.waitForToken(500);
+      } else {
+        const delayMs = 100;
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
     }
   }
   return result;
