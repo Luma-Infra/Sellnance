@@ -49,7 +49,7 @@ export function formatFilterValue(val, isMcap) {
 
 export function formatKoreanMoney(usdVal) {
   if (typeof usdVal !== "number" || isNaN(usdVal) || usdVal <= 0) return "0원";
-  const rate = store.marketDataMap?.krw_usd_rate || 1;
+  const rate = store.marketDataMap?.krw_usd_rate || 1000;
   const krwVal = usdVal * rate;
   if (krwVal <= 0) return "0원";
   if (krwVal >= 1e12) {
@@ -185,14 +185,19 @@ export function positionCustomFilterDropdown(dropdown) {
     window.innerWidth < 1200 ||
     (typeof window.isTouchDevice === "function" && window.isTouchDevice());
   const baseWidth = isMobile ? 280 : 320;
-  const dropdownWidth = Math.min(baseWidth, window.innerWidth - (isMobile ? 32 : 16));
+  const dropdownWidth = Math.min(
+    baseWidth,
+    window.innerWidth - (isMobile ? 32 : 16),
+  );
 
   dropdown.style.position = "fixed";
   dropdown.style.zIndex = isMobile ? "500" : "250";
   dropdown.style.top = `${rect.bottom + 6}px`;
   dropdown.style.left = `${Math.max(8, Math.min(rect.right - dropdownWidth, window.innerWidth - dropdownWidth - 8))}px`;
   dropdown.style.width = `${dropdownWidth}px`;
-  dropdown.style.maxWidth = isMobile ? "calc(100vw - 32px)" : "calc(100vw - 16px)";
+  dropdown.style.maxWidth = isMobile
+    ? "calc(100vw - 32px)"
+    : "calc(100vw - 16px)";
   dropdown.style.maxHeight = "calc(100dvh - 120px)";
   dropdown.style.overflowY = "auto";
 }
@@ -215,10 +220,18 @@ export function toggleCustomFilter(event) {
 
   if (isHidden) {
     // 열 때 현재 커밋된 필터 값을 임시 변수로 동기화하고 UI 슬라이더에 반영
-    store.tempMcapMin = typeof store.customMcapMin === "number" ? store.customMcapMin : 0;
-    store.tempMcapMax = typeof store.customMcapMax === "number" ? store.customMcapMax : 10000000000000;
-    store.tempVolMin = typeof store.customVolMin === "number" ? store.customVolMin : 0;
-    store.tempVolMax = typeof store.customVolMax === "number" ? store.customVolMax : 100000000000;
+    store.tempMcapMin =
+      typeof store.customMcapMin === "number" ? store.customMcapMin : 0;
+    store.tempMcapMax =
+      typeof store.customMcapMax === "number"
+        ? store.customMcapMax
+        : 10000000000000;
+    store.tempVolMin =
+      typeof store.customVolMin === "number" ? store.customVolMin : 0;
+    store.tempVolMax =
+      typeof store.customVolMax === "number"
+        ? store.customVolMax
+        : 100000000000;
     store.tempVolSource = store.customVolSource || "BINANCE";
 
     const minMcapEl = document.getElementById("mcap-min");
@@ -465,7 +478,11 @@ function handleOutsideCustomFilterClick(e) {
 }
 
 if (typeof document !== "undefined") {
-  document.addEventListener("pointerdown", handleOutsideCustomFilterClick, true);
+  document.addEventListener(
+    "pointerdown",
+    handleOutsideCustomFilterClick,
+    true,
+  );
 }
 
 if (typeof window !== "undefined") {
@@ -488,4 +505,3 @@ if (typeof window !== "undefined") {
   window.updateCustomFilterUI = updateCustomFilterUI;
   window.positionCustomFilterDropdown = positionCustomFilterDropdown;
 }
-

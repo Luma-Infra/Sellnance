@@ -1,6 +1,6 @@
 // quickview.js
 import { store, tfSec } from "./_store.js";
-import { getRowExchangeMeta } from "./_market_rules.js";
+import { getRowExchangeMeta, normalizeExchangeInterval } from "./_market_rules.js";
 import { getPureBase } from "./chart_utils.js";
 import { getCandleThemeColors } from "./theme_manager.js";
 import { formatChartTickMark, formatChartTime } from "./chart_timezone.js";
@@ -156,6 +156,16 @@ export function destroyQuickView() {
 function resolveTopAssets() {
   // store의 테이블 원본 데이터를 클론하여 정렬 진행
   let source = [...(store.currentTableData || store.originalTableData || [])];
+
+  // [알파 코인 원천 제외] 퀵뷰는 정규 캔들 차트 및 고속 웹소켓 전용이므로 알파 코인은 대상에서 배제
+  source = source.filter(
+    (d) =>
+      !(
+        d.Binance_Alpha === "O" ||
+        Boolean(d.is_alpha) ||
+        d.Listed_Exchanges?.includes("BINANCE_ALPHA")
+      ),
+  );
 
   // 🚀 즐겨찾기(FAV) 전용 모드인 경우 필터링 적용 (UID 타입 안전성 100% 보장)
   if (qvState.baseTarget === "FAV") {
@@ -489,12 +499,7 @@ async function initSingleQuickViewChart(container, asset, idx) {
     let symbol = asset.resolvedSymbol;
 
     if (exchange === "upbit") {
-      const uTF = qvState.timeframe;
-      let upbitInterval = "days";
-      if (uTF === "1m") upbitInterval = "minutes/1";
-      else if (uTF === "15m") upbitInterval = "minutes/15";
-      else if (uTF === "1h") upbitInterval = "minutes/60";
-      else if (uTF === "4h") upbitInterval = "minutes/240";
+      const upbitInterval = normalizeExchangeInterval("upbit", qvState.timeframe);
 
       const rawSym = String(symbol).trim().toUpperCase();
       const cleanSym = (rawSym === "USDT" || rawSym === "KRW-USDT")

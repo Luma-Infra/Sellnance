@@ -6,7 +6,11 @@ let upbitRadarRetryDelay = 5000;
 let upbitRetryTimer = null;
 
 export function startUpbitFeed() {
-  if (upbitRadarWs && (upbitRadarWs.readyState === WebSocket.OPEN || upbitRadarWs.readyState === WebSocket.CONNECTING)) {
+  if (
+    upbitRadarWs &&
+    (upbitRadarWs.readyState === WebSocket.OPEN ||
+      upbitRadarWs.readyState === WebSocket.CONNECTING)
+  ) {
     return;
   }
 
@@ -41,14 +45,19 @@ export function startUpbitFeed() {
         JSON.stringify([
           { ticket: `sellnance_upbit_radar_${Date.now()}` },
           { type: "ticker", codes: allUpbitCodes },
-        ])
+        ]),
       );
-    } catch (e) { }
+    } catch (e) {}
   };
 
   const decoder = new TextDecoder("utf-8");
   upbitRadarWs.onmessage = (event) => {
-    if (typeof window !== "undefined" && window.isSandboxActive && window.isSandboxActive()) return;
+    if (
+      typeof window !== "undefined" &&
+      window.isSandboxActive &&
+      window.isSandboxActive()
+    )
+      return;
     try {
       const ticker = JSON.parse(decoder.decode(event.data));
       if (!ticker || !ticker.code) return;
@@ -57,10 +66,14 @@ export function startUpbitFeed() {
       const newPriceKrw = parseFloat(ticker.trade_price);
 
       // O(1) 해시 탐색 (이전: allSource.find() O(N) 선형 탐색 → 개선)
-      const localRow = store.tickerRowMap?.get(krwTicker) || store.tickerRowMap?.get(pureSym);
-      const matchedUid = (localRow && localRow.Upbit === "O") ? localRow.UID : "";
+      const localRow =
+        store.tickerRowMap?.get(krwTicker) || store.tickerRowMap?.get(pureSym);
+      const matchedUid = localRow && localRow.Upbit === "O" ? localRow.UID : "";
 
-      if (localRow && (localRow.Upbit === "O" || localRow.Ticker?.endsWith("KRW"))) {
+      if (
+        localRow &&
+        (localRow.Upbit === "O" || localRow.Ticker?.endsWith("KRW"))
+      ) {
         localRow.Upbit_Price = newPriceKrw;
         localRow.Price_KRW = newPriceKrw;
         if (ticker.signed_change_rate !== undefined) {
@@ -87,8 +100,7 @@ export function startUpbitFeed() {
         store.visibleSymbols?.has(ticker.code);
 
       if (matchedUid && typeof window.renderRealtimeRow === "function") {
-        const isFutures = store.currentMarket === "FUTURES";
-        window.renderRealtimeRow(ticker.code, normalizedTicker, isFutures);
+        window.renderRealtimeRow(ticker.code, normalizedTicker, false);
       }
 
       // 실시간 차트 캔들 및 김프 갱신으로 직결 (단일 소켓 공유)
@@ -99,14 +111,17 @@ export function startUpbitFeed() {
       if (typeof window._qvUpbitHandler === "function") {
         window._qvUpbitHandler(ticker);
       }
-    } catch (err) { }
+    } catch (err) {}
   };
 }
 
 function scheduleUpbitReconnect() {
   if (upbitRetryTimer) return;
   const delay = upbitRadarRetryDelay;
-  upbitRadarRetryDelay = Math.min(60000, Math.floor(upbitRadarRetryDelay * 1.5));
+  upbitRadarRetryDelay = Math.min(
+    60000,
+    Math.floor(upbitRadarRetryDelay * 1.5),
+  );
   upbitRetryTimer = setTimeout(() => {
     upbitRetryTimer = null;
     startUpbitFeed();
@@ -151,9 +166,9 @@ export function syncUpbitRadarSubscription() {
       JSON.stringify([
         { ticket: `sellnance_upbit_radar_${Date.now()}` },
         { type: "ticker", codes: allUpbitCodes },
-      ])
+      ]),
     );
-  } catch (e) { }
+  } catch (e) {}
 }
 
 if (typeof window !== "undefined") {
@@ -163,11 +178,10 @@ if (typeof window !== "undefined") {
       upbitRadarWs.onerror = null;
       try {
         upbitRadarWs.close(1000);
-      } catch (_) { }
+      } catch (_) {}
     }
   });
 }
 
 window.syncUpbitRadarSubscription = syncUpbitRadarSubscription;
 window.initUpbitSniperSocket = initUpbitSniperSocket;
-

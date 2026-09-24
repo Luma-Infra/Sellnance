@@ -8,8 +8,6 @@ import {
   getRowDisplayMetrics,
 } from "./_market_rules.js";
 
-
-
 // 🎯 개별 스트림 스나이퍼 소켓 초기화 (피드 드라이버 내부 전용 함수들을 호출)
 export function initSniperSocket() {
   if (typeof window.initBinanceSniperSocket === "function") {
@@ -25,7 +23,12 @@ export function initSniperSocket() {
 
 // 🔄 [핵심] visibleSymbols와 연동하여 바이낸스/업비트 구독 리스트 동시 동기화
 export function syncSniperSubscriptions() {
-  if (typeof window !== "undefined" && window.isSandboxActive && window.isSandboxActive()) return;
+  if (
+    typeof window !== "undefined" &&
+    window.isSandboxActive &&
+    window.isSandboxActive()
+  )
+    return;
   if (!store.visibleSymbols) return;
   const getNextId = () => Math.floor(Date.now() + Math.random() * 1000);
 
@@ -36,27 +39,50 @@ export function syncSniperSubscriptions() {
 
   store.visibleSymbols.forEach((sym) => {
     const row = allSource.find(
-      (r) => r.Ticker === sym || r.DisplayTicker === sym || r.Symbol === sym
+      (r) => r.Ticker === sym || r.DisplayTicker === sym || r.Symbol === sym,
     );
     if (!row) return;
 
     // 1. Spot 상장 코인인 경우
-    const hasSpot = row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE_SPOT") || row.Listed_Exchanges?.includes("BINANCE") || row.Exact_Spot;
+    const hasSpot =
+      row.Binance === "O" ||
+      row.Listed_Exchanges?.includes("BINANCE_SPOT") ||
+      row.Listed_Exchanges?.includes("BINANCE") ||
+      row.Exact_Spot;
     if (hasSpot) {
-      let bSpotTicker = row.Exact_Spot || (row.Ticker && !row.Ticker.endsWith("KRW") ? row.Ticker.replace("USDT", "") : null);
+      let bSpotTicker =
+        row.Exact_Spot ||
+        (row.Ticker && !row.Ticker.endsWith("KRW")
+          ? row.Ticker.replace("USDT", "")
+          : null);
       if (bSpotTicker) {
-        currentVisibleBinanceSpot.push(`${bSpotTicker.toLowerCase()}usdt@aggTrade`);
-        currentVisibleBinanceSpot.push(`${bSpotTicker.toLowerCase()}usdt@miniTicker`);
+        currentVisibleBinanceSpot.push(
+          `${bSpotTicker.toLowerCase()}usdt@aggTrade`,
+        );
+        currentVisibleBinanceSpot.push(
+          `${bSpotTicker.toLowerCase()}usdt@miniTicker`,
+        );
       }
     }
 
     // 2. Futures 상장 코인인 경우
-    const hasFutures = row.Binance_Futures === "O" || row.Listed_Exchanges?.includes("BINANCE_FUTURES") || row.Exact_Futures;
+    const hasFutures =
+      row.Binance_Futures === "O" ||
+      row.Listed_Exchanges?.includes("BINANCE_FUTURES") ||
+      row.Exact_Futures;
     if (hasFutures) {
-      let bFuturesTicker = row.Exact_Futures || (row.Ticker && !row.Ticker.endsWith("KRW") ? row.Ticker.replace("USDT", "") : null);
+      let bFuturesTicker =
+        row.Exact_Futures ||
+        (row.Ticker && !row.Ticker.endsWith("KRW")
+          ? row.Ticker.replace("USDT", "")
+          : null);
       if (bFuturesTicker) {
-        currentVisibleBinanceFutures.push(`${bFuturesTicker.toLowerCase()}usdt@aggTrade`);
-        currentVisibleBinanceFutures.push(`${bFuturesTicker.toLowerCase()}usdt@miniTicker`);
+        currentVisibleBinanceFutures.push(
+          `${bFuturesTicker.toLowerCase()}usdt@aggTrade`,
+        );
+        currentVisibleBinanceFutures.push(
+          `${bFuturesTicker.toLowerCase()}usdt@miniTicker`,
+        );
       }
     }
 
@@ -74,15 +100,17 @@ export function syncSniperSubscriptions() {
 
   // Spot 소켓 구독 동기화
   if (store.sniperWs && store.sniperWs.readyState === WebSocket.OPEN) {
-    const toSub = currentVisibleBinanceSpot.filter((s) => !store.activeSubs.has(s));
+    const toSub = currentVisibleBinanceSpot.filter(
+      (s) => !store.activeSubs.has(s),
+    );
     if (toSub.length > 0) {
       store.sniperWs.send(
-        JSON.stringify({ method: "SUBSCRIBE", params: toSub, id: getNextId() })
+        JSON.stringify({ method: "SUBSCRIBE", params: toSub, id: getNextId() }),
       );
       toSub.forEach((s) => store.activeSubs.add(s));
     }
     const toUnsub = Array.from(store.activeSubs).filter(
-      (s) => !currentVisibleBinanceSpot.includes(s)
+      (s) => !currentVisibleBinanceSpot.includes(s),
     );
     if (toUnsub.length > 0) {
       store.sniperWs.send(
@@ -90,24 +118,29 @@ export function syncSniperSubscriptions() {
           method: "UNSUBSCRIBE",
           params: toUnsub,
           id: getNextId(),
-        })
+        }),
       );
       toUnsub.forEach((s) => store.activeSubs.delete(s));
     }
   }
 
   // Futures 소켓 구독 동기화
-  if (store.sniperWsFutures && store.sniperWsFutures.readyState === WebSocket.OPEN) {
+  if (
+    store.sniperWsFutures &&
+    store.sniperWsFutures.readyState === WebSocket.OPEN
+  ) {
     if (!store.activeSubsFutures) store.activeSubsFutures = new Set();
-    const toSub = currentVisibleBinanceFutures.filter((s) => !store.activeSubsFutures.has(s));
+    const toSub = currentVisibleBinanceFutures.filter(
+      (s) => !store.activeSubsFutures.has(s),
+    );
     if (toSub.length > 0) {
       store.sniperWsFutures.send(
-        JSON.stringify({ method: "SUBSCRIBE", params: toSub, id: getNextId() })
+        JSON.stringify({ method: "SUBSCRIBE", params: toSub, id: getNextId() }),
       );
       toSub.forEach((s) => store.activeSubsFutures.add(s));
     }
     const toUnsub = Array.from(store.activeSubsFutures).filter(
-      (s) => !currentVisibleBinanceFutures.includes(s)
+      (s) => !currentVisibleBinanceFutures.includes(s),
     );
     if (toUnsub.length > 0) {
       store.sniperWsFutures.send(
@@ -115,7 +148,7 @@ export function syncSniperSubscriptions() {
           method: "UNSUBSCRIBE",
           params: toUnsub,
           id: getNextId(),
-        })
+        }),
       );
       toUnsub.forEach((s) => store.activeSubsFutures.delete(s));
     }
@@ -132,9 +165,9 @@ export function syncSniperSubscriptions() {
           JSON.stringify([
             { ticket: "upbit_table_sniper_" + getNextId() },
             { type: "ticker", codes: uniqueUpbitCodes },
-          ])
+          ]),
         );
-      } catch (e) { }
+      } catch (e) {}
     }
   }
 }
@@ -148,45 +181,66 @@ export function calculateRowKimchi(r, rate) {
   if (!r || !rate || rate <= 0) return;
 
   const exList = (r.Listed_Exchanges || []).map((e) => e.toUpperCase());
-  const hasUpbit = r.Upbit === "O" || exList.includes("UPBIT") || !!r.Upbit_Symbol;
+  const hasUpbit =
+    r.Upbit === "O" || exList.includes("UPBIT") || !!r.Upbit_Symbol;
   const hasBithumb = exList.includes("BITHUMB") || !!r.Bithumb_Symbol;
-  const hasGlobalSpot =
+  const hasGlobal =
     r.Binance === "O" ||
+    r.Binance_Futures === "O" ||
     exList.includes("BINANCE_SPOT") ||
     exList.includes("BINANCE") ||
+    exList.includes("BINANCE_FUTURES") ||
     exList.includes("BYBIT_SPOT") ||
     exList.includes("BYBIT") ||
+    exList.includes("BYBIT_FUTURES") ||
     r.Binance_Price_Spot > 0 ||
-    r.Bybit_Price_Spot > 0;
+    r.Bybit_Price_Spot > 0 ||
+    r.Binance_Price_Futures > 0 ||
+    r.Bybit_Price_Futures > 0;
 
-  if (!hasGlobalSpot || (!hasUpbit && !hasBithumb)) {
+  if (!hasGlobal || (!hasUpbit && !hasBithumb)) {
     r.Kimchi_Raw = null;
     r.Kimchi_Label = "-";
     r.Kimchi_Formatted = "-";
+    r.Kimchi_Source = null;
     return;
   }
 
-
   let priceKor = 0;
   if (hasUpbit || hasBithumb) {
-    const krwRow = store.uidToKrwRowMap ? store.uidToKrwRowMap.get(String(r.UID)) : null;
+    const krwRow = store.uidToKrwRowMap
+      ? store.uidToKrwRowMap.get(String(r.UID))
+      : null;
     if (hasUpbit) {
-      priceKor = (krwRow ? krwRow.Upbit_Price || krwRow.Price_KRW : 0) || r.Upbit_Price || r.Price_KRW || 0;
+      priceKor =
+        (krwRow ? krwRow.Upbit_Price || krwRow.Price_KRW : 0) ||
+        r.Upbit_Price ||
+        r.Price_KRW ||
+        0;
     } else if (hasBithumb) {
-      priceKor = (krwRow ? krwRow.Bithumb_Price || krwRow.Price_KRW : 0) || r.Bithumb_Price || r.Price_KRW || 0;
+      priceKor =
+        (krwRow ? krwRow.Bithumb_Price || krwRow.Price_KRW : 0) ||
+        r.Bithumb_Price ||
+        r.Price_KRW ||
+        0;
     }
   }
 
-  const domMult = getMultiplier(r.Upbit_Symbol || r.Bithumb_Symbol || r.Ticker || r.Symbol);
+  const domMult = getMultiplier(
+    r.Upbit_Symbol || r.Bithumb_Symbol || r.Ticker || r.Symbol,
+  );
   const unitKorPrice = priceKor / domMult;
 
   // 🚀 [김프 해외 단가 연산] market_rules.js의 단일 룰북 호출
-  const { rawGlb, ovsMult } = getRowKimchiGlobalPrice(r);
+  const { rawGlb, ovsMult, source } = getRowKimchiGlobalPrice(r);
 
   let unitGlbPrice = rawGlb;
   if (ovsMult > 1 && unitGlbPrice > 0 && unitKorPrice > 0) {
     const approxUsd = rate > 0 ? unitKorPrice / rate : 0;
-    if (Math.abs(unitGlbPrice / ovsMult - approxUsd) < Math.abs(unitGlbPrice - approxUsd)) {
+    if (
+      Math.abs(unitGlbPrice / ovsMult - approxUsd) <
+      Math.abs(unitGlbPrice - approxUsd)
+    ) {
       unitGlbPrice = unitGlbPrice / ovsMult;
     }
   }
@@ -195,16 +249,24 @@ export function calculateRowKimchi(r, rate) {
     const kimchiPct = (unitKorPrice / (unitGlbPrice * rate) - 1) * 100;
     if (isFinite(kimchiPct)) {
       r.Kimchi_Raw = kimchiPct;
+      r.Kimchi_Source = source;
       if (kimchiPct > 500 || kimchiPct <= -90) {
         r.Kimchi_Label = "VOID";
         r.Kimchi_Formatted = "VOID";
       } else {
-        r.Kimchi_Label = (kimchiPct > 0 ? "+" : "") + kimchiPct.toFixed(2) + "%";
-        r.Kimchi_Formatted = (kimchiPct > 0 ? "+" : "") + kimchiPct.toFixed(2) + "%";
+        r.Kimchi_Label =
+          (kimchiPct > 0 ? "+" : "") + kimchiPct.toFixed(2) + "%";
+        r.Kimchi_Formatted =
+          (kimchiPct > 0 ? "+" : "") + kimchiPct.toFixed(2) + "%";
       }
       return;
     }
   }
+
+  r.Kimchi_Raw = null;
+  r.Kimchi_Label = "-";
+  r.Kimchi_Formatted = "-";
+  r.Kimchi_Source = null;
 
   /*
   const isFakeZero =
@@ -230,6 +292,58 @@ if (typeof window !== "undefined") {
 
 const lastRenderRowMap = new Map();
 
+// [행 식별자 매핑] 소켓 틱 데이터로부터 해당 종목 행(Row)을 O(1) 색인으로 탐색
+function findTargetRow(tId, data) {
+  const dataSym = (data.s || tId).toUpperCase();
+  const cleanDataSym = dataSym.replace("-", "").toUpperCase();
+  const cleanTId = tId.replace("-", "").toUpperCase();
+
+  let row = null;
+  if (data.isUpbitRealtime && data.UID) {
+    row = store.uidRowMap?.get(String(data.UID)) || null;
+  }
+
+  if (!row) {
+    row =
+      store.tickerRowMap.get(cleanDataSym) || store.tickerRowMap.get(cleanTId);
+    if (!row && (dataSym.startsWith("KRW-") || tId.startsWith("KRW-"))) {
+      const upbitTicker = tId.replace("KRW-", "") + "KRW";
+      row = store.tickerRowMap.get(upbitTicker);
+    }
+    if (!row && cleanDataSym.endsWith("KRW")) {
+      row = store.tickerRowMap.get(cleanDataSym);
+    }
+    if (!row) {
+      const baseSym = cleanDataSym.replace("USDT", "").replace("_FUTURES", "");
+      row = store.tickerRowMap.get(baseSym);
+    }
+  }
+
+  if (row && data.isUpbitRealtime && data.UID) {
+    if (row.UID != data.UID) {
+      const byUid =
+        store.uidRowMap?.get(String(data.UID)) ||
+        store.currentTableData?.find((r) => r.UID == data.UID);
+      if (byUid) {
+        row = byUid;
+      } else {
+        return null; // 오염된 이종 코인 데이터 드롭
+      }
+    }
+  }
+
+  if (!row) return null;
+
+  if (
+    !row.Ticker.endsWith("KRW") &&
+    getMultiplier(dataSym) !== getMultiplier(row.Ticker)
+  ) {
+    return null;
+  }
+
+  return row;
+}
+
 // ⚡ [HTS 핵심] 개별 행 정밀 렌더링 엔진 (웹소켓 전용)
 export function renderRealtimeRow(tId, data, isFutures = false) {
   if (data && data.e === "24hrMiniTicker") {
@@ -247,12 +361,27 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
   if (store.isTabHidden || store.isRestoringTab) return;
 
   // [초고속 메모리 진입로] 메모리 갱신(Price_Raw 등)은 0ms 무손실로 즉시 수행
-  const serverTs = data.trade_timestamp || data.timestamp || data.tms || data.ttms || data.E || data.T;
+  const serverTs =
+    data.trade_timestamp ||
+    data.timestamp ||
+    data.tms ||
+    data.ttms ||
+    data.E ||
+    data.T;
   if (serverTs && typeof window.calibrateTrueTime === "function") {
     window.calibrateTrueTime(serverTs);
   }
-  const now = typeof window.getTrueEpochNow === "function" ? window.getTrueEpochNow() : Date.now();
-  const source = data.isUpbitRealtime ? "upbit" : data.isBithumbRealtime ? "bithumb" : (isFutures ? "binance_futures" : "binance_spot");
+  const now =
+    typeof window.getTrueEpochNow === "function"
+      ? window.getTrueEpochNow()
+      : Date.now();
+  const source = data.isUpbitRealtime
+    ? "upbit"
+    : data.isBithumbRealtime
+      ? "bithumb"
+      : isFutures
+        ? "binance_futures"
+        : "binance_spot";
   const tickKey = `${source}:${data.s || tId}:${data.e || "ticker"}`;
 
   // [소켓 고빈도 폭주 방어 안전 밸브: 30ms 마이크로 쓰로틀 (초당 최대 33회)]
@@ -267,60 +396,25 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
     if (store.bypassCounters) store.bypassCounters.throttlePass++;
     store._lastRowTickMap.set(tickKey, now);
   }
-  const dataSym = (data.s || tId).toUpperCase();
-  const cleanDataSym = dataSym.replace("-", "").toUpperCase();
-  const cleanTId = tId.replace("-", "").toUpperCase();
 
-  let row = null;
-  if (data.isUpbitRealtime && data.UID) {
-    // O(1) uidRowMap \uc6b0\uc120, \uc5c6\uc73c\uba74 tickerRowMap\uc73c\ub85c \ud3f4\ubc31 (\uc774\uc804: Array.find() O(N))
-    row = store.uidRowMap?.get(String(data.UID)) || null;
-  }
-
-  if (!row) {
-    row = store.tickerRowMap.get(cleanDataSym) || store.tickerRowMap.get(cleanTId);
-    if (!row && (dataSym.startsWith("KRW-") || tId.startsWith("KRW-"))) {
-      const upbitTicker = tId.replace("KRW-", "") + "KRW";
-      row = store.tickerRowMap.get(upbitTicker);
-    }
-    if (!row && cleanDataSym.endsWith("KRW")) {
-      row = store.tickerRowMap.get(cleanDataSym);
-    }
-    if (!row) {
-      const baseSym = cleanDataSym.replace("USDT", "").replace("_FUTURES", "");
-      row = store.tickerRowMap.get(baseSym);
-    }
-  }
-
-  if (row && data.isUpbitRealtime && data.UID) {
-    if (row.UID != data.UID) {
-      // uidRowMap O(1) \uc6b0\uc120, \uc5c6\uc73c\uba74 \ud55c \ubc88\ub9cc Array.find() \ud3f4\ubc31
-      const byUid = store.uidRowMap?.get(String(data.UID))
-        || store.currentTableData?.find((r) => r.UID == data.UID);
-      if (byUid) {
-        row = byUid;
-      } else {
-        return; // \uc624\uc5fc\ub41c \uc774\uc885 \ucf54\uc778 \ub370\uc774\ud130 \ub4dc\ub86d
-      }
-    }
-  }
-
+  const row = findTargetRow(tId, data);
   if (!row) return;
 
-  if (!row.Ticker.endsWith("KRW") && getMultiplier(dataSym) !== getMultiplier(row.Ticker)) return;
-
-  const newPrice = parseFloat(data.c || data.p || data.trade_price || data.price);
+  const newPrice = parseFloat(
+    data.c || data.p || data.trade_price || data.price,
+  );
   if (isNaN(newPrice)) return;
 
   const isKrwCoin = row.Ticker.endsWith("KRW");
-  const rate = store.marketDataMap?.krw_usd_rate || 0;
+  const rate = store.marketDataMap?.krw_usd_rate || 1000;
   const isKoreaSocket = !!(data.isUpbitRealtime || data.isBithumbRealtime);
-  const isAllMode =
-    store.currentMarket === "ALL" ||
-    store.currentMarket === "KIMCHI" ||
-    store.currentMarket === "NEW";
 
-  const hasGlobal = row.Binance === "O" || row.Binance_Futures === "O" || row.Listed_Exchanges?.includes("BINANCE_SPOT") || row.Listed_Exchanges?.includes("BINANCE") || row.Listed_Exchanges?.includes("BINANCE_FUTURES");
+  const hasGlobal =
+    row.Binance === "O" ||
+    row.Binance_Futures === "O" ||
+    row.Listed_Exchanges?.includes("BINANCE_FUTURES") ||
+    row.Listed_Exchanges?.includes("BINANCE_SPOT") ||
+    row.Listed_Exchanges?.includes("BINANCE");
 
   if (isKoreaSocket) {
     if (data.isUpbitRealtime || row.Upbit !== "O") row.Price_KRW = newPrice;
@@ -333,16 +427,18 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
       row.Bithumb_Price = newPrice;
     }
   } else {
-    const hasFutures = row.Binance_Futures === "O" || row.Listed_Exchanges?.includes("BINANCE_FUTURES");
-    const hasSpot = row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE_SPOT") || row.Listed_Exchanges?.includes("BINANCE");
+    const hasFutures =
+      row.Binance_Futures === "O" ||
+      row.Listed_Exchanges?.includes("BINANCE_FUTURES");
+    const hasSpot =
+      row.Binance === "O" ||
+      row.Listed_Exchanges?.includes("BINANCE_SPOT") ||
+      row.Listed_Exchanges?.includes("BINANCE");
     const isFuturesOnly = hasFutures && !hasSpot;
     const isSpotOnly = hasSpot && !hasFutures;
 
     const isBinance =
-      hasSpot ||
-      hasFutures ||
-      row.Exact_Spot ||
-      row.Exact_Futures;
+      hasSpot || hasFutures || row.Exact_Spot || row.Exact_Futures;
 
     if (isBinance) {
       if (isFutures) {
@@ -389,13 +485,7 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
     */
 
     // 🚀 [선물 우선 (Futures First) 원칙] 둘 다 있거나 선물이 있으면 선물 틱 우선 매핑, 현물만 있으면 현물 틱
-    let shouldUpdate = true;
-    if (store.currentMarket === "SPOT") {
-      shouldUpdate = !isFutures || isFuturesOnly;
-    } else {
-      // FUTURES 및 ALL, KIMCHI, NEW, FAV 등 기본 탭: 선물 상장 코인은 선물 틱으로 대표 시세 갱신
-      shouldUpdate = hasFutures ? isFutures : !isFutures;
-    }
+    const shouldUpdate = hasFutures ? isFutures : !isFutures;
 
     if (shouldUpdate) {
       if (!row.Ticker.endsWith("KRW")) {
@@ -412,15 +502,14 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
   let shouldUpdateChg = false;
   if (isKrwCoin) {
     if (store.currentMarket === "UPBIT") {
-      shouldUpdateChg = data.isUpbitRealtime || (row.Upbit === "O" && !data.isBithumbRealtime);
-    } else if (store.currentMarket === "BITHUMB") {
-      shouldUpdateChg = data.isBithumbRealtime || (row.Upbit !== "O" && !data.isUpbitRealtime);
+      shouldUpdateChg =
+        data.isUpbitRealtime || (row.Upbit === "O" && !data.isBithumbRealtime);
     } else {
-      if (row.Upbit === "O") {
-        shouldUpdateChg = data.isUpbitRealtime || !data.isBithumbRealtime;
-      } else {
-        shouldUpdateChg = data.isBithumbRealtime || !data.isUpbitRealtime;
-      }
+      // 기본 모드(ALL / BINANCE): 업비트 상장 코인은 업비트 틱 우선, 빗썸 전용 코인은 빗썸 틱 우선
+      shouldUpdateChg =
+        row.Upbit === "O"
+          ? data.isUpbitRealtime || !data.isBithumbRealtime
+          : data.isBithumbRealtime || !data.isUpbitRealtime;
     }
   } else {
     const hasFutures =
@@ -436,15 +525,9 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
       row.Bybit === "O" ||
       row.Listed_Exchanges?.includes("BYBIT_SPOT") ||
       !!row.Exact_Spot;
-    const isFuturesOnly = hasFutures && !hasSpot;
-    const isSpotOnly = hasSpot && !hasFutures;
 
-    if (store.currentMarket === "SPOT") {
-      shouldUpdateChg = !isFutures || isFuturesOnly;
-    } else {
-      // FUTURES 및 ALL 등 기본 탭: 선물 상장 코인은 선물 등락률로 대표 24h/Day 갱신 (1초 경주마 정렬 연동)
-      shouldUpdateChg = hasFutures ? isFutures : !isFutures;
-    }
+    // 🚀 ALL / BINANCE 기본 탭: 선물 상장 코인은 선물 등락률로 대표 24h/Day 갱신 (1초 경주마 정렬 연동)
+    shouldUpdateChg = hasFutures ? isFutures : !isFutures;
   }
 
   if (data.P !== undefined) {
@@ -455,7 +538,10 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
     } else {
       if (isFutures) {
         row.Change_24h_Futures = chg;
-        if (row.Bybit_Futures === "O" || row.Listed_Exchanges?.includes("BYBIT_FUTURES")) {
+        if (
+          row.Bybit_Futures === "O" ||
+          row.Listed_Exchanges?.includes("BYBIT_FUTURES")
+        ) {
           row.Change_24h_Bybit_Futures = chg;
         }
       } else if (
@@ -476,7 +562,13 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
   }
 
   // [KST 일봉 리셋 & 과거 데이터 무효화]
-  const currentUtcDay = new Date(typeof window.getTrueEpochNow === "function" ? window.getTrueEpochNow() : Date.now()).toISOString().slice(0, 10);
+  const currentUtcDay = new Date(
+    typeof window.getTrueEpochNow === "function"
+      ? window.getTrueEpochNow()
+      : Date.now(),
+  )
+    .toISOString()
+    .slice(0, 10);
   if (row._lastUtcDay && row._lastUtcDay !== currentUtcDay) {
     row.Change_Today_Raw = 0;
     row.Change_Today_Futures = 0;
@@ -490,7 +582,16 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
   }
   row._lastUtcDay = currentUtcDay;
 
-  if (isKoreaSocket) {
+  const isAlpha = row.is_alpha || row.Binance_Alpha === "O";
+
+  if (isAlpha) {
+    // 🚀 [알파 방어] 알파 코인은 어떤 소켓 틱이 들어와도 Day 시가 및 Day 등락률 무조건 null (-) 고정!
+    row.Change_Today_Raw = null;
+    row.Change_Today_Spot = null;
+    row.Change_Today_Binance = null;
+    row.spot_utc0_open_Raw = null;
+    row.futures_utc0_open_Raw = null;
+  } else if (isKoreaSocket) {
     let openPriceKRW = row.utc0_open_KRW ? parseFloat(row.utc0_open_KRW) : 0;
     if (openPriceKRW <= 0 && row.utc0_open_Raw && rate > 0) {
       openPriceKRW = parseFloat(row.utc0_open_Raw) * rate;
@@ -518,9 +619,17 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
   } else {
     let openPrice = 0;
     if (isFutures) {
-      openPrice = parseFloat(row.futures_utc0_open_Raw || row.utc0_open_Raw || 0);
+      openPrice = parseFloat(
+        row.futures_utc0_open_Raw ||
+          (row.Binance_Futures === "O" ? row.utc0_open_Raw : 0) ||
+          0,
+      );
     } else {
-      openPrice = parseFloat(row.spot_utc0_open_Raw || row.utc0_open_Raw || 0);
+      openPrice = parseFloat(
+        row.spot_utc0_open_Raw ||
+          (row.Binance === "O" ? row.utc0_open_Raw : 0) ||
+          0,
+      );
     }
 
     // 9시 이후 첫 틱 수신 시 해당 틱을 당일 시가로 초기화하여 0초부터 실시간 연산 지원
@@ -537,7 +646,9 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
     if (openPrice > 0 && newPrice > 0) {
       let normNewPrice = newPrice;
       let normOpenPrice = openPrice;
-      const ovsMult = getMultiplier(row.Exact_Futures || row.Ticker || row.Symbol);
+      const ovsMult = getMultiplier(
+        row.Exact_Futures || row.Ticker || row.Symbol,
+      );
       if (ovsMult > 1) {
         if (normNewPrice > normOpenPrice * 10) normNewPrice /= ovsMult;
         else if (normOpenPrice > normNewPrice * 10) normOpenPrice /= ovsMult;
@@ -545,7 +656,10 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
       const todayUsd = ((normNewPrice - normOpenPrice) / normOpenPrice) * 100;
       if (isFutures) {
         row.Change_Today_Futures = todayUsd;
-        if (row.Bybit_Futures === "O" || row.Listed_Exchanges?.includes("BYBIT_FUTURES")) {
+        if (
+          row.Bybit_Futures === "O" ||
+          row.Listed_Exchanges?.includes("BYBIT_FUTURES")
+        ) {
           row.Change_Today_Bybit_Futures = todayUsd;
         }
       } else if (row.Listed_Exchanges?.includes("BINANCE") || row.Exact_Spot) {
@@ -562,8 +676,11 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
   }
 
   // [신규 방어막] 실시간 소켓 갱신 시각 기록 (3초 레이더의 낡은 캐시 덮어쓰기 원천 차단용)
-  row._LastRealtimeUpdate = typeof window.getTrueEpochNow === "function" ? window.getTrueEpochNow() : Date.now();
-  row.Last_Updated_Source = '🔌 실시간소켓';
+  row._LastRealtimeUpdate =
+    typeof window.getTrueEpochNow === "function"
+      ? window.getTrueEpochNow()
+      : Date.now();
+  row.Last_Updated_Source = "실시간 소켓";
 
   if (!store.blockKimchi) {
     if (rate > 0) {
@@ -571,12 +688,22 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
 
       if (isKrwCoin) {
         const pureBase = getPureBase(row.Symbol || row.Ticker);
-        const partners = store.pureBaseToRowsMap ? store.pureBaseToRowsMap.get(pureBase) : null;
+        const partners = store.pureBaseToRowsMap
+          ? store.pureBaseToRowsMap.get(pureBase)
+          : null;
         if (partners) {
           partners.forEach((r) => {
-            if (r !== row && String(r.UID) === String(row.UID) && r.Ticker.endsWith("KRW")) {
+            if (
+              r !== row &&
+              String(r.UID) === String(row.UID) &&
+              r.Ticker.endsWith("KRW")
+            ) {
               r.Price_KRW = newPrice;
-              if (data.isUpbitRealtime || tId.startsWith("KRW-") || tId.endsWith("KRW")) {
+              if (
+                data.isUpbitRealtime ||
+                tId.startsWith("KRW-") ||
+                tId.endsWith("KRW")
+              ) {
                 r.Upbit_Price = newPrice;
               } else if (data.isBithumbRealtime || tId.endsWith("_KRW")) {
                 r.Bithumb_Price = newPrice;
@@ -589,15 +716,20 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
     }
   }
 
-  // 🚀 실시간 거래대금(Volume) 누적 동기화
+  // 실시간 거래대금(Volume) 누적 동기화
   if (isKoreaSocket) {
     if (data.q_upbit !== undefined) {
       row.Upbit_Vol = parseFloat(data.q_upbit);
-      const rate = store.marketDataMap?.krw_usd_rate || 1350;
-      if (store.currencyMode === "KRW" && typeof window.formatVolumeKRW === "function") {
+      const rate = store.marketDataMap?.krw_usd_rate || 1000;
+      if (
+        store.currencyMode === "KRW" &&
+        typeof window.formatVolumeKRW === "function"
+      ) {
         row.Upbit_Vol_Formatted = window.formatVolumeKRW(row.Upbit_Vol);
       } else if (typeof window.formatVolumeDollar === "function") {
-        row.Upbit_Vol_Formatted = window.formatVolumeDollar(rate > 0 ? row.Upbit_Vol / rate : row.Upbit_Vol);
+        row.Upbit_Vol_Formatted = window.formatVolumeDollar(
+          rate > 0 ? row.Upbit_Vol / rate : row.Upbit_Vol,
+        );
       }
       const hasGlobal =
         row.Binance === "O" ||
@@ -607,7 +739,10 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
       if (!hasGlobal && row.Upbit_Vol > 0) {
         const upVolUsd = rate > 0 ? row.Upbit_Vol / rate : row.Upbit_Vol;
         row.Volume_Raw = upVolUsd;
-        if (store.currencyMode === "KRW" && typeof window.formatVolumeKRW === "function") {
+        if (
+          store.currencyMode === "KRW" &&
+          typeof window.formatVolumeKRW === "function"
+        ) {
           row.Volume_Formatted = window.formatVolumeKRW(row.Upbit_Vol);
         } else if (typeof window.formatVolumeDollar === "function") {
           row.Volume_Formatted = window.formatVolumeDollar(upVolUsd);
@@ -615,7 +750,11 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
       }
     }
   } else {
-    if (data.e === "24hrMiniTicker" || data.e === "24hrTicker" || (!data.e && data.q !== undefined)) {
+    if (
+      data.e === "24hrMiniTicker" ||
+      data.e === "24hrTicker" ||
+      (!data.e && data.q !== undefined)
+    ) {
       if (data.e !== "aggTrade" && data.e !== "trade") {
         if (isFutures) {
           row.Binance_Vol_Futures = parseFloat(data.q);
@@ -637,42 +776,22 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
         row.Bybit_Futures === "O" ||
         !!row.Exact_Futures) &&
       row.Spot_Only !== "O";
-    const isFuturesTab =
-      activeM === "FUTURES" ||
-      activeM === "BYBIT_FUTURES" ||
-      (activeM === "BINANCE" && isFuturesCoin);
-    const isSpotTab =
-      activeM === "SPOT" ||
-      activeM === "BINANCE_SPOT" ||
-      activeM === "BYBIT_SPOT" ||
-      (activeM === "BINANCE" && !isFuturesCoin);
 
-    let activeVol = 0;
-    if (isSpotTab) {
-      activeVol =
-        row.Binance_Vol_Spot > 0
-          ? row.Binance_Vol_Spot
-          : row.Binance_Vol_Futures || 0;
-    } else if (isFuturesTab) {
-      activeVol =
-        row.Binance_Vol_Futures > 0
-          ? row.Binance_Vol_Futures
-          : row.Binance_Vol_Spot || 0;
-    } else {
-      // ALL, KIMCHI 등 기본 탭: 선물 코인은 선물 거래량(Futures Vol), 현물 코인은 현물 거래량(Spot Vol) 우선
-      activeVol = isFuturesCoin
-        ? (row.Binance_Vol_Futures > 0
-          ? row.Binance_Vol_Futures
-          : row.Binance_Vol_Spot || 0)
-        : (row.Binance_Vol_Spot > 0
-          ? row.Binance_Vol_Spot
-          : row.Binance_Vol_Futures || 0);
-    }
+    const activeVol = isFuturesCoin
+      ? row.Binance_Vol_Futures > 0
+        ? row.Binance_Vol_Futures
+        : row.Binance_Vol_Spot || 0
+      : row.Binance_Vol_Spot > 0
+        ? row.Binance_Vol_Spot
+        : row.Binance_Vol_Futures || 0;
 
     if (activeVol > 0) {
       row.Volume_Raw = activeVol;
-      if (store.currencyMode === "KRW" && typeof window.formatVolumeKRW === "function") {
-        const rate = store.marketDataMap?.krw_usd_rate || 1;
+      if (
+        store.currencyMode === "KRW" &&
+        typeof window.formatVolumeKRW === "function"
+      ) {
+        const rate = store.marketDataMap?.krw_usd_rate || 1000;
         row.Volume_Formatted = window.formatVolumeKRW(activeVol * rate);
       } else if (typeof window.formatVolumeDollar === "function") {
         row.Volume_Formatted = window.formatVolumeDollar(activeVol);
@@ -680,6 +799,14 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
     }
   }
 
+  // DOM 렌더링 호출
+  renderRowDom(row);
+}
+
+// -------------------------------------------------------------
+// [DOM 렌더러] 행 노출 확인, 쓰로틀링, 가격 플래시 및 전광판 갱신
+// -------------------------------------------------------------
+function renderRowDom(row) {
   const isSelected =
     row.Ticker === store.currentSelectedSymbol ||
     row.UID === store.currentSelectedUid ||
@@ -698,15 +825,19 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
   if (!isVisible) return;
 
   // [스마트 DOM 렌더 쓰로틀: 글자 갱신 주기]
-  const isTurbo = typeof window.isTurboWindow === "function" && window.isTurboWindow();
+  const isTurbo =
+    typeof window.isTurboWindow === "function" && window.isTurboWindow();
   const perf = CONFIG.TABLE_PERF || {};
   const throttleLimit = isTurbo
-    ? (perf.CELL_RENDER_THROTTLE_TURBO_MS || 500)
-    : (perf.CELL_RENDER_THROTTLE_NORMAL_MS || 500);
+    ? perf.CELL_RENDER_THROTTLE_TURBO_MS || 500
+    : perf.CELL_RENDER_THROTTLE_NORMAL_MS || 500;
 
   const renderNow = Date.now();
   if (!row._lastCellRenderTime) row._lastCellRenderTime = 0;
-  if (throttleLimit > 0 && renderNow - row._lastCellRenderTime < throttleLimit) {
+  if (
+    throttleLimit > 0 &&
+    renderNow - row._lastCellRenderTime < throttleLimit
+  ) {
     if (store.bypassCounters) store.bypassCounters.tableUpdate++;
     return;
   }
@@ -723,17 +854,26 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
   }
 
   const priceCell = document.getElementById(`price-${row.Ticker}`);
-  const oldPrice = priceCell ? parseFloat(priceCell.getAttribute("data-raw-price")) || 0 : 0;
+  const oldPrice = priceCell
+    ? parseFloat(priceCell.getAttribute("data-raw-price")) || 0
+    : 0;
 
   const rowEl =
     (row.UID ? store.rowDomMap?.get(String(row.UID)) : null) ||
-    store.rowDomMap?.get(row.Ticker);
-  if (rowEl && typeof window.updateRowDynamicHTML === "function") {
+    store.rowDomMap?.get(row.Ticker) ||
+    document.getElementById(`row-${row.Ticker}`);
+  if (!rowEl) {
+    if (store.bypassCounters) store.bypassCounters.tableUpdate++;
+    return;
+  }
+
+  if (typeof window.updateRowDynamicHTML === "function") {
     window.updateRowDynamicHTML(rowEl, row, !isSelected);
   }
 
   if (priceCell) {
-    const displayedPrice = parseFloat(priceCell.getAttribute("data-raw-price")) || 0;
+    const displayedPrice =
+      parseFloat(priceCell.getAttribute("data-raw-price")) || 0;
     if (displayedPrice !== oldPrice) {
       const activeExchange = priceCell.getAttribute("data-active-exchange");
       const activeSpan =
@@ -752,7 +892,8 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
     row.DisplayTicker === store.currentSelectedSymbol ||
     row.Exact_Spot === store.currentSelectedSymbol ||
     row.Exact_Futures === store.currentSelectedSymbol ||
-    (store.currentSelectedUid && String(row.UID) === String(store.currentSelectedUid))
+    (store.currentSelectedUid &&
+      String(row.UID) === String(store.currentSelectedUid))
   ) {
     if (typeof window.updateHeaderDisplay === "function") {
       const pPrecision =
@@ -766,7 +907,10 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
       } else if (activeMkt === "BITHUMB") {
         activePrice = row.Bithumb_Price;
       } else if (activeMkt === "BYBIT" || activeMkt === "BYBIT_FUTURES") {
-        activePrice = (activeMkt === "BYBIT_FUTURES") ? row.Bybit_Price_Futures : row.Bybit_Price_Spot;
+        activePrice =
+          activeMkt === "BYBIT_FUTURES"
+            ? row.Bybit_Price_Futures
+            : row.Bybit_Price_Spot;
       } else if (activeMkt === "FUTURES") {
         activePrice = row.Binance_Price_Futures;
       } else if (activeMkt === "SPOT") {
@@ -781,7 +925,12 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
   const changeCell = document.getElementById(`change-${row.Ticker}`);
   if (changeCell) {
     const isFocus = store.currentSortCol !== "Change_Today";
-    const themeClass = change24h > 0 ? "text-theme-up" : change24h < 0 ? "text-theme-down" : "text-theme-text";
+    const themeClass =
+      change24h > 0
+        ? "text-theme-up"
+        : change24h < 0
+          ? "text-theme-down"
+          : "text-theme-text";
     const chgText = `${change24h > 0 ? "+" : ""}${Number(change24h).toFixed(2)}%`;
     const chgFontSize = chgText.length > 8 ? "text-[9.5px]" : "text-[10.5px]";
     changeCell.className = `${themeClass} font-medium flex-1 min-w-0 text-left tracking-tighter whitespace-nowrap ${isFocus ? "opacity-100" : "opacity-40"} ${chgFontSize}`;
@@ -791,10 +940,16 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
   const todayCell = document.getElementById(`today-${row.Ticker}`);
   if (todayCell) {
     const isFocus = store.currentSortCol === "Change_Today";
-    const tThemeClass = todayChange > 0 ? "text-theme-up" : todayChange < 0 ? "text-theme-down" : "text-theme-text";
+    const tThemeClass =
+      todayChange > 0
+        ? "text-theme-up"
+        : todayChange < 0
+          ? "text-theme-down"
+          : "text-theme-text";
     const safeChange = todayChange < -99.9 ? -99.9 : todayChange;
     const todayText = `${safeChange > 0 ? "+" : ""}${Number(safeChange).toFixed(2)}%`;
-    const todayFontSize = todayText.length > 8 ? "text-[9.5px]" : "text-[10.5px]";
+    const todayFontSize =
+      todayText.length > 8 ? "text-[9.5px]" : "text-[10.5px]";
     todayCell.className = `${tThemeClass} font-medium flex-1 min-w-0 text-left tracking-tighter whitespace-nowrap ${isFocus ? "opacity-100" : "opacity-40"} ${todayFontSize}`;
     todayCell.textContent = todayText;
   }

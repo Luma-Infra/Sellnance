@@ -253,7 +253,7 @@ export function getFilteredData() {
       return false;
     }
 
-    const rate = store.marketDataMap?.krw_usd_rate || 1400;
+    const rate = store.marketDataMap?.krw_usd_rate || 1000;
     const vol =
       store.customVolSource === "UPBIT"
         ? (d.Upbit_Vol || 0) / rate

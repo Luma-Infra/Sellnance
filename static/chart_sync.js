@@ -82,49 +82,20 @@ export const performSyncPriceScaleWidths = (force = false) => {
   const BASE_LEFT_WIDTH = !isSmallMobile && isKimchiVisible ? 60 : 0;
 
   try {
-    if (force) {
-      currentMaxRight = 0;
-      currentMaxLeft = 0;
-      store.savedPriceScaleWidth = null;
-      store.savedLeftPriceScaleWidth = null;
-      if (c1) {
-        c1.priceScale("right").applyOptions({
-          minimumWidth: 0,
-          autoScale: !store.isPriceScaleUserZoomed,
-        });
-        c1.priceScale("left").applyOptions({
-          minimumWidth: 0,
-          visible: BASE_LEFT_WIDTH > 0,
-          autoScale: !store.isKimchiPriceScaleUserZoomed,
-        });
-      }
-      if (c2) {
-        c2.priceScale("right").applyOptions({
-          minimumWidth: 0,
-          autoScale: !store.isVolPriceScaleUserZoomed,
-        });
-        c2.priceScale("left").applyOptions({
-          minimumWidth: 0,
-          visible: BASE_LEFT_WIDTH > 0,
-        });
-      }
+    let measuredRight = 0;
+    if (c1) {
+      const rWidth = c1.priceScale("right").width();
+      if (rWidth > measuredRight) measuredRight = rWidth;
+    }
+    if (c2) {
+      const rWidth = c2.priceScale("right").width();
+      if (rWidth > measuredRight) measuredRight = rWidth;
     }
 
-    // 1. 우측 가격축 동기화
-    const w1 = c1 ? c1.priceScale("right").width() : 0;
-    const w2 = c2 ? c2.priceScale("right").width() : 0;
-    const measuredRight = Math.max(w1, w2);
+    // [단방향 최대치 고정 락] 절대 줄어들지 않고 메인/볼륨 중 더 넓은 너비로 완벽 불변 고정
+    const targetWidth = Math.max(currentMaxRight, measuredRight);
 
-    // 🚀 [원자적 상하 우측 너비 일치] 메인과 볼륨 중 더 넓은 너비로 단일 틱에서 양방향 완벽 동기화 (덜그럭 0%)
-    const targetWidth = measuredRight > 0 ? measuredRight : currentMaxRight;
-
-    if (
-      targetWidth > 0 &&
-      (targetWidth !== currentMaxRight ||
-        w1 !== targetWidth ||
-        w2 !== targetWidth ||
-        force)
-    ) {
+    if (targetWidth > 0 && (targetWidth !== currentMaxRight || force)) {
       currentMaxRight = targetWidth;
       store.savedPriceScaleWidth = targetWidth;
       if (c1) {
@@ -250,6 +221,7 @@ export const resetPriceScaleWidthSync = () => {
   if (typeof updateScaleModeButtonsUI === "function") updateScaleModeButtonsUI();
   window.isResettingWidth = false;
 };
+window.resetPriceScaleWidthSync = resetPriceScaleWidthSync;
 
 // ==========================================
 // 4. 스케일 모드 버튼(A / L) UI 및 오버레이 엔진

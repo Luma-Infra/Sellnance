@@ -1,6 +1,12 @@
 // stream_korea.js
 import { store, tfSec, CONFIG } from "./_store.js";
-import { getMultiplier, getPureBase, getUnixSeconds, getNextBarTime } from "./chart_utils.js";
+import {
+  getMultiplier,
+  getPureBase,
+  getCleanSymbol,
+  getUnixSeconds,
+  getNextBarTime,
+} from "./chart_utils.js";
 import {
   isChartBusy,
   isMatchingCurrentSymbol,
@@ -22,32 +28,52 @@ function getPriceForExchange(exchange, row, pureSymbol) {
   const exUpper = exchange.toUpperCase();
   if (exUpper === "UPBIT") {
     const sym = row?.Upbit_Symbol || pureSymbol;
-    const price = store.tickerBuffer[`KRW-${sym}`]?.c || row?.Upbit_Price || row?.Price_KRW;
+    const price =
+      store.tickerBuffer[`KRW-${sym}`]?.c || row?.Upbit_Price || row?.Price_KRW;
     return price ? parseFloat(price) / getMultiplier(sym) : null;
   }
   if (exUpper === "BITHUMB") {
     const sym = row?.Bithumb_Symbol || pureSymbol;
-    const price = store.tickerBuffer[`${sym}_KRW`]?.c || row?.Bithumb_Price || row?.Price_KRW;
+    const price =
+      store.tickerBuffer[`${sym}_KRW`]?.c ||
+      row?.Bithumb_Price ||
+      row?.Price_KRW;
     return price ? parseFloat(price) / getMultiplier(sym) : null;
   }
-  if (exUpper === "BINANCE_SPOT" || exUpper === "SPOT") {
+  if (
+    exUpper === "BINANCE_SPOT" ||
+    exUpper === "SPOT" ||
+    exUpper === "BINANCE"
+  ) {
     const sym = row?.Exact_Spot || pureSymbol;
-    const price = store.tickerBuffer[`${sym}USDT`]?.c || row?.Binance_Price_Spot || row?.Binance_Price;
+    const price =
+      store.tickerBuffer[`${sym}USDT`]?.c ||
+      row?.Binance_Price_Spot ||
+      row?.Binance_Price;
     return price ? parseFloat(price) / getMultiplier(sym) : null;
   }
   if (exUpper === "BINANCE_FUTURES" || exUpper === "FUTURES") {
     const sym = row?.Exact_Futures || pureSymbol;
-    const price = store.tickerBuffer[`${sym}USDT_FUTURES`]?.c || row?.Binance_Price_Futures || row?.Binance_Price;
+    const price =
+      store.tickerBuffer[`${sym}USDT_FUTURES`]?.c ||
+      row?.Binance_Price_Futures ||
+      row?.Binance_Price;
     return price ? parseFloat(price) / getMultiplier(sym) : null;
   }
   if (exUpper === "BYBIT_SPOT" || exUpper === "BYBIT") {
     const sym = row?.Bybit_Symbol || pureSymbol;
-    const price = store.tickerBuffer[`${sym}USDT`]?.c || row?.Bybit_Price_Spot || row?.Bybit_Price;
+    const price =
+      store.tickerBuffer[`${sym}USDT`]?.c ||
+      row?.Bybit_Price_Spot ||
+      row?.Bybit_Price;
     return price ? parseFloat(price) / getMultiplier(sym) : null;
   }
   if (exUpper === "BYBIT_FUTURES") {
     const sym = row?.Bybit_Symbol || pureSymbol;
-    const price = store.tickerBuffer[`${sym}USDT_FUTURES`]?.c || row?.Bybit_Price_Futures || row?.Bybit_Price;
+    const price =
+      store.tickerBuffer[`${sym}USDT_FUTURES`]?.c ||
+      row?.Bybit_Price_Futures ||
+      row?.Bybit_Price;
     return price ? parseFloat(price) / getMultiplier(sym) : null;
   }
   return null;
@@ -58,30 +84,34 @@ export function updateRealtimeKimchi(liveData, symbol, chartTime) {
   const perfStart = performance.now();
   // 🚀 [함수 호출 간격 추적] 이 함수가 마지막으로 불린 시각과 지금의 gap을 측정 → late arrival 판단용
   const nowCallMs = Date.now();
-  const callGapMs = store._lastKimchiCallMs ? (nowCallMs - store._lastKimchiCallMs) : 0;
+  const callGapMs = store._lastKimchiCallMs
+    ? nowCallMs - store._lastKimchiCallMs
+    : 0;
   store._lastKimchiCallMs = nowCallMs;
   if (store.blockKimchi || store.isKimchiDisabled) return;
   if (!store.kimchiSeries || !store.paneConfig.kimchi) return;
 
-  // 🚀 [김프 침범 방지 - 리버스 락킹]
-  // 김프는 현재 활성 탭과 반대되는(국내 ↔ 해외) 실시간 스트림 물줄기를 추적하여 연산해야 합니다.
-  const isCurrentTabKorea = ["UPBIT", "BITHUMB"].includes(store.currentChartMarket);
+  // [리버스 락킹 해제] 국내/해외 어느 쪽에서 틱이 들어오든 최신 버퍼 가격을 매칭하여 즉시 김프 갱신
+  const isCurrentTabKorea = ["UPBIT", "BITHUMB"].includes(
+    store.currentChartMarket,
+  );
   const isStreamKorea = liveData.marketType
     ? ["UPBIT", "BITHUMB"].includes(liveData.marketType)
-    : (symbol.startsWith("KRW-") || symbol.endsWith("KRW") || symbol.includes("_KRW"));
-  if (isCurrentTabKorea === isStreamKorea) {
-    return;
-  }
+    : symbol.startsWith("KRW-") ||
+    symbol.endsWith("KRW") ||
+    symbol.includes("_KRW");
 
-  const rate = store.marketDataMap?.krw_usd_rate || 0;
+  const rate = store.marketDataMap?.krw_usd_rate || 1000;
   if (rate === 0) return;
 
   const tFindStart = performance.now();
-  const pureSymbol = getPureBase(symbol);
+  const pureSymbol = getCleanSymbol(symbol) || getPureBase(symbol) || symbol;
   if (!store._symbolToRowCache) {
     store._symbolToRowCache = new Map();
   }
-  let row = store.tickerRowMap.get(pureSymbol) || store._symbolToRowCache.get(pureSymbol);
+  let row =
+    store.tickerRowMap.get(pureSymbol) ||
+    store._symbolToRowCache.get(pureSymbol);
   if (!row) {
     row = store.currentTableData.find((c) => c.Symbol === pureSymbol);
     if (row) {
@@ -93,41 +123,106 @@ export function updateRealtimeKimchi(liveData, symbol, chartTime) {
   let unitKorPrice = null;
   let unitGlbPrice = null;
 
-  // 🚀 [분리 락킹] 활성 탭에 매칭되는 국내/해외 파트너 거래소를 store.preferredKimchiSub로 강제 바인딩하여 타 거래소 침범 차단!
-  let korExchange = isCurrentTabKorea ? store.currentChartMarket : store.preferredKimchiSub;
-  let glbExchange = !isCurrentTabKorea ? store.currentChartMarket : store.preferredKimchiSub;
+  // 활성 탭에 매칭되는 국내/해외 파트너 거래소 바인딩
+  let korExchange = isCurrentTabKorea
+    ? store.currentChartMarket
+    : store.preferredKimchiSub;
+  let glbExchange = !isCurrentTabKorea
+    ? store.currentChartMarket
+    : store.preferredKimchiSub;
 
   if (!korExchange) {
     korExchange = row?.Upbit === "O" ? "upbit" : "bithumb";
   }
   if (!glbExchange) {
-    glbExchange = row?.Listed_Exchanges?.some(ex => ex.includes("BINANCE")) ? "binance_spot" : "bybit_spot";
+    if (
+      row?.Binance_Price_Spot ||
+      row?.Listed_Exchanges?.includes("BINANCE_SPOT")
+    ) {
+      glbExchange = "binance_spot";
+    } else if (
+      row?.Bybit_Price_Spot ||
+      row?.Listed_Exchanges?.includes("BYBIT_SPOT")
+    ) {
+      glbExchange = "bybit_spot";
+    } else if (
+      row?.Binance_Price_Futures ||
+      row?.Listed_Exchanges?.includes("BINANCE_FUTURES")
+    ) {
+      glbExchange = "binance_futures";
+    } else if (
+      row?.Bybit_Price_Futures ||
+      row?.Listed_Exchanges?.includes("BYBIT_FUTURES")
+    ) {
+      glbExchange = "bybit_futures";
+    } else {
+      glbExchange = row?.Listed_Exchanges?.some((ex) => ex.includes("BINANCE"))
+        ? "binance_spot"
+        : "bybit_spot";
+    }
   }
 
-  // 🚀 [침범 차단] 수신된 스트림의 마켓 형식이 활성 파트너 거래소의 유형과 일치하지 않으면 즉시 폐기!
+  // 수신된 스트림의 마켓 형식이 활성 파트너 거래소의 유형과 일치하지 않으면 즉시 폐기
   const lowerKor = String(korExchange).toLowerCase();
   const lowerGlb = String(glbExchange).toLowerCase();
   if (isStreamKorea) {
-    const targetType = lowerKor === "upbit" ? "UPBIT" : lowerKor === "bithumb" ? "BITHUMB" : null;
-    if (targetType && liveData.marketType !== targetType) return;
+    const targetType =
+      lowerKor === "upbit"
+        ? "UPBIT"
+        : lowerKor === "bithumb"
+          ? "BITHUMB"
+          : null;
+    if (targetType && liveData.marketType && liveData.marketType !== targetType) return;
   } else {
     const mapping = {
-      "binance_futures": "FUTURES",
-      "binance_spot": "SPOT",
-      "bybit_futures": "BYBIT_FUTURES",
-      "bybit_spot": "BYBIT"
+      binance_futures: "FUTURES",
+      futures: "FUTURES",
+      b_fut: "FUTURES",
+      binance_spot: "SPOT",
+      spot: "SPOT",
+      binance: "SPOT",
+      b_spot: "SPOT",
+      bybit_futures: "BYBIT_FUTURES",
+      bybit_spot: "BYBIT",
+      bybit: "BYBIT",
     };
     const targetType = mapping[lowerGlb];
-    if (targetType && liveData.marketType !== targetType) return;
+    if (targetType && liveData.marketType && liveData.marketType !== targetType) return;
   }
 
   if (isStreamKorea) {
     const mainMulti = getMultiplier(symbol);
     unitKorPrice = liveData.close / mainMulti;
+
+    // 수신된 국내 최신 가격을 버퍼와 row에 실시간 즉각 캐싱
+    if (!store.tickerBuffer) store.tickerBuffer = {};
+    if (liveData.marketType === "BITHUMB") {
+      store.tickerBuffer[`${pureSymbol}_KRW`] = { c: liveData.close };
+      if (row) row.Bithumb_Price = liveData.close;
+    } else {
+      store.tickerBuffer[`KRW-${pureSymbol}`] = { c: liveData.close };
+      if (row) row.Upbit_Price = liveData.close;
+    }
+
     unitGlbPrice = getPriceForExchange(glbExchange, row, pureSymbol);
   } else {
     const mainMulti = getMultiplier(symbol);
     unitGlbPrice = liveData.close / mainMulti;
+
+    // 수신된 해외 최신 가격을 버퍼와 row에 실시간 즉각 캐싱
+    if (!store.tickerBuffer) store.tickerBuffer = {};
+    const isFut =
+      liveData.marketType === "FUTURES" ||
+      liveData.marketType === "BYBIT_FUTURES";
+    const bufKey = isFut
+      ? `${pureSymbol}USDT_FUTURES`
+      : `${pureSymbol}USDT`;
+    store.tickerBuffer[bufKey] = { c: liveData.close };
+    if (row) {
+      if (isFut) row.Binance_Price_Futures = liveData.close;
+      else row.Binance_Price_Spot = liveData.close;
+    }
+
     unitKorPrice = getPriceForExchange(korExchange, row, pureSymbol);
   }
 
@@ -169,16 +264,17 @@ export function updateRealtimeKimchi(liveData, symbol, chartTime) {
       };
       store.realtimeKimchi = kimchiObj;
       try {
-        const lastKimchiItem = store.kimchiData && store.kimchiData.length > 0
-          ? store.kimchiData[store.kimchiData.length - 1]
-          : null;
+        const lastKimchiItem =
+          store.kimchiData && store.kimchiData.length > 0
+            ? store.kimchiData[store.kimchiData.length - 1]
+            : null;
 
         if (!lastKimchiItem || chartTime >= lastKimchiItem.time) {
           const isTimeNew = !lastKimchiItem || chartTime > lastKimchiItem.time;
           const now = performance.now();
           const lastSeriesUpdate = store._lastKimchiSeriesUpdate || 0;
 
-          if (isTimeNew || (now - lastSeriesUpdate > 500)) {
+          if (isTimeNew || now - lastSeriesUpdate > 500) {
             const tUpdateStart = performance.now();
             store.kimchiSeries.update(kimchiObj);
             tUpdate = performance.now() - tUpdateStart;
@@ -191,8 +287,12 @@ export function updateRealtimeKimchi(liveData, symbol, chartTime) {
             cachedKimchiEl = document.getElementById("ohlc-kimchi");
           }
           if (cachedKimchiEl && !store.isCrosshairActive) {
-            const newText = (kimchiPct > 0 ? "+" : "") + kimchiPct.toFixed(2) + "%";
-            const newColor = typeof window.getKimchiColor === "function" ? window.getKimchiColor(kimchiPct) : "#57a4fc";
+            const newText =
+              (kimchiPct > 0 ? "+" : "") + kimchiPct.toFixed(2) + "%";
+            const newColor =
+              typeof window.getKimchiColor === "function"
+                ? window.getKimchiColor(kimchiPct)
+                : "#57a4fc";
 
             // 값이 변경되었을 때만 textContent와 style.color 갱신하여 reflow 방지
             if (cachedKimchiEl.textContent !== newText) {
@@ -205,14 +305,19 @@ export function updateRealtimeKimchi(liveData, symbol, chartTime) {
 
           // 🚀 김프 전용 미니 뱃지 실시간 갱신 (상단 메인 뱃지와 완전히 별개로 독립 트래킹)
           if (!cachedKimchiCallerEl) {
-            cachedKimchiCallerEl = document.getElementById("ohlc-kimchi-caller");
+            cachedKimchiCallerEl =
+              document.getElementById("ohlc-kimchi-caller");
           }
           let callerId = "UNKNOWN";
           if (store.traceRowCaller) {
             const stack = new Error().stack || "";
             if (stack.includes("stream") || stack.includes("updateStatus")) {
               callerId = "1 (Stream)";
-            } else if (stack.includes("chart_utils.js") || stack.includes("chart.js") || stack.includes("chart_data.js")) {
+            } else if (
+              stack.includes("chart_utils.js") ||
+              stack.includes("chart.js") ||
+              stack.includes("chart_data.js")
+            ) {
               callerId = "2 (Chart)";
             } else {
               callerId = "3 (UI/Filter)";
@@ -230,9 +335,13 @@ export function updateRealtimeKimchi(liveData, symbol, chartTime) {
 
           // 🚀 [디버그 동적 전파] traceRowCaller가 켜져 있을 때만 실행하여 평소 탐색 비용을 0ms로 만듭니다.
           if (store.traceRowCaller) {
-            const firstRowDebug = document.querySelector('#coin-list-body > div[data-index="0"] .first-row-debug-area');
+            const firstRowDebug = document.querySelector(
+              '#coin-list-body > div[data-index="0"] .first-row-debug-area',
+            );
             if (firstRowDebug) {
-              const kimchiDebug = firstRowDebug.querySelector(".debug-kimchi-caller");
+              const kimchiDebug = firstRowDebug.querySelector(
+                ".debug-kimchi-caller",
+              );
               if (kimchiDebug) kimchiDebug.innerText = `KIMP: ${callerId}`;
             }
           }
@@ -271,7 +380,6 @@ export function updateRealtimeKimchi(liveData, symbol, chartTime) {
               //     });
               //   }
               // } catch (_autofitErr) { /* 무시 */ }
-
             } else if (chartTime === lastKimchiItem.time) {
               store.kimchiData[store.kimchiData.length - 1] = kimchiObj;
             }
@@ -279,17 +387,27 @@ export function updateRealtimeKimchi(liveData, symbol, chartTime) {
         }
       } catch (e) {
         // Xconsole.warn("🚨 kimchiSeries.update 예외 발생, vol-pane 자동 복구 시도:", e);
-        if (store.kimchiSeries && store.kimchiData && store.kimchiData.length > 0) {
+        if (
+          store.kimchiSeries &&
+          store.kimchiData &&
+          store.kimchiData.length > 0
+        ) {
           // 김프 데이터 내부의 value가 null이 되지 않도록 0층 방어벽 가동
-          const sterileKimchiData = store.kimchiData.map(item => ({
+          const sterileKimchiData = store.kimchiData.map((item) => ({
             ...item,
-            value: (item.value === null || item.value === undefined || isNaN(item.value)) ? 0 : Number(item.value)
+            value:
+              item.value === null ||
+                item.value === undefined ||
+                isNaN(item.value)
+                ? 0
+                : Number(item.value),
           }));
           // 🚀 [Fix 2] 복구 경로 최적화: 최신 N개만 슬라이싱 전달 (proxy 내 sanitizeChartData가 이미 내장됨)
           const _maxKimchi2 = store.currentRenderLimit || 1000;
-          const _slicedKimchi = sterileKimchiData.length > _maxKimchi2
-            ? sterileKimchiData.slice(-_maxKimchi2)
-            : sterileKimchiData;
+          const _slicedKimchi =
+            sterileKimchiData.length > _maxKimchi2
+              ? sterileKimchiData.slice(-_maxKimchi2)
+              : sterileKimchiData;
           store.kimchiSeries.setData(_slicedKimchi);
         }
       }
@@ -325,7 +443,11 @@ export function updateRealtimeKimchiThrottled(liveData, symbol, chartTime) {
   if (timeElapsed >= throttleInterval) {
     kimchiUpdatePending = true;
     requestAnimationFrame(() => {
-      updateRealtimeKimchi(latestKimchiLiveData, latestKimchiSymbol, latestKimchiChartTime);
+      updateRealtimeKimchi(
+        latestKimchiLiveData,
+        latestKimchiSymbol,
+        latestKimchiChartTime,
+      );
       lastKimchiUpdateTime = performance.now();
       kimchiUpdatePending = false;
     });
@@ -333,7 +455,11 @@ export function updateRealtimeKimchiThrottled(liveData, symbol, chartTime) {
     kimchiUpdatePending = true;
     setTimeout(() => {
       requestAnimationFrame(() => {
-        updateRealtimeKimchi(latestKimchiLiveData, latestKimchiSymbol, latestKimchiChartTime);
+        updateRealtimeKimchi(
+          latestKimchiLiveData,
+          latestKimchiSymbol,
+          latestKimchiChartTime,
+        );
         lastKimchiUpdateTime = performance.now();
         kimchiUpdatePending = false;
       });
@@ -347,7 +473,13 @@ export function getUpbitMessageHandler(symbol, broadcastCandleUpdate) {
     const btnSim = document.getElementById("tab-btn-sim");
     if (btnSim && btnSim.classList.contains("active")) return;
 
-    if (store.isFetchingChart || window.isFetchingChart || store.isLoadingMoreHistory || store.isRestoringTab) return;
+    if (
+      store.isFetchingChart ||
+      window.isFetchingChart ||
+      store.isLoadingMoreHistory ||
+      store.isRestoringTab
+    )
+      return;
 
     let res = null;
     try {
@@ -374,7 +506,11 @@ export function getUpbitMessageHandler(symbol, broadcastCandleUpdate) {
 
       if (store.mainData && store.mainData.length > 0) {
         const lastCandle = store.mainData[store.mainData.length - 1];
-        updateRealtimeKimchiThrottled({ close: newPrice, marketType: "UPBIT" }, symbol, lastCandle.time);
+        updateRealtimeKimchiThrottled(
+          { close: newPrice, marketType: "UPBIT" },
+          symbol,
+          lastCandle.time,
+        );
       }
       return;
     }
@@ -398,7 +534,13 @@ export function getUpbitMessageHandler(symbol, broadcastCandleUpdate) {
     const nextBarTime = getNextBarTime(lastCandle.time, store.currentTF);
     const currentUnix = Math.floor(res.timestamp / 1000);
 
-    const tradeResult = applyTradeToCandle(lastCandle, newPrice, tradeQty, currentUnix, nextBarTime);
+    const tradeResult = applyTradeToCandle(
+      lastCandle,
+      newPrice,
+      tradeQty,
+      currentUnix,
+      nextBarTime,
+    );
     const activeCandle = tradeResult.activeCandle;
     const chartUpdateNeeded = true;
 
@@ -439,7 +581,11 @@ export function getBithumbMessageHandler(symbol, broadcastCandleUpdate) {
 
       if (store.mainData && store.mainData.length > 0) {
         const lastCandle = store.mainData[store.mainData.length - 1];
-        updateRealtimeKimchiThrottled({ close: newPrice, marketType: "BITHUMB" }, symbol, lastCandle.time);
+        updateRealtimeKimchiThrottled(
+          { close: newPrice, marketType: "BITHUMB" },
+          symbol,
+          lastCandle.time,
+        );
       }
       return;
     }
@@ -451,7 +597,11 @@ export function getBithumbMessageHandler(symbol, broadcastCandleUpdate) {
     const tradeSymbol = firstTrade?.symbol || symbol;
 
     // 🛡️ [Symbol Guard] 빗썸 현재 활성 심볼 일치 여부 검증
-    if (!isMatchingCurrentSymbol(tradeSymbol) && !isMatchingCurrentSymbol(symbol)) return;
+    if (
+      !isMatchingCurrentSymbol(tradeSymbol) &&
+      !isMatchingCurrentSymbol(symbol)
+    )
+      return;
 
     if (isChartBusy()) return;
     if (!store.mainData || store.mainData.length === 0) return;
@@ -474,7 +624,13 @@ export function getBithumbMessageHandler(symbol, broadcastCandleUpdate) {
       let currentUnix = Math.floor(new Date(dtStr).getTime() / 1000);
       if (isNaN(currentUnix)) currentUnix = Math.floor(Date.now() / 1000);
 
-      const tradeResult = applyTradeToCandle(lastCandle, newPrice, tradeQty, currentUnix, nextBarTime);
+      const tradeResult = applyTradeToCandle(
+        lastCandle,
+        newPrice,
+        tradeQty,
+        currentUnix,
+        nextBarTime,
+      );
       activeCandle = tradeResult.activeCandle;
       chartUpdateNeeded = true;
     });

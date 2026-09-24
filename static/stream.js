@@ -15,16 +15,11 @@ import { renderRealtimeRow, calculateRowKimchi } from "./stream_table.js";
 // 차트 관련 실시간 처리 로드
 import "./stream_global.js";
 
-// 🚀 [신규] 코인별 대표 지표(Raw)를 거래소 우선순위(선물 > 현물 > 업비트)에 맞게 강제 동기화하는 함수
+// 코인별 대표 지표(Raw)를 거래소 우선순위(선물 > 현물 > 업비트)에 맞게 강제 동기화하는 함수
 export function syncRowPrioritizedMetrics(row) {
   const currentMarket = store.currentMarket || "ALL";
-  const rate = store.marketDataMap?.krw_usd_rate || 1;
-
-  let hasFutures =
-    row.Binance_Futures === "O" ||
-    row.Listed_Exchanges?.includes("BINANCE_FUTURES");
-  let hasSpot =
-    row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE");
+  const rate = store.marketDataMap?.krw_usd_rate || 1000;
+  const isAlpha = row.is_alpha || row.Binance_Alpha === "O";
 
   let pPrice = null;
   let p24h = null;
@@ -32,23 +27,8 @@ export function syncRowPrioritizedMetrics(row) {
   let pOpen = null;
   let pInflow = "";
 
-  if (currentMarket === "FUTURES") {
-    pPrice =
-      row.Binance_Price_Futures ?? row.Bybit_Price_Futures ?? row.Price_Raw;
-    p24h = row.Change_24h_Futures ?? row.Change_24h_Raw;
-    pToday = row.Change_Today_Futures ?? row.Change_Today_Raw;
-    pOpen = row.futures_utc0_open_Raw ?? row.utc0_open_Raw;
-    pInflow = row.Binance_Futures === "O" ? "BINANCE_FUTURES" : "BYBIT_FUTURES";
-  } else if (currentMarket === "SPOT") {
-    pPrice = row.Binance_Price_Spot ?? row.Bybit_Price_Spot ?? row.Price_Raw;
-    p24h = (row.Change_24h_Spot ?? row.Change_24h_Binance) ?? row.Change_24h_Bybit ?? row.Change_24h_Raw;
-    pToday =
-      (row.Change_Today_Spot ?? row.Change_Today_Binance) ??
-      row.Change_Today_Bybit ??
-      row.Change_Today_Raw;
-    pOpen = row.spot_utc0_open_Raw ?? row.utc0_open_Raw;
-    pInflow = row.Binance === "O" ? "BINANCE_SPOT" : "BYBIT_SPOT";
-  } else if (currentMarket === "UPBIT") {
+  if (currentMarket === "UPBIT") {
+    // 1️⃣ 업비트 모드
     pPrice = row.Upbit_Price
       ? rate > 0
         ? row.Upbit_Price / rate
@@ -62,40 +42,28 @@ export function syncRowPrioritizedMetrics(row) {
         : parseFloat(row.utc0_open_KRW)
       : row.utc0_open_Raw;
     pInflow = "UPBIT";
-  } else if (currentMarket === "BITHUMB") {
-    pPrice = row.Bithumb_Price
-      ? rate > 0
-        ? row.Bithumb_Price / rate
-        : row.Bithumb_Price
-      : row.Price_Raw;
-    p24h = row.Change_24h_Bithumb ?? row.Change_24h_Raw;
-    pToday = row.Change_Today_Bithumb ?? row.Change_Today_Raw;
-    pOpen = row.utc0_open_KRW
-      ? rate > 0
-        ? parseFloat(row.utc0_open_KRW) / rate
-        : parseFloat(row.utc0_open_KRW)
-      : row.utc0_open_Raw;
-    pInflow = "BITHUMB";
   } else {
-    // ALL 모드 등 기본: 해외선물 > 해외현물 > 업비트 순으로 락킹 (바이비트와 빗썸은 메인 락킹에서 배제)
-    if (
-      hasFutures &&
-      (row.Binance_Futures === "O" ||
-        row.Listed_Exchanges?.includes("BINANCE_FUTURES"))
-    ) {
+    // 2️⃣ ALL / BINANCE 기본 모드 (사령관님 선물 > 현물 커스텀 락킹)
+    const hasFutures =
+      row.Binance_Futures === "O" ||
+      row.Listed_Exchanges?.includes("BINANCE_FUTURES");
+    const hasSpot =
+      row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE");
+
+    if (hasFutures) {
       pPrice = row.Binance_Price_Futures ?? row.Price_Raw;
       p24h = row.Change_24h_Futures ?? row.Change_24h_Raw;
       pToday = row.Change_Today_Futures ?? row.Change_Today_Raw;
       pOpen = row.futures_utc0_open_Raw ?? row.utc0_open_Raw;
       pInflow = "BINANCE_FUTURES";
-    } else if (
-      hasSpot &&
-      (row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE"))
-    ) {
+    } else if (hasSpot) {
       pPrice = row.Binance_Price_Spot ?? row.Price_Raw;
       p24h = row.Change_24h_Binance ?? row.Change_24h_Raw;
-      pToday = row.Change_Today_Binance ?? row.Change_Today_Raw;
-      pOpen = row.spot_utc0_open_Raw ?? row.utc0_open_Raw;
+      // 알파 코인은 Day 등락률 무조건 null (-) 고정!
+      pToday = isAlpha
+        ? null
+        : (row.Change_Today_Binance ?? row.Change_Today_Raw);
+      pOpen = isAlpha ? null : (row.spot_utc0_open_Raw ?? row.utc0_open_Raw);
       pInflow = "BINANCE_SPOT";
     } else if (
       row.Upbit_Price &&
@@ -105,9 +73,7 @@ export function syncRowPrioritizedMetrics(row) {
         row.Binance === "O" ||
         row.Binance_Futures === "O" ||
         (row.Listed_Exchanges &&
-          row.Listed_Exchanges.some(
-            (e) => e.includes("BINANCE"),
-          ));
+          row.Listed_Exchanges.some((e) => e.includes("BINANCE")));
       pPrice =
         hasOvs && row.Price_Raw
           ? row.Price_Raw
@@ -139,9 +105,7 @@ export function syncRowPrioritizedMetrics(row) {
         row.Binance === "O" ||
         row.Binance_Futures === "O" ||
         (row.Listed_Exchanges &&
-          row.Listed_Exchanges.some(
-            (e) => e.includes("BINANCE"),
-          ));
+          row.Listed_Exchanges.some((e) => e.includes("BINANCE")));
       pPrice =
         hasOvs && row.Price_Raw
           ? row.Price_Raw
@@ -170,8 +134,14 @@ export function syncRowPrioritizedMetrics(row) {
       row.Listed_Exchanges?.includes("BYBIT_FUTURES")
     ) {
       pPrice = row.Bybit_Price_Futures;
-      p24h = row.Change_24h_Bybit_Futures ?? row.Change_24h_Bybit ?? row.Change_24h_Raw;
-      pToday = row.Change_Today_Bybit_Futures ?? row.Change_Today_Bybit ?? row.Change_Today_Raw;
+      p24h =
+        row.Change_24h_Bybit_Futures ??
+        row.Change_24h_Bybit ??
+        row.Change_24h_Raw;
+      pToday =
+        row.Change_Today_Bybit_Futures ??
+        row.Change_Today_Bybit ??
+        row.Change_Today_Raw;
       pOpen = row.futures_utc0_open_Raw ?? row.utc0_open_Raw;
       pInflow = "BYBIT_FUTURES";
     } else if (
@@ -191,7 +161,15 @@ export function syncRowPrioritizedMetrics(row) {
 
   if (pPrice !== null && pPrice !== undefined) row.Price_Raw = pPrice;
   if (p24h !== null && p24h !== undefined) row.Change_24h_Raw = p24h;
-  if (pToday !== null && pToday !== undefined) row.Change_Today_Raw = pToday;
+  if (isAlpha) {
+    row.Change_Today_Raw = null;
+    row.Change_Today_Spot = null;
+    row.Change_Today_Binance = null;
+    row.spot_utc0_open_Raw = null;
+    row.futures_utc0_open_Raw = null;
+  } else if (pToday !== null && pToday !== undefined) {
+    row.Change_Today_Raw = pToday;
+  }
   if (pOpen !== null && pOpen !== undefined && parseFloat(pOpen) > 0) {
     row.utc0_open_Raw = parseFloat(pOpen);
   }

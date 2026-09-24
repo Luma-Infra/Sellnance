@@ -76,23 +76,29 @@ export function flushRealtimeRender() {
 
                 if (normSec >= lastSec) {
                     // [타입 정합성] 기존 볼륨 배열의 time 형식(문자열 vs 숫자)과 일치시켜 Lightweight Charts 예외 차단
-                    if (typeof lastVolItem.time === "string" && typeof normalizedTime === "number") {
-                        volObj.time = String(lastVolItem.time);
-                    } else if (typeof lastVolItem.time === "number" && typeof normalizedTime === "string") {
-                        volObj.time = getUnixSeconds(normalizedTime);
+                    if (typeof lastVolItem.time === "string") {
+                        if (typeof normalizedTime === "number") {
+                            const dt = new Date(normalizedTime * 1000);
+                            volObj.time = `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, "0")}-${String(dt.getUTCDate()).padStart(2, "0")}`;
+                        } else {
+                            volObj.time = String(normalizedTime);
+                        }
+                    } else {
+                        volObj.time = normSec;
                     }
 
-                    if (!store.chartVol?.timeScale().getVisibleLogicalRange()) {
-                        return;
-                    }
-
-                    store.volumeSeries.update(volObj);
+                    // [메모리 배열 항상 동기화] 백그라운드 탭에서도 캔들(mainData)과 1:1로 거래량 데이터 항상 보존
                     if (normSec > lastSec) {
                         volData.push(volObj);
                     } else if (normSec === lastSec) {
                         volData[volData.length - 1] = volObj;
                     }
                     store.volumeDataMap.set(normSec, volObj);
+
+                    // [캔버스 렌더링] 뷰포트가 활성화된 상태에서만 차트 시리즈 update 호출
+                    if (store.chartVol?.timeScale().getVisibleLogicalRange()) {
+                        store.volumeSeries.update(volObj);
+                    }
                 }
             }
         } catch (e) {

@@ -109,7 +109,7 @@ export const realUpdateHeaderDisplay = (
     dom.headCallerPriceEl.textContent = ` [${callerId}]`;
   }
 
-  const rate = store.marketDataMap?.krw_usd_rate || 0;
+  const rate = store.marketDataMap?.krw_usd_rate || 1000;
   const isKrwMode = store.currencyMode === "KRW";
 
   const activeMarket =

@@ -155,7 +155,7 @@ export function restoreSavedUserSettings() {
       savedViewMode = "basic";
       try {
         localStorage.setItem("sellnance_table_view_mode", "basic");
-      } catch (e) { }
+      } catch (e) {}
     }
     if (typeof switchViewMode === "function") {
       switchViewMode(savedViewMode, false);
@@ -175,7 +175,7 @@ export function restoreSavedUserSettings() {
     if (typeof window.updateSortUI === "function") {
       window.updateSortUI(store.currentSortCol, store.sortState);
     }
-  } catch (e) { }
+  } catch (e) {}
 }
 
 let _dashboardEnginePromise = null;
@@ -265,7 +265,10 @@ export function updateStatusBadge() {
 
     // 🚀 [사일런트 갱신 트리거] 카운트다운 만료 시 10초 쿨다운을 두고 즉시 사일런트 갱신 트리거
     const nowMs = Date.now();
-    if (!store._lastAutoSilentFetch || nowMs - store._lastAutoSilentFetch > 10000) {
+    if (
+      !store._lastAutoSilentFetch ||
+      nowMs - store._lastAutoSilentFetch > 10000
+    ) {
       store._lastAutoSilentFetch = nowMs;
       if (typeof window.loadTableDataSilent === "function") {
         window.loadTableDataSilent();
@@ -520,15 +523,14 @@ export function scheduleDailyReset() {
   const timeUntilReset = nextReset.getTime() - now.getTime();
 
   setTimeout(() => {
-    const rate = store.marketDataMap?.krw_usd_rate || 0;
+    const rate = store.marketDataMap?.krw_usd_rate || 1000;
     if (store.currentTableData && Array.isArray(store.currentTableData)) {
       store.currentTableData.forEach((row) => {
-        if (row.Binance_Price_Futures || row.Price_Raw) {
-          row.futures_utc0_open_Raw =
-            row.Binance_Price_Futures || row.Price_Raw;
+        if (row.Binance_Price_Futures) {
+          row.futures_utc0_open_Raw = row.Binance_Price_Futures;
         }
-        if (row.Binance_Price_Spot || row.Price_Raw) {
-          row.spot_utc0_open_Raw = row.Binance_Price_Spot || row.Price_Raw;
+        if (row.Binance_Price_Spot) {
+          row.spot_utc0_open_Raw = row.Binance_Price_Spot;
         }
         if (row.Price_KRW || (row.Price_Raw && rate > 0)) {
           row.utc0_open_KRW = row.Price_KRW || row.Price_Raw * rate;
@@ -586,7 +588,7 @@ export function setupRouteAndHistory() {
     ) {
       store.currentTF = lastTF;
     }
-  } catch (e) { }
+  } catch (e) {}
 
   const initialRouteSym = getInitialRouteSymbol();
   if (initialRouteSym && store.isEngineStarted) {
@@ -600,7 +602,7 @@ export function setupRouteAndHistory() {
       if (activeTab === "chart" && typeof switchMobileTab === "function") {
         switchMobileTab("chart");
       }
-    } catch (e) { }
+    } catch (e) {}
   }
 
   const handleHistoryNavigation = () => {
@@ -622,7 +624,11 @@ export function setupTabVisibilityRecovery() {
   let tabHiddenAt = 0;
 
   const triggerRecovery = () => {
-    if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+    if (
+      typeof document !== "undefined" &&
+      document.visibilityState !== "visible"
+    )
+      return;
     const now = Date.now();
     const elapsed = tabHiddenAt > 0 ? now - tabHiddenAt : 0;
 
@@ -650,7 +656,7 @@ export function setupTabVisibilityRecovery() {
           false,
           false,
           store.currentUid,
-          true
+          true,
         );
       }
     }

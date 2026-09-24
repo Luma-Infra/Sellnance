@@ -167,4 +167,156 @@ describe("Frontend Core Modules Direct Tests", () => {
     const { rawGlb } = getRowKimchiGlobalPrice(tfuelRow);
     expect(rawGlb).toBe(0.01256);
   });
+
+  // 9. 알파 코인 24h / 당일 시가 정렬 시 후순위 격리 및 B-ALPHA 필터 활성 시 정상 정렬 검증
+  it("9. Alpha Coin Ranking Suppression during 24h/Today Sort", async () => {
+    const { simpleSortData } = await import("../static/table_sort.js");
+    const { store } = await import("../static/_store.js");
+
+    const mockData = [
+      {
+        Symbol: "ALPHA1",
+        DisplayTicker: "APM",
+        Change_24h_Raw: 500.0, // 극단적 펌핑 알파 코인
+        Price_Raw: 1.0,
+        Binance_Alpha: "O",
+        Binance_Futures: "X",
+        is_futures: false,
+      },
+      {
+        Symbol: "BTC",
+        DisplayTicker: "BTC",
+        Change_24h_Raw: 5.2, // 일반 메이저 코인
+        Price_Raw: 86000,
+        Binance_Futures: "O",
+        is_futures: true,
+      },
+      {
+        Symbol: "ETH",
+        DisplayTicker: "ETH",
+        Change_24h_Raw: 3.1, // 일반 메이저 코인
+        Price_Raw: 3000,
+        Binance_Futures: "O",
+        is_futures: true,
+      },
+    ];
+
+    // [케이스 1]: 전체 마켓 (ALL) 상태에서 24h 내림차순 정렬 시
+    // 알파 코인이 +500%라도 상위권을 도배하지 않고 일반 코인(BTC 5.2% -> ETH 3.1%) 뒤로 후순위 배치되어야 함
+    store.currentTableData = [...mockData];
+    store.currentSortCol = "Change_24h";
+    store.sortState = "desc";
+    store.exchFilterStates = {};
+
+    simpleSortData();
+
+    expect(store.currentTableData[0].DisplayTicker).toBe("BTC");
+    expect(store.currentTableData[1].DisplayTicker).toBe("ETH");
+    expect(store.currentTableData[2].DisplayTicker).toBe("APM"); // 알파 코인이 후순위로 이동
+
+    // [케이스 2]: 상단 거래소 필터에서 B-ALPHA 활성화(상태 2) 시
+    // 알파 코인 보기 목적이므로 변동률 순위대로 정상 1위에 랭크되어야 함
+    store.currentTableData = [...mockData];
+    store.exchFilterStates = { BINANCE_SPOT: 2 };
+
+    simpleSortData();
+
+    expect(store.currentTableData[0].DisplayTicker).toBe("APM"); // 알파 코인이 1위
+    expect(store.currentTableData[1].DisplayTicker).toBe("BTC");
+    expect(store.currentTableData[2].DisplayTicker).toBe("ETH");
+  });
+
+  // 10. 업비트/빗썸 원화 차트 가격 정밀도 및 축 포맷팅 검증
+  it("10. KRW Price Formatting and Precision for Upbit & Bithumb", async () => {
+    const { getKrwPrecision, formatCrosshairPrice, formatSmartPrice } = await import("../static/chart_utils.js");
+    const { store } = await import("../static/_store.js");
+
+    // 100원 이상 코인은 무조건 정수 (소수점 0자리)
+    expect(getKrwPrecision(120_000_000, "upbit")).toBe(0);
+    expect(getKrwPrecision(3_500, "upbit")).toBe(0);
+    expect(getKrwPrecision(120_000_000, "bithumb")).toBe(0);
+    expect(getKrwPrecision(3_500, "bithumb")).toBe(0);
+
+    // 10~100원 코인은 업비트 소수점 1자리(0.1원 호가), 빗썸 소수점 2자리
+    expect(getKrwPrecision(45.67, "upbit")).toBe(1);
+    expect(getKrwPrecision(45.67, "bithumb")).toBe(2);
+
+    // 1~10원 코인은 소수점 3자리
+    expect(getKrwPrecision(3.456, "bithumb")).toBe(3);
+
+    // 1원 미만 코인은 소수점 4자리
+    expect(getKrwPrecision(0.1234, "bithumb")).toBe(4);
+
+    // formatSmartPrice 원화 모드 동작 검증
+    expect(formatSmartPrice(120_000_000, 2, true)).toBe("120,000,000"); // 달러 precision 2가 넘어와도 원화는 정수!
+    expect(formatSmartPrice(3_500, 4, true)).toBe("3,500");
+
+    // formatCrosshairPrice에서 UPBIT/BITHUMB 활성 시 원화 포맷 자동 적용 검증
+    store.currentChartMarket = "UPBIT";
+    expect(formatCrosshairPrice(120_000_000, 2, false)).toBe("120,000,000");
+
+    store.currentChartMarket = "BITHUMB";
+    expect(formatCrosshairPrice(3_500, 2, false)).toBe("3,500");
+
+    // 달러 마켓(FUTURES)일 때는 달러 규칙(소수점 2자리) 정상 유지 검증
+    store.currentChartMarket = "FUTURES";
+    expect(formatCrosshairPrice(86000, 2, false)).toBe("86,000.00");
+  });
+
+  // 11. 양방향 실시간 김프 갱신 검증 (리버스 락킹 해제)
+  it("11. Bidirectional Real-time Kimchi Calculation (Reverse-Locking Removed)", async () => {
+    const { updateRealtimeKimchi } = await import("../static/stream_korea.js");
+    const { store } = await import("../static/_store.js");
+
+    store.kimchiSeries = { update: () => {} };
+    store.paneConfig = { volume: true, kimchi: true };
+    store.isKimchiDisabled = false;
+    store.blockKimchi = false;
+    store.marketDataMap = { krw_usd_rate: 1400 };
+
+    // 테스트용 코인 데이터 주입
+    const mockRow = {
+      Symbol: "BTC",
+      Ticker: "BTCKRW",
+      Upbit_Symbol: "BTC",
+      Exact_Spot: "BTC",
+      Upbit_Price: 140_000_000,
+      Binance_Price_Spot: 98_000,
+      Listed_Exchanges: ["UPBIT", "BINANCE"],
+    };
+    store.tickerRowMap = new Map([["BTC", mockRow]]);
+    store.tickerBuffer = {
+      "KRW-BTC": { c: 140_000_000 },
+      BTCUSDT: { c: 98_000 },
+    };
+
+    // [상황 1]: 현재 차트가 업비트(UPBIT)일 때, 업비트 실시간 체결 틱이 들어온 경우
+    // 과거에는 리버스 락킹으로 인해 return되어 김프가 갱신되지 않았으나, 이제 즉시 연산되어야 함
+    store.currentChartMarket = "UPBIT";
+    store.preferredKimchiSub = "binance_spot";
+    store.realtimeKimchi = null;
+
+    updateRealtimeKimchi(
+      { close: 141_000_000, marketType: "UPBIT" },
+      "KRW-BTC",
+      1700000000,
+    );
+
+    // 141,000,000 / (98,000 * 1400) = 141,000,000 / 137,200,000 = ~1.02769 (+2.77%)
+    expect(store.realtimeKimchi).not.toBeNull();
+    expect(store.realtimeKimchi.value).toBeCloseTo(2.77, 1);
+    expect(store.realtimeKimchi.time).toBe(1700000000);
+
+    // [상황 2]: 현재 차트가 업비트(UPBIT)일 때, 해외(SPOT) 실시간 체결 틱이 들어온 경우
+    updateRealtimeKimchi(
+      { close: 100_000, marketType: "SPOT" },
+      "BTCUSDT",
+      1700000005,
+    );
+
+    // 141,000,000 / (100,000 * 1400) = 141,000,000 / 140,000,000 = 1.00714 (+0.71%)
+    expect(store.realtimeKimchi.value).toBeCloseTo(0.71, 1);
+    expect(store.realtimeKimchi.time).toBe(1700000005);
+  });
 });
+

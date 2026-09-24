@@ -167,10 +167,11 @@ export function updateRowStaticHTML(rowEl, row) {
       <span class="text-[10px] font-bold mt-0.5 truncate w-full text-left opacity-0">-</span>
     </div>
   </div>
-  <div class="p-2 col-kimch overflow-hidden kimchi-placeholder text-[12px] font-medium text-theme-text">
+  <div class="p-2 col-kimch overflow-hidden kimchi-placeholder text-[11px] font-medium text-theme-text">
     <div class="kimchi-container flex flex-col h-full justify-center leading-tight items-start min-w-0">
-      <div class="flex items-center justify-start gap-1 min-w-0 max-w-full">
-        <span class="kimchi-pct text-[12px] font-medium truncate">-</span>
+      <div class="flex items-center justify-start gap-1 min-w-0 max-w-full whitespace-nowrap">
+        <span class="kimchi-pct text-[11px] font-medium whitespace-nowrap flex-shrink-0">-</span>
+        <span class="kimchi-tag text-[8px] font-extrabold px-[2.5px] py-[0.5px] rounded-[2px] border leading-none hidden select-none tracking-tight flex-shrink-0" style="display: none;"></span>
       </div>
       <div class="flex items-center justify-start gap-2 text-[10px] font-medium mt-0.5 min-w-0 max-w-full">
         <span class="funding-val text-theme-accent opacity-70 truncate">-</span>
@@ -297,7 +298,7 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
     row.precision !== undefined && row.precision !== null
       ? Number(row.precision)
       : store.getPrecision(row.Ticker || row.DisplayTicker || row.Symbol);
-  const rate = store.marketDataMap?.krw_usd_rate || 0;
+  const rate = store.marketDataMap?.krw_usd_rate || 1000;
   const isKrw = store.currencyMode === "KRW";
 
   const {
@@ -624,16 +625,22 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
       const hasBithumb = exList.includes("BITHUMB") || !!row.Bithumb_Symbol;
       const hasGlobal =
         row.Binance === "O" ||
-        // row.Binance_Futures === "O" ||
+        row.Binance_Futures === "O" ||
         exList.includes("BINANCE") ||
-        // exList.includes("BINANCE_FUTURES") ||
+        exList.includes("BINANCE_SPOT") ||
+        exList.includes("BINANCE_FUTURES") ||
         exList.includes("BYBIT") ||
-        // exList.includes("BYBIT_FUTURES") ||
-        // row.Binance_Price_Futures > 0 ||
+        exList.includes("BYBIT_SPOT") ||
+        exList.includes("BYBIT_FUTURES") ||
         row.Binance_Price_Spot > 0 ||
-        row.Binance_Price > 0 ||
-        row.Bybit_Price > 0;
+        row.Bybit_Price_Spot > 0 ||
+        row.Binance_Price_Futures > 0 ||
+        row.Bybit_Price_Futures > 0;
       const hasBoth = hasGlobal && (hasUpbit || hasBithumb);
+
+      const tagEl =
+        container._kimchiTagEl ||
+        (container._kimchiTagEl = container.querySelector(".kimchi-tag"));
 
       const isInvalidKimchi =
         !hasBoth ||
@@ -647,8 +654,13 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
       if (isInvalidKimchi) {
         if (kimchiPctEl.textContent !== "-") kimchiPctEl.textContent = "-";
         kimchiPctEl.className =
-          "kimchi-pct text-[12px] font-medium text-theme-text opacity-40";
+          "kimchi-pct text-[11px] font-medium text-theme-text opacity-40 whitespace-nowrap flex-shrink-0";
         if (kimchiPctEl.style.fontSize) kimchiPctEl.style.fontSize = "";
+        if (tagEl) {
+          tagEl.textContent = "";
+          tagEl.classList.add("hidden");
+          tagEl.style.display = "none";
+        }
       } else if (
         row.Kimchi_Raw > 500 ||
         row.Kimchi_Raw <= -90 ||
@@ -657,20 +669,46 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
         if (kimchiPctEl.textContent !== "VOID")
           kimchiPctEl.textContent = "VOID";
         kimchiPctEl.className =
-          "kimchi-pct text-[11px] font-bold text-amber-500/80 tracking-wider";
+          "kimchi-pct text-[10px] font-bold text-amber-500/80 tracking-wider whitespace-nowrap flex-shrink-0";
         if (kimchiPctEl.style.fontSize) kimchiPctEl.style.fontSize = "";
+        if (tagEl) {
+          tagEl.textContent = "";
+          tagEl.classList.add("hidden");
+          tagEl.style.display = "none";
+        }
       } else {
         if (kimchiPctEl.textContent !== row.Kimchi_Formatted)
           kimchiPctEl.textContent = row.Kimchi_Formatted;
-        kimchiPctEl.className = `kimchi-pct text-[12px] font-medium truncate ${row.Kimchi_Raw > 0 ? "text-theme-up" : "text-theme-down"}`;
+        kimchiPctEl.className = `kimchi-pct text-[11px] font-medium whitespace-nowrap flex-shrink-0 ${row.Kimchi_Raw > 0 ? "text-theme-up" : "text-theme-down"}`;
 
-        // 🚀 최대 +333.33%(8글자) 대응 로그 폰트 축소 (6글자 초과 시 10.0px까지 스케일 다운)
+        // 🚀 최대 +333.33%(8글자) 대응 로그 폰트 축소 (6글자 초과 시 9.5px까지 스케일 다운)
         const kLen = (row.Kimchi_Formatted || "").length;
         if (kLen > 6) {
-          const scaledPx = Math.max(10.0, 12.0 - Math.log10(kLen / 6) * 16.0);
+          const scaledPx = Math.max(9.5, 11.0 - Math.log10(kLen / 6) * 16.0);
           kimchiPctEl.style.fontSize = `${scaledPx.toFixed(1)}px`;
         } else if (kimchiPctEl.style.fontSize) {
           kimchiPctEl.style.fontSize = "";
+        }
+
+        // 김프 출처 소스 태그 (S/F, 거래소 고유 컬러 뱃지 - 다크/라이트 테마 자동 동기화)
+        if (tagEl) {
+          const src = row.Kimchi_Source;
+          if (src && src.tag) {
+            if (tagEl.textContent !== src.tag) tagEl.textContent = src.tag;
+            tagEl.title = src.title || "";
+            const isBybit = src.exchange === "bybit";
+            tagEl.classList.toggle("kimchi-tag-bybit", isBybit);
+            tagEl.classList.toggle("kimchi-tag-binance", !isBybit);
+            if (tagEl.style.color) tagEl.style.color = "";
+            if (tagEl.style.borderColor) tagEl.style.borderColor = "";
+            if (tagEl.style.backgroundColor) tagEl.style.backgroundColor = "";
+            tagEl.classList.remove("hidden");
+            tagEl.style.display = "inline-flex";
+          } else {
+            tagEl.textContent = "";
+            tagEl.classList.add("hidden");
+            tagEl.style.display = "none";
+          }
         }
       }
     }
@@ -799,7 +837,9 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
                 ex.id === "BINANCE" &&
                 !isFutures &&
                 row.Binance_Futures !== "O" &&
-                (exchanges.includes("BINANCE_ALPHA") || row.Binance_Alpha === "O" || Boolean(row.is_alpha));
+                (exchanges.includes("BINANCE_ALPHA") ||
+                  row.Binance_Alpha === "O" ||
+                  Boolean(row.is_alpha));
 
               const isListed =
                 isSpot ||
@@ -927,7 +967,7 @@ window.updateRowPriceDisplay = (target, row) => {
       document.getElementById(`price-${tId}`));
   if (!parentEl) return;
 
-  const rate = store.marketDataMap?.krw_usd_rate || 0;
+  const rate = store.marketDataMap?.krw_usd_rate || 1000;
   const isKrwMode = store.currencyMode === "KRW";
   const p =
     row.precision !== undefined && row.precision !== null

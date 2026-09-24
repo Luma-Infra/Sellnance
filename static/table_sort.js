@@ -96,7 +96,7 @@ export function simpleSortData() {
     store.currentSortCol === "Listing_Date";
 
   const isKrwMode = store.currencyMode === "KRW";
-  const rate = store.marketDataMap?.krw_usd_rate || 0;
+  const rate = store.marketDataMap?.krw_usd_rate || 1000;
 
   // 🚀 [Schwartzian Transform] 공통 Raw 변수 값 및 비어있음 판단을 O(N)으로 1회만 선계산하여 캐싱
   const mapped = dataCopy.map((d) => {
@@ -118,7 +118,10 @@ export function simpleSortData() {
       val = getRowDisplayMetrics(d, isKrwMode, rate).nDay;
     } else if (store.currentSortCol === "Price") {
       val = getRowDisplayMetrics(d, isKrwMode, rate).displayPrice;
-    } else if (store.currentSortCol === "VolumeBinance" || store.currentSortCol === "Volume") {
+    } else if (
+      store.currentSortCol === "VolumeBinance" ||
+      store.currentSortCol === "Volume"
+    ) {
       const volInfo = getRowDisplayVolume(d);
       val = volInfo.volBRaw;
     } else if (store.currentSortCol === "VolumeUpbit") {
@@ -133,7 +136,10 @@ export function simpleSortData() {
       isEmpty = true;
     } else {
       // 🚀 화면에 하이픈(-)으로 노출되거나 유효값(볼륨/시총 등)이 0인 무효 데이터를 최하단 배치하기 위한 정밀 감지
-      if (store.currentSortCol === "VolumeBinance" || store.currentSortCol === "Volume") {
+      if (
+        store.currentSortCol === "VolumeBinance" ||
+        store.currentSortCol === "Volume"
+      ) {
         const num = Number(val);
         if (
           isNaN(num) ||
@@ -159,7 +165,11 @@ export function simpleSortData() {
         isEmpty = true;
       } else if (
         store.currentSortCol === "VMC" &&
-        (val === 0 || val === 0.0 || val === "0" || Number(val) <= 0 || d.VMC_Formatted === "-")
+        (val === 0 ||
+          val === 0.0 ||
+          val === "0" ||
+          Number(val) <= 0 ||
+          d.VMC_Formatted === "-")
       ) {
         isEmpty = true;
       } else if (
@@ -222,6 +232,32 @@ export function simpleSortData() {
     }
 
     if (!isTextCol) {
+      // [알파 코인 상위권 도배 방지]: 24h / 당일 시가(Day) 정렬 시,
+      // B-ALPHA 필터를 켜지 않은 일반 상태에서는 알파 코인을 일반 코인 뒤로 후순위 배치합니다.
+      const isSortChange =
+        store.currentSortCol === "Change_24h" ||
+        store.currentSortCol === "Change_Today";
+      const isAlphaFilterActive = Boolean(
+        store.exchFilterStates?.["BINANCE_SPOT"] === 2 ||
+        store.exchFilterStates?.["BINANCE_ALPHA"] === 1,
+      );
+
+      if (isSortChange && !isAlphaFilterActive) {
+        const getIsAlpha = (row) =>
+          Boolean(
+            (row.Binance_Alpha === "O" ||
+              row.is_alpha ||
+              row.Listed_Exchanges?.includes("BINANCE_ALPHA")) &&
+            row.Binance_Futures !== "O" &&
+            !row.is_futures,
+          );
+        const isAlphaA = a.isAlpha ?? (a.isAlpha = getIsAlpha(a.d));
+        const isAlphaB = b.isAlpha ?? (b.isAlpha = getIsAlpha(b.d));
+
+        if (isAlphaA && !isAlphaB) return 1; // 알파 A는 일반 코인 B보다 뒤로
+        if (!isAlphaA && isAlphaB) return -1; // 일반 코인 A는 알파 B보다 앞으로
+      }
+
       return isAsc ? a.val - b.val : b.val - a.val;
     }
 
@@ -240,11 +276,12 @@ export function applyRealtimeSort() {
   // [스크롤 락 최적화] 사용자가 스크롤 중일 때는 실시간 정렬(DOM 재배치)을 건너뛰어 스크롤 렉을 차단!
   if (store.isScrolling) return;
 
-  const isTurbo = typeof window.isTurboWindow === "function" && window.isTurboWindow();
+  const isTurbo =
+    typeof window.isTurboWindow === "function" && window.isTurboWindow();
   const perf = CONFIG.TABLE_PERF || {};
   const throttleWait = isTurbo
-    ? (perf.SORT_THROTTLE_WAIT_TURBO_MS || 500)
-    : (perf.SORT_THROTTLE_WAIT_NORMAL_MS || 500);
+    ? perf.SORT_THROTTLE_WAIT_TURBO_MS || 500
+    : perf.SORT_THROTTLE_WAIT_NORMAL_MS || 500;
 
   if (store.isRealtimeSorting) return;
   store.isRealtimeSorting = true;
@@ -257,7 +294,10 @@ export function applyRealtimeSort() {
 }
 
 // [UI 동기화] 활성 정렬 화살표 및 버튼 하이라이트 복원 함수
-export function updateSortUI(colKey = store.currentSortCol, sortState = store.sortState) {
+export function updateSortUI(
+  colKey = store.currentSortCol,
+  sortState = store.sortState,
+) {
   if (!colKey) return;
 
   // 1. 모든 화살표 초기화
@@ -267,9 +307,11 @@ export function updateSortUI(colKey = store.currentSortCol, sortState = store.so
   });
 
   // 2. 모든 정렬 헤더 버튼의 활성 하이라이트 제거
-  document.querySelectorAll("#market-table-header [onclick*='sortTable']").forEach((btn) => {
-    btn.classList.remove("text-theme-accent", "font-bold", "opacity-100");
-  });
+  document
+    .querySelectorAll("#market-table-header [onclick*='sortTable']")
+    .forEach((btn) => {
+      btn.classList.remove("text-theme-accent", "font-bold", "opacity-100");
+    });
 
   // 3. 현재 정렬된 컬럼 화살표 및 버튼 하이라이트 부여
   const arrowEl = document.getElementById(`sort-${colKey}`);
@@ -287,4 +329,3 @@ window.updateSortUI = updateSortUI;
 window.simpleSortData = simpleSortData;
 window.sortTable = sortTable;
 window.applyRealtimeSort = applyRealtimeSort;
-

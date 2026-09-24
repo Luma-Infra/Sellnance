@@ -128,7 +128,7 @@ export function startOrderbookStream(symbol, market) {
   if (!symbol) return;
 
   if (!market) {
-    market = store.currentChartMarket || store.currentMarket || "UPBIT";
+    market = store.currentChartMarket || "FUTURES";
   }
 
   // 🚀 [버그 픽스] 테이블에서 "BTCUSDT" 또는 "BTCKRW"가 넘어오더라도 순수 심볼("BTC")만 추출하여 소켓 경로 중복 오류 방지
