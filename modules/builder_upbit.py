@@ -252,11 +252,12 @@ def build_upbit_row(
         if ch_sym in CHAIN_LOGO_MAP
         else ch_sym
     )
-    logo = utils.create_image_tag(
+    logo_url = (
         f"https://s2.coinmarketcap.com/static/img/coins/64x64/{final_ucid}.png"
-        if final_ucid
-        else ""
+        if (final_ucid and str(final_ucid).isdigit())
+        else "/static/luma-deer-svg-dark.svg"
     )
+    logo = utils.create_image_tag(logo_url)
 
     coin_name = (
         explicit_name

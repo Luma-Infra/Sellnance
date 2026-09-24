@@ -339,8 +339,7 @@ export async function loadTableData(force = false, silent = false) {
       headers["X-CMC-API-KEY"] = localCmcKey;
     }
 
-    // Xconsole.log("1. 파이썬 서버에 테이블 데이터 요청 시작!"); // ⭐️ 추가
-    const res = await fetch(`/api/market-data?force=${force}`, { headers });
+    const res = await fetch("/api/market-data", { headers });
     // Xconsole.log("2. 파이썬 서버가 응답 완료!"); // ⭐️ 추가
     const result = await res.json();
     if (result && result.last_updated_raw && typeof window.calibrateTrueTime === "function") {

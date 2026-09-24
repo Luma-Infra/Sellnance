@@ -31,6 +31,7 @@ load_dotenv()
 
 # [FastAPI 경고 필터링] 최신 FastAPI ORJSONResponse 비추천 노이즈 경고 영구 숨김
 import warnings
+
 warnings.filterwarnings("ignore", message=".*ORJSONResponse is deprecated.*")
 
 # [Sentry 에러 모니터링] SENTRY_DSN 환경변수 존재 시 비동기 백그라운드 워커로 구동 (GC/성능 오버헤드 0%)
@@ -577,7 +578,7 @@ def get_next_update_timestamp(
 
 # async 삭제됨
 @app.get("/api/market-data")
-def get_market_data(request: Request, force: bool = False):
+def get_market_data(request: Request):
     """프론트엔드의 표(Table)를 그리기 위한 데이터를 JSON으로 반환합니다."""
     # 🔒 [DDoS / 트래픽 고갈 방어] IP당 분당 33회 초과 시 즉시 차단
     if not check_market_data_rate_limit(request, max_requests=33, window_seconds=60):
