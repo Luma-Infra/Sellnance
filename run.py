@@ -83,40 +83,33 @@ def start_engine():
     print("-" * 50)
 
     # Uvicorn 가동 (modules/app.py의 app 객체 실행)
-    cmd = [
-        sys.executable,
-        "-m",
-        "uvicorn",
-        "modules.app:app",
-        "--host",
-        "0.0.0.0",
-        "--port",
-        str(port),
-        "--log-level",
-        "info",
-    ]
+    import uvicorn
 
-    # 프로덕션(Railway)에서는 --reload 절대 금지 (1GB OOM 및 다중 프로세스 누수 차단)
-    # 로컬 개발 시에는 캐시 JSON 파일 쓰기로 인한 무한 리로드 루프 방지 필터 적용
+    reload_kwargs = {}
     if not is_prod:
-        cmd.extend(
-            [
-                "--reload",
-                "--reload-exclude",
+        # 프로덕션(Railway)에서는 reload 절대 금지 (1GB OOM 및 다중 프로세스 누수 차단)
+        # 로컬 개발 시에는 캐시 JSON 파일 쓰기로 인한 무한 리로드 루프 방지 필터 적용
+        reload_kwargs = {
+            "reload": True,
+            "reload_dirs": ["modules", "templates", "static"],
+            "reload_excludes": [
                 "*.json",
-                "--reload-exclude",
                 "*.log",
-                "--reload-exclude",
                 "scratch/*",
-                "--reload-exclude",
                 "dist/*",
-                "--reload-exclude",
                 "node_modules/*",
-            ]
-        )
+                "*.tmp",
+            ],
+        }
 
     try:
-        subprocess.run(cmd)
+        uvicorn.run(
+            "modules.app:app",
+            host="0.0.0.0",
+            port=port,
+            log_level="info",
+            **reload_kwargs,
+        )
     except KeyboardInterrupt:
         print("\n\n👋 [STOP] 엔진 가동이 중단되었습니다.")
 

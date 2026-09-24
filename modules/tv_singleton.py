@@ -14,7 +14,7 @@ _tv_instance = None
 _rate_cache_lock = threading.Lock()
 _cached_rate: Optional[float] = None
 _cached_rate_time: float = 0.0
-RATE_CACHE_TTL: float = 60.0  # 60초 캐시 유지
+RATE_CACHE_TTL: float = 900.0  # 15분(900초) 캐시 유지
 
 
 def get_tv_datafeed():
@@ -35,7 +35,7 @@ def get_tv_datafeed():
 
 def get_cached_usdkrw_rate(fallback_rate: float = 0.0) -> float:
     """
-    TvDatafeed 싱글톤을 활용한 실시간 USD/KRW 환율 수집 (60초 TTL 캐시)
+    TvDatafeed 싱글톤을 활용한 실시간 USD/KRW 환율 수집 (15분 TTL 캐시)
     """
     global _cached_rate, _cached_rate_time
     now = time.time()

@@ -5,6 +5,7 @@ from requests.adapters import HTTPAdapter
 from modules.utils import is_valid_ticker
 from datetime import datetime, timezone
 import urllib.parse
+import threading
 import requests
 import json
 import time
@@ -44,15 +45,21 @@ def save_utc0_cache():
 # 초기 로드
 load_utc0_cache()
 
-# 🚨 [거래소별 유의/상폐/모니터링 경고 저장소]
+# [거래소별 유의/상폐/모니터링 경고 저장소]
 EXCHANGE_WARNINGS = {"UPBIT": {}, "BITHUMB": {}, "BINANCE": {}}
+
+# [고성능 커넥션 풀] TCP/TLS 핸드셰이크 재활용 및 소켓 누수 차단
+API_SESSION = requests.Session()
+adapter = HTTPAdapter(pool_connections=50, pool_maxsize=50)
+API_SESSION.mount("https://", adapter)
+API_SESSION.mount("http://", adapter)
 
 
 def get_korean_exchange_markets():
     global EXCHANGE_WARNINGS
     upbit_krw_set, bithumb_krw_set = set(), set()
     try:
-        res = requests.get(
+        res = API_SESSION.get(
             "https://api.upbit.com/v1/market/all?isDetails=true", timeout=5
         ).json()
         for m in res:
@@ -71,7 +78,7 @@ def get_korean_exchange_markets():
     except Exception as e:
         print(f"🚨 [디버그] 업비트 마켓 목록 에러: {e}")
     try:
-        res = requests.get(
+        res = API_SESSION.get(
             "https://api.bithumb.com/v1/market/all?isDetails=true", timeout=5
         ).json()
         for m in res:
@@ -92,8 +99,29 @@ def get_korean_exchange_markets():
     return upbit_krw_set, bithumb_krw_set
 
 
-def fetch_global_listings():
-    """8대 메이저 거래소 중 외부 5개(OKX, BYBIT, BITGET, GATEIO, COINBASE) 현물 상장 수집"""
+_GLOBAL_LISTINGS_CACHE = {}
+_GLOBAL_LISTINGS_LAST_FETCH = 0.0
+_GLOBAL_LISTINGS_LOCK = threading.Lock()
+GLOBAL_LISTINGS_TTL = 3600.0  # 1시간 캐시
+
+
+def fetch_global_listings(force_reload: bool = False):
+    """
+    8대 메이저 거래소 중 외부 5개(OKX, BYBIT, BITGET, GATEIO, COINBASE) 현물/선물 상장 수집
+    - [1시간 TTL 캐시 적용] 15분마다 외부 9개 마켓을 무의미하게 타격하지 않고 즉각 반환
+    - time.monotonic() 기반으로 시스템 시계 오염 방지
+    """
+    global _GLOBAL_LISTINGS_CACHE, _GLOBAL_LISTINGS_LAST_FETCH
+
+    now = time.monotonic()
+    with _GLOBAL_LISTINGS_LOCK:
+        if (
+            not force_reload
+            and _GLOBAL_LISTINGS_CACHE
+            and (now - _GLOBAL_LISTINGS_LAST_FETCH < GLOBAL_LISTINGS_TTL)
+        ):
+            return _GLOBAL_LISTINGS_CACHE
+
     listings = {}
 
     def add_tags(coins, tag):
@@ -108,7 +136,7 @@ def fetch_global_listings():
             add_tags(
                 [
                     i["baseCcy"]
-                    for i in requests.get(
+                    for i in API_SESSION.get(
                         "https://www.okx.com/api/v5/public/instruments?instType=SPOT",
                         timeout=5,
                     )
@@ -125,7 +153,7 @@ def fetch_global_listings():
             add_tags(
                 [
                     i["baseCcy"]
-                    for i in requests.get(
+                    for i in API_SESSION.get(
                         "https://www.okx.com/api/v5/public/instruments?instType=SWAP",
                         timeout=5,
                     )
@@ -142,7 +170,7 @@ def fetch_global_listings():
             add_tags(
                 [
                     i["baseCoin"]
-                    for i in requests.get(
+                    for i in API_SESSION.get(
                         "https://api.bybit.com/v5/market/instruments-info?category=spot",
                         timeout=5,
                     )
@@ -160,7 +188,7 @@ def fetch_global_listings():
             add_tags(
                 [
                     i["baseCoin"]
-                    for i in requests.get(
+                    for i in API_SESSION.get(
                         "https://api.bybit.com/v5/market/instruments-info?category=linear",
                         timeout=5,
                     )
@@ -178,7 +206,7 @@ def fetch_global_listings():
             add_tags(
                 [
                     i["baseCoin"]
-                    for i in requests.get(
+                    for i in API_SESSION.get(
                         "https://api.bitget.com/api/v2/spot/public/symbols", timeout=5
                     )
                     .json()
@@ -194,7 +222,7 @@ def fetch_global_listings():
             add_tags(
                 [
                     i["baseCoin"]
-                    for i in requests.get(
+                    for i in API_SESSION.get(
                         "https://api.bitget.com/api/v2/mix/market/contracts?productType=USDT-futures",
                         timeout=5,
                     )
@@ -211,7 +239,7 @@ def fetch_global_listings():
             add_tags(
                 [
                     i["base"]
-                    for i in requests.get(
+                    for i in API_SESSION.get(
                         "https://api.gateio.ws/api/v4/spot/currency_pairs", timeout=5
                     ).json()
                 ],
@@ -225,7 +253,7 @@ def fetch_global_listings():
             add_tags(
                 [
                     i["name"].split("_")[0]
-                    for i in requests.get(
+                    for i in API_SESSION.get(
                         "https://api.gateio.ws/api/v4/futures/usdt/contracts", timeout=5
                     ).json()
                 ],
@@ -239,7 +267,7 @@ def fetch_global_listings():
             add_tags(
                 [
                     i["base_currency"]
-                    for i in requests.get(
+                    for i in API_SESSION.get(
                         "https://api.exchange.coinbase.com/products", timeout=5
                     ).json()
                 ],
@@ -248,7 +276,7 @@ def fetch_global_listings():
         except:
             pass
 
-    # 🚀 병렬로 9개 마켓 동시 타격
+    # 병렬로 9개 마켓 동시 타격
     target_funcs = [
         get_okx,
         get_okx_futures,
@@ -266,6 +294,13 @@ def fetch_global_listings():
             wait(futures)
     except RuntimeError:
         pass
+
+    with _GLOBAL_LISTINGS_LOCK:
+        if listings:
+            _GLOBAL_LISTINGS_CACHE = listings
+            _GLOBAL_LISTINGS_LAST_FETCH = time.monotonic()
+        elif _GLOBAL_LISTINGS_CACHE:
+            return _GLOBAL_LISTINGS_CACHE
 
     return listings
 

@@ -1,9 +1,9 @@
 # modules/sandbox_scanner.py
 """
-🧪 [Sandbox Scanner]
+[Sandbox Scanner]
 9대 메이저 거래소 + 바이낸스 알파(Binance Alpha) 전수조사 스캐너
 - 외부 API 단 1회성(One-shot) 병렬 호출로 2~3초 만에 수집
-- 정적 캐시 파일(static/sandbox_data.json)로 저장하여 무한 재호출 방지 (IP 밴 0%)
+- 정적 캐시 파일(static/sandbox_data.json)로 저장하여 무한 재호출 방지
 - 심볼(Symbol), 가격, 5~9대 거래소 태그(Listed_Exchanges) 집중 매핑
 """
 
@@ -20,10 +20,12 @@ STATIC_DIR = os.path.join(os.path.dirname(__file__), "..", "static")
 OUTPUT_FILE = os.path.join(STATIC_DIR, "sandbox_data.json")
 
 SESSION = requests.Session()
-SESSION.headers.update({
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-    "Accept": "application/json, text/plain, */*",
-})
+SESSION.headers.update(
+    {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Accept": "application/json, text/plain, */*",
+    }
+)
 
 
 def fetch_json(url, timeout=6):
@@ -48,18 +50,30 @@ def run_full_scan():
         "BITHUMB": ("https://api.bithumb.com/v1/market/all?isDetails=true", 5),
         "BINANCE_SPOT": ("https://api.binance.com/api/v3/ticker/price", 5),
         "BINANCE_FUTURES": ("https://fapi.binance.com/fapi/v1/ticker/price", 5),
-        "BYBIT_SPOT": ("https://api.bybit.com/v5/market/instruments-info?category=spot", 5),
-        "BYBIT_FUTURES": ("https://api.bybit.com/v5/market/instruments-info?category=linear", 5),
+        "BYBIT_SPOT": (
+            "https://api.bybit.com/v5/market/instruments-info?category=spot",
+            5,
+        ),
+        "BYBIT_FUTURES": (
+            "https://api.bybit.com/v5/market/instruments-info?category=linear",
+            5,
+        ),
         "OKX_SPOT": ("https://www.okx.com/api/v5/public/instruments?instType=SPOT", 5),
         "BITGET_SPOT": ("https://api.bitget.com/api/v2/spot/public/symbols", 5),
         "GATEIO_SPOT": ("https://api.gateio.ws/api/v4/spot/currency_pairs", 5),
         "COINBASE_SPOT": ("https://api.exchange.coinbase.com/products", 5),
-        "BINANCE_ALPHA": ("https://www.binance.com/bapi/defi/v1/public/wallet-direct/buw/wallet/cex/alpha/all/token/list", 5),
+        "BINANCE_ALPHA": (
+            "https://www.binance.com/bapi/defi/v1/public/wallet-direct/buw/wallet/cex/alpha/all/token/list",
+            5,
+        ),
     }
 
     results = {}
     with ThreadPoolExecutor(max_workers=len(tasks)) as executor:
-        future_map = {executor.submit(fetch_json, url, timeout): k for k, (url, timeout) in tasks.items()}
+        future_map = {
+            executor.submit(fetch_json, url, timeout): k
+            for k, (url, timeout) in tasks.items()
+        }
         for future in future_map:
             k = future_map[future]
             try:
@@ -226,7 +240,9 @@ def run_full_scan():
             # 가격 및 변동률
             try:
                 p = float(item.get("price") or 0)
-                if p > 0 and (u["price"] == 0.0 or "BINANCE_SPOT" not in u["exchanges"]):
+                if p > 0 and (
+                    u["price"] == 0.0 or "BINANCE_SPOT" not in u["exchanges"]
+                ):
                     u["price"] = p
                 u["change_24h"] = float(item.get("percentChange24h") or 0)
                 u["volume"] = float(item.get("volume24h") or 0)
@@ -247,12 +263,14 @@ def run_full_scan():
     for idx, item in enumerate(sorted_items):
         sym = item["symbol"]
         exch_list = sorted(list(item["exchanges"]))
-        
+
         # 거래소 언더바 식별 Ticker (예: NES_ALPHA, PUMP_BITGET_ALPHA, BTC_MAJOR)
         if len(exch_list) > 3:
             exch_suffix = "MULTI"
         else:
-            exch_suffix = "_".join([e.replace("_SPOT", "").replace("BINANCE_", "B_") for e in exch_list])
+            exch_suffix = "_".join(
+                [e.replace("_SPOT", "").replace("BINANCE_", "B_") for e in exch_list]
+            )
         ticker_key = f"{sym}_{exch_suffix}"
 
         vol = item["volume"]
@@ -280,9 +298,15 @@ def run_full_scan():
             "Price_Raw": item["price"],
             "Price_KRW": item["price"] * 1400 if item["price"] > 0 else 0,
             "Upbit_Price": item["price"] * 1400 if "UPBIT" in item["exchanges"] else 0,
-            "Bithumb_Price": item["price"] * 1400 if "BITHUMB" in item["exchanges"] else 0,
-            "Binance_Price_Spot": item["price"] if "BINANCE_SPOT" in item["exchanges"] else 0,
-            "Binance_Price_Futures": item["price"] if "BINANCE_FUTURES" in item["exchanges"] else 0,
+            "Bithumb_Price": (
+                item["price"] * 1400 if "BITHUMB" in item["exchanges"] else 0
+            ),
+            "Binance_Price_Spot": (
+                item["price"] if "BINANCE_SPOT" in item["exchanges"] else 0
+            ),
+            "Binance_Price_Futures": (
+                item["price"] if "BINANCE_FUTURES" in item["exchanges"] else 0
+            ),
             "Change_24h": item["change_24h"],
             "Change_Today": item["change_24h"],
             "Change_24h_Raw": item["change_24h"],
@@ -314,7 +338,9 @@ def run_full_scan():
             "Listed_Exchanges": exch_list,
             "Exchanges": exch_list,
             "ListingDate": "-",
-            "Warnings": "4X" if (item.get("alpha_meta") or {}).get("mulPoint") == 4 else "",
+            "Warnings": (
+                "4X" if (item.get("alpha_meta") or {}).get("mulPoint") == 4 else ""
+            ),
             "isFavorite": False,
             "_isSandboxRow": True,
             "alpha_meta": item.get("alpha_meta"),

@@ -43,13 +43,31 @@ def atomic_save_json(
             dir=dir_name, prefix=".tmp_", suffix=".json"
         )
         try:
-            with open(temp_fd, "w", encoding="utf-8") as f:
+            # [초고속 직렬화] orjson 우선 적용 (CPU 피크 차단)
+            payload = None
+            try:
+                import orjson
+
+                opt = orjson.OPT_NON_STR_KEYS
                 if indent is not None:
-                    json.dump(data, f, indent=indent, ensure_ascii=ensure_ascii)
-                else:
-                    json.dump(data, f, ensure_ascii=ensure_ascii)
-                f.flush()
-                os.fsync(f.fileno())
+                    opt |= orjson.OPT_INDENT_2
+                payload = orjson.dumps(data, option=opt)
+            except Exception:
+                payload = None
+
+            if payload is not None:
+                with open(temp_fd, "wb") as f:
+                    f.write(payload)
+                    f.flush()
+                    os.fsync(f.fileno())
+            else:
+                with open(temp_fd, "w", encoding="utf-8") as f:
+                    if indent is not None:
+                        json.dump(data, f, indent=indent, ensure_ascii=ensure_ascii)
+                    else:
+                        json.dump(data, f, ensure_ascii=ensure_ascii)
+                    f.flush()
+                    os.fsync(f.fileno())
             os.replace(temp_path, abs_path)
         except Exception:
             if os.path.exists(temp_path):

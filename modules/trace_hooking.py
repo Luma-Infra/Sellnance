@@ -32,11 +32,7 @@ def draw_dashboard():
     for i, msg in enumerate(PHASES):
         status = status_list[i]
         s_text = str(status or "").strip()
-        icon = (
-            "⏳"
-            if s_text == "대기중"
-            else "🏃" if s_text == "진행중..." else "✅"
-        )
+        icon = "⏳" if s_text == "대기중" else "🏃" if s_text == "진행중..." else "✅"
 
         # 🚀 1. 앞부분 출력
         line_start = f" {icon} Phase {i+1}/9: {msg}"

@@ -1,10 +1,10 @@
 # app.py
 from fastapi import FastAPI, Request, Body, Response, HTTPException
+from fastapi.responses import StreamingResponse, ORJSONResponse
 from starlette.middleware.gzip import GZipMiddleware
 from datetime import datetime, timezone, timedelta
 from fastapi.middleware.cors import CORSMiddleware
 from modules.tv_singleton import get_tv_datafeed
-from fastapi.responses import StreamingResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
@@ -106,25 +106,26 @@ def safe_print(*args, **kwargs):
 
 builtins.print = safe_print
 
-from . import trace_hooking
+from . import cmc_api
+from . import scheduler
 from . import api_manager
 from . import exchange_api
+from . import trace_hooking
 from . import config_manager
-from . import cmc_api
 from .adapter import ExchangeAdapter  # 통합 지휘소 영입
 from .candle_proxy import (
     fetch_candles_guarded,
-)  # 🛡️ 캔들 3중 방어 엔진 (세마포어/합승/캐시)
+)  # 캔들 3중 방어 엔진 (세마포어/합승/캐시)
 
-# 🚀 터미널 인코딩은 환경변수(PYTHONIOENCODING)로 처리합니다.
+# 터미널 인코딩은 환경변수(PYTHONIOENCODING)로 처리합니다
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # ⧆️ 9시 정각 감시 스레드 시작
-    threading.Thread(target=auto_reset_scheduler, daemon=True).start()
+    # 🕒 [스케줄러 & 상장 와처] 15분 정기 갱신, 4시간 시총, 9시 시가 초기화 및 10초 상장 와처 일괄 가동
+    scheduler.start_all_schedulers()
 
-    # ⧆️ 데이터 긁어오기 (이건 배포든 로칼이든 필수!)
+    # ⧆️ 데이터 긁어오기 (서버 최초 기동 시 캐시 초기 로드)
     threading.Thread(target=api_manager.get_cached_data, args=(True,)).start()
 
     # 상장일 데이터 시스템 초기화 (LISTING_DATES 메모리 로드 + 바이낸스 API 콜)
@@ -151,6 +152,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Blueprint Terminal",
     lifespan=lifespan,
+    default_response_class=ORJSONResponse,
     docs_url=None,
     redoc_url=None,
     openapi_url=None,
@@ -198,7 +200,7 @@ app.add_middleware(
 class CachedStaticFiles(StaticFiles):
     """
     정적 자산(폰트, SVG 이미지, Vite 빌드 번들 등)에 브라우저 영구 캐시(Cache-Control: immutable)를 주입하여
-    다음 접속부터 0ms 디스크 캐시로 즉각 로딩을 보장하는 정적 파일 핸들러.
+    다음 접속부터 0ms 디스크 캐시로 즉각 로딩을 보장하는 정적 파일 핸들러
     """
 
     def file_response(self, *args, **kwargs) -> Response:
@@ -1065,24 +1067,6 @@ async def send_feedback(data: dict = Body(...)):
 # 서버 시작 시 브라우저 자동 실행 (기존 로직 유지)
 def open_browser():
     webbrowser.open("http://127.0.0.1:8000")
-
-
-def auto_reset_scheduler():
-    while True:
-        kst = pytz.timezone("Asia/Seoul")
-        now_kst = datetime.now(kst)
-
-        # 4시간 정각(01, 05, 09, 13, 17, 21시) 0초 ~ 30초 사이에 갱신 트리거
-        if (
-            now_kst.hour in [1, 5, 9, 13, 17, 21]
-            and now_kst.minute == 0
-            and now_kst.second < 30
-        ):
-            print(f"⏰ 스케줄러: {now_kst.hour}시 정각입니다. 캐시를 갱신합니다.")
-            api_manager.get_cached_data(force_reload=True)
-            time.sleep(30)  # 중복 실행 방지용 휴식
-
-        time.sleep(10)  # 10초마다 시계 확인
 
 
 @app.get("/api/progress")
