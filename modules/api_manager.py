@@ -398,16 +398,14 @@ def _fetch_and_process_data(silent_mode=False, api_key=None):
         print(f"🚨 [조립 치명적 에러]: {e}")
         traceback.print_exc()
 
-    if is_mapping_updated:
-        config_manager.save_mapping_data(MAPPING_DATA)
-        print("💾 [업데이트] 새로운 족보(mapping.json)가 저장되었습니다.")
-
     all_live_assets = binance_data.keys() | upbit_krw_set | bybit_data.keys()
     live_bases = {utils.get_pure_base_asset(a).upper() for a in all_live_assets}
 
     # 🚀 [청소기 가동 구간 - 철벽 방어막 장착]
     # 사일런트 모드이거나, 수집된 데이터가 평소보다 적으면 족보 청소를 절대 하지 않고 즉시 퇴근합니다!!!
     if silent_mode or len(binance_data) < 10 or len(upbit_krw_set) < 10:
+        if is_mapping_updated:
+            config_manager.save_mapping_data(MAPPING_DATA)
         print(
             f"⚠️ [SAFEGUARD] 족보 청소 생략 (Silent:{silent_mode}, 바낸:{len(binance_data)}, 업비트:{len(upbit_krw_set)})"
         )
@@ -471,7 +469,6 @@ def _fetch_and_process_data(silent_mode=False, api_key=None):
 
     if is_mapping_updated:
         config_manager.save_mapping_data(MAPPING_DATA)
-        print(f"💾 새로운 코인 정보가 mapping.json에 저장 완료되었습니다!")
 
     return final_results
 

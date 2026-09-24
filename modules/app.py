@@ -29,6 +29,10 @@ import re
 # .env 환경변수 조기 로드
 load_dotenv()
 
+# [FastAPI 경고 필터링] 최신 FastAPI ORJSONResponse 비추천 노이즈 경고 영구 숨김
+import warnings
+warnings.filterwarnings("ignore", message=".*ORJSONResponse is deprecated.*")
+
 # [Sentry 에러 모니터링] SENTRY_DSN 환경변수 존재 시 비동기 백그라운드 워커로 구동 (GC/성능 오버헤드 0%)
 try:
     import sentry_sdk
