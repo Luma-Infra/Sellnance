@@ -6,12 +6,14 @@
 - 4시간 정각 (01, 05, 09, 13, 17, 21시) 서버 CMC 시총 갱신
 - 10초 주기 초경량 신규 상장 aiohttp 비동기 레이더 와처
 """
-import pytz
+import os
+import sys
 import time
+import pytz
 import asyncio
 import aiohttp
 import threading
-from datetime import datetime
+from datetime import datetime, timedelta
 
 try:
     import orjson
@@ -108,7 +110,7 @@ async def wait_for_exchanges_9am_crossing(
     target_ms: int, timeout: float = 30.0
 ) -> bool:
     """
-    ⚡ Upbit + Binance 실시간 웹소켓 듀얼 원자시계 정밀 동기화 엔진 (Top 5 AND 게이트)
+    Upbit + Binance 실시간 웹소켓 듀얼 원자시계 정밀 동기화 엔진 (Top 5 AND 게이트)
     - 08:59:45 경에 일시 가동되어 업비트 Top 5 중 1등 돌파 + 바이낸스 현물 Top 5 중 1등 돌파를 확인
     - [현선 침범 0% & OOM 0% 3중 방어]:
       1. 웹소켓은 장부 주입 없이 '원자시계 돌파' 신호만 확인 후 즉시 파기
@@ -256,7 +258,7 @@ def start_unified_background_scheduler():
                     )
                     target_ms = int(today_9am.timestamp() * 1000)
 
-                    # ⚡ [초경량 웹소켓 동기화] 업비트 & 바이낸스 09:00:00.000 틱 돌파 감시 (최대 30초 대기)
+                    # [초경량 웹소켓 동기화] 업비트 & 바이낸스 09:00:00.000 틱 돌파 감시 (최대 30초 대기)
                     print(
                         "📡 [9AM WEBSOCKET] 업비트 & 바이낸스 09:00:00.000 정밀 원자시계 감시 가동..."
                     )
@@ -270,7 +272,7 @@ def start_unified_background_scheduler():
                             "⏰ [9AM WEBSOCKET] 타임아웃/로컬 폴백으로 09:00 정각 파이프라인 진행"
                         )
 
-                    # 🛡️ 0.3초 미세 완충 (모든 거래소 매칭 엔진의 09시 일봉 캔들 완전 생성 보장)
+                    # ️ 0.3초 미세 완충 (모든 거래소 매칭 엔진의 09시 일봉 캔들 완전 생성 보장)
                     time.sleep(0.3)
 
                     api_manager.trigger_kst_9am_reset_atomic()
@@ -278,7 +280,7 @@ def start_unified_background_scheduler():
                     time.sleep(15)
                     continue
 
-                # 🔄 [일반 15분 정기 갱신 구간] (:15, :30, :45, 타 시간대 :00)
+                # [일반 15분 정기 갱신 구간] (:15, :30, :45, 타 시간대 :00)
                 time.sleep(sleep_sec)
                 now = datetime.now(KST)
 
@@ -303,7 +305,7 @@ def start_unified_background_scheduler():
 
 def start_realtime_listing_watcher():
     """
-    ⚡ aiohttp 비동기 멀티플렉싱 초경량 무음 상장 감시 엔진 (6대 거래소 동시 병렬 ~ 10초 주기)
+    aiohttp 비동기 멀티플렉싱 초경량 무음 상장 감시 엔진 (6대 거래소 동시 병렬 ~ 10초 주기)
     """
     global _WATCHER_STARTED
     with _SCHEDULER_LOCK:
@@ -430,3 +432,9 @@ def start_all_schedulers():
     """모든 백그라운드 스케줄러 일괄 가동"""
     start_unified_background_scheduler()
     start_realtime_listing_watcher()
+    try:
+        from .mem_audit import start_hourly_memory_audit
+
+        start_hourly_memory_audit()
+    except Exception as e:
+        print(f"⚠️ [MEM AUDIT INIT ERROR] {e}")
