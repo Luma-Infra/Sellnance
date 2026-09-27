@@ -92,9 +92,11 @@ def start_hourly_memory_audit():
 
     from . import api_manager
     from . import candle_proxy
+    from . import utils
 
     def run():
         time.sleep(5)  # 서버 부팅 직후 5초 대기 후 초기 베이스라인 1회 로깅
+        utils.trim_memory()
         prev_rss = get_process_rss_mb()
         prev_counts = {}
         for obj in gc.get_objects():
@@ -114,6 +116,7 @@ def start_hourly_memory_audit():
 
                 now = datetime.now(KST)
                 time_str = now.strftime("%H:%M")
+                utils.trim_memory()
                 curr_rss = get_process_rss_mb()
                 diff_rss = curr_rss - prev_rss
 

@@ -10,7 +10,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
 from typing import Union
 
-# --- 🔒 THREAD-SAFE ATOMIC FILE STORAGE 🔒 ---
+# --- THREAD-SAFE ATOMIC FILE STORAGE ---
 _FILE_LOCKS = {}
 _FILE_LOCKS_LOCK = threading.Lock()
 
@@ -78,7 +78,7 @@ def atomic_save_json(
             raise
 
 
-# --- ⭐️ FORMATTING FUNCTIONS ⭐️ ---
+# --- FORMATTING FUNCTIONS ---
 def format_market_cap_string(mc):
     if mc is None or mc == 0:
         return "0"
@@ -114,9 +114,9 @@ def format_volume_krw_string(vol_krw):
 
 
 def js_round(number, decimals=0):
-    # 🚀 숫자를 Decimal 객체로 변환
+    # 숫자를 Decimal 객체로 변환
     d = Decimal(str(number))
-    # 🚀 사사오입(ROUND_HALF_UP) 적용
+    # 사사오입(ROUND_HALF_UP) 적용
     quantize_str = "1" if decimals == 0 else f"1.{'0' * decimals}"
     return float(d.quantize(Decimal(quantize_str), rounding=ROUND_HALF_UP))
 
@@ -168,20 +168,20 @@ def format_dynamic_price(price, precision):
     return f"{price:,.{precision}f}"
 
 
-# --- ⭐️ UX SETTINGS ⭐️ ---
-# ✅ [수정 후] 테마를 지원하는 클린 포맷터
+# --- UX SETTINGS ---
+# [수정 후] 테마를 지원하는 클린 포맷터
 def format_change(percent):
     if percent is None or not isinstance(percent, (int, float)):
         return '<span class="text-theme-text opacity-50">N/A</span>'
 
-    # 🚀 하드코딩 색상 빼고 테마 클래스로 변경!
+    # 하드코딩 색상 빼고 테마 클래스로 변경!
     theme_class = (
         "text-theme-up"
         if percent > 0
         else "text-theme-down" if percent < 0 else "text-theme-text opacity-50"
     )
 
-    # 🚀 인라인 스타일(font-weight) 대신 Tailwind 클래스로 통일
+    # 인라인 스타일(font-weight) 대신 Tailwind 클래스로 통일
     weight_class = "font-medium" if abs(percent) >= 5.0 else "font-normal"
 
     # style="..." 은 완전히 삭제하고 class="..." 만 넘겨줍니다.
@@ -195,11 +195,11 @@ def create_image_tag(url):
 
 
 def get_pure_base_asset(ticker):
-    # 🚀 WBTC 단독 코인은 BTC 자르기 스킵!
+    # WBTC 단독 코인은 BTC 자르기 스킵!
     if ticker in ("WBTC", "WETH"):
         return ticker
 
-    # 🚀 mapping.json의 HARDCODE_VERIFY_SKIP_LIST 예외 캐시 조회 시 바로 반환 (스킵 가드)
+    # mapping.json의 HARDCODE_VERIFY_SKIP_LIST 예외 캐시 조회 시 바로 반환 (스킵 가드)
     if _SKIP_LIST_CACHE and ticker in _SKIP_LIST_CACHE:
         return ticker
 
@@ -278,7 +278,7 @@ def is_valid_ticker(ticker, skip_list=None):
     return False
 
 
-# ⚖️ [가격 괴리율 및 동명이인 검증 기본 안전 마진 설정 (단일 출처)]
+# [가격 괴리율 및 동명이인 검증 기본 안전 마진 설정 (단일 출처)]
 DEFAULT_PRICE_MIN_RATIO = 0.5  # 하방 50% 하락 (0.5배)
 DEFAULT_PRICE_MAX_RATIO = 2.0  # 상방 2배 상승 (+100%, 2.0배)
 
@@ -304,3 +304,21 @@ def is_valid_price_ratio(
         return min_ratio <= ratio <= max_ratio
     except Exception:
         return True
+
+
+def trim_memory():
+    """
+    리눅스 C 표준 라이브러리(glibc) heap 미사용 메모리 즉시 OS 커널 반납 (단편화 방어)
+    - 대용량 데이터 수집/가공 직후 프로세스가 물고 있는 잔여 C 메모리 강제 해제
+    - 윈도우/맥 등 타 OS에서는 에러 없이 안전하게 패스
+    """
+    import gc
+
+    gc.collect()
+    try:
+        import ctypes
+
+        libc = ctypes.CDLL("libc.so.6")
+        libc.malloc_trim(0)
+    except Exception:
+        pass

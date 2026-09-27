@@ -13,18 +13,18 @@ import sys
 import os
 import re
 
-# ✅ 수정
+# 수정
 from modules import builder, cmc_api, exchange_api, config_manager, utils
 from modules.exchange_api import capture_utc0_prices_bulk
 
-# --- ⭐️ GLOBAL CACHE SETTINGS ⭐️ ---
+# --- GLOBAL CACHE SETTINGS ---
 KST = pytz.timezone("Asia/Seoul")
 GLOBAL_CACHE = {"data": [], "timestamp": datetime.min, "last_updated_str": ""}
 GLOBAL_CMC_CACHE = {
     "map": {},
     "lookup": {},
     "timestamp": datetime.min,
-}  # 🚀 CMC 크레딧 방어용 독립 캐시
+}  # CMC 크레딧 방어용 독립 캐시
 
 MARKET_DATA_CACHE_FILE = os.path.join(
     os.path.dirname(__file__), "../static/market_data_cache.json"
@@ -45,7 +45,7 @@ NEW_KEY_FETCH_HISTORY = collections.deque()
 MAX_NEW_KEY_FETCHES_PER_MIN = 10
 new_key_rate_lock = threading.Lock()
 
-# 🚀 고정 크기 해시 버킷 락 풀 (Lock 생성/삭제 Race Condition 및 메모리 누수 0% 차단)
+# 고정 크기 해시 버킷 락 풀 (Lock 생성/삭제 Race Condition 및 메모리 누수 0% 차단)
 NUM_CMC_LOCK_BUCKETS = 64
 CMC_FETCH_BUCKET_LOCKS = [threading.Lock() for _ in range(NUM_CMC_LOCK_BUCKETS)]
 
@@ -189,7 +189,7 @@ def trigger_kst_9am_reset_atomic():
         return False
 
 
-# 🚀 [스케줄러 모듈 위임]
+# [스케줄러 모듈 위임]
 # 15분 정기 갱신, 4시간 시총, 9시 시가 초기화 및 10초 상장 레이더는 modules/scheduler.py가 전담
 from modules.scheduler import (
     get_seconds_until_next_15min,
@@ -220,9 +220,11 @@ def _fetch_and_process_data_and_cache(silent_mode=False):
             )
     except Exception as e:
         print(f"🚨 [BG CACHE ERROR] {e}")
+    finally:
+        utils.trim_memory()
 
 
-# 🚀 [수정] 모듈 로드 시점에 즉시 실행하지 않고, 처음 호출될 때 초기화하도록 변경
+# [수정] 모듈 로드 시점에 즉시 실행하지 않고, 처음 호출될 때 초기화하도록 변경
 _INITIALIZED = False
 MAPPING_DATA = None
 
@@ -253,11 +255,11 @@ def suppress_output():
 
 
 # ==========================================
-# 👑 최종 함수 BOSS
+# 최종 함수 BOSS
 # ==========================================
 def _fetch_and_process_data(silent_mode=False, api_key=None):
     global GLOBAL_CMC_CACHE
-    # 🚀 1. 족보 로드 (항상 최신본으로 시작!)
+    # 1. 족보 로드 (항상 최신본으로 시작!)
     MAPPING_DATA = config_manager.load_mapping_data()
     (
         NOTE_MAP,
@@ -376,7 +378,7 @@ def _fetch_and_process_data(silent_mode=False, api_key=None):
     # 3. 조립 및 계산
     global_listings = exchange_api.fetch_global_listings()
 
-    # ✅ 조립 부대 가동 (에러 방어막 가동)
+    # 조립 부대 가동 (에러 방어막 가동)
     final_results = []
     is_mapping_updated = False
     try:
@@ -401,8 +403,8 @@ def _fetch_and_process_data(silent_mode=False, api_key=None):
     all_live_assets = binance_data.keys() | upbit_krw_set | bybit_data.keys()
     live_bases = {utils.get_pure_base_asset(a).upper() for a in all_live_assets}
 
-    # 🚀 [청소기 가동 구간 - 철벽 방어막 장착]
-    # 사일런트 모드이거나, 수집된 데이터가 평소보다 적으면 족보 청소를 절대 하지 않고 즉시 퇴근합니다!!!
+    # [청소기 가동 구간 - 철벽 방어막 장착]
+    # 사일런트 모드이거나, 수집된 데이터가 평소보다 적으면 족보 청소를 하지 않고 즉시 나기기
     if silent_mode or len(binance_data) < 10 or len(upbit_krw_set) < 10:
         if is_mapping_updated:
             config_manager.save_mapping_data(MAPPING_DATA)
@@ -430,11 +432,11 @@ def _fetch_and_process_data(silent_mode=False, api_key=None):
     }
 
     for saved_name in list(MAPPING_DATA["TICKER_DATA"].keys()):
-        # 🚀 [추가] (STOCK) 접미사가 붙은 주식 자산의 경우, 접미사 제거한 base 심볼로 실시간 수집 리스트(live_bases)와 매칭 체크
+        # [추가] (STOCK) 접미사가 붙은 주식 자산의 경우, 접미사 제거한 base 심볼로 실시간 수집 리스트(live_bases)와 매칭 체크
         clean_name = re.sub(r"\(STOCK\)$", "", saved_name, flags=re.IGNORECASE)
         ticker_val = MAPPING_DATA["TICKER_DATA"].get(saved_name)
 
-        # [알파 코인 청소 예외]: 6번째 인자가 ALPHA이거나 대시보드 활성 알파 자산은 절대 청소 대상에서 제외!
+        # [알파 코인 청소 예외]: 6번째 인자가 ALPHA이거나 대시보드 활성 알파 자산은 청소 대상에서 제외!
         if (
             (
                 isinstance(ticker_val, list)
@@ -605,7 +607,7 @@ def get_cached_data(force_reload=False, silent_mode=False, user_api_key=None):
         else:
             is_expired = True
 
-        # 🚀 [핵심] silent_mode일 때는 만료와 무관하게 무조건 펀비/시세만 새로 긁어와 캐시 갱신!
+        # [핵심] silent_mode일 때는 만료와 무관하게 펀비/시세만 새로 긁어와 캐시 갱신하기
         if force_reload or needs_reset or is_expired or silent_mode:
             try:
                 raw_data = _fetch_and_process_data(
