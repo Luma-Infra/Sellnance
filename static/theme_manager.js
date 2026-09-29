@@ -1,5 +1,5 @@
 // theme_manager.js
-// 🎨 [스타일 & 컬러 테마 전담 지휘소]
+// [스타일 & 컬러 테마 전담 지휘소]
 // - 배경 테마 (라이트: theme-upbit ↔ 다크: theme-binance)
 // - 상승/하락 컬러 모드 (바이낸스 초/빨 ↔ 업비트 빨/파)
 // - 캔들, 거래량, 테이블(24h/Day 등락률, 김프), 호가창, 경주마 플래시까지 전역 CSS 변수 일괄 제어
@@ -20,7 +20,8 @@ export function getCandleThemeColors() {
     "binance";
 
   const isUpbit = currentMode === "upbit" || currentMode === "kr";
-  const style = typeof document !== "undefined" ? getComputedStyle(document.body) : null;
+  const style =
+    typeof document !== "undefined" ? getComputedStyle(document.body) : null;
   const up =
     style?.getPropertyValue("--candle-up")?.trim() ||
     style?.getPropertyValue("--up")?.trim() ||
@@ -72,7 +73,7 @@ export function applyCandleTheme(theme) {
     store.candleTheme = theme;
     try {
       localStorage.setItem("sellnance_candle_theme", theme);
-    } catch (e) { }
+    } catch (e) {}
   } else {
     store.candleTheme =
       store.candleTheme ||
@@ -81,29 +82,29 @@ export function applyCandleTheme(theme) {
       "binance";
   }
 
-  // 1. 전역 CSS data-color-mode 주입 → CSS 변수(--up, --down 등) 즉시 0ms 전환!
+  // 1. 전역 CSS data-color-mode → CSS 변수(--up, --down 등) 전환
   document.documentElement.setAttribute("data-color-mode", store.candleTheme);
   document.body.setAttribute("data-color-mode", store.candleTheme);
 
-  // 2. 캔들, 그리드, 볼륨(vol) 차트 시리즈를 원자적으로 동기 갱신 (지연/딜레이 0ms)
+  // 2. 캔들, 그리드, 볼륨(vol) 차트 시리즈 갱신
   updateChartTheme();
 
   // 3. 버튼 UI 갱신
   updateCandleThemeButtons();
 
-  // 4. 시뮬레이터 콩나물 대가리 색상 즉시 동기화
+  // 4. 시뮬레이터 핸들 색상 동기화
   if (typeof window.changeDir === "function" && store.curDir) {
     window.changeDir(store.curDir);
   }
 
-  // 5. 🚀 퀵뷰(QuickView) 캔들 차트 색상 실시간 동기화
+  // 5. 퀵뷰(QuickView) 캔들 차트 색상 실시간 동기화
   if (typeof window.updateQuickViewTheme === "function") {
     window.updateQuickViewTheme();
   }
 }
 
 /**
- * 🚀 캔들/텍스트 컬러 모드 토글 (업비트 ↔ 바이낸스)
+ * 캔들/텍스트 컬러 모드 토글 (업비트 ↔ 바이낸스)
  */
 export function toggleCandleTheme() {
   const currentMode =
@@ -130,9 +131,12 @@ export function toggleTheme() {
     ) || 0;
 
   isThemeToggling = true;
-  setTimeout(() => {
-    isThemeToggling = false;
-  }, THEME_MS > 0 ? THEME_MS + 20 : 100);
+  setTimeout(
+    () => {
+      isThemeToggling = false;
+    },
+    THEME_MS > 0 ? THEME_MS + 20 : 100,
+  );
 
   const html = document.documentElement;
   const body = document.body;
@@ -143,12 +147,14 @@ export function toggleTheme() {
   const mainLogoImg = document.getElementById("main-logo-img");
   const staticPath = "../static/";
 
-  // 🚀 [0초 즉각 전환 및 트랜지션 강제 오버라이드]
-  // HTML 태그들의 Tailwind 기본 duration-300을 calc(var(--theme-transition-ms) * 1ms) !important 로 0초 강제 제압
+  // [트랜지션 오버라이드]
   html.classList.add("theme-transitioning");
-  setTimeout(() => {
-    html.classList.remove("theme-transitioning");
-  }, THEME_MS > 0 ? THEME_MS : 50);
+  setTimeout(
+    () => {
+      html.classList.remove("theme-transitioning");
+    },
+    THEME_MS > 0 ? THEME_MS : 50,
+  );
 
   const updateThemeButtons = (theme) => {
     const isDark = theme === "binance";
@@ -182,13 +188,13 @@ export function toggleTheme() {
     if (mainLogoImg) mainLogoImg.src = "/static/luma-deer-svg-dark.svg";
   }
 
-  // 🚀 캔들, 볼륨(vol), 프리뷰 차트 색상 일괄 동기화
+  // 캔들, 볼륨(vol), 프리뷰 차트 색상 일괄 동기화
   applyCandleTheme(store.candleTheme || "binance");
 
-  // 🚀 테마 상태를 localStorage에 먼저 저장하여 차트 테마 및 김프 엔진이 최신 테마를 즉각 참조 가능하도록 보장
+  // 테마 상태를 localStorage에 먼저 저장하여 차트 테마 및 김프 엔진이 최신 테마를 참조 가능하도록 하기
   localStorage.setItem("sellnance_theme", store.currentTheme);
 
-  // 🚀 차트 그리드선/경계선/배경색을 RAF로 미루지 않고 동기적으로 즉시 실행하여 0초 동시 전환
+  // 차트 그리드선/경계선/배경색을 동기적으로 실행하여 전환
   updateChartTheme();
 
   // 무거운 이미지 DOM 교체만 다음 프레임에 비동기 처리
@@ -200,7 +206,9 @@ export function toggleTheme() {
     const fallbackSrc = "/static/" + targetSvg;
 
     document
-      .querySelectorAll('img[src*="luma-deer-svg"]:not(#onboarding-modal img), img.fallback-logo')
+      .querySelectorAll(
+        'img[src*="luma-deer-svg"]:not(#onboarding-modal img), img.fallback-logo',
+      )
       .forEach((img) => {
         img.src = fallbackSrc;
         img.classList.add("fallback-logo");
@@ -244,16 +252,15 @@ export function restoreThemeSettings() {
     }
 
     // 2. 캔들/텍스트 컬러 모드 복원
-    const savedColorMode = localStorage.getItem("sellnance_candle_theme") || "binance";
+    const savedColorMode =
+      localStorage.getItem("sellnance_candle_theme") || "binance";
     applyCandleTheme(savedColorMode);
-  } catch (e) { }
+  } catch (e) {}
 }
 
-// 🚀 전역 window 노출
+// 전역 window 노출
 window.toggleTheme = toggleTheme;
 window.toggleCandleTheme = toggleCandleTheme;
 window.updateCandleThemeButtons = updateCandleThemeButtons;
 window.applyCandleTheme = applyCandleTheme;
 window.getCandleThemeColors = getCandleThemeColors;
-
-

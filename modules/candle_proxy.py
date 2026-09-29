@@ -15,7 +15,7 @@ from .adapter import ExchangeAdapter
 
 CF_WORKER_PROXY_URL = os.getenv("CF_WORKER_PROXY_URL", "").strip()
 
-# [500명 방어 엔진 (I/O 병목 해제 50개 톨게이트)]
+# [부하 관리, I/O ~ 세마포어]
 CANDLE_SEMAPHORE = asyncio.Semaphore(50)
 GLOBAL_AIO_SESSION = None
 IN_FLIGHT_CANDLE_REQUESTS = {}
@@ -47,7 +47,7 @@ def get_candle_ttl(interval: str, to: str = "") -> float:
     - 15분~30분봉: 60초 (1분)
     - 3분~5분봉: 30초
     - 1분봉 등 초단기봉: 15초
-    (💡 실시간 최신가는 프론트엔드 웹소켓이 매초 보정하므로 과거 캔들 배열 캐싱은 길어도 안전하게)
+    (실시간 최신가는 프론트엔드 웹소켓이 매초 보정하므로 과거 캔들 배열 캐싱은 길어도 안전하게)
     """
     if to:
         return 600.0
@@ -83,7 +83,7 @@ def get_candle_ttl(interval: str, to: str = "") -> float:
     return 15.0  # 15초
 
 
-# [업비트 429 방어 고속 토큰 버킷 레이트 리미터 (버스트 8개 허용 / 초당 8개 충전, 429 쿨다운)]
+# [업비트 429 방지를 위한 토큰 버킷 limit (버스트 8개 허용 / 초당 8개 충전, 429 쿨다운)]
 class UpbitTokenBucketLimiter:
     def __init__(self, capacity: float = 8.0, refill_rate: float = 8.0):
         self.capacity = capacity  # 최대 버스트 허용량 (업비트 10req/s 한도 내 8개)
@@ -115,7 +115,7 @@ class UpbitTokenBucketLimiter:
             pass
 
     async def wait(self):
-        min_pacing = 1.0 / self.refill_rate  # 125ms (초당 8회 안전 간격)
+        min_pacing = 1.0 / self.refill_rate  # 초당 8회를 위한 안전 간격)
         while True:
             sleep_time = 0.0
             async with self.lock:
@@ -131,11 +131,11 @@ class UpbitTokenBucketLimiter:
                     )
                     self.last_refill = now
 
-                    # 3. 최소 125ms 페이싱(간격) 체크 (8개 방어)
+                    # 3. 페이싱(간격) 체크
                     elapsed_since_last = now - self.last_request_time
                     pacing_wait = max(0.0, min_pacing - elapsed_since_last)
 
-                    # 4. 토큰 1개 이상이고 페이싱 통과 시 즉시 발송
+                    # 4. 토큰 1개 이상이고 페이싱 통과 시 바로 발송
                     if self.tokens >= 1.0 and pacing_wait <= 0.0:
                         self.tokens -= 1.0
                         self.last_request_time = now
@@ -159,11 +159,11 @@ def _construct_tv_msg(func, param_list):
 
 class PersistentTVClient:
     """
-    [초고속 락-프리 트레이딩뷰 비동기 멀티플렉서]
-    - 단일 TCP 웹소켓 연결 멀티플렉싱: 유저 500명 동시 접속에도 단 1개 소켓만 공유하여 백엔드/트뷰 부하 0%
-    - aiohttp 비동기 스트림 리더: ping/close 프레임 안전 분기 처리 및 연결 유실 시 0초 자동 복구
+    [트레이딩뷰 비동기 멀티플렉서]
+    - 단일 TCP 웹소켓 연결 멀티플렉싱: 유저 다수가 동시에 접속에도 단 1개 소켓만 공유하여 백엔드/트뷰 부하 최소화
+    - aiohttp 비동기 스트림 리더: ping/close 프레임 안전 분기 처리 및 연결 유실 시 자동 복구
     - GC 원자성 (Zero-Leak): finally 블록에서 pending_futures를 원자적 pop()하여 메모리 누수 최소화
-    - 트레이딩뷰 밴 완벽 방어: 20개 동시 세션 세마포어 캡 + 데이터 수신 즉시 chart_delete_session 전송
+    - 트레이딩뷰 밴 방지: 20개 동시 세션 세마포어 캡 + 데이터 수신 즉시 chart_delete_session 전송
     """
 
     def __init__(self):
@@ -226,7 +226,7 @@ class PersistentTVClient:
             async for msg in self.ws:
                 if msg.type == aiohttp.WSMsgType.TEXT:
                     raw_text = msg.data
-                    # 1. 트레이딩뷰 핑/퐁 하트비트 0ms 즉시 응답
+                    # 1. 트레이딩뷰 핑/퐁 하트비트 즉시 응답
                     if "~h~" in raw_text:
                         h_val = raw_text.split("~h~")[1]
                         await self.ws.send_str(f"~m~{len(h_val)}~m~~h~{h_val}")
@@ -324,7 +324,7 @@ class PersistentTVClient:
                 )
                 await ws.send_str(batch_msg)
 
-                # Future 완료 대기 (최대 3.5초 안전 타임아웃, 평시 0.2초)
+                # Future 완료 대기 (안전한 타임아웃)
                 candles = await asyncio.wait_for(fut, timeout=3.5)
                 return candles if candles else []
             except Exception:
@@ -361,7 +361,7 @@ async def fetch_alpha_or_fallback_candles(
     session = await get_aio_session()
     n_bars = int(limit) if limit else 500
 
-    # 1. 🥇 [바이낸스 알파 공식 Klines API 1순위]
+    # 1. [바이낸스 알파 공식 Klines API 1순위]
     alpha_id = None
     try:
         alpha_map = alpha_rules.fetch_binance_alpha_raw()
@@ -392,7 +392,7 @@ async def fetch_alpha_or_fallback_candles(
         except Exception:
             pass
 
-    # 2. 🥈 [타 거래소 공식 REST API 폴백: 기존 _raw_fetch_candles 파이프라인 재사용 (중복 제거)]
+    # 2. [타 거래소 공식 REST API 폴백: 기존 _raw_fetch_candles 파이프라인 재사용 (중복 제거)]
     fallback_targets = [
         ("bybit_spot", "BYBIT"),
         ("bitget_spot", "BITGET"),
@@ -488,7 +488,7 @@ async def _raw_fetch_candles(
             "months": "1M",
         }
         tv_tf = tv_tf_map.get(interval, tv_tf_map.get(interval.lower(), "1D"))
-        # [초고속 렌더링] 첫 진입(to 없음) 시 300개로 0.2초 초고속 렌더링, 과거 탐색 시 요청 limit 충실 반영
+        # [고속 렌더링] 첫 진입(to 없음) 시 300개로 고속 렌더링, 과거 탐색 시 요청 개수 limit 반영
         req_bars = min(limit, 300) if not to else min(limit, 2000)
         try:
             tv_candles = await PERSISTENT_TV_CLIENT.get_candles(
@@ -670,7 +670,7 @@ async def _raw_fetch_candles(
             exchange, symbol, interval, limit, to, start
         )
         if not url:
-            return {"error": "지원하지 않는 거래소입니다."}, None
+            return {"error": "지원하지 않는 거래소입니다"}, None
 
         if exchange == "upbit":
             await UPBIT_RATE_LIMITER.wait()
@@ -761,7 +761,7 @@ async def _raw_fetch_candles(
                     f"✅ [알파/미상장 캔들 스마트 폴백 수신] {symbol} -> {src} ({len(data)}개)"
                 )
 
-        # 빗썸 전체 캔들 반환 시 요청한 limit만큼 백엔드에서 즉시 슬라이싱하여 전송 속도 극대화
+        # 빗썸 전체 캔들 반환 시 요청한 limit만큼 백엔드에서 즉시 슬라이싱하여 전송 속도 최적화
         if (
             exchange == "bithumb"
             and isinstance(data, dict)
@@ -846,7 +846,7 @@ async def _raw_fetch_candles(
                         if raw_candles:
                             fallback_data = sorted(raw_candles, key=lambda x: x[0])
                             print(
-                                f" └─ [탐색 성공] aiohttp TV 심볼 '{cand}'에서 {len(fallback_data)}개 캔들 광속 수신 완료!"
+                                f" └─ [탐색 성공] aiohttp TV 심볼 '{cand}'에서 {len(fallback_data)}개 캔들 수신 완료"
                             )
                             break
 
@@ -854,7 +854,7 @@ async def _raw_fetch_candles(
                         compressed_cache = fallback_data[-limit:]
                         TV_GAP_CACHE[cache_key] = compressed_cache
                         print(
-                            f"✅ 단절 복구 및 범용 캐싱 완료 ({cache_key}): 과거 {len(compressed_cache)}개 압축 캔들!"
+                            f"✅ 단절 복구 및 캐싱 완료 ({cache_key}): 과거 {len(compressed_cache)}개 압축 캔들"
                         )
 
                         target_ts = (
@@ -891,17 +891,17 @@ async def fetch_candles_guarded(
     start: str = "",
 ):
     """
-    🛡️ [3중 철통 방어 관문]:
-      1. 타임프레임별 적응형 LRU 메모리 캐시 (15초~600초, 0ms 즉각 반환)
+    [3중 백엔드 관리]:
+      1. 타임프레임별 적응형 LRU 메모리 캐시 (15초~600초)
       2. Single-Flight (동일 코인 요청 시 1대 비행기에 전원 합승하여 외부 호출 0회 압축)
-      3. Global Semaphore (동시 외부 연결 최대 20개 톨게이트 제어로 IP 차단 원천 봉쇄)
+      3. Global Semaphore (동시 외부 연결 최대 20개 톨게이트 제어로 IP 차단 방지)
     """
     global CANDLE_CACHE
     now = time.time()
     ttl = get_candle_ttl(interval, to)
 
     if len(CANDLE_CACHE) > 100:
-        # 1차: 300초(5분) 이상 경과한 캐시 즉시 퇴출
+        # 1차: 300초(5분) 이상 경과한 캐시 즉시 return
         CANDLE_CACHE = {k: v for k, v in CANDLE_CACHE.items() if now - v[0] < 300}
         # 2차: 그래도 100개 초과 시 가장 최신 80개만 남기고 즉시 제거
         if len(CANDLE_CACHE) > 100:
@@ -912,7 +912,7 @@ async def fetch_candles_guarded(
 
     req_cache_key = f"{exchange}_{symbol}_{interval}_{limit}_{start}_{to}"
 
-    # [적응형 캐시 검사 (0ms 즉시 반환)]
+    # [적응형 캐시 검사]
     if req_cache_key in CANDLE_CACHE:
         cached_entry = CANDLE_CACHE[req_cache_key]
         if len(cached_entry) == 3:
@@ -932,7 +932,7 @@ async def fetch_candles_guarded(
 
     # [세마포어 톨게이트 (거래소별 독립 격리)]
     async def _guarded_worker():
-        # 1. 빗썸은 자체 전용 20개 세마포어가 있으므로 바깥 20개 세마포어를 점유하지 않음 (역전 현상 0%)
+        # 1. 빗썸은 자체 전용 20개 세마포어가 있으므로 바깥 20개 세마포어를 점유하지 않음
         if exchange == "bithumb":
             data, source = await _raw_fetch_candles(
                 exchange, symbol, interval, limit, to, start
@@ -953,7 +953,7 @@ async def fetch_candles_guarded(
                     exchange, symbol, interval, limit, to, start
                 )
 
-        # 🚀 [유효성 검증] 유효한 캔들 데이터(len > 0)만 캐시 저장 (빈 배열 [] 캐싱 차단)
+        # [유효성 검증] 유효한 캔들 데이터(len > 0)만 캐시 저장 (빈 배열 [] 캐싱 차단)
         if isinstance(data, list) and len(data) > 0:
             CANDLE_CACHE[req_cache_key] = (time.time(), data, source)
         elif isinstance(data, dict) and "error" not in data and bool(data):

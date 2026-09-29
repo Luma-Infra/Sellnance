@@ -28,7 +28,7 @@ export { getCandleThemeColors, applyCandleTheme };
 // === DEBUG_PERF_TOGGLE ===
 const ENABLE_PERF_LOG = false; // Set to false to disable all performance logging instantly
 
-// 🚀 [메인 & 거래량 차트 양방향 100% 대칭 60fps 네이티브 캔버스 십자선 플러그인]
+// [메인 & 거래량 차트 양방향 대칭 by 네이티브 캔버스 십자선 플러그인]
 class CanvasCrosshairPrimitive {
   constructor() {
     this._chart = null;
@@ -66,12 +66,12 @@ class CanvasCrosshairPrimitive {
     if (this._requestUpdate) {
       try {
         this._requestUpdate();
-      } catch (e) { }
+      } catch (e) {}
     }
   }
 }
 
-// 🚀 [신규 플러그인: 시간축 라벨]
+// [신규 플러그인: 시간축 라벨]
 // 네이티브 크로스헤어가 고장나는 딜레마를 피해, 이 커스텀 플러그인이 시간축(X축) 바닥에 시간 라벨을 직접 그립니다!
 class CanvasCrosshairTimeAxisView {
   constructor(source) {
@@ -91,7 +91,7 @@ class CanvasCrosshairTimeAxisView {
       typeof document !== "undefined" &&
       document.body &&
       document.body.classList.contains("theme-upbit");
-    return isUpbit ? "#363c4e" : "#2b2b43"; // 🚀 트레이딩뷰 네이티브 크로스헤어 라벨 배경색
+    return isUpbit ? "#363c4e" : "#2b2b43"; // 트레이딩뷰 네이티브 크로스헤어 라벨 배경색
   }
   color() {
     return "#ffffff";
@@ -123,14 +123,14 @@ class CanvasCrosshairPaneRenderer {
       ctx.save();
       ctx.lineWidth = 1;
       ctx.strokeStyle = "#758696";
-      ctx.lineCap = "butt"; // 🚀 round의 삐져나옴/뭉침 현상을 제거하고 칼각 도트로 복원!
+      ctx.lineCap = "butt"; // round의 삐져나옴/뭉침 현상을 제거하고 칼각 도트로 복원!
       if (typeof ctx.setLineDash === "function") {
-        ctx.setLineDash([1, 2]); // 🚀 1픽셀 찍고 2픽셀 쉬는 가장 또렷하고 촘촘한 도트 비율!
+        ctx.setLineDash([1, 2]); // 1픽셀 찍고 2픽셀 쉬는 가장 또렷하고 촘촘한 도트 비율!
       }
       ctx.beginPath();
-      // 🚀 x 좌표를 픽셀 경계 중앙(+0.5)으로 강제 정렬
+      // x 좌표를 픽셀 경계 중앙(+0.5)으로 강제 정렬
       const exactX = Math.round(x) + 0.5;
-      // 🚀 위아래 패널 경계선(Border/Gap)의 미세한 틈새 단절을 없애기 위해 무자비하게 팽창 렌더링!!!
+      // 위아래 패널 경계선(Border/Gap)의 미세한 틈새 단절을 없애기 위해 무자비하게 팽창 렌더링!!!
       ctx.moveTo(exactX, -100);
       ctx.lineTo(
         exactX,
@@ -148,7 +148,7 @@ class CanvasCrosshairPaneRenderer {
   }
 }
 
-// 🚀 3. 차트 생성
+// 3. 차트 생성
 export async function initChart() {
   if (typeof window.LightweightCharts === "undefined") {
     await new Promise((resolve) => {
@@ -176,17 +176,17 @@ export async function initChart() {
     store.volumeSeries = null;
     store.kimchiSeries = null;
     store.previewSeries = null;
-    store.countdownPriceLine = null; // 🚀 카운트다운 유령선 방지
-    store._mainCrosshair = null; // 🚀 십자선 프리미티브 GC 수거 활성화
-    store._volCrosshair = null; // 🚀 십자선 프리미티브 GC 수거 활성화
-    store._measurePrimitive = null; // 🚀 자 도구 프리미티브 GC 수거 활성화
-    store.measureStartPriceLine = null; // 🚀 자 도구 시작 가격선 GC 수거 활성화
-    store.measureEndPriceLine = null; // 🚀 자 도구 끝 가격선 GC 수거 활성화
+    store.countdownPriceLine = null; // 카운트다운 유령선 방지
+    store._mainCrosshair = null; // 십자선 프리미티브 GC 수거 활성화
+    store._volCrosshair = null; // 십자선 프리미티브 GC 수거 활성화
+    store._measurePrimitive = null; // 자 도구 프리미티브 GC 수거 활성화
+    store.measureStartPriceLine = null; // 자 도구 시작 가격선 GC 수거 활성화
+    store.measureEndPriceLine = null; // 자 도구 끝 가격선 GC 수거 활성화
   }
   const elMain = document.getElementById("pane-main");
   const elVol = document.getElementById("pane-vol");
 
-  // 🚀 CSS에 정의된 다크/라이트 모드 테마 변수 가져오기
+  // CSS에 정의된 다크/라이트 모드 테마 변수 가져오기
   const style = getComputedStyle(document.body);
   const textColor = style.getPropertyValue("--text").trim() || "#d1d4dc";
   const gridColor =
@@ -198,11 +198,11 @@ export async function initChart() {
   store.downColorCache = downColor;
 
   const commonOptions = {
-    autoSize: true, // 🚀 v5 핵심 기능: 창 크기에 맞춰 자동 리사이징!
+    autoSize: true, // v5 핵심 기능: 창 크기에 맞춰 자동 리사이징!
     layout: {
       background: { color: "transparent" },
       textColor: textColor,
-      attributionLogo: false, // 🚀 트레이딩뷰 워터마크 끄기
+      attributionLogo: false, // 트레이딩뷰 워터마크 끄기
     },
     grid: { vertLines: { color: gridColor }, horzLines: { color: gridColor } },
     crosshair: {
@@ -224,7 +224,7 @@ export async function initChart() {
     },
     handleScale: {
       axisPressedMouseMove: { time: true, price: true },
-      mouseWheel: false, // 🚀 기본 느린 트뷰 휠 줌 비활성화 (초고속 네이티브 가속 줌으로 대체)
+      mouseWheel: false, // 기본 느린 트뷰 휠 줌 비활성화 (초고속 네이티브 가속 줌으로 대체)
     },
     handleScroll: { vertTouchDrag: true },
     timeScale: {
@@ -249,11 +249,11 @@ export async function initChart() {
       visible: true,
       borderColor: gridColor,
       mode: store.isLogMode ? 1 : 0,
-      minimumWidth: store.savedPriceScaleWidth || 0, // 🚀 [UX 개선] 저장된 가격 축의 너비를 레이아웃 생성 시점에 복구하여 레이아웃 꿀렁임 제거
+      minimumWidth: store.savedPriceScaleWidth || 0, // [UX 개선] 저장된 가격 축의 너비를 레이아웃 생성 시점에 복구하여 레이아웃 꿀렁임 제거
       scaleMargins: {
         top: store.mainChartScaleMargins?.top ?? 0.1,
         bottom: store.mainChartScaleMargins?.bottom ?? 0,
-      }, // 🚀 0원 및 음수 가격 노출 원천 차단 (하단 여백은 autoscaleInfoProvider가 안전 클램핑)
+      }, // 0원 및 음수 가격 노출 원천 차단 (하단 여백은 autoscaleInfoProvider가 안전 클램핑)
     },
     leftPriceScale: {
       autoScale: true,
@@ -261,7 +261,7 @@ export async function initChart() {
       minimumWidth:
         typeof window !== "undefined" && window.innerWidth < 768
           ? 0
-          : (store.savedLeftPriceScaleWidth || 60),
+          : store.savedLeftPriceScaleWidth || 60,
       borderColor: "transparent",
       scaleMargins: {
         top: store.mainChartScaleMargins?.top ?? 0.1,
@@ -278,12 +278,12 @@ export async function initChart() {
       ...commonOptions.crosshair,
       vertLine: {
         ...commonOptions.crosshair.vertLine,
-        labelVisible: false, // 🚀 [정답] 네이티브 시간 라벨만 딱 끄기! (플러그인 라벨과 겹침 방지)
+        labelVisible: false, // [정답] 네이티브 시간 라벨만 딱 끄기! (플러그인 라벨과 겹침 방지)
       },
     },
     timeScale: {
       ...commonOptions.timeScale,
-      borderColor: "transparent", // 🚀 [하단 테두리 박멸] 볼륨 캔버스 하단의 진한 테두리 선 투명화
+      borderColor: "transparent", // [하단 테두리 제거] 볼륨 캔버스 하단의 진한 테두리 선 투명화
     },
     rightPriceScale: {
       autoScale: true,
@@ -293,7 +293,7 @@ export async function initChart() {
         top: store.volChartScaleMargins?.top ?? 0.5,
         bottom: store.volChartScaleMargins?.bottom ?? 0,
       },
-      minimumWidth: store.savedPriceScaleWidth || 0, // 🚀 [UX 개선] 저장된 가격 축의 너비를 레이아웃 생성 시점에 복구하여 레이아웃 꿀렁임 제거
+      minimumWidth: store.savedPriceScaleWidth || 0, // [UX 개선] 저장된 가격 축의 너비를 레이아웃 생성 시점에 복구하여 레이아웃 꿀렁임 제거
     },
     leftPriceScale: {
       autoScale: true,
@@ -301,8 +301,8 @@ export async function initChart() {
       minimumWidth:
         typeof window !== "undefined" && window.innerWidth < 768
           ? 0
-          : (store.savedLeftPriceScaleWidth || 60),
-      borderColor: "transparent", // 🚀 [좌측 테두리 박멸] 메인 차트와 동일하게 좌측 테두리 선 투명화
+          : store.savedLeftPriceScaleWidth || 60,
+      borderColor: "transparent", // [좌측 테두리 제거] 메인 차트와 동일하게 좌측 테두리 선 투명화
       scaleMargins: {
         top: store.volChartScaleMargins?.kimchiTop ?? 0.1,
         bottom: store.volChartScaleMargins?.kimchiBottom ?? 0.1,
@@ -310,29 +310,29 @@ export async function initChart() {
     },
   });
 
-  // 🚀 사용자가 차트 줌/패닝을 직접 조작했음을 감지하는 이벤트 리스너 부착
+  // 사용자가 차트 줌/패닝을 직접 조작했음을 감지하는 이벤트 리스너 부착
   store.chart.timeScale().subscribeVisibleTimeRangeChange(() => {
-    // 🚀 사용자가 직접 마우스/터치로 조작할 때만 이벤트를 기록하므로 여기선 비워둡니다.
+    // 사용자가 직접 마우스/터치로 조작할 때만 이벤트를 기록하므로 여기선 비워두기
   });
 
-  // 🚀 [Lazy Load & Zoom Width Save] 가로폭(줌 상태) 저장 및 과거 데이터 로딩 통합 관리
+  // [Lazy Load & Zoom Width Save] 가로폭(줌 상태) 저장 및 과거 데이터 로딩 통합 관리
   let isCheckingLoadMore = false;
   let isUserInteractingWithChart = false;
   let userInteractionTimeout = null;
 
   store.chart.timeScale().subscribeVisibleLogicalRangeChange(async (range) => {
     if (!range) return;
-    if (store.isFetchingChart) return; // 🚀 데이터 로딩/초기 기동 중 발생한 내부 레이아웃 리액션에 의한 가로폭 오염 방지
-    if (!store.isUserZoomed) return; // 🚀 사용자가 직접 마우스/터치로 줌/스크롤 조작 시에만 가로폭 저장 진행
+    if (store.isFetchingChart) return; // 데이터 로딩/초기 기동 중 발생한 내부 레이아웃 리액션에 의한 가로폭 오염 방지
+    if (!store.isUserZoomed) return; // 사용자가 직접 마우스/터치로 줌/스크롤 조작 시에만 가로폭 저장 진행
 
-    // 🚀 [UX 개선] 사용자가 스크롤/줌을 통해 설정한 캔들 개수(가로폭)를 실시간으로 저장합니다.
+    // [UX 개선] 사용자가 스크롤/줌을 통해 설정한 캔들 개수(가로폭)를 실시간으로 저장
     const width = range.to - range.from;
     const maxLimit = (CONFIG.CHART_CONFIG?.MAX_SPAN_LIMIT ?? 1200) + 50;
     if (width > 0 && width <= maxLimit) {
       store.savedZoomWidth = width;
     }
 
-    // 🚀 [UX 개선] 최신 캔들 부근(우측 끝)을 바라보고 있을 때만 우측 여백 크기를 저장합니다.
+    // [UX 개선] 최신 캔들 부근(우측 끝)을 바라보고 있을 때만 우측 여백 크기를 저장
     if (store.mainData && store.mainData.length > 0) {
       const len = store.mainData.length;
       if (range.to >= len - 15) {
@@ -342,11 +342,11 @@ export async function initChart() {
 
     if (isCheckingLoadMore) return;
 
-    // 🚀 [철통 방어 가드] 사용자가 실제로 마우스 드래그/휠/터치 조작 중일 때만 과거 추가 로드 허용!
-    // 단순 실시간 새 캔들 생성/틱 수신으로 인한 timeScale 밀림 시에는 절대 트리거 방지!
+    // 사용자가 실제로 마우스 드래그/휠/터치 조작 중일 때만 과거 추가 로드 허용
+    // 단순 실시간 새 캔들 생성/틱 수신으로 인해서 timeScale 밀려나는 경우에도 트리거 방지
     if (!isUserInteractingWithChart) return;
 
-    // 🚀 [와리가리 프리징 방어] 왼쪽 끝 도달 판정 기준을 10 -> 2로 좁혀 불필요한 API 폭주 원천 차단
+    // [UX] 왼쪽 끝 도달 판정 기준을 10 -> 2로 좁혀 불필요한 API 호출 차단
     if (range.from < 2) {
       isCheckingLoadMore = true;
       if (typeof window.loadMoreHistory === "function") {
@@ -354,11 +354,11 @@ export async function initChart() {
       }
       setTimeout(() => {
         isCheckingLoadMore = false;
-      }, 1000); // 1초 디바운스로 스크롤 프레임 폭주 원천 차단
+      }, 1000);
     }
   });
 
-  // 🚀 [초고속 0ms 네이티브 휠 줌 가속 엔진]
+  // [네이티브 휠 줌 가속 엔진]
   const chartWrapper = document.getElementById("chart-wrapper");
   if (chartWrapper) {
     const onUserInteract = () => {
@@ -375,7 +375,7 @@ export async function initChart() {
         return;
       if (Math.abs(e.deltaY) < 1) return;
 
-      // [정밀 영역 분기 가드: Y축 가격/김프 스케일 영역 검출]
+      // [정밀 영역 분기 : Y축 가격/김프 스케일 영역 검출]
       // 1) DOM 기반 체크: Lightweight Charts 내부 테이블 구조
       const targetEl = e.target;
       const td = targetEl ? targetEl.closest("td") : null;
@@ -394,8 +394,12 @@ export async function initChart() {
 
       if (rect) {
         const cursorX = e.clientX - rect.left;
-        const rightWidth = activeChart ? activeChart.priceScale("right").width() : 50;
-        const leftWidth = activeChart ? activeChart.priceScale("left").width() : 0;
+        const rightWidth = activeChart
+          ? activeChart.priceScale("right").width()
+          : 50;
+        const leftWidth = activeChart
+          ? activeChart.priceScale("left").width()
+          : 0;
         if (cursorX >= rect.width - rightWidth - 10) {
           isOverRightScale = true;
         } else if (leftWidth > 0 && cursorX <= leftWidth + 10) {
@@ -403,15 +407,21 @@ export async function initChart() {
         }
       }
 
-      // 🛑 마우스 커서가 가격 스케일(우측) 또는 김프 스케일(좌측) 위에 있을 때:
-      // 메인 차트 캔들(가로 TimeScale) 줌을 100% 차단하고 Y축 스케일 인터랙션으로 분기!
+      // 마우스 커서가 가격 스케일(우측) 또는 김프 스케일(좌측) 위에 있을 때
+      // 메인 차트 캔들(가로 TimeScale) 줌을 차단하고 Y축 스케일 인터랙션으로 분기
       if (isOverRightScale || isOverLeftScale) {
         e.preventDefault();
         e.stopPropagation();
 
         if (typeof window.zoomPriceScale === "function") {
           const cursorY = rect ? e.clientY - rect.top : null;
-          window.zoomPriceScale(!isOverVol, isOverRightScale, e.deltaY, cursorY, activeEl);
+          window.zoomPriceScale(
+            !isOverVol,
+            isOverRightScale,
+            e.deltaY,
+            cursorY,
+            activeEl,
+          );
         }
         return;
       }
@@ -431,11 +441,11 @@ export async function initChart() {
       const MAX_SPAN = CONFIG.CHART_CONFIG?.MAX_SPAN_LIMIT ?? 1200; // 최대 축소 한계 (200개 제한 해제)
       const maxTo = len - 1 + margin;
 
-      // 🛑 [한계점 즉시 감지 & 0ms 조기 탈출]
+      // [한계점 감지 및 return]
       if (e.deltaY > 0 && currentSpan >= MAX_SPAN - 0.5) return;
       if (e.deltaY < 0 && currentSpan <= MIN_SPAN + 0.1) return;
 
-      // 🚀 [크로스헤어 정밀 앵커]
+      // [크로스헤어 정밀 앵커]
       const cursorX = e.clientX - rect.left;
       let cursorLogical = timeScale.coordinateToLogical(cursorX);
 
@@ -445,13 +455,13 @@ export async function initChart() {
         cursorLogical = range.from + currentSpan * ratio;
       }
 
-      // 🎯 마우스 커서 위치 기준 100% 정밀 앵커 비율 (0.0 ~ 1.0)
+      // 마우스 커서 위치 기준 ~ 정밀 앵커 비율 (0.0 ~ 1.0)
       const anchorRatio = Math.max(
         0,
         Math.min(1, (cursorLogical - range.from) / currentSpan),
       );
 
-      // 🚀 스토어 배속 변수 (부드럽고 쾌적한 줌 가속)
+      // 스토어 배속 변수 (부드럽고 쾌적한 줌 가속)
       const zoomMultiplier = store.chartZoomSpeed ?? 1.6;
       const normalizedDelta =
         Math.sign(e.deltaY) * Math.min(Math.abs(e.deltaY) / 100, 1.2);
@@ -469,20 +479,20 @@ export async function initChart() {
       let newFrom = cursorLogical - newSpan * anchorRatio;
       let newTo = cursorLogical + newSpan * (1 - anchorRatio);
 
-      // 🚀 [우측 마진 바운더리 보호 - 좌측 강제 밀림 버그 원천 차단]
+      // [우측 마진 바운더리 보호 - 좌측 강제 밀림 버그 차단]
       if (newTo > maxTo) {
         newTo = maxTo;
         newFrom = newTo - newSpan;
       }
 
-      // 🚀 [좌측 바운더리 보호] 무한 과거 이탈 방지
+      // [좌측 바운더리 보호] 과거 이탈 방지
       const minFrom = -MAX_SPAN;
       if (newFrom < minFrom) {
         newFrom = minFrom;
         newTo = newFrom + newSpan;
       }
 
-      // 🚀 미세 변화 무시 (불필요한 렌더링 스킵)
+      // 미세 변화 무시 (불필요한 렌더링 스킵)
       if (
         Math.abs(newFrom - range.from) < 0.05 &&
         Math.abs(newTo - range.to) < 0.05
@@ -496,10 +506,10 @@ export async function initChart() {
       if (store.chartVol) {
         try {
           store.chartVol.timeScale().setVisibleLogicalRange(targetRange);
-        } catch (_) { }
+        } catch (_) {}
       }
 
-      // [원자적 1프레임 동기화] 휠 줌 즉시 메인/볼륨 십자선 마그네틱 자석 좌표 실시간 일치
+      // [원자적 동기화] 휠 줌 즉시 메인/볼륨 십자선 마그네틱 자석 좌표 실시간 일치
       try {
         const curX = e.clientX - rect.left;
         let postLogical = timeScale.coordinateToLogical(curX);
@@ -511,7 +521,7 @@ export async function initChart() {
           if (store._mainCrosshair) store._mainCrosshair.setX(snappedX);
           if (store._volCrosshair) store._volCrosshair.setX(snappedX);
         }
-      } catch (_) { }
+      } catch (_) {}
 
       store.isUserZoomed = true;
       store.savedZoomWidth = Math.round(newSpan);
@@ -554,7 +564,7 @@ export async function initChart() {
     );
   }
 
-  // 🚀 DOM 이벤트 기반 activeChart 제어 제거 (라이브러리 내부 이벤트로 100% 통합 제어)
+  // DOM 이벤트 기반 activeChart 제어 제거 (라이브러리 내부 이벤트로 통합 제어)
 
   const p = store.getPrecision(store.currentAsset);
   const customPriceFormat = {
@@ -578,14 +588,14 @@ export async function initChart() {
       borderVisible: false,
       wickUpColor: upColor,
       wickDownColor: downColor,
-      lastValueVisible: !store.showCountdown, // 🚀 카운트다운 활성화 시 카운트다운 일체형 바 단독 노출 (중복 뱃지 방지)
-      priceLineVisible: !store.showCountdown, // 🚀 카운트다운 활성화 시 카운트다운 선 단독 노출 (중복 점선 방지)
+      lastValueVisible: !store.showCountdown, // 카운트다운 활성화 시 카운트다운 일체형 바 단독 노출 (중복 뱃지 방지)
+      priceLineVisible: !store.showCountdown, // 카운트다운 활성화 시 카운트다운 선 단독 노출 (중복 점선 방지)
       priceFormat: customPriceFormat,
       autoscaleInfoProvider: mainCandleAutoscaleProvider,
     },
   );
 
-  // 🚀 좌측 스케일 전용 등락률 및 가격차이 표시 보조 시리즈
+  // 좌측 스케일 전용 등락률 및 가격차이 표시 보조 시리즈
   store.leftScaleSeries = store.chart.addSeries(
     window.LightweightCharts.LineSeries,
     {
@@ -599,7 +609,7 @@ export async function initChart() {
     },
   );
 
-  // 💡 [추가] _main.js에 있던 시뮬레이터용 캔들 시리즈 할당 복구
+  // [추가] _main.js에 있던 시뮬레이터용 캔들 시리즈 할당 복구
   store.previewSeries = store.chart.addSeries(
     window.LightweightCharts.CandlestickSeries,
     {
@@ -623,7 +633,7 @@ export async function initChart() {
   );
 
   // ========================================================
-  // 🚀 [고차원 프록시 가로채기] 볼륨 시리즈 원천 방어막 주입
+  // [프록시 중계] 볼륨 시리즈 안전하게 처리하기
   // ========================================================
   if (store.volumeSeries) {
     const rawVolumeSetData = store.volumeSeries.setData.bind(
@@ -631,7 +641,7 @@ export async function initChart() {
     );
     const rawVolumeUpdate = store.volumeSeries.update.bind(store.volumeSeries);
 
-    // .setData() 통로 가로채기 및 완전 소독
+    // .setData() 통로 처리하기
     store.volumeSeries.setData = (dataArr) => {
       if (!Array.isArray(dataArr)) {
         rawVolumeSetData([]);
@@ -649,7 +659,7 @@ export async function initChart() {
         })
         .filter(Boolean);
 
-      // 시간 정제 및 중복 정렬은 기존 엔진(sanitizeChartData)을 거치되, value 필드 안전 장치가 완전히 끝난 배열 전달
+      // 시간 정제 및 중복 정렬은 기존 엔진(sanitizeChartData)을 거치되, value 필드 안전 장치가 끝난 배열 전달
       rawVolumeSetData(
         window.sanitizeChartData
           ? window.sanitizeChartData(sterilized, true)
@@ -657,16 +667,16 @@ export async function initChart() {
       );
     };
 
-    // .update() 통로 가로채기 및 완전 소독
+    // .update() 통로 처리하기
     store.volumeSeries.update = (dataObj) => {
       if (!dataObj || dataObj.time === undefined || dataObj.time === null)
         return;
 
-      // value 강제 변환 및 오염 박멸 (기존 d.color 등 메타데이터 100% 계승)
+      // value 강제 변환 및 오염 제거 (기존 d.color 등 메타데이터 계승)
       const safeVal =
         dataObj.value === null ||
-          dataObj.value === undefined ||
-          isNaN(Number(dataObj.value))
+        dataObj.value === undefined ||
+        isNaN(Number(dataObj.value))
           ? 0
           : Number(dataObj.value);
 
@@ -679,7 +689,7 @@ export async function initChart() {
     };
   }
 
-  // 🚀 김프를 오버레이 라인 시리즈로 업그레이드 (다채로운 색상 포기, 가독성 우선)
+  // 김프를 오버레이 라인 시리즈로 업그레이드 (다채로운 색상 포기, 가독성 우선)
   store.kimchiSeries = store.chartVol.addSeries(
     window.LightweightCharts.LineSeries,
     {
@@ -698,7 +708,7 @@ export async function initChart() {
   );
 
   // ========================================================
-  // 🚀 [고차원 프록시] 김프 시리즈 원천 방어막 주입
+  // [프록시 중계] 김프 시리즈 보호하기
   // ========================================================
   if (store.kimchiSeries) {
     const rawKimchiSetData = store.kimchiSeries.setData.bind(
@@ -734,17 +744,17 @@ export async function initChart() {
         return;
       const safeVal =
         dataObj.value === null ||
-          dataObj.value === undefined ||
-          isNaN(Number(dataObj.value))
+        dataObj.value === undefined ||
+        isNaN(Number(dataObj.value))
           ? 0
           : Number(dataObj.value);
       try {
         rawKimchiUpdate({ ...dataObj, value: safeVal });
-      } catch (e) { }
+      } catch (e) {}
     };
   }
 
-  // 🚀 [메인 & 거래량 차트 양방향 대칭 십자선 플러그인 초기화 및 부착]
+  // [메인 & 거래량 차트 양방향 대칭 십자선 플러그인 초기화 및 적용]
   if (store.candleSeries && !store._mainCrosshair) {
     store._mainCrosshair = new CanvasCrosshairPrimitive();
     store.candleSeries.attachPrimitive(store._mainCrosshair);
@@ -754,13 +764,13 @@ export async function initChart() {
     store.volumeSeries.attachPrimitive(store._volCrosshair);
   }
 
-  // 🚀 [멀티 차트 동기화 전담 엔진 초기화] 크로스헤어, 시간축, 가격축 너비 락킹 및 스케일 모드 버튼 바인딩
+  // [멀티 차트 동기화 전담 엔진 초기화] 크로스헤어, 시간축, 가격축 너비 락킹 및 스케일 모드 버튼 바인딩
   initChartSync(elMain, elVol);
 
   initResizers();
   applyChartLayout();
 
-  // 🚀 자 대고 그리는 측정 도구(Measure Tool) 및 그리기 도구(Drawing Tool) 프리미티브 부착
+  // 자 대고 그리는 측정 도구(Measure Tool) 및 그리기 도구(Drawing Tool) 프리미티브 부착
   setTimeout(() => {
     if (typeof window.setupMeasureTool === "function")
       window.setupMeasureTool();
@@ -776,7 +786,7 @@ export async function initChart() {
 }
 
 export function updateChartTheme() {
-  // 🚀 테마 변경 시 차트를 부수지 않고 색상만 즉각적으로 갈아끼우는 함수
+  // 테마 변경 시 차트 색상을 동기적으로 갈아끼우는 함수
   if (!store.chart) return;
 
   const style = getComputedStyle(document.body);
@@ -820,7 +830,7 @@ export function updateChartTheme() {
     });
   }
 
-  // 🚀 3. 볼륨 시리즈 색상 원자적 동기화 (requestIdleCallback 지연 제거 → 동일 틱 즉각 렌더링)
+  // 3. 볼륨 시리즈 색상 원자적 동기화 (requestIdleCallback 지연 제거 → 동일 틱 렌더링)
   if (
     store.volumeSeries &&
     store.volumeData &&
@@ -852,9 +862,12 @@ export function updateChartTheme() {
     }
   }
 
-  // 🚀 4. 김프(Kimchi) 데이터 및 무지개 라인 시리즈, 범례 색상 즉시 테마 동기화 (새로고침 없이 0초 즉시 반영)
+  // 4. 김프(Kimchi) 데이터 및 무지개 라인 시리즈, 범례 색상 즉시 테마 동기화
   if (store.kimchiData && store.kimchiData.length > 0) {
-    const getKCol = typeof getKimchiColor === "function" ? getKimchiColor : window.getKimchiColor;
+    const getKCol =
+      typeof getKimchiColor === "function"
+        ? getKimchiColor
+        : window.getKimchiColor;
     if (typeof getKCol === "function") {
       for (let i = 0; i < store.kimchiData.length; i++) {
         const item = store.kimchiData[i];
@@ -867,10 +880,10 @@ export function updateChartTheme() {
     if (typeof rebuildKimchiDataMap === "function") {
       try {
         rebuildKimchiDataMap();
-      } catch (e) { }
+      } catch (e) {}
     }
 
-    // 🎯 차트 캔버스 상의 무지개 김프 라인 즉각 다시 그리기 (Volume과 동일한 방식)
+    // 차트 캔버스 상의 무지개 김프 라인 다시 그리기 (Volume과 동일한 방식)
     if (store.kimchiSeries && !store.isKimchiDisabled) {
       try {
         store.kimchiSeries.setData(
@@ -883,11 +896,11 @@ export function updateChartTheme() {
       }
     }
   }
-  if (
-    store.realtimeKimchi &&
-    store.realtimeKimchi.value !== undefined
-  ) {
-    const getKCol = typeof getKimchiColor === "function" ? getKimchiColor : window.getKimchiColor;
+  if (store.realtimeKimchi && store.realtimeKimchi.value !== undefined) {
+    const getKCol =
+      typeof getKimchiColor === "function"
+        ? getKimchiColor
+        : window.getKimchiColor;
     if (typeof getKCol === "function") {
       store.realtimeKimchi.color = getKCol(store.realtimeKimchi.value);
     }
@@ -895,7 +908,10 @@ export function updateChartTheme() {
 
   const kimchiEl = document.getElementById("ohlc-kimchi");
   if (kimchiEl) {
-    const getKCol = typeof getKimchiColor === "function" ? getKimchiColor : window.getKimchiColor;
+    const getKCol =
+      typeof getKimchiColor === "function"
+        ? getKimchiColor
+        : window.getKimchiColor;
     if (typeof getKCol === "function") {
       const targetKim =
         store.realtimeKimchi ||
@@ -911,7 +927,7 @@ export function updateChartTheme() {
   if (typeof window.updateStatus === "function") {
     try {
       window.updateStatus();
-    } catch (e) { }
+    } catch (e) {}
   }
 
   applyChartLayout();

@@ -1,9 +1,9 @@
 // ui_dialog.js
-// 🌟 Sellnance 자체 초경량 토스트 & 확인 모달 통합 시스템
+// Sellnance 자체 초경량 토스트 & 확인 모달 통합 시스템
 // - PC 토스트: 우측 상단 (Top-Right)
 // - PC 모달: 정중앙 (Center)
 // - 모바일 토스트 & 모달: 상단 중앙 (Top-Center, 작고 아담한 UI)
-// - 테마 CSS 변수 (--panel, --border, --text, --accent, --up, --down) 100% 자동 연동
+// - 테마 CSS 변수 (--panel, --border, --text, --accent, --up, --down) 연동
 
 function getToastContainer() {
   let container = document.getElementById("sellnance-toast-container");
@@ -23,24 +23,27 @@ const ICONS = {
 };
 
 /**
- * 🚀 플로팅 토스트 알림 표시
+ * 플로팅 토스트 알림 표시
  * @param {string} message - 토스트 메시지
  * @param {'success'|'error'|'warning'|'info'} type - 알림 종류
- * @param {number} duration - 노출 시간 (ms, 기본 2200ms)
+ * @param {number} duration - msg 노출 시간
  */
 export function showToast(message, type = "success", duration = 2200) {
   if (typeof document === "undefined") return;
   const container = getToastContainer();
 
-  // 🚀 최대 동시 노출 개수 제한 (기본 4개): 초과 시 가장 오래된 토스트부터 부드럽게 밀어내기(FIFO)
+  // 최대 동시 노출 개수 제한 (기본 4개): 초과 시 가장 오래된 토스트부터 부드럽게 밀어내기(FIFO)
   const MAX_TOASTS = 4;
-  const activeToasts = container.querySelectorAll(".sellnance-toast:not(.sellnance-toast-hide)");
+  const activeToasts = container.querySelectorAll(
+    ".sellnance-toast:not(.sellnance-toast-hide)",
+  );
   if (activeToasts.length >= MAX_TOASTS) {
     for (let i = 0; i <= activeToasts.length - MAX_TOASTS; i++) {
       const oldToast = activeToasts[i];
       oldToast.classList.add("sellnance-toast-hide");
       setTimeout(() => {
-        if (oldToast.parentElement) oldToast.parentElement.removeChild(oldToast);
+        if (oldToast.parentElement)
+          oldToast.parentElement.removeChild(oldToast);
       }, 255);
     }
   }
@@ -75,27 +78,36 @@ export function showToast(message, type = "success", duration = 2200) {
   toast.addEventListener("click", removeToast);
 
   // 모바일 터치 스와이프 제스처 지원
-  let startX = 0, startY = 0;
-  toast.addEventListener("touchstart", (e) => {
-    if (e.touches.length === 1) {
-      startX = e.touches[0].clientX;
-      startY = e.touches[0].clientY;
-    }
-  }, { passive: true });
-
-  toast.addEventListener("touchend", (e) => {
-    if (e.changedTouches.length === 1) {
-      const diffX = e.changedTouches[0].clientX - startX;
-      const diffY = e.changedTouches[0].clientY - startY;
-      if (Math.abs(diffX) > 40 || diffY < -30) {
-        removeToast();
+  let startX = 0,
+    startY = 0;
+  toast.addEventListener(
+    "touchstart",
+    (e) => {
+      if (e.touches.length === 1) {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
       }
-    }
-  }, { passive: true });
+    },
+    { passive: true },
+  );
+
+  toast.addEventListener(
+    "touchend",
+    (e) => {
+      if (e.changedTouches.length === 1) {
+        const diffX = e.changedTouches[0].clientX - startX;
+        const diffY = e.changedTouches[0].clientY - startY;
+        if (Math.abs(diffX) > 40 || diffY < -30) {
+          removeToast();
+        }
+      }
+    },
+    { passive: true },
+  );
 
   container.appendChild(toast);
 
-  // 🚀 강제 리플로우 및 0ms 즉각 진입 애니메이션 보장
+  // 리플로우 및 빠른 진입 애니메이션
   void toast.offsetHeight;
   requestAnimationFrame(() => {
     toast.classList.add("sellnance-toast-show");
@@ -107,7 +119,7 @@ export function showToast(message, type = "success", duration = 2200) {
 }
 
 /**
- * 🚀 확인 / 취소 모달 다이얼로그 (Promise 기반)
+ * 확인 / 취소 모달 다이얼로그 (Promise 기반)
  * @param {object} options
  * @returns {Promise<boolean>}
  */
@@ -201,12 +213,16 @@ export function showConfirm({
   });
 }
 
-// 🚀 SweetAlert2 완전 호환 드롭인 브릿지
+// SweetAlert2 호환 브릿지
 export const SwalBridge = {
   fire: function (opts = {}) {
     if (typeof opts === "string") {
       showToast(opts, "info");
-      return Promise.resolve({ isConfirmed: true, isDenied: false, isDismissed: false });
+      return Promise.resolve({
+        isConfirmed: true,
+        isDenied: false,
+        isDismissed: false,
+      });
     }
 
     if (opts.toast) {
@@ -214,7 +230,11 @@ export const SwalBridge = {
       const type = opts.icon || "info";
       const timer = typeof opts.timer === "number" ? opts.timer : 2200;
       showToast(msg, type, timer);
-      return Promise.resolve({ isConfirmed: true, isDenied: false, isDismissed: false });
+      return Promise.resolve({
+        isConfirmed: true,
+        isDenied: false,
+        isDismissed: false,
+      });
     }
 
     return showConfirm({
@@ -235,7 +255,7 @@ export const SwalBridge = {
   },
 };
 
-// 글로벌 바인딩
+// 전역 바인딩
 if (typeof window !== "undefined") {
   window.showToast = showToast;
   window.showConfirm = showConfirm;

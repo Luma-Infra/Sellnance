@@ -30,18 +30,18 @@ func main() {
 	// 4. 정적 파일 및 템플릿 서빙
 	app.Static("/static", "./static")
 
-	// 🚀 [이식] 뼈대 HTML 렌더링
+	// [이식] 뼈대 HTML 렌더링
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendFile("./templates/index.html")
 	})
 
 	// 5. API 라우터 (JS가 찌르는 주소들)
 	app.Get("/api/market-data", func(c *fiber.Ctx) error {
-		// 🚀 [중요] 사용자가 강제 갱신 버튼을 눌렀을 때의 방어
+		// [중요] 사용자가 갱신 버튼을 눌렀을 경우
 		if c.Query("force") == "true" {
 			ForceUpdateCache() // 동기 대기 후 데이터 반환
 		}
-		// Redis 없이 메모리에서 바로 0.001초 컷으로 꺼내옴
+		// Redis 없이 메모리에서 바로 꺼내옴
 		data, lastUpdated := GetCachedData()
 		return c.JSON(fiber.Map{
 			"data":         data,
@@ -49,10 +49,10 @@ func main() {
 		})
 	})
 
-	// 🚀 [이식 3] 실시간 마켓 맵 조회 (캐시 0.01초 컷)
+	// [이식 3] 실시간 마켓 맵 조회
 	app.Get("/api/market-map", func(c *fiber.Ctx) error {
 		data, _ := GetCachedData()
-		
+
 		spot := []string{}
 		upbit := []string{}
 		futures := []string{}
@@ -60,13 +60,15 @@ func main() {
 
 		for _, item := range data {
 			sym, ok := item["Symbol"].(string)
-			if !ok { continue }
-			
+			if !ok {
+				continue
+			}
+
 			if item["Upbit"] == "O" {
 				upbit = append(upbit, sym)
 				allAssetsMap[sym] = true
 			}
-			
+
 			if exchanges, ok := item["Listed_Exchanges"].([]interface{}); ok {
 				for _, ex := range exchanges {
 					if ex == "BINANCE_FUTURES" {
@@ -93,7 +95,7 @@ func main() {
 		})
 	})
 
-	// 🚀 [이식 4] 개별 코인 정보 조회 (CMC 크레딧 방어)
+	// [이식 4] 개별 코인 정보 조회
 	app.Get("/api/coin-info/:asset", func(c *fiber.Ctx) error {
 		asset := c.Params("asset")
 		data, _ := GetCachedData()
@@ -101,7 +103,7 @@ func main() {
 		for _, item := range data {
 			sym, _ := item["Symbol"].(string)
 			disp, _ := item["DisplayTicker"].(string)
-			
+
 			if sym == asset || disp == asset {
 				return c.JSON(fiber.Map{
 					"asset":      asset,
@@ -113,7 +115,7 @@ func main() {
 		return c.JSON(fiber.Map{"asset": asset, "name": asset, "market_cap": "정보 없음"})
 	})
 
-	// 🚀 [이식 5] 차트 프록시 (FastAPI의 requests.get 대체 및 고속화)
+	// [이식 5] 차트 프록시 (FastAPI의 requests.get 대체 및 고속화)
 	app.Get("/api/candles", func(c *fiber.Ctx) error {
 		exchange := c.Query("exchange")
 		symbol := c.Query("symbol")
@@ -134,20 +136,28 @@ func main() {
 		} else if exchange == "bybit" {
 			// 바이비트 인터벌 변환 (1d -> D, 1w -> W 등)
 			bybitInterval := interval
-			if interval == "1d" { bybitInterval = "D" }
-			if interval == "1w" { bybitInterval = "W" }
-			if interval == "1M" { bybitInterval = "M" }
+			if interval == "1d" {
+				bybitInterval = "D"
+			}
+			if interval == "1w" {
+				bybitInterval = "W"
+			}
+			if interval == "1M" {
+				bybitInterval = "M"
+			}
 			url = fmt.Sprintf("https://api.bybit.com/v5/market/kline?category=spot&symbol=%s&interval=%s&limit=%s", symbol, bybitInterval, limit)
 		} else if exchange == "bithumb" {
 			// 빗썸 인터벌 변환 (1d -> 24h)
 			bithumbInterval := interval
-			if interval == "1d" { bithumbInterval = "24h" }
+			if interval == "1d" {
+				bithumbInterval = "24h"
+			}
 			url = fmt.Sprintf("https://api.bithumb.com/public/candlestick/%s/%s", symbol, bithumbInterval)
 		} else {
 			return c.Status(400).JSON(fiber.Map{"error": "알 수 없는 거래소입니다."})
 		}
 
-		// Fiber의 자체 HTTP 클라이언트로 초고속 비동기 요청
+		// Fiber의 자체 HTTP 클라이언트로 비동기 요청
 		agent := fiber.Get(url).Timeout(10 * time.Second) // 대량 캔들 수집을 위해 타임아웃 증가
 		if exchange == "upbit" {
 			agent.Set("Accept", "application/json")
@@ -165,7 +175,7 @@ func main() {
 		return c.Send(body)
 	})
 
-	// 🚀 [이식 6] SSE 진행률 빨대 (StreamingResponse 완벽 구현)
+	// [이식 6] SSE 진행률 (StreamingResponse 구현)
 	app.Get("/api/progress", func(c *fiber.Ctx) error {
 		c.Set("Content-Type", "text/event-stream")
 		c.Set("Cache-Control", "no-cache")
@@ -195,13 +205,13 @@ func main() {
 	log.Fatal(app.Listen(":8000"))
 }
 
-// ⏰ KST 기준 9시 정각 리셋 스케줄러
+// KST 기준 9시 정각 리셋 스케줄러
 func DailyResetScheduler() {
 	loc, _ := time.LoadLocation("Asia/Seoul")
 	for {
 		now := time.Now().In(loc)
 		if now.Hour() == 9 && now.Minute() == 0 && now.Second() < 30 {
-			log.Println("⏰ 스케줄러: 9시 정각! 캐시 강제 갱신!")
+			log.Println("⏰ 스케줄러: 9시 정각이므로 캐시를 갱신합니다")
 			ForceUpdateCache()
 			time.Sleep(30 * time.Second) // 중복 실행 방지
 		}

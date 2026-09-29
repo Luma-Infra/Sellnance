@@ -110,13 +110,10 @@ async function _fetchCandlesSmartInternal(
   );
 
   // 1. 브라우저 직접 호출 (바이낸스/바이비트 직통)
-  // ⚠️ 주의: 업비트는 브라우저 Origin 헤더 감지 시 '10초당 1회'로 극단적 제한을 걸기 때문에
-  // 업비트는 브라우저 직접 fetch를 하지 않고 서버 백엔드 프록시(/api/candles)를 경유합니다.
+  //️ 주의: 업비트는 브라우저 Origin 헤더 감지 시 10초당 1회로 제한을 걸기 때문에
+  // 업비트는 브라우저 직접 fetch를 하지 않고 서버 백엔드 프록시(/api/candles)를 경유
   const isUpbit = exchange === "upbit";
-  const canDirectFetch =
-    !isGapRecovery &&
-    !isUpbit &&
-    (!toVal && !startVal);
+  const canDirectFetch = !isGapRecovery && !isUpbit && !toVal && !startVal;
 
   if (canDirectFetch) {
     try {
@@ -164,7 +161,7 @@ async function _fetchCandlesSmartInternal(
         const fetchTimeout = exchange === "upbit" ? 1500 : 500;
         const fetchSignal =
           typeof AbortSignal !== "undefined" &&
-            typeof AbortSignal.timeout === "function"
+          typeof AbortSignal.timeout === "function"
             ? AbortSignal.timeout(fetchTimeout)
             : undefined;
         const res = await fetch(directUrl, { signal: fetchSignal });
@@ -273,11 +270,11 @@ export async function fetchPaginated(
     remaining -= data.length;
     lastTo = data[data.length - 1].candle_date_time_utc;
 
-    // [1차 즉시 렌더링]: 첫 1회차(최신 200개)가 들어오자마자 화면에 0.05초 만에 선행 표시!
+    // [1차 렌더링]: 첫 1회차(최신 200개)가 들어오자마자 화면에 표시
     if (onFirstBatch && result.length === data.length && remaining > 0) {
       try {
         onFirstBatch([...result]);
-      } catch (e) { }
+      } catch (e) {}
     }
 
     if (remaining > 0) {
@@ -321,7 +318,7 @@ export function mapTime(d, tf) {
 }
 
 export function clearChartData(isTfChange = false) {
-  // 🚀 [과거 데이터 Lazy 로딩 취소 및 인디케이터 은닉]
+  // [과거 데이터 Lazy 로딩 취소 및 인디케이터 은닉]
   store.isLoadingMoreHistory = false;
   const lazyIndicator = document.getElementById("chart-lazy-loading-indicator");
   if (lazyIndicator) {
@@ -329,18 +326,18 @@ export function clearChartData(isTfChange = false) {
     lazyIndicator.classList.add("opacity-0", "scale-95", "pointer-events-none");
   }
 
-  // 🚀 [우측 가격축 여백 유지] 데이터 페칭 중 0px로 찌그러지는 깜빡임을 방지하고, 데이터 도착 시 syncPriceScaleWidths(true)로 즉시 확정
+  // [우측 가격축 여백 유지] 데이터 페칭 중 0px로 찌그러지는 깜빡임을 방지하고, 데이터 도착 시 syncPriceScaleWidths(true)로 즉시 확정
   store.isUserZoomed = false;
   store._symbolToRowCache = null;
 
-  // 🚀 코인 변경 및 타임프레임 변경 시: 기존 캔들과 김프 데이터를 모두 유지하여 눈의 피로(깜빡임)를 완벽히 제거합니다.
+  // 코인 변경 및 타임프레임 변경 시: 기존 캔들과 김프 데이터를 모두 유지하여 눈의 피로(깜빡임)를 제거
   // (새로운 데이터를 받아오는 순간 한 방에 덮어씌움으로써 자연스럽고 부드럽게 전환)
   if (!isTfChange && store.countdownPriceLine && store.candleSeries) {
     store.candleSeries.removePriceLine(store.countdownPriceLine);
     store.countdownPriceLine = null;
   }
 
-  // 🚀 사슴 마커는 코인/타임프레임 전환 시 즉시 증발해야 하므로 지워줍니다.
+  // 사슴 마커는 코인/타임프레임 전환 시 즉시 증발해야 하므로 지워주기
   if (
     store.candleSeries &&
     typeof store.candleSeries.setMarkers === "function"
@@ -355,13 +352,10 @@ export function clearChartData(isTfChange = false) {
   }
   store.hasPlacedDeer = false;
 
-  console
-    .log
-    // "🧹 차트/타임프레임 변경: 기존 차트 잔상 유지 (사슴 마커는 즉시 제거)",
-    ();
+  // console.log("차트/타임프레임 변경: 기존 차트 유지 (사슴 마커는 제거)");
 }
 
-// 🚀 [역할 분리] 메인 차트 초기화 및 캔들 조립 엔진은 chart_fetch.js로 분리 이관 완료
+// [역할 분리] 메인 차트 초기화 및 캔들 조립 엔진은 chart_fetch.js로 분리 이관 완료
 export { fetchHistory };
 
 window.switchKimchiSub = function (newSubId) {
@@ -370,12 +364,12 @@ window.switchKimchiSub = function (newSubId) {
     window.isFetchingChart ||
     store.isKimchiLoading
   ) {
-    return; // 🚀 차트/김프 데이터 로딩 중에는 중복 클릭 및 교체 차단
+    return; // 차트/김프 데이터 로딩 중에는 중복 클릭 및 교체 차단
   }
   const currentSub =
     store.preferredKimchiSub || store.lastFetchParams?.subExchange;
   if (currentSub === newSubId) {
-    return; // 🚀 이미 활성화된 거래소를 중복 클릭한 경우 불필요한 네트워크 요청 없이 즉시 리턴
+    return; // 이미 활성화된 거래소를 중복 클릭한 경우 불필요한 네트워크 요청 없이 즉시 리턴
   }
   store.preferredKimchiSub = newSubId;
   if (typeof window.showKimchiLoading === "function") {
@@ -451,7 +445,7 @@ window.switchKimchiSub = function (newSubId) {
   }
 };
 
-// 🦌 과거 좌측 제일 끝에 도달했을 때 사슴 마커(노란 원 없이)를 배치하는 함수 (김프 차트도 동시 삽입)
+// 과거 좌측 제일 끝에 도달했을 때 사슴 마커(노란 원 없이)를 배치하는 함수 (김프 차트도 동시 삽입)
 // export function placeDeerAtEnd(params) {
 //   if (store.hasPlacedDeer) return;
 //   store.hasPlacedDeer = true;
@@ -484,7 +478,7 @@ window.switchKimchiSub = function (newSubId) {
 //     const deerMarker = {
 //       time: markerTime,
 //       position: "aboveBar",
-//       color: "transparent", // 노란색 원형 점을 완전히 없애고 투명하게 처리
+//       color: "transparent", // 노란색 원형 점을 없애고 투명하게 처리
 //       text: "🦌",
 //       size: 1.5,
 //     };

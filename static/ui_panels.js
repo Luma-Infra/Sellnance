@@ -1,5 +1,5 @@
 // ui_panels.js
-// 🖥️ [사이드바, 패널 스왑, 뷰 모드, 온보딩 모달 제어 모듈]
+//️ [사이드바, 패널 스왑, 뷰 모드, 온보딩 모달 제어 모듈]
 import { store } from "./_store.js";
 import { fetchHistory } from "./chart_data.js";
 import { showConfirm } from "./ui_dialog.js";
@@ -40,7 +40,7 @@ export function switchViewMode(mode, saveToStorage = true) {
   if (saveToStorage) {
     try {
       localStorage.setItem("sellnance_table_view_mode", mode);
-    } catch (e) { }
+    } catch (e) {}
   }
 
   panel.classList.remove(
@@ -92,14 +92,14 @@ export function switchViewMode(mode, saveToStorage = true) {
 let _panelSwapTimer = null;
 let _panelSwapLayoutTimer = null;
 
-// 🚀 좌우 패널 위치 스왑 (FLIP 애니메이션)
+// 좌우 패널 위치 스왑 (FLIP 애니메이션)
 export function togglePanelSwap() {
   const container = document.getElementById("panel-split-container");
   const leftPanel = document.getElementById("left-panel");
   const rightPanel = document.getElementById("right-panel");
   if (!container || !leftPanel || !rightPanel) return;
 
-  // 이전 진행 중인 애니메이션/타이머 즉시 정리
+  // 이전 진행 중인 애니메이션/타이머 정리
   if (_panelSwapTimer) clearTimeout(_panelSwapTimer);
   if (_panelSwapLayoutTimer) clearTimeout(_panelSwapLayoutTimer);
   leftPanel.style.transition = "none";
@@ -121,7 +121,11 @@ export function togglePanelSwap() {
   if (isCurrentlySwapped) {
     document.documentElement.classList.remove("panel-swapped-mode");
     container.style.setProperty("flex-direction", "row", "important");
-    container.classList.remove("panel-swapped", "flex-row-reverse", "md:flex-row-reverse");
+    container.classList.remove(
+      "panel-swapped",
+      "flex-row-reverse",
+      "md:flex-row-reverse",
+    );
     container.classList.add("flex-row");
     leftPanel.style.borderRightWidth = "";
     leftPanel.style.borderLeftWidth = "";
@@ -149,7 +153,7 @@ export function togglePanelSwap() {
   leftPanel.style.transform = `translateX(${deltaLeft}px)`;
   rightPanel.style.transform = `translateX(${deltaRight}px)`;
 
-  // 강제 Reflow 유도
+  // Reflow 유도
   void leftPanel.offsetWidth;
 
   // 5. Play (목표 위치로 부드럽게 슬라이드 애니메이션)
@@ -190,7 +194,8 @@ export function showOnboardingModal(force = false) {
   if (!modal || !content) return;
 
   // 로컬 저장소 상태를 읽어 체크박스 동기화
-  const isNeverShow = localStorage.getItem("sellnance_onboarding_shown") === "true";
+  const isNeverShow =
+    localStorage.getItem("sellnance_onboarding_shown") === "true";
   const neverShowChk = document.getElementById("onboarding-never-show");
   if (neverShowChk) {
     neverShowChk.checked = isNeverShow;
@@ -243,8 +248,8 @@ export function checkLayoutOverlap() {
     typeof window.isTouchDevice === "function"
       ? window.isTouchDevice()
       : /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-        navigator.userAgent || "",
-      );
+          navigator.userAgent || "",
+        );
 
   // 1. 진짜 모바일/F12 터치 기기일 때 (<1200px)
   if (isTouch && window.innerWidth < 1200) {
@@ -256,11 +261,14 @@ export function checkLayoutOverlap() {
     return;
   }
 
-  // 2. PC 데스크탑 환경: F12 모바일 모달 강제 정리 & right-panel 원래 자리로 즉시 복원
+  // 2. PC 데스크탑 환경: F12 모바일 모달 정리 & right-panel 원래 자리로 복원
   const mainContainer = document.getElementById("panel-split-container");
   const overlay = document.getElementById("mobile-chart-overlay");
 
-  if (overlay && (!overlay.classList.contains("hidden") || overlay.style.opacity === "1")) {
+  if (
+    overlay &&
+    (!overlay.classList.contains("hidden") || overlay.style.opacity === "1")
+  ) {
     overlay.style.cssText = "";
     overlay.classList.add("hidden");
   }
@@ -311,7 +319,7 @@ export function adjustNoticeFontSizes() {
     const text = div.innerText || "";
     const len = text.length;
 
-    // 🚀 감쇄율 2배 완화(0.45 -> 0.22) & 하한선 상향(0.45 -> 0.65rem): 글자가 덜 깎이고 시인성 보장
+    // 글자 크기 및 시인성 고려해서 증감 보정
     const threshold = 40;
     const baseRem = 0.75;
     const minRem = 0.65;
@@ -333,7 +341,7 @@ export function adjustNoticeFontSizes() {
   });
 }
 
-// 🚀 창 크기 변경 시 렉 방지: 150ms 디바운스 적용
+// 창 크기 변경 시 렉 방지 위한 디바운스 적용
 let _overlapDebounceTimer = null;
 window.addEventListener("resize", () => {
   if (_overlapDebounceTimer) clearTimeout(_overlapDebounceTimer);
@@ -348,7 +356,7 @@ document.addEventListener("DOMContentLoaded", () => {
     adjustNoticeFontSizes();
   }, 200);
 
-  // 🚀 모바일 환경: 가격 축 터치 시 A/L 버튼 표시, 차트 터치 시 숨김 (트뷰 앱 방식)
+  // 모바일 환경: 가격 축 터치 시 A/L 버튼 표시, 차트 터치 시 숨김 (트뷰 앱 방식)
   const paneMain = document.getElementById("pane-main");
   if (paneMain) {
     const scaleContainer = paneMain.querySelector(".scale-mode-container");
@@ -428,12 +436,15 @@ export function executeTabSwitch(mode) {
       window.destroyQuickView();
     }
 
-    // 시뮬레이션에서 복귀할 때만 가격 축 너비 완전 초기화 (시뮬 가격 기준 잔상 제거)
-    if (prevTab === "sim" && typeof window.resetPriceScaleWidthSync === "function") {
+    // 시뮬레이션에서 복귀할 때만 가격 축 너비 초기화
+    if (
+      prevTab === "sim" &&
+      typeof window.resetPriceScaleWidthSync === "function"
+    ) {
       window.resetPriceScaleWidthSync();
     }
 
-    // 🚀 퀵뷰 복귀 시 불필요한 차트 재조회(fetchHistory) 제거 -> 즉시 복귀
+    // 퀵뷰 복귀 시 불필요한 차트 재조회(fetchHistory) 제거 이후 복귀
     requestAnimationFrame(() => {
       if (typeof window.applyChartLayout === "function") {
         window.applyChartLayout();
@@ -491,7 +502,7 @@ export function executeTabSwitch(mode) {
   }
 }
 
-// 🚀 전역 노출
+// 전역 노출
 window.toggleSidebar = toggleSidebar;
 window.switchViewMode = switchViewMode;
 window.togglePanelSwap = togglePanelSwap;
@@ -501,4 +512,3 @@ window.checkLayoutOverlap = checkLayoutOverlap;
 window.adjustNoticeFontSizes = adjustNoticeFontSizes;
 window.switchChartTab = switchChartTab;
 window.executeTabSwitch = executeTabSwitch;
-

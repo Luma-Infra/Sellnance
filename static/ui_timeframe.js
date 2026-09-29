@@ -1,22 +1,22 @@
 // ui_timeframe.js
-// ⏱️ [차트 타임프레임(주기) 및 스케일 제어 전담 모듈]
+//️ [차트 타임프레임(주기) 및 스케일 제어 전담 모듈]
 import { store } from "./_store.js";
 import { fetchHistory } from "./chart_data.js";
 import { showConfirm } from "./ui_dialog.js";
 
 export const timeframes = [
-  { label: "1분", value: "1m" },
-  { label: "3분", value: "3m" },
-  { label: "5분", value: "5m" },
-  { label: "15분", value: "15m" },
-  { label: "30분", value: "30m" },
-  { label: "1시간", value: "1h" },
-  { label: "4시간", value: "4h" },
-  { label: "12시간", value: "12h" },
+  { label: "1", value: "1m" },
+  { label: "3", value: "3m" },
+  { label: "5", value: "5m" },
+  { label: "15", value: "15m" },
+  { label: "30", value: "30m" },
+  { label: "1H", value: "1h" },
+  { label: "4H", value: "4h" },
+  { label: "12H", value: "12h" },
   { label: "1D", value: "1d" },
   { label: "3D", value: "3d" },
   { label: "1W", value: "1w" },
-  { label: "1달", value: "1M" },
+  { label: "1M", value: "1M" },
 ];
 
 export function getVisibleTfs() {
@@ -30,7 +30,7 @@ export function getVisibleTfs() {
         );
       }
     }
-  } catch (e) { }
+  } catch (e) {}
   return timeframes.map((t) => t.value);
 }
 
@@ -47,7 +47,7 @@ export function renderTimeframeButtons(currentTF = "1d") {
 
   const visibleVals = getVisibleTfs();
   if (!visibleVals.includes(currentTF)) {
-    currentTF = visibleVals.includes("1d") ? "1d" : (visibleVals[0] || "1d");
+    currentTF = visibleVals.includes("1d") ? "1d" : visibleVals[0] || "1d";
   }
 
   timeframes
@@ -60,7 +60,7 @@ export function renderTimeframeButtons(currentTF = "1d") {
         tf.value === currentTF
           ? "active !opacity-100 border-theme-accent font-bold"
           : "border-transparent";
-      btn.className = `tf-btn outline-none focus:outline-none focus:ring-0 focus-visible:outline-none px-2.5 py-1 text-[11px] font-medium bg-transparent text-theme-text opacity-50 border rounded hover:bg-theme-border/50 hover:opacity-100 transition-all select-none cursor-pointer ${activeClass}`;
+      btn.className = `tf-btn outline-none focus:outline-none focus:ring-0 focus-visible:outline-none px-1.5 py-1 text-[11px] font-medium bg-transparent text-theme-text opacity-50 border rounded hover:bg-theme-border/50 hover:opacity-100 transition-all select-none cursor-pointer ${activeClass}`;
       btn.dataset.tf = tf.value;
       btn.innerText = tf.label;
       btn.onclick = () => {
@@ -75,7 +75,7 @@ export function renderTimeframeButtons(currentTF = "1d") {
     requestAnimationFrame(() => window.updateElementScrollMask(container));
   }
 
-  // 🚀 [모바일 UX 혁신] 선택된 활성 봉(1d, 3d, 1w 등)이 화면 밖으로 가려지지 않고 즉시 보이도록 스크롤 자동 정렬!
+  // [모바일 UX] 선택된 활성 봉(1d, 3d, 1w 등)이 화면 밖으로 가려지지 않고 보이도록 스크롤 자동 정렬
   requestAnimationFrame(() => {
     scrollActiveTfIntoView(true);
   });
@@ -125,7 +125,12 @@ export function syncChartControlsModalUI() {
 
   updateBtn("modal-ctrl-ohlc", isOhlc, "OHLC 정보 ON", "OHLC 정보 OFF");
   updateBtn("modal-ctrl-pct", isPct, "우측 % 켜짐", "우측 % 꺼짐");
-  updateBtn("modal-ctrl-countdown", isCountdown, "카운트다운 ON", "카운트다운 OFF");
+  updateBtn(
+    "modal-ctrl-countdown",
+    isCountdown,
+    "카운트다운 ON",
+    "카운트다운 OFF",
+  );
   updateBtn("modal-ctrl-kimchi", isKimchi, "김프 비교 ON", "김프 비교 OFF");
 }
 
@@ -162,10 +167,11 @@ export function renderTfCheckboxList() {
     const btn = document.createElement("button");
     const isChecked = visibleVals.includes(tf.value);
 
-    btn.className = `px-2 py-1.5 text-[11px] font-bold rounded border transition-all cursor-pointer ${isChecked
-      ? "bg-theme-accent text-white border-theme-accent shadow-sm"
-      : "bg-theme-panel/50 text-theme-text opacity-50 border-theme-border/50 hover:opacity-100 hover:border-theme-border"
-      }`;
+    btn.className = `px-2 py-1.5 text-[11px] font-bold rounded border transition-all cursor-pointer ${
+      isChecked
+        ? "bg-theme-accent text-white border-theme-accent shadow-sm"
+        : "bg-theme-panel/50 text-theme-text opacity-50 border-theme-border/50 hover:opacity-100 hover:border-theme-border"
+    }`;
     btn.innerText = tf.label;
 
     btn.addEventListener("click", (e) => {
@@ -183,7 +189,9 @@ export function renderTfCheckboxList() {
       } else {
         // 새로 켤 때: 원본 timeframes 순서대로 정렬 유지
         const allKeys = timeframes.map((t) => t.value);
-        nextVisible = allKeys.filter((v) => currentVisible.includes(v) || v === tf.value);
+        nextVisible = allKeys.filter(
+          (v) => currentVisible.includes(v) || v === tf.value,
+        );
       }
 
       // 1. 즉시 저장
@@ -203,7 +211,7 @@ export function renderTfCheckboxList() {
         renderFn(activeTf);
       }
 
-      // 3. 모달 내부 체크박스 UI 즉시 갱신
+      // 3. 모달 내부 체크박스 UI 갱신
       renderTfCheckboxList();
     });
 
@@ -245,10 +253,10 @@ export function setTF(tf) {
   if (isSimMode) {
     showConfirm({
       title: "초기화 경고!",
-      text: "타임프레임을 변경하면 현재 그려둔 가상 차트가 모두 날아갑니다. 바꿀까요?",
+      text: "타임프레임을 변경하면 현재 그려둔 가상 캔들이 모두 사라져요, 그래도 바꿀까요?",
       icon: "warning",
-      confirmText: "네, 변경할게요 🚀",
-      cancelText: "아니요, 취소",
+      confirmText: "✅ 네, 변경할게요",
+      cancelText: "❌ 아니요, 취소할게요",
       confirmColor: "var(--up)",
       cancelColor: "transparent",
       showCancelButton: true,
@@ -264,11 +272,12 @@ export function executeSetTF(tf) {
   store.currentTF = tf;
   try {
     localStorage.setItem("sellnance_last_tf", tf);
-  } catch (e) { }
+  } catch (e) {}
 
-  if (typeof window.flushRealtimeBuffers === "function") window.flushRealtimeBuffers();
+  if (typeof window.flushRealtimeBuffers === "function")
+    window.flushRealtimeBuffers();
 
-  // 🚀 [0ms 즉시 피드백] DOM 전체를 파괴하고 다시 만들지 않고, 활성 클래스만 0ms 즉각 전환
+  // DOM 전체를 파괴하고 다시 만들지 않고, 활성 클래스만 전환
   let activeBtn = null;
   document.querySelectorAll(".tf-btn").forEach((b) => {
     const isMatch = b.dataset.tf === tf;
@@ -281,7 +290,10 @@ export function executeSetTF(tf) {
     if (isMatch) activeBtn = b;
   });
 
-  if (document.activeElement && document.activeElement.classList.contains("tf-btn")) {
+  if (
+    document.activeElement &&
+    document.activeElement.classList.contains("tf-btn")
+  ) {
     document.activeElement.blur();
   }
 
@@ -392,7 +404,7 @@ export function toggleLogScale(forceVal) {
   }
 }
 
-// 🚀 전역 노출
+// 전역 노출
 window.setTF = setTF;
 window.executeSetTF = executeSetTF;
 window.toggleLogScale = toggleLogScale;
@@ -407,7 +419,8 @@ function handleOutsideTfClick(e) {
 
   const btn =
     document.getElementById("tf-settings-toggle-btn") ||
-    (e.target.closest && e.target.closest("button[onclick*='toggleTfSettings']"));
+    (e.target.closest &&
+      e.target.closest("button[onclick*='toggleTfSettings']"));
 
   if (btn && (btn === e.target || btn.contains(e.target))) return;
   if (!dropdown.contains(e.target)) {
@@ -416,5 +429,8 @@ function handleOutsideTfClick(e) {
 }
 
 document.addEventListener("pointerdown", handleOutsideTfClick, true);
-document.addEventListener("touchstart", handleOutsideTfClick, { capture: true, passive: true });
+document.addEventListener("touchstart", handleOutsideTfClick, {
+  capture: true,
+  passive: true,
+});
 document.addEventListener("click", handleOutsideTfClick, true);

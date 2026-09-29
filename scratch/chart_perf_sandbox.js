@@ -1,7 +1,7 @@
 // scratch/chart_perf_sandbox.js
 /**
- * 🚀 차트 실시간 렌더링 및 인터랙션 성능 정밀 계측 샌드박스 프로파일러
- * 
+ * 차트 실시간 렌더링 및 인터랙션 성능 정밀 계측 샌드박스 프로파일러
+ *
  * 계측 대상:
  * 1. syncPriceScaleWidths (너비 동기화)
  * 2. renderRealtimeUpdate (실시간 틱 캔들 렌더링)
@@ -13,7 +13,10 @@
  */
 
 (function initChartSandboxProfiler() {
-  console.log("%c🔥 [Chart Profiler Sandbox] 계측 시작...", "color: #00ffaa; font-weight: bold; font-size: 14px;");
+  console.log(
+    "%c🔥 [Chart Profiler Sandbox] 계측 시작...",
+    "color: #00ffaa; font-weight: bold; font-size: 14px;",
+  );
 
   const metrics = {
     calls: {},
@@ -58,7 +61,11 @@
   if (window.store) {
     if (window.store.candleSeries) {
       profileFunc(window.store.candleSeries, "update", "candleSeries.update");
-      profileFunc(window.store.candleSeries, "applyOptions", "candleSeries.applyOptions");
+      profileFunc(
+        window.store.candleSeries,
+        "applyOptions",
+        "candleSeries.applyOptions",
+      );
     }
     if (window.store.volumeSeries) {
       profileFunc(window.store.volumeSeries, "update", "volumeSeries.update");
@@ -71,18 +78,34 @@
       profileFunc(window.store.chart, "applyOptions", "mainChart.applyOptions");
       if (window.store.chart.timeScale) {
         const ts = window.store.chart.timeScale();
-        profileFunc(ts, "setVisibleLogicalRange", "mainChart.setVisibleLogicalRange");
+        profileFunc(
+          ts,
+          "setVisibleLogicalRange",
+          "mainChart.setVisibleLogicalRange",
+        );
       }
     }
     if (window.store.chartVol) {
-      profileFunc(window.store.chartVol, "applyOptions", "volChart.applyOptions");
+      profileFunc(
+        window.store.chartVol,
+        "applyOptions",
+        "volChart.applyOptions",
+      );
       if (window.store.chartVol.timeScale) {
         const ts = window.store.chartVol.timeScale();
-        profileFunc(ts, "setVisibleLogicalRange", "volChart.setVisibleLogicalRange");
+        profileFunc(
+          ts,
+          "setVisibleLogicalRange",
+          "volChart.setVisibleLogicalRange",
+        );
       }
     }
     if (window.store._drawingPrimitive) {
-      profileFunc(window.store._drawingPrimitive, "updateAll", "drawingPrimitive.updateAll");
+      profileFunc(
+        window.store._drawingPrimitive,
+        "updateAll",
+        "drawingPrimitive.updateAll",
+      );
     }
   }
 
@@ -97,7 +120,7 @@
     lastFrameTime = now;
     metrics.totalFrames++;
 
-    // 16.6ms 기준 초과 프레임(렉) 카운트
+    // rAF ~ 기준 초과 프레임(렉) 카운트
     if (delta > 20) {
       metrics.longFrames++;
     }
@@ -115,16 +138,25 @@
 
   // 4. 리포트 출력 함수
   window.__dumpPerfReport = function () {
-    console.log("\n================ 📊 [차트 샌드박스 성능 프로파일링 결과 리포트] ================");
+    console.log(
+      "\n================ 📊 [차트 샌드박스 성능 프로파일링 결과 리포트] ================",
+    );
     const avgFps = metrics.fpsHistory.length
-      ? (metrics.fpsHistory.reduce((a, b) => a + b, 0) / metrics.fpsHistory.length).toFixed(1)
+      ? (
+          metrics.fpsHistory.reduce((a, b) => a + b, 0) /
+          metrics.fpsHistory.length
+        ).toFixed(1)
       : "N/A";
     const jankRate = metrics.totalFrames
       ? ((metrics.longFrames / metrics.totalFrames) * 100).toFixed(1)
       : 0;
 
-    console.log(`🎯 평균 FPS: ${avgFps} fps | 총 프레임: ${metrics.totalFrames} | 렉 발생 프레임(>20ms): ${metrics.longFrames} (${jankRate}%)`);
-    console.log("--------------------------------------------------------------------------------");
+    console.log(
+      `🎯 평균 FPS: ${avgFps} fps | 총 프레임: ${metrics.totalFrames} | 렉 발생 프레임(>20ms): ${metrics.longFrames} (${jankRate}%)`,
+    );
+    console.log(
+      "--------------------------------------------------------------------------------",
+    );
 
     const reportTable = Object.keys(metrics.calls).map((label) => {
       const calls = metrics.calls[label];
@@ -143,7 +175,9 @@
     // 점유시간 기준 내림차순 정렬
     reportTable.sort((a, b) => b["총 점유시간 (ms)"] - a["총 점유시간 (ms)"]);
     console.table(reportTable);
-    console.log("================================================================================\n");
+    console.log(
+      "================================================================================\n",
+    );
     return {
       avgFps,
       jankRate,
@@ -153,7 +187,9 @@
 
   // 5. 스트레스 테스트 시뮬레이터 (웹소켓 틱 폭격 + 마우스 인터랙션)
   window.__runStressTest = async function (durationSec = 5, ticksPerSec = 50) {
-    console.log(`\n🚀 [스트레스 테스트 시작] 지속시간: ${durationSec}초, 초당 틱: ${ticksPerSec}개`);
+    console.log(
+      `\n🚀 [스트레스 테스트 시작] 지속시간: ${durationSec}초, 초당 틱: ${ticksPerSec}개`,
+    );
     const intervalMs = 1000 / ticksPerSec;
     const startTime = Date.now();
     let tickCount = 0;
@@ -161,16 +197,23 @@
     const stressInterval = setInterval(() => {
       if (Date.now() - startTime > durationSec * 1000) {
         clearInterval(stressInterval);
-        console.log(`✅ [스트레스 테스트 완료] 총 ${tickCount}개 틱 주입 완료. 결과 집계 중...`);
+        console.log(
+          `✅ [스트레스 테스트 완료] 총 ${tickCount}개 틱 주입 완료. 결과 집계 중...`,
+        );
         setTimeout(() => {
           window.__dumpPerfReport();
         }, 500);
         return;
       }
 
-      if (window.store && window.store.mainData && window.store.mainData.length) {
+      if (
+        window.store &&
+        window.store.mainData &&
+        window.store.mainData.length
+      ) {
         const last = window.store.mainData[window.store.mainData.length - 1];
-        const fakePrice = Number(last.close) * (1 + (Math.random() - 0.5) * 0.001);
+        const fakePrice =
+          Number(last.close) * (1 + (Math.random() - 0.5) * 0.001);
         const fakeQty = Math.random() * 2;
 
         // stream_render의 renderRealtimeUpdate 또는 candleSeries.update 호출
@@ -197,5 +240,7 @@
     }, intervalMs);
   };
 
-  console.log("💡 [준비 완료] window.__runStressTest(5, 50) 또는 window.__dumpPerfReport() 로 테스트 가능합니다.");
+  console.log(
+    "💡 [준비 완료] window.__runStressTest(5, 50) 또는 window.__dumpPerfReport() 로 테스트 가능합니다",
+  );
 })();

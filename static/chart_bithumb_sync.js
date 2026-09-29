@@ -1,5 +1,5 @@
 // chart_bithumb_sync.js
-// 🚀 빗썸 전용 KST 시간/가격 정규화 및 분해·재창조 조립 통합 엔진
+// 빗썸 전용 KST 시간/가격 정규화 및 분해·재창조 조립 통합 엔진
 
 import { store } from "./_store.js";
 
@@ -38,11 +38,13 @@ export function getBithumbGroupTime(tSec, tf) {
   if (tf === "1w") {
     const day = dKst.getUTCDay();
     const diff = dKst.getUTCDate() - day + (day === 0 ? -6 : 1);
-    const kstMonTs = Date.UTC(dKst.getUTCFullYear(), dKst.getUTCMonth(), diff, 0, 0, 0) / 1000;
+    const kstMonTs =
+      Date.UTC(dKst.getUTCFullYear(), dKst.getUTCMonth(), diff, 0, 0, 0) / 1000;
     return kstMonTs - 32400;
   }
   if (tf === "1M") {
-    const kstFirstTs = Date.UTC(dKst.getUTCFullYear(), dKst.getUTCMonth(), 1, 0, 0, 0) / 1000;
+    const kstFirstTs =
+      Date.UTC(dKst.getUTCFullYear(), dKst.getUTCMonth(), 1, 0, 0, 0) / 1000;
     return kstFirstTs - 32400;
   }
   return tSec;
@@ -72,10 +74,15 @@ export async function fetchBithumbUnifiedCandles(options) {
   // 1️⃣ 4시간봉, 12시간봉, 일봉, 3일봉, 주봉, 월봉 캔들 수신 (트뷰 본진 직통 aiohttp TV 캔들)
   if (isSynthesisTF) {
     const bFetchInt = ["4h", "12h"].includes(tf) ? tf : "24h";
-    const bData = await fetchCandlesSmart("bithumb", bithumbSym, bFetchInt, 1000);
+    const bData = await fetchCandlesSmart(
+      "bithumb",
+      bithumbSym,
+      bFetchInt,
+      1000,
+    );
     const rawBithumbList = Array.isArray(bData?.data) ? bData.data : [];
 
-    // 🚀 트레이딩뷰 본진 규격(UTC0 기준) 빗썸 캔들을 순수 그대로 반환 (중복 바이낸스 200개 호출 영구 삭제)
+    // 트레이딩뷰 본진 규격(UTC0 기준) 빗썸 캔들을 순수 그대로 반환 (중복 바이낸스 200개 호출 영구 삭제)
     if (rawBithumbList.length > 0) {
       return rawBithumbList
         .map((d) => ({

@@ -5,7 +5,7 @@ import { store } from "./_store.js";
 import { renderTable } from "./table_render.js";
 import { saveControlPanelSession } from "./table_filter.js";
 
-// 🚀 커스텀 로그 스케일 필터 범위 변환 함수
+// 커스텀 로그 스케일 필터 범위 변환 함수
 export function sliderToMcap(v) {
   const num = parseFloat(v);
   if (isNaN(num) || num <= 0) return 0;
@@ -67,7 +67,7 @@ export function formatKoreanMoney(usdVal) {
   return `${krwVal.toFixed(0)}원`;
 }
 
-// 🚀 커스텀 필터 버튼의 활성/비활성 하이라이트 동기화
+// 커스텀 필터 버튼의 활성/비활성 하이라이트 동기화
 export function syncCustomFilterBtnUI() {
   const btnCustom = document.getElementById("btn-custom-filter");
   if (!btnCustom) return;
@@ -99,7 +99,7 @@ export function syncCustomFilterBtnUI() {
   }
 }
 
-// 🚀 슬라이더 UI 텍스트 및 트랙 하이라이트 실시간 갱신
+// 슬라이더 UI 텍스트 및 트랙 하이라이트 실시간 갱신
 export function updateCustomFilterUI() {
   const minMcapEl = document.getElementById("mcap-min");
   const maxMcapEl = document.getElementById("mcap-max");
@@ -170,12 +170,12 @@ export function updateCustomFilterUI() {
   }
 }
 
-// 🚀 커스텀 필터 팝업 위치 동적 계산 (recent-search-chips와 동일한 fixed 오버레이 방식)
+// 커스텀 필터 팝업 위치 동적 계산 (recent-search-chips와 동일한 fixed 오버레이 방식)
 export function positionCustomFilterDropdown(dropdown) {
   const btn = document.getElementById("btn-custom-filter");
   if (!btn || !dropdown) return;
 
-  // 부모의 overflow-hidden 클리핑 및 쌓임 맥락(Stacking Context)을 원천 차단하기 위해 body 직속으로 마운트
+  // 부모의 overflow-hidden 클리핑 및 Stacking Context 현상을 차단하기 위한 body 마운트
   if (dropdown.parentElement !== document.body) {
     document.body.appendChild(dropdown);
   }
@@ -202,7 +202,7 @@ export function positionCustomFilterDropdown(dropdown) {
   dropdown.style.overflowY = "auto";
 }
 
-// 🚀 커스텀 필터 팝업 열기/닫기 토글
+// 커스텀 필터 팝업 열기/닫기 토글
 export function toggleCustomFilter(event) {
   if (event) event.stopPropagation();
   const dropdown = document.getElementById("custom-filter-dropdown");
@@ -276,7 +276,7 @@ export function toggleCustomFilter(event) {
 
     dropdown.classList.remove("hidden");
     dropdown.classList.add("flex");
-    void dropdown.offsetWidth; // 강제 리플로우 (차트 tf 설정과 동일)
+    void dropdown.offsetWidth; // 리플로우 (차트 tf 설정과 동일)
     dropdown.classList.remove("opacity-0", "translate-y-[-10px]");
     dropdown.classList.add("opacity-100", "translate-y-0");
   } else {
@@ -291,7 +291,7 @@ export function toggleCustomFilter(event) {
   }
 }
 
-// 🚀 커스텀 드롭다운 내부 퀵 프리셋: Mcap < 1M 적용
+// 커스텀 드롭다운 내부 퀵 프리셋: Mcap < 1M 적용
 export function toggleSmallCapFromCustom(event) {
   if (event) event.stopPropagation();
   const minMcapEl = document.getElementById("mcap-min");
@@ -305,7 +305,7 @@ export function toggleSmallCapFromCustom(event) {
   applyCustomFilter();
 }
 
-// 🚀 거래량 소스(바낸/업비트) 선택
+// 거래량 소스(바낸/업비트) 선택
 export function setVolSource(source) {
   store.tempVolSource = source;
   const btnBinance = document.getElementById("vol-source-binance");
@@ -330,7 +330,7 @@ export function setVolSource(source) {
   updateCustomFilterUI();
 }
 
-// 🚀 커스텀 필터 적용
+// 커스텀 필터 적용
 export function applyCustomFilter() {
   store.customMcapMin = store.tempMcapMin;
   store.customMcapMax = store.tempMcapMax;
@@ -347,7 +347,7 @@ export function applyCustomFilter() {
   toggleCustomFilter();
 }
 
-// 🚀 커스텀 필터 기본값 리셋
+// 커스텀 필터 기본값 리셋
 export function resetCustomFilter() {
   const minMcapEl = document.getElementById("mcap-min");
   const maxMcapEl = document.getElementById("mcap-max");
@@ -389,7 +389,7 @@ export function resetCustomFilter() {
   if (typeof renderTable === "function") renderTable();
 }
 
-// 🚀 슬라이더 입력 및 트랙 클릭 이벤트 초기화 함수
+// 슬라이더 입력 및 트랙 클릭 이벤트 초기화 함수
 export function initCustomFilterEvents() {
   const minMcapEl = document.getElementById("mcap-min");
   const maxMcapEl = document.getElementById("mcap-max");
@@ -494,7 +494,7 @@ if (typeof window !== "undefined") {
   });
 }
 
-// 글로벌 window 바인딩
+// 전역 window 바인딩
 if (typeof window !== "undefined") {
   window.toggleCustomFilter = toggleCustomFilter;
   window.toggleSmallCapFromCustom = toggleSmallCapFromCustom;

@@ -30,9 +30,9 @@ def atomic_save_json(
     ensure_ascii=False,
 ):
     """
-    동시 쓰기 시 파일 손상(Race condition & corrupted JSON)을 원천 차단하는 원자적 저장 함수
+    동시 쓰기 시 파일 손상(Race condition & corrupted JSON)을 차단하는 원자적 저장 함수
     1) 스레드 락으로 동일 프로세스 내 동시 쓰기 충돌 방지
-    2) 동일 디렉토리에 임시 파일(.tmp) 완전 기록 후 os.replace()로 원자적(Atomic) 교체
+    2) 동일 디렉토리에 임시 파일(.tmp) 기록 후 os.replace()로 원자적(Atomic) 교체
     """
     abs_path = os.path.abspath(str(filepath))
     lock = get_file_lock(abs_path)
@@ -43,7 +43,7 @@ def atomic_save_json(
             dir=dir_name, prefix=".tmp_", suffix=".json"
         )
         try:
-            # [초고속 직렬화] orjson 우선 적용 (CPU 피크 차단)
+            # [고속 직렬화] orjson 우선 적용 (CPU 피크 차단)
             payload = None
             try:
                 import orjson
@@ -126,7 +126,7 @@ def get_precision(tick_size_str):
     """문자열 형태의 틱사이즈에서 소수점 자릿수 추출 (예: "0.0001" -> 4)"""
     if not tick_size_str or "." not in str(tick_size_str):
         return 0
-    # 뒤에 붙은 의미 없는 0을 지우고 소수점 아래 길이를 잽니다.
+    # 뒤에 붙은 의미 없는 0을 지우고 소수점 아래 길이 재기
     return len(str(tick_size_str).split(".")[-1].rstrip("0"))
 
 
@@ -174,7 +174,7 @@ def format_change(percent):
     if percent is None or not isinstance(percent, (int, float)):
         return '<span class="text-theme-text opacity-50">N/A</span>'
 
-    # 하드코딩 색상 빼고 테마 클래스로 변경!
+    # 자연스러운 테마 클래스로 변경
     theme_class = (
         "text-theme-up"
         if percent > 0
@@ -184,7 +184,7 @@ def format_change(percent):
     # 인라인 스타일(font-weight) 대신 Tailwind 클래스로 통일
     weight_class = "font-medium" if abs(percent) >= 5.0 else "font-normal"
 
-    # style="..." 은 완전히 삭제하고 class="..." 만 넘겨줍니다.
+    # style="..." 은 삭제하고 class="..." 만 넘겨주기
     return f'<span class="{theme_class} {weight_class}">{percent:+.2f} %</span>'
 
 
@@ -199,7 +199,7 @@ def get_pure_base_asset(ticker):
     if ticker in ("WBTC", "WETH"):
         return ticker
 
-    # mapping.json의 HARDCODE_VERIFY_SKIP_LIST 예외 캐시 조회 시 바로 반환 (스킵 가드)
+    # mapping.json의 HARDCODE_VERIFY_SKIP_LIST 예외 캐시 조회 시 바로 반환
     if _SKIP_LIST_CACHE and ticker in _SKIP_LIST_CACHE:
         return ticker
 
@@ -253,9 +253,9 @@ _SKIP_LIST_CACHE: list | None = None
 
 def is_valid_ticker(ticker, skip_list=None):
     """
-    영어 대문자, 숫자 이외의 문자가 섞여 있으면 거부합니다.
+    영어 대문자, 숫자 이외의 문자가 섞여 있으면 return
     (한자, 특수문자, 소문자, 이모지 등 온갖 잡다구리한 쓰레기 티커들 사전에 차단)
-    단, HARDCODE_VERIFY_SKIP_LIST에 들어있는 한글/한자/특수문자 티커는 허용합니다.
+    단, HARDCODE_VERIFY_SKIP_LIST에 들어있는 한글/한자/특수문자 티커는 허용
     """
     global _SKIP_LIST_CACHE
     if skip_list is None:
@@ -291,7 +291,7 @@ def is_valid_price_ratio(
 ) -> bool:
     """
     [가격 괴리율 및 동명이인 판별 공통 모듈]
-    기준 가격(ref_price) 대비 대상 가격(target_price)의 비율이 안전 허용 범위 내인지 검증합니다.
+    기준 가격(ref_price) 대비 대상 가격(target_price)의 비율이 안전 허용 범위 내인지 검증
     - 기본 설정: DEFAULT_PRICE_MIN_RATIO ~ DEFAULT_PRICE_MAX_RATIO
     - 한쪽 가격이 없거나 0 이하이면 비교 불가로 True 반환
     """
@@ -308,9 +308,9 @@ def is_valid_price_ratio(
 
 def trim_memory():
     """
-    리눅스 C 표준 라이브러리(glibc) heap 미사용 메모리 즉시 OS 커널 반납 (단편화 방어)
-    - 대용량 데이터 수집/가공 직후 프로세스가 물고 있는 잔여 C 메모리 강제 해제
-    - 윈도우/맥 등 타 OS에서는 에러 없이 안전하게 패스
+    리눅스 C 표준 라이브러리(glibc) heap 미사용 메모리 즉시 OS 커널 반납 (단편화 최소화)
+    - 대용량 데이터 수집/가공 직후 프로세스가 물고 있는 잔여 C 메모리 해제
+    - 윈도우/맥 등 타 OS에서는 에러 없이 안전하게 Pass
     """
     import gc
 

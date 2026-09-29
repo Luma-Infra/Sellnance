@@ -1,14 +1,14 @@
-// Lightweight Charts의 Series prototype 및 차트 동작을 가로채서 데이터 유입과 비동기 렌더링/크로스헤어 이벤트를 전방위 감시합니다.
+// Lightweight Charts의 Series prototype 및 차트 동작을 가로채서 데이터 유입과 비동기 렌더링/크로스헤어 이벤트를 전역 감시하기
 (function () {
   function initTracker() {
     if (!window.LightweightCharts || window.LightweightCharts.__tracked) return;
     window.LightweightCharts.__tracked = true;
 
     console.log(
-      "🕵️‍♂️ [LWC 트래커 점화] LightweightCharts 인터셉터가 정상 등록되었습니다.",
+      "🕵️‍♂️ [LWC 트래커 점화] LightweightCharts 인터셉터가 정상 등록되었습니다",
     );
 
-    // 🚀 비동기 렌더링(Drawing) 단계의 Uncaught Error 및 requestAnimationFrame 단계의 차트 내부 붕괴 감지
+    // 비동기 렌더링(Drawing) 단계의 Uncaught Error 및 requestAnimationFrame 단계의 차트 내부 붕괴 감지
     const originalRequestAnimationFrame = window.requestAnimationFrame;
     window.requestAnimationFrame = function (callback) {
       return originalRequestAnimationFrame(function () {
@@ -108,7 +108,7 @@
         series.setData = function (data) {
           if (!data) {
             console.error(
-              "🚨 [감사 경고] setData에 null/undefined 데이터 주입됨!",
+              "🚨 [감사 경고] setData에 null/undefined 데이터 반영됨!",
             );
             console.trace();
           } else {
@@ -201,7 +201,7 @@
     };
   }
 
-  // 🚀 비동기 로딩 방어: LightweightCharts 전역 개체가 등록될 때까지 집요하게 Polling & Hooking을 수행합니다.
+  // 비동기 로딩 방어: LightweightCharts 전역 개체가 등록될 때까지 집요하게 Polling & Hooking을 수행
   if (window.LightweightCharts) {
     initTracker();
   } else {
@@ -215,7 +215,7 @@
         lwcTemp = val;
         try {
           initTracker();
-        } catch (e) { }
+        } catch (e) {}
       },
       configurable: true,
       enumerable: true,

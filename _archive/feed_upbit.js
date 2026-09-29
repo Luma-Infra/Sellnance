@@ -15,7 +15,10 @@ export function startUpbitFeed() {
 
   upbitRadarWs.onclose = () => {
     const currentDelay = upbitRadarRetryDelay;
-    upbitRadarRetryDelay = Math.min(60000, Math.floor(upbitRadarRetryDelay * 1.5));
+    upbitRadarRetryDelay = Math.min(
+      60000,
+      Math.floor(upbitRadarRetryDelay * 1.5),
+    );
     setTimeout(startUpbitFeed, currentDelay);
   };
 
@@ -27,12 +30,12 @@ export function startUpbitFeed() {
       .filter((row) => row.Upbit === "O" && row.Symbol)
       .map((row) => `KRW-${row.Symbol}`);
     if (allUpbitCodes.length === 0) return;
-    
+
     upbitRadarWs.send(
       JSON.stringify([
         { ticket: "UNIQUE_TICKET" },
         { type: "ticker", codes: allUpbitCodes },
-      ])
+      ]),
     );
   };
 
@@ -41,11 +44,14 @@ export function startUpbitFeed() {
     const ticker = JSON.parse(decoder.decode(event.data));
     const pureSym = ticker.code.replace("KRW-", "");
     const krwTicker = pureSym + "KRW";
-    
+
     let matchedUid = "";
     const allSource = store.currentTableData || store.originalTableData || [];
     const localRow = allSource.find(
-      (r) => r.Ticker === krwTicker || r.DisplayTicker === pureSym || r.Symbol === pureSym
+      (r) =>
+        r.Ticker === krwTicker ||
+        r.DisplayTicker === pureSym ||
+        r.Symbol === pureSym,
     );
     if (localRow) {
       matchedUid = localRow.UID;
@@ -81,9 +87,12 @@ export function startUpbitFeed() {
   };
 }
 
-// 🎯 업비트 테이블 노출용 Sniper 소켓
+// 업비트 테이블 노출용 Sniper 소켓
 export function initUpbitSniperSocket() {
-  if (store.upbitSniperWs && store.upbitSniperWs.readyState === WebSocket.OPEN) {
+  if (
+    store.upbitSniperWs &&
+    store.upbitSniperWs.readyState === WebSocket.OPEN
+  ) {
     return;
   }
 
@@ -105,14 +114,18 @@ export function initUpbitSniperSocket() {
 
       const allSource = store.originalTableData || store.currentTableData || [];
       const row = allSource.find(
-        (r) => r.Ticker === krwTicker || r.DisplayTicker === pureSym || r.Symbol === pureSym
+        (r) =>
+          r.Ticker === krwTicker ||
+          r.DisplayTicker === pureSym ||
+          r.Symbol === pureSym,
       );
       if (row) {
         const rate = store.marketDataMap?.krw_usd_rate || 0;
         row.Price_Raw = newPriceKrw / rate;
         if (row.utc0_open_Raw) {
           const openPrice = parseFloat(row.utc0_open_Raw);
-          row.Change_Today_Raw = ((row.Price_Raw - openPrice) / openPrice) * 100;
+          row.Change_Today_Raw =
+            ((row.Price_Raw - openPrice) / openPrice) * 100;
         }
       }
 

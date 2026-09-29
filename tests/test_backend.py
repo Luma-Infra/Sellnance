@@ -228,7 +228,7 @@ def test_cmc_key_validation_and_listing_security():
     assert is_valid_cmc_key_format("") is False
     assert is_valid_cmc_key_format(None) is False
 
-    # 2) 고정 해시 버킷 락 풀(64개) 검증 (Race Condition & Lock 삭제 누수 0% 보장)
+    # 2) 고정 해시 버킷 락 풀(64개) 검증 (Race Condition & Lock 삭제 누수 고려)
     assert NUM_CMC_LOCK_BUCKETS == 64
     assert len(CMC_FETCH_BUCKET_LOCKS) == 64
 

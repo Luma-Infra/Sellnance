@@ -1,5 +1,5 @@
 (() => {
-  // 🔍 Sellnance 전용 실시간 차트 정밀 감시 모니터
+  // Sellnance 전용 실시간 차트 정밀 감시 모니터
   const HISTORY_LIMIT = 20; // 각 시리즈별 최근 동작 기록 한도
   const seriesLogs = new Map(); // seriesName -> Array of logs
   const payloadHistories = new Map(); // seriesName -> Array of full dataArr (last 5 calls)
@@ -160,7 +160,7 @@
       ${errorHTML}
       
       <div style="display: flex; flex-direction: column; gap: 4px; max-height: 480px; overflow-y: auto;">
-        ${seriesHTML || "<div style='color: #888; text-align: center; padding: 10px;'>차트 시리즈가 아직 등록되지 않았습니다.</div>"}
+        ${seriesHTML || "<div style='color: #888; text-align: center; padding: 10px;'>차트 시리즈가 아직 등록되지 않았습니다</div>"}
       </div>
 
       ${storeStateHTML}
@@ -219,12 +219,12 @@
       (err.message?.includes("Value is null") ||
         err.stack?.includes("lightweight-charts"))
     ) {
-      // 콘솔창에 즉각적인 데이터 원본 덤프 수행
+      // 콘솔창에 데이터 원본 덤핑 수행
       console.group("🚨 [차트 크래시 정밀 덤프]");
       console.error("오류 메시지:", err.message);
       console.error("에러 스택:", err.stack);
       console.log(
-        "최근 5회 주입 페이로드 히스토리 (콘솔에서 직접 배열을 확인해 분석할 수 있습니다):",
+        "최근 5회 들어온 페이로드 히스토리 (콘솔에서 직접 배열을 확인해 분석할 수 있습니다):",
       );
       payloadHistories.forEach((pHist, name) => {
         console.log(
@@ -261,7 +261,7 @@
     series.setData = function (dataArr) {
       if (!isMonitoring) return originalSetData.apply(this, arguments);
 
-      // 전체 데이터 주입 캐시에 저장 (최근 5회분)
+      // 전체 데이터 반영 캐시에 저장 (최근 5회분)
       if (!payloadHistories.has(seriesName)) {
         payloadHistories.set(seriesName, []);
       }
@@ -273,7 +273,7 @@
       });
       if (pHist.length > 5) pHist.shift();
 
-      // 데이터 오염 및 유실 정밀 체크 (시리즈 타입별 분기 처리로 오탐 박멸)
+      // 데이터 오염 및 유실 정밀 체크 (시리즈 타입별 분기 처리로 오탐 제거)
       let nullCount = 0;
       let undefinedCount = 0;
       let nanCount = 0;
@@ -326,14 +326,14 @@
         logDiagnostic(
           seriesName,
           "WARN",
-          `setData 주입 감지! 크기: ${dataArr ? dataArr.length : 0} | 🚨 결측치 감지: null(${nullCount}), undefined(${undefinedCount}), NaN(${nanCount})`,
+          `setData 반영 감지, 크기: ${dataArr ? dataArr.length : 0} | 🚨 결측치 감지: null(${nullCount}), undefined(${undefinedCount}), NaN(${nanCount})`,
           sample,
         );
       } else {
         logDiagnostic(
           seriesName,
           "setData",
-          `정상 데이터 설정 완료. 크기: ${dataArr ? dataArr.length : 0}`,
+          `정상 데이터 설정 완료, 크기: ${dataArr ? dataArr.length : 0}`,
           sample,
         );
       }
@@ -487,7 +487,7 @@
     updateUI();
   };
 
-  // 7. 폴링을 통해 주기적으로 새로운 시리즈가 주입되는지 감시하여 자동 결합
+  // 7. 폴링을 통해 주기적으로 새로운 시리즈가 반영되는지 감시하여 자동 결합
   const syncStoreInterval = setInterval(() => {
     if (!isMonitoring) {
       clearInterval(syncStoreInterval);

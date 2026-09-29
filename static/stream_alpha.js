@@ -1,23 +1,23 @@
 // static/stream_alpha.js
 /**
- * 💎 [Alpha Realtime Stream Pipeline] (2안: 독립 파이프라인)
- * 기존 바이낸스/업비트/바이비트 소켓과 완전히 독립된 알파 전용 실시간 시세 및 김프 갱신 파이프라인
+ * [Alpha Realtime Stream Pipeline] (2안: 독립 파이프라인)
+ * 기존 바이낸스/업비트/바이비트 소켓과 독립된 알파 전용 실시간 시세 및 김프 갱신 파이프라인
  */
 
 import { store } from "./_store.js";
 
 let alphaStreamTimer = null;
 let isPolling = false;
-const POLLING_INTERVAL_MS = 2500; // 2.5초 실시간 틱 주기
+const POLLING_INTERVAL_MS = 2500; // 실시간 틱 주기
 
 /**
- * 🚀 알파 실시간 틱 단일 사이클
+ * 알파 실시간 틱 단일 사이클
  */
 async function tickAlphaStream() {
   if (isPolling) return;
   if (document.hidden) return; // 탭 비활성화 시 절전
 
-  // 현재 테이블에 순수 알파 코인이 있는지 빠른 검사 (선물 코인은 원천 차단)
+  // 현재 테이블에 순수 알파 코인이 있는지 빠른 검사 (선물 코인은 차단)
   const currentRows = store.currentTableData || [];
   const alphaRows = currentRows.filter(
     (r) =>
@@ -76,7 +76,7 @@ async function tickAlphaStream() {
         row.Kimchi_Label = "BITHUMB";
       }
 
-      // 3. 공식 updateRowDynamicHTML을 통한 DOM 초고속 다이렉트 갱신 (리렌더링 렉 0%)
+      // 3. 공식 updateRowDynamicHTML을 통한 DOM 고속 다이렉트 갱신
       const rowEl =
         store.rowDomMap?.get(String(row.UID)) ||
         store.rowDomMap?.get(row.Ticker);
@@ -95,7 +95,7 @@ async function tickAlphaStream() {
         }
       }
 
-      // 4. 상단 헤더 디스플레이 선택 중인 코인이면 헤더 시세도 즉시 갱신
+      // 4. 상단 헤더 디스플레이 선택 중인 코인이면 헤더 시세도 갱신
       if (
         store.currentSelectedSymbol &&
         (row.Ticker === store.currentSelectedSymbol ||
@@ -121,7 +121,7 @@ export function initAlphaStreamPipeline() {
   if (alphaStreamTimer) clearInterval(alphaStreamTimer);
 
   // 동시 접속자 증가 시  HTTP 요청 방지
-  // 1. 초기 1회 즉시 호출
+  // 1. 초기 1회 호출
   // setTimeout(tickAlphaStream, 1000);
 
   // 2. 2.5초 주기 독립 폴링 가동
@@ -130,7 +130,7 @@ export function initAlphaStreamPipeline() {
 }
 
 /**
- * 🛑 알파 스트림 정지
+ * 알파 스트림 정지
  */
 export function stopAlphaStreamPipeline() {
   if (alphaStreamTimer) {

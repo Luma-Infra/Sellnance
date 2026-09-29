@@ -112,10 +112,10 @@ async def wait_for_exchanges_9am_crossing(
     """
     Upbit + Binance 실시간 웹소켓 듀얼 원자시계 정밀 동기화 엔진 (Top 5 AND 게이트)
     - 08:59:45 경에 일시 가동되어 업비트 Top 5 중 1등 돌파 + 바이낸스 현물 Top 5 중 1등 돌파를 확인
-    - [현선 침범 0% & OOM 0% 3중 방어]:
-      1. 웹소켓은 장부 주입 없이 '원자시계 돌파' 신호만 확인 후 즉시 파기
+    - [현선 침범 및 OOM 관리하기]
+      1. 웹소켓은 장부 반영 없이 attomic 시계 돌파 신호만 확인 후 즉시 return
       2. 5개 중 단 1개라도 돌파 틱 수신 즉시 await ws.close() 직후 물리적 TCP 차단
-      3. 양쪽 모두 돌파 확인 시 0.3초 미세 완충 후 시가 벌크 파이프라인 단 1회 실행
+      3. 양쪽 모두 돌파 확인 시 짧은 지연 이후 시가 벌크 파이프라인 1회 실행
     """
     upbit_passed = False
     binance_passed = False
@@ -258,21 +258,21 @@ def start_unified_background_scheduler():
                     )
                     target_ms = int(today_9am.timestamp() * 1000)
 
-                    # [초경량 웹소켓 동기화] 업비트 & 바이낸스 09:00:00.000 틱 돌파 감시 (최대 30초 대기)
+                    # [초경량 웹소켓 동기화] 업비트 & 바이낸스 09:00:00.000 틱 돌파 감시
                     print(
                         "📡 [9AM WEBSOCKET] 업비트 & 바이낸스 09:00:00.000 정밀 원자시계 감시 가동..."
                     )
                     success = sync_wait_for_9am_crossing(target_ms, timeout=30.0)
                     if success:
                         print(
-                            "🎯 [9AM WEBSOCKET] 업비트 & 바이낸스 09:00:00.000 체결 틱 동시 돌파 감지! (0ms 오차)"
+                            "🎯 [9AM WEBSOCKET] 업비트 & 바이낸스 09:00:00.000 체결 틱 동시 돌파 감지!"
                         )
                     else:
                         print(
                             "⏰ [9AM WEBSOCKET] 타임아웃/로컬 폴백으로 09:00 정각 파이프라인 진행"
                         )
 
-                    # ️ 0.3초 미세 완충 (모든 거래소 매칭 엔진의 09시 일봉 캔들 완전 생성 보장)
+                    # ️ 지연된 처리 (모든 거래소 매칭 엔진의 09시 일봉 캔들 생성 관리)
                     time.sleep(0.3)
 
                     api_manager.trigger_kst_9am_reset_atomic()
@@ -284,7 +284,7 @@ def start_unified_background_scheduler():
                 time.sleep(sleep_sec)
                 now = datetime.now(KST)
 
-                # 혹시 비정상 지연 등으로 09:00대를 지나쳤으나 당일 리셋을 아직 안 한 경우 세이프티 가드
+                # 혹시 비정상 지연 등으로 09:00대를 지나쳤으나 당일 리셋을 아직 안 한 경우 방지
                 if now.hour == 9 and last_reset_date != now.date():
                     print("🎯 [BG SCHEDULER] 09:00 지연 감지 세이프티 가드 실행...")
                     api_manager.trigger_kst_9am_reset_atomic()
@@ -305,7 +305,7 @@ def start_unified_background_scheduler():
 
 def start_realtime_listing_watcher():
     """
-    aiohttp 비동기 멀티플렉싱 초경량 무음 상장 감시 엔진 (6대 거래소 동시 병렬 ~ 10초 주기)
+    aiohttp 비동기 멀티플렉싱 상장 감시 엔진 (6대 거래소 동시 병렬 ~ 10초 주기)
     """
     global _WATCHER_STARTED
     with _SCHEDULER_LOCK:
@@ -405,13 +405,13 @@ def start_realtime_listing_watcher():
                                 for ex, syms in new_diff.items()
                             ]
                             print(
-                                f"\n🚨 [신규 상장 감지] {' | '.join(discovery_msgs)} 신규 상장 포착! 긴급 0초 장부 동기화 가동..."
+                                f"\n🚨 [신규 상장 감지] {' | '.join(discovery_msgs)} 신규 상장 포착! 긴급 장부 동기화 가동..."
                             )
                             api_manager._fetch_and_process_data_and_cache(
                                 silent_mode=True
                             )
                             print(
-                                f"⚡ [신규 상장 동기화 완료] 신규 상장 코인이 장부에 즉시 입고되었습니다.\n"
+                                f"⚡ [신규 상장 동기화 완료] 신규 상장 코인이 장부에 즉시 입고 되었습니다\n"
                             )
                 except Exception:
                     pass

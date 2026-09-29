@@ -10,7 +10,7 @@ import { applyChartLayout } from "./chart_layout.js";
 import { normalizeExchangeInterval } from "./_market_rules.js";
 // import { fetchBithumbUnifiedCandles } from "./chart_bithumb_sync.js"; // 빗썸 정신차릴 때까지 임시 대기
 
-// 🚀 [거래소별 특유 색상 테마 매핑 - 현선(SPOT/FUT) 완벽 분리]
+// [거래소별 특유 색상 테마 매핑 - 현선(SPOT/FUT) 분리]
 export function getExchangeLoadingTheme(exchId) {
   const id = (exchId || "").toLowerCase();
   // 1. 국내 거래소
@@ -29,14 +29,14 @@ export function getExchangeLoadingTheme(exchId) {
   // 2. 바이낸스 (현물/선물 일치)
   if (id.includes("binance") || id.includes("b-spot") || id.includes("b-fut")) {
     return {
-      bg: "linear-gradient(90deg, #D4A007 0%, #F0B90B 50%, #FFF080 100%)", // 🟡 바이낸스 골드
+      bg: "linear-gradient(90deg, #D4A007 0%, #F0B90B 50%, #FFF080 100%)", // 바이낸스 골드
       glow: "0 0 10px rgba(240, 185, 11, 0.95)",
     };
   }
   // 3. 바이비트 (현물/선물 일치)
   if (id.includes("bybit") || id.includes("byb")) {
     return {
-      bg: "linear-gradient(90deg, #E58A00 0%, #F7A600 50%, #FFD270 100%)", // 🟠 바이비트 앰버
+      bg: "linear-gradient(90deg, #E58A00 0%, #F7A600 50%, #FFD270 100%)", // 바이비트 앰버
       glow: "0 0 10px rgba(247, 166, 0, 0.95)",
     };
   }
@@ -142,7 +142,7 @@ export function updateKimchiComparisonUI() {
     }
   }
 
-  // 🚀 OHLC 레전드 내부 kimp 컨테이너 숨김/표시
+  // OHLC 레전드 내부 kimp 컨테이너 숨김/표시
   if (ohlcKimchi) {
     if (isDisabled) {
       ohlcKimchi.classList.add("hidden");
@@ -151,7 +151,7 @@ export function updateKimchiComparisonUI() {
     }
   }
 
-  // 🚀 김프 비교군 스위처 버튼 숨김/표시
+  // 김프 비교군 스위처 버튼 숨김/표시
   if (switcher) {
     if (isDisabled) {
       switcher.style.display = "none";
@@ -171,7 +171,7 @@ export function updateKimchiComparisonUI() {
         store.kimchiSeries.setData([]);
         if (visibleRange && store.chartVol)
           store.chartVol.timeScale().setVisibleLogicalRange(visibleRange);
-      } catch (e) { }
+      } catch (e) {}
     }
   }
   if (typeof applyChartLayout === "function") {
@@ -193,12 +193,12 @@ export function toggleKimchiComparison(forceVal) {
       "sellnance_kimchi_disabled",
       store.isKimchiDisabled ? "true" : "false",
     );
-  } catch (e) { }
+  } catch (e) {}
 
   updateKimchiComparisonUI();
 
   if (store.isKimchiDisabled) {
-    // 🎯 [김프 끄기] 전체 재조회(fetchHistory) 없이 캔들과 볼륨은 100% 실시간 스트리밍 유지하고 김프만 즉시 정화
+    // [김프 끄기] 전체 재조회(fetchHistory) 없이 캔들과 볼륨은 실시간 스트리밍 유지하고 김프만 off
     if (store.kimchiSeries) {
       try {
         const visibleRange = store.chart
@@ -207,7 +207,7 @@ export function toggleKimchiComparison(forceVal) {
         store.kimchiSeries.setData([]);
         if (visibleRange && store.chartVol)
           store.chartVol.timeScale().setVisibleLogicalRange(visibleRange);
-      } catch (e) { }
+      } catch (e) {}
     }
     store.kimchiData = [];
     if (store.kimchiDataMap) store.kimchiDataMap.clear();
@@ -228,7 +228,7 @@ export function toggleKimchiComparison(forceVal) {
       window.updateLegend(store.mainData[lastIdx], v, null);
     }
   } else {
-    // 🎯 [김프 켜기] 백그라운드에서 김프 데이터만 수집하여 차트에 바인딩
+    // [김프 켜기] 백그라운드에서 김프 데이터만 수집하여 차트에 바인딩
     if (typeof window.fetchHistory === "function" && store.currentAsset) {
       window.fetchHistory(store.currentAsset, false, false, true);
     }
@@ -240,7 +240,7 @@ window.updateKimchiComparisonUI = updateKimchiComparisonUI;
 
 let currentKimchiReqId = 0;
 
-// 🚀 [역할 분리] 김프 데이터 백그라운드 Lazy 수집 및 차트 렌더링 전담
+// [역할 분리] 김프 데이터 백그라운드 Lazy 수집 및 차트 렌더링 전담
 export async function lazyRenderKimchiData(params) {
   const reqId = ++currentKimchiReqId;
   const {
@@ -261,7 +261,7 @@ export async function lazyRenderKimchiData(params) {
 
   const effectiveApplyLayout = paramApplyLayout || applyChartLayout;
 
-  // 🎯 [김프 비교 끄기 상태 가드] 즉시 리턴 때려서 네트워크 통신 및 렌더링 전면 차단
+  // [김프 비교 끄기 상태 관리] 즉시 return ~ 네트워크 통신 및 렌더링 차단
   if (store.isKimchiDisabled) {
     if (store.kimchiSeries) {
       try {
@@ -271,7 +271,7 @@ export async function lazyRenderKimchiData(params) {
         store.kimchiSeries.setData([]);
         if (visibleRange && store.chartVol)
           store.chartVol.timeScale().setVisibleLogicalRange(visibleRange);
-      } catch (e) { }
+      } catch (e) {}
     }
     store.kimchiData = [];
     if (store.kimchiDataMap) store.kimchiDataMap.clear();
@@ -294,7 +294,7 @@ export async function lazyRenderKimchiData(params) {
     }
 
     hideKimchiLoading();
-    return; // 🎯 네트워크 통신 즉시 차단 (Early Return)
+    return; // 네트워크 통신 즉시 차단 (Early Return)
   }
 
   // [국내 미지원 코인] 해외 전용 코인은 업비트/빗썸이 없으므로 통신 대기 없이 즉시 정리
@@ -318,7 +318,7 @@ export async function lazyRenderKimchiData(params) {
     if (store.kimchiSeries) {
       try {
         store.kimchiSeries.setData([]);
-      } catch (e) { }
+      } catch (e) {}
     }
     store.kimchiData = [];
     if (store.kimchiDataMap) store.kimchiDataMap.clear();
@@ -326,12 +326,12 @@ export async function lazyRenderKimchiData(params) {
     if (curRange && store.chartVol) {
       try {
         store.chartVol.timeScale().setVisibleLogicalRange(curRange);
-      } catch (e) { }
+      } catch (e) {}
     }
     if (store.chartVol && !store.isVolPriceScaleUserZoomed) {
       try {
         store.chartVol.priceScale("right").applyOptions({ autoScale: true });
-      } catch (e) { }
+      } catch (e) {}
     }
     return;
   }
@@ -350,11 +350,11 @@ export async function lazyRenderKimchiData(params) {
     const _fetchCoinInfo = _cachedInfo
       ? Promise.resolve(_cachedInfo)
       : fetch(`/api/coin-info/${querySym}`)
-        .then((res) => res.json())
-        .then((d) => {
-          store._coinInfoCache.set(querySym, d);
-          return d;
-        });
+          .then((res) => res.json())
+          .then((d) => {
+            store._coinInfoCache.set(querySym, d);
+            return d;
+          });
 
     if (reqId !== currentKimchiReqId) return;
 
@@ -365,7 +365,7 @@ export async function lazyRenderKimchiData(params) {
       store.currentChartMarket === "UPBIT" ||
       store.currentChartMarket === "BITHUMB"
     ) {
-      // 🚀 [현물 우선 -> 선물 fallback] 바이낸스 현물 (B-SPOT)
+      // [현물 우선 -> 선물 fallback] 바이낸스 현물 (B-SPOT)
       if (listedEx.includes("BINANCE_SPOT") || listedEx.includes("BINANCE"))
         availableSubs.push({
           id: "binance_spot",
@@ -374,7 +374,7 @@ export async function lazyRenderKimchiData(params) {
           sym: `${exactSpot}USDT`,
           pureSym: exactSpot,
         });
-      // 🚀 바이낸스 선물 (B-FUT)
+      // 바이낸스 선물 (B-FUT)
       if (listedEx.includes("BINANCE_FUTURES"))
         availableSubs.push({
           id: "binance_futures",
@@ -383,7 +383,7 @@ export async function lazyRenderKimchiData(params) {
           sym: `${exactFutures}USDT`,
           pureSym: exactFutures,
         });
-      // 🚀 바이비트 현물 (BYB-S)
+      // 바이비트 현물 (BYB-S)
       if (listedEx.includes("BYBIT_SPOT") || listedEx.includes("BYBIT"))
         availableSubs.push({
           id: "bybit_spot",
@@ -392,7 +392,7 @@ export async function lazyRenderKimchiData(params) {
           sym: `${exactBybit}USDT`,
           pureSym: exactBybit,
         });
-      // 🚀 바이비트 선물 (BYB-F)
+      // 바이비트 선물 (BYB-F)
       if (listedEx.includes("BYBIT_FUTURES"))
         availableSubs.push({
           id: "bybit_futures",
@@ -536,10 +536,11 @@ export async function lazyRenderKimchiData(params) {
       const subMult =
         store.currentTF === "3d" || store.currentTF === "12h" ? 2 : 1;
       // 업비트 서브 캔들은 1회(200개)로 가볍고 빠르게 진입 (과거 탐색 시 점진 로딩)
-      const initialSubLimit = subExchange === "upbit" ? 200 * subMult : 500 * subMult;
+      const initialSubLimit =
+        subExchange === "upbit" ? 200 * subMult : 500 * subMult;
 
-      // [1:N 기간 일치 보장] 메인이 3d/12h일 때 메인은 500개(=1,500일치/6,000시간치)를 가져오므로,
-      // 서브 캔들도 3배(1,500개)를 가져와야 메인 전체 기간(4년치)의 김프가 공백 없이 100% 가득 참!
+      // [1:N 기간 일치] 메인이 3d/12h일 때 메인은 500개(=1,500일치/6,000시간치)를 가져오므로,
+      // 서브 캔들도 3배(1,500개)를 가져와야 메인 전체 기간(4년치)의 김프가 공백 없이 채워짐
 
       showKimchiLoading(subExchange);
 
@@ -584,7 +585,7 @@ export async function lazyRenderKimchiData(params) {
               loadedFromLocal = true;
             }
           }
-        } catch (e) { }
+        } catch (e) {}
 
         if (!loadedFromLocal) {
           const res = await fetch("/api/usdkrw");
@@ -595,7 +596,7 @@ export async function lazyRenderKimchiData(params) {
                 "sellnance_usdkrw_cache",
                 JSON.stringify(usdkrwRaw),
               );
-            } catch (e) { }
+            } catch (e) {}
             let fiatTimeline = [];
             for (let [ts, price] of Object.entries(usdkrwRaw)) {
               fiatTimeline.push({
@@ -770,20 +771,20 @@ export async function lazyRenderKimchiData(params) {
             if (currentRange && store.chartVol) {
               try {
                 store.chartVol.timeScale().setVisibleLogicalRange(currentRange);
-              } catch (e) { }
+              } catch (e) {}
             }
             if (store.chartVol && !store.isVolPriceScaleUserZoomed) {
               try {
                 store.chartVol
                   .priceScale("right")
                   .applyOptions({ autoScale: true });
-              } catch (e) { }
+              } catch (e) {}
             }
 
-            // 🎯 김프 선이 차트에 완전히 렌더링된 순간 로딩 종료!
+            // 김프 선이 차트에 렌더링 되었다면 로딩 종료
             hideKimchiLoading();
 
-            // 🚀 [해결] 데이터가 성공적으로 바인딩되었으므로 오버레이 경고 문구를 숨깁니다.
+            // [해결] 데이터가 성공적으로 바인딩되었으므로 오버레이 경고 문구를 숨기기
             if (typeof window.toggleVolFallback === "function") {
               window.toggleVolFallback(false);
             }
@@ -808,7 +809,7 @@ export async function lazyRenderKimchiData(params) {
       if (store.kimchiSeries) {
         try {
           store.kimchiSeries.setData([]);
-        } catch (e) { }
+        } catch (e) {}
       }
       store.kimchiData = [];
       if (store.kimchiDataMap) {
@@ -833,14 +834,14 @@ export async function lazyRenderKimchiData(params) {
           if (curRange && store.chartVol) {
             try {
               store.chartVol.timeScale().setVisibleLogicalRange(curRange);
-            } catch (e) { }
+            } catch (e) {}
           }
           if (store.chartVol && !store.isVolPriceScaleUserZoomed) {
             try {
               store.chartVol
                 .priceScale("right")
                 .applyOptions({ autoScale: true });
-            } catch (e) { }
+            } catch (e) {}
           }
         } catch (layoutErr) {
           // Xconsole.warn("fetchHistory (no-data) applyChartLayout 예외 우회:", layoutErr);

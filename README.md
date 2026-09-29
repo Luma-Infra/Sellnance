@@ -1,4 +1,5 @@
 # Sellnance (셀낸스)
+
 ### 멀티 거래소 실시간 시세 & 김치프리미엄 통합 분석 터미널 (Sell + Binance)
 
 <img width="1919" height="543" alt="Sellnance 대시보드 스크린샷" src="https://github.com/user-attachments/assets/7c1f6ddb-e07b-4b97-b69d-d94083eec444" />
@@ -26,7 +27,7 @@
 Sellnance는 국내 주요 거래소(업비트, 빗썸)와 글로벌 거래소(바이낸스 현물/선물, 바이비트)의 시세, 호가, 김치프리미엄, 상장일, 펀딩비 데이터를 단일 화면에서 실시간으로 관제·분석할 수 있는 웹 차트 터미널입니다
 
 - **포지션 및 역할**: 1인 개발 (기획, 데이터 모델링, 백엔드/프론트엔드 아키텍처 설계 및 구현, 배포)
-- **개발 기간**: 2026.04 ~ 현재 (*7~8월 부트캠프 집중 기간 제외, 9월부터 실사용 기반 상시 개선 중*)
+- **개발 기간**: 2026.04 ~ 현재 (_7~8월 부트캠프 집중 기간 제외, 9월부터 실사용 기반 상시 개선 중_)
 - **서비스 형태**: 웹 브라우저 기반 SPA / PWA 지원
 
 ---
@@ -55,9 +56,9 @@ flowchart TB
     subgraph Backend["FastAPI Backend (Data Builder & Candle Proxy)"]
         Builder["Market Data Builder\n(시세/일봉/상장데이터/환율 수집)"]
         CacheFile[("market_data_cache.json\n(초기 부트스트랩 / GZip 250KB)")]
-        
+
         CP["candle_proxy.py\n(비동기 세마포어 + 동시 요청 합승 + TTL 캐시)"]
-        
+
         EX_REST --> Builder
         CMC_API --> Builder
         Builder --> CacheFile
@@ -95,6 +96,7 @@ flowchart TB
 ## 핵심 엔지니어링 챌린지 & 트러블슈팅
 
 ### 1. 이종 거래소 간 자산 식별자(Asset Identity) 정합성 및 심볼 충돌 대응
+
 - **문제 분석:**
   - **티커 불일치(Discrepancy)**: 동일 자산이나 거래소별 리브랜딩/스왑 정책 차이로 심볼이 다른 케이스 (`BTT` ↔ `BTTC`, `BEAM` ↔ `BEAMX`, `AMP` ↔ `AMP2`)
   - **선물 배수 단위(Multiplier)**: 바이낸스 선물의 호가 단위 맞춤용 배수 티커 (`1000PEPE`, `1000SHIB`, `1000000BOB`)
@@ -114,6 +116,7 @@ flowchart TB
 ---
 
 ### 2. 초당 수백 개 웹소켓 틱 유입 시 60fps 렌더링 성능 유지
+
 - **문제 분석:**
   - 4개 거래소 웹소켓 체결 틱이 들어올 때마다 테이블 DOM(`<tr>`, `<td>`)을 직접 수정할 경우 브라우저 강제 동기식 리플로우(Forced Reflow)로 인한 메인 스레드 병목 및 탭 프리징 발생
   - Lightweight Charts 캔버스 렌더링 루프와 실시간 틱 주입 경합으로 프레임레이트가 15~20fps 수준으로 저하
@@ -122,23 +125,25 @@ flowchart TB
   - **`requestAnimationFrame` 기반 일괄 갱신**: 브라우저 렌더링 타이밍에 맞추어 100ms 주기로 누적된 변경점만 한 번에 배치 반영
   - **뷰포트 우선 렌더링**: 화면에 노출되는 상위 30~40개 행 중심으로 렌더링을 처리하고 비가시 영역은 백그라운드 데이터만 동기화하여 CPU 오버헤드 절감
 - **트레이드오프:**
-  - 100ms 배치 주기를 두어 60fps 프레임레이트를 확보한 대신, 체결 틱이 화면에 렌더링되기까지 최대 100ms 수준의 시각적 지연(Latency)이 발생할 수 있음
+  - 배치 주기를 두어 60fps 프레임레이트를 확보한 대신, 체결 틱이 화면에 렌더링되기까지 최대 100ms 수준의 시각적 지연(Latency)이 발생할 수 있음
 
 ---
 
 ### 3. 캔들 프록시 요청 제어 (API Rate Limit & 동시성 병목 대응)
+
 - **문제 분석:**
   - 탭 전환 및 다중 사용자 환경에서 트레이딩뷰 및 외부 거래소 REST API로 단시간 대량 캔들 조회가 발생할 경우 IP 차단(HTTP 429 Too Many Requests) 위험 노출
 - **접근 방식 및 구현:**
   - **비동기 세마포어 (`asyncio.Semaphore`)**: 동시 아웃바운드 요청 수를 제한하여 업스트림 부하 조절
   - **동일 요청 합승 (Request Coalescing)**: 동일 심볼·타임프레임의 동시 요청 유입 시 별도 네트워크 호출 없이 기존 비동기 태스크에 편승(In-flight Deduplication)
-  - **계층형 인메모리 캐싱**: 완료된 과거 봉 데이터는 타임프레임별 TTL 캐시로 즉각 반환(0ms)
+  - **계층형 인메모리 캐싱**: 완료된 과거 봉 데이터는 타임프레임별 TTL 캐시로 즉각 반환
 - **트레이드오프:**
   - 동일 요청 합승으로 외부 API 호출 횟수는 대폭 줄였으나, 선행 요청이 외부 네트워크 문제로 지연될 경우 이에 편승한 후행 요청들도 함께 응답 대기에 묶이는 종속 구조 발생
 
 ---
 
 ### 4. 단일 진실 소스(SSOT) 기반 김치프리미엄 동기화
+
 - **문제 분석:**
   - 테이블은 실시간 체결 틱(`trade`) 기준으로 김프를 계산하고, 차트는 완성 캔들 종가(`close`) 기준으로 계산하여 동일 시점 화면 간 수치 불일치 발생
   - 바이낸스 현물(Spot)과 선물(Futures) 기준 가격이 혼용되는 문제
@@ -153,18 +158,19 @@ flowchart TB
 
 ## 성능 최적화 & 안정성 지표
 
-| 영역 | 최적화 기법 | 적용 전 | 적용 후 (개선 효과) |
-| :--- | :--- | :--- | :--- |
-| **네트워크 페이로드** | `GZipMiddleware` (최소 1KB 이상 압축) | ~2.5 MB | **~250 KB (약 90% 대역폭 절감)** |
-| **정적 자산 서빙** | 정적 파일(`woff2`, SVG, Vite 번들) 영구 캐시 주입 | 매 요청 왕복 | **`Cache-Control: immutable` (0ms 로딩)** |
-| **브라우저 렌더링** | 소켓 틱 버퍼링 큐 + `requestAnimationFrame` 배치 | ~20 fps (화면 버벅임) | **안정적인 60 fps 유지** |
-| **에러 모니터링** | Sentry SDK 커스텀 필터링 (`before_send`) | 불필요 APM 오버헤드 | **종료 시그널/웹소켓 노이즈 필터링, 순수 런타임 에러만 수집** |
+| 영역                  | 최적화 기법                                       | 적용 전               | 적용 후 (개선 효과)                                           |
+| :-------------------- | :------------------------------------------------ | :-------------------- | :------------------------------------------------------------ |
+| **네트워크 페이로드** | `GZipMiddleware` (최소 1KB 이상 압축)             | ~2.5 MB               | **~250 KB (약 90% 대역폭 절감)**                              |
+| **정적 자산 서빙**    | 정적 파일(`woff2`, SVG, Vite 번들) 영구 캐시 주입 | 매 요청 왕복          | **`Cache-Control: immutable` (0ms 로딩)**                     |
+| **브라우저 렌더링**   | 소켓 틱 버퍼링 큐 + `requestAnimationFrame` 배치  | ~20 fps (화면 버벅임) | **안정적인 60 fps 유지**                                      |
+| **에러 모니터링**     | Sentry SDK 커스텀 필터링 (`before_send`)          | 불필요 APM 오버헤드   | **종료 시그널/웹소켓 노이즈 필터링, 순수 런타임 에러만 수집** |
 
 ---
 
 ## Tech Stack
 
 ### Backend
+
 - **Framework & Runtime**: Python 3.13 (`uv`), FastAPI, Uvicorn (ASGI)
 - **Async I/O & Networking**: `aiohttp`, `websockets`, `requests`
 - **Data Processing**: `pandas`, `pytz` (KST/UTC 타임존 동기화)
@@ -172,6 +178,7 @@ flowchart TB
 - **Next-Gen Migration (In Progress)**: Go, Go Fiber v2 (`modules/migration_go`)
 
 ### Frontend
+
 - **Core**: Vanilla JavaScript (ES6+), Alpine.js (경량 반응형 상태 관리)
 - **Styling**: Tailwind CSS v4, PostCSS
 - **Charting**: TradingView Lightweight Charts v5
@@ -196,12 +203,15 @@ flowchart TB
 ## Getting Started (Local Development)
 
 ### 원클릭 실행 (Windows)
+
 프로젝트 루트의 `start.bat`을 실행하면 가상환경 감지부터 포트 정리, 엔진 가동까지 자동으로 완료됩니다
+
 ```bash
 start.bat
 ```
 
 ### CLI 직접 실행 (uv 권장)
+
 ```bash
 # uv 가상환경에서 엔진 즉시 가동 (포트 8000 자동 정리 및 브라우저 자동 오픈)
 uv run python run.py
@@ -211,6 +221,7 @@ npm run dev
 ```
 
 ### 테스트 실행
+
 ```bash
 # 전체 테스트 실행 (Pytest + Vitest)
 npm test
@@ -222,6 +233,7 @@ npm run test:py
 ---
 
 ## 라이선스 및 면책 조항 (License & Disclaimer)
-* **License:** MIT License. 개인 학습, 연구 및 포트폴리오 목적으로 사용 가능합니다
-* **Disclaimer:** 본 프로젝트는 실시간 데이터 분석 및 시뮬레이션을 위한 도구입니다
-* 제공되는 시세 정보의 지연이나 오류가 발생할 수 있으며, 이를 바탕으로 한 실제 트레이딩 손실에 대해서는 어떠한 법적 책임도 지지 않습니다 (거래소 API 이용 약관 준수 필수)
+
+- **License:** MIT License. 개인 학습, 연구 및 포트폴리오 목적으로 사용 가능합니다
+- **Disclaimer:** 본 프로젝트는 실시간 데이터 분석 및 시뮬레이션을 위한 도구입니다
+- 제공되는 시세 정보의 지연이나 오류가 발생할 수 있으며, 이를 바탕으로 한 실제 트레이딩 손실에 대해서는 어떠한 법적 책임도 지지 않습니다 (거래소 API 이용 약관 준수 필수)

@@ -1,7 +1,7 @@
 // chart_layout.js
 import { store } from "./_store.js";
 
-// 🚀 [추가] 차트 패널 (볼륨, 김프) 토글 관리자
+// [추가] 차트 패널 (볼륨, 김프) 토글 관리자
 export function togglePane(paneName) {
   store.paneConfig[paneName] = !store.paneConfig[paneName];
   applyChartLayout();
@@ -31,20 +31,20 @@ export function applyChartLayout() {
   const paneVol = document.getElementById("pane-vol");
   const rVol = document.getElementById("resizer-vol");
 
-  // 1. 시리즈 & 스케일 표시/숨김 설정 (김프가 볼륨 캔버스 안에 기생)
+  // 1. 시리즈 & 스케일 표시/숨김 설정
   if (store.volumeSeries) {
     store.volumeSeries.applyOptions({ visible: v });
     store.chartVol.priceScale("right").applyOptions({ visible: v });
   }
 
-  // 🚀 [반응형 좌측 여백] 768px 미만(모바일)이면 좌측 스케일을 완전히 접어(0px) 캔버스 100% 확장, 768px 이상(PC/태블릿)이면 60px 수직 정렬 항상 고정
-  // 🎯 [핵심] 김프 비교 끄기/켜기 시에도 상하 차트의 좌측 스케일을 100% 일치시켜 캔버스 시작점과 크로스헤어 수직선을 1px 오차 없이 일치 보장!
+  // [반응형 좌측 여백] 768px 미만(모바일)이면 좌측 스케일을 접어서 캔버스 확장, 768px 이상(PC/태블릿)이면 60px 수직 정렬 항상 고정
+  // 김프 비교 끄기/켜기 시에도 상하 차트의 좌측 스케일을 일치시켜 캔버스 시작점과 크로스헤어 수직선을 오차 없이 일치시키기
   const isSmallMobile =
     typeof window !== "undefined" && window.innerWidth < 768;
 
   const isKimchiActuallyVisible = !!k && !store.isKimchiDisabled;
 
-  // 🎯 [핵심] ON일 때는 둘 다 60px, OFF일 때는 둘 다 0px로 완벽 일치! (크로스헤어 0px 오차 + OFF 시 캔버스 100% 확장)
+  // ON일 때는 둘 다 60px, OFF일 때는 둘 다 0px로 일치 (OFF 시 캔버스 확장)
   const leftWidth = !isSmallMobile && isKimchiActuallyVisible ? 60 : 0;
   const isLeftVisible = leftWidth > 0;
 
@@ -84,13 +84,13 @@ export function applyChartLayout() {
   if (paneMain) paneMain.style.flex = `${mainFlex}`;
   if (paneVol) paneVol.style.flex = `${subFlex}`;
 
-  // 🚀 X축(시간) 스케일 중복 방지
+  // X축(시간) 스케일 중복 방지
   if (store.chart) store.chart.timeScale().applyOptions({ visible: !v && !k });
   if (store.chartVol)
     store.chartVol.timeScale().applyOptions({ visible: v || k });
 
-  // 🚀 [리사이즈 비동기 스케줄링] DOM 너비/높이 강제 측정 비용(Reflow) 및 캔버스 중복 resize 방지
-  // [성능 최적화] 실제 너비/높이 값이 1px이라도 달라졌을 때만 resize를 호출하여 불필요한 DOM Reflow 렉 차단
+  // [리사이즈 비동기 스케줄링] DOM 너비/높이 측정에 따른 Reflow 및 캔버스 중복 resize 방지
+  // [성능 최적화] 실제 너비/높이 값이 달라졌을 때만 resize를 호출하여 불필요한 DOM Reflow 렉 차단
   if (store.chart && paneMain) {
     requestAnimationFrame(() => {
       if (store.chart && paneMain) {
@@ -114,7 +114,7 @@ export function applyChartLayout() {
         const w = paneVol.clientWidth;
         const h = paneVol.clientHeight;
 
-        // 🚀 [높이 0px 방어] 컨테이너가 켜지는 과정에서 일시적으로 clientHeight가 0일 경우, 50ms 대기 후 재리사이즈 예약
+        // 컨테이너가 켜지는 과정에서 일시적으로 clientHeight가 0일 경우, 대기 후 re-resize 예약
         if (h === 0 && (v || k)) {
           setTimeout(() => {
             if (store.chartVol && paneVol) {
@@ -170,7 +170,7 @@ export function applyChartLayout() {
     });
   }
 
-  // 🚀 김프 비교군 스위처 (pane-vol 영역 상단 위치) 연동
+  // 김프 비교군 스위처 (pane-vol 영역 상단 위치) 연동
   const kimchiSwitcher = document.getElementById("kimchi-switcher");
   if (kimchiSwitcher) {
     if (isKimchiActuallyVisible) {
@@ -182,15 +182,15 @@ export function applyChartLayout() {
     }
   }
 
-  // 🚀 [추가] 활성 차트 패널에 맞춘 타임존 버튼 동기화
+  // [추가] 활성 차트 패널에 맞춘 타임존 버튼 동기화
   if (typeof window.mountTimezoneButton === "function") {
     window.mountTimezoneButton();
   }
 }
 
-// 🚀 2. 드래그 엔진 초기화
+// 2. 드래그 엔진 초기화
 export function initResizers() {
-  if (window._resizersInitialized) return; // 🚀 중복 등록 차단 (렉 유발 1위 방어!)
+  if (window._resizersInitialized) return; // 중복 등록 차단
   window._resizersInitialized = true;
 
   const wrapper = document.getElementById("chart-wrapper");
@@ -264,12 +264,12 @@ window.applyChartLayout = applyChartLayout;
 window.initResizers = initResizers;
 window.toggleVolFallback = toggleVolFallback;
 
-// 뷰 모드 전환 시 차트만 콕 집어 resize (table/quickview 사이드 이펙트 없음)
+// 뷰 모드 전환 시 차트만 resize (table/quickview 사이드 이펙트 방지)
 window.addEventListener("viewModeChanged", () => {
   applyChartLayout();
 });
 
-// 🚀 창 크기 변경 시 768px 모바일 경계에서 좌측 여백(0px <-> 60px) 자동 스위칭
+// 창 크기 변경 시 768px 모바일 경계에서 좌측 여백(0px <-> 60px) 자동 스위칭
 let chartResizeDebounce = null;
 window.addEventListener("resize", () => {
   if (chartResizeDebounce) clearTimeout(chartResizeDebounce);

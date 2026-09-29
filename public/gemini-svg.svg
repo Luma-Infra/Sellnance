@@ -3,7 +3,7 @@
     /* 1. 라이트 모드 (업비트: 날렵한 블루-레드) */
     .deer-path {
       stroke: url(#upbit_grad);
-      stroke-width: 4; /* 👈 여기서 '뚱뚱함'을 해결! (숫자가 낮을수록 날렵함) */
+      stroke-width: 4; /*  여기서 '뚱뚱함'을 해결! (숫자가 낮을수록 날렵함) */
       stroke-linecap: round;
       stroke-linejoin: round;
       fill: none;

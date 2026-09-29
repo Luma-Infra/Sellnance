@@ -43,7 +43,7 @@ class FastDiscreteEventSimulator:
             return
             
         if self.mode == "AFTER":
-            # 🛡️ [Symbol Guard in renderRealtimeUpdate]
+            # [Symbol Guard in renderRealtimeUpdate]
             symbol_to_check = tick_symbol or candle_sym
             if symbol_to_check:
                 current_active = get_pure_base(self.current_selected_symbol or self.current_asset)
@@ -86,7 +86,7 @@ class FastDiscreteEventSimulator:
             return
 
         if self.mode == "AFTER":
-            # 🛡️ [Symbol Guard in rAF]
+            # [Symbol Guard in rAF]
             current_active = get_pure_base(self.current_selected_symbol or self.current_asset)
             tick_sym = get_pure_base(self.latest_symbol or "")
             if not current_active or not tick_sym or current_active != tick_sym:

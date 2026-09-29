@@ -15,7 +15,7 @@ import { renderRealtimeRow, calculateRowKimchi } from "./stream_table.js";
 // 차트 관련 실시간 처리 로드
 import "./stream_global.js";
 
-// 코인별 대표 지표(Raw)를 거래소 우선순위(선물 > 현물 > 업비트)에 맞게 강제 동기화하는 함수
+// 코인별 대표 지표(Raw)를 거래소 우선순위(선물 > 현물 > 업비트)에 맞게 동기화하는 함수
 export function syncRowPrioritizedMetrics(row) {
   const currentMarket = store.currentMarket || "ALL";
   const rate = store.marketDataMap?.krw_usd_rate || 1000;
@@ -43,7 +43,7 @@ export function syncRowPrioritizedMetrics(row) {
       : row.utc0_open_Raw;
     pInflow = "UPBIT";
   } else {
-    // 2️⃣ ALL / BINANCE 기본 모드 (사령관님 선물 > 현물 커스텀 락킹)
+    // 2️⃣ ALL / BINANCE 기본 모드 (선물 > 현물 커스텀 locking)
     const hasFutures =
       row.Binance_Futures === "O" ||
       row.Listed_Exchanges?.includes("BINANCE_FUTURES");
@@ -54,16 +54,19 @@ export function syncRowPrioritizedMetrics(row) {
       pPrice = row.Binance_Price_Futures ?? row.Price_Raw;
       p24h = row.Change_24h_Futures ?? row.Change_24h_Raw;
       pToday = row.Change_Today_Futures ?? row.Change_Today_Raw;
-      pOpen = row.futures_utc0_open_Raw ?? row.utc0_open_Raw;
+      pOpen = row.futures_utc0_open_Raw;
       pInflow = "BINANCE_FUTURES";
     } else if (hasSpot) {
       pPrice = row.Binance_Price_Spot ?? row.Price_Raw;
       p24h = row.Change_24h_Binance ?? row.Change_24h_Raw;
-      // 알파 코인은 Day 등락률 무조건 null (-) 고정!
+      // 알파 코인은 Day 등락률 null (-) 고정
       pToday = isAlpha
         ? null
         : (row.Change_Today_Binance ?? row.Change_Today_Raw);
-      pOpen = isAlpha ? null : (row.spot_utc0_open_Raw ?? row.utc0_open_Raw);
+      pOpen = isAlpha
+        ? null
+        : row.spot_utc0_open_Raw ||
+          (row.Spot_Only === "O" ? row.utc0_open_Raw : null);
       pInflow = "BINANCE_SPOT";
     } else if (
       row.Upbit_Price &&
@@ -142,7 +145,7 @@ export function syncRowPrioritizedMetrics(row) {
         row.Change_Today_Bybit_Futures ??
         row.Change_Today_Bybit ??
         row.Change_Today_Raw;
-      pOpen = row.futures_utc0_open_Raw ?? row.utc0_open_Raw;
+      pOpen = row.futures_utc0_open_Raw;
       pInflow = "BYBIT_FUTURES";
     } else if (
       row.Bybit_Price_Spot &&
@@ -152,7 +155,7 @@ export function syncRowPrioritizedMetrics(row) {
       pPrice = row.Bybit_Price_Spot;
       p24h = row.Change_24h_Bybit ?? row.Change_24h_Raw;
       pToday = row.Change_Today_Bybit ?? row.Change_Today_Raw;
-      pOpen = row.spot_utc0_open_Raw ?? row.utc0_open_Raw;
+      pOpen = row.spot_utc0_open_Raw;
       pInflow = "BYBIT_SPOT";
     }
   }
@@ -179,7 +182,7 @@ export function syncRowPrioritizedMetrics(row) {
     .replace("_spot", "")
     .replace("_futures", "");
 
-  // 🚀 [HTS 가드 엔진] 외부 혹은 미확인 코드에 의한 김프 0.0% 강제 오염 완벽 격리 차단 (0% 고착 리셋 버그 차단용 주석 처리)
+  // 외부 혹은 미확인 코드에 의한 김프 0.0% 오염 확인 용도
   /*
   if (row.Kimchi_Raw === null || row.Kimchi_Raw === undefined || isNaN(row.Kimchi_Raw)) {
     row.Kimchi_Raw = null;
@@ -190,15 +193,15 @@ export function syncRowPrioritizedMetrics(row) {
 }
 window.syncRowPrioritizedMetrics = syncRowPrioritizedMetrics;
 
-// 🚀 각 피드 드라이버 초기 기동 바인딩 (초기 기동 렉 방지를 위해 우선순위가 높은 국내 전용 소켓 피드만 점화)
+// 각 피드 드라이버 초기 기동 바인딩 (초기 기동 렉 방지를 위해 우선순위가 높은 국내 전용 소켓 피드만 점화)
 export function initAllExchangeFeeds() {
-  // 바이낸스/바이비트 전 마켓 스캔 수급은 3초 레이더나 테이블 스나이퍼 소켓(initSniperSocket)으로 충분히 커버되므로,
-  // 메인 화면에서는 국내 거래소 데이터 피드 위주로 안정 기동시킵니다.
+  // 바이낸스/바이비트 전 마켓 스캔 수급은 레이더나 테이블 스나이퍼 소켓(initSniperSocket)으로 충분히 커버되므로,
+  // 메인 화면에서는 국내 거래소 데이터 피드 위주로 안정적으로 가동하기
 
   startUpbitFeed();
   startBithumbFeed();
 
-  // (필요 시 레이더 모드가 켜질 때 동적 호출되도록 드라이버 준비 상태만 유지합니다.)
+  // (필요 시 레이더 모드가 켜질 때 동적 호출되도록 드라이버 준비 상태만 유지)
   // startBinanceSpotFeed();
   // startBinanceFuturesFeed();
   // startBybitSpotFeed();

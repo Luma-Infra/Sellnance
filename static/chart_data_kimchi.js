@@ -2,7 +2,7 @@ import { store, tfSec } from "./_store.js";
 import { ensureSafeUnixSeconds } from "./chart_utils.js";
 import { isValidPriceRatio } from "./stream_utils.js";
 
-// 🚀 [12h / 3d 서브 캔들 에포크 정밀 합성 엔진]
+// [12h / 3d 서브 캔들 에포크 정밀 합성 엔진]
 export function resampleSubCandles(subCandles, targetTF, subExchange) {
   if (!Array.isArray(subCandles) || subCandles.length === 0) return [];
   if (targetTF !== "12h" && targetTF !== "3d") return subCandles;
@@ -92,7 +92,7 @@ export function resampleSubCandles(subCandles, targetTF, subExchange) {
     if (targetTF === "12h") {
       bucket = Math.floor(t / 43200) * 43200;
     } else if (targetTF === "3d") {
-      // 🚀 바이낸스 3일봉 공식 에포크 정렬: (ts - 86400) % 259200 == 0
+      // 바이낸스 3일봉 공식 에포크 정렬: (ts - 86400) % 259200 == 0
       bucket = Math.floor((t - 86400) / 259200) * 259200 + 86400;
     }
 
@@ -124,14 +124,14 @@ export function calculateKimchiData(mainData, subRaw, params) {
   const fiatRateMap = store.fiatRateCache[rateCacheKey] || [];
   const currentFiatRate = store.marketDataMap.krw_usd_rate || 1000;
 
-  // 🚀 [12h / 3d 정밀 합성] 서브 거래소 캔들이 4h나 1d로 들어온 경우 타겟 타임프레임(12h, 3d)으로 에포크 정밀 합성
+  // [12h / 3d 정밀 합성] 서브 거래소 캔들이 4h나 1d로 들어온 경우 타겟 타임프레임(12h, 3d)으로 에포크 정밀 합성
   const processedSubRaw = resampleSubCandles(subRaw, tf, subExchange);
 
   let newKimchiData = [];
   if (Array.isArray(processedSubRaw) && processedSubRaw.length > 0) {
     const intervalSec = tfSec[tf] || 60;
 
-    // 🚀 서브 거래소 파싱 도우미 함수 정의
+    // 서브 거래소 파싱 도우미 함수 정의
     const getSubTime = (item) => {
       if (!item) return 0;
       if (typeof item.time === "number") {
@@ -167,7 +167,7 @@ export function calculateKimchiData(mainData, subRaw, params) {
       );
     };
 
-    // 🚀 서브 데이터를 타임스탬프 기준 시간 오름차순으로 완벽 정렬 (12h/3d 에포크 합성본 사용)
+    // 서브 데이터를 타임스탬프 기준 시간 오름차순으로 정렬 (12h/3d 에포크 합성본 사용)
     const sortedSub = [...processedSubRaw].sort(
       (a, b) => getSubTime(a) - getSubTime(b),
     );
@@ -183,7 +183,7 @@ export function calculateKimchiData(mainData, subRaw, params) {
     mainData.forEach((candle, index) => {
       const candleTimeSec = ensureSafeUnixSeconds(candle.time);
 
-      // [서브 거래소 상장 이전 구간 가드] 서브 캔들이 존재하지 않는 과거 구간은 김프 계산 스킵 (대폭락 갭 원천 차단)
+      // [서브 거래소 상장 이전 구간] 서브 캔들이 존재하지 않는 과거 구간은 김프 계산 스킵 (비정상적 갭 차단)
       if (
         firstSubTime > 0 &&
         candleTimeSec < firstSubTime - intervalSec * 1.5
@@ -204,9 +204,9 @@ export function calculateKimchiData(mainData, subRaw, params) {
         rateIndex++;
       }
 
-      // 🚀 [시계열 정합성 보장 최인접 시간 매칭 알고리즘]
+      // [시계열 정합성 ~ 최인접 시간 매칭 알고리즘]
       // 메인 차트와 서브 차트가 모두 오름차순 정렬된 상태이므로,
-      // 순방향 포인터를 돌며 현재 메인 캔들 시각(candleTimeSec) 이하(과거/동일) 또는 미세 오차 이내의 서브 캔들을 탐색합니다.
+      // 순방향 포인터를 돌며 현재 메인 캔들 시각(candleTimeSec) 이하(과거/동일) 또는 미세 오차 이내의 서브 캔들을 탐색
       while (
         subIndex < sortedSub.length - 1 &&
         getSubTime(sortedSub[subIndex + 1]) <=
@@ -233,7 +233,7 @@ export function calculateKimchiData(mainData, subRaw, params) {
         lastKnownSubTime = candleTimeSec;
       } else {
         const tolerance = intervalSec * 3;
-        // 시차가 너무 벌어졌다면(3배 이상) 이전 매칭된 가격 캐시를 완전히 초기화하여 무분별한 역방향 누적 차단
+        // 시차가 너무 벌어졌다면 이전 매칭된 가격 캐시를 초기화하여 무분별한 역방향 누적 차단
         if (lastKnownSubTime && candleTimeSec - lastKnownSubTime > tolerance) {
           lastKnownSubClose = null;
         }
@@ -248,7 +248,7 @@ export function calculateKimchiData(mainData, subRaw, params) {
         if (unitGlbPrice > 0 && lastKnownRate > 0 && unitKorPrice > 0) {
           const overseasKrw = unitGlbPrice * lastKnownRate;
 
-          // isValidPriceRatio 재사용: 99% 폭락(0.01) 및 10배 폭등(10.0) 이상치 완벽 방어]
+          // isValidPriceRatio 재사용: 99% 폭락(0.01) 및 10배 폭등(10.0) 이상치 return]
           if (isValidPriceRatio(unitKorPrice, overseasKrw)) {
             const kimchiPct = (unitKorPrice / overseasKrw - 1) * 100;
             if (isFinite(kimchiPct)) {

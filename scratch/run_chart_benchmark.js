@@ -1,6 +1,6 @@
 // scratch/run_chart_benchmark.js
 /**
- * 🚀 차트 실시간 렌더링 & 드래그/인터랙션 단위 벤치마크 샌드박스 (외부 API 0회, 로컬 환경)
+ * 차트 실시간 렌더링 & 드래그/인터랙션 단위 벤치마크 샌드박스 (외부 API 0회, 로컬 환경)
  */
 import { performance } from "perf_hooks";
 

@@ -24,7 +24,7 @@ GLOBAL_CMC_CACHE = {
     "map": {},
     "lookup": {},
     "timestamp": datetime.min,
-}  # CMC 크레딧 방어용 독립 캐시
+}  # CMC 크레딧 유지 위한 독립 캐시
 
 MARKET_DATA_CACHE_FILE = os.path.join(
     os.path.dirname(__file__), "../static/market_data_cache.json"
@@ -100,7 +100,7 @@ def _load_market_data_cache_from_file():
                         except:
                             GLOBAL_CACHE["timestamp"] = datetime.now(KST)
                     print(
-                        f"⚡ [MARKET DATA CACHE] 파일에서 {len(data)}개 전체 코인 장부 즉시 로드 완료 (0초 서빙 준비 완료)"
+                        f"⚡ [MARKET DATA CACHE] 파일에서 {len(data)}개 전체 코인 장부 로드 완료"
                     )
     except Exception as e:
         print(f"🚨 [MARKET DATA CACHE LOAD ERROR] {e}")
@@ -190,7 +190,7 @@ def trigger_kst_9am_reset_atomic():
 
 
 # [스케줄러 모듈 위임]
-# 15분 정기 갱신, 4시간 시총, 9시 시가 초기화 및 10초 상장 레이더는 modules/scheduler.py가 전담
+# 15분 정기 갱신, 4시간 시총, 9시 시가 초기화 및 상장 watch 레이더는 modules/scheduler.py가 전담
 from modules.scheduler import (
     get_seconds_until_next_15min,
     start_unified_background_scheduler,
@@ -255,11 +255,11 @@ def suppress_output():
 
 
 # ==========================================
-# 최종 함수 BOSS
+# 최종 함수 final
 # ==========================================
 def _fetch_and_process_data(silent_mode=False, api_key=None):
     global GLOBAL_CMC_CACHE
-    # 1. 족보 로드 (항상 최신본으로 시작!)
+    # 1. 족보 로드 (항상 최신본으로 시작)
     MAPPING_DATA = config_manager.load_mapping_data()
     (
         NOTE_MAP,
@@ -273,7 +273,7 @@ def _fetch_and_process_data(silent_mode=False, api_key=None):
         HARDCODE_VERIFY_SKIP_LIST,
     ) = config_manager.get_mapping_parts(MAPPING_DATA)
 
-    # 1. 시세 수집 (바낸/업비트/바이비트/펀비 무료 무제한 타격!)
+    # 1. 시세 수집 (바낸/업비트/빗썸/바이비트)
     (
         binance_data,
         upbit_data,
@@ -287,7 +287,7 @@ def _fetch_and_process_data(silent_mode=False, api_key=None):
         f"📊 [1/3 시세/펀비 수집 완료 (Silent:{silent_mode})] 바낸:{len(binance_data)}, 업비트:{len(upbit_data)}, 바이비트:{len(bybit_data)}"
     )
 
-    # 2. 정보 수집 (CMC 크레딧 철벽 방어!)
+    # 2. 정보 수집 (CMC 크레딧 관리)
     now_kst = datetime.now(KST)
     is_user_key = bool(api_key and isinstance(api_key, str) and api_key.strip() != "")
 
@@ -378,7 +378,6 @@ def _fetch_and_process_data(silent_mode=False, api_key=None):
     # 3. 조립 및 계산
     global_listings = exchange_api.fetch_global_listings()
 
-    # 조립 부대 가동 (에러 방어막 가동)
     final_results = []
     is_mapping_updated = False
     try:
@@ -403,7 +402,6 @@ def _fetch_and_process_data(silent_mode=False, api_key=None):
     all_live_assets = binance_data.keys() | upbit_krw_set | bybit_data.keys()
     live_bases = {utils.get_pure_base_asset(a).upper() for a in all_live_assets}
 
-    # [청소기 가동 구간 - 철벽 방어막 장착]
     # 사일런트 모드이거나, 수집된 데이터가 평소보다 적으면 족보 청소를 하지 않고 즉시 나기기
     if silent_mode or len(binance_data) < 10 or len(upbit_krw_set) < 10:
         if is_mapping_updated:
@@ -482,11 +480,11 @@ def get_cached_data(force_reload=False, silent_mode=False, user_api_key=None):
     kst = pytz.timezone("Asia/Seoul")
     now_kst = datetime.now(kst)
 
-    # 유저 개별 API 키가 주입된 경우: 유효성 검증 + 동시 요청 합승 + 캐시 개수 상한 방어
+    # 유저 개별 API 키인 경우: 유효성 검증 + 동시 요청 합승 + 캐시 개수 상한 관리
     if user_api_key and is_valid_cmc_key_format(user_api_key):
         key_hash = hashlib.sha256(user_api_key.strip().encode()).hexdigest()
 
-        # 1. 1차 캐시 히트 검사 (0ms)
+        # 1. 1차 캐시 히트 검사
         with user_cache_lock:
             _prune_user_cmc_caches()
             user_cache = USER_CMC_CACHES.get(key_hash)
@@ -514,7 +512,7 @@ def get_cached_data(force_reload=False, silent_mode=False, user_api_key=None):
                 failed_at
                 and (now_kst - failed_at).total_seconds() < FAILED_KEY_COOLDOWN
             ):
-                # 5분 이내 실패했던 무효/가짜 키 -> 외부 호출 차단 및 글로벌 기본 데이터 반환
+                # 5분 이내 실패했던 키 -> 외부 호출 차단 및 글로벌 기본 데이터 반환
                 return GLOBAL_CACHE.get("data", []), GLOBAL_CACHE.get(
                     "last_updated_str", ""
                 )
@@ -607,7 +605,7 @@ def get_cached_data(force_reload=False, silent_mode=False, user_api_key=None):
         else:
             is_expired = True
 
-        # [핵심] silent_mode일 때는 만료와 무관하게 펀비/시세만 새로 긁어와 캐시 갱신하기
+        # silent_mode일 때는 만료와 무관하게 펀비/시세만 새로 긁어와 캐시 갱신하기
         if force_reload or needs_reset or is_expired or silent_mode:
             try:
                 raw_data = _fetch_and_process_data(

@@ -106,7 +106,7 @@ export function stopOrderbookStream() {
   if (store.orderbookWs) {
     try {
       store.orderbookWs.close();
-    } catch (e) { }
+    } catch (e) {}
     store.orderbookWs = null;
   }
   obState.asks = [];
@@ -125,7 +125,7 @@ export function startOrderbookStream(symbol, market) {
 
   obState.precisionModifier = 0;
 
-  // 🚀 [안전 가드] symbol 또는 market이 전달되지 않았을 시 스토어 기본값으로 폴백 처리
+  // symbol 또는 market이 전달되지 않았을 시 스토어 기본값으로 폴백 처리
   if (!symbol) {
     symbol = store.currentSelectedSymbol || store.currentAsset || "";
   }
@@ -135,7 +135,7 @@ export function startOrderbookStream(symbol, market) {
     market = store.currentChartMarket || "FUTURES";
   }
 
-  // 🚀 [버그 픽스] 테이블에서 "BTCUSDT" 또는 "BTCKRW"가 넘어오더라도 순수 심볼("BTC")만 추출하여 소켓 경로 중복 오류 방지
+  // [버그 픽스] 테이블에서 "BTCUSDT" 또는 "BTCKRW"가 넘어오더라도 순수 심볼("BTC")만 추출하여 소켓 경로 중복 오류 방지
   const baseSym = symbol
     .toUpperCase()
     .replace("USDT", "")
@@ -150,17 +150,18 @@ export function startOrderbookStream(symbol, market) {
       { format: "SIMPLE" },
     ]);
 
-    // [업비트 10초 연결 rule] 이미 연결된 웹소켓이 있으면 절대 끊지 않고 payload만 덮어씌워 구독 갱신
+    // [업비트 공식 문서 참고] 이미 연결된 웹소켓이 있으면 끊지 않고 payload만 덮어씌워 구독 갱신
     if (
       store.orderbookWs &&
       store.orderbookWs._market === "UPBIT" &&
-      (store.orderbookWs.readyState === WebSocket.OPEN || store.orderbookWs.readyState === WebSocket.CONNECTING)
+      (store.orderbookWs.readyState === WebSocket.OPEN ||
+        store.orderbookWs.readyState === WebSocket.CONNECTING)
     ) {
       if (store.orderbookWs.readyState === WebSocket.OPEN) {
         try {
           store.orderbookWs.send(payload);
           return;
-        } catch (e) { }
+        } catch (e) {}
       } else {
         // 아직 연결 중이면 onopen 때 최신 payload 전송
         store.orderbookWs._pendingPayload = payload;
@@ -173,7 +174,7 @@ export function startOrderbookStream(symbol, market) {
         store.orderbookWs.onopen = null;
         store.orderbookWs.onmessage = null;
         store.orderbookWs.close();
-      } catch (e) { }
+      } catch (e) {}
     }
 
     const ws = new WebSocket("wss://api.upbit.com/websocket/v1");
@@ -185,7 +186,7 @@ export function startOrderbookStream(symbol, market) {
         const toSend = ws._pendingPayload || payload;
         ws._pendingPayload = null;
         ws.send(toSend);
-      } catch (e) { }
+      } catch (e) {}
     };
     ws.onmessage = async (e) => {
       if (store.orderbookWs !== ws) return;
@@ -202,7 +203,7 @@ export function startOrderbookStream(symbol, market) {
           obState.bids = res.obu.map((u) => ({ price: u.bp, size: u.bs }));
           scheduleRender();
         }
-      } catch (err) { }
+      } catch (err) {}
     };
   } else if (market === "BITHUMB") {
     const rawSym = `${baseSym}_KRW`;
@@ -211,11 +212,15 @@ export function startOrderbookStream(symbol, market) {
       symbols: [rawSym],
     });
 
-    if (store.orderbookWs && store.orderbookWs.readyState === WebSocket.OPEN && store.orderbookWs._market === "BITHUMB") {
+    if (
+      store.orderbookWs &&
+      store.orderbookWs.readyState === WebSocket.OPEN &&
+      store.orderbookWs._market === "BITHUMB"
+    ) {
       try {
         store.orderbookWs.send(payload);
         return;
-      } catch (e) { }
+      } catch (e) {}
     }
 
     if (store.orderbookWs) {
@@ -223,7 +228,7 @@ export function startOrderbookStream(symbol, market) {
         store.orderbookWs.onopen = null;
         store.orderbookWs.onmessage = null;
         store.orderbookWs.close();
-      } catch (e) { }
+      } catch (e) {}
     }
 
     const ws = new WebSocket("wss://pubwss.bithumb.com/pub/ws");
@@ -232,7 +237,7 @@ export function startOrderbookStream(symbol, market) {
     ws.onopen = () => {
       try {
         ws.send(payload);
-      } catch (e) { }
+      } catch (e) {}
     };
     store.orderbookWs.onmessage = (e) => {
       const res = JSON.parse(e.data);
@@ -269,7 +274,7 @@ export function startOrderbookStream(symbol, market) {
         store.orderbookWs.onopen = null;
         store.orderbookWs.onmessage = null;
         store.orderbookWs.close();
-      } catch (e) { }
+      } catch (e) {}
     }
 
     const ws = new WebSocket(wsUrl);
@@ -284,7 +289,7 @@ export function startOrderbookStream(symbol, market) {
             args: [`orderbook.50.${streamSym}`],
           }),
         );
-      } catch (e) { }
+      } catch (e) {}
     };
     ws.onmessage = (e) => {
       if (store.orderbookWs !== ws) return;
@@ -345,7 +350,7 @@ export function startOrderbookStream(symbol, market) {
         store.orderbookWs.onopen = null;
         store.orderbookWs.onmessage = null;
         store.orderbookWs.close();
-      } catch (e) { }
+      } catch (e) {}
     }
 
     const ws = new WebSocket(`${wsBase}/${streamSym}@depth20@100ms`);
@@ -405,7 +410,7 @@ function renderOrderbook() {
     priceEl.innerText = formatSmartPrice(mid, p);
   }
 
-  // 병합 헬퍼 (초고속 연산)
+  // 병합 헬퍼 (고속 연산)
   const groupData = (data, isAsk) => {
     let grouped = [];
     data.forEach((item) => {
@@ -510,7 +515,7 @@ if (typeof window !== "undefined") {
       store.orderbookWs.onclose = null;
       try {
         store.orderbookWs.close(1000);
-      } catch (_) { }
+      } catch (_) {}
     }
   });
 }

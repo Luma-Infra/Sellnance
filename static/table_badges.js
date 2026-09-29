@@ -1,5 +1,5 @@
 // table_badges.js
-// 🏷️ [테이블 뱃지 및 상장일 계산 모듈]
+//️ [테이블 뱃지 및 상장일 계산 모듈]
 // 1. 거래소별 유의/상폐 경고 뱃지 HTML 생성
 // 2. 필터 모드별 상장일 계산 및 포맷팅 (getListingDate, formatListingDateWithExchange)
 

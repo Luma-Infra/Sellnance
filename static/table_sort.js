@@ -11,28 +11,28 @@ import { getRowDisplayMetrics, getRowDisplayVolume } from "./_market_rules.js";
 let lastSortTime = 0;
 
 export function sortTable(colKey) {
-  // 🚀 모든 정렬 요소 공통 500ms 광클 방어
+  // 동일한 클릭 이벤트 return
   const now = Date.now();
   if (now - lastSortTime < 500) {
     return;
   }
   lastSortTime = now;
 
-  // 🚀 누르자마자 실행되게 즉시 로딩 클래스 추가 (차트 로딩 효과처럼 어두워짐)
+  // 누르자마자 실행되도록 로딩 클래스 추가 (차트 로딩 효과처럼 어두워짐)
   const table = document.getElementById("coin-list-body");
   if (table) {
     table.classList.add("table-loading");
     table.classList.add("no-transition");
   }
 
-  // 🚀 [2단 토글 개편] 모든 정렬 가능 컬럼을 3단(desc -> asc -> 해제)이 아닌 2단(desc <-> asc)으로 토글합니다.
+  // [2단 토글 개편] 모든 정렬 가능 컬럼을 3단(desc -> asc -> 해제)이 아닌 2단(desc <-> asc)으로 토글
   if (store.currentSortCol === colKey) {
     store.sortState = store.sortState === "desc" ? "asc" : "desc";
   } else {
     store.currentSortCol = colKey;
     store.sortState = "desc";
   }
-  // 🚀 [UX 복원] 마지막 정렬 기준 로컬 및 세션 저장 (새로고침 시 PC/모바일 100% 유지)
+  // [UX 복원] 마지막 정렬 기준 로컬 및 세션 저장 (새로고침 시 PC/모바일 유지)
   try {
     localStorage.setItem("sellnance_last_sort_col", store.currentSortCol);
     localStorage.setItem("sellnance_last_sort_state", store.sortState);
@@ -41,12 +41,12 @@ export function sortTable(colKey) {
     if (typeof window.saveControlPanelSession === "function") {
       window.saveControlPanelSession();
     }
-  } catch (e) { }
+  } catch (e) {}
 
-  // 🚀 [UI 갱신] 활성 정렬 화살표 및 버튼 강조 효과 동기화
+  // [UI 갱신] 활성 정렬 화살표 및 버튼 강조 효과 동기화
   updateSortUI(store.currentSortCol, store.sortState);
 
-  // 🚀 [INP 해결] 즉시 동기 실행하여 렌더링 스케줄 대기를 완전히 없앱니다.
+  // [INP 해결] 즉시 동기 실행하여 렌더링 스케줄 대기 최소화
   const scrollContainer = document.querySelector(
     "#left-panel .overflow-y-auto",
   );
@@ -55,9 +55,9 @@ export function sortTable(colKey) {
   }
 
   simpleSortData();
-  renderTable(false); // 수동 정렬이므로 0초 컷으로 즉시 전체 배치
+  renderTable(false); // 수동 정렬이므로 전체 배치하기
 
-  // 🚀 정렬 및 렌더링이 브라우저 레이아웃에 완전히 반영된 뒤(50ms) 로딩 및 no-transition 클래스 제거
+  // 정렬 및 렌더링이 브라우저 레이아웃에 반영된 뒤에 로딩 및 no-transition 클래스 제거
   if (table) {
     setTimeout(() => {
       table.classList.remove("table-loading");
@@ -69,7 +69,7 @@ export function sortTable(colKey) {
 export function simpleSortData() {
   const dataCopy = [...store.currentTableData];
 
-  // 🚀 마켓/거래소 선택과 관계없이 언제나 공통 대표 변수(Raw)만을 일관되게 정렬 기준으로 사용
+  // 마켓/거래소 선택과 관계없이 언제나 공통 대표 변수(Raw)만을 일관되게 정렬 기준으로 사용
   const sortKeyMap = {
     MarketCap: "MarketCap_Raw",
     Price: "Price_Raw",
@@ -98,7 +98,7 @@ export function simpleSortData() {
   const isKrwMode = store.currencyMode === "KRW";
   const rate = store.marketDataMap?.krw_usd_rate || 1000;
 
-  // 🚀 [Schwartzian Transform] 공통 Raw 변수 값 및 비어있음 판단을 O(N)으로 1회만 선계산하여 캐싱
+  // [Schwartzian Transform] 공통 Raw 변수 값 및 비어있음 판단을 O(N)으로 1회만 선계산하여 캐싱
   const mapped = dataCopy.map((d) => {
     let val;
     if (store.currentSortCol === "Listing_Date") {
@@ -135,7 +135,7 @@ export function simpleSortData() {
     if (val === undefined || val === null || val === "" || val === "-") {
       isEmpty = true;
     } else {
-      // 🚀 화면에 하이픈(-)으로 노출되거나 유효값(볼륨/시총 등)이 0인 무효 데이터를 최하단 배치하기 위한 정밀 감지
+      // 화면에 하이픈(-)으로 노출되거나 유효값(볼륨/시총 등)이 0인 무효 데이터를 최하단 배치하기 위한 정밀 감지
       if (
         store.currentSortCol === "VolumeBinance" ||
         store.currentSortCol === "Volume"
@@ -197,14 +197,14 @@ export function simpleSortData() {
     return { val, isEmpty, d };
   });
 
-  // 🚀 가벼운 캐시 데이터 정렬 (O(N log N)의 비교 비용 최소화)
+  // 가벼운 캐시 데이터 정렬 (O(N log N)의 비교 비용 최소화)
   mapped.sort((a, b) => {
     // 값이 없는 데이터는 오름차순/내림차순 상관없이 항상 최하단으로 정렬
     if (a.isEmpty && b.isEmpty) return 0;
     if (a.isEmpty) return 1;
     if (b.isEmpty) return -1;
 
-    // 🚨 Caution(유의) 정렬 시: 상폐/유의 위험 종목들이 무조건 최상단, 알파벳/가나다 순으로 정렬
+    // Caution(유의) 정렬 시: 상폐/유의 위험 종목들이 최상단, 알파벳/가나다 순으로 정렬
     if (store.currentSortCol === "Caution") {
       const hasWarnA = a.d.Warnings && Object.keys(a.d.Warnings).length > 0;
       const hasWarnB = b.d.Warnings && Object.keys(b.d.Warnings).length > 0;
@@ -233,7 +233,7 @@ export function simpleSortData() {
 
     if (!isTextCol) {
       // [알파 코인 상위권 도배 방지]: 24h / 당일 시가(Day) 정렬 시,
-      // B-ALPHA 필터를 켜지 않은 일반 상태에서는 알파 코인을 일반 코인 뒤로 후순위 배치합니다.
+      // B-ALPHA 필터를 켜지 않은 일반 상태에서는 알파 코인을 일반 코인 뒤로 후순위 배치
       const isSortChange =
         store.currentSortCol === "Change_24h" ||
         store.currentSortCol === "Change_Today";

@@ -3,7 +3,7 @@
 [독립 메모리 감사 데몬 스레드]
 - 1시간 주기 절대시간 매시 30분 정각(:30 KST)에 프로세스 RSS 및 주요 객체/캐시 델타 감사 로그 출력
 - 리눅스(/proc/self/status) 및 윈도우(psapi) 범용 지원 (외부 패키지 의존 및 메모리 오버헤드 최소화)
-- 기존 스케줄러와 완전 격리된 별도 데몬 스레드로 무중단 운용
+- 기존 스케줄러와 격리된 별도 데몬 스레드로 무중단 운용
 """
 import os
 import sys
@@ -95,7 +95,7 @@ def start_hourly_memory_audit():
     from . import utils
 
     def run():
-        time.sleep(5)  # 서버 부팅 직후 5초 대기 후 초기 베이스라인 1회 로깅
+        time.sleep(5)  # 서버 부팅 직후 대기 이후에 초기 베이스라인 1회 로깅
         utils.trim_memory()
         prev_rss = get_process_rss_mb()
         prev_counts = {}

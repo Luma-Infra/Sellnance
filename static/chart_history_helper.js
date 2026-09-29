@@ -2,16 +2,23 @@ import { store } from "./_store.js";
 import { getPureBase } from "./chart_utils.js";
 import { formatListingDateWithExchange } from "./table_render.js";
 
-// 🚀 [역할 분리] UID 및 거래소 우선순위에 따라 정확한 rowInfo 로드
-export function findRowInfo(displayName, pureBase, exchangeFlags, targetUid = null) {
-  // 1. targetUid 또는 store.currentSelectedUid가 있으면 최우선으로 UID 기준 즉각 반환! (동명이인 오염 완벽 방어)
+// [역할 분리] UID 및 거래소 우선순위에 따라 정확한 rowInfo 로드
+export function findRowInfo(
+  displayName,
+  pureBase,
+  exchangeFlags,
+  targetUid = null,
+) {
+  // 1. targetUid 또는 store.currentSelectedUid가 있으면 최우선으로 UID 기준으로 반환 (동명이인 오염 방지)
   const effectiveUid = targetUid || store.currentSelectedUid;
   if (effectiveUid) {
-    const byUid = store.currentTableData.find((c) => String(c.UID) === String(effectiveUid));
+    const byUid = store.currentTableData.find(
+      (c) => String(c.UID) === String(effectiveUid),
+    );
     if (byUid) return byUid;
   }
 
-  // 2. DisplayTicker 또는 Ticker 완전 일치 우선 검색 (예: AI(Sleepless), AIUSDT 등)
+  // 2. DisplayTicker 또는 Ticker 일치 우선 검색 (예: AI(Sleepless), AIUSDT 등)
   if (displayName) {
     const exactMatch = store.currentTableData.find(
       (c) => c.DisplayTicker === displayName || c.Ticker === displayName,
@@ -19,7 +26,8 @@ export function findRowInfo(displayName, pureBase, exchangeFlags, targetUid = nu
     if (exactMatch) return exactMatch;
   }
 
-  const { isUpbit, isBithumb, isBybit, isBybitFutures, isFutures, isSpot } = exchangeFlags;
+  const { isUpbit, isBithumb, isBybit, isBybitFutures, isFutures, isSpot } =
+    exchangeFlags;
 
   let expectedUid = null;
   const dupList = store.marketDataMap?.duplicated_list;
@@ -37,7 +45,8 @@ export function findRowInfo(displayName, pureBase, exchangeFlags, targetUid = nu
       if (Array.isArray(v) && v.length >= 4) {
         const dupSym = (v[2] || "").toUpperCase();
         const dupEx = v[3].toUpperCase();
-        const isExMatch = dupEx === exchangeTag || dupEx.startsWith(exchangeTag);
+        const isExMatch =
+          dupEx === exchangeTag || dupEx.startsWith(exchangeTag);
         if (dupSym === pureBase && isExMatch) {
           expectedUid = v[0];
           break;
@@ -51,7 +60,8 @@ export function findRowInfo(displayName, pureBase, exchangeFlags, targetUid = nu
         if (Array.isArray(v) && v.length >= 4) {
           const dupBase = key.split("(")[0].toUpperCase();
           const dupEx = v[3].toUpperCase();
-          const isExMatch = dupEx === exchangeTag || dupEx.startsWith(exchangeTag);
+          const isExMatch =
+            dupEx === exchangeTag || dupEx.startsWith(exchangeTag);
           if (dupBase === pureBase && isExMatch) {
             expectedUid = v[0];
             break;
@@ -65,23 +75,45 @@ export function findRowInfo(displayName, pureBase, exchangeFlags, targetUid = nu
   if (cleanDisplayName.includes(":")) {
     cleanDisplayName = cleanDisplayName.split(":")[1].trim();
   }
-  cleanDisplayName = cleanDisplayName.replace(/_FUTURES$/i, "").replace(/_SPOT$/i, "").replace(/_UPBIT$/i, "").replace(/_BITHUMB$/i, "");
-  if (cleanDisplayName.endsWith("KRW")) cleanDisplayName = cleanDisplayName.slice(0, -3);
-  else if (cleanDisplayName.endsWith("USDT")) cleanDisplayName = cleanDisplayName.slice(0, -4);
+  cleanDisplayName = cleanDisplayName
+    .replace(/_FUTURES$/i, "")
+    .replace(/_SPOT$/i, "")
+    .replace(/_UPBIT$/i, "")
+    .replace(/_BITHUMB$/i, "");
+  if (cleanDisplayName.endsWith("KRW"))
+    cleanDisplayName = cleanDisplayName.slice(0, -3);
+  else if (cleanDisplayName.endsWith("USDT"))
+    cleanDisplayName = cleanDisplayName.slice(0, -4);
 
   let rowInfo = store.currentTableData.find((c) => {
     if (expectedUid && String(c.UID) === String(expectedUid)) return true;
 
     const t = (c.Ticker || "").toUpperCase();
-    const cleanT = t.endsWith("KRW") ? t.slice(0, -3) : (t.endsWith("USDT") ? t.slice(0, -4) : t);
+    const cleanT = t.endsWith("KRW")
+      ? t.slice(0, -3)
+      : t.endsWith("USDT")
+        ? t.slice(0, -4)
+        : t;
 
     const dt = (c.DisplayTicker || "").toUpperCase();
-    const cleanDt = dt.endsWith("KRW") ? dt.slice(0, -3) : (dt.endsWith("USDT") ? dt.slice(0, -4) : dt);
+    const cleanDt = dt.endsWith("KRW")
+      ? dt.slice(0, -3)
+      : dt.endsWith("USDT")
+        ? dt.slice(0, -4)
+        : dt;
 
     const sym = (c.Symbol || "").toUpperCase();
-    const cleanSym = sym.endsWith("KRW") ? sym.slice(0, -3) : (sym.endsWith("USDT") ? sym.slice(0, -4) : sym);
+    const cleanSym = sym.endsWith("KRW")
+      ? sym.slice(0, -3)
+      : sym.endsWith("USDT")
+        ? sym.slice(0, -4)
+        : sym;
 
-    if (cleanT !== cleanDisplayName && cleanDt !== cleanDisplayName && cleanSym !== cleanDisplayName)
+    if (
+      cleanT !== cleanDisplayName &&
+      cleanDt !== cleanDisplayName &&
+      cleanSym !== cleanDisplayName
+    )
       return false;
 
     if (isUpbit && (c.Listed_Exchanges?.includes("UPBIT") || c.Upbit === "O"))
@@ -99,23 +131,44 @@ export function findRowInfo(displayName, pureBase, exchangeFlags, targetUid = nu
   if (!rowInfo) {
     rowInfo = store.currentTableData.find((c) => {
       const t = (c.Ticker || "").toUpperCase();
-      const cleanT = t.endsWith("KRW") ? t.slice(0, -3) : (t.endsWith("USDT") ? t.slice(0, -4) : t);
+      const cleanT = t.endsWith("KRW")
+        ? t.slice(0, -3)
+        : t.endsWith("USDT")
+          ? t.slice(0, -4)
+          : t;
 
       const dt = (c.DisplayTicker || "").toUpperCase();
-      const cleanDt = dt.endsWith("KRW") ? dt.slice(0, -3) : (dt.endsWith("USDT") ? dt.slice(0, -4) : dt);
+      const cleanDt = dt.endsWith("KRW")
+        ? dt.slice(0, -3)
+        : dt.endsWith("USDT")
+          ? dt.slice(0, -4)
+          : dt;
 
       const sym = (c.Symbol || "").toUpperCase();
-      const cleanSym = sym.endsWith("KRW") ? sym.slice(0, -3) : (sym.endsWith("USDT") ? sym.slice(0, -4) : sym);
+      const cleanSym = sym.endsWith("KRW")
+        ? sym.slice(0, -3)
+        : sym.endsWith("USDT")
+          ? sym.slice(0, -4)
+          : sym;
 
-      return cleanT === cleanDisplayName || cleanDt === cleanDisplayName || cleanSym === cleanDisplayName;
+      return (
+        cleanT === cleanDisplayName ||
+        cleanDt === cleanDisplayName ||
+        cleanSym === cleanDisplayName
+      );
     });
   }
 
   return rowInfo;
 }
 
-// 🚀 [역할 분리] 신규 상장일(Listing Date) 갱신 및 백엔드 비동기 저장
-export function determineListingDate(rawMain, rowInfo, pureBase, exchangeFlags) {
+// [역할 분리] 신규 상장일(Listing Date) 갱신 및 백엔드 비동기 저장
+export function determineListingDate(
+  rawMain,
+  rowInfo,
+  pureBase,
+  exchangeFlags,
+) {
   if (!rawMain || rawMain.length === 0) return;
   const { isUpbit, isBithumb, isBybit, isFutures, isSpot } = exchangeFlags;
   try {
@@ -149,7 +202,9 @@ export function determineListingDate(rawMain, rowInfo, pureBase, exchangeFlags) 
           [exchangeKey]: newDateStr,
         };
 
-        const listingEl = document.getElementById(`listing-${store.currentSelectedSymbol}`);
+        const listingEl = document.getElementById(
+          `listing-${store.currentSelectedSymbol}`,
+        );
         const tRow = store.originalTableData.find(
           (r) =>
             r.Ticker === store.currentSelectedSymbol ||
@@ -171,9 +226,11 @@ export function determineListingDate(rawMain, rowInfo, pureBase, exchangeFlags) 
             exchange_key: exchangeKey,
             date: newDateStr,
           }),
-        }).catch(() => { });
+        }).catch(() => {});
       } else {
-        const listingEl = document.getElementById(`listing-${store.currentSelectedSymbol}`);
+        const listingEl = document.getElementById(
+          `listing-${store.currentSelectedSymbol}`,
+        );
         const tRow = store.originalTableData.find(
           (r) =>
             r.Ticker === store.currentSelectedSymbol ||

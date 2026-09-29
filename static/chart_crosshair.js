@@ -48,13 +48,13 @@ export function syncCrosshair(sourceChart, targetCharts) {
         param.point.x >= 0 &&
         param.point.y >= 0 &&
         param.point.x <=
-        (sourceChart._element
-          ? sourceChart._element.clientWidth
-          : window.innerWidth) &&
+          (sourceChart._element
+            ? sourceChart._element.clientWidth
+            : window.innerWidth) &&
         param.point.y <=
-        (sourceChart._element
-          ? sourceChart._element.clientHeight
-          : window.innerHeight);
+          (sourceChart._element
+            ? sourceChart._element.clientHeight
+            : window.innerHeight);
 
       if (isHover) {
         if (store.activeChart !== sourceChart) {
@@ -67,7 +67,7 @@ export function syncCrosshair(sourceChart, targetCharts) {
             try {
               if (!sourceChart || !window.LightweightCharts) return;
 
-              // 🚀 1. 활성 차트: 가로선과 가격 라벨 색상 복원
+              // 1. 활성 차트: 가로선과 가격 라벨 색상 복원
               sourceChart.applyOptions({
                 crosshair: {
                   mode: window.LightweightCharts.CrosshairMode.Normal,
@@ -87,7 +87,7 @@ export function syncCrosshair(sourceChart, targetCharts) {
                 },
               });
 
-              // 🚀 2. 비활성 차트: 가로선 완전 투명화
+              // 2. 비활성 차트: 가로선 투명화
               targetCharts.forEach((targetObj) => {
                 if (targetObj.chart) {
                   targetObj.chart.applyOptions({
@@ -115,11 +115,11 @@ export function syncCrosshair(sourceChart, targetCharts) {
                   window.syncPriceScaleWidths(true);
                 }
               }, 50);
-            } catch (applyErr) { }
+            } catch (applyErr) {}
           });
         }
 
-        // 🚀 가로축 마그네틱 스냅
+        // 가로축 마그네틱 스냅
         store.lastMouseX = param.point.x;
         let magnetX = param.point.x;
         let currentLogical = null;
@@ -151,7 +151,9 @@ export function syncCrosshair(sourceChart, targetCharts) {
         let targetTime = param.time;
         if (targetTime === undefined) {
           let logicalIndex = null;
-          if (typeof sourceChart.timeScale().coordinateToLogical === "function") {
+          if (
+            typeof sourceChart.timeScale().coordinateToLogical === "function"
+          ) {
             logicalIndex = sourceChart
               .timeScale()
               .coordinateToLogical(param.point.x);
@@ -208,8 +210,9 @@ export function syncCrosshair(sourceChart, targetCharts) {
             store.leftScaleSeries &&
             typeof store.leftScaleSeries.coordinateToPrice === "function"
           ) {
-            store.crosshairLeftPrice =
-              store.leftScaleSeries.coordinateToPrice(param.point.y);
+            store.crosshairLeftPrice = store.leftScaleSeries.coordinateToPrice(
+              param.point.y,
+            );
           }
         }
         store.isCrosshairActive = true;
@@ -284,7 +287,7 @@ export function syncCrosshair(sourceChart, targetCharts) {
           }, 50);
         }
       }
-    } catch (err) { }
+    } catch (err) {}
     const totalPerf = performance.now() - perfStart;
     if (ENABLE_PERF_LOG && totalPerf > 1.5) {
       // Xconsole.warn(`[Perf] syncCrosshair took ${totalPerf.toFixed(2)}ms`);
@@ -311,7 +314,7 @@ export function renderTargetCharts(
       ) {
         try {
           tChart.clearCrosshairPosition();
-        } catch (e) { }
+        } catch (e) {}
       }
 
       let timeStr = null;
@@ -326,6 +329,6 @@ export function renderTargetCharts(
       } else if (tChart === store.chart && store._mainCrosshair) {
         store._mainCrosshair.setX(targetX, timeStr);
       }
-    } catch (e) { }
+    } catch (e) {}
   });
 }

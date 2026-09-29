@@ -13,8 +13,15 @@ export function startBybitSpotFeed() {
   bybitSpotRadarWs.onopen = () => {
     // 가시적인 Bybit 현물 구독 대상 선별
     const spotSymbols = store.currentTableData
-      .filter((row) => (row.Listed_Exchanges?.includes("BYBIT") || row.Bybit) && row.Spot_Only === "O")
-      .map((row) => `publicTrade.${(row.Bybit_Symbol || row.Symbol || "").toUpperCase()}USDT`);
+      .filter(
+        (row) =>
+          (row.Listed_Exchanges?.includes("BYBIT") || row.Bybit) &&
+          row.Spot_Only === "O",
+      )
+      .map(
+        (row) =>
+          `publicTrade.${(row.Bybit_Symbol || row.Symbol || "").toUpperCase()}USDT`,
+      );
 
     if (spotSymbols.length === 0) return;
 
@@ -23,7 +30,7 @@ export function startBybitSpotFeed() {
         JSON.stringify({
           op: "subscribe",
           args: spotSymbols,
-        })
+        }),
       );
     } catch (e) {
       console.error("Bybit Spot Radar subscribe error:", e);
@@ -43,8 +50,9 @@ export function startBybitSpotFeed() {
       if (!store.tickerBuffer) store.tickerBuffer = {};
       store.tickerBuffer[ticker] = { c: newPrice };
 
-      // 🚀 [HTS Bybit Spot 전용 격리 적재] 오직 Bybit 현물 가격 변수만 정밀 대입 (O(1) 해시 색인 탐색)
-      const row = store.tickerRowMap.get(ticker) || store.tickerRowMap.get(pureSym);
+      // 오직 Bybit 현물 가격 변수만 정밀 대입 (O(1) 해시 색인 탐색)
+      const row =
+        store.tickerRowMap.get(ticker) || store.tickerRowMap.get(pureSym);
       if (row) {
         row.Bybit_Price_Spot = newPrice;
       }

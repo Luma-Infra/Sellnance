@@ -37,7 +37,7 @@ function changeDir(d) {
     if (btnGen) btnGen.style.backgroundColor = "var(--down)";
   }
 
-  // 슬라이더 콩나물 대가리 및 % 수치 색상 - 차트 캔들 상승/하락 컬러에 100% 귀속
+  // 슬라이더 마커 및 % 수치 색상 - 차트 캔들 상승/하락 컬러에 맞추기
   const simControls = document.getElementById("sim-controls");
   const simColor = d === "bull" ? "var(--up)" : "var(--down)";
   if (simControls) {
@@ -64,7 +64,7 @@ function addCandle() {
   store.mainData.push(n);
   store.candleSeries.setData(store.mainData);
 
-  // 🚀 [원자적 너비 동기화] 캔들 생성 즉시 동일 동기 틱에서 볼륨 차트 우측 너비 일치 (덜그럭 0%)
+  // [원자적 너비 동기화] 캔들 생성 즉시 동일 동기 틱에서 볼륨 차트 우측 너비 일치
   if (typeof performSyncPriceScaleWidths === "function") {
     performSyncPriceScaleWidths(false);
   }
@@ -79,7 +79,7 @@ function undoLast() {
     store.mainData.pop();
     store.candleSeries.setData(store.mainData);
 
-    // 🚀 [원자적 너비 동기화] 캔들 삭제 즉시 동일 동기 틱에서 볼륨 차트 우측 너비 일치
+    // [원자적 너비 동기화] 캔들 삭제 즉시 동일 동기 틱에서 볼륨 차트 우측 너비 일치
     if (typeof performSyncPriceScaleWidths === "function") {
       performSyncPriceScaleWidths(false);
     }
@@ -121,12 +121,12 @@ function getNext() {
         : last.time;
   const nextTime = lastTime + (tfSec[store.currentTF] || 86400);
 
-  // [수학적 비율 기반 꼬리 산출 - 절대 0 이하/음수 불가 & 무한 극소수점 완벽 대응]
+  // [수학적 비율 기반 꼬리 산출 - 0 이하/음수 불가 & 무한 소수점 대응]
   // 1. 상단 꼬리: 몸통 최고점(highLimit) 기준 t% 비율 확장
   const safeHigh = Math.max(highLimit, highLimit * (1 + t));
 
   // 2. 하단 꼬리: 몸통 최저점(lowLimit) 기준 bt% 비율 감쇄 (선형 뺄셈이 아닌 기하학적 비율 감소)
-  // bt가 최대(100%)여도 최저점의 99%까지만 하락하도록 클램핑하여 0.000000... 무한 점근 수렴 보장 (음수 불가)
+  // bt가 최대여도 최저점의 99%까지만 하락하도록 클램핑하여 0.0000... 무한히 수렴하도록 하기(음수는 불가)
   const clampedBt = Math.min(bt, 0.99);
   const safeLow = Math.max(Number.MIN_VALUE, lowLimit * (1 - clampedBt));
 

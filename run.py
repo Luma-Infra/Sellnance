@@ -12,7 +12,7 @@ if sys.platform == "win32":
 
 
 def get_lan_ip():
-    """현재 활성화된 네트워크 인터페이스의 실제 로컬 LAN IP를 가져옵니다."""
+    """현재 활성화된 네트워크 인터페이스의 실제 로컬 LAN IP를 가져오기"""
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("8.8.8.8", 80))
@@ -27,7 +27,7 @@ def get_lan_ip():
 
 
 def clear_port(port):
-    """8000번 포트를 리스닝 중인 프로세스를 안전하고 정확하게 종료합니다."""
+    """8000번 포트를 리스닝 중인 프로세스를 안전하고 정확하게 종료하기"""
     try:
         current_pid = os.getpid()
         if sys.platform == "win32":
@@ -87,7 +87,7 @@ def start_engine():
 
     reload_kwargs = {}
     if not is_prod:
-        # 프로덕션(Railway)에서는 reload 절대 금지 (1GB OOM 및 다중 프로세스 누수 차단)
+        # 프로덕션(Railway)에서는 reload 금지 (1GB OOM 및 다중 프로세스 누수 차단)
         # 로컬 개발 시에는 캐시 JSON 파일 쓰기로 인한 무한 리로드 루프 방지 필터 적용
         reload_kwargs = {
             "reload": True,
@@ -111,7 +111,7 @@ def start_engine():
             **reload_kwargs,
         )
     except KeyboardInterrupt:
-        print("\n\n👋 [STOP] 엔진 가동이 중단되었습니다.")
+        print("\n\n👋 [STOP] 엔진 가동이 중단되었습니다")
 
 
 if __name__ == "__main__":

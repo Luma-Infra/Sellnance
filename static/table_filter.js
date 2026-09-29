@@ -5,7 +5,7 @@ import { store, CONFIG } from "./_store.js";
 import { renderTable, clearAllPendingFavActions } from "./table_render.js";
 import { loadTableData } from "./table_api.js";
 
-// 📦 분리된 하위 모듈들 임포트 & re-export (하위 호환성 100% 보장)
+// 분리된 하위 모듈들 임포트 & re-export (하위 호환까지 고려)
 export {
   toggleExchFilter,
   updateExchFilterUI,
@@ -63,7 +63,7 @@ export function isStockCoin(row) {
 }
 
 // ==========================================
-// 2. 핵심 테이블 데이터 필터링 엔진
+// 2. 테이블 데이터 필터링 엔진
 // ==========================================
 export function getFilteredData() {
   let filteredData = [...store.currentTableData];
@@ -86,7 +86,7 @@ export function getFilteredData() {
       );
     });
 
-    // 🚀 검색 결과 우선순위 정렬 (티커 우선 + 완전일치 최우선)
+    // 검색 결과 우선순위 정렬 (티커 우선 + 완전 일치 최우선)
     filteredData.sort((a, b) => {
       const getScore = (r) => {
         const disp = (r.DisplayTicker || "").toUpperCase();
@@ -95,12 +95,12 @@ export function getFilteredData() {
         const name = (r.Name || "").toUpperCase();
         const nameKR = (r.Name_KR || "").toUpperCase();
 
-        if (disp === q || sym === q || raw === q) return 0; // 완전일치 티커
+        if (disp === q || sym === q || raw === q) return 0; // 완전 일치 티커
         if (disp.startsWith(q) || sym.startsWith(q) || raw.startsWith(q))
           return 1; // 전방일치 티커
-        if (disp.includes(q) || sym.includes(q) || raw.includes(q)) return 2; // 부분일치 티커
-        if (name.startsWith(q) || nameKR.startsWith(q)) return 3; // 전방일치 코인명
-        if (name.includes(q) || nameKR.includes(q)) return 4; // 부분일치 코인명
+        if (disp.includes(q) || sym.includes(q) || raw.includes(q)) return 2; // 부분 일치 티커
+        if (name.startsWith(q) || nameKR.startsWith(q)) return 3; // 전방 일치 코인명
+        if (name.includes(q) || nameKR.includes(q)) return 4; // 부분 일치 코인명
         return 5;
       };
 
@@ -118,7 +118,7 @@ export function getFilteredData() {
     const rawFavs = JSON.parse(localStorage.getItem(favKey) || "[]");
     const favorites = Array.from(new Set(rawFavs.map(String)));
 
-    // 🚀 즐겨찾기 메타데이터 캐시 로드 (_meta 및 sellnance_fav_meta 양방향 완벽 병합)
+    // 즐겨찾기 메타데이터 캐시 로드 (_meta 및 sellnance_fav_meta 양방향 병합)
     let legacyMeta = {};
     try {
       legacyMeta = JSON.parse(localStorage.getItem("_meta") || "{}");
@@ -140,7 +140,7 @@ export function getFilteredData() {
     });
     localStorage.setItem("sellnance_fav_meta", JSON.stringify(favMeta));
 
-    // [중복 및 공백 구멍 박멸] UID 및 Ticker 중복 방지 단일 매핑 필터링
+    // [중복 및 공백 구멍 제거] UID 및 Ticker 중복 방지 단일 매핑 필터링
     const seenUids = new Set();
     const seenTickers = new Set();
     const matchedRows = [];
@@ -158,7 +158,7 @@ export function getFilteredData() {
     filteredData = matchedRows;
 
     // [이스터에그] 즐겨찾기에 남아있으나 현재 상장 폐지된 코인 껍데기(Ghost Row) 생성
-    // [상폐 오인 방어] 전체 테이블 데이터가 아직 로드되지 않은 초기/로딩 상태(50개 이하)일 때는 정상 코인을 상폐로 오인하지 않도록 방어
+    // [추가] 전체 테이블 데이터가 아직 로드되지 않은 초기/로딩 상태(50개 이하)일 때는 정상 코인을 상폐로 간주하지 않기
     const allLoadedSource =
       store.originalTableData && store.originalTableData.length > 0
         ? store.originalTableData
@@ -166,7 +166,7 @@ export function getFilteredData() {
     const allLoadedUids = new Set(allLoadedSource.map((d) => String(d.UID)));
     const totalLoadedCount = allLoadedSource.length;
 
-    // [핵심 버그 수정] 검색어 필터링 결과(seenUids)가 아니라, 실제 전체 원본 데이터(allLoadedUids)에 존재하지 않는 것만 상폐 코인으로 판정!
+    // 검색어 필터링 결과(seenUids)가 아니라, 실제 전체 원본 데이터(allLoadedUids)에 존재하지 않는 것만 상폐 코인으로 판정
     const delistedUids = store.isTableLoaded
       ? favorites.filter((uid) => !allLoadedUids.has(String(uid)))
       : [];
@@ -223,7 +223,7 @@ export function getFilteredData() {
       return ghost;
     });
 
-    // 🎯 [검색어 연동] 사용자가 검색 중일 때는 상폐 코인도 검색어와 일치하는 것만 노출!
+    // [검색어 연동] 사용자가 검색 중일 때는 상폐 코인도 검색어와 일치하는 것만 노출!
     if (store.searchQuery && store.searchQuery.trim() !== "") {
       const q = store.searchQuery.trim().toUpperCase();
       delistedRows = delistedRows.filter((ghost) => {
@@ -322,7 +322,7 @@ export function getFilteredData() {
       });
       if (isExcluded) return false;
 
-      // [B] ONLY(순수 독점) 모드 자동 배제 검사 (완전 엄격 독점)
+      // [B] ONLY(순수 독점) 모드
       if (filterMode === "ONLY") {
         const targetExchs = [
           "BINANCE_SPOT",
@@ -873,7 +873,7 @@ if (typeof document !== "undefined") {
   }
 }
 
-// 글로벌 window 바인딩 (인라인 HTML 및 타 모듈 호환)
+// 전역 window 바인딩 (인라인 HTML 및 타 모듈 호환)
 if (typeof window !== "undefined") {
   window.isStockCoin = isStockCoin;
   window.getFilteredData = getFilteredData;

@@ -1,11 +1,11 @@
-// stream_utils.js - 실시간 스트림 파이프라인 공통 가드 및 연산 유틸리티
+// stream_utils.js - 실시간 스트림 파이프라인 공통 관리 및 연산 유틸리티
 import { store, tfSec } from "./_store.js";
 import { getPureBase, getUnixSeconds } from "./chart_utils.js";
 import { mapTime } from "./chart_data.js";
 
 /**
  * 타임프레임에 맞춰 일봉(YYYY-MM-DD) 또는 분/시봉(Unix초)으로 시간 정규화
- * @param {Object|number|string} d 
+ * @param {Object|number|string} d
  * @returns {*} 정규화된 time 값
  */
 export function getNormalizedTime(d) {
@@ -17,7 +17,7 @@ export function getNormalizedTime(d) {
 
 /**
  * 타임스탬프 또는 날짜 형식 유효성 검증
- * @param {*} chartTime 
+ * @param {*} chartTime
  * @returns {boolean}
  */
 export function isTimeValid(chartTime) {
@@ -38,7 +38,7 @@ export function isTimeValid(chartTime) {
 }
 
 /**
- * 차트가 데이터 패칭, 탭 복원, 과거 데이터 로딩 중인지 확인하는 공통 락 가드
+ * 차트가 데이터 패칭, 탭 복원, 과거 데이터 로딩 중인지 확인하는 함수
  * @returns {boolean} 차트가 바쁜 상태이면 true
  */
 export function isChartBusy() {
@@ -46,7 +46,7 @@ export function isChartBusy() {
     (store.isFetchingChart && !store.isSilentSyncing) ||
     (window.isFetchingChart && !store.isSilentSyncing) ||
     store.isLoadingMoreHistory ||
-    store.isRestoringTab
+    store.isRestoringTab,
   );
 }
 
@@ -57,7 +57,9 @@ export function isChartBusy() {
  */
 export function isMatchingCurrentSymbol(tickSymbol) {
   if (!tickSymbol) return false;
-  let currentExpected = String(store.currentSelectedSymbol || store.currentAsset || "");
+  let currentExpected = String(
+    store.currentSelectedSymbol || store.currentAsset || "",
+  );
   if (currentExpected.includes(":")) {
     currentExpected = currentExpected.split(":").pop();
   }
@@ -109,29 +111,82 @@ export function isMatchingCurrentSymbol(tickSymbol) {
     row = store.tickerRowMap.get(effUid);
   }
   if (!row && store.tickerRowMap) {
-    row = store.tickerRowMap.get(currentExpected) || store.tickerRowMap.get(baseExpected);
+    row =
+      store.tickerRowMap.get(currentExpected) ||
+      store.tickerRowMap.get(baseExpected);
   }
   if (!row && store.currentTableData) {
     row = store.currentTableData.find(
       (c) =>
         String(c.UID) === String(effUid) ||
-        (c.Symbol && (c.Symbol.toUpperCase() === currentExpected || c.Symbol.toUpperCase().split("(")[0].trim() === baseExpected)) ||
-        (c.Ticker && (c.Ticker.toUpperCase() === currentExpected || c.Ticker.toUpperCase().split("(")[0].trim() === baseExpected)) ||
-        (c.DisplayTicker && (c.DisplayTicker.toUpperCase() === currentExpected || c.DisplayTicker.toUpperCase().split("(")[0].trim() === baseExpected)) ||
+        (c.Symbol &&
+          (c.Symbol.toUpperCase() === currentExpected ||
+            c.Symbol.toUpperCase().split("(")[0].trim() === baseExpected)) ||
+        (c.Ticker &&
+          (c.Ticker.toUpperCase() === currentExpected ||
+            c.Ticker.toUpperCase().split("(")[0].trim() === baseExpected)) ||
+        (c.DisplayTicker &&
+          (c.DisplayTicker.toUpperCase() === currentExpected ||
+            c.DisplayTicker.toUpperCase().split("(")[0].trim() ===
+              baseExpected)) ||
         (c.Exact_Spot && c.Exact_Spot.toUpperCase() === currentExpected) ||
-        (c.Exact_Futures && c.Exact_Futures.toUpperCase() === currentExpected) ||
-        (c.Upbit_Symbol && (c.Upbit_Symbol.toUpperCase() === currentExpected || c.Upbit_Symbol.toUpperCase().split("(")[0].trim() === baseExpected)) ||
-        (c.Bithumb_Symbol && (c.Bithumb_Symbol.toUpperCase() === currentExpected || c.Bithumb_Symbol.toUpperCase().split("(")[0].trim() === baseExpected))
+        (c.Exact_Futures &&
+          c.Exact_Futures.toUpperCase() === currentExpected) ||
+        (c.Upbit_Symbol &&
+          (c.Upbit_Symbol.toUpperCase() === currentExpected ||
+            c.Upbit_Symbol.toUpperCase().split("(")[0].trim() ===
+              baseExpected)) ||
+        (c.Bithumb_Symbol &&
+          (c.Bithumb_Symbol.toUpperCase() === currentExpected ||
+            c.Bithumb_Symbol.toUpperCase().split("(")[0].trim() ===
+              baseExpected)),
     );
   }
   if (row) {
-    if (row.Exact_Spot && (row.Exact_Spot.toUpperCase() === cleanTick || row.Exact_Spot.toUpperCase() === baseTick)) return true;
-    if (row.Exact_Futures && (row.Exact_Futures.toUpperCase() === cleanTick || row.Exact_Futures.toUpperCase() === baseTick)) return true;
-    if (row.Upbit_Symbol && (row.Upbit_Symbol.toUpperCase() === cleanTick || row.Upbit_Symbol.toUpperCase() === baseTick || row.Upbit_Symbol.toUpperCase().split("(")[0].trim() === baseTick)) return true;
-    if (row.Bithumb_Symbol && (row.Bithumb_Symbol.toUpperCase() === cleanTick || row.Bithumb_Symbol.toUpperCase() === baseTick || row.Bithumb_Symbol.toUpperCase().split("(")[0].trim() === baseTick)) return true;
-    if (row.Symbol && (row.Symbol.toUpperCase() === cleanTick || row.Symbol.toUpperCase().split("(")[0].trim() === baseTick)) return true;
-    if (row.DisplayTicker && (row.DisplayTicker.toUpperCase() === cleanTick || row.DisplayTicker.toUpperCase().split("(")[0].trim() === baseTick)) return true;
-    if (row.Ticker && row.Ticker.toUpperCase().replace(/USDT$/i, "").replace(/KRW$/i, "") === baseTick) return true;
+    if (
+      row.Exact_Spot &&
+      (row.Exact_Spot.toUpperCase() === cleanTick ||
+        row.Exact_Spot.toUpperCase() === baseTick)
+    )
+      return true;
+    if (
+      row.Exact_Futures &&
+      (row.Exact_Futures.toUpperCase() === cleanTick ||
+        row.Exact_Futures.toUpperCase() === baseTick)
+    )
+      return true;
+    if (
+      row.Upbit_Symbol &&
+      (row.Upbit_Symbol.toUpperCase() === cleanTick ||
+        row.Upbit_Symbol.toUpperCase() === baseTick ||
+        row.Upbit_Symbol.toUpperCase().split("(")[0].trim() === baseTick)
+    )
+      return true;
+    if (
+      row.Bithumb_Symbol &&
+      (row.Bithumb_Symbol.toUpperCase() === cleanTick ||
+        row.Bithumb_Symbol.toUpperCase() === baseTick ||
+        row.Bithumb_Symbol.toUpperCase().split("(")[0].trim() === baseTick)
+    )
+      return true;
+    if (
+      row.Symbol &&
+      (row.Symbol.toUpperCase() === cleanTick ||
+        row.Symbol.toUpperCase().split("(")[0].trim() === baseTick)
+    )
+      return true;
+    if (
+      row.DisplayTicker &&
+      (row.DisplayTicker.toUpperCase() === cleanTick ||
+        row.DisplayTicker.toUpperCase().split("(")[0].trim() === baseTick)
+    )
+      return true;
+    if (
+      row.Ticker &&
+      row.Ticker.toUpperCase().replace(/USDT$/i, "").replace(/KRW$/i, "") ===
+        baseTick
+    )
+      return true;
     if (row.UID && row.UID.toUpperCase() === cleanTick) return true;
   }
 
@@ -139,17 +194,28 @@ export function isMatchingCurrentSymbol(tickSymbol) {
 }
 
 /**
- * 🛡️ [가격 이상치/코인 교차 오염 안전망]
- * 직전 봉 종가 대비 10배 폭등 또는 99% 폭락 등 비정상 틱 유입 방어
+ * [가격 이상치/코인 교차 오염 안전망]
+ * 직전 봉 종가 대비 10배 폭등 또는 99% 폭락 등 비정상인 틱 유입 방지
  * @param {number} newPrice - 신규 체결가
  * @param {number} currentClose - 직전 봉 종가
  * @param {number} maxRatio - 최대 허용 배수 (기본: 10.0배)
  * @param {number} minRatio - 최소 허용 배수 (기본: 0.01 = -99%)
  * @returns {boolean} 정상 가격 범위 내이면 true
  */
-export function isValidPriceRatio(newPrice, currentClose, maxRatio = 10.0, minRatio = 0.01) {
-  if (typeof newPrice !== "number" || isNaN(newPrice) || newPrice <= 0) return false;
-  if (typeof currentClose !== "number" || isNaN(currentClose) || currentClose <= 0) return true;
+export function isValidPriceRatio(
+  newPrice,
+  currentClose,
+  maxRatio = 10.0,
+  minRatio = 0.01,
+) {
+  if (typeof newPrice !== "number" || isNaN(newPrice) || newPrice <= 0)
+    return false;
+  if (
+    typeof currentClose !== "number" ||
+    isNaN(currentClose) ||
+    currentClose <= 0
+  )
+    return true;
   const ratio = newPrice / currentClose;
   return ratio <= maxRatio && ratio >= minRatio;
 }
@@ -163,7 +229,13 @@ export function isValidPriceRatio(newPrice, currentClose, maxRatio = 10.0, minRa
  * @param {number} nextBarTime - 다음 봉 시작 시각 (초 단위)
  * @returns {{ isNewCandle: boolean, activeCandle: Object }}
  */
-export function applyTradeToCandle(lastCandle, newPrice, tradeQty, currentUnix, nextBarTime) {
+export function applyTradeToCandle(
+  lastCandle,
+  newPrice,
+  tradeQty,
+  currentUnix,
+  nextBarTime,
+) {
   if (currentUnix < nextBarTime) {
     lastCandle.close = newPrice;
     lastCandle.high = Math.max(lastCandle.high, newPrice);
@@ -177,7 +249,10 @@ export function applyTradeToCandle(lastCandle, newPrice, tradeQty, currentUnix, 
       barStartTime = Math.floor(currentUnix / tfSeconds) * tfSeconds;
     }
     const normTime = getNormalizedTime({ time: barStartTime });
-    if (lastCandle && getUnixSeconds(lastCandle.time) === getUnixSeconds(normTime)) {
+    if (
+      lastCandle &&
+      getUnixSeconds(lastCandle.time) === getUnixSeconds(normTime)
+    ) {
       lastCandle.close = newPrice;
       lastCandle.high = Math.max(lastCandle.high, newPrice);
       lastCandle.low = Math.min(lastCandle.low, newPrice);

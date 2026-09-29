@@ -195,7 +195,7 @@ export async function saveSettings() {
     }
   } catch (e) {
     console.error("Failed to save settings:", e);
-    showToast("설정 저장 중 오류가 발생했습니다.", "error", 2500);
+    showToast("설정 저장 중 오류가 발생했어요", "error", 2500);
   } finally {
     if (saveBtn) {
       saveBtn.innerText = "SAVE & APPLY";
@@ -251,7 +251,7 @@ if (typeof window !== "undefined") {
   });
 }
 
-// 글로벌 window 객체에 바인딩
+// 전역 window 객체에 바인딩
 if (typeof window !== "undefined") {
   window.openSettingsModal = openSettingsModal;
   window.closeSettingsModal = closeSettingsModal;

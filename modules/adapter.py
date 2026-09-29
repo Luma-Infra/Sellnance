@@ -1,13 +1,13 @@
 # modules/adapter.py
 # ==========================================
-# 🔌 거래소 규격 통합 어댑터 (Normalization Layer)
+# 거래소 규격 통합 어댑터 (Normalization Layer)
 # ==========================================
 
 
 class ExchangeAdapter:
     @staticmethod
     def normalize_interval(exchange, interval):
-        """거래소별 인터벌 규격을 통일합니다. (바낸, 업비트, 빗썸, 바이비트, 비트겟, 게이트아이오)"""
+        """거래소별 인터벌 규격을 통일 (바낸, 업비트, 빗썸, 바이비트, 비트겟, 게이트아이오)"""
         # 1. BINANCE
         if exchange in ["binance_spot", "binance_futures"]:
             mapping = {"days": "1d", "weeks": "1w", "months": "1M"}
@@ -152,7 +152,7 @@ class ExchangeAdapter:
 
     @staticmethod
     def normalize_symbol(exchange, symbol):
-        """거래소별 마켓 코드 형식을 통일합니다."""
+        """거래소별 마켓 코드 형식을 통일"""
         # 1. BINANCE, BYBIT, BITGET (BaseQuote 형식: BTCUSDT)
         if exchange in [
             "binance_spot",

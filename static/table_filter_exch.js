@@ -7,13 +7,13 @@ import { saveControlPanelSession } from "./table_filter.js";
 import { showToast } from "./ui_dialog.js";
 import { getExchangeLogo } from "./table_tooltips.js";
 
-// 🚀 거래소 필터링 개별 사이클 조절 함수
+// 거래소 필터링 개별 사이클 조절 함수
 export function toggleExchFilter(exchId, event) {
   if (event) event.preventDefault();
 
   const current = store.exchFilterStates[exchId] || 0;
 
-  // 🚀 B-SPOT 버튼은 4단계 순환: 해제(0) -> 현물(1) -> 알파(2) -> 제외(-1) -> 해제(0)
+  // B-SPOT 버튼은 4단계 순환: 해제(0) -> 현물(1) -> 알파(2) -> 제외(-1) -> 해제(0)
   if (exchId === "BINANCE_SPOT") {
     if (current === 0) store.exchFilterStates[exchId] = 1;
     else if (current === 1) store.exchFilterStates[exchId] = 2;
@@ -35,7 +35,7 @@ export function toggleExchFilter(exchId, event) {
   if (typeof saveControlPanelSession === "function") saveControlPanelSession();
 }
 
-// 🚀 상단 거래소 필터바 및 프리셋 상태 표시 업데이트
+// 상단 거래소 필터바 및 프리셋 상태 표시 업데이트
 export function updateExchFilterUI() {
   const mainContainer = document.getElementById("exchange-filter-container");
   const customContainer = document.getElementById(
@@ -57,7 +57,7 @@ export function updateExchFilterUI() {
     { id: "GATEIO_SPOT", cmcId: 302, name: "GATEIO" },
   ];
 
-  // 🚀 3단 스위치 모드 토글 HTML (AND / OR / ONLY)
+  // 3단 스위치 모드 토글 HTML (AND / OR / ONLY)
   const currentMode = store.exchFilterMode || "AND";
   const modeLabels = { AND: "AND", OR: "OR", ONLY: "ONLY" };
 
@@ -73,7 +73,7 @@ export function updateExchFilterUI() {
       "bg-orange-500/25 border-orange-500/80 text-orange-400 font-bold";
   }
 
-  // 1️⃣ [PC 상단 메인 필터바 (#exchange-filter-container)] - 스크롤 원천 차단 & 1줄 균등/쾌적 배치
+  // [PC 상단 메인 필터바 (#exchange-filter-container)] 스크롤 차단 & 1줄로 쾌적하게 배치
   if (mainContainer) {
     const pcModeToggleHtml = `
       <button onclick="window.switchExchFilterMode()" 
@@ -277,7 +277,7 @@ export function updateExchFilterUI() {
       mobButtonsHtml + mobModeToggleHtml + mobResetBtnHtml;
   }
 
-  // 🚀 아랫줄의 #exchange-presets-container 프리셋 제어바 렌더링
+  // 아랫줄의 #exchange-presets-container 프리셋 제어바 렌더링
   const presetContainers = document.querySelectorAll(
     "#exchange-presets-container, #custom-exchange-presets-container",
   );
@@ -347,7 +347,7 @@ export function updateExchFilterUI() {
     const isPresetActive = store.activePresetIndex !== undefined;
     const currentPresetNum = (store.activePresetIndex ?? 0) + 1;
 
-    // 🚀 느좋(감성 & 미니멀) 캡슐형 저장/삭제 툴바: 촌스러운 원색 테두리 제거 및 고감도 글래스모피즘 적용
+    // 느좋(감성 & 미니멀) 캡슐형 저장/삭제 툴바: 촌스러운 원색 테두리 제거 및 고감도 글래스모피즘 적용
     const actionGroupHtml = `
       <div class="inline-flex items-center p-0.5 rounded-lg border border-theme-border/40 bg-theme-panel/30 backdrop-blur-xs transition-all duration-200 ${isPresetActive ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"}">
         <button onclick="window.saveCurrentPreset()" 
@@ -413,7 +413,7 @@ export function updateExchFilterUI() {
   }
 }
 
-// 🚀 3단 결합 조건 모드 스위칭 함수 (AND -> OR -> ONLY -> AND)
+// 3단 결합 조건 모드 스위칭 함수 (AND -> OR -> ONLY -> AND)
 export function switchExchFilterMode() {
   const current = store.exchFilterMode || "AND";
   if (current === "AND") store.exchFilterMode = "OR";
@@ -426,13 +426,13 @@ export function switchExchFilterMode() {
   if (typeof saveControlPanelSession === "function") saveControlPanelSession();
 }
 
-// 🚀 우클릭 시 제외(-1) 상태로 다이렉트 변환하는 편의 지름길 함수
+// 우클릭 시 제외(-1) 상태로 다이렉트 변환하는 함수
 export function toggleExchExclude(exchId) {
   const current = store.exchFilterStates[exchId] || 0;
   if (current === -1) {
     store.exchFilterStates[exchId] = 0; // 이미 제외면 해제
   } else {
-    store.exchFilterStates[exchId] = -1; // 아니면 즉시 제외 적용
+    store.exchFilterStates[exchId] = -1; // 아니면 제외 적용
   }
   store.currentRenderLimit = 1000;
   if (typeof renderTable === "function") renderTable();
@@ -440,20 +440,20 @@ export function toggleExchExclude(exchId) {
   if (typeof saveControlPanelSession === "function") saveControlPanelSession();
 }
 
-// 🚀 모든 거래소 필터 상태 해제 함수
+// 모든 거래소 필터 상태 해제 함수
 export function resetExchFilters() {
   if (!store.exchFilterStates) return;
   Object.keys(store.exchFilterStates).forEach((key) => {
     store.exchFilterStates[key] = 0;
   });
-  store.exchFilterMode = "AND"; // 리셋 시 결합 조건도 AND 기본값으로 회귀
+  store.exchFilterMode = "AND"; // 리셋 시 결합 조건도 AND 기본값으로 복구
   store.currentRenderLimit = 1000;
   if (typeof renderTable === "function") renderTable();
   updateExchFilterUI();
   if (typeof saveControlPanelSession === "function") saveControlPanelSession();
 }
 
-// 🚀 거래소 필터 프리셋 저장/선택/삭제 기능
+// 거래소 필터 프리셋 저장/선택/삭제 기능
 export function selectExchPreset(index) {
   if (store.activePresetIndex === index) {
     store.activePresetIndex = undefined;
@@ -542,7 +542,7 @@ export function deleteCurrentPreset() {
   showToast(`프리셋 ${index + 1} 삭제됨`, "info", 2000);
 }
 
-// 글로벌 window 바인딩
+// 전역 window 바인딩
 if (typeof window !== "undefined") {
   window.toggleExchFilter = toggleExchFilter;
   window.updateExchFilterUI = updateExchFilterUI;

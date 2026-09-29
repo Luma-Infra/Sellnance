@@ -36,7 +36,7 @@ export class UpbitBrowserLimiter {
     return false;
   }
 
-  // 토큰이 충전될 때까지 안전하게 대기하는 비동기 메서드 (기본 500ms 상한)
+  // 토큰이 충전될 때까지 안전하게 대기하는 비동기 메서드
   async waitForToken(maxWaitMs = 500) {
     const start = performance.now();
     while (performance.now() - start < maxWaitMs) {
@@ -66,10 +66,10 @@ export class UpbitBrowserLimiter {
           this.lastRefill = performance.now();
         }
       }
-    } catch (e) { }
+    } catch (e) {}
   }
 
-  // 429 감지 시 5초간 브라우저 호출 전면 중단 (418 격상 원천 방지)
+  // 429 감지 시 브라우저 호출 전면 중단 (418 밴 방지)
   triggerCooldown(seconds = 5.0) {
     const now = performance.now();
     this.cooldownUntil = Math.max(this.cooldownUntil, now + seconds * 1000);

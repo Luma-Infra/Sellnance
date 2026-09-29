@@ -5,7 +5,6 @@ import { syncCrosshair } from "./chart_crosshair.js";
 
 export { syncCrosshair };
 
-
 // ==========================================
 // 2. 가로 시간축(TimeScale) 1:1 상호 동기화 엔진
 // ==========================================
@@ -24,14 +23,19 @@ export function syncTimeScales(sourceChart, targetChart) {
   sourceChart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
     if (isSyncingRange || !range) return;
 
-    // 🛡️ [데이터 정합성 & 인터랙션 기반 무결점 동기화]
+    // [데이터 정합성 & 인터랙션 기반 무결점 동기화]
     // 1. 차트 페칭 중이거나 데이터 교체 중에는 동기화 이벤트 차단
     if (store.isFetchingChart || window.isFetchingChart) return;
 
     // 2. 도메인 데이터 무결성 검증: 양쪽 차트 데이터가 존재하고 동일 캔들 타임라인(최신 봉 시간 일치)일 때만 허용
     const mainData = store.mainData;
     const volData = store.volumeData;
-    if (!mainData || mainData.length === 0 || !volData || volData.length === 0) {
+    if (
+      !mainData ||
+      mainData.length === 0 ||
+      !volData ||
+      volData.length === 0
+    ) {
       return;
     }
     const mainLast = mainData[mainData.length - 1];
@@ -77,8 +81,7 @@ export const performSyncPriceScaleWidths = (force = false) => {
 
   const isSmallMobile =
     typeof window !== "undefined" && window.innerWidth < 768;
-  const isKimchiVisible =
-    !!store.paneConfig?.kimchi && !store.isKimchiDisabled;
+  const isKimchiVisible = !!store.paneConfig?.kimchi && !store.isKimchiDisabled;
   const BASE_LEFT_WIDTH = !isSmallMobile && isKimchiVisible ? 60 : 0;
 
   try {
@@ -92,7 +95,7 @@ export const performSyncPriceScaleWidths = (force = false) => {
       if (rWidth > measuredRight) measuredRight = rWidth;
     }
 
-    // [단방향 최대치 고정 락] 절대 줄어들지 않고 메인/볼륨 중 더 넓은 너비로 완벽 불변 고정
+    // [단방향 최대치 고정 락] 줄어들지 않고 메인/볼륨 중 더 넓은 너비로 불변 고정
     const targetWidth = Math.max(currentMaxRight, measuredRight);
 
     if (targetWidth > 0 && (targetWidth !== currentMaxRight || force)) {
@@ -117,7 +120,8 @@ export const performSyncPriceScaleWidths = (force = false) => {
       const lw1 = c1 ? c1.priceScale("left").width() : 0;
       const lw2 = c2 ? c2.priceScale("left").width() : 0;
       const measuredLeft = Math.max(BASE_LEFT_WIDTH, lw1, lw2);
-      const targetLeftWidth = measuredLeft > 0 ? measuredLeft : (currentMaxLeft || BASE_LEFT_WIDTH);
+      const targetLeftWidth =
+        measuredLeft > 0 ? measuredLeft : currentMaxLeft || BASE_LEFT_WIDTH;
 
       if (
         targetLeftWidth > 0 &&
@@ -161,7 +165,7 @@ export const performSyncPriceScaleWidths = (force = false) => {
       }
     }
 
-    // 🚀 초기 로드/새로고침 시 캔버스 첫 프레임 미완료로 너비가 0이었던 경우 다음 프레임에 즉시 2차 원자적 보정
+    // 초기 로드/새로고침 시 캔버스 첫 프레임 미완료로 너비가 0이었던 경우 다음 프레임에 즉시 2차 원자적 보정
     if (targetWidth === 0 || (BASE_LEFT_WIDTH > 0 && currentMaxLeft === 0)) {
       requestAnimationFrame(() => {
         performSyncPriceScaleWidths(false);
@@ -181,7 +185,7 @@ export const syncPriceScaleWidths = (force = false) => {
 
   if (widthSyncPending) return;
   const now = performance.now();
-  if (now - lastWidthSyncTime < 30) return; // 30ms로 반응성 극대화
+  if (now - lastWidthSyncTime < 30) return; // 반응성 조정
   widthSyncPending = true;
 
   requestAnimationFrame(() => {
@@ -203,22 +207,30 @@ export const resetPriceScaleWidthSync = () => {
 
   const isSmallMobile =
     typeof window !== "undefined" && window.innerWidth < 768;
-  const isKimchiVisible =
-    !!store.paneConfig?.kimchi && !store.isKimchiDisabled;
+  const isKimchiVisible = !!store.paneConfig?.kimchi && !store.isKimchiDisabled;
   const BASE_LEFT_WIDTH = !isSmallMobile && isKimchiVisible ? 60 : 0;
 
   const c1 = store.chart;
   const c2 = store.chartVol;
   if (c1) {
     c1.priceScale("right").applyOptions({ minimumWidth: 0, autoScale: true });
-    c1.priceScale("left").applyOptions({ minimumWidth: BASE_LEFT_WIDTH, visible: BASE_LEFT_WIDTH > 0, autoScale: true });
+    c1.priceScale("left").applyOptions({
+      minimumWidth: BASE_LEFT_WIDTH,
+      visible: BASE_LEFT_WIDTH > 0,
+      autoScale: true,
+    });
   }
   if (c2) {
     c2.priceScale("right").applyOptions({ minimumWidth: 0, autoScale: true });
-    c2.priceScale("left").applyOptions({ minimumWidth: BASE_LEFT_WIDTH, visible: BASE_LEFT_WIDTH > 0, autoScale: true });
+    c2.priceScale("left").applyOptions({
+      minimumWidth: BASE_LEFT_WIDTH,
+      visible: BASE_LEFT_WIDTH > 0,
+      autoScale: true,
+    });
   }
 
-  if (typeof updateScaleModeButtonsUI === "function") updateScaleModeButtonsUI();
+  if (typeof updateScaleModeButtonsUI === "function")
+    updateScaleModeButtonsUI();
   window.isResettingWidth = false;
 };
 window.resetPriceScaleWidthSync = resetPriceScaleWidthSync;
@@ -278,7 +290,7 @@ export function setupScaleModeButtons() {
     };
   }
 
-  // [거래량/김프 패널 A 버튼] 메인 차트 상태나 너비는 강제로 풀지 않고, 하단 Vol/Kimchi Y축만 독립 오토스케일 복구
+  // [거래량/김프 패널 A 버튼] 메인 차트 상태나 너비 상관없이 하단 Vol/Kimchi Y축만 독립 오토스케일 복구
   if (volA) {
     volA.onclick = (e) => {
       e.stopPropagation();
@@ -310,22 +322,30 @@ export function setupScaleModeButtons() {
 export function initChartSync(elMain, elVol) {
   // 0. 사용자 포인터/인터랙션 활성 차트 추적 (직접 조작 중인 패널이 마스터 주도권 보유)
   if (elMain) {
-    elMain.addEventListener("pointerenter", () => { activePointerChart = store.chart; });
+    elMain.addEventListener("pointerenter", () => {
+      activePointerChart = store.chart;
+    });
     elMain.addEventListener("pointerleave", (e) => {
       if (!elVol || !elVol.contains(e.relatedTarget)) {
         if (activePointerChart === store.chart) activePointerChart = null;
       }
     });
-    elMain.addEventListener("pointerdown", () => { activePointerChart = store.chart; });
+    elMain.addEventListener("pointerdown", () => {
+      activePointerChart = store.chart;
+    });
   }
   if (elVol) {
-    elVol.addEventListener("pointerenter", () => { activePointerChart = store.chartVol; });
+    elVol.addEventListener("pointerenter", () => {
+      activePointerChart = store.chartVol;
+    });
     elVol.addEventListener("pointerleave", (e) => {
       if (!elMain || !elMain.contains(e.relatedTarget)) {
         if (activePointerChart === store.chartVol) activePointerChart = null;
       }
     });
-    elVol.addEventListener("pointerdown", () => { activePointerChart = store.chartVol; });
+    elVol.addEventListener("pointerdown", () => {
+      activePointerChart = store.chartVol;
+    });
   }
 
   // 1. 크로스헤어 상호 연동
@@ -344,10 +364,14 @@ export function initChartSync(elMain, elVol) {
 
   // 3. 차트 크기 변경 시 가격축 너비 동기화
   if (store.chart) {
-    store.chart.timeScale().subscribeSizeChange(() => syncPriceScaleWidths(false));
+    store.chart
+      .timeScale()
+      .subscribeSizeChange(() => syncPriceScaleWidths(false));
   }
   if (store.chartVol) {
-    store.chartVol.timeScale().subscribeSizeChange(() => syncPriceScaleWidths(false));
+    store.chartVol
+      .timeScale()
+      .subscribeSizeChange(() => syncPriceScaleWidths(false));
   }
 
   // 4. 각 패널별 독립 더블 클릭 리셋
@@ -389,7 +413,7 @@ export function initChartSync(elMain, elVol) {
   const handleScaleInteraction = (el, isMain, e) => {
     if (!el) return;
 
-    // 휠 클릭(가운데 버튼 e.button === 1) 또는 우클릭은 스케일 조작에서 완전히 제외 (PASS)
+    // 휠 클릭(가운데 버튼 e.button === 1) 또는 우클릭은 스케일 조작에서 제외 (PASS)
     if (e.type === "mousedown" || e.type === "pointerdown") {
       if (e.button !== 0) return;
     }
@@ -422,10 +446,12 @@ export function initChartSync(elMain, elVol) {
     const rect = el.getBoundingClientRect();
     const cursorX = clientX - rect.left;
     const chartObj = isMain ? store.chart : store.chartVol;
-    const rightScaleWidth = chartObj ? chartObj.priceScale("right").width() : 50;
+    const rightScaleWidth = chartObj
+      ? chartObj.priceScale("right").width()
+      : 50;
     const leftScaleWidth = chartObj ? chartObj.priceScale("left").width() : 0;
 
-    // 🚀 [엄격한 DOM 격리 분기] tdIndex 기준: 0=좌측스케일, 1=차트캔버스(절대침범금지), 2=우측스케일
+    // [엄격한 DOM 격리 분기] tdIndex 기준: 0=좌측스케일, 1=차트캔버스(침범금지), 2=우측스케일
     let isOverRightScale = false;
     let isOverLeftScale = false;
 
@@ -434,7 +460,7 @@ export function initChartSync(elMain, elVol) {
     } else if (tdIndex === 0 && leftScaleWidth > 0) {
       isOverLeftScale = true;
     } else if (tdIndex === 1) {
-      // 캔버스 본체는 스케일 조작에서 100% 완전 제외 (오버레이/좌표 왜곡 원천 차단)
+      // 캔버스 본체는 스케일 조작에서 제외 (오버레이/좌표 왜곡 차단)
       isOverRightScale = false;
       isOverLeftScale = false;
     } else {
@@ -446,7 +472,12 @@ export function initChartSync(elMain, elVol) {
     // 마우스 좌클릭 드래그 감지 (단순 딸깍 클릭 무시, 실제 6px 이상 이동 시 수동 스케일 모드 플래그 활성화)
     if (e.type === "pointerdown" || e.type === "mousedown") {
       if (isOverRightScale || (!isMain && isOverLeftScale)) {
-        dragStart = { isMain, isRight: isOverRightScale, startY: clientY, startX: clientX };
+        dragStart = {
+          isMain,
+          isRight: isOverRightScale,
+          startY: clientY,
+          startX: clientX,
+        };
       }
       return;
     }
@@ -471,7 +502,11 @@ export function initChartSync(elMain, elVol) {
       return;
     }
 
-    if (e.type === "pointerup" || e.type === "mouseup" || e.type === "pointercancel") {
+    if (
+      e.type === "pointerup" ||
+      e.type === "mouseup" ||
+      e.type === "pointercancel"
+    ) {
       dragStart = null;
     }
   };
@@ -479,20 +514,36 @@ export function initChartSync(elMain, elVol) {
   const onMainInteraction = (e) => handleScaleInteraction(elMain, true, e);
   const onVolInteraction = (e) => handleScaleInteraction(elVol, false, e);
 
-  [
-    "pointerdown",
-    "pointermove",
-    "pointerup",
-    "pointercancel",
-  ].forEach((evt) => {
-    if (elMain) elMain.addEventListener(evt, onMainInteraction, { passive: true, capture: true });
-    if (elVol) elVol.addEventListener(evt, onVolInteraction, { passive: true, capture: true });
-  });
+  ["pointerdown", "pointermove", "pointerup", "pointercancel"].forEach(
+    (evt) => {
+      if (elMain)
+        elMain.addEventListener(evt, onMainInteraction, {
+          passive: true,
+          capture: true,
+        });
+      if (elVol)
+        elVol.addEventListener(evt, onVolInteraction, {
+          passive: true,
+          capture: true,
+        });
+    },
+  );
 
   // 차트 영역 바깥에서 마우스를 뗐을 때도 안전하게 드래그 상태 해제
   if (typeof window !== "undefined") {
-    window.addEventListener("pointerup", () => { dragStart = null; }, { passive: true });
-    window.addEventListener("pointercancel", () => { dragStart = null; }, { passive: true });
+    window.addEventListener(
+      "pointerup",
+      () => {
+        dragStart = null;
+      },
+      { passive: true },
+    );
+    window.addEventListener(
+      "pointercancel",
+      () => {
+        dragStart = null;
+      },
+      { passive: true },
+    );
   }
 }
-

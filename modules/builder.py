@@ -1,6 +1,6 @@
 # builder.py
 # ==========================================
-# 🧱 모듈 3: 데이터 조립 및 변동률 계산기
+# 모듈 3: 데이터 조립 및 변동률 계산기
 # ==========================================
 from modules.builder_binance import build_binance_row, build_binance_index
 from modules import utils, config_manager, exchange_api, alpha_rules
@@ -50,7 +50,7 @@ def clean_stale_tickers(binance_data, upbit_krw_set, mapping):
     return is_updated
 
 
-# 위 함수들을 호출해서 최종 final_results 리스트를 완성.
+# 위 함수들을 호출하는 final_results 리스트
 def assemble_final_dashboard(
     global_listings,
     binance_data,
@@ -107,7 +107,7 @@ def assemble_final_dashboard(
             if ex.startswith("BYBIT"):
                 REVERSE_LOOKUP[f"{sym_key}_BYBIT"] = k
 
-    # 법정 환율 (USD/KRW) 실시간 수집 (TvDatafeed 싱글톤 + 60초 캐시 연동으로 메모리 누수 방지)
+    # 법정 환율 (USD/KRW) 실시간 수집 (TvDatafeed 싱글톤)
     old_rate = float(mapping.get("DEFAULT_KRW_USD_RATE", 0.0))
     krw_usd_rate = get_cached_usdkrw_rate(fallback_rate=old_rate)
     if krw_usd_rate > 0 and krw_usd_rate != old_rate:
@@ -117,7 +117,7 @@ def assemble_final_dashboard(
             f"🔄 [실시간 환율 갱신] TradingView USD/KRW ({krw_usd_rate}원) mapping.json 족보에 갱신 완료!"
         )
 
-    # [Alpha Rules Engine] 바이낸스 알파 코인 자동 동적 선별 및 현물(Spot) 주입 (족보 우선 체크 + 2배수 가격 검증)
+    # [Alpha Rules Engine] 바이낸스 알파 코인 자동 동적 선별 및 현물(Spot) (족보 우선 체크 + 2배수 가격 검증)
     alpha_rules.inject_alpha_gems_into_pipeline(
         binance_data,
         global_listings,
@@ -129,7 +129,7 @@ def assemble_final_dashboard(
         duplicated_list=DUPLICATED_LIST,
     )
 
-    # 1. 바이낸스 투입 (마켓 데이터 사전 해시 인덱싱으로 O(1) 초고속 조회)
+    # 1. 바이낸스 투입 (마켓 데이터 사전 해시 인덱싱으로 O(1) 조회)
     binance_index = build_binance_index(binance_data)
     for ticker, b_info in binance_data.items():
         base = utils.get_pure_base_asset(ticker).upper()
@@ -158,7 +158,7 @@ def assemble_final_dashboard(
             any_update = True
 
         if row:
-            row["krw_usd_rate"] = krw_usd_rate  # 🚀 모든 행에 테더 환율 공급
+            row["krw_usd_rate"] = krw_usd_rate  # 모든 행에 테더 환율 반영
             uid = str(row.get("UID") or row.get("DisplayTicker") or ticker)
             final_results[uid] = row
 
@@ -170,7 +170,7 @@ def assemble_final_dashboard(
             r"_(binance|upbit|bithumb)$", "", alias_upbit_raw, flags=re.IGNORECASE
         )
 
-        # 🚀 [수정] 바이낸스 처리 여부 확인 시 alias 비교 (단, 동명이인 META 등은 UID까지 일치해야 동일 코인으로 인정)
+        # [수정] 바이낸스 처리 여부 확인 시 alias 비교 (단, 동명이인 META 등은 UID까지 일치해야 동일 코인으로 판정)
         up_key_check = REVERSE_LOOKUP.get(f"{base}_UPBIT")
         up_expected_uid = (
             DUPLICATED_LIST[up_key_check][0]
@@ -180,11 +180,11 @@ def assemble_final_dashboard(
 
         already_processed = False
         for r in final_results.values():
-            # 1. DisplayTicker가 일치하면 무조건 동일 코인 (UP 등)
+            # 1. DisplayTicker가 일치하면 동일 코인 (UP 등)
             if r.get("DisplayTicker") == alias_upbit:
                 already_processed = True
                 break
-            # 2. Symbol이 일치할 때, 만약 족보에 기대 UID가 명시되어 있다면 UID까지 같아야 인정
+            # 2. Symbol이 일치할 때, 만약 족보에 기대 UID가 명시되어 있다면 UID까지 같아야 일치
             if r.get("Symbol") == base:
                 if up_expected_uid and r.get("UID") != up_expected_uid:
                     continue
@@ -216,7 +216,7 @@ def assemble_final_dashboard(
         if row:
             uid = str(row.get("UID") or base)
             if uid in final_results:
-                # 🚀 [오류 방어] 동명이인(DUPLICATED_LIST)인 경우 UID 불일치 시 덮어쓰기 및 병합 전파 차단
+                # 동명이인(DUPLICATED_LIST)인 경우 UID 불일치 시 덮어쓰기 및 침범 방지
                 if base in duplicated_bases:
                     if final_results[uid].get("UID") != uid:
                         continue
@@ -253,7 +253,7 @@ def assemble_final_dashboard(
                         dom_unit_price = row["Price_KRW"] / dom_mult
                         ovs_unit_price = target_overseas_p / ovs_mult
 
-                        # [가격 괴리율 검증]: 해외 시세와 국내 시세가 0.5배 ~ 2.0배 범위를 벗어나는 개잡코는 김프 왜곡 차단!
+                        # [가격 검증] 해외 시세와 국내 시세 둘 간의 심한 갭차이 여부까지 확인하여 관리
                         ref_dom_usd = dom_unit_price / krw_usd_rate
                         if utils.is_valid_price_ratio(ovs_unit_price, ref_dom_usd):
                             overseas_krw = ovs_unit_price * krw_usd_rate
@@ -267,7 +267,7 @@ def assemble_final_dashboard(
                 final_results[uid]["Upbit_Symbol"] = base
             else:
                 # Bybit Fallback for Upbit only coins
-                # 🚀 [오류 방어] 동명이인(DUPLICATED_LIST)인 경우 Bybit 가격 오염 차단
+                # 동명이인(DUPLICATED_LIST)인 경우 Bybit 가격 오염 차단
                 by_spot_p = (
                     bybit_data.get(base, {}).get("spot_price", 0.0)
                     if base not in duplicated_bases
@@ -295,12 +295,12 @@ def assemble_final_dashboard(
                     if by_spot_p > 0:
                         row.setdefault("Listed_Exchanges", []).append("BYBIT_SPOT")
                     row["Listed_Exchanges"] = list(set(row.get("Listed_Exchanges", [])))
-                row["krw_usd_rate"] = krw_usd_rate  # 🚀 모든 행에 테더 환율 공급
+                row["krw_usd_rate"] = krw_usd_rate  # 모든 행에 테더 환율 반영
                 final_results[uid] = row
         if updated:
             any_update = True
 
-    # 🚀 [임시 중단] 3단계: 바이비트 단독 코인 투입 (바이비트 단독 선물 잡코인 제외, 현물 비교군으로만 활용)
+    # [임시 중단] 3단계: 바이비트 단독 코인 투입 (바이비트 단독 선물 잡코인 제외, 현물 비교군으로만 활용)
     # if False:
     #     for base, b_inf in bybit_data.items():
     #         if b_inf.get("futures_price", 0) > 0:
@@ -332,7 +332,7 @@ def assemble_final_dashboard(
     #                     if updated:
     #                         any_update = True
 
-    # 🚨 [거래소별 유의/상폐/모니터링 경고 라벨 통합 바인딩]
+    # [거래소별 유의/상폐/모니터링 경고 라벨 통합 바인딩]
     for row in final_results.values():
         base_sym = (row.get("Symbol") or row.get("DisplayTicker") or "").upper()
         pure_base = utils.get_pure_base_asset(base_sym).upper()
@@ -390,5 +390,5 @@ def assemble_final_dashboard(
             row["Warnings"] = warnings
 
     # AS-IS: return final_results, any_update
-    # TO-BE: 👇 딕셔너리의 값들만 리스트로 뽑아서 리턴!
+    # TO-BE: 딕셔너리의 값들만 리스트로 뽑아서 리턴
     return list(final_results.values()), any_update

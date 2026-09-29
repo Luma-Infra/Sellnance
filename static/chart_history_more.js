@@ -22,9 +22,13 @@ export async function loadMoreHistory(isSilent = false) {
     return;
   }
 
-  // 디바운스 ~ API Ban 방지를 위해 최소 1.5초 간격으로 요청 제한 (Silent 백필 시는 허용)
+  // 디바운스 ~ API Ban 방지를 위해 일정 간격으로 요청 제한 (Silent 백필 시는 허용)
   const now = Date.now();
-  if (!isSilent && store.lastLazyLoadTime && now - store.lastLazyLoadTime < 1500) {
+  if (
+    !isSilent &&
+    store.lastLazyLoadTime &&
+    now - store.lastLazyLoadTime < 1500
+  ) {
     return;
   }
   store.lastLazyLoadTime = now;
@@ -84,7 +88,7 @@ export async function loadMoreHistory(isSilent = false) {
     const dt = new Date(oldestTimeSec * 1000);
     toVal = dt.toISOString();
   } else {
-    // 바이낸스 및 바이비트는 밀리초 타임스탬프 사용 (겹치지 않게 -1ms)
+    // 바이낸스 및 바이비트는 밀리초 타임스탬프 사용 (캔들 겹치지 않게 중복 제거하기)
     toVal = Math.floor(oldestTimeSec * 1000) - 1;
   }
 
@@ -101,8 +105,8 @@ export async function loadMoreHistory(isSilent = false) {
         toVal,
       );
 
-      // [핵심: 전체 덮어쓰기] 알파 코인의 추가 로딩 중 타 거래소(비트겟 등)로 폴백된 경우에만 한정:
-      // (바낸 정규 스팟/퓨처는 폴백 대상이 아니므로 절대 덮어쓰지 않음)
+      // [전체 덮어쓰기] 알파 코인의 추가 로딩 중 타 거래소(비트겟 등)로 폴백된 경우에만 한정:
+      // (바낸 정규 스팟/퓨처는 폴백 대상이 아니므로 덮어쓰지 않음)
       const cleanSym = (params.ticker || "")
         .replace("USDT", "")
         .replace("KRW-", "")
@@ -321,7 +325,7 @@ export async function loadMoreHistory(isSilent = false) {
           ? 0
           : Number(d.volume);
 
-      // 컬러 값이 유실되었을 경우를 대비해 기본 하드코딩 컬러(투명도 포함) 폴백 지정
+      // 컬러 값이 유실되었을 경우를 대비한 기본 컬러(투명도 포함) 폴백
       const fallbackUpColor = params.upColorVol || "#26a69a80";
       const fallbackDownColor = params.downColorVol || "#ef535080";
       const safeColor = d.close >= d.open ? fallbackUpColor : fallbackDownColor;
@@ -338,7 +342,7 @@ export async function loadMoreHistory(isSilent = false) {
       let fetchedSub = [];
 
       // [서브 거래소 연속 페이징] 메인의 최과거 시각으로 점프하지 않고,
-      // 서브 데이터 자체의 가장 오래된 캔들(oldestSubTimeSec)을 찾아 그 직전부터 연속적으로 수집하여 중간 구멍(Hole) 박멸!
+      // 서브 데이터 자체의 가장 오래된 캔들(oldestSubTimeSec)을 찾아 그 직전부터 연속적으로 수집하여 중간 구멍(Hole) 제거
       let oldestSubTimeSec = null;
       if (Array.isArray(store.subRawData) && store.subRawData.length > 0) {
         for (const d of store.subRawData) {
@@ -436,7 +440,7 @@ export async function loadMoreHistory(isSilent = false) {
     rebuildMainDataMap();
     rebuildVolumeDataMap();
 
-    // [핵심] 차트 캔들 추가 시 화면이 밀리는 현상을 원천 방어하기 위해 Visible Logical Range를 N만큼 밀어줌
+    // 차트 캔들 추가 시 화면이 밀리는 현상을 방지하기 위해 Visible Logical Range를 N만큼 밀어주기
     const timeScale = store.chart.timeScale();
     const visibleRange = timeScale.getVisibleLogicalRange();
 
@@ -444,7 +448,7 @@ export async function loadMoreHistory(isSilent = false) {
 
     try {
       // 모든 시리즈 데이터를 동일한 틱 내에서 동기식으로 세팅하여
-      // 캔들 시리즈만 업데이트되고 볼륨 시리즈는 다음 프레임으로 지연되어 생기는 인덱스/시간 불일치 크래시를 원천 차단합니다.
+      // 캔들 시리즈만 업데이트되고 볼륨 시리즈는 다음 프레임으로 지연되어 생기는 인덱스/시간 불일치 크래시를 차단
       store.candleSeries.setData(sanitizeChartData(store.mainData));
 
       if (store.leftScaleSeries) {
@@ -466,7 +470,7 @@ export async function loadMoreHistory(isSilent = false) {
         store.kimchiSeries.setData(sanitizeChartData(store.kimchiData, true));
       }
 
-      // 🔥 [핵심] 모든 시리즈 데이터가 동기적으로 세팅된 뒤, 화면 범위 이동을 처리합니다.
+      // 모든 시리즈 데이터가 동기적으로 세팅된 뒤, 화면 범위 이동을 처리하기
       requestAnimationFrame(() => {
         try {
           if (isStale()) return;
@@ -493,7 +497,11 @@ export async function loadMoreHistory(isSilent = false) {
     }
     if (lazyIndicator) {
       lazyIndicator.classList.remove("opacity-100", "scale-100");
-      lazyIndicator.classList.add("opacity-0", "scale-95", "pointer-events-none");
+      lazyIndicator.classList.add(
+        "opacity-0",
+        "scale-95",
+        "pointer-events-none",
+      );
     }
   }
 }

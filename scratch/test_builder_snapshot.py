@@ -7,7 +7,7 @@ import json
 import logging
 from deepdiff import DeepDiff
 
-# 🚀 로거를 먼저 세팅하여 다른 라이브러리 출력 오염 방지
+# 로거를 먼저 세팅하여 다른 라이브러리 출력 오염 방지
 from modules import logger
 from modules import api_manager, config_manager, app
 
@@ -31,7 +31,7 @@ def main():
     if mode == "--save":
         data = capture_snapshot()
         if not data:
-            print("🚨 데이터 수집 실패! 스냅샷을 저장할 수 없습니다.")
+            print("🚨 데이터 수집 실패! 스냅샷을 저장할 수 없습니다")
             sys.exit(1)
             
         with open(SNAPSHOT_FILE, "w", encoding="utf-8") as f:
@@ -40,7 +40,7 @@ def main():
 
     elif mode == "--verify":
         if not os.path.exists(SNAPSHOT_FILE):
-            print("🚨 원본 스냅샷 파일이 없습니다. --save를 먼저 실행하세요.")
+            print("🚨 원본 스냅샷 파일이 없습니다, --save를 먼저 실행하세요.")
             sys.exit(1)
 
         with open(SNAPSHOT_FILE, "r", encoding="utf-8") as f:
@@ -57,7 +57,7 @@ def main():
             pprint.pprint(diff)
             sys.exit(1)
         else:
-            print("✅ [SUCCESS] 완벽하게 100% 일치합니다! (오차 0%)")
+            print("✅ [SUCCESS] 100% 일치합니다! (오차 0%)")
             sys.exit(0)
 
 if __name__ == "__main__":

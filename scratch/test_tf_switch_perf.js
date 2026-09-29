@@ -1,6 +1,6 @@
 // scratch/test_tf_switch_perf.js
-// 🚀 타임프레임(TF) 변경 성능 정밀 벤치마크 (나노초 단위 정밀 계측)
-// 외부 거래소 API 호출 0회 (IP 밴 100% 방지, 로컬 메모리 모의 샌드박스)
+// 타임프레임(TF) 변경 성능 정밀 벤치마크 (나노초 단위 정밀 계측)
+// 외부 거래소 API 호출 0회 (IP 밴 방지, 로컬 메모리 모의 샌드박스)
 
 function generateMockCandles(count, basePrice = 65000, tf = "1m") {
   const candles = [];
@@ -26,7 +26,7 @@ function generateMockCandles(count, basePrice = 65000, tf = "1m") {
   return candles;
 }
 
-// 1. Mock 차트 인스턴스 (Lightweight Charts 구조 완벽 시뮬레이션)
+// 1. Mock 차트 인스턴스 (Lightweight Charts 구조 시뮬레이션)
 class MockPriceScale {
   constructor(name, initialWidth = 65) {
     this.name = name;
@@ -66,15 +66,15 @@ class MockChart {
   }
   timeScale() {
     return {
-      fitContent: () => { },
-      setVisibleLogicalRange: () => { },
+      fitContent: () => {},
+      setVisibleLogicalRange: () => {},
       getVisibleLogicalRange: () => ({ from: 0, to: 100 }),
     };
   }
 }
 
 // ========================================================
-// 🧪 [시나리오 A: 이전 비동기 2-rAF 방식]
+// [시나리오 A: 이전 비동기 2-rAF 방식]
 // ========================================================
 function simulateOldTfSwitch(candles, store, callback) {
   const startNs = process.hrtime.bigint();
@@ -86,16 +86,20 @@ function simulateOldTfSwitch(candles, store, callback) {
 
   // 1프레임 후 볼륨 및 피팅
   setImmediate(() => {
-    store.volumeSeries.setData(candles.map(c => ({ time: c.time, value: c.volume })));
+    store.volumeSeries.setData(
+      candles.map((c) => ({ time: c.time, value: c.volume })),
+    );
 
     // 2프레임 후 비동기 syncPriceScaleWidths
     setImmediate(() => {
       let maxRight = Math.max(
         store.chart.priceScale("right").width(),
-        store.chartVol.priceScale("right").width()
+        store.chartVol.priceScale("right").width(),
       );
       store.chart.priceScale("right").applyOptions({ minimumWidth: maxRight });
-      store.chartVol.priceScale("right").applyOptions({ minimumWidth: maxRight });
+      store.chartVol
+        .priceScale("right")
+        .applyOptions({ minimumWidth: maxRight });
 
       const endNs = process.hrtime.bigint();
       const totalNs = Number(endNs - startNs);
@@ -105,7 +109,7 @@ function simulateOldTfSwitch(candles, store, callback) {
 }
 
 // ========================================================
-// 🧪 [시나리오 B: 현재 동기식 단일 rAF 원자적 방식]
+// [시나리오 B: 현재 동기식 단일 rAF 원자적 방식]
 // ========================================================
 function simulateNewAtomicTfSwitch(candles, store, callback) {
   const startNs = process.hrtime.bigint();
@@ -118,12 +122,14 @@ function simulateNewAtomicTfSwitch(candles, store, callback) {
 
     // 2. 캔들 + 볼륨 동시 주입
     store.candleSeries.setData(candles);
-    store.volumeSeries.setData(candles.map(c => ({ time: c.time, value: c.volume })));
+    store.volumeSeries.setData(
+      candles.map((c) => ({ time: c.time, value: c.volume })),
+    );
 
     // 3. 동기식 즉시 축 너비 일치
     let maxRight = Math.max(
       store.chart.priceScale("right").width(),
-      store.chartVol.priceScale("right").width()
+      store.chartVol.priceScale("right").width(),
     );
     store.chart.priceScale("right").applyOptions({ minimumWidth: maxRight });
     store.chartVol.priceScale("right").applyOptions({ minimumWidth: maxRight });
@@ -134,12 +140,16 @@ function simulateNewAtomicTfSwitch(candles, store, callback) {
   });
 }
 
-// 🚀 1,000회 나노초 정밀 벤치마크 실행
+// 1,000회 나노초 정밀 벤치마크 실행
 async function runBenchmark() {
-  console.log("================================================================================");
+  console.log(
+    "================================================================================",
+  );
   console.log("🚀 [타임프레임 TF 변경 성능 정밀 계측 벤치마크 (나노초 단위)]");
   console.log("   (외부 API 호출 0회 - 100% 로컬 샌드박스 안전 실행)");
-  console.log("================================================================================");
+  console.log(
+    "================================================================================",
+  );
 
   const mockCandles = generateMockCandles(1000, 68500, "1m");
 
@@ -185,19 +195,39 @@ async function runBenchmark() {
   const newAvgMs = newAvgNs / 1_000_000;
 
   console.log(`\n📊 [1,000회 반복 측정 결과 요약]`);
-  console.log(`--------------------------------------------------------------------------------`);
+  console.log(
+    `--------------------------------------------------------------------------------`,
+  );
   console.log(`1. 이전 비동기 2-rAF 방식:`);
-  console.log(`   - 평균 소요 시간: ${oldAvgNs.toFixed(0)} ns (${oldAvgMs.toFixed(3)} ms)`);
-  console.log(`   - 프레임 지연(Desync): 2프레임 지연 (33.3ms 동안 볼륨/메인 축 어긋남 발생)`);
-  console.log(`   - 깜빡임/찌그러짐 위험: ⚠️ 높음 (캔들 주입과 축 고정이 분리됨)`);
-  console.log(`--------------------------------------------------------------------------------`);
+  console.log(
+    `   - 평균 소요 시간: ${oldAvgNs.toFixed(0)} ns (${oldAvgMs.toFixed(3)} ms)`,
+  );
+  console.log(
+    `   - 프레임 지연(Desync): 2프레임 지연 (33.3ms 동안 볼륨/메인 축 어긋남 발생)`,
+  );
+  console.log(
+    `   - 깜빡임/찌그러짐 위험: ⚠️ 높음 (캔들 주입과 축 고정이 분리됨)`,
+  );
+  console.log(
+    `--------------------------------------------------------------------------------`,
+  );
   console.log(`2. 현재 동기식 단일 rAF 원자적 방식 (지금 적용된 코드):`);
-  console.log(`   - 평균 소요 시간: ${newAvgNs.toFixed(0)} ns (${newAvgMs.toFixed(3)} ms)`);
-  console.log(`   - 프레임 지연(Desync): 0.00% (0프레임, 단일 렌더 사이클에서 동시 체결)`);
-  console.log(`   - 깜빡임/찌그러짐 위험: 🟢 0% 완전 박멸 (0ms 즉각 바통 터치)`);
-  console.log(`--------------------------------------------------------------------------------`);
-  console.log(`🚀 성능 향상 배율: ${(oldAvgNs / newAvgNs).toFixed(1)}배 더 빠르고 지연 0프레임 달성!`);
-  console.log("================================================================================\n");
+  console.log(
+    `   - 평균 소요 시간: ${newAvgNs.toFixed(0)} ns (${newAvgMs.toFixed(3)} ms)`,
+  );
+  console.log(
+    `   - 프레임 지연(Desync): 0.00% (0프레임, 단일 렌더 사이클에서 동시 체결)`,
+  );
+  console.log(`   - 깜빡임/찌그러짐 위험: 🟢 0% 완료 (즉각 터치)`);
+  console.log(
+    `--------------------------------------------------------------------------------`,
+  );
+  console.log(
+    `🚀 성능 향상 배율: ${(oldAvgNs / newAvgNs).toFixed(1)}배 더 빠르고 지연 0프레임 달성!`,
+  );
+  console.log(
+    "================================================================================\n",
+  );
 }
 
 runBenchmark();

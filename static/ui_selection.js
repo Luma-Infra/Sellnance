@@ -30,7 +30,7 @@ export function selectSymbol(
       ? store.originalTableData
       : store.currentTableData || [];
 
-  // [신규] 새로고침 0초 진입 시 스토어 메모리가 비어있으면 로컬 캐시에서 즉시 복원
+  // [신규] 새로고침 진입 시 스토어 메모리가 비어있으면 로컬 캐시에서 복원
   if (allSourceData.length === 0) {
     try {
       const cachedStr = localStorage.getItem("sellnance_market_data_cache");
@@ -44,7 +44,7 @@ export function selectSymbol(
           }
         }
       }
-    } catch (e) { }
+    } catch (e) {}
   }
   // 1. suffix 및 트레이딩뷰 스타일(EXCHANGE:SYMBOL_MARKET) 파싱
   const originalSym = String(s).trim();
@@ -150,8 +150,8 @@ export function selectSymbol(
     });
   }
 
-  // 🚀 [쓰레기/오타 URL 방어] 전체 데이터(100개 초과)가 로드된 상태에서 최초 진입 시 목록에 없는 유령 코인이면 BTC_FUTURES로 자동 폴백
-  // 🔒 [보고 있는 코인 무한 락업] UID 0순위 일치 검사 및 Ticker/Symbol 일치 검사로 동명이인 코인까지 완벽 방어
+  // [URL 관리] 전체 데이터(100개 초과)가 로드된 상태에서 최초 진입 시 목록에 없는 유령 코인이면 BTC_FUTURES로 자동 폴백
+  // [보고 있는 코인 락업] UID 0순위 일치 검사 및 Ticker/Symbol 일치 검사로 동명이인 코인까지 검사
   const isAlreadyViewing =
     (targetUid &&
       store.currentSelectedUid &&
@@ -179,22 +179,22 @@ export function selectSymbol(
       if (last && last !== parsedSymbol && last !== rawSymbol) {
         fallbackSymbol = last;
       }
-    } catch (_) { }
+    } catch (_) {}
     return selectSymbol(fallbackSymbol);
   }
 
   const uniqueTicker = rowInfo ? rowInfo.Ticker : parsedSymbol;
 
-  // 🚀 [신규 가드] 이미 선택된 코인을 클릭했거나, 이미 선택된 활성 거래소 뱃지를 클릭한 경우
+  // 이미 선택된 코인을 클릭했거나, 이미 선택된 활성 거래소 뱃지를 클릭한 경우
   if (isRowClick && store.currentAsset === uniqueTicker) {
-    // 🚀 [모바일 대응] 이미 선택된 코인이더라도 모바일에서는 네비게이션 및 오버레이를 '차트'로 확실히 전환
+    // [모바일 대응] 이미 선택된 코인이더라도 모바일에서는 네비게이션 및 오버레이를 '차트'로 확실히 전환
     const isTouch =
       typeof window.isTouchDevice === "function"
         ? window.isTouchDevice()
         : (window.matchMedia &&
-          window.matchMedia("(pointer: coarse)").matches) ||
-        "ontouchstart" in window ||
-        (typeof navigator !== "undefined" && navigator.maxTouchPoints > 0);
+            window.matchMedia("(pointer: coarse)").matches) ||
+          "ontouchstart" in window ||
+          (typeof navigator !== "undefined" && navigator.maxTouchPoints > 0);
     if (window.innerWidth < 1200 && isTouch) {
       if (typeof window.switchMobileTab === "function") {
         window.switchMobileTab("chart");
@@ -212,7 +212,7 @@ export function selectSymbol(
     return;
   }
 
-  // 🚀 [INP 최적화 Phase 1] 클릭 즉시 실시간 버퍼 플러시 및 차트 잠금 활성화
+  // [INP 최적화] 실시간 버퍼 플러시 및 차트 잠금 활성화
   if (typeof window.flushRealtimeBuffers === "function") {
     window.flushRealtimeBuffers();
   }
@@ -225,15 +225,15 @@ export function selectSymbol(
   store.currentAsset = uniqueTicker;
   store.currentSelectedSymbol = uniqueTicker;
   store.currentSelectedUid = rowInfo ? rowInfo.UID : targetUid || null;
-  // 🚀 [UX 복원] 마지막 선택 코인 로컬 저장 및 최근 조회한 검색어 등록
+  // [UX 복원] 마지막 선택 코인 로컬 저장 및 최근 조회한 검색어 등록
   try {
     localStorage.setItem("sellnance_last_symbol", uniqueTicker);
-  } catch (e) { }
+  } catch (e) {}
   if (typeof window.addRecentSearch === "function") {
     window.addRecentSearch(uniqueTicker);
   }
 
-  // 🚀 선택된 코인은 화면 가시 영역(30위 바깥)과 상관없이 무조건 실시간 시세 구독에 강제 등록
+  // 선택된 코인은 화면 가시 영역(30위 바깥)과 상관없이 실시간 시세 구독에 등록
   if (store.visibleSymbols) {
     store.visibleSymbols.add(uniqueTicker);
     if (rowInfo?.Ticker) store.visibleSymbols.add(rowInfo.Ticker);
@@ -244,7 +244,7 @@ export function selectSymbol(
     }
   }
 
-  // 🚀 테이블 행이 DOM에 이미 생성되어 있고 마켓 스위칭이 아닐 때만 즉시 동적 지표(Day/24h) 동기화
+  // 테이블 행이 DOM에 이미 생성되어 있고, 마켓 스위칭이 아닐 때만 동적 지표(Day/24h) 동기화
   const isMarketSwitchOnly =
     forceMarket !== null &&
     (store.currentSelectedSymbol === uniqueTicker ||
@@ -259,7 +259,7 @@ export function selectSymbol(
   //   }
   // }
 
-  // 🚀 주소창 해시 연동 (라우팅 최적화)
+  // 주소창 해시 연동 (라우팅 최적화)
   let tempMarket = forceMarket || parsedMarket;
   if (tempMarket === "BINANCE") tempMarket = "SPOT";
   if (tempMarket === "BINANCE_FUTURES") tempMarket = "FUTURES";
@@ -327,17 +327,17 @@ export function selectSymbol(
       window.location.hash ||
       window.location.pathname !== targetPath
     ) {
-      // 🚀 기존 #해시로 진입한 경우 깔끔한 트레이딩뷰 스타일 URL로 전환
+      // 기존 해시로 진입한 경우 깔끔한 트레이딩뷰 스타일 URL로 전환
       window.history.replaceState(null, null, targetPath);
     }
   }
 
-  // 1. 이전 코인의 잔여 쓰로틀 큐 즉시 초기화 (원자성 보장 & 덮어쓰기 방지)
+  // 1. 이전 코인의 잔여 쓰로틀 큐 초기화 (덮어쓰기 방지)
   if (typeof window.clearHeaderThrottle === "function") {
     window.clearHeaderThrottle();
   }
 
-  // 검색창 닫기 및 입력값 동기화 (가벼운 DOM 조작 즉시 실행)
+  // 검색창 닫기 및 입력값 동기화 (가벼운 DOM 조작 실행)
   const symInput = document.getElementById("symbol-input");
   // if (symInput) {
   //   symInput.value = rowInfo ? rowInfo.Symbol : s;
@@ -345,16 +345,16 @@ export function selectSymbol(
   const searchRes = document.getElementById("search-results");
   if (searchRes) searchRes.style.display = "none";
 
-  // 🚀 [추가] 초기 안내 오버레이 숨기기
+  // [추가] 초기 안내 오버레이 숨기기
   const initMessage = document.getElementById("chart-init-message");
   if (initMessage) initMessage.style.display = "none";
 
-  // 2. 리스트(목록) 행 즉시 하이라이트 반영 (시각적 피드백 선행)
+  // 2. 리스트(목록) row 하이라이트 반영 (시각적 피드백 선행)
   if (typeof applySelectedHighlight === "function") {
     applySelectedHighlight();
   }
 
-  // 🚀 [INP 최적화 Phase 2] 무거운 배열 탐색, DOM 재생성, API 통신, 차트 렌더링(fetchHistory)을 다음 페인트 이후로 양보(Yielding)
+  // [INP 최적화] 무거운 배열 탐색, DOM 재생성, API 통신, 차트 렌더링(fetchHistory)을 다음 페인트 이후로 양보(Yielding)
   pendingSelectRaf = requestAnimationFrame(() => {
     pendingSelectTimeout = setTimeout(() => {
       pendingSelectRaf = null;
@@ -384,7 +384,7 @@ export function selectSymbol(
           let starClass = "";
           if (isFav) {
             starText = "★";
-            starColor = "#e3b30a"; // 🚀 노란색 고정 (라이트모드 파란색 오염 방어)
+            starColor = "#e3b30a"; // 노란색 고정
             starClass = "active";
           } else if (isFav2) {
             starText = "★";
@@ -404,7 +404,7 @@ export function selectSymbol(
           const nameStr = rawName
             .replace(/\s*[\(\（\[][^\)\）\]]*[\)\）\]]/g, "")
             .trim();
-          // 🚀 전용: [Symbol | Name] (예: 龙虾 | LONGXIA(lobster)) 원본 괄호 포함 표기
+          // 전용: [Symbol | Name] (예: 龙虾 | LONGXIA(lobster)) 원본 괄호 포함 표기
           const pcText = rawName ? `${pureSym} | ${rawName}` : pureSym;
           const len = pcText.length;
           // 수학적 로그 방식 적용: 10글자 초과 시 길이에 반비례하여 부드럽게 폰트 크기 축소
@@ -415,7 +415,7 @@ export function selectSymbol(
             const sizeRem = Math.max(
               fs.ASSET_MIN_REM,
               fs.ASSET_BASE_REM -
-              Math.log10(len / fs.ASSET_THRESHOLD) * fs.ASSET_LOG_MULT,
+                Math.log10(len / fs.ASSET_THRESHOLD) * fs.ASSET_LOG_MULT,
             );
             fontSizeStyle = `style="font-size: ${sizeRem.toFixed(3)}rem; line-height: 1.1; white-space: nowrap;"`;
           } else {
@@ -430,9 +430,9 @@ export function selectSymbol(
               <div class="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-white/5 rounded-full overflow-hidden">
                 ${logoHtml}
               </div>
-              <!-- 🚀 PC 전용 (>=1200px): [Symbol | Name] 단일 라인 표기 -->
+              <!-- PC 전용 (>=1200px): [Symbol | Name] 단일 라인 표기 -->
               <span class="hidden min-[1200px]:inline truncate font-extrabold text-theme-accent" title="${pcText}" ${fontSizeStyle}>${pcText}</span>
-              <!-- 🚀 모바일 전용 (<1200px): 코인 이름을 무조건 아랫줄 2단으로 정렬 -->
+              <!-- 모바일 전용 (<1200px): 코인 이름을 아랫줄 2단으로 정렬 -->
               <div class="flex flex-col min-[1200px]:hidden leading-none min-w-0">
                 <span class="text-base sm:text-lg font-extrabold tracking-wide truncate leading-tight text-theme-accent">${pureSym}</span>
                 ${nameStr ? `<span class="text-[10px] text-theme-text/60 font-medium tracking-tight truncate leading-tight mt-0.5">${nameStr}</span>` : ""}
@@ -440,7 +440,7 @@ export function selectSymbol(
             </div>
           `;
         } else {
-          // 🚀 [신규] rowInfo 로드 대기 중(직접 URL 진입 등)에도 기본 깔끔한 심볼 표기
+          // [신규] rowInfo 로드 대기 중(직접 URL 진입 등)에도 기본 깔끔한 심볼 표기
           const pureSym = getPureBase(uniqueTicker || parsedSymbol);
           contentHtml = `
             <div class="flex items-center gap-2">
@@ -460,7 +460,7 @@ export function selectSymbol(
 
       updateExchangeBadges(uniqueTicker, rowInfo ? rowInfo.UID : null);
 
-      // 🚀 호가창(Orderbook) 업데이트 (호가창 패널이 열려 있을 경우 자동 재연결)
+      // 호가창(Orderbook) 업데이트 (호가창 패널이 열려 있을 경우 자동 재연결)
       const chartTargetSym =
         rowInfo && rowInfo._chartTargetSymbol
           ? rowInfo._chartTargetSymbol
@@ -484,7 +484,7 @@ export function selectSymbol(
               if (headAssetElements.length > 0 && infoData && infoData.name) {
                 const displaySym = getPureBase(
                   infoData.symbol ||
-                  (rowInfo ? rowInfo.Symbol : querySym.split("(")[0]),
+                    (rowInfo ? rowInfo.Symbol : querySym.split("(")[0]),
                 );
                 const favorites = JSON.parse(
                   localStorage.getItem("sellnance_favs") || "[]",
@@ -504,7 +504,7 @@ export function selectSymbol(
                 let starClass = "";
                 if (isFav) {
                   starText = "★";
-                  starColor = "#e3b30a"; // 🚀 노란색 고정 (라이트모드 파란색 오염 방어)
+                  starColor = "#e3b30a"; // 노란색 고정
                   starClass = "active";
                 } else if (isFav2) {
                   starText = "★";
@@ -517,7 +517,7 @@ export function selectSymbol(
                     ? rowInfo.Logo
                     : `<img src="${document.body?.classList.contains("theme-upbit") ? "/static/luma-deer-svg-light.svg" : "/static/luma-deer-svg-dark.svg"}" class="fallback-logo" loading="lazy" style="width: 24px; height: 24px; vertical-align: middle; border-radius: 50%;">`;
                 const nameStr2 = infoData.name || "";
-                // 🚀 PC 전용: [Symbol | Name] 원본 표기
+                // PC 전용: [Symbol | Name] 원본 표기
                 const pcText2 = nameStr2
                   ? `${displaySym} | ${nameStr2}`
                   : displaySym;
@@ -541,9 +541,9 @@ export function selectSymbol(
                     <div class="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-white/5 rounded-full overflow-hidden">
                       ${logoHtml}
                     </div>
-                    <!-- 🚀 PC 전용 (>=1200px): [Symbol | Name] 단일 라인 표기 -->
+                    <!-- PC 전용 (>=1200px): [Symbol | Name] 단일 라인 표기 -->
                     <span class="hidden min-[1200px]:inline truncate font-extrabold text-theme-accent" title="${pcText2}" ${fontSizeStyle2}>${pcText2}</span>
-                    <!-- 🚀 모바일 전용 (<1200px): 코인 이름을 무조건 아랫줄 2단으로 정렬 -->
+                    <!-- 모바일 전용 (<1200px): 코인 이름을 아랫줄 2단으로 정렬 -->
                     <div class="flex flex-col min-[1200px]:hidden leading-none min-w-0">
                       <span class="text-base sm:text-lg font-extrabold tracking-wide truncate leading-tight text-theme-accent">${displaySym}</span>
                       ${nameStr2 ? `<span class="text-[10px] text-theme-text/60 font-medium tracking-tight truncate leading-tight mt-0.5">${nameStr2}</span>` : ""}
@@ -591,14 +591,14 @@ export function selectSymbol(
                 ) ||
                 (rowInfo?.UID
                   ? document.querySelector(
-                    `#coin-list-body > div[data-uid="${rowInfo.UID}"]`,
-                  )
+                      `#coin-list-body > div[data-uid="${rowInfo.UID}"]`,
+                    )
                   : null) ||
                 (store.rowDomMap
                   ? store.rowDomMap.get(uniqueTicker) ||
-                  (rowInfo?.UID
-                    ? store.rowDomMap.get(String(rowInfo.UID))
-                    : null)
+                    (rowInfo?.UID
+                      ? store.rowDomMap.get(String(rowInfo.UID))
+                      : null)
                   : null);
               if (targetRow && targetRow.style.display !== "none") {
                 targetRow.scrollIntoView({
@@ -611,12 +611,12 @@ export function selectSymbol(
         }
       }
 
-      // 🚀 [핵심] 차트 데이터 패치 실행 (메인 스레드 경합 완벽 해소)
+      // 차트 데이터 패치 실행 (메인 스레드 경합 해소)
       if (typeof fetchHistory === "function") {
         fetchHistory(chartTargetSym, false, false, false, rowInfo?.UID);
       }
 
-      // 🚀 [추가] 코인 신규 선택 시 실시간 정렬 엔진 강제 점화 및 즉시 적용 (마켓 스위칭 시에는 테이블 정렬 스킵)
+      // [추가] 코인 신규 선택 시 실시간 정렬 엔진 점화 및 적용 (마켓 스위칭 시에는 테이블 정렬 스킵)
       if (
         !isMarketSwitchOnly &&
         typeof window.applyRealtimeSort === "function"
@@ -624,26 +624,26 @@ export function selectSymbol(
         window.applyRealtimeSort();
       }
 
-      // 🚀 모바일 터치 환경(1200px 미만 & 터치 기기)일 경우: 행 직접 터치(isRowClick) 또는 차트 탭 활성 상태일 때만 차트 오버레이 열기
+      // 모바일 터치 환경(1200px 미만 & 터치 기기)일 경우: 행 직접 터치(isRowClick) 또는 차트 탭 활성 상태일 때만 차트 오버레이 열기
       const isTouch =
         typeof window.isTouchDevice === "function"
           ? window.isTouchDevice()
           : (window.matchMedia &&
-            window.matchMedia("(pointer: coarse)").matches) ||
-          "ontouchstart" in window ||
-          (typeof navigator !== "undefined" && navigator.maxTouchPoints > 0);
+              window.matchMedia("(pointer: coarse)").matches) ||
+            "ontouchstart" in window ||
+            (typeof navigator !== "undefined" && navigator.maxTouchPoints > 0);
 
       if (window.innerWidth < 1200 && isTouch) {
         let activeTab = "list";
         try {
           activeTab =
             sessionStorage.getItem("sellnance_active_mobile_tab") || "list";
-        } catch (e) { }
+        } catch (e) {}
 
         if (isRowClick || activeTab === "chart") {
           try {
             sessionStorage.setItem("sellnance_active_mobile_tab", "chart");
-          } catch (e) { }
+          } catch (e) {}
           if (typeof window.switchMobileTab === "function") {
             window.switchMobileTab("chart");
           } else if (typeof window.showMobileChart === "function") {
@@ -802,18 +802,18 @@ export function updateExchangeBadges(s, targetUid = null) {
           .split("(")[0]
           .toUpperCase();
         const rawFallback =
-          (isCurrentActive && store.activeCandleFallback)
+          isCurrentActive && store.activeCandleFallback
             ? store.activeCandleFallback
-            : (item.isAlpha
+            : item.isAlpha
               ? store.activeCandleFallback ||
-              rowInfo.fallback_exchange ||
-              store.fallbackExchanges?.[baseSym]
-              : null);
+                rowInfo.fallback_exchange ||
+                store.fallbackExchanges?.[baseSym]
+              : null;
         const fallbackEx =
           rawFallback &&
-            !["BINANCE", "BINANCE_ALPHA", "BINANCE_SPOT", "ALPHA"].includes(
-              String(rawFallback).toUpperCase(),
-            )
+          !["BINANCE", "BINANCE_ALPHA", "BINANCE_SPOT", "ALPHA"].includes(
+            String(rawFallback).toUpperCase(),
+          )
             ? rawFallback
             : null;
 
@@ -859,7 +859,7 @@ export function updateExchangeBadges(s, targetUid = null) {
           return;
         }
 
-        // 🌟 활성 거래소 배지
+        // 활성 거래소 배지
         const ringClass = isCurrentActive
           ? "ring-2 ring-white scale-105 shadow-lg brightness-110 opacity-100"
           : "opacity-60 hover:opacity-100 hover:scale-105";

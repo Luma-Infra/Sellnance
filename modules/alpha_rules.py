@@ -1,8 +1,8 @@
 # modules/alpha_rules.py
 """
-💎 [Custom Alpha Gems Rule Engine]
+[Custom Alpha Gems Rule Engine]
 바이낸스 알파(Binance Alpha) 전용 커스텀 규칙 및 동적 자동 선별 엔진
-- 기존 바이낸스 현물/선물과 완전 격리
+- 기존 바이낸스 현물/선물과 격리
 """
 
 from datetime import datetime, timezone
@@ -19,11 +19,11 @@ SESSION.headers.update(
 )
 
 _ALPHA_API_CACHE = {"timestamp": 0.0, "data": {}}
-_CACHE_TTL_SECONDS = 3.0  # 바이낸스 알파 API 과도 호출 방지 쿨다운 (3초)
+_CACHE_TTL_SECONDS = 3.0  # 바이낸스 알파 API 과도 호출 방지 쿨다운
 
 
 def fetch_binance_alpha_raw():
-    """바이낸스 알파 API 전체 토큰 목록 및 실시간 시세/메타 수집 (3초 TTL 캐시 및 다중 후보 보관)"""
+    """바이낸스 알파 API 전체 토큰 목록 및 실시간 시세/메타 수집 (TTL 캐시 및 다중 후보 보관)"""
     global _ALPHA_API_CACHE
     now = time.time()
     if (
@@ -89,11 +89,11 @@ def get_reference_price_usd(sym, bithumb_data=None, krw_usd_rate=None, bybit_dat
 
 def evaluate_gem_rules(sym, exch_tags):
     """
-    🎯 [커스텀 규칙 알고리즘 판정기]
-    - 규칙을 바꾸고 싶을 때 이 함수 내부의 조건식만 수정하면 됩니다.
-    - True 반환 시 선별되어 바이낸스 현물 파이프라인으로 주입됩니다.
+    [커스텀 규칙 알고리즘 판정기]
+    - 규칙을 바꾸고 싶을 때 이 함수 내부의 조건식만 수정하기
+    - True 반환 시 선별되어 바이낸스 현물 파이프 라인으로 관여
     """
-    # [공통 제외 규칙] 업비트 상장, 바이낸스 선물 상장, 바이낸스 진짜 현물 상장, 주식(STOCK) 토큰 원천 배제
+    # [공통 제외 규칙] 업비트 상장, 바이낸스 선물 상장, 바이낸스 현물 상장, 주식(STOCK) 토큰은 배제
     if "UPBIT" in exch_tags:
         return False
     if "BINANCE_FUTURES" in exch_tags:
@@ -111,7 +111,7 @@ def evaluate_gem_rules(sym, exch_tags):
     has_bybit = "BYBIT_SPOT" in exch_tags or "BYBIT" in exch_tags
 
     # 4대 조건식 (하나라도 만족 시 통과)
-    # Case 1: 빗썸 상장 알파 보석
+    # Case 1: 빗썸 상장 알파 코인
     if has_bithumb:
         return True
 
@@ -284,9 +284,9 @@ def inject_alpha_gems_into_pipeline(
     duplicated_list=None,
 ):
     """
-    [파이프라인 원클릭 주입 함수]
-    선별된 보석 코인들을 바이낸스 현물(Spot) 파이프라인과 글로벌 상장 태그에 직접 주입
-    (족보 우선 체크, 2배수 가격 검증, 3초 API 캐시 자동 가동)
+    [파이프라인 함수]
+    선별된 알파 코인들을 바이낸스 현물(Spot) 파이프라인과 글로벌 상장 태그로 관리
+    (족보 우선 체크, 2배수 가격 검증, API 캐시 관리)
     """
     try:
         alpha_map = fetch_binance_alpha_raw()
@@ -325,7 +325,7 @@ def inject_alpha_gems_into_pipeline(
         for sym, alpha_item in dynamic_gems.items():
             ticker = f"{sym}USDT"
 
-            # 1. 선별된 알파 보석에만 글로벌 리스팅 태그 보강
+            # 1. 선별된 알파 코인에만 태그 부여
             if sym not in global_listings:
                 global_listings[sym] = set()
             global_listings[sym].add("BINANCE_ALPHA")

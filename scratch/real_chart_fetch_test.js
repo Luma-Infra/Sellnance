@@ -1,5 +1,5 @@
 // Real Integration Test directly importing workspace's static/chart_fetch.js and static/_store.js!
-// 🔒 [외부 API 차단 안전망] globalThis.fetch를 가상 Mock으로 가로채어 실제 거래소/서버 네트워크 통신 0회 보장
+// [외부 API 차단 안전망] globalThis.fetch를 가상 Mock으로 가로채어 실제 거래소/서버 네트워크 통신 0회 보장
 
 globalThis.location = {
   hostname: "localhost",
@@ -76,7 +76,7 @@ globalThis.requestAnimationFrame = (cb) => {
   setImmediate(cb);
 };
 
-// 🔒 [원천 차단] 외부 네트워크 요청을 메모리 가상 응답으로 가로챔 (API 통신 0회)
+// [원천 차단] 외부 네트워크 요청을 메모리 가상 응답으로 가로챔 (API 통신 0회)
 globalThis.fetch = async (url) => {
   const urlStr = String(url).toUpperCase();
   console.log(`  🌐 [Mock Fetch Intercepted] URL: ${urlStr}`);
@@ -199,7 +199,7 @@ async function testRealCode() {
   if (finalLoadedPrice === 0.1) {
     console.log("\n🚨 [실제 파일 검증 결과: 침범 참사 100% 재현 확인!]");
     console.log(
-      "  뒤늦게 응답이 도착한 0.1$ DOGE의 fetchHistory가 100$ AAVE 차트 데이터를 덮어써서 파괴했습니다.",
+      "  뒤늦게 응답이 도착한 0.1$ DOGE의 fetchHistory가 100$ AAVE 차트 데이터를 덮어써서 파괴했습니다",
     );
   } else {
     console.log("\n✅ 정상 방어됨");

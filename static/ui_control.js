@@ -1,7 +1,7 @@
 // ui_control.js
 // --- 📱 UI/UX 컨트롤 허브 모듈 ---
-// 기존 기능 및 전역 바인딩(window.*), import/export 역할을 100% 보존하면서
-// 유지보수를 위해 각 전담 하위 모듈로 체계화된 허브 파일입니다.
+// 기존 기능 및 전역 바인딩(window.*), import/export 역할 보존
+// 유지보수를 위해 각 전담 하위 모듈로 체계화된 허브 파일
 
 import { store, CONFIG } from "./_store.js";
 import { initChart, updateChartTheme } from "./chart.js";
@@ -100,18 +100,12 @@ export {
   closeMobileChart,
 } from "./ui_mobile.js";
 
-export {
-  executeTabSwitch,
-  switchChartTab,
-} from "./ui_panels.js";
+export { executeTabSwitch, switchChartTab } from "./ui_panels.js";
 
 // ==========================================
 // 7. 심볼 선택 및 거래소 뱃지 (ui_selection.js)
 // ==========================================
-export {
-  selectSymbol,
-  updateExchangeBadges,
-} from "./ui_selection.js";
+export { selectSymbol, updateExchangeBadges } from "./ui_selection.js";
 
 // ==========================================
 // 8. 탭 슬라이더 하이라이터 (moveTabSlider)
@@ -142,7 +136,7 @@ export function moveTabSlider(index) {
   syncQuickViewNeonSize();
 }
 
-// 📏 실제 박스 크기(가로, 세로, 대각선)를 기반으로 네온 회전 영역을 동적 동기화
+// 실제 박스 크기(가로, 세로, 대각선)를 기반으로 회전 영역을 동적 동기화
 export function syncQuickViewNeonSize() {
   const btn = document.getElementById("tab-btn-quickview");
   const glow = document.getElementById("quickview-neon-glow");
@@ -151,9 +145,10 @@ export function syncQuickViewNeonSize() {
   const h = btn.offsetHeight;
   if (!w || !h) return;
   // 박스의 실제 대각선 길이 + 여유 모서리 여백(32px)으로 회전 영역을 동적 산출하여
-  // 사이드바 토글 등으로 박스 크기가 변해도 우측 하단 및 모든 모서리가 100% 꽉 채워지도록 보장
+  // 사이드바 토글 등으로 박스 크기가 변해도 우측 하단 및 모든 모서리가 채워지도록 하기
   const diag = Math.ceil(Math.hypot(w, h)) + 32;
-  const wrapper = document.getElementById("quickview-neon-wrapper") || glow.parentElement;
+  const wrapper =
+    document.getElementById("quickview-neon-wrapper") || glow.parentElement;
   if (wrapper) {
     wrapper.style.width = `${diag}px`;
     wrapper.style.height = `${diag}px`;
@@ -161,7 +156,7 @@ export function syncQuickViewNeonSize() {
 }
 window.syncQuickViewNeonSize = syncQuickViewNeonSize;
 
-// 🚀 탭 컨테이너 크기 변경 시 하이라이터 위치 동적 재조정
+// 탭 컨테이너 크기 변경 시 하이라이터 위치 동적 재조정
 document.addEventListener("DOMContentLoaded", () => {
   setTimeout(() => {
     syncQuickViewNeonSize();
@@ -182,7 +177,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       observer.observe(container);
 
-      // 페이지 첫 로딩 시 현재 active 클래스가 설정된 탭 위치로 즉시 하이라이터 이동
+      // 페이지 첫 로딩 시 현재 active 클래스가 설정된 탭 위치로 하이라이터 이동
       const activeBtn = container.querySelector(".chart-tabs-btn.active");
       if (activeBtn) {
         const buttons = Array.from(
@@ -216,7 +211,7 @@ setTimeout(() => {
         fullscreenBtn.className =
           "hidden min-[1200px]:flex px-2.5 py-1 text-[11px] font-bold bg-transparent text-theme-text opacity-60 border border-theme-border/30 rounded hover:bg-theme-border/50 hover:opacity-100 transition-all ml-2 flex-shrink-0 cursor-pointer items-center gap-1";
 
-        // 동적 전체화면 CSS 스타일 주입
+        // 동적 전체화면 CSS 스타일 갱신
         if (!document.getElementById("fullscreen-tf-css")) {
           const styleEl = document.createElement("style");
           styleEl.id = "fullscreen-tf-css";
@@ -289,7 +284,7 @@ setTimeout(() => {
               "border-theme-accent/40",
             );
           } else {
-            // 전체화면 탈출: tf-container를 원래 위치로 복원
+            // 전체화면 종료: tf-container를 원래 위치로 복원
             container.classList.remove("fullscreen-tf-style");
 
             // head-control-buttons를 원래 부모로 복원
@@ -326,7 +321,7 @@ setTimeout(() => {
             );
           }
 
-          // DOM 재배치 후 캔버스 높이 재계산을 위한 차트 레이아웃 강제 갱신
+          // DOM 재배치 이후 캔버스 높이 재계산을 위한 차트 레이아웃 갱신
           setTimeout(() => {
             if (typeof window.applyChartLayout === "function") {
               window.applyChartLayout();
@@ -361,7 +356,7 @@ setTimeout(() => {
       }
     };
 
-    // 강제 1회 재생성
+    // 1회 재생성
     if (store.currentTF) {
       window.renderTimeframeButtons(store.currentTF);
     } else {
@@ -371,7 +366,7 @@ setTimeout(() => {
 }, 50);
 
 // ==========================================
-// 10. 전역 바인딩 (window.*) 100% 보존
+// 10. 전역 바인딩 (window.*) 보존
 // ==========================================
 window.moveTabSlider = moveTabSlider;
 
@@ -391,4 +386,3 @@ document.addEventListener("DOMContentLoaded", () => {
   syncCheckboxesFromStore();
   renderRecentSearchChips();
 });
-

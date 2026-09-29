@@ -45,7 +45,7 @@ async function fetchHistory_ProtectedCode(store, symbol, latencyMs, candles) {
   // Simulated async HTTP API network delay
   await sleep(latencyMs);
 
-  // 🛡️ [Fetch Guard] 만약 요청 완료 시점에 더 최신의 fetch가 시작되었거나 심볼이 바뀌었으면 폐기(Drop)!
+  // [Fetch Guard] 만약 요청 완료 시점에 더 최신의 fetch가 시작되었거나 심볼이 바뀌었으면 폐기(Drop)!
   if (
     currentFetchId !== globalFetchSeq ||
     store.currentAsset !== snapshotAsset
@@ -139,7 +139,7 @@ async function runUnitTest() {
   console.log(`  • 실제 차트에 그려진 종가 : ${protectedRenderedPrice}$`);
   if (protectedRenderedPrice === 100.0) {
     console.log(
-      "  🛡️ [완벽 방어 성공!] 뒤늦게 도착한 0.1$ 응답을 폐기하고 100$ 차트 유지 (PASS)",
+      "  🛡️ [방어 성공!] 뒤늦게 도착한 0.1$ 응답을 폐기하고 100$ 차트 유지 (PASS)",
     );
   } else {
     console.log("  🚨 오염 발생 (FAIL)");

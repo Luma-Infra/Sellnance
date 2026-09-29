@@ -493,6 +493,9 @@ def build_upbit_row(
             else (by_raw.get("futures_change_24h") or by_raw.get("change_24h") or 0.0)
         ),
         "Binance_Vol_Spot": bin_agg["binance_spot_vol"],
+        "Change_Today_Upbit": change_today,
+        "Change_24h_Upbit": up_change_24h,
+        "Upbit_Vol_Today": float(up_info.get("volume_today") or 0.0),
         "Exact_Spot": bin_agg["exact_spot_ticker"],
         "Upbit_Vol_Formatted": (
             utils.format_volume_string(

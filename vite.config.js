@@ -24,13 +24,19 @@ export default defineConfig({
     emptyOutDir: true,
     sourcemap: false,
     chunkSizeWarningLimit: 800,
+    // [최적화] 모든 형태(한 줄, 여러 줄, JSDoc, 라이선스)의 주석 및 디버거/로그 제거
+    esbuild: {
+      legalComments: "none",
+      drop: ["debugger"],
+      pure: ["console.log", "console.debug", "console.info"],
+    },
     rollupOptions: {
       input: {
         // 엔트리 포인트 경로 설정
-        main: resolve(__dirname, "templates/index.html"),
+        ma100: resolve(__dirname, "templates/index.html"),
       },
       output: {
-        entryFileNames: "assets/app-[hash].js",
+        entryFileNames: "assets/ap120-[hash].js",
         chunkFileNames: "assets/[name]-[hash].js",
         assetFileNames: "assets/[name]-[hash].[ext]",
         manualChunks(id) {
@@ -38,28 +44,29 @@ export default defineConfig({
           if (normalizedId.includes("node_modules")) {
             return "vendor";
           }
+          // 1. 차트 엔진 (가장 무겁고 독립적인 렌더링 레이어)
           if (
             normalizedId.includes("/static/chart") ||
             normalizedId.includes("/static/sim_engine")
           ) {
-            return "c1";
+            return "ch120";
           }
+          // 2. 실시간 시세 & 테이블 파이프라인 (유기적으로 결합된 단일 스트림)
           if (
             normalizedId.includes("/static/stream") ||
             normalizedId.includes("/static/feed_") ||
-            normalizedId.includes("/static/orderbook")
+            normalizedId.includes("/static/orderbook") ||
+            normalizedId.includes("/static/table")
           ) {
-            return "c2";
+            return "ma140";
           }
-          if (normalizedId.includes("/static/table")) {
-            return "c3";
-          }
+          // 3. UI 및 퀵뷰 레이어
           if (
             normalizedId.includes("/static/ui_") ||
             normalizedId.includes("/static/quickview") ||
             normalizedId.includes("/static/start")
           ) {
-            return "c4";
+            return "uc160";
           }
         },
       },

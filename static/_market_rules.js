@@ -1,7 +1,7 @@
 /**
- * 🏛️ MARKET RULES (Single Source of Truth)
+ * MARKET RULES (Single Source of Truth)
  * 셀낸스 전역(테이블, 소켓 스트림, 렌더러, 필터, 차트, 경주마 정렬)에서
- * 현물/선물 판별, 김프 해외가 산출, 대표 수치, 거래소 매핑을 단 1곳에서 관리합니다.
+ * 현물/선물 판별, 김프 해외가 산출, 대표 수치, 거래소 매핑을 단 1곳에서 관리
  */
 
 import { store } from "./_store.js";
@@ -20,7 +20,7 @@ export function isFuturesCoin(row) {
 }
 
 /**
- * 2. 거래소별 상장 메타데이터 100% 통합 판별
+ * 2. 거래소별 상장 메타데이터 통합 판별
  */
 export function getRowExchangeMeta(row) {
   if (!row) {
@@ -156,7 +156,7 @@ export function getRowDisplayMetrics(row, isKrwMode = null, rate = null) {
 
   const isFutures = isFuturesCoin(row);
 
-  // 🚀 [테이블 4단 분리: 1.바낸 선물 ➔ 2.업비트 현물 ➔ 3.바낸 현물 ➔ 4.바이빗 현물]
+  // [테이블 4단 분리: 1.바낸 선물 ➔ 2.업비트 현물 ➔ 3.바낸 현물 ➔ 4.바이빗 현물]
   const binanceFuturesP =
     row.Binance_Price_Futures || (isFutures ? row.Price_Raw : null);
   const upbitP = row.Upbit_Price ?? (row.Upbit === "O" ? row.Price_KRW : null);
@@ -165,24 +165,24 @@ export function getRowDisplayMetrics(row, isKrwMode = null, rate = null) {
   const binanceSpotP =
     row.Binance_Price_Spot ||
     (!isFutures &&
-      (row.Binance === "O" ||
-        row.Listed_Exchanges?.includes("BINANCE_SPOT") ||
-        row.Listed_Exchanges?.includes("BINANCE"))
+    (row.Binance === "O" ||
+      row.Listed_Exchanges?.includes("BINANCE_SPOT") ||
+      row.Listed_Exchanges?.includes("BINANCE"))
       ? row.Price_Raw
       : null);
   const bybitFuturesP =
     row.Bybit_Price_Futures ||
     (isFutures &&
-      (row.Bybit_Futures === "O" ||
-        row.Listed_Exchanges?.includes("BYBIT_FUTURES"))
+    (row.Bybit_Futures === "O" ||
+      row.Listed_Exchanges?.includes("BYBIT_FUTURES"))
       ? row.Price_Raw
       : null);
   const bybitSpotP =
     row.Bybit_Price_Spot ||
     (!isFutures &&
-      (row.Bybit === "O" ||
-        row.Listed_Exchanges?.includes("BYBIT_SPOT") ||
-        row.Listed_Exchanges?.includes("BYBIT"))
+    (row.Bybit === "O" ||
+      row.Listed_Exchanges?.includes("BYBIT_SPOT") ||
+      row.Listed_Exchanges?.includes("BYBIT"))
       ? row.Price_Raw
       : null);
 
@@ -238,14 +238,14 @@ export function getRowDisplayMetrics(row, isKrwMode = null, rate = null) {
     }
   }
 
-  // 🚀 [등락률 1:1 매핑] activeExchange 및 선택된 단가 기준 1:1 동기화
+  // [등락률 1:1 매핑] activeExchange 및 선택된 단가 기준 1:1 동기화
   let n24h = 0;
   let nDay = null;
 
   const isAlpha = row.Binance_Alpha === "O" || Boolean(row.is_alpha);
 
   if (isAlpha) {
-    // 🚀 알파 코인은 빗썸/업비트 등 타 거래소 상장 여부와 무관하게 Day 등락률 무조건 null (-) 고정!
+    // 알파 코인은 빗썸/업비트 등 타 거래소 상장 여부와 무관하게 Day 등락률 null (-) 고정!
     nDay = null;
     n24h = row.Change_24h_Raw ?? row.Change_24h_Binance ?? 0;
   } else if (activeExchange === "upbit") {
@@ -329,7 +329,7 @@ export function getRowDisplayVolume(
     .replace(/-/g, "_");
   const isKoreaMain = normActive === "UPBIT" || normActive === "BITHUMB";
 
-  // 좌측 해외 거래소 볼륨 & 색상 산출 (하단 서브 김프 노출 순서 & ID 완벽 동기화)
+  // 좌측 해외 거래소 볼륨 & 색상 산출 (하단 서브 김프 노출 순서 & ID 동기화)
   let volBRaw = 0;
   let volBColorClass = "text-[#f0b90b]"; // 바낸 기본
 
@@ -406,7 +406,7 @@ export function getRowDisplayVolume(
     }
   }
 
-  // 우측 국내 거래소 볼륨 & 색상 산출 (하단 서브 김프 노출 순서 & ID 완벽 동기화)
+  // 우측 국내 거래소 볼륨 & 색상 산출 (하단 서브 김프 노출 순서 & ID 동기화)
   let volURaw = 0;
   let volUColorClass = "text-upbit-color";
 
@@ -422,7 +422,7 @@ export function getRowDisplayVolume(
     volURaw = row.Upbit_Vol || 0;
   }
 
-  // 🚀 [3] 통화 모드 (KRW / USD) 포맷팅
+  // [3] 통화 모드 (KRW / USD) 포맷팅
   let volBFormatted = "-";
   if (volBRaw > 0) {
     if (isKrwMode && typeof window.formatVolumeKRW === "function") {
@@ -452,7 +452,7 @@ export function getRowDisplayVolume(
 }
 
 /**
- * 6. 티커명 뒤에 .P 표기 HTML 생성 (말줄임 시에도 .P 항상 노출 보장)
+ * 6. 티커명 뒤에 .P 표기 HTML 생성 (말줄임 시에도 .P 항상 보이기)
  */
 export function getDisplayTickerHtml(row) {
   if (!row) return "";
@@ -477,7 +477,7 @@ export function getChartDefaultMarket(row) {
     hasBybitFutures,
   } = getRowExchangeMeta(row);
 
-  // 🚀 순수 알파 코인은 바이낸스 선물이 절대 없으므로 SPOT으로 직행
+  // 순수 알파 코인은 바이낸스 선물이 없으므로 SPOT으로 직행
   const isAlpha = Boolean(
     (row.Binance_Alpha === "O" ||
       row.Listed_Exchanges?.includes("BINANCE_ALPHA") ||
@@ -610,7 +610,7 @@ export function isExchangeNativeTF(exchange, tf) {
 
 /**
  * 9. 거래소별 공식 REST API 캔들 인터벌 규격 정규화 (Single Source of Truth)
- * 프론트엔드 전역(차트 페칭, 퀵뷰, 김프 서브, 과거 데이터)에서 거래소 API 호출 시 단 1곳에서 인터벌을 안전하게 변환합니다.
+ * 프론트엔드 전역(차트 페칭, 퀵뷰, 김프 서브, 과거 데이터)에서 거래소 API 호출 시 단 1곳에서 인터벌을 안전하게 변환
  */
 export function normalizeExchangeInterval(exchange, interval) {
   if (!exchange || !interval) return interval;
@@ -623,16 +623,39 @@ export function normalizeExchangeInterval(exchange, interval) {
     if (["days", "weeks", "months"].includes(intStr)) return intStr;
 
     // 일/주/월봉 변환
-    if (intStr === "1d" || intStr === "3d" || intStr === "d" || intStr === "day" || intStr === "D") return "days";
-    if (intStr === "1w" || intStr === "w" || intStr === "week" || intStr === "W") return "weeks";
-    if (intStr === "1M" || intStr === "M" || intStr === "month" || intStr === "months") return "months";
+    if (
+      intStr === "1d" ||
+      intStr === "3d" ||
+      intStr === "d" ||
+      intStr === "day" ||
+      intStr === "D"
+    )
+      return "days";
+    if (
+      intStr === "1w" ||
+      intStr === "w" ||
+      intStr === "week" ||
+      intStr === "W"
+    )
+      return "weeks";
+    if (
+      intStr === "1M" ||
+      intStr === "M" ||
+      intStr === "month" ||
+      intStr === "months"
+    )
+      return "months";
 
     // 분봉/시간봉 변환: 1, 3, 5, 10, 15, 30, 60, 240
     const upbitUnits = [1, 3, 5, 10, 15, 30, 60, 240];
     if (/^\d+$/.test(intStr)) {
       const num = parseInt(intStr, 10);
       if (upbitUnits.includes(num)) return `minutes/${num}`;
-      const matched = upbitUnits.slice().reverse().find((u) => num % u === 0) || 1;
+      const matched =
+        upbitUnits
+          .slice()
+          .reverse()
+          .find((u) => num % u === 0) || 1;
       return `minutes/${matched}`;
     }
 
@@ -647,7 +670,11 @@ export function normalizeExchangeInterval(exchange, interval) {
       const h = parseInt(hMatch[1], 10);
       const totalMin = h * 60;
       if (upbitUnits.includes(totalMin)) return `minutes/${totalMin}`;
-      const matched = upbitUnits.slice().reverse().find((u) => totalMin % u === 0) || 60;
+      const matched =
+        upbitUnits
+          .slice()
+          .reverse()
+          .find((u) => totalMin % u === 0) || 60;
       return `minutes/${matched}`;
     }
 

@@ -539,6 +539,9 @@
   "AXSUSDT": {
     "binance_listing": "2026-03-19"
   },
+  "AXTIB": {
+    "binance_listing": "2026-09-24"
+  },
   "AZTEC": {
     "binance_listing": "2026-02-11"
   },
@@ -1141,6 +1144,9 @@
   "CRCLB": {
     "binance_listing": "2026-06-11"
   },
+  "CRDOB": {
+    "binance_listing": "2026-09-24"
+  },
   "CRO": {
     "upbit_listing": "2020-08-01",
     "bybit_listing": "2021-11-22"
@@ -1213,6 +1219,9 @@
   },
   "CYBERUSDT": {
     "binance_listing": "2023-08-01"
+  },
+  "CYPHB": {
+    "binance_listing": "2026-09-24"
   },
   "CYS": {
     "binance_listing": "2025-12-12",
@@ -2076,6 +2085,9 @@
   "INTCUSDT": {
     "binance_listing": "2026-02-02"
   },
+  "INTWB": {
+    "binance_listing": "2026-09-24"
+  },
   "INUSDT": {
     "binance_listing": "2025-08-07"
   },
@@ -2087,6 +2099,9 @@
   },
   "IO": {
     "binance_listing": "2024-06-11"
+  },
+  "IONQ": {
+    "binance_listing": "2026-09-24"
   },
   "IOST": {
     "binance_listing": "2019-09-25",
@@ -2659,6 +2674,9 @@
     "binance_listing": "2022-09-19",
     "bithumb_listing": "2026-07-03"
   },
+  "MRNAB": {
+    "binance_listing": "2026-09-24"
+  },
   "MRVL": {
     "binance_listing": "2026-05-15"
   },
@@ -2698,11 +2716,17 @@
   "MUSDT": {
     "binance_listing": "2025-07-07"
   },
+  "MUUB": {
+    "binance_listing": "2026-09-24"
+  },
   "MUUSDT": {
     "binance_listing": "2026-04-07"
   },
   "MVL": {
     "upbit_listing": "2025-12-06"
+  },
+  "MVLLB": {
+    "binance_listing": "2026-09-24"
   },
   "MYRO": {
     "binance_listing": "2024-03-05"
@@ -3229,6 +3253,9 @@
   "Q": {
     "binance_listing": "2025-09-02"
   },
+  "QI": {
+    "binance_listing": "2025-05-14"
+  },
   "QIUSDT": {
     "binance_listing": "2026-05-10"
   },
@@ -3378,6 +3405,12 @@
   },
   "RIVERUSDT": {
     "binance_listing": "2025-10-17"
+  },
+  "RKLB": {
+    "binance_listing": "2026-09-24"
+  },
+  "RKLBB": {
+    "binance_listing": "2026-09-24"
   },
   "RKLBUSDT": {
     "binance_listing": "2026-05-22"
@@ -3957,6 +3990,9 @@
   },
   "TBT": {
     "binance_listing": "2026-07-27"
+  },
+  "TEM": {
+    "binance_listing": "2026-09-24"
   },
   "TFUEL": {
     "binance_listing": "2025-04-30"

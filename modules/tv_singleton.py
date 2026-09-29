@@ -1,8 +1,8 @@
 # modules/tv_singleton.py
 """
-TradingView tvDatafeed 단일 싱글톤 및 실시간 환율 캐시 모듈.
+TradingView tvDatafeed 단일 싱글톤 및 실시간 환율 캐시 모듈
 매 루프마다 새 TvDatafeed 객체를 생성하지 않고 단일 인스턴스를 재활용하여
-백그라운드 웹소켓 좀비 스레드 누수 및 메모리 팽창을 원천 차단합니다.
+백그라운드 웹소켓 스레드 누수 및 메모리 GC 최소화
 """
 import threading
 import time

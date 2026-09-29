@@ -3,7 +3,7 @@ import functools
 import sys
 import os
 
-# 🚀 단계별 고정 메시지 정의
+# 단계별 고정 메시지 정의
 PHASES = [
     "메인 엔진 가동 및 족보 로드",
     "거래소 시세 수집 진입",
@@ -21,7 +21,7 @@ status_list = ["대기중"] * len(PHASES)
 
 
 def draw_dashboard():
-    """터미널 커서 위치 제어를 통해 무조건 일렬 정렬합니다."""
+    """터미널 커서 위치 제어를 통해 일렬 정렬"""
     sys.stdout.write("\033[H")
 
     print(f"\n{'='*60}")
@@ -34,21 +34,21 @@ def draw_dashboard():
         s_text = str(status or "").strip()
         icon = "⏳" if s_text == "대기중" else "🏃" if s_text == "진행중..." else "✅"
 
-        # 🚀 1. 앞부분 출력
+        # 1. 앞부분 출력
         line_start = f" {icon} Phase {i+1}/9: {msg}"
         sys.stdout.write(line_start)
 
-        # 🚀 2. 커서를 현재 줄의 N번째 칸으로 강제 이동 (\033[자릿수G)
-        # 한글 폭 문제를 무시하고 무조건 안착시킵니다.
+        # 2. 커서를 현재 줄의 N번째 칸으로 이동 (\033[자릿수G)
+        # 한글 폭 문제를 무시하고 안착시키기
         sys.stdout.write("\033[50G")
 
-        # 🚀 3. 상태 출력
+        # 3. 상태 출력
         print(f"{status}")
 
         if s_text == "완료!!":
             completed_count += 1
 
-    # 📊 하단 프로그레스 바 계산
+    # 하단 프로그레스 바 계산
     percent = int((completed_count / len(PHASES)) * 100)
     bar_length = 30
     filled_length = int(bar_length * completed_count // len(PHASES))
@@ -60,7 +60,7 @@ def draw_dashboard():
 
 
 def phase_trace(phase_idx):
-    """지정된 단계의 상태를 스위칭합니다."""
+    """지정된 단계의 상태를 스위칭"""
 
     def decorator(func):
         @functools.wraps(func)
@@ -86,7 +86,7 @@ def apply_traces(manager_broadcast=None):
     os.system("cls" if os.name == "nt" else "clear")
 
     # ----------------------------------------------------
-    # 📊 1~9단계 함수 매핑 (순서대로 스위칭)
+    # 1~9단계 함수 매핑 (순서대로 스위칭)
     # ----------------------------------------------------
     api_manager._fetch_and_process_data = phase_trace(0)(
         api_manager._fetch_and_process_data

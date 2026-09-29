@@ -1,11 +1,23 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { TIMEZONE_LIST } from "../static/chart_timezone.js";
-import { ensureSafeUnixSeconds, getUnixSeconds } from "../static/chart_utils.js";
+import {
+  ensureSafeUnixSeconds,
+  getUnixSeconds,
+} from "../static/chart_utils.js";
 import { isValidPriceRatio, isTimeValid } from "../static/stream_utils.js";
 import { resampleSubCandles } from "../static/chart_data_kimchi.js";
 import { CONFIG, tfSec } from "../static/_store.js";
-import { isFuturesCoin, getRowExchangeMeta, isExchangeNativeTF } from "../static/_market_rules.js";
-import { addRecentSearch, getRecentSearches, removeRecentSearch, clearAllRecentSearches } from "../static/ui_search.js";
+import {
+  isFuturesCoin,
+  getRowExchangeMeta,
+  isExchangeNativeTF,
+} from "../static/_market_rules.js";
+import {
+  addRecentSearch,
+  getRecentSearches,
+  removeRecentSearch,
+  clearAllRecentSearches,
+} from "../static/ui_search.js";
 import { getVisibleTfs, saveVisibleTfs } from "../static/ui_timeframe.js";
 import { isStockCoin } from "../static/table_filter.js";
 
@@ -95,7 +107,9 @@ describe("Frontend Core Modules Direct Tests", () => {
     expect(isFuturesCoin({ Binance_Futures: "O" })).toBe(true);
     expect(isFuturesCoin({ Listed_Exchanges: ["BINANCE_FUTURES"] })).toBe(true);
     expect(isFuturesCoin({ Bybit_Futures: "O" })).toBe(false); // 바이빗 선물 단독은 .P 미부여
-    expect(isFuturesCoin({ Binance_Futures: "X", Bybit_Futures: "X", Upbit: "O" })).toBe(false);
+    expect(
+      isFuturesCoin({ Binance_Futures: "X", Bybit_Futures: "X", Upbit: "O" }),
+    ).toBe(false);
 
     // 거래소 지원 타임프레임(Native TF) 판별
     expect(isExchangeNativeTF("binance", "1m")).toBe(true);
@@ -135,7 +149,8 @@ describe("Frontend Core Modules Direct Tests", () => {
 
   // 8. 스팟 전용 코인(TFUEL 등) USD/KRW 대표가 및 김프 단가 검증
   it("8. Spot Coin (TFUEL) USD/KRW Metrics & Kimchi Calculation", async () => {
-    const { getRowDisplayMetrics, getRowKimchiGlobalPrice } = await import("../static/_market_rules.js");
+    const { getRowDisplayMetrics, getRowKimchiGlobalPrice } =
+      await import("../static/_market_rules.js");
     const tfuelRow = {
       UID: "3822",
       Symbol: "TFUEL",
@@ -228,10 +243,11 @@ describe("Frontend Core Modules Direct Tests", () => {
 
   // 10. 업비트/빗썸 원화 차트 가격 정밀도 및 축 포맷팅 검증
   it("10. KRW Price Formatting and Precision for Upbit & Bithumb", async () => {
-    const { getKrwPrecision, formatCrosshairPrice, formatSmartPrice } = await import("../static/chart_utils.js");
+    const { getKrwPrecision, formatCrosshairPrice, formatSmartPrice } =
+      await import("../static/chart_utils.js");
     const { store } = await import("../static/_store.js");
 
-    // 100원 이상 코인은 무조건 정수 (소수점 0자리)
+    // 100원 이상 코인은 정수화 (소수점 0자리)
     expect(getKrwPrecision(120_000_000, "upbit")).toBe(0);
     expect(getKrwPrecision(3_500, "upbit")).toBe(0);
     expect(getKrwPrecision(120_000_000, "bithumb")).toBe(0);
@@ -319,4 +335,3 @@ describe("Frontend Core Modules Direct Tests", () => {
     expect(store.realtimeKimchi.time).toBe(1700000005);
   });
 });
-

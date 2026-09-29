@@ -29,7 +29,7 @@ import re
 # .env 환경변수 조기 로드
 load_dotenv()
 
-# [FastAPI 경고 필터링] 최신 FastAPI ORJSONResponse 비추천 노이즈 경고 영구 숨김
+# [FastAPI 경고 필터링] 최신 FastAPI ORJSONResponse 비추천 노이즈 경고 숨기기
 import warnings
 
 warnings.filterwarnings("ignore", message=".*ORJSONResponse is deprecated.*")
@@ -92,7 +92,7 @@ if sys.platform == "win32":
 
 import config  # 설정 모듈 임포트
 
-# 🚀 [표준 로깅 시스템] KST 타임스탬프 로거 및 안전한 print 브릿지
+# [표준 로깅 시스템] KST 타임스탬프 로거 및 안전한 print 브릿지
 import builtins
 from .logger import logger
 from . import utils
@@ -120,23 +120,23 @@ from . import config_manager
 from .adapter import ExchangeAdapter  # 통합 지휘소 영입
 from .candle_proxy import (
     fetch_candles_guarded,
-)  # 캔들 3중 방어 엔진 (세마포어/합승/캐시)
+)  # 캔들 최적화 엔진 (세마포어/합승/캐시)
 
 # 터미널 인코딩은 환경변수(PYTHONIOENCODING)로 처리합니다
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 🕒 [스케줄러 & 상장 와처] 15분 정기 갱신, 4시간 시총, 9시 시가 초기화 및 10초 상장 와처 일괄 가동
+    # [스케줄러 & 상장 와처] 15분 정기 갱신, 4시간 시총, 9시 시가 초기화 및 상장 와처 일괄 가동
     scheduler.start_all_schedulers()
 
-    # ⧆️ 데이터 긁어오기 (서버 최초 기동 시 캐시 초기 로드)
+    # 데이터 긁어오기 (서버 최초 기동 시 캐시 초기 로드)
     threading.Thread(target=api_manager.get_cached_data, args=(True,)).start()
 
     # 상장일 데이터 시스템 초기화 (LISTING_DATES 메모리 로드 + 바이낸스 API 콜)
     threading.Thread(target=_init_listing_dates, daemon=True).start()
 
-    # ⧆️ 트레이딩뷰 실시간 멀티플렉서 사전 웜업 (빗썸/환율 첫 호출 0초 서빙 준비)
+    # 트레이딩뷰 실시간 멀티플렉서 사전 웜업 (빗썸/환율 첫 호출 서빙 준비)
     try:
         from .candle_proxy import PERSISTENT_TV_CLIENT
 
@@ -204,8 +204,8 @@ app.add_middleware(
 
 class CachedStaticFiles(StaticFiles):
     """
-    정적 자산(폰트, SVG 이미지, Vite 빌드 번들 등)에 브라우저 영구 캐시(Cache-Control: immutable)를 주입하여
-    다음 접속부터 0ms 디스크 캐시로 즉각 로딩을 보장하는 정적 파일 핸들러
+    정적 자산(폰트, SVG 이미지, Vite 빌드 번들 등)에 브라우저 영구 캐시(Cache-Control: immutable)를 통해서
+    다음 접속부터 디스크 캐시로 곧바로 로딩되는 정적 파일 핸들러
     """
 
     def file_response(self, *args, **kwargs) -> Response:
@@ -266,16 +266,16 @@ def _load_listing_file() -> dict:
 
 
 def _save_listing_file(data: dict):
-    """listing.json 쓰기 (알파벳 정렬 및 원자적 저장). 데이터 증발 방어막 적용."""
+    """listing.json 쓰기 (알파벳 정렬 및 원자적 저장), 데이터 증발 관리 적용"""
     if os.environ.get("TESTING") == "1":
-        # 테스트 환경에서는 실제 listing.json 파일 덮어쓰기 원천 차단
+        # 테스트 환경에서는 실제 listing.json 파일 덮어쓰기 차단
         return
 
     if not isinstance(data, dict) or not data:
         print("[LISTING] 빈 데이터 저장 시도 차단")
         return
 
-    # [데이터 증발 방어막] 기존 파일 대비 비정상적 데이터 급감(50% 미만) 시 저장 거부
+    # 기존 파일 대비 비정상적 데이터 급감(50% 미만) 시 저장 거부
     if LISTING_FILE.exists():
         try:
             with open(LISTING_FILE, "r", encoding="utf-8") as f:
@@ -283,7 +283,7 @@ def _save_listing_file(data: dict):
                 if isinstance(existing_data, dict) and len(existing_data) > 100:
                     if len(data) < len(existing_data) * 0.5:
                         print(
-                            f"[LISTING CRITICAL] 기존 데이터({len(existing_data)}개) 대비 신규 데이터({len(data)}개)가 비정상적으로 적어 저장을 차단합니다."
+                            f"[LISTING CRITICAL] 기존 데이터({len(existing_data)}개) 대비 신규 데이터({len(data)}개)가 비정상적으로 적어 저장을 차단할게요"
                         )
                         return
         except Exception as e:
@@ -465,7 +465,7 @@ async def get_alpha_realtime():
 
 @app.get("/.well-known/appspecific/com.chrome.devtools.json")
 def chrome_devtools_dummy():
-    """Chrome DevTools F12 404 콘솔 로그 방어용 더미 핸들러"""
+    """Chrome DevTools F12 404 콘솔 로그 관리용 더미 핸들러"""
     return {}
 
 
@@ -484,7 +484,7 @@ SESSION_LOCK = threading.Lock()
 
 
 def track_user_session(request: Request):
-    """요청자 IP를 기반으로 최근 1시간(3600초) 내에 활동한 활성 세션 수를 카운트합니다."""
+    """요청자 IP를 기반으로 최근 1시간(3600초) 내에 활동한 활성 세션 수를 카운트"""
     # 프록시(Cloudflare, Railway 등)를 거친 경우 원래 IP 획득 시도
     client_ip = request.headers.get("x-forwarded-for") or (
         request.client.host if request.client else "unknown"
@@ -502,7 +502,7 @@ def track_user_session(request: Request):
         return len(ACTIVE_SESSIONS)
 
 
-# 🔒 [L7 트래픽 보호 / DDoS 방어] IP별 분당 요청 제한 (33회/분)
+# [L7 트래픽 보호 / DDoS 방지] IP별 분당 요청 제한 (33회/분)
 RATE_LIMIT_LOCK = threading.Lock()
 MARKET_DATA_REQUEST_HISTORY = {}  # { "ip": [ts1, ts2, ...] }
 
@@ -510,7 +510,7 @@ MARKET_DATA_REQUEST_HISTORY = {}  # { "ip": [ts1, ts2, ...] }
 def check_market_data_rate_limit(
     request: Request, max_requests: int = 33, window_seconds: int = 60
 ) -> bool:
-    """IP당 60초 내 max_requests(기본 20회) 초과 시 False 반환 (429 차단)."""
+    """IP당 60초 내 max_requests(기본 20회) 초과 시 False 반환 (429 차단)"""
     if os.environ.get("TESTING") == "1":
         return True
 
@@ -549,7 +549,7 @@ def check_market_data_rate_limit(
 def get_next_update_timestamp(
     is_user_key: bool = False, last_raw_ts: float = 0.0
 ) -> float:
-    """KST 기준 다음 시총 갱신 예정 시각(유닉스 타임스탬프)을 정밀 계산합니다."""
+    """KST 기준 다음 시총 갱신 예정 시각(유닉스 타임스탬프)을 정밀 계산"""
     kst = pytz.timezone("Asia/Seoul")
     now_kst = datetime.now(kst)
     if is_user_key:
@@ -579,8 +579,8 @@ def get_next_update_timestamp(
 # async 삭제됨
 @app.get("/api/market-data")
 def get_market_data(request: Request):
-    """프론트엔드의 표(Table)를 그리기 위한 데이터를 JSON으로 반환합니다."""
-    # 🔒 [DDoS / 트래픽 고갈 방어] IP당 분당 33회 초과 시 즉시 차단
+    """프론트엔드의 표(Table)를 그리기 위한 데이터를 JSON으로 반환"""
+    # [DDoS / 트래픽 고갈 방지] IP당 분당 33회 초과 시 즉시 차단
     if not check_market_data_rate_limit(request, max_requests=33, window_seconds=60):
         raise HTTPException(
             status_code=429,
@@ -592,7 +592,7 @@ def get_market_data(request: Request):
     is_user_key = bool(cmc_key and isinstance(cmc_key, str) and cmc_key.strip() != "")
 
     user_count = track_user_session(request)
-    # [DDoS / API 쿼터 고갈 방어] 외부 유저의 ?force=true 무차별 캐시 무효화 차단 (서버 15분 스케줄러 캐시만 제공)
+    # [DDoS / API 쿼터 고갈 방지] 외부 유저의 ?force=true 무차별 캐시 무효화 차단 (서버 15분 스케줄러 캐시만 제공)
     data, last_updated = api_manager.get_cached_data(
         force_reload=False, user_api_key=cmc_key
     )
@@ -605,7 +605,7 @@ def get_market_data(request: Request):
     else:
         cache_timestamp = api_manager.GLOBAL_CACHE.get("timestamp", datetime.min)
 
-    # [FIX] datetime.min일 때 mktime 오버플로우 방지 가드
+    # [FIX] datetime.min일 때 mktime 오버플로우 방지
     if cache_timestamp == datetime.min:
         raw_ts = 0.0
     else:
@@ -636,7 +636,7 @@ def get_market_data(request: Request):
 
 # @app.get("/api/dev/trigger-9am")
 def dev_trigger_9am():
-    """🚀 [개발/테스트 전용] 9시 정각 시가 초기화 및 캐시 갱신 원스톱 파이프라인 수동 강제 트리거"""
+    """[Dev/debug] 9시 정각 시가 초기화 및 캐시 갱신 트리거"""
     if IS_PRODUCTION:
         raise HTTPException(status_code=404, detail="Not Found")
     success = api_manager.trigger_kst_9am_reset_atomic()
@@ -654,7 +654,7 @@ def get_market_data_silent(request: Request):
     """[캐시 즉시 반환] 유저 요청 시 수집 없이 GLOBAL_CACHE만 뿌림.
     수집은 서버 자체 15분 백그라운드 스케줄러가 전담 (유저 500명 와도 수집 0번).
     """
-    # 🔒 [DDoS / 트래픽 고갈 방어] IP당 분당 20회 초과 시 즉시 차단
+    # [DDoS / 트래픽 고갈 방지] IP당 분당 20회 초과 시 즉시 차단
     if not check_market_data_rate_limit(request, max_requests=33, window_seconds=60):
         raise HTTPException(
             status_code=429,
@@ -678,7 +678,7 @@ def get_market_data_silent(request: Request):
         last_updated = api_manager.GLOBAL_CACHE.get("last_updated_str", "")
         cache_timestamp = api_manager.GLOBAL_CACHE.get("timestamp", datetime.min)
 
-    # [FIX] datetime.min일 때 mktime 오버플로우 방지 가드
+    # [FIX] datetime.min일 때 mktime 오버플로우 방지
     if cache_timestamp == datetime.min:
         raw_ts = 0.0
     else:
@@ -709,12 +709,12 @@ def get_market_data_silent(request: Request):
 # app.py 내부 라우터 교체
 @app.get("/api/market-map")
 def get_market_map():
-    """Raw API 호출 삭제! 중앙 캐시에서 0.01초 만에 뽑아옵니다."""
+    """Raw API 호출 제거, 중앙 캐시에서 바로 가져오기"""
     try:
-        # 중앙 통제소에서 데이터 가져오기 (force=False 라서 크레딧 소모 0)
+        # 데이터 가져오기
         cached_data, _ = api_manager.get_cached_data(force_reload=False)
 
-        # 조립된 데이터 안에서 슥슥 뽑아내기만 하면 끝!
+        # 가져온 데이터 쓰기
         upbit = [c["Symbol"] for c in cached_data if c.get("Upbit") == "O"]
         futures = [
             c["Symbol"]
@@ -770,7 +770,7 @@ def get_market_map():
 # async 삭제됨
 @app.get("/api/coin-info/{asset}")
 def get_coin_info(asset: str):
-    """캐시된 데이터에서 코인 정보를 찾아 반환합니다. (CMC 호출 안 함 = 크레딧 0원)"""
+    """캐시된 데이터에서 코인 정보를 찾아 반환 (CMC 호출 미사용으로 크레딧 0)"""
     try:
         # 접두사(BINANCE: 등) 및 접미사(_FUTURES, _SPOT 등) 정규화
         clean_asset = (
@@ -862,19 +862,19 @@ def get_usdkrw_history():
         if app.state.usdkrw_cache is not None:
             history_map = app.state.usdkrw_cache
 
-        # 2. 디스크 파일 캐시 로드 (서버 재시작 시 0ms 즉시 복원)
+        # 2. 디스크 파일 캐시 로드 (서버 재시작 시 복원)
         if history_map is None and cache_path.exists():
             try:
                 with open(cache_path, "r", encoding="utf-8") as f:
                     history_map = json.load(f)
                     app.state.usdkrw_cache = history_map
                     print(
-                        f"⚡ [환율 캐시] 디스크에서 {len(history_map)}일치 과거 환율 즉시 로드 (0ms)"
+                        f"⚡ [환율 캐시] 디스크에서 {len(history_map)}일치 과거 환율 즉시 로드"
                     )
             except Exception as e:
                 print(f"⚠️ [환율 캐시] 디스크 로드 실패, 재생성 진행: {e}")
 
-        # 3. 디스크에도 없으면 트레이딩뷰에서 1회 수집 후 디스크 영구 보관
+        # 3. 디스크에도 없으면 트뷰에서 1회 수집 후 디스크 영구 보관
         if history_map is None:
             try:
                 tv = get_tv_datafeed()
@@ -929,14 +929,14 @@ def get_usdkrw_history():
                     # 디스크에 영구 원자적 저장
                     utils.atomic_save_json(cache_path, history_map)
                     print(
-                        f"💾 [환율 캐시] {len(history_map)}일치 과거 환율 디스크 파일 영구 저장 완료!"
+                        f"💾 [환율 캐시] {len(history_map)}일치 과거 환율 디스크 파일 영구 저장 완료"
                     )
                     app.state.usdkrw_cache = history_map
             except Exception as e:
                 print(f"⚠️ [환율 엔진] 트뷰 수집 실패: {e}")
 
         if not history_map:
-            return {"error": "환율 데이터를 수집하지 못했습니다."}
+            return {"error": "환율 데이터를 수집하지 못했습니다"}
 
         # 4. [하이브리드 결합] 오늘 실시간 최신 환율을 마지막 타임라인에 덧붙임
         try:
@@ -979,7 +979,7 @@ def get_settings():
 
 @app.post("/api/settings")
 def update_settings(data: dict = Body(...)):
-    # 🔒 [보안 격리 및 실시간 유효성 검증] 유저가 입력한 키의 CMC 인증 상태를 즉시 검증
+    # [보안 격리 및 실시간 유효성 검증] 유저가 입력한 키의 CMC 인증 상태를 즉시 검증
     cmc_key = str(data.get("CMC_API_KEY", "")).strip()
     if cmc_key:
         is_valid, msg = cmc_api.validate_cmc_api_key(cmc_key)
@@ -993,7 +993,7 @@ def update_settings(data: dict = Body(...)):
     }
 
 
-# 💬 [보안 격리] 디스코드 피드백 프록시 (도배 방지)
+# [보안 격리] 디스코드 피드백 프록시 (도배 방지)
 _last_feedback_time = 0.0
 
 
@@ -1001,19 +1001,19 @@ _last_feedback_time = 0.0
 async def send_feedback(data: dict = Body(...)):
     message = str(data.get("message", "")).strip()
     if not message:
-        return {"status": "error", "message": "내용을 입력해 주세요."}
+        return {"status": "error", "message": "내용을 입력해 주세요"}
 
     # 1. 도배 및 매크로 스팸 방지 (글로벌 쿨다운)
     global _last_feedback_time
     now = time.time()
     if (now - _last_feedback_time) < 5.0:
-        return {"status": "error", "message": "잠시 후 다시 전송해 주세요."}
+        return {"status": "error", "message": "잠시 후 다시 전송해 주세요"}
     _last_feedback_time = now
 
     # 2. .env 환경변수에서 디스코드 웹훅 로드
     webhook_url = os.environ.get("DISCORD_FEEDBACK_WEBHOOK", "").strip()
     if not webhook_url:
-        return {"status": "error", "message": "웹훅이 설정되지 않았습니다."}
+        return {"status": "error", "message": "웹훅이 설정되지 않았습니다"}
 
     symbol = str(data.get("symbol", "미선택")).strip()
     uid = str(data.get("uid", "-")).strip()
@@ -1027,7 +1027,7 @@ async def send_feedback(data: dict = Body(...)):
     env_clean = environment.replace("💻 ", "").replace("📱 ", "")
     email_tag = f" • ✉️ {email}" if email else ""
     footer_text = (
-        f"📍 {symbol} (UID: {uid}) • 🖥️ {env_clean} • 📐 {resolution} • {now_kst_str}"
+        f"{symbol} (UID: {uid}), {env_clean}, {resolution}, {now_kst_str}"
     )
 
     payload = {
@@ -1035,7 +1035,7 @@ async def send_feedback(data: dict = Body(...)):
         "avatar_url": "https://sellnance.app/static/luma-deer-svg-dark.svg",
         "embeds": [
             {
-                "title": f"💬 사용자 피드백{email_tag}",
+                # "title": f"💬 사용자 피드백{email_tag}",
                 "description": message,
                 "color": 15776011,  # Sellnance Gold (#F0B90B)
                 "footer": {
@@ -1063,10 +1063,10 @@ async def send_feedback(data: dict = Body(...)):
         print(f"피드백 전송 예외: {e}")
         return {
             "status": "error",
-            "message": "피드백 전송 중 통신 오류가 발생했습니다.",
+            "message": "피드백 전송 중 통신 오류가 발생했습니다",
         }
 
-    return {"status": "error", "message": "피드백 전송에 실패했습니다."}
+    return {"status": "error", "message": "피드백 전송에 실패했어요"}
 
 
 # 서버 시작 시 브라우저 자동 실행 (기존 로직 유지)
@@ -1076,7 +1076,7 @@ def open_browser():
 
 @app.get("/api/progress")
 async def progress_stream():
-    """프론트엔드에 현재 진행 상황을 실시간으로 쏴주는 빨대"""
+    """프론트엔드에 현재 진행 상황을 실시간으로 쏴주기"""
 
     async def event_generator():
         while True:
@@ -1097,7 +1097,7 @@ async def progress_stream():
             # 모든 단계가 완료되면 중단하거나 계속 대기
             if data["percent"] == 100:
                 break
-            await asyncio.sleep(0.5)  # 0.5초마다 업데이트
+            await asyncio.sleep(0.5)
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 

@@ -1,7 +1,7 @@
 // static/chart_draw.js
 import { store } from "./_store.js";
 
-// 🚀 [Lightweight Charts v5 네이티브 캔버스 그리기 프리미티브 클래스]
+// [Lightweight Charts v5 네이티브 캔버스 그리기 프리미티브 클래스]
 export class DrawingPrimitive {
   constructor() {
     this._chart = null;
@@ -90,7 +90,7 @@ class DrawingPriceAxisRenderer {
     const coordinate = this._view.coordinate();
     if (!text || coordinate === -100) return;
 
-    // 🚀 CanvasRenderingContext2D 안전 추출 (래퍼 객체인 경우 대응)
+    // CanvasRenderingContext2D 안전 추출 (래퍼 객체인 경우 대응)
     const canvasCtx = ctx.context || ctx.ctx || ctx;
     if (typeof canvasCtx.save !== "function") return;
 
@@ -626,7 +626,7 @@ let dragStartPrice = 0;
 let dragStartLogical = 0;
 let dragStartDrawingState = null;
 
-// 🚀 그리기 모드 마우스 클릭/드래그 핸들러 설정
+// 그리기 모드 마우스 클릭/드래그 핸들러 설정
 export function initDrawingEvents() {
   const container = document.getElementById("pane-main");
   if (!container) return;
@@ -906,7 +906,7 @@ export function initDrawingEvents() {
   });
 }
 
-// 🚀 그리기 도구 선택 및 액티브 하이라이트 UI 갱신 함수
+// 그리기 도구 선택 및 액티브 하이라이트 UI 갱신 함수
 export function selectDrawingTool(toolName) {
   if (toolName === "trash") {
     // 그리기 전체 초기화

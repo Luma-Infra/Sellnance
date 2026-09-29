@@ -1,5 +1,5 @@
 // pwa_install.js
-// 📱 [PWA 설치 안내 모달 & 프롬프트 매니저]
+// [PWA 설치 안내 모달 & 프롬프트 매니저]
 
 let deferredInstallPrompt = null;
 let pwaModalInitialized = false;
@@ -16,7 +16,7 @@ if (typeof window !== "undefined") {
     deferredInstallPrompt = null;
     try {
       localStorage.setItem("sellnance_pwa_installed", "true");
-    } catch (err) { }
+    } catch (err) {}
     closePwaModal();
   });
 }
@@ -34,8 +34,7 @@ export function isIosSafari() {
   if (typeof window === "undefined") return false;
   const ua = window.navigator.userAgent.toLowerCase();
   const isIos = /iphone|ipad|ipod/.test(ua);
-  const isWebview =
-    /kakaotalk|line|inapp|instagram|fbav|naver/i.test(ua);
+  const isWebview = /kakaotalk|line|inapp|instagram|fbav|naver/i.test(ua);
   return isIos && !isWebview;
 }
 
@@ -57,11 +56,11 @@ export function initPwaInstallPrompt() {
     }
   } catch (err) { }
 
-  // 첫 코인 리스트 로드 후 1.8초 뒤 자연스럽게 노출
+  // 첫 코인 리스트 로드 후 잠시 뒤 자연스럽게 노출
   setTimeout(() => {
     // 사용자가 차트 화면으로 바로 진입한 게 아니라 리스트/메인 상태일 때
     showPwaModal();
-  }, 1800);
+  }, 2000);
   */
 }
 
@@ -97,7 +96,7 @@ export function closePwaModal(dismissDays = 0) {
     try {
       const until = Date.now() + dismissDays * 24 * 60 * 60 * 1000;
       localStorage.setItem("sellnance_pwa_dismissed_until", until.toString());
-    } catch (err) { }
+    } catch (err) {}
   }
 
   modal.classList.remove("opacity-100");
@@ -121,7 +120,7 @@ export async function triggerPwaInstall() {
       if (choiceResult.outcome === "accepted") {
         try {
           localStorage.setItem("sellnance_pwa_installed", "true");
-        } catch (err) { }
+        } catch (err) {}
       }
       deferredInstallPrompt = null;
     } catch (err) {
@@ -140,7 +139,9 @@ export async function triggerPwaInstall() {
 function createPwaModalDOM() {
   const isIos = isIosSafari();
   const isDark = !document.documentElement.classList.contains("theme-upbit");
-  const deerLogo = isDark ? "/static/luma-deer-svg-dark.svg" : "/static/luma-deer-svg-light.svg";
+  const deerLogo = isDark
+    ? "/static/luma-deer-svg-dark.svg"
+    : "/static/luma-deer-svg-light.svg";
 
   const modalHtml = `
     <div id="pwa-install-modal"
@@ -181,8 +182,9 @@ function createPwaModalDOM() {
           </div>
         </div>
 
-        ${isIos
-      ? `
+        ${
+          isIos
+            ? `
           <!-- iOS Safari 전용 안내 -->
           <div class="flex flex-col gap-1.5 p-3 rounded-xl bg-theme-accent/10 border border-theme-accent/30 text-[11px] text-theme-accent font-medium">
             <div class="flex items-center gap-1.5">
@@ -199,7 +201,7 @@ function createPwaModalDOM() {
             </button>
           </div>
           `
-      : `
+            : `
           <!-- Android / Chrome / PC 원클릭 설치 버튼 -->
           <div class="flex flex-col gap-2 pt-1">
             <button onclick="window.triggerPwaInstall && window.triggerPwaInstall()"
@@ -217,7 +219,7 @@ function createPwaModalDOM() {
             </div>
           </div>
           `
-    }
+        }
       </div>
     </div>
   `;

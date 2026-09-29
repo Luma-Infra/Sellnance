@@ -1,5 +1,5 @@
 // ui_perf_blocker.js
-// ⚡ [성능 디버깅 및 DOM 차단 가드 전담 모듈]
+// [성능 디버깅 및 DOM 차단 관련 전담 모듈]
 import { store } from "./_store.js";
 
 export function toggleRightDomBlock(checked) {
@@ -15,7 +15,9 @@ export function toggleRightDomBlock(checked) {
   const containerOb = document.getElementById("child-orderbook-container");
   const containerLegend = document.getElementById("child-legend-container");
   const containerResize = document.getElementById("child-resize-container");
-  const containerMouseEvent = document.getElementById("child-mouse-event-container");
+  const containerMouseEvent = document.getElementById(
+    "child-mouse-event-container",
+  );
 
   if (checked) {
     if (childChart) {
@@ -99,7 +101,7 @@ export function toggleChartMouseEventBlock(checked) {
     try {
       if (store.chart) store.chart.clearCrosshairPosition();
       if (store.chartVol) store.chartVol.clearCrosshairPosition();
-    } catch (e) { }
+    } catch (e) {}
   }
 }
 
@@ -111,8 +113,12 @@ export function toggleLeftDomBlock(checked) {
   const childTableUpdate = document.getElementById("block-table-update-toggle");
 
   const containerSort = document.getElementById("child-sort-container");
-  const containerTabScroll = document.getElementById("child-tabscroll-container");
-  const containerTableUpdate = document.getElementById("child-table-update-container");
+  const containerTabScroll = document.getElementById(
+    "child-tabscroll-container",
+  );
+  const containerTableUpdate = document.getElementById(
+    "child-table-update-container",
+  );
 
   if (checked) {
     if (childSort) {
@@ -182,9 +188,13 @@ export function toggleKimchiBlock(checked) {
   // Xconsole.log(`⚡ [DEBUG] 김프 실시간 연산 차단 모드: ${checked ? "ON" : "OFF"}`);
 
   const childRadar = document.getElementById("block-radardatabatch-toggle");
-  const containerRadar = document.getElementById("child-radardatabatch-container");
+  const containerRadar = document.getElementById(
+    "child-radardatabatch-container",
+  );
   const childDynamicHtml = document.getElementById("block-dynamic-html-toggle");
-  const containerDynamicHtml = document.getElementById("child-dynamichtml-container");
+  const containerDynamicHtml = document.getElementById(
+    "child-dynamichtml-container",
+  );
 
   if (checked) {
     if (childRadar) {
@@ -323,7 +333,7 @@ export function syncCheckboxesFromStore() {
   toggleKimchiBlock(!!store.blockKimchi);
 }
 
-// 🚀 전역 노출
+// 전역 노출
 window.toggleRightDomBlock = toggleRightDomBlock;
 window.toggleLeftDomBlock = toggleLeftDomBlock;
 window.toggleChartDomBlock = toggleChartDomBlock;

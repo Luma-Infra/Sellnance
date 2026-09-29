@@ -1,7 +1,7 @@
 // chart_measure.js
 import { store, tfSec, measureDOM } from "./_store.js";
 
-// 🚀 [Lightweight Charts v5 네이티브 캔버스 플러그인 클래스 정의]
+// [Lightweight Charts v5 네이티브 캔버스 플러그인 클래스 정의]
 class MeasurePrimitive {
   constructor() {
     this._chart = null;
@@ -45,12 +45,12 @@ class MeasurePaneRenderer {
     const series = store._measurePrimitive._series;
     const chart = store._measurePrimitive._chart;
 
-    // 🚀 Lightweight Charts v5.2 호환 캔버스 컨텍스트 추출 (Media Coordinate Space 활용)
+    // Lightweight Charts v5.2 호환 캔버스 컨텍스트 추출 (Media Coordinate Space 활용)
     const renderFn = (scope) => {
       const ctx = scope.context || scope.ctx || scope;
       ctx.save();
 
-      // 1. 시작 좌표 실시간 변환 (스크롤/줌 완벽 연동)
+      // 1. 시작 좌표 실시간 변환 (스크롤/줌 연동)
       let startX = store.measureStart.x;
       if (
         store.measureStart.logical !== null &&
@@ -102,14 +102,14 @@ class MeasurePaneRenderer {
       const widthX = Math.max(1, Math.abs(endX - startX));
       const heightY = Math.max(1, Math.abs(endY - startY));
 
-      // 🚀 [캔버스 박스 네이티브 렌더링]
+      // [캔버스 박스 네이티브 렌더링]
       ctx.fillStyle = tBg;
       ctx.fillRect(leftX, topY, widthX, heightY);
       ctx.strokeStyle = tColor;
       ctx.lineWidth = 1;
       ctx.strokeRect(leftX, topY, widthX, heightY);
 
-      // 🚀 [캔버스 텍스트 네이티브 렌더링]
+      // [캔버스 텍스트 네이티브 렌더링]
       let barsDiff = 0;
       if (store.measureStart.logical !== null && curLogical !== null) {
         barsDiff = Math.abs(
@@ -131,7 +131,7 @@ class MeasurePaneRenderer {
       const centerX = leftX + widthX / 2;
       const centerY = topY + heightY / 2;
 
-      // 🚀 [시각적 개선] 캔들과 텍스트가 겹칠 때 가독성을 위해 테두리(Stroke) 효과 추가
+      // [시각적 개선] 캔들과 텍스트가 겹칠 때 가독성을 위해 테두리(Stroke) 효과 추가
       const bgColor = style.getPropertyValue("--panel").trim() || "#131722";
       ctx.lineWidth = 3;
       ctx.strokeStyle = bgColor;
@@ -146,7 +146,7 @@ class MeasurePaneRenderer {
       ctx.fillText(text3, centerX, centerY + 14);
 
       ctx.restore();
-      // (DOM 조작 코드는 라이브러리 네이티브 createPriceLine으로 대체되었으므로 완벽 삭제)
+      // (DOM 조작 코드는 라이브러리 네이티브 createPriceLine으로 대체되었으므로 삭제)
     };
 
     if (typeof target.useMediaCoordinateSpace === "function") {
@@ -171,7 +171,7 @@ export function stopMeasuring() {
     el.innerText = "";
   });
 
-  // 🚀 [추가] 라이브러리 네이티브 커스텀 가격선 완벽 리셋(제거)
+  // [추가] 라이브러리 네이티브 커스텀 가격선 리셋(제거)
   if (store.candleSeries) {
     if (store.measureStartPriceLine) {
       store.candleSeries.removePriceLine(store.measureStartPriceLine);
@@ -305,7 +305,7 @@ export function initMeasureEvents() {
         logical: logical,
       };
 
-      // 🚀 [핵심] 라이브러리 네이티브 커스텀 가격선(createPriceLine)으로 시작/끝 가격표 완벽 대체!
+      // 라이브러리 네이티브 커스텀 가격선(createPriceLine)으로 시작/끝 가격표 대체
       const style = getComputedStyle(document.body);
       const upColor = style.getPropertyValue("--up").trim() || "#26a69a";
       const lineOpts = {
@@ -365,7 +365,6 @@ export function initMeasureEvents() {
 
     if (curPrice === null) return;
 
-
     store.measureEnd = {
       price: curPrice,
       time: curTimeRaw,
@@ -374,7 +373,7 @@ export function initMeasureEvents() {
       y: curY,
     };
 
-    // 🚀 [핵심] 드래그 중 실시간으로 끝 가격선(price) 및 양/음봉 색상(color) 60fps 네이티브 갱신!
+    // 드래그 중 실시간으로 끝 가격선(price) 및 양/음봉 색상(color) 60fps 네이티브 갱신
     const isUp = curPrice >= store.measureStart.price;
     const style = getComputedStyle(document.body);
     const upColor = style.getPropertyValue("--up").trim() || "#26a69a";

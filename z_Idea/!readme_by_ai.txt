@@ -238,7 +238,7 @@ async function selectSymbol(s) {
     // if (headMcap) headMcap.innerText = infoData.market_cap;
     // if (headMcap) headMcap.innerText = "조회 실패";
 async function fetchHistory(symbol, rawTicker) {
-  // 🚨 1. 광클 철벽 방어 (1.5초 이내 재요청 무시하여 429 에러 방지)
+  // 1. 광클 철벽 방어 (1.5초 이내 재요청 무시하여 429 에러 방지)
   const now = Date.now();
   const pureSymbol = symbol.replace(/USDT$/i, "").toUpperCase();
   const isUpbitOnly = (marketDataMap.upbit || []).includes(pureSymbol);
@@ -247,7 +247,7 @@ async function fetchHistory(symbol, rawTicker) {
   const loadingModal = document.getElementById("chart-loading-modal");
   const isFutures = !isUpbitOnly && (marketDataMap.futures || []).includes(pureSymbol);
   const isSpot = !isUpbitOnly && (marketDataMap.spot || []).includes(pureSymbol);
-    // 🚀 2. 직접 외부로 안 나가고 내 파이썬 서버(/api/candles)로 요청!
+    // 2. 직접 외부로 안 나가고 내 파이썬 서버(/api/candles)로 요청!
       const exchange = isFutures ? "binance_futures" : "binance_spot";
       // 내부 API 호출
       const res = await fetch(`/api/candles?exchange=${exchange}&symbol=${binanceTicker}&interval=${currentTF}&limit=500`);
@@ -272,8 +272,8 @@ function formatSmartPrice(price) {
     // logValue가 -Infinity(값이 너무 작을 때)인 경우 방어
     const firstSigDigit = isFinite(logValue) ? Math.floor(logValue) : -20;
     // 자릿수 결정 (기존 로직 유지하되 안전장치 추가)
-    // 🚨 핵심: toLocaleString은 0~20까지만 안전함
-    // 🔥 에러 발생 시 범인(데이터)을 콘솔에 박제
+    // 핵심: toLocaleString은 0~20까지만 안전함
+    // 에러 발생 시 범인(데이터)을 콘솔에 박제
     // 시스템이 뻗지 않게 기본값 반환
 function updateLegend(d) {
   const leg = document.getElementById("ohlc-legend");
@@ -281,7 +281,7 @@ function updateLegend(d) {
   const chg = (((d.close - d.open) / d.open) * 100).toFixed(2);
   const sign = chg > 0 ? "+" : "";
 function updateStatus(d) {
-  // 🚀 1. 핵심: d(실시간 데이터)가 들어오면 그걸 최우선으로 쓴다!
+  // 1. 핵심: d(실시간 데이터)가 들어오면 그걸 최우선으로 쓴다!
   // d가 없으면(마우스 이벤트 등) 그때만 mainData에서 꺼내온다.
   const last = d || (mainData.length ? mainData[mainData.length - 1] : null);
   // console.log(d);
@@ -292,16 +292,16 @@ function updateStatus(d) {
   const volEl = document.getElementById("head-volume");
   // 4. 시뮬레이터 타겟 & 레전드 동시 갱신
   const targetEl = document.getElementById("head-target");
-  // 🚀 5. 대망의 레전드 업데이트
+  // 5. 대망의 레전드 업데이트
 function autoFit() {
     const len = mainData.length;
-    // 🚨 핵심 패치: 캔들을 화면 중간쯤에 오도록 '보이는 범위'를 강제 조절합니다.
+    // 핵심 패치: 캔들을 화면 중간쯤에 오도록 '보이는 범위'를 강제 조절합니다.
     // from: 과거 100개 캔들 전부터 보여줌 (줌 레벨 조절)
     // to: 현재 캔들 이후로 '50개' 분량의 빈 도화지(우측 여백)를 미리 깔아둠
-      to: len + 20, // 👈 이 숫자를 키우면 캔들이 더 왼쪽(가운데)으로 밀려납니다.
+      to: len + 20, // 이 숫자를 키우면 캔들이 더 왼쪽(가운데)으로 밀려납니다.
 // _main.js 에서 기존 함수를 이걸로 교체
 function calculateTimeRemaining(tf, serverMs) {
-  // 🚨 내 PC 시간이 아니라, 파라미터로 받은 '웹소켓 서버 시간'을 기준으로 삼음
+  // 내 PC 시간이 아니라, 파라미터로 받은 '웹소켓 서버 시간'을 기준으로 삼음
   const now = new Date(serverMs);
       const hours = now.getUTCHours();
       const next4h = Math.ceil((hours + 0.1) / 4) * 4;
@@ -343,15 +343,15 @@ function getNext() {
 // --- 🌊 실시간 웹소켓 엔진 ---
 // stream.js
 function startRealtimeCandle(symbol, interval, isFutures, isSpot) {
-    // 🚀 연결 막기
+    // 연결 막기
     // 연결 종료
     // 메모리 정리
-  // 🚀 [추가] update()를 대체할 궁극의 실시간 덮어쓰기 함수
+  // [추가] update()를 대체할 궁극의 실시간 덮어쓰기 함수
   const renderWithGhosts = () => {
     // 앞서 만든 헬퍼 함수 활용 (initChart 밖에 선언해두면 좋습니다)
     const lastTime = getUnixSeconds(mainData[mainData.length - 1].time);
     const interval =
-    // 🚀 전역 변수 CHART_CONFIG.GHOST_COUNT 적용!
+    // 전역 변수 CHART_CONFIG.GHOST_COUNT 적용!
     const ghostData = Array.from(
     // stream.js 내부 renderWithGhosts 함수 하단
       const lastPrice = mainData[mainData.length - 1].close;
@@ -366,28 +366,28 @@ function startRealtimeCandle(symbol, interval, isFutures, isSpot) {
       const serverMs = res.E;
       const liveData = {
         const lastIdx = mainData.length - 1;
-      // 🚀 카운트다운을 웹소켓 서버 시간에 종속시킴
-      // 🚨 기존 candleSeries.update(liveData); 삭제하고 아래 함수로 교체!
+      // 카운트다운을 웹소켓 서버 시간에 종속시킴
+      // 기존 candleSeries.update(liveData); 삭제하고 아래 함수로 교체!
     // upbit
     const upbitTicker = `KRW-${symbol}`;
       const msg = [
     upbitChartWs.onmessage = async (e) => {
       const text = await e.data.text();
       const res = JSON.parse(text);
-      const serverMs = res.timestamp; // 🚨 업비트가 보내준 현재 서버 시간
+      const serverMs = res.timestamp; // 업비트가 보내준 현재 서버 시간
         const d = new Date(res.timestamp);
         const candleStartTime = Math.floor(d.getTime() / 1000);
         const liveData = {
         const lastIdx = mainData.length - 1;
-        // 🚀 카운트다운을 웹소켓 서버 시간에 종속시킴
-        // 🚨 기존 candleSeries.update(liveData); 삭제하고 아래 함수로 교체!
+        // 카운트다운을 웹소켓 서버 시간에 종속시킴
+        // 기존 candleSeries.update(liveData); 삭제하고 아래 함수로 교체!
 function startBinanceMarketRadar() {
     const dot = document.getElementById("status-dot"),
   // stream.js 내부 수정
     const data = JSON.parse(event.data);
       const pureSymbol = ticker.s.replace("USDT", "");
       tickerBuffer[pureSymbol] = ticker; // 정렬용 버퍼는 그대로 유지
-      // // 🚀 [차등화 전략 핵심] 0초 실시간 깜빡이 센서 가동
+      // // [차등화 전략 핵심] 0초 실시간 깜빡이 센서 가동
       // // 쌀먹 원칙: CCTV(visibleSymbols)에 잡힌 놈만 즉시 렌더링한다.
       // if (
       //   typeof visibleSymbols !== "undefined" &&
@@ -412,11 +412,11 @@ function startBinanceMarketRadar() {
     let dataUpdated = false; // 데이터가 갱신되었는지 확인하는 플래그
       const ticker = tickerBuffer[pureSymbol];
       const newPrice = parseFloat(ticker.c);
-      // 🚨 1. 정렬을 위해 원본 배열(currentTableData) 무조건 갱신!
+      // 1. 정렬을 위해 원본 배열(currentTableData) 무조건 갱신!
       // (화면에 안 보여도 데이터는 최신화해둬야 갑자기 떡상할 때 1등으로 치고 올라옵니다)
         const targetRow = currentTableData.find(
             const openPrice = parseFloat(targetRow.utc0_open);
-      // 🚨 2. 화면에 안 보이는 코인이면 CPU 절약을 위해 DOM 업데이트(깜빡임 등)는 패스!
+      // 2. 화면에 안 보이는 코인이면 CPU 절약을 위해 DOM 업데이트(깜빡임 등)는 패스!
       // --- 👇 여기서부터는 기존 화면 업데이트 로직 동일 👇 ---
       const priceCell = document.getElementById(`price-${pureSymbol}`);
       const changeCell = document.getElementById(`change-${pureSymbol}`);
@@ -435,7 +435,7 @@ function startBinanceMarketRadar() {
       // }
       // if (changeCell) {
       //   const newChange = parseFloat(ticker.P);
-      //   const formattedChange = newChange.toFixed(2); // 🚀 소수점 2자리 고정
+      //   const formattedChange = newChange.toFixed(2); // 소수점 2자리 고정
       //   const color =
       //     newChange > 0 ? "#26a69a" : newChange < 0 ? "#ef5350" : "gray";
       //   const weight = Math.abs(newChange) >= 5.0 ? "bold" : "normal";
@@ -451,9 +451,9 @@ nge} %</span>`;
       //     const openPrice = parseFloat(targetCoin.utc0_open);
       //     const newPrice = parseFloat(ticker.c);
       //     if (openPrice > 0) {
-      //       // 🚀 1. 새로 계산한 등락률 (숫자형)
+      //       // 1. 새로 계산한 등락률 (숫자형)
       //       const todayChange = ((newPrice - openPrice) / openPrice) * 100;
-      //       // 🚀 2. 출력용 문자열 (소수점 2자리 고정)
+      //       // 2. 출력용 문자열 (소수점 2자리 고정)
       //       const finalStr = todayChange.toFixed(2);
       //       const tColor =
       //         todayChange > 0
@@ -462,10 +462,10 @@ nge} %</span>`;
       //             ? "#ef5350"
       //             : "gray";
       //       const tWeight = Math.abs(todayChange) >= 5.0 ? "bold" : "normal";
-      //       // 🚀 3. DOM 업데이트
+      //       // 3. DOM 업데이트
       //       todayCell.innerHTML = `<span style="color:${tColor}; font-weight:${tWeight};">${todayChange > 0 ? "+" : ""}${final
 Str} %</span>`;
-      //       // 🚀 4. [중요] 정렬용 데이터(currentTableData)도 숫자로 업데이트
+      //       // 4. [중요] 정렬용 데이터(currentTableData)도 숫자로 업데이트
       //       const row = currentTableData.find(
       //         (r) => (r.Symbol || r.symbol) === pureSymbol,
       //       );
@@ -475,7 +475,7 @@ Str} %</span>`;
       //     }
       //   }
       // }
-    // 🚀 3. 데이터가 갱신되었다면 경주마 애니메이션 출동! (3초마다 스르륵)
+    // 3. 데이터가 갱신되었다면 경주마 애니메이션 출동! (3초마다 스르륵)
     const dot = document.getElementById("status-dot"),
 
 
@@ -483,20 +483,20 @@ Str} %</span>`;
 --- File: streamEach.js ---
 
 // streamEach.js
-// 🎯 스나이퍼 소켓 초기화
+// 스나이퍼 소켓 초기화
 function initSniperSocket() {
   // 바이낸스 선물 복합 스트림 (개별 티커 전용)
     syncSniperSubscriptions(); // 연결되자마자 현재 보이는 놈들 구독
     const data = JSON.parse(e.data);
     // 개별 티커 데이터(24hrTicker)가 오면 즉시 DOM 업데이트
-// 🔄 [핵심] visibleSymbols와 연동하여 구독 리스트 동기화
+// [핵심] visibleSymbols와 연동하여 구독 리스트 동기화
 function syncSniperSubscriptions() {
   const currentVisible = Array.from(visibleSymbols).map(
   // 1. 새로 들어온 놈들 -> SUBSCRIBE
   const toSub = currentVisible.filter((s) => !activeSubs.has(s));
   // 2. 나간 놈들 -> UNSUBSCRIBE (바이낸스 부하 방지)
   const toUnsub = Array.from(activeSubs).filter(
-// ⚡ 정밀 렌더링 시작하기
+// 정밀 렌더링 시작하기
 // streamEach.js
 function renderSniperPrice(data) {
   const symbol = data.s.replace("USDT", "");
@@ -507,16 +507,16 @@ function renderSniperPrice(data) {
   const oldPrice = parseFloat(priceCell.innerText.replace(/[^0-9.-]+/g, ""));
   // 1. 가격 업데이트 (기존 로직)
     const flashClass = newPrice > oldPrice ? "flash-up" : "flash-down";
-  // ✅ [수정 완료] 2. 24시간 등락률 업데이트
+  // [수정 완료] 2. 24시간 등락률 업데이트
     const change24h = parseFloat(data.P);
     const themeClass =
-  // ✅ [수정 완료] 3. 당일(Today) 등락률 업데이트
+  // [수정 완료] 3. 당일(Today) 등락률 업데이트
     const targetRow = currentTableData.find(
       const openPrice = parseFloat(targetRow.utc0_open);
       const todayChange = ((newPrice - openPrice) / openPrice) * 100;
-      // 🚀 하드코딩 색상(#26a69a) 대신 테마 클래스로 교체!
+      // 하드코딩 색상(#26a69a) 대신 테마 클래스로 교체!
       const tThemeClass =
-// 🚀 모든 뷰 변화의 종착역
+// 모든 뷰 변화의 종착역
 function refreshSniperTarget() {
 
 
@@ -544,8 +544,8 @@ async function loadTableData(force = false) {
 // 2. ⭐️ 3단계 정렬 핵심 로직 ⭐️ (리셋 & 상단 이동 추가)
 function sortTable(colKey) {
   // 1. 클릭할 때마다 3단계 사이클 돌리기
-  // 🚀 [추가] 정렬을 누르면 무조건 50개 리밋으로 리셋!
-  // 🚀 [추가] 스크롤을 최상단으로 강제 소환!
+  // [추가] 정렬을 누르면 무조건 50개 리밋으로 리셋!
+  // [추가] 스크롤을 최상단으로 강제 소환!
   const scrollContainer = document.querySelector(
   // 2. 화살표 UI 업데이트
   const arrowEl = document.getElementById(`sort-${colKey}`);
@@ -553,29 +553,29 @@ function sortTable(colKey) {
     // [3타 - 제자리 복구]
     renderTable(); // renderTable 내부에서도 currentRenderLimit(50)을 쓰니까 완벽!
     // [1타, 2타 - 실시간 정렬]
-    // 💡 applyRealtimeSort가 돌면서 100등 밖으로 밀려난 애들을
+    // applyRealtimeSort가 돌면서 100등 밖으로 밀려난 애들을
     // 알아서 recycleBin(재활용 바구니)에 넣고 DOM에서 치워버립니다.
 // 표 그리기 함수 수정
-// 🚀 [추가] 행(TR) 생성 헬퍼 (초기 렌더링 & 신규 진입 시 사용)
+// [추가] 행(TR) 생성 헬퍼 (초기 렌더링 & 신규 진입 시 사용)
 function createRowElement(row) {
   const tr = document.createElement("tr");
   const pureSymbol = row.Symbol;
   // 껍데기 만들고 알맹이 채우는 함수 재활용
   // 새로 만든 행을 CCTV에 즉시 등록
-// 🚀 [수정됨] 표 그리기 함수 (딱 100개만 렌더링하도록 변경)
+// [수정됨] 표 그리기 함수 (딱 100개만 렌더링하도록 변경)
 function renderTable() {
   const tbody = document.getElementById("table-body");
   // ⭐️ 기존 감시 카메라 끄고 초기화
-  // 🚀 핵심: 새 카메라 달기 전에 "기존 카메라"를 완전히 파괴해야 합니다!
+  // 핵심: 새 카메라 달기 전에 "기존 카메라"를 완전히 파괴해야 합니다!
     tableObserver = null; // 참조까지 끊어버리세요
   // ⭐️ 새 감시 카메라 설치
         const sym = entry.target.dataset.sym; // 코인 이름 가져오기
           visibleSymbols.add(sym); // 화면에 들어오면 추가
         else visibleSymbols.delete(sym); // 화면 밖으로 나가면 삭제
-  // 🚨 핵심: 500개 전체가 아니라 상위 RENDER_LIMIT만 자릅니다!
-  const topData = currentTableData.slice(0, currentRenderLimit); // 🚀 이걸로 변경
+  // 핵심: 500개 전체가 아니라 상위 RENDER_LIMIT만 자릅니다!
+  const topData = currentTableData.slice(0, currentRenderLimit); // 이걸로 변경
     // 만들어둔 헬퍼 함수로 깔끔하게 렌더링
-  applySelectedHighlight(); // 🚀 [추가] 정렬 끝나고 내 코인 다시 찾아!
+  applySelectedHighlight(); // [추가] 정렬 끝나고 내 코인 다시 찾아!
 // <td class="p-4 text-right">
 //     <div class="flex flex-col items-end justify-center h-full gap-1">
 //         <span class="text-[13px]">${row.Upbit === "O" ? "🔵" : "⚫"}</span>
@@ -584,14 +584,14 @@ function renderTable() {
 // </td>
 // ⭐️ 2. 좌우 넓이 드래그 조절 기능 ⭐️
 const leftPanel = document.getElementById("left-panel");
-  // 🚨 핵심: 이전 프레임이 대기 중이면 취소하고 최신 것만 실행
+  // 핵심: 이전 프레임이 대기 중이면 취소하고 최신 것만 실행
     const containerWidth = document.body.clientWidth;
     // 1. 패널 크기 변경
     // 2. 차트 리사이즈 (가장 무거운 작업)
     if (window.chart) {
       const container = document.getElementById("chart-container");
       window.chart.resize(container.clientWidth, container.clientHeight);
-  document.body.classList.remove("resizing-active"); // 🚨 효과 해제
+  document.body.classList.remove("resizing-active"); // 효과 해제
 // ⭐️ [신규 추가] 실시간 재정렬 & 경주마 애니메이션 함수
 function applyRealtimeSort() {
   // 1. 값 기반 메모리 정렬 (500개 연산 - 초고속)
@@ -601,9 +601,9 @@ function applyRealtimeSort() {
   const topSymbols = new Set(topData.map((d) => d.Symbol || d.symbol));
   const existingRows = Array.from(tbody.children);
   const firstRects = new Map();
-  // 🚀 [최적화 2] FLIP First: "화면에 보이는 놈들만" 위치 기억
+  // [최적화 2] FLIP First: "화면에 보이는 놈들만" 위치 기억
     const sym = row.dataset.sym;
-  // 🚀 [최적화 1] DOM 재활용 풀(Pool) 생성
+  // [최적화 1] DOM 재활용 풀(Pool) 생성
   // 100등 밖으로 밀려난 패배자들의 DOM을 버리지 않고 모아둡니다.
   const recycleBin = [];
     const sym = row.dataset.sym;
@@ -617,15 +617,15 @@ function applyRealtimeSort() {
       tr.style.animation = "flash-up 1s ease-out"; // 떡상 이펙트
     // 위치가 다르면 DOM 이동
   // 혹시 남은 잉여 DOM이 있다면 그때서야 파괴 (보통 발생 안 함)
-  // 🚀 [최적화 2] FLIP Last & Play: "화면에 보였던 놈들만" 부드럽게 이동
+  // [최적화 2] FLIP Last & Play: "화면에 보였던 놈들만" 부드럽게 이동
   const finalRows = Array.from(tbody.children);
     const sym = row.dataset.sym;
     const firstY = firstRects.get(sym);
     // 안 보였던 놈(firstY 없음)은 좌표 연산 스킵!
       const lastY = row.getBoundingClientRect().top; // 여기서 Reflow 발생 (최소화됨)
       const deltaY = firstY - lastY;
-  // 🚀 안전장치 장착 (스크롤 쪽이랑 똑같이!)
-  applySelectedHighlight(); // 🚀 [추가] 순위 바뀌어도 내 코인은 빛나야지!
+  // 안전장치 장착 (스크롤 쪽이랑 똑같이!)
+  applySelectedHighlight(); // [추가] 순위 바뀌어도 내 코인은 빛나야지!
 function applySelectedHighlight() {
   const selectedSymbol = currentSelectedSymbol; // 전역에 저장된 선택 심볼
   // 1. 일단 모든 행의 하이라이트 제거
@@ -633,7 +633,7 @@ function applySelectedHighlight() {
   const targetTr = document.querySelector(
     targetTr.style.outline = "2px solid var(--accent)"; // 68층 성주님의 골드 라인
     targetTr.style.zIndex = "10"; // 다른 행보다 위로
-// 💡 헬퍼 함수: 재활용한 껍데기에 알맹이만 채우는 함수 (기존 로직 분리)
+// 헬퍼 함수: 재활용한 껍데기에 알맹이만 채우는 함수 (기존 로직 분리)
 function updateRowInnerHTML(tr, row) {
   const pureSymbol = (row.Ticker || "").replace("KRW", "").replace("USDT", "").toUpperCase();
   const getCleanNum = (val) => {
@@ -644,16 +644,16 @@ function updateRowInnerHTML(tr, row) {
   const color24h =
   const colorDay =
   const formattedPrice = formatSmartPrice(Number(row.Price));
-  // 🚀 핵심: 원화 가격이 데이터에 존재하면 " (911원)" 포맷으로 만들기
+  // 핵심: 원화 가격이 데이터에 존재하면 " (911원)" 포맷으로 만들기
   const krwDisplay = row.Price_KRW
   // ⭐️ [추가] 로컬스토리지에서 즐겨찾기 상태 가져오기
   const favorites = JSON.parse(localStorage.getItem("sellnance_favs") || "[]");
   const isFav = favorites.includes(pureSymbol);
-// 🚀 [table.js 또는 main.js] 무한 스크롤 & 스나이퍼 통합 엔진
+// [table.js 또는 main.js] 무한 스크롤 & 스나이퍼 통합 엔진
 function initInfiniteScroll() {
   const scrollContainer = document.querySelector(
-  let isFetchingMore = false; // 🚨 스크롤 폭주 방지 (스로틀링)
-  let scrollTimer; // 🎯 조준경 동기화용 (디바운싱)
+  let isFetchingMore = false; // 스크롤 폭주 방지 (스로틀링)
+  let scrollTimer; // 조준경 동기화용 (디바운싱)
   // 1. 로딩 바 DOM 생성
   const loadingIndicator = document.createElement("div");
   // 2. 통합 스크롤 센서 가동
@@ -661,17 +661,17 @@ function initInfiniteScroll() {
       // --- [파트 A] 무한 스크롤 (데이터 추가 렌더링) ---
             // 1. 기존 개수 기억하고 한도 늘리기
             const oldLimit = currentRenderLimit;
-            // 🚀 2. 핵심 최적화: 전체 정렬 대신, 딱 추가될 50개만 잘라서 밑에 붙입니다!
+            // 2. 핵심 최적화: 전체 정렬 대신, 딱 추가될 50개만 잘라서 밑에 붙입니다!
             const tbody = document.getElementById("table-body");
             const nextBatch = currentTableData.slice(
               // 'createRowElement'가 알아서 껍데기 만들고 CCTV(Observer)까지 달아줍니다!
             // 3. 50개가 새로 생겼으니 조준경 갱신
       // --- [파트 B] 스나이퍼 조준경 (디바운싱 동기화) ---
       // 슥슥 올릴 땐 가만히 있다가, 멈추면 해당 구역 0.1초 틱 따기 시작!
-        // ✅ [통합 훅] refreshSniperTarget 하나면 '보이는 놈 계산 + 구독'까지 한방입니다.
+        // [통합 훅] refreshSniperTarget 하나면 '보이는 놈 계산 + 구독'까지 한방입니다.
       }, 200); // 0.3초 멈춤 감지 (IP 밴 방어선)
 function toggleFavorite(symbol, event) {
-  event.stopPropagation(); // 🚨 중요: 별 눌렀을 때 차트 열리는 거 방지!
+  event.stopPropagation(); // 중요: 별 눌렀을 때 차트 열리는 거 방지!
   const btn = event.currentTarget;
     // ⭐️ 쫀득한 애니메이션 효과
 // ⭐️ 이 코드가 있어야 웹페이지가 켜지자마자 데이터를 가져옵니다!
@@ -703,7 +703,7 @@ function switchMobileView(view) {
   const rightPanel = document.getElementById("right-panel");
   const btnList = document.getElementById("mob-btn-list");
   const btnChart = document.getElementById("mob-btn-chart");
-    // 🚀 [추가] 모바일 리스트 모드일 때 높이 제한과 스크롤 주입
+    // [추가] 모바일 리스트 모드일 때 높이 제한과 스크롤 주입
     // 차트 화면 렌더링 최적화
       const container = document.getElementById("chart-container");
 function showMobileChart() {
@@ -714,14 +714,14 @@ function showMobileChart() {
   const rightPanel = document.getElementById("right-panel");
   // 1. 이사 로직 (중복 방지)
   // 2. 레이아웃 및 '방벽 제거' (핵심!)
-  // 🚀 active 클래스 하나로 pointer-events와 opacity를 동시에 제어하는 게 가장 깔끔합니다.
+  // active 클래스 하나로 pointer-events와 opacity를 동시에 제어하는 게 가장 깔끔합니다.
   // 3. 애니메이션 및 차트 리사이즈
     if (window.chart) {
       const newWidth = content.clientWidth;
       const newHeight = content.clientHeight - 60;
       window.chart.resize(newWidth, newHeight);
       window.chart.timeScale().fitContent();
-      // 🚀 [추가] 차트가 뜨자마자 포커스를 잡게 해서 원터치 프리패스 완성!
+      // [추가] 차트가 뜨자마자 포커스를 잡게 해서 원터치 프리패스 완성!
       const container = document.getElementById("chart-container");
 function closeMobileChart() {
   const overlay = document.getElementById("mobile-chart-overlay");
@@ -746,8 +746,8 @@ function executeTabSwitch(mode) {
 --- File: _config.js ---
 
 // _config.js
-// 🌐 전역 변수 (Global State)
-// 🚀 [광클 방지용] 마지막 요청 시간 기록
+// 전역 변수 (Global State)
+// [광클 방지용] 마지막 요청 시간 기록
 const SCREEN_WIDTH = 768;
 const UI_UPDATE_INTERVAL = 3000;
 const tfSec = {
@@ -768,7 +768,7 @@ const RENDER_CHUNK = 50; // 스크롤 바닥 칠 때마다 50개씩 추가
 // ⭐️ 파일 위쪽 전역 변수 모여있는 곳에 2줄 추가
 // 웹 소캣
 // --- 📏 1. 전역 상태 및 DOM 요소 (간소화) ---
-  cachedPriceTd = null; // 🚀 DOM 캐싱용 변수
+  cachedPriceTd = null; // DOM 캐싱용 변수
 // 요소 생성 (스타일은 CSS 파일로 빼는 것을 강력 추천하지만, 일단 유지)
 
 
@@ -778,8 +778,8 @@ const RENDER_CHUNK = 50; // 스크롤 바닥 칠 때마다 50개씩 추가
 // _main.js
 // --- 🚀 초기화 (Init) ---
 window.onload = () => {
-  initInfiniteScroll(); // 🚀 무한 스크롤 센서 가동!
-  initSniperSocket(); // 🚀 스나이퍼 센서 가동
+  initInfiniteScroll(); // 무한 스크롤 센서 가동!
+  initSniperSocket(); // 스나이퍼 센서 가동
   // if (typeof selectSymbol === "function") selectSymbol("BTC");
   // 슬라이더 이벤트 바인딩
     const inputEl = document.getElementById("input-" + id);
@@ -794,7 +794,7 @@ function initChart() {
   const upColor = currentTheme === "binance" ? "#26a69a" : "#c84a31";
   const downColor = currentTheme === "binance" ? "#ef5350" : "#1261c4";
         const d = new Date(getUnixSeconds(time) * 1000);
-        // 🚀 핵심: tickMarkType이 'Year'(0)이면 연도를 최우선으로 반환
+        // 핵심: tickMarkType이 'Year'(0)이면 연도를 최우선으로 반환
         // LightweightCharts.TickMarkType.Year 값은 보통 0입니다.
         const isDayUnit = !(currentTF || "1h").match(/[hm]/);
           // 일봉 이상: 연도 첫날이 아니면 '월/일' 표시
@@ -805,25 +805,25 @@ function initChart() {
         const date = String(d.getDate()).padStart(2, "0");
         const h = String(d.getHours()).padStart(2, "0");
         const min = String(d.getMinutes()).padStart(2, "0");
-        // 🚀 십자선(Crosshair) 라벨도 동일한 규칙 적용
-  // 🚀 1. 공통 커스텀 가격 포맷 설정 (함수 추가 없이 기존 formatSmartPrice 재활용!)
+        // 십자선(Crosshair) 라벨도 동일한 규칙 적용
+  // 1. 공통 커스텀 가격 포맷 설정 (함수 추가 없이 기존 formatSmartPrice 재활용!)
   const customPriceFormat = {
     minMove: 0.00000001, // 동전주(최대 소수점 8자리)까지 눈금을 허용하도록 족쇄 해제
     formatter: (price) => formatSmartPrice(price), // Y축 숫자를 그릴 때마다 기존 함수 통과
-    priceFormat: customPriceFormat, // 👈 여기 추가
-    priceFormat: customPriceFormat, // 👈 여기 추가
+    priceFormat: customPriceFormat, // 여기 추가
+    priceFormat: customPriceFormat, // 여기 추가
     // 1. 마우스가 차트 위에 있고 데이터가 존재할 때 (탐색 모드)
       const d = p.seriesData.get(candleSeries);
     // 2. 마우스가 차트를 벗어났을 때 (실시간 추적 모드)
       // 가장 최근 봉(현재가) 데이터를 전광판에 고정!
-  // 🚀 설정 변수를 활용한 유령 데이터 렌더링
+  // 설정 변수를 활용한 유령 데이터 렌더링
     const lastTime = getUnixSeconds(mainData[mainData.length - 1].time);
     const interval =
-    // 🚀 전역 변수 적용
+    // 전역 변수 적용
     const ghostData = Array.from(
     // VISIBLE_COUNT, RIGHT_PADDING 변수 사용
   // 측정 도구 세팅
-  // 🚀 [여기에 추가!!!] 차트 그려진 직후에 카운트다운 DOM 세팅!
+  // [여기에 추가!!!] 차트 그려진 직후에 카운트다운 DOM 세팅!
   // 리사이즈 옵저버 디바운스
   if (window.chartResizeObserver) window.chartResizeObserver.disconnect();
   window.chartResizeObserver = new ResizeObserver(([entry]) => {
@@ -831,11 +831,11 @@ function initChart() {
     const { width, height } = entry.contentRect;
     // 2. 0달러 방지 (크기가 0일 땐 패스)
     // 3. 디바운스 (너무 자주 그리면 렉 걸리니까 0.05초 대기)
-        // 🚀 리사이즈 직후 차트 범위를 다시 맞춰야 안 찌그러짐
+        // 리사이즈 직후 차트 범위를 다시 맞춰야 안 찌그러짐
         // console.log(`📏 리사이즈 완료: ${width}x${height}`);
-      // 🚀 모바일 오버레이 방어 (아까 그 기준 적용!)
+      // 모바일 오버레이 방어 (아까 그 기준 적용!)
         const overlay = document.getElementById("mobile-chart-overlay");
-  // 🎯 차트 컨테이너 감시 시작!
+  // 차트 컨테이너 감시 시작!
   const chartContainer = document.getElementById("chart-container");
     window.chartResizeObserver.observe(chartContainer);
 function setTF(tf) {
@@ -857,7 +857,7 @@ function setupMeasureTool() {
 // --- ⚡ 3. 마우스 이벤트 (단 한 번만 실행되도록 분리) ---
 function initMeasureEvents() {
   const container = document.getElementById("chart-container");
-    // 🚀 매번 찾지 않고 캐싱된 DOM 사용
+    // 매번 찾지 않고 캐싱된 DOM 사용
     const rect = container.getBoundingClientRect();
       const chartRect = cachedChartTd.getBoundingClientRect();
       const sX = e.clientX - chartRect.left;
@@ -869,7 +869,7 @@ function initMeasureEvents() {
     const curY = e.clientY - chartRect.top;
     const curPrice = candleSeries.coordinateToPrice(curY);
     const curTime = chart.timeScale().coordinateToTime(curX);
-    // 🚀 실시간 좌표 역산
+    // 실시간 좌표 역산
     const startX = chart.timeScale().timeToCoordinate(measureStart.time);
     const startY = candleSeries.priceToCoordinate(measureStart.price);
     const priceDiff = curPrice - measureStart.price;
@@ -896,13 +896,13 @@ function updateRealtimeCountdown(serverMs) {
   // 4. DOM 업데이트 (단 한 번의 Reflow만 발생)
 function setupCountdownDOM() {
   const container = document.getElementById("chart-container");
-  // 🚀 [개선 포인트] container 내부뿐만 아니라, 이사 간 부모(table) 전체에서 가격축(td:nth-child(3))을 찾습니다.
+  // [개선 포인트] container 내부뿐만 아니라, 이사 간 부모(table) 전체에서 가격축(td:nth-child(3))을 찾습니다.
   const priceScaleTd = container.closest('table')?.querySelector("tr:nth-child(1) td:nth-child(3)") 
     // 차트가 아직 안 그려졌거나 렌더링 전이면 재시도
-  // 🚀 [중요] 기존에 그려진 잔상이 있다면 제거하고 새로 붙입니다 (중복 방지)
-  // 🚀 [핵심] 스타일 재설정 (기존 스타일 유지)
-  // 🚀 최종적으로 현재 활성화된 가격 축에 찰싹 붙이기!
-// // 🚀 [실시간 브라우저 감시관] - initChart 밖에 두세요!
+  // [중요] 기존에 그려진 잔상이 있다면 제거하고 새로 붙입니다 (중복 방지)
+  // [핵심] 스타일 재설정 (기존 스타일 유지)
+  // 최종적으로 현재 활성화된 가격 축에 찰싹 붙이기!
+// // [실시간 브라우저 감시관] - initChart 밖에 두세요!
 // window.addEventListener('resize', () => {
 //   const width = window.innerWidth; // 창 전체 너비 측정
 //   const overlay = document.getElementById("mobile-chart-overlay");

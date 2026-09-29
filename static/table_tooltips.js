@@ -1,5 +1,5 @@
 // table_tooltips.js
-// 🔍 [테이블 전역 툴팁 & 호버 팝오버 관리 모듈]
+// [테이블 전역 툴팁 & 호버 팝오버 관리 모듈]
 // 1. 거래소별 유의/상폐/모니터링 경고 전역 포털 툴팁 (document.body 직속)
 // 2. 상장 거래소 그리드 마우스 호버 시 3배 확대 프리뷰 전역 팝오버
 
@@ -26,7 +26,10 @@ export const EXCH_CMC_ICON_MAP = {
 };
 
 export function getExchangeLogo(cmcId) {
-  return EXCH_CMC_ICON_MAP[cmcId] || `https://s2.coinmarketcap.com/static/img/exchanges/64x64/${cmcId}.png`;
+  return (
+    EXCH_CMC_ICON_MAP[cmcId] ||
+    `https://s2.coinmarketcap.com/static/img/exchanges/64x64/${cmcId}.png`
+  );
 }
 
 let globalCautionTooltip = null;
@@ -92,7 +95,7 @@ export function showCautionTooltip(e, warningsJsonStr) {
     tooltip.style.transform = "translateY(-50%)";
     tooltip.classList.remove("opacity-0", "pointer-events-none");
     tooltip.classList.add("opacity-100");
-  } catch (err) { }
+  } catch (err) {}
 }
 
 export function hideCautionTooltip() {
@@ -102,7 +105,7 @@ export function hideCautionTooltip() {
   }
 }
 
-// 🚀 window 전역 노출 및 닫기 이벤트 등록
+// window 전역 노출 및 닫기 이벤트 등록
 window.showCautionTooltip = showCautionTooltip;
 window.hideCautionTooltip = hideCautionTooltip;
 
@@ -116,7 +119,7 @@ if (typeof document !== "undefined") {
 }
 
 // ==========================================
-// 🚀 Web Popover API 기반 3배 확대 프리뷰 전역 팝오버 탑재
+// Web Popover API 기반 3배 확대 프리뷰 전역 팝오버 탑재
 // ==========================================
 if (typeof window !== "undefined") {
   document.addEventListener("DOMContentLoaded", () => {
@@ -162,7 +165,7 @@ if (typeof window !== "undefined") {
             popoverEl.style.boxShadow = "0 20px 40px rgba(0, 0, 0, 0.85)";
           }
 
-          // 🚀 [디자인 엔진] 단 한 줄로 제어하는 팝오버 배율 변수 (기본 3.0배)
+          // [디자인 엔진] 단 한 줄로 제어하는 팝오버 배율 변수 (기본 3.0배)
           const scale = 2.5;
           const baseIconSize = 16; // 원래 아이콘 크기인 16px 기준
 
@@ -256,7 +259,7 @@ if (typeof window !== "undefined") {
               popoverEl.style.opacity = "1";
               popoverEl.style.transform = "scale(1)";
             });
-          } catch (err) { }
+          } catch (err) {}
         }
       });
 
@@ -273,7 +276,7 @@ if (typeof window !== "undefined") {
             hideTimeout = setTimeout(() => {
               try {
                 popoverEl.hidePopover();
-              } catch (err) { }
+              } catch (err) {}
             }, 150);
           }, 50);
         }

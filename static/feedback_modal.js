@@ -1,5 +1,5 @@
 // feedback_modal.js
-// 💬 다크/라이트 테마 100% 동기화 네이티브 피드백 & 고객센터 모달
+// 다크/라이트 테마 동기화 네이티브 피드백 & CS 모달
 
 import { store } from "./_store.js";
 import { showToast } from "./ui_dialog.js";
@@ -14,12 +14,12 @@ export function toggleFeedbackModal(show) {
       "opacity-0",
       "pointer-events-none",
       "min-[1200px]:scale-0",
-      "max-[1199px]:translate-y-full"
+      "max-[1199px]:translate-y-full",
     );
     modal.classList.add(
       "opacity-100",
       "min-[1200px]:scale-100",
-      "max-[1199px]:translate-y-0"
+      "max-[1199px]:translate-y-0",
     );
     if (floatingBtn) {
       floatingBtn.classList.add("scale-0", "opacity-0", "pointer-events-none");
@@ -38,16 +38,20 @@ export function toggleFeedbackModal(show) {
     modal.classList.remove(
       "opacity-100",
       "min-[1200px]:scale-100",
-      "max-[1199px]:translate-y-0"
+      "max-[1199px]:translate-y-0",
     );
     modal.classList.add(
       "opacity-0",
       "pointer-events-none",
       "min-[1200px]:scale-0",
-      "max-[1199px]:translate-y-full"
+      "max-[1199px]:translate-y-full",
     );
     if (floatingBtn) {
-      floatingBtn.classList.remove("scale-0", "opacity-0", "pointer-events-none");
+      floatingBtn.classList.remove(
+        "scale-0",
+        "opacity-0",
+        "pointer-events-none",
+      );
     }
   }
 }
@@ -60,7 +64,7 @@ export async function submitFeedback(event) {
   const now = Date.now();
   if (now - lastFeedbackSubmitTime < 5000) {
     const remainSec = Math.ceil((5000 - (now - lastFeedbackSubmitTime)) / 1000);
-    showToast(`${remainSec}초 후 다시 전송할 수 있습니다.`, "warning", 2000);
+    showToast(`${remainSec}초 후 다시 전송할 수 있어요`, "warning", 2000);
     return;
   }
 
@@ -82,7 +86,7 @@ export async function submitFeedback(event) {
     submitBtn.innerHTML = `<span>전송 중...</span>`;
   }
 
-  // 🔍 접속 환경 & 해상도 감지
+  // 접속 환경 & 해상도 감지
   const ua = navigator.userAgent || "";
   let os = "기타 OS";
   if (/iPhone/i.test(ua)) os = "iOS (iPhone)";
@@ -99,18 +103,22 @@ export async function submitFeedback(event) {
   else if (/Firefox|FxiOS/i.test(ua)) browser = "Firefox";
   else if (/SamsungBrowser/i.test(ua)) browser = "Samsung Internet";
 
-  const isMobile = window.innerWidth < 1200 || /Mobi|Android|iPhone|iPad/i.test(ua);
+  const isMobile =
+    window.innerWidth < 1200 || /Mobi|Android|iPhone|iPad/i.test(ua);
   const deviceType = isMobile ? "📱 모바일" : "💻 PC";
   const environment = `${deviceType} • ${os} • ${browser}`;
   const screenRes = `${window.screen?.width || window.innerWidth} x ${window.screen?.height || window.innerHeight}`;
   const windowRes = `${window.innerWidth} x ${window.innerHeight}`;
   const resolution = `${screenRes} (창: ${windowRes})`;
 
-  // 🔍 현재 보고 있는 코인 심볼 및 UID 추출
-  const currentSymbol = store.currentSelectedSymbol || store.currentAsset || "미선택";
+  // 현재 보고 있는 코인 심볼 및 UID 추출
+  const currentSymbol =
+    store.currentSelectedSymbol || store.currentAsset || "미선택";
   let currentUid = store.currentSelectedUid || "-";
   if (currentUid === "-" && currentSymbol !== "미선택" && store.tickerRowMap) {
-    const row = store.tickerRowMap.get(currentSymbol) || store.tickerRowMap.get(currentSymbol.toUpperCase());
+    const row =
+      store.tickerRowMap.get(currentSymbol) ||
+      store.tickerRowMap.get(currentSymbol.toUpperCase());
     if (row && row.UID) currentUid = row.UID;
   }
 
@@ -135,8 +143,8 @@ export async function submitFeedback(event) {
       const errMsg =
         result.message ||
         (res.status === 429
-          ? "요청이 너무 많습니다. 잠시 후 다시 시도해주세요."
-          : "피드백 전송에 실패했습니다.");
+          ? "요청이 너무 많습니다, 잠시 후 다시 시도해주세요"
+          : "피드백 전송에 실패했습니다");
       showToast(errMsg, "error", 3000);
       return;
     }
@@ -148,7 +156,7 @@ export async function submitFeedback(event) {
     toggleFeedbackModal(false);
   } catch (err) {
     console.error("Feedback submission error:", err);
-    showToast("네트워크 오류로 피드백을 전송하지 못했습니다.", "error", 3000);
+    showToast("네트워크 오류로 피드백을 전송하지 못했어요", "error", 3000);
   } finally {
     if (submitBtn) {
       submitBtn.disabled = false;

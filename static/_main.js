@@ -1,12 +1,74 @@
 // _main.js
 // Sellnance Main Entry Point
 
+// [Global] 브라우저 확장 프로그램 및 비치명적 노이즈 차단
+(function () {
+  var IGNORES = [
+    "Value is null",
+    "Ping received after close",
+    "message channel closed",
+    "Back-Forward Cache",
+    "Back-Forward",
+    "asynchronous response by returning true",
+  ];
+  function isSuppressed(msg) {
+    if (!msg) return false;
+    var str =
+      typeof msg === "object"
+        ? msg.message || msg.stack || JSON.stringify(msg)
+        : String(msg);
+    for (var i = 0; i < IGNORES.length; i++) {
+      if (str.indexOf(IGNORES[i]) !== -1) return true;
+    }
+    return false;
+  }
+  window.addEventListener(
+    "error",
+    function (e) {
+      if (
+        isSuppressed(
+          e.message || (e.error && (e.error.message || e.error.stack)),
+        )
+      ) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        return true;
+      }
+    },
+    true,
+  );
+  window.addEventListener(
+    "unhandledrejection",
+    function (e) {
+      if (
+        isSuppressed(
+          e.reason && (e.reason.message || e.reason.stack || e.reason),
+        )
+      ) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        return true;
+      }
+    },
+    true,
+  );
+  var origError = console.error;
+  console.error = function () {
+    var args = Array.prototype.slice.call(arguments);
+    var text = args
+      .map(function (a) {
+        return typeof a === "object"
+          ? (a && (a.message || a.stack)) || JSON.stringify(a)
+          : String(a);
+      })
+      .join(" ");
+    if (isSuppressed(text)) return;
+    origError.apply(console, args);
+  };
+})();
+
 import { store } from "./_store.js";
-import {
-  searchSymbols,
-  clearSearch,
-  selectSymbol,
-} from "./ui_control.js";
+import { searchSymbols, clearSearch, selectSymbol } from "./ui_control.js";
 
 // 하위 서브시스템 등록
 import "./ui_dialog.js";
@@ -23,6 +85,7 @@ import "./quickview.js";
 import "./feedback_modal.js";
 import "./sandbox_injector.js";
 import "./stream_alpha.js";
+// import "./lwc_error_tracker.js";
 
 // 분리된 3대 모듈
 import {
@@ -48,7 +111,7 @@ import {
   setupTabVisibilityRecovery,
 } from "./main_init.js";
 
-// 🚀 전역 store 및 헬퍼 바인딩
+// 전역 store 및 헬퍼 바인딩
 window.store = store;
 window.searchSymbols = searchSymbols;
 window.clearSearch = clearSearch;
@@ -57,7 +120,7 @@ window.getKrwPrecision = getKrwPrecision;
 window.updateHeaderDisplay = updateHeaderDisplay;
 window.toggleHeaderTop = toggleHeaderTop;
 
-// 🚀 DOM 로드 완료 시 사용자 설정 복원
+// DOM 로드 완료 시 사용자 설정 복원
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", () => {
     restoreSavedUserSettings();
@@ -72,34 +135,33 @@ if (document.readyState === "loading") {
   }
 }
 
-// 🚀 UI 인터랙션 및 전역 이벤트 리스너 바인딩
+// UI 인터랙션 및 전역 이벤트 리스너 바인딩
 setupSliderEvents();
 setupButtonEvents();
 setupSearchNavigation();
 initGlobalEventListeners();
 
-// 🚀 성능 디버거 및 상태 뱃지 타이머 시작
+// 성능 디버거 및 상태 뱃지 타이머 시작
 startPerformanceDebugger();
 setInterval(updateStatusBadge, 1000);
 
-// 🚀 초기 라우트 / 히스토리 및 정밀 타이머 가동
+// 초기 라우트 / 히스토리 및 정밀 타이머 가동
 setupRouteAndHistory();
 scheduleDailyReset();
 setupTabVisibilityRecovery();
 // initAlphaStreamPipeline(); // 서버 부하 방지를 위해 비활성화
 
-// 🚀 초기 필터 UI 상태 동기화 (3단 토글 슬라이더 위치 등)
+// 초기 필터 UI 상태 동기화 (3단 토글 슬라이더 위치 등)
 if (typeof window.switchFilter === "function") {
   window.switchFilter(store.filterMode);
 }
 
-// 📱 PWA Service Worker 등록 (설치 안내 프롬프트는 임시 비활성화)
+// PWA Service Worker 등록 (설치 안내 프롬프트는 임시 비활성화)
 // import { initPwaInstallPrompt } from "./pwa_install.js";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker
-      .register("/static/sw.js");
+    navigator.serviceWorker.register("/static/sw.js");
     // .then((reg) => console.log("PWA SW registered:", reg.scope))
     // .catch((err) => console.warn("PWA SW registration failed:", err));
 

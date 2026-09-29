@@ -1,10 +1,10 @@
 // ui_mobile.js
-// 📱 [모바일 뷰 & 탭 & 바텀시트 오버레이 제어 모듈]
+// [모바일 뷰 & 탭 & 바텀시트 오버레이 제어 모듈]
 import { store, CONFIG } from "./_store.js";
 
 let _closeMobileChartTimer = null;
 
-// 📱 [터치 스크린 / 모바일 기기 감지 헬퍼: 데스크탑 PC 오감지 방지]
+// [터치 스크린 / 모바일 기기 감지 헬퍼: 데스크탑 PC 오감지 방지]
 export function isTouchDevice() {
   if (typeof window === "undefined") return false;
   const ua = navigator.userAgent || "";
@@ -84,7 +84,7 @@ export function showMobileChart() {
 
   try {
     sessionStorage.setItem("sellnance_active_mobile_tab", "chart");
-  } catch (e) { }
+  } catch (e) {}
 
   store._currentMobileTab = "chart";
   window.dispatchEvent(
@@ -106,7 +106,9 @@ export function showMobileChart() {
 
   if (!store.currentSelectedSymbol && !store.currentAsset) {
     const defaultSym =
-      (typeof window.getInitialRouteSymbol === "function" ? window.getInitialRouteSymbol() : null) ||
+      (typeof window.getInitialRouteSymbol === "function"
+        ? window.getInitialRouteSymbol()
+        : null) ||
       localStorage.getItem("sellnance_last_symbol") ||
       "BINANCE:BTC_FUTURES";
     if (typeof window.selectSymbol === "function") {
@@ -158,7 +160,7 @@ export function showMobileChart() {
     if (typeof window.syncPriceScaleWidths === "function") {
       window.syncPriceScaleWidths(true);
     }
-    // 🚀 [PC와 100% 동일한 우측 10봉 여백 & 상하 차트 동기화] fitContent 0여백 버그 제거하고 autoFit 연동
+    // [PC와 동일한 우측 10봉 여백 & 상하 차트 동기화] fitContent 여백 버그 제거하고 autoFit 연동
     if (typeof window.autoFit === "function") {
       window.autoFit(true);
     }
@@ -171,7 +173,7 @@ export function showMobileChart() {
 export function closeMobileChart() {
   try {
     sessionStorage.setItem("sellnance_active_mobile_tab", "list");
-  } catch (e) { }
+  } catch (e) {}
 
   const overlay = document.getElementById("mobile-chart-overlay");
   const panel = document.getElementById("mobile-chart-panel");
@@ -211,7 +213,9 @@ export function updateMobileNavUI(tab = store._currentMobileTab || "list") {
   const isChart = tab === "chart";
   slider.style.transform = isChart ? "translateX(108px)" : "translateX(0px)";
   if (sliderInner) {
-    sliderInner.style.transform = isChart ? "translateX(-108px)" : "translateX(0px)";
+    sliderInner.style.transform = isChart
+      ? "translateX(-108px)"
+      : "translateX(0px)";
   }
 }
 
@@ -233,13 +237,13 @@ export function switchMobileTab(tab, event) {
   if (event) {
     try {
       event.stopPropagation();
-    } catch (e) { }
+    } catch (e) {}
   }
   if (window.innerWidth >= CONFIG.SCREEN_WIDTH || !isTouchDevice()) return;
 
   try {
     sessionStorage.setItem("sellnance_active_mobile_tab", tab);
-  } catch (e) { }
+  } catch (e) {}
 
   const leftPanel = document.getElementById("left-panel");
   const settingsModal = document.getElementById("settings-modal");
@@ -247,9 +251,7 @@ export function switchMobileTab(tab, event) {
   store._currentMobileTab = tab;
   updateMobileNavUI(tab);
 
-  window.dispatchEvent(
-    new CustomEvent("mobile-tab-changed", { detail: tab }),
-  );
+  window.dispatchEvent(new CustomEvent("mobile-tab-changed", { detail: tab }));
 
   if (tab === "list") {
     closeMobileChart();
@@ -272,7 +274,9 @@ export function switchMobileTab(tab, event) {
     const targetSym =
       store.currentSelectedSymbol ||
       store.currentAsset ||
-      (typeof window.getInitialRouteSymbol === "function" ? window.getInitialRouteSymbol() : null) ||
+      (typeof window.getInitialRouteSymbol === "function"
+        ? window.getInitialRouteSymbol()
+        : null) ||
       localStorage.getItem("sellnance_last_symbol") ||
       "BINANCE:BTC_FUTURES";
 
@@ -293,7 +297,7 @@ export function switchMobileTab(tab, event) {
   }
 }
 
-// 📱 모바일/패드 전용 탄성 고무줄(Rubber-Band Elastic Overscroll) 풀업 UX
+// 모바일/패드 전용 탄성 고무줄(Rubber-Band Elastic Overscroll) 풀업 UX
 export function initMobileRubberBandScroll() {
   const listBody = document.getElementById("coin-list-body");
   if (!listBody || listBody._rubberBandInitialized) return;
@@ -341,7 +345,9 @@ export function initMobileRubberBandScroll() {
         listBody.style.transform = `translate3d(0, -${tension.toFixed(2)}px, 0)`;
 
         if (fadeOverlay) {
-          fadeOverlay.style.opacity = Math.max(0.2, 1 - tension / 60).toFixed(2);
+          fadeOverlay.style.opacity = Math.max(0.2, 1 - tension / 60).toFixed(
+            2,
+          );
         }
 
         if (e.cancelable && overscroll > 5) {
@@ -399,15 +405,24 @@ export function initMobileRubberBandScroll() {
   listBody.addEventListener("touchcancel", resetElastic, { passive: true });
 }
 
-// 🚀 [모바일 전용] 가로 스크롤 끝단 블러/페이드 마스크 UX 인디케이터
+// [모바일 전용] 가로 스크롤 끝단 블러/페이드 마스크 UX 인디케이터
 export function updateElementScrollMask(el) {
   if (!el || window.innerWidth >= CONFIG.SCREEN_WIDTH) {
-    if (el) el.classList.remove("scroll-mask-left", "scroll-mask-right", "scroll-mask-both");
+    if (el)
+      el.classList.remove(
+        "scroll-mask-left",
+        "scroll-mask-right",
+        "scroll-mask-both",
+      );
     return;
   }
   const maxScroll = el.scrollWidth - el.clientWidth;
   if (maxScroll <= 3) {
-    el.classList.remove("scroll-mask-left", "scroll-mask-right", "scroll-mask-both");
+    el.classList.remove(
+      "scroll-mask-left",
+      "scroll-mask-right",
+      "scroll-mask-both",
+    );
     return;
   }
   const canLeft = el.scrollLeft > 3;
@@ -423,7 +438,11 @@ export function updateElementScrollMask(el) {
     el.classList.add("scroll-mask-right");
     el.classList.remove("scroll-mask-left", "scroll-mask-both");
   } else {
-    el.classList.remove("scroll-mask-left", "scroll-mask-right", "scroll-mask-both");
+    el.classList.remove(
+      "scroll-mask-left",
+      "scroll-mask-right",
+      "scroll-mask-both",
+    );
   }
 }
 
@@ -457,10 +476,10 @@ export function initMobileScrollMaskIndicators() {
   });
 }
 
-// [모바일 전용] 새로고침 시 잔류 줌/확대 배율을 100%(1.0)로 안전하게 리셋
+// [모바일 전용] 새로고침 시 잔류 줌/확대 배율을 안전하게 리셋
 export function resetMobileViewportScale() {
   if (typeof window === "undefined" || typeof document === "undefined") return;
-  // PC(>=1200px)는 100% 제외
+  // PC(>=1200px)는 제외
   if (window.innerWidth >= 1200 && !isTouchDevice()) return;
 
   try {
@@ -468,7 +487,8 @@ export function resetMobileViewportScale() {
     if (!meta) return;
 
     const normalContent = "width=device-width, initial-scale=1.0";
-    const resetContent = "width=device-width, initial-scale=1.0, maximum-scale=1.0";
+    const resetContent =
+      "width=device-width, initial-scale=1.0, maximum-scale=1.0";
 
     meta.setAttribute("content", resetContent);
     window.scrollTo(0, 0);
@@ -476,9 +496,9 @@ export function resetMobileViewportScale() {
     setTimeout(() => {
       try {
         meta.setAttribute("content", normalContent);
-      } catch (e) { }
+      } catch (e) {}
     }, 100);
-  } catch (e) { }
+  } catch (e) {}
 }
 
 // 자동 초기화
@@ -520,4 +540,3 @@ window.initMobileRubberBandScroll = initMobileRubberBandScroll;
 window.updateElementScrollMask = updateElementScrollMask;
 window.initMobileScrollMaskIndicators = initMobileScrollMaskIndicators;
 window.resetMobileViewportScale = resetMobileViewportScale;
-

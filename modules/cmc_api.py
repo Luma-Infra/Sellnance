@@ -1,6 +1,6 @@
 # cmc_api.py
 # ==========================================
-# 🧱 모듈 2: 코인마켓캡(CMC) 정보 수집기
+# 모듈 2: 코인마켓캡(CMC) 정보 수집기
 # ==========================================
 
 from concurrent.futures import ThreadPoolExecutor
@@ -15,9 +15,9 @@ from modules.utils import get_pure_base_asset, is_valid_ticker
 
 
 def validate_cmc_api_key(api_key: str | None) -> tuple[bool, str]:
-    """사용자가 입력한 개인 CMC API 키의 유효성을 실시간으로 1회 검증합니다."""
+    """사용자가 입력한 개인 CMC API 키의 유효성을 실시간으로 1회 검증"""
     if not api_key or not isinstance(api_key, str) or not api_key.strip():
-        return True, "키가 설정되지 않았습니다."
+        return True, "키가 설정되지 않았습니다"
 
     clean_key = api_key.strip()
     url = "https://pro-api.coinmarketcap.com/v1/key/info"
@@ -35,7 +35,7 @@ def validate_cmc_api_key(api_key: str | None) -> tuple[bool, str]:
             error_code = status_obj.get("error_code")
             if error_code not in [0, None]:
                 return False, f"CMC 인증 오류: {status_obj.get('error_message')}"
-            return True, "유효한 API 키입니다."
+            return True, "유효한 API 키입니다"
         return False, f"CMC 응답 오류 (HTTP {resp.status_code})"
     except Exception as e:
         return False, f"검증 요청 실패: {e}"
@@ -47,7 +47,7 @@ def _fetch_cmc_api_chunk(task):
         resp = requests.get(url, headers=headers, params=params, timeout=10)
         if resp.status_code in [400, 402, 401, 403, 429]:
             print(
-                f"[CMC 키 인증 실패] HTTP {resp.status_code}: 유효하지 않은 API 키입니다."
+                f"[CMC 키 인증 실패] HTTP {resp.status_code}: 유효하지 않은 API 키입니다"
             )
             return {"error": "INVALID_KEY", "status_code": resp.status_code}
         resp.raise_for_status()
@@ -118,21 +118,21 @@ def build_cmc_lookup_lists(binance_data, upbit_krw_set, MAPPING_DATA):
             if ex.startswith("BYBIT"):
                 REVERSE_LOOKUP[f"{sym_key}_BYBIT"] = k
 
-    # 🚀 공통 처리기 (귀빈 대접 버전)
+    # 공통 처리기 (귀빈 대접 버전)
     def process_asset(a, exchange_tag):
         if a in EXCLUSION_LIST:
             return
 
-        # 1순위: '원본 이름(a)' 그대로 하드코딩 맵에 있는지 확인 (최고 귀빈)
+        # 1순위: 원본 이름(a) 그대로 사전 맵에 있는지 확인 (최고 귀빈)
         cmc_id = None
         if a in SYMBOL_TO_ID_MAP:
             cmc_id = str(SYMBOL_TO_ID_MAP[a])
 
-        # 2순위: 원본에 없을 때만 '숫자(배율)' 제거를 시도
-        # PUMPBTC 같은 건 여기서 BTC가 안 잘리도록 고친 get_pure_base_asset이 작동함
+        # 2순위: 원본에 없을 때만 숫자(배율) 제거를 시도
+        # PUMPBTC 같은 건 여기서 BTC가 안 잘리도록 고친 get_pure_base_asset 적용
         base = utils.get_pure_base_asset(a).upper()
 
-        # [귀빈 예외] 원본과 배율 제거본이 다를 때(즉, 숫자만 붙었을 때) 하드코딩 맵 재조회
+        # [귀빈 예외] 원본과 배율 제거본이 다를 때(즉, 숫자만 붙었을 때) 사전 맵 재조회
         if not cmc_id and a.upper() != base:
             if base in SYMBOL_TO_ID_MAP:
                 cmc_id = str(SYMBOL_TO_ID_MAP[base])
@@ -200,24 +200,24 @@ def build_cmc_lookup_lists(binance_data, upbit_krw_set, MAPPING_DATA):
             asset_to_lookup_key[lookup_name] = cmc_id
         else:
             if a in HARDCODE_VERIFY_SKIP_LIST or base in HARDCODE_VERIFY_SKIP_LIST:
-                # CMC 최초 호출 시 Skip list에 있다면 심볼 조회를 생략(스킵)합니다.
+                # CMC 최초 호출 시 Skip list에 있다면 심볼 조회를 pass
                 print(
-                    f"⏭️ [CMC 최초 스킵] {a} ({resolved_tag}) - 최초 심볼 조회를 생략합니다."
+                    f"⏭️ [CMC 최초 스킵] {a} ({resolved_tag}) - 최초 심볼 조회를 생략할게요"
                 )
             else:
-                # 하드코딩 없으면 원본(a) 혹은 배율 제거본(base)으로 CMC 타격
-                # 숫자가 붙었던 녀석은 base로, 일반 합성어는 a 그대로 보냄
+                # 사전 매핑된 맵이 없으면 원본(a) 혹은 배율 제거본(base)으로 CMC 호출
+                # 숫자가 포함은 base로, 일반 합성어는 a 그대로 보냄
                 target_name = base if a.upper() != base else a.upper()
                 sym_lookup.append(target_name)
                 asset_to_lookup_key[lookup_name] = target_name
 
-    # 🚀 바이낸스와 업비트를 '각각' 돌립니다. 이제 EDGE와 MET가 둘 다 큐에 들어갑니다!
+    # 바이낸스와 업비트를 '각각' 돌리기, 이제 EDGE와 MET가 둘 다 큐에 들어가도록 조정됩니다
     for base in binance_base_set:
         process_asset(base, "BINANCE")
     for base in upbit_krw_set:
         process_asset(base, "UPBIT")
 
-    # 🚀 바이낸스 알파 코인 명단도 CMC 대기열에 포함! (6번째 인자가 ALPHA인 코인)
+    # 바이낸스 알파 코인 명단도 CMC 대기열에 포함 (6번째 인자가 ALPHA인 코인)
     for base, v in TICKER_DATA.items():
         if isinstance(v, list) and len(v) >= 6 and str(v[5]).upper() == "ALPHA":
             process_asset(base, "BINANCE")
@@ -225,10 +225,10 @@ def build_cmc_lookup_lists(binance_data, upbit_krw_set, MAPPING_DATA):
     return list(set(id_lookup)), list(set(sym_lookup)), asset_to_lookup_key
 
 
-# CMC 단일 묶음 호출기.
+# CMC 단일 묶음 호출기
 def fetch_cmc_market_data(binance_data, upbit_krw_set, MAPPING_DATA, api_key=None):
-    # 2. 조회 명단 작성 (UID파 vs 티커파)
-    # 🚀 upbit_only_assets 파라미터를 버리고 전체 upbit_krw_set 받기
+    # 2. 조회 명단 작성 (UID and Ticker)
+    # upbit_only_assets 파라미터를 버리고 전체 upbit_krw_set 받기
     id_lookup, sym_lookup, asset_to_lookup_key = build_cmc_lookup_lists(
         binance_data, upbit_krw_set, MAPPING_DATA
     )
@@ -240,7 +240,7 @@ def fetch_cmc_market_data(binance_data, upbit_krw_set, MAPPING_DATA, api_key=Non
     return market_data_map, asset_to_lookup_key, is_invalid_key
 
 
-# ThreadPool 돌려서 CMC 데이터 긁어오고 market_data_map 만드는 로직.
+# ThreadPool 돌려서 CMC 데이터 긁어오고 market_data_map 만드는 로직
 def execute_cmc_requests(id_lookup, sym_lookup, api_key=None):
     url = "https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest"
     headers = {
@@ -297,7 +297,7 @@ def execute_cmc_requests(id_lookup, sym_lookup, api_key=None):
                     or q.get("fully_diluted_market_cap")
                 )
 
-                # 🚀 [핵심] builder가 찾기 쉽게 공통 데이터 맵을 만듭니다.
+                # builder ~ 공통 데이터 맵 만들기
                 asset_info = {
                     "name": name,
                     "market_cap": mcap,
@@ -311,11 +311,11 @@ def execute_cmc_requests(id_lookup, sym_lookup, api_key=None):
                     ),
                 }
 
-                # ✅ [최후 통첩] 숫자 ID와 티커(Symbol) 둘 다 장부에 기록하세요!
+                # [Final] 숫자 ID와 티커(Symbol) 둘 다 장부에 기록하기
                 market_data_map[ucid_str] = asset_info  # ID로 찾을 때 대비
                 if info.get("symbol"):
                     sym_upper = info["symbol"].upper()
-                    # 주식/코인 구분 등록 (첫 번째 등록되는 최고 순위 자산만 선점하도록 방어)
+                    # 주식/코인 구분 등록 (첫 번째 등록되는 최고 순위 자산만 선점하도록 처리)
                     if "derivatives" in name.lower() or "stock" in name.lower():
                         if f"{sym_upper}_STOCK" not in market_data_map:
                             market_data_map[f"{sym_upper}_STOCK"] = asset_info

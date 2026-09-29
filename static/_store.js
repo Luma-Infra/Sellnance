@@ -20,9 +20,9 @@ try {
   ) {
     initialTF = savedTF;
   }
-} catch (e) { }
+} catch (e) {}
 
-//[신규] 마지막 정렬 기준 로컬/세션 스토리지 복원
+// [신규] 마지막 정렬 기준 로컬/세션 스토리지 복원
 let initialSortCol = "VolumeBinance";
 let initialSortState = "desc";
 try {
@@ -40,9 +40,9 @@ try {
     (typeof sessionStorage !== "undefined" &&
       sessionStorage.getItem("sellnance_last_sort_state"));
   if (savedSortState) initialSortState = savedSortState;
-} catch (e) { }
+} catch (e) {}
 
-//[신규] control-panel-parent 세션 스토리지 복원
+// [신규] control-panel-parent 세션 스토리지 복원
 let sessionControlPanel = null;
 try {
   const savedCP =
@@ -61,7 +61,7 @@ try {
     }
     sessionControlPanel.currencyMode = "RECOMMENDED";
   }
-} catch (e) { }
+} catch (e) {}
 
 export const store = {
   currentSortCol: initialSortCol,
@@ -76,7 +76,7 @@ export const store = {
   visibleSymbols: new Set(),
   intersectingSymbols: new Set(),
   btcRateCache: {}, // 합성 환율 전용 메모리 캐시 엔진 추가
-  tickerRowMap: new Map(), // [단일 진실 공급원] 전역 테이블 행 O(1) 광속 탐색 맵
+  tickerRowMap: new Map(), // [단일 진실 공급원] 전역 테이블 행 O(1) 탐색 맵
   lastUpdatedRaw: null,
   nextUpdateRaw: null,
 
@@ -98,7 +98,7 @@ export const store = {
   tempVolMax: sessionControlPanel?.customVolMax ?? 100000000000,
   tempVolSource: sessionControlPanel?.customVolSource ?? "BINANCE",
   useFlip: true, // 플립 애니메이션 사용 여부
-  chartZoomSpeed: 1.15, // 캔버스 휠 스크롤 줌 가속 배속 (1.0: 기본 트뷰 속도, 2.0~2.5: 초고속 쾌적 줌, 3.5: 초광속)
+  chartZoomSpeed: 1.15, // 캔버스 휠 스크롤 줌 가속 배속 (1.0: 기본 트뷰 속도, 2.0~2.5: 빠름, 3.5: 매우 빠름)
   priceScaleZoomSpeed: 0.035, // 가격축 Y스케일 휠 감도 (기존 12~14% 과민 줌 -> 1휠 틱당 약 3.5% 트뷰 디폴트 감도: Math.min(abs(deltaY) / 100, 1.2) * 0.035)
   hideSmallCap: sessionControlPanel?.hideSmallCap ?? false, // 시총 1M 미만 숨기기 여부
   currentTab: sessionControlPanel?.currentTab || "ALL", // 카테고리 탭 (ALL, FAV, FAV2)
@@ -116,7 +116,7 @@ export const store = {
   viewMode: "DETAILED",
   tableViewMode: "basic",
   cmcStatus: "SERVER_CACHE", //'OK' | 'INVALID_KEY' | 'SERVER_CACHE'
-  listingDates: {}, //📅 거래소별 상장일 { BTC: { binance_listing: "2019-09-08", upbit_listing: "..." } }
+  listingDates: {}, // 거래소별 상장일 { BTC: { binance_listing: "2019-09-08", upbit_listing: "..." } }
   settings: {
     CMC_API_KEY: "",
   },
@@ -142,7 +142,7 @@ export const store = {
     bottom: 0.025, // 하단 여백 (캔들 오토스케일 프로바이더에서 안전 여백 동적 제어)
     bottomBufferRatio: 0.05, // 저점 캔들과 바닥 사이 안전 여백 비율
     bottomMaxGapRatio: 0.5, // 저점 가격 대비 최대 여백 허용 비율
-    bottomMinFloorRatio: 0.05, // 최저가 대비 절대 바닥 하한
+    bottomMinFloorRatio: 0.05, // 최저가 대비 바닥 하한선
   },
 
   // 하단 볼륨 차트 상/하단 스케일 여백 설정 (우측 거래량 및 좌측 김프)
@@ -183,7 +183,7 @@ export const store = {
       if (!isNaN(saved) && saved >= 0.2 && saved <= 0.9) {
         return { s1: saved, s2: 0.85 };
       }
-    } catch (e) { }
+    } catch (e) {}
     return { s1: 0.75, s2: 0.85 };
   })(),
   exchFilterStates: sessionControlPanel?.exchFilterStates ?? {
@@ -231,7 +231,7 @@ export const store = {
   showCountdown: true, // 차트 카운트다운 표시 여부
   currentRenderLimit: 1000, // 최대 렌더링 캔들 제한 개수
 
-  // [성능 통계 카운터] 차단 가드에 의해 연산/갱신이 바이패스(빠꾸)처리된 실시간 카운트 집계기
+  // [성능 통계 카운터] 차단 로직에 의해 연산/갱신이 바이패스 처리된 실시간 카운트 집계기
   bypassCounters: {
     rightDom: 0,
     chartDom: 0,
@@ -246,8 +246,8 @@ export const store = {
     kimchi: 0,
     radarBatch: 0,
     dynamicHtml: 0,
-    throttleBypass: 0, // [신규] 100ms 진입 쓰로틀링 걸려 빠꾸먹은 건수
-    throttlePass: 0, // [신규] 100ms 가드 통과해서 실제 처리된 건수
+    throttleBypass: 0, // [신규] 진입 쓰로틀링에 걸려 패스된 건수
+    throttlePass: 0, // [신규] 실제 처리된 건수
   },
 
   curDir: "bull",
@@ -414,11 +414,11 @@ export const CONFIG = {
     CELL_RENDER_THROTTLE_NORMAL_MS: 1000, // 평상시 개별 셀 글자 갱신 제한
     CELL_RENDER_THROTTLE_TURBO_MS: 500, // 경주마 시간대 개별 셀 글자 갱신 제한
 
-    // 3. 소켓 인입 안전 밸브 (고빈도 aggTrade 틱 폭주 및 브라우저 프리징 방어)
+    // 3. 소켓 쓰로틀링 (고빈도 aggTrade 틱 및 브라우저 프리징 방지)
     SOCKET_MICRO_THROTTLE_MS: 30, // 동일 코인 초고빈도 틱 압축 쓰로틀
   },
 
-  //⚙️ [차트 전용 실시간 성능/쓰로틀 제어 콘솔 - 수동 조절 가능]
+  // [차트 전용 실시간 성능/쓰로틀 제어 콘솔 - 수동 조절 가능]
   CHART_PERF: {
     REALTIME_THROTTLE_MS: 33, // 캔들/볼륨 실시간 차트 렌더링 쓰로틀
     KIMCHI_THROTTLE_MS: 100, // 실시간 김프 보조지표 선 렌더링 쓰로틀

@@ -1,5 +1,5 @@
 const EngineUI = {
-  // 🚀 1. 로딩 오버레이 HTML 구조 통째로 주입
+  // 1. 로딩 오버레이 HTML 구조 반영
   init() {
     const loaderWrap = document.getElementById("app-loader");
     loaderWrap.innerHTML = `
@@ -22,7 +22,7 @@ const EngineUI = {
     `;
   },
 
-  // 🚀 2. 데이터 들어올 때마다 화면 갱신
+  // 2. 데이터 들어올 때마다 화면 갱신
   update(data) {
     const bar = document.getElementById("progress-bar");
     const text = document.getElementById("percent-text");
@@ -51,7 +51,7 @@ const EngineUI = {
     if (data.percent === 100) this.finish();
   },
 
-  // 🚀 3. 로딩 완료 시 처리
+  // 3. 로딩 완료 시 처리
   finish() {
     setTimeout(() => {
       const overlay = document.getElementById("loading-overlay");
@@ -68,9 +68,9 @@ const EngineUI = {
   },
 };
 
-// 🚀 SSE 연결부 수정
+// SSE 연결부 수정
 const eventSource = new EventSource("/api/progress");
-EngineUI.init(); // 시작하자마자 UI 주입
+EngineUI.init();
 
 eventSource.onmessage = (event) => {
   const data = JSON.parse(event.data);
