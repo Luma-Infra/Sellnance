@@ -2,7 +2,7 @@
 import { store } from "./_store.js";
 
 let bybitSpotRadarWs = null;
-const _bybitSpotThrottleMap = new Map(); // 500ms 쓰로틀: 체결 건별 DOM 폭주 방지
+const _bybitSpotThrottleMap = new Map(); // 체결 건별 DOM 부하 방지
 
 export function startBybitSpotFeed() {
   if (bybitSpotRadarWs && bybitSpotRadarWs.readyState !== WebSocket.CLOSED) {
@@ -14,8 +14,15 @@ export function startBybitSpotFeed() {
   bybitSpotRadarWs.onopen = () => {
     // 가시적인 Bybit 현물 구독 대상 선별
     const spotSymbols = store.currentTableData
-      .filter((row) => (row.Listed_Exchanges?.includes("BYBIT") || row.Bybit) && row.Spot_Only === "O")
-      .map((row) => `publicTrade.${(row.Bybit_Symbol || row.Symbol || "").toUpperCase()}USDT`);
+      .filter(
+        (row) =>
+          (row.Listed_Exchanges?.includes("BYBIT") || row.Bybit) &&
+          row.Spot_Only === "O",
+      )
+      .map(
+        (row) =>
+          `publicTrade.${(row.Bybit_Symbol || row.Symbol || "").toUpperCase()}USDT`,
+      );
 
     if (spotSymbols.length === 0) return;
 
@@ -24,7 +31,7 @@ export function startBybitSpotFeed() {
         JSON.stringify({
           op: "subscribe",
           args: spotSymbols,
-        })
+        }),
       );
     } catch (e) {
       console.error("Bybit Spot Radar subscribe error:", e);
@@ -44,13 +51,14 @@ export function startBybitSpotFeed() {
       if (!store.tickerBuffer) store.tickerBuffer = {};
       store.tickerBuffer[ticker] = { c: newPrice };
 
-      // 🚀 [HTS Bybit Spot 전용 격리 적재] 오직 Bybit 현물 가격 변수만 정밀 대입 (O(1) 해시 색인 탐색)
-      const row = store.tickerRowMap.get(ticker) || store.tickerRowMap.get(pureSym);
+      // [Bybit Spot 전용 격리 적재] 오직 Bybit 현물 가격 변수만 정밀 대입 (O(1) 해시 색인 탐색)
+      const row =
+        store.tickerRowMap.get(ticker) || store.tickerRowMap.get(pureSym);
       if (row) {
         row.Bybit_Price_Spot = newPrice;
       }
 
-      // 실시간 렌더 큐 등록 (500ms 쓰로틀 적용 - publicTrade는 체결 건별 이벤트라 무제한 유입됨)
+      // 실시간 렌더 큐 등록 (쓰로틀 적용 by publicTrade는 체결 건별 이벤트 ~ 무제한 유입)
       if (
         store.visibleSymbols &&
         (store.visibleSymbols.has(pureSym) || store.visibleSymbols.has(ticker))
@@ -61,7 +69,15 @@ export function startBybitSpotFeed() {
         _bybitSpotThrottleMap.set(ticker, now);
 
         if (typeof window.renderRealtimeRow === "function") {
-          window.renderRealtimeRow(ticker, { s: ticker, c: newPrice, e: "trade" }, false);
+          window.renderRealtimeRow(
+            ticker,
+            { s: ticker, c: newPrice, e: "trade", isBybitRealtime: true },
+            {
+              exchange: "bybit",
+              market: "spot",
+              quote: "USDT",
+            },
+          );
         }
       }
     });

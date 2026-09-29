@@ -1,10 +1,10 @@
 // main_events.js
-// ⌨️ 키보드 단축키, 검색창 탐색, 슬라이더/버튼 UI 이벤트 및 포커스 관리 모듈
+//️ 키보드 단축키, 검색창 탐색, 슬라이더/버튼 UI 이벤트 및 포커스 관리 모듈
 
 import { store } from "./_store.js";
 import { selectSymbol } from "./ui_control.js";
 
-// 💡 슬라이더 로직 (가독성을 위해 분리)
+// 슬라이더 로직 (가독성을 위해 분리)
 export function setupSliderEvents() {
   ["body", "top", "bottom"].forEach((id) => {
     const inputEl = document.getElementById("input-" + id);
@@ -25,7 +25,7 @@ export function setupSliderEvents() {
   });
 }
 
-// 💡 버튼 호버 로직
+// 버튼 호버 로직
 export function setupButtonEvents() {
   const genBtn = document.getElementById("btn-generate");
   if (genBtn) {
@@ -39,7 +39,7 @@ export function setupButtonEvents() {
     };
   }
 
-  // 🚀 flip-toggle (경주마 애니메이션) UI 바인딩
+  // flip-toggle (경주마 애니메이션) UI 바인딩
   const flipToggle = document.getElementById("flip-toggle");
   if (flipToggle) {
     store.useFlip = flipToggle.checked;
@@ -49,7 +49,7 @@ export function setupButtonEvents() {
   }
 }
 
-// 💡 검색창 내 방향키 위/아래 이동 및 엔터 선택 로직 (눈에 보이는 절대 인덱스 기준 완전 동기화)
+// 검색창 내 방향키 위/아래 이동 및 엔터 선택 로직 (눈에 보이는 절대 인덱스 기준으로 동기화)
 export function setupSearchNavigation() {
   const symbolInput = document.getElementById("symbol-input");
   if (!symbolInput) return;
@@ -114,7 +114,7 @@ export function setupSearchNavigation() {
   }
 }
 
-// 🚀 전역 키보드 및 클릭 이벤트 등록
+// 전역 키보드 및 클릭 이벤트 등록
 export function initGlobalEventListeners() {
   // 검색창 바깥 클릭 시 닫기
   document.addEventListener("click", (e) => {
@@ -134,7 +134,16 @@ export function initGlobalEventListeners() {
   // 정렬 순서 퀵 서칭 탐색 및 타임프레임 변경 엔진 (방향키 이벤트)
   let lastArrowKeyTime = 0;
   document.addEventListener("keydown", (e) => {
-    if (document.activeElement.tagName === "INPUT") return;
+    const activeEl = document.activeElement;
+    const activeTag = activeEl ? activeEl.tagName : "";
+    if (
+      activeTag === "INPUT" ||
+      activeTag === "TEXTAREA" ||
+      activeTag === "SELECT" ||
+      (activeEl && activeEl.isContentEditable)
+    ) {
+      return;
+    }
 
     const up = e.key === "ArrowUp";
     const down = e.key === "ArrowDown";
@@ -143,7 +152,35 @@ export function initGlobalEventListeners() {
 
     if (!up && !down && !left && !right) return;
 
-    // 🚀 [초고속 연타 & 꾹 누름 방어] 쓰로틀링 적용 (첫 타 즉시 반응 + 리미트)
+    // 피드백 모달, 설정 모달, 알림/확인 다이얼로그 등이 열려있으면 단축키 무시
+    const feedbackModal = document.getElementById("feedback-modal");
+    const isFeedbackOpen =
+      feedbackModal &&
+      !feedbackModal.classList.contains("opacity-0") &&
+      !feedbackModal.classList.contains("pointer-events-none");
+
+    const settingsModal = document.getElementById("settings-modal");
+    const isSettingsOpen =
+      settingsModal && settingsModal.style.display !== "none";
+
+    const isDialogOverlayOpen = !!document.querySelector(
+      ".sellnance-modal-overlay:not(.sellnance-modal-hide)",
+    );
+
+    if (
+      isFeedbackOpen ||
+      isSettingsOpen ||
+      isDialogOverlayOpen ||
+      (e.target &&
+        e.target.closest &&
+        e.target.closest(
+          "#feedback-modal, #settings-modal, .sellnance-modal-overlay, [role='dialog']",
+        ))
+    ) {
+      return;
+    }
+
+    // [UX ~ 초고속 연타, 꾹 누르는 경우 대비] 쓰로틀링 적용 (첫 타 즉시 반응 + 리미트)
     const now = Date.now();
     if (now - lastArrowKeyTime < 150) {
       e.preventDefault();
@@ -158,19 +195,19 @@ export function initGlobalEventListeners() {
         store.visibleTfs && store.visibleTfs.length > 0
           ? store.visibleTfs
           : [
-            "1m",
-            "3m",
-            "5m",
-            "15m",
-            "30m",
-            "1h",
-            "4h",
-            "12h",
-            "1d",
-            "3d",
-            "1w",
-            "1M",
-          ];
+              "1m",
+              "3m",
+              "5m",
+              "15m",
+              "30m",
+              "1h",
+              "4h",
+              "12h",
+              "1d",
+              "3d",
+              "1w",
+              "1M",
+            ];
       let idx = tfArray.indexOf(store.currentTF);
       if (left && idx > 0 && typeof window.setTF === "function")
         window.setTF(tfArray[idx - 1]);
@@ -240,7 +277,7 @@ export function initGlobalEventListeners() {
     }
   });
 
-  // [다중 탭 0ms 실시간 동기화] 즐겨찾기(FAV/FAV2) 변경 시 다른 모든 탭 즉시 갱신
+  // [다중 탭 실시간 동기화] 즐겨찾기(FAV/FAV2) 변경 시 다른 모든 탭 즉시 갱신
   window.addEventListener("storage", (e) => {
     if (
       e.key === "sellnance_favs" ||
@@ -254,7 +291,9 @@ export function initGlobalEventListeners() {
         window.updateFavoritesCount();
       }
       const curSym =
-        store.currentSelectedSymbol || store.selectedSymbol || store.selectedTicker;
+        store.currentSelectedSymbol ||
+        store.selectedSymbol ||
+        store.selectedTicker;
       if (curSym && typeof window.updateHeaderStar === "function") {
         window.updateHeaderStar(curSym);
       }

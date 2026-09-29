@@ -11,7 +11,7 @@ import json
 import time
 import os
 
-# 🚀 9시 시가 캐시 (메모리 & 파일)
+# 9시 시가 캐시 (메모리 & 파일)
 UTC0_CACHE_FILE = "static/utc0_prices.json"
 UTC0_OPEN_CACHE = {}
 
@@ -68,7 +68,7 @@ def get_korean_exchange_markets():
             if market.startswith("KRW-"):
                 upbit_krw_set.add(sym)
 
-            # 🚀 업비트 유의종목(CAUTION) 및 시장경보(warning: true) 감지
+            # 업비트 유의종목(CAUTION) 및 시장경보(warning: true) 감지
             is_warn = m.get("market_warning") == "CAUTION" or (
                 isinstance(m.get("market_event"), dict)
                 and m.get("market_event", {}).get("warning") is True
@@ -87,7 +87,7 @@ def get_korean_exchange_markets():
             if market.startswith("KRW-"):
                 bithumb_krw_set.add(sym)
 
-            # 🚀 빗썸 유의종목(CAUTION) 감지
+            # 빗썸 유의종목(CAUTION) 감지
             is_warn = m.get("market_warning") == "CAUTION" or (
                 isinstance(m.get("market_event"), dict)
                 and m.get("market_event", {}).get("warning") is True
@@ -306,7 +306,7 @@ def fetch_global_listings(force_reload: bool = False):
 
 
 # ==========================================
-# 🧱 모듈 1: 거래소 시세 수집기 (바낸 업비트 빗썸)
+# 모듈 1: 거래소 시세 수집기 (바낸 업비트 빗썸)
 # ==========================================
 
 
@@ -387,9 +387,10 @@ def fetch_exchange_market_data(mapping):
     )
 
 
-# 전역 세션 객체 생성 (커넥션 풀링을 통한 속도 극대화)
+# 전역 세션 객체 생성 (커넥션 풀링을 통한 속도 최적화)
 api_session = requests.Session()
-# 🚀 [FIX] 커넥션 풀 사이즈 확장 (기본 10 -> 100)
+
+# [FIX] 커넥션 풀 사이즈 확장 (기본 10 -> 100)
 adapter = HTTPAdapter(pool_connections=100, pool_maxsize=100)
 api_session.mount("https://", adapter)
 api_session.mount("http://", adapter)
@@ -397,24 +398,43 @@ api_session.mount("http://", adapter)
 
 def capture_utc0_prices_bulk():
     """
-    🚀 [최적화 핵심] 9시 정각에 전체 티커를 벌크로 긁어서 시가를 고정합니다.
-    (기존 ticker/24hr lastPrice를 사용하던 치명적 오차 버그를 제거하고 tradingDay 및 1d klines로 정확하게 수집하도록 위임합니다)
+    [최적화] 9시 정각에 바이낸스 tradingDay 전체 API를 즉시 타격하여
+    현물 전 종목(스팟 온리 포함)의 공식 09:00(UTC 00:00) 시가를 선제적으로 확정 캐싱
     """
     global UTC0_OPEN_CACHE
-    print("🎯 [SCEDULER] KST 09:00 시가 벌크 초기화 개시...")
+    print("🎯 [SCHEDULER] KST 09:00 시가 벌크 초기화 개시...")
 
     try:
         today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-        # 🚀 이전 날짜들만 정리하고 오늘 날짜는 빈 딕셔너리로 안전하게 초기화
+        # 이전 날짜들만 정리하고 오늘 날짜 딕셔너리 안전 확보
         for old_k in list(UTC0_OPEN_CACHE.keys()):
             if old_k != today_str:
                 del UTC0_OPEN_CACHE[old_k]
         today_cache = UTC0_OPEN_CACHE.setdefault(today_str, {})
         today_cache.clear()
 
+        # 9시 정각: 바이낸스 tradingDay 전체를 1회 벌크 호출하여 모든 현물 공식 09시 시가 조회
+        try:
+            res_all_td = api_session.get(
+                "https://api.binance.com/api/v3/ticker/tradingDay",
+                timeout=7,
+            ).json()
+            if isinstance(res_all_td, list):
+                docked_spot = 0
+                for item in res_all_td:
+                    symbol_str = item.get("symbol", "")
+                    if symbol_str.endswith("USDT"):
+                        sym = symbol_str[:-4]
+                        if is_valid_ticker(sym) and item.get("openPrice"):
+                            today_cache[sym] = float(item["openPrice"])
+                            docked_spot += 1
+                print(f"⚡ [9AM 선제 장전] 바이낸스 현물 {docked_spot}개 종목 09시 공식 시가 즉시 캐싱 완료!")
+        except Exception as te:
+            print(f"⚠️ [9AM tradingDay 벌크 경고] 백업 지연 수집 전환: {te}")
+
         save_utc0_cache()
         print(
-            f"✅ [SUCCESS] {today_str} 시가 캐시 초기화 완료 (메인 루프에서 무결점 1d 시가로 자동 수집됩니다)"
+            f"✅ [SUCCESS] {today_str} 시가 캐시 초기화 완료 (현선 독립 공식 시가 확정)"
         )
     except Exception as e:
         print(f"🚨 [ERROR] 시가 벌크 초기화 실패: {e}")
@@ -424,9 +444,9 @@ def capture_utc0_prices_bulk():
 def fetch_missing_utc0_opens_parallel(tasks):
     """
     [현선 시가 독립 ~ 고속 보정기]
-    - 현물 시가와 선물 시가는 시장 구조와 베이시스가 다르므로 100% 독립적으로 각각 수집/보존합니다.
-    1. 현물: tradingDay 벌크 API(100개씩 청크)로 바이낸스 현물 09시 시가 0.3초 컷 확보
-    2. 선물: fapi 1d klines (요청당 weight 단 1, 한도 2400)를 max_workers=25 병렬로 1초대 초고속 수집
+    - 현물 시가와 선물 시가는 시장 구조와 베이시스가 다르므로 독립적으로 각각 수집/보존
+    1. 현물: tradingDay 벌크 API(100개씩 청크)로 바이낸스 현물 09시 시가 빠르게 확보
+    2. 선물: fapi 1d klines (요청당 weight 단 1, 한도 2400)를 max_workers=25 병렬로 초고속 수집
     3. 바이낸스 미상장 코인: 바이비트(spot / linear)로 독립 백업
     """
     global UTC0_OPEN_CACHE
@@ -465,7 +485,7 @@ def fetch_missing_utc0_opens_parallel(tasks):
         except Exception as e:
             print(f"⚠️ tradingDay 벌크 실패, 백업 로직 전환: {e}")
 
-    # 2. [현선 무조건 독립] 남은 누락분 (선물 전량 + tradingDay 누락 현물) 독립 병렬 수집
+    # 2. [현선 반드시 독립] 남은 누락분 (선물 전량 + tradingDay 누락 현물) 독립 병렬 수집
     remaining_tasks = []
     for sym, is_futures in tasks:
         cache_key = f"{sym}_FUTURES" if is_futures else sym
@@ -529,7 +549,7 @@ def fetch_missing_utc0_opens_parallel(tasks):
 
             return sym, is_fut, None
 
-        # 선물 weight=1, IP한도 2400이므로 max_workers=25로 안전하게 1초대 초고속 수집
+        # 선물 weight=1, IP한도 2400이므로 max_workers=25로 안전하게 수집
         with ThreadPoolExecutor(max_workers=25) as executor:
             futures = [executor.submit(_fetch, t) for t in remaining_tasks]
             for f in futures:
@@ -561,7 +581,7 @@ def fetch_binance_open(task):
     """(보조) 선물/현물 구분해서 9시 시가 수집 (task: (symbol, is_futures))"""
     symbol, is_futures = task
 
-    # 🚀 설계대로 분기점 생성
+    # 설계대로 분기점 생성
     if is_futures:
         # 선물 전용 주소
         url = f"https://fapi.binance.com/fapi/v1/klines?symbol={symbol}USDT&interval=1d&limit=1"
@@ -574,7 +594,7 @@ def fetch_binance_open(task):
         if res and isinstance(res, list) and len(res) > 0:
             return symbol, float(res[0][1])
     except Exception as e:
-        # 🚨 실패 시 로그 (어느 쪽에서 터졌는지 알 수 있게 url 슬쩍 노출)
+        # 실패 시 로그 (어느 쪽에서 터졌는지 알 수 있게 url 슬쩍 노출)
         print(f"🚨 [시가 에러] {symbol} ({'선물' if is_futures else '현물'}): {e}")
 
     return symbol, None
@@ -594,8 +614,8 @@ def fetch_binance_futures_spot(bybit_data=None):
             "https://fapi.binance.com/fapi/v1/ticker/24hr",
             "https://api.binance.com/api/v3/exchangeInfo",
             "https://api.binance.com/api/v3/ticker/24hr",
-            "https://fapi.binance.com/fapi/v1/premiumIndex",  # 🚀 펀딩비 추가
-            "https://fapi.binance.com/fapi/v1/fundingInfo",  # 🚀 펀딩 주기(fundingIntervalHours) 추가
+            "https://fapi.binance.com/fapi/v1/premiumIndex",  # 펀딩비 추가
+            "https://fapi.binance.com/fapi/v1/fundingInfo",  # 펀딩 주기(fundingIntervalHours) 추가
         ]
 
         def fetch_url_safe(base_url):
@@ -616,7 +636,7 @@ def fetch_binance_futures_spot(bybit_data=None):
                         return r.json()
                     elif r.status_code in [429, 451, 403]:
                         print(
-                            f"⚠️ [API {r.status_code} 제한] {url} 접속 제한. 백업 우회를 시도합니다..."
+                            f"⚠️ [API {r.status_code} 제한] {url} 접속 제한, 백업 우회 시도..."
                         )
                         if cf_proxy:
                             proxy_url = (
@@ -641,7 +661,7 @@ def fetch_binance_futures_spot(bybit_data=None):
             return None
 
         with ThreadPoolExecutor(max_workers=6) as executor:
-            # 🚀 [수정] map 대신 직접 submit 하여 에러 발생 시에도 개별 제어 가능하게 변경
+            # [수정] map 대신 직접 submit 하여 에러 발생 시에도 개별 제어 가능하게 변경
             futures = [executor.submit(fetch_url_safe, url) for url in urls]
             results = [f.result() for f in futures]
 
@@ -733,7 +753,7 @@ def fetch_binance_futures_spot(bybit_data=None):
                         break
                 b_precisions[s["symbol"]] = utils.get_precision(tick_size)
 
-        # 🚀 underlyingType & contractType 정보 수집
+        # underlyingType & contractType 정보 수집
         binance_types = {}
         for s in info_f.get("symbols", []):
             if s.get("quoteAsset") == "USDT":
@@ -742,7 +762,7 @@ def fetch_binance_futures_spot(bybit_data=None):
                     "contract_type": s.get("contractType", ""),
                 }
 
-        # 🚀 펀딩비 및 펀딩 주기 맵
+        # 펀딩비 및 펀딩 주기 맵
         funding_map = {}
         funding_interval_map = {}
         if isinstance(premium_f, list):
@@ -790,9 +810,9 @@ def fetch_binance_futures_spot(bybit_data=None):
                 if isinstance(i, dict) and i.get("symbol") in active_s
             }
 
-        # 🚀 [추가] 하드코딩 없는 범용 주식형 토큰 동적 매핑 엔진 (SPCXBUSDT -> SPCXUSDT 등)
-        # 선물에서 underlyingType이 STOCK인 심볼들(예: SPCXUSDT)에 대해,
-        # 현물(spot)에서 대응하는 티커(예: SPCXBUSDT)가 존재하면 현물 데이터의 티커명을 'B'를 제거한 형태로 치환하여 관리합니다.
+        # [추가] 범용 주식형 토큰 동적 매핑 엔진 (SPCXBUSDT -> SPCXUSDT 등)
+        # 선물에서 underlyingType이 STOCK인 심볼들(예: SPCXUSDT)에 대해서
+        # 현물(spot)에서 대응하는 티커(예: SPCXBUSDT)가 존재하면 현물 데이터의 티커명을 'B'를 제거한 형태로 치환하여 관리
         stock_futures_symbols = {
             s["symbol"]
             for s in info_f.get("symbols", [])
@@ -849,7 +869,7 @@ def fetch_binance_futures_spot(bybit_data=None):
 
         if open_price_tasks:
             print(
-                f"⏳ [시가 보정] 캐시 누락 {len(open_price_tasks)}건 발생. 일봉 klines 병렬 캡처로 1방에 보정합니다..."
+                f"⏳ [시가 보정] 캐시 누락 {len(open_price_tasks)}건 발생, 일봉 klines 병렬 캡처로 보정 중..."
             )
             fetch_missing_utc0_opens_parallel(open_price_tasks)
             day_cache = UTC0_OPEN_CACHE.get(today_str, {})
@@ -885,7 +905,7 @@ def fetch_binance_futures_spot(bybit_data=None):
                     if ticker in active_f
                     else utc0_open_dict.get(sym)
                 ),
-                "funding_rate": funding_map.get(ticker, 0.0),  # 🚀 펀딩비 꽂아넣기
+                "funding_rate": funding_map.get(ticker, 0.0),  # 펀딩비 꽂아넣기
                 "binance_futures_funding_interval": funding_interval_map.get(ticker, 8),
                 "funding_interval": funding_interval_map.get(ticker, 8),
                 "underlying_type": t_details.get("underlying_type", ""),
@@ -926,9 +946,12 @@ def fetch_upbit_prices(upbit_assets):
                         "raw_item": item,
                         "price": item["trade_price"],
                         "utc0_open": item["opening_price"],
+                        "change_today": item.get("signed_change_rate", 0.0) * 100,
                         "change_24h": item.get("signed_change_rate", 0.0) * 100,
                         "volume_24h": item.get("acc_trade_price_24h", 0.0),
+                        "volume_today": item.get("acc_trade_price", 0.0),
                         "acc_trade_price_24h": item.get("acc_trade_price_24h", 0.0),
+                        "acc_trade_price": item.get("acc_trade_price", 0.0),
                     }
                 success = True
                 break
@@ -943,7 +966,7 @@ def fetch_upbit_prices(upbit_assets):
             print(
                 f"❌ [업비트 수집 최종 실패 (Chunk)] {markets_str[:40]}... 청크 데이터 유실"
             )
-        time.sleep(0.08)  # 업비트 1초 쿼터 보호용 청크 간 80ms 간격 확보
+        time.sleep(0.08)  # 업비트 chunk 간격 확보
 
     return upbit_data
 
@@ -1015,7 +1038,7 @@ def fetch_bybit_prices():
                 bybit_data[base]["funding_rate"] = float(item.get("fundingRate", 0))
                 bybit_data[base][
                     "bybit_futures_funding_interval"
-                ] = 8  # 🚀 [예약] Bybit 선물 주기 확장 대비 (기본 8h)
+                ] = 8  # [예약] Bybit 선물 주기 확장 대비 (기본 8h)
                 chg_24 = float(item.get("price24hPcnt", 0.0)) * 100
                 bybit_data[base]["futures_change_24h"] = chg_24
                 if "change_24h" not in bybit_data[base] or not bybit_data[base].get(

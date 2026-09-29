@@ -1,14 +1,14 @@
 // chart_utils.js
 import { store, tfSec, CONFIG } from "./_store.js";
 
-// ⚙️ 시간 변환 통합 헬퍼
+//️ 시간 변환 통합 헬퍼
 export const getUnixSeconds = (t) => {
   if (typeof t === "object" && t !== null) {
-    // 🚀 [UTC 고정] t.year, t.month, t.day를 절대적인 UTC 0시로 변환
+    // [UTC 고정] t.year, t.month, t.day를 절대적인 UTC 0시로 변환
     return Date.UTC(t.year, t.month - 1, t.day) / 1000;
   }
   if (typeof t === "string") {
-    // 🚀 [UTC 고정] 문자열 뒤에 Z를 붙이거나 T00:00:00Z를 강제하여 UTC로 파싱
+    // [UTC 고정] 문자열 뒤에 Z를 붙이거나 T00:00:00Z를 강제하여 UTC로 파싱
     if (!t.includes("T") && !t.includes("Z")) {
       return Date.parse(t + "T00:00:00Z") / 1000;
     }
@@ -32,14 +32,14 @@ export const getNextBarTime = (lastCandleTime, tf) => {
     const diff = day === 0 ? 1 : 8 - day;
     return Math.floor(
       Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate() + diff) /
-      1000,
+        1000,
     );
   }
   if (tf === "1d") {
     const dt = new Date(lastCandleUnix * 1000);
     return Math.floor(
       Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate() + 1) /
-      1000,
+        1000,
     );
   }
   if (tf === "3d") {
@@ -80,7 +80,7 @@ export function mainCandleAutoscaleProvider(original) {
   // 바닥과 최저점 캔들 사이의 시각적 여백 확보 (store 설정 비율 기반 동적 계산)
   const margin =
     delta > 0 ? Math.min(delta * bufferRatio, min * maxGapRatio) : min * 0.05;
-  // 0원/음수로 내려가지 않도록 바닥 최솟값을 안전하게 클램핑 (최저가의 floorRatio 이상, 하드코딩 없는 수학적 스케일링)
+  // 0원/음수로 내려가지 않도록 바닥 최솟값을 안전하게 클램핑 (최저가의 floorRatio 이상으로 수학적 스케일링)
   const safeMin = Math.max(min * minFloorRatio, min - margin);
 
   return {
@@ -133,7 +133,7 @@ export function resetChartScale() {
     });
   }
 
-  // 🚀 [원자적 리셋] 메인 및 볼륨/김프 스케일 일괄 autoScale 복구
+  // [원자적 리셋] 메인 및 볼륨/김프 스케일 일괄 autoScale 복구
   store.chart
     .priceScale("right")
     .applyOptions({ minimumWidth: 0, autoScale: true });
@@ -152,7 +152,7 @@ export function resetChartScale() {
       .applyOptions({ minimumWidth: 0, autoScale: true });
   }
 
-  const margin = 10; // 🚀 [수동 오토핏 버튼] 우측 마진 고정값 10으로 강제 세팅
+  const margin = 10; // [수동 오토핏 버튼] 우측 마진 고정값으로 세팅
 
   try {
     const timeScale = store.chart.timeScale();
@@ -170,7 +170,7 @@ export function resetChartScale() {
   } catch (e) {
     try {
       store.chart.timeScale().scrollToRealtime();
-    } catch (err) { }
+    } catch (err) {}
   }
 
   if (store.chartVol) {
@@ -190,11 +190,11 @@ export function resetChartScale() {
     } catch (e) {
       try {
         store.chartVol.timeScale().scrollToRealtime();
-      } catch (err) { }
+      } catch (err) {}
     }
   }
 
-  // 🚀 [즉각 동기화] 타이머 없이 단일 프레임에서 가로폭 완벽 싱크
+  // [동기화] 타이머 없이 단일 프레임에서 가로폭 싱크
   if (typeof window.syncPriceScaleWidths === "function") {
     window.syncPriceScaleWidths(true);
   }
@@ -203,7 +203,7 @@ export function resetChartScale() {
   }
 }
 
-// 🟦 업비트 최신 공식 호가단위 동기화: 가격대별 자동 precision 반환 (로그 클램핑 수식)
+// 업비트 최신 공식 호가단위 동기화: 가격대별 자동 precision 반환 (로그 클램핑 수식)
 export function getUpbitKrwPrecision(price) {
   if (!price || price <= 0 || isNaN(price)) return 0;
   return price >= 100
@@ -213,7 +213,7 @@ export function getUpbitKrwPrecision(price) {
 if (typeof window !== "undefined")
   window.getUpbitKrwPrecision = getUpbitKrwPrecision;
 
-// 🟧 빗썸 최신 공식 호가단위 동기화: (100원 이상 0, 10~100원 2, 1~10원 3, 1원 미만 4)
+// 빗썸 최신 공식 호가단위 동기화: (100원 이상 0, 10~100원 2, 1~10원 3, 1원 미만 4)
 export function getBithumbKrwPrecision(price) {
   if (!price || price <= 0 || isNaN(price)) return 0;
   if (price >= 100) return 0;
@@ -224,7 +224,7 @@ export function getBithumbKrwPrecision(price) {
 if (typeof window !== "undefined")
   window.getBithumbKrwPrecision = getBithumbKrwPrecision;
 
-// 🎯 원화 거래소(업비트/빗썸) 통합 precision 라우터
+// 원화 거래소(업비트/빗썸) 통합 precision 라우터
 export function getKrwPrecision(price, exchange = "upbit") {
   const exch = (
     exchange ||
@@ -249,7 +249,7 @@ export function formatKrwPrice(price, exchange = "upbit") {
 }
 if (typeof window !== "undefined") window.formatKrwPrice = formatKrwPrice;
 
-// ✅ 포맷팅 by precision (원화 가격과 달러 가격 분리 규칙 적용)
+// 포맷팅 by precision (원화 가격과 달러 가격 분리 규칙 적용)
 export function formatSmartPrice(price, p, isKrw = false) {
   try {
     if (price === 0) {
@@ -265,8 +265,8 @@ export function formatSmartPrice(price, p, isKrw = false) {
     let numPrice = parseFloat(price);
     if (isNaN(numPrice) || !Number.isFinite(numPrice)) return "";
 
-    // 🚀 [부동소수점 오차(IEEE 754 epsilon) 0 보정]
-    // 0.2 - 0.2 연산 등으로 발생하는 2.7755e-17 같은 부동소수점 쓰레기값을 순수 0으로 정규화!
+    // [부동소수점 오차(IEEE 754 epsilon) 0 보정]
+    // 0.2 - 0.2 연산 등으로 발생하는 2.7755e-17 같은 부동소수점 값을 순수 0으로 정규화
     if (Math.abs(numPrice) < 1e-12) {
       numPrice = 0;
       const d =
@@ -277,13 +277,13 @@ export function formatSmartPrice(price, p, isKrw = false) {
       });
     }
 
-    // 원화(KRW) 가격 규칙: 업비트/빗썸 최신 공식 호가단위 100% 동기화
+    // 원화(KRW) 가격 규칙: 업비트/빗썸 최신 공식 호가단위 동기화
     if (isKrw) {
       const exch = (store?.currentChartMarket || "upbit").toLowerCase();
       return formatKrwPrice(numPrice, exch);
     }
 
-    // 2️⃣ 달러(USD) 가격 규칙: 소수점 이하 유효숫자 4자리 보장 (0.00000001080 등 극소수 코인 0/잘림 방어)
+    // 달러(USD) 가격 규칙: 소수점 이하 유효숫자 4자리 관리 (0.00000001080 같은 코인 0/잘림 방지)
     let decimals =
       p !== undefined && p !== null ? Math.max(0, parseInt(p, 10)) : 2;
     if (numPrice > 0 && numPrice < 0.01) {
@@ -302,7 +302,7 @@ export function formatSmartPrice(price, p, isKrw = false) {
         decimals = Math.max(decimals, Math.min(10, exp + 3));
       }
     } else if (numPrice > 0 && numPrice < 1 && decimals <= 2) {
-      // 🚀 [1달러 미만 코인 보정] 정밀도가 2 이하로 잘못 넘어온 경우 최소 4자리 유효숫자 보장 (0.11, 0.12 잘림 방지)
+      // [1달러 미만 코인 보정] 정밀도가 2 이하로 잘못 넘어온 경우 최소 4자리 유효숫자 관리 (0.11, 0.12 잘림 방지)
       const formattedStr = numPrice.toPrecision(4);
       const parts = formattedStr.split("e");
       if (parts.length === 1) {
@@ -344,12 +344,12 @@ export function formatCrosshairPrice(
   }
   // 좌측 스케일: showCrosshairPct 플래그가 켜진 경우에만 퍼센트 표시
   // (DrawingPriceAxisView.visible()이 제어하므로 여기서는 항상 비워둠)
-  return ""; // 좌측 스케일 등락률 크로스헤어 라벨 완전히 비활성화
+  return ""; // 좌측 스케일 등락률 크로스헤어 라벨 비활성화
 }
 if (typeof window !== "undefined")
   window.formatCrosshairPrice = formatCrosshairPrice;
 
-// 🚀 달러/원화 거래대금 포맷팅 (실시간 소켓용)
+// 달러/원화 거래대금 포맷팅 (실시간 소켓용)
 export function formatVolumeDollar(vol) {
   if (!vol || isNaN(vol)) return "0";
   if (vol >= 1_000_000_000) return (vol / 1_000_000_000).toFixed(2) + " B";
@@ -367,7 +367,7 @@ export function formatVolumeKRW(vol) {
 }
 
 function updateLegend(d, v, k) {
-  // 🚀 [디버그 옵션] 우측 패널 DOM 차단 또는 레전드 개별 차단 시 범인 추적용 즉시 리턴
+  // [디버그 옵션] 우측 패널 DOM 차단 또는 레전드 개별 차단 시 추적용 즉시 리턴
   if (store.blockRightDom || store.blockLegend) {
     const nowTime = Date.now();
     if (!window._lastLegendUpdateTime) window._lastLegendUpdateTime = 0;
@@ -410,7 +410,7 @@ function updateLegend(d, v, k) {
   if (placeholder) placeholder.classList.add("hidden");
   if (valuesContainer) valuesContainer.classList.remove("hidden");
 
-  // 🚀 [수정] 단일 진실 공급원(Single Source of Truth)인 store.getPrecision 사용! (O(1) 초광속 참조)
+  // 소수점은 store.getPrecision 사용
   let p = store.getPrecision(store.currentAsset);
   if (
     store.currencyMode === "KRW" &&
@@ -419,7 +419,7 @@ function updateLegend(d, v, k) {
     p = window.getKrwPrecision(d.close);
   }
 
-  // 🚀 0일 때를 위한 삼항 연산자 (보합색 추가)
+  // 0일 때를 위한 삼항 연산자
   const cls =
     d.close > d.open
       ? "text-theme-up"
@@ -428,23 +428,23 @@ function updateLegend(d, v, k) {
         : "text-theme-text opacity-70";
   const chg = d.close - d.open;
 
-  // 🚀 저가~고가 진폭(Range) 및 진폭 백분율 계산
+  // 저가~고가 진폭(Range) 및 진폭 백분율 계산
   const range = d.high - d.low;
   const rangePercent =
     d.open && d.open !== 0 ? ((range / d.open) * 100).toFixed(2) : "0.00";
 
-  // 🚀 분모 0 방지 및 chg가 0일 때 직접 처리
+  // 분모 0 방지 및 chg가 0일 때 직접 처리
   const chgPercent =
     d.open && d.open !== 0 ? ((chg / d.open) * 100).toFixed(2) : "0.00";
   const sign = chg >= 0 ? "+" : "";
 
-  // 🚀 formatSmartPrice에 0이 들어가도 안 죽게 안전하게 호출
+  // formatSmartPrice에 0이 들어가도 안전하게 호출
   const safeFormat = (val, precision) => {
     if (val === 0) return (0).toFixed(precision); // 0이면 그냥 0.00... 출력
     return formatSmartPrice(val, precision);
   };
 
-  // 🚀 값 및 클래스 업데이트 (innerText 대신 textContent 사용 + 변경 시에만 DOM 접근하여 Reflow 0 달성)
+  // 값 및 클래스 업데이트 (innerText 대신 textContent 사용 + 변경 시에만 DOM 접근)
   const openEl = document.getElementById("ohlc-open");
   const highEl = document.getElementById("ohlc-high");
   const lowEl = document.getElementById("ohlc-low");
@@ -484,7 +484,7 @@ function updateLegend(d, v, k) {
     if (chgEl.className !== chgCls) chgEl.className = chgCls;
   }
 
-  // 🚀 볼륨 전광판 포맷팅 및 색상 적용
+  // 볼륨 전광판 포맷팅 및 색상 적용
   const volContainer = document.getElementById("ohlc-vol-container");
   if (store.paneConfig.volume) {
     let volValue = "-";
@@ -523,10 +523,10 @@ function updateLegend(d, v, k) {
     if (volContainer) volContainer.classList.add("hidden");
   }
 
-  // 🚀 김프 전광판 포맷팅 및 다이내믹 색상 적용
+  // 김프 전광판 포맷팅 및 다이내믹 색상 적용
   const kimchiContainer = document.getElementById("ohlc-kimchi-container");
   if (store.paneConfig.kimchi && !store.isKimchiDisabled) {
-    // 🚀 [분리 락킹] 마우스가 과거의 역사적인 봉을 호버 중일 때만 해당 과거 시점(k)의 김프를 보여주고,
+    // [분리 락킹] 마우스가 과거의 역사적인 봉을 호버 중일 때만 해당 과거 시점(k)의 김프를 보여주고,
     // 마우스가 우측 여백(최신 시점)에 있거나 벗어난 실시간 상태일 때는 항상 최신 실시간 김프를 보여줍니다!
     const isLatest =
       store.mainData &&
@@ -537,10 +537,10 @@ function updateLegend(d, v, k) {
       store.isCrosshairActive && !isLatest
         ? k
         : store.realtimeKimchi ||
-        k ||
-        (store.kimchiData && store.kimchiData.length > 0
-          ? store.kimchiData[store.kimchiData.length - 1]
-          : null);
+          k ||
+          (store.kimchiData && store.kimchiData.length > 0
+            ? store.kimchiData[store.kimchiData.length - 1]
+            : null);
 
     let kimValue = "-";
     let kimColorStyle = "";
@@ -554,14 +554,14 @@ function updateLegend(d, v, k) {
     }
     if (kimchiContainer) kimchiContainer.classList.remove("hidden");
 
-    // 항상 안전하게 김프 범례를 갱신합니다.
+    // 항상 안전하게 김프 범례를 갱신
     const kimchiEl = document.getElementById("ohlc-kimchi");
     if (kimchiEl) {
       kimchiEl.innerText = kimValue;
       kimchiEl.style.color = kimColorStyle;
     }
 
-    // 🚀 범례 및 김프 업데이트 추적기 (callerId)
+    // 범례 및 김프 업데이트 추적기 (callerId)
     const ohlcCallerEl = document.getElementById("ohlc-caller-id");
     const kimchiCallerEl = document.getElementById("ohlc-kimchi-caller");
 
@@ -569,7 +569,7 @@ function updateLegend(d, v, k) {
     if (store.traceRowCaller) {
       const stack = new Error().stack || "";
       if (store.isCrosshairActive === true) {
-        callerId = "2 (Chart)"; // 🚀 마우스 크로스헤어 이동 시는 무조건 Chart
+        callerId = "2 (Chart)"; // 마우스 크로스헤어 이동 시는 Chart
       } else if (stack.includes("stream") || stack.includes("updateStatus")) {
         callerId = "1 (Stream)";
       } else if (
@@ -592,7 +592,7 @@ function updateLegend(d, v, k) {
     if (ohlcCallerEl) ohlcCallerEl.innerText = `[${callerId}]`;
     if (kimchiCallerEl) kimchiCallerEl.innerText = ` [${callerId}]`;
 
-    // 🚀 [디버그 동적 전파] 무조건 첫번째 행(index 0)에 있는 디버그 영역에도 함께 기록해줍니다.
+    // [디버그 동적 전파] 첫번째 행(index 0)에 있는 디버그 영역에도 함께 기록
     const firstRowDebug = document.querySelector(
       '#coin-list-body > div[data-index="0"] .first-row-debug-area',
     );
@@ -608,7 +608,7 @@ function updateLegend(d, v, k) {
 }
 
 function updateStatus(d, p) {
-  // 🚀 [디버그 옵션] 우측 패널 DOM 차단 또는 레전드 개별 차단 시 범인 추적용 즉시 리턴
+  // Dubug and return
   if (store.blockRightDom || store.blockLegend) {
     const nowTime = Date.now();
     if (!window._lastStatusUpdateTime) window._lastStatusUpdateTime = 0;
@@ -618,8 +618,8 @@ function updateStatus(d, p) {
     window._lastStatusUpdateTime = nowTime;
   }
 
-  // 🚀 핵심: d(실시간 데이터)가 들어오면 그걸 최우선으로 쓴다!
-  // d가 없으면(마우스 이벤트 등) 그때만 mainData에서 꺼내온다.
+  // d(실시간 데이터)가 들어오면 그걸 최우선으로 사용
+  // d가 없으면(마우스 이벤트 등) 그때만 mainData에서 꺼내기
   const last =
     d ||
     (store.mainData.length ? store.mainData[store.mainData.length - 1] : null);
@@ -656,10 +656,10 @@ function updateStatus(d, p) {
   if (row && typeof window.updateHeaderDisplay === "function") {
     const btnSim = document.getElementById("tab-btn-sim");
     const isSimMode = btnSim ? btnSim.classList.contains("active") : false;
-    // [침범 방어] 시뮬레이터 모드(isSimMode)이거나 실시간 틱(d)이 없을 때는
-    // 가상 시뮬레이션 캔들 가격이 상단 메인 전광판(#head-price-main)을 침범하지 못하도록 return (차단)
+    // 시뮬레이터 모드(isSimMode)이거나 실시간 틱(d)이 없을 때는
+    // 가상 시뮬레이션 캔들 가격이 상단 메인 전광판(#head-price-main)을 침범하지 못하도록 return
     if (isSimMode && !d) {
-      // 가상 시뮬 가격의 메인 전광판 침범 방어 (스킵)
+      // 가상 시뮬 가격의 메인 전광판 침범 방지
     } else if (d) {
       window.updateHeaderDisplay(row, d.close ?? last.close, precision);
     }
@@ -680,7 +680,7 @@ function updateStatus(d, p) {
       store.curDir === "bull" ? "var(--up)" : "var(--down)";
   }
 
-  // 🚀 대망의 레전드 업데이트 (십자선 활성화 중일 때는 덮어쓰기 방어!)
+  // ohlc legned 업데이트 (십자선 활성화 중일 때는 덮어쓰기 방지)
   if (!store.isCrosshairActive) {
     const lastIdx = store.mainData.length ? store.mainData.length - 1 : -1;
     const v =
@@ -702,20 +702,21 @@ function updateStatus(d, p) {
     updateLegend(last, v, k);
   }
 
-  // 🚀 실시간 시세 변동 시 우측 현재가 등락폭 레이블 갱신
+  // 실시간 시세 변동 시 우측 현재가 등락폭 레이블 갱신
   if (store._drawingPrimitive && !store.isCrosshairActive) {
     store._drawingPrimitive.updateAll();
   }
 }
 
 export function autoFit(isTabRestore = false) {
-  // 🚀 [비동기/동기 로딩] 사용자가 맞춰둔 커스텀 여백(savedRightMargin)을 우선 준수, 없으면 10
+  // [비동기/동기 로딩] 사용자가 맞춰둔 커스텀 여백(savedRightMargin)을 우선 준수하기
   const margin = store.savedRightMargin ?? 10;
   const defaultZoom =
     (typeof CONFIG !== "undefined" && CONFIG.CHART_CONFIG?.VISIBLE_COUNT) ??
     100;
   if (isTabRestore && store.isUserZoomed) {
-    // 🚀 [UX 개선] 탭 복귀/전환 시 기존 줌 상태(가로폭)는 유지하면서, 최신 봉(가장 우측) 위치로 화면을 강제 정렬하고 가격 스케일을 맞춥니다.
+    // [UX 개선] 탭 복귀/전환 시 기존 줌 상태(가로폭)는 유지하면서
+    // 최신 봉(가장 우측) 위치로 화면을 정렬하고 가격 스케일을 맞추기
     try {
       if (store.chart) {
         const timeScale = store.chart.timeScale();
@@ -756,12 +757,12 @@ export function autoFit(isTabRestore = false) {
           store.chartVol.priceScale("left").applyOptions({ autoScale: true });
         }
       }
-    } catch (e) { }
+    } catch (e) {}
     return;
   }
   if (store.chart && store.mainData.length) {
     const len = store.mainData.length;
-    // 🚀 [UX 개선] 캔들 개수(len)가 극단적으로 적은 신규 상장 코인(예: 일봉 5개) 전환 시에만 캔들 쪼그라듬 방지
+    // [UX 개선] 캔들 개수(len)가 매우 적은 신규 상장 코인(예: 일봉 5개) 전환 시에만 캔들 수축되는 현상 방지
     const rawZoomWidth = store.savedZoomWidth || defaultZoom;
     const maxFittingSpan =
       len < 50
@@ -778,7 +779,7 @@ export function autoFit(isTabRestore = false) {
       store.chart.priceScale("right").applyOptions({ autoScale: true });
     }
 
-    // 🚀 거래량 차트(vol-pane) 완벽 동기화 오토핏! (스케일 뻗거나 꼬이는 현상 원천 차단)
+    // 거래량 차트(vol-pane) 동기화 오토핏 (스케일 튀는 현상 방지)
     if (store.chartVol) {
       try {
         store.chartVol.timeScale().setVisibleLogicalRange(logicalRange);
@@ -788,7 +789,7 @@ export function autoFit(isTabRestore = false) {
         if (!store.isKimchiPriceScaleUserZoomed && store.kimchiSeries) {
           store.chartVol.priceScale("left").applyOptions({ autoScale: true });
         }
-      } catch (e) { }
+      } catch (e) {}
     }
   }
 }
@@ -804,7 +805,7 @@ function calculateTimeRemaining(tf, serverMs, lastCandleTime) {
   } else if (tfSec[tf] && tfSec[tf] <= 43200) {
     const ms = tfSec[tf] * 1000;
 
-    // 🚨 0.1초 오차 방지를 위해 1ms 더해서 올림 처리
+    // 오차 방지를 위해서 올림 처리
     nextClose = Math.ceil((serverMs + 1) / ms) * ms;
   }
   // 2. 날짜 단위 계산이 필요한 봉들 (하루 ~ 1년)
@@ -840,7 +841,7 @@ function calculateTimeRemaining(tf, serverMs, lastCandleTime) {
     }
   }
 
-  // 3. 남은 시간 계산 및 포맷팅 (0초 도달 시 59초로 튀지 않고 00:00 고정)
+  // 3. 남은 시간 계산 및 포맷팅 (0초 도달 시 59초로 순환하지 않고 00:00 대기)
   const diff = Math.max(0, nextClose - serverMs);
   if (diff <= 0) return "00:00";
 
@@ -870,7 +871,7 @@ if (typeof window !== "undefined") {
   window.calculateTimeRemaining = calculateTimeRemaining;
 }
 
-// 🚀 [추가] 백엔드 정규식 이식: 1000XEC, 1MBABYDOGE 등 단위 배수 추출기
+// [추가] 백엔드 정규식 이식: 1000XEC, 1MBABYDOGE 등 단위 배수 추출기
 export function getMultiplier(sym) {
   if (!sym) return 1;
   const match = sym.match(/^(10+|1[MB])(?=[A-Z])/i);
@@ -881,7 +882,7 @@ export function getMultiplier(sym) {
   return parseInt(p, 10);
 }
 
-// 🚀 [추가] 순수 코인명(Base Asset) 추출기 (1000XEC -> XEC)
+// [추가] 순수 코인명(Base Asset) 추출기 (1000XEC -> XEC)
 export function getPureBase(sym) {
   if (!sym) return "";
   return sym.replace(/^(10+|1[MB])(?=[A-Z])/i, "").toUpperCase();
@@ -927,7 +928,7 @@ if (typeof window !== "undefined") {
 }
 
 // ================== chart.js에서 이동됨 ==================
-// 🚀 김프 다채로운 색상 적용 엔진 (라이트/다크 테마 최적화 분기)
+// 김프 다채로운 색상 적용 엔진 (라이트/다크 테마 최적화 분기)
 export function getKimchiColor(val) {
   let isLight = false;
   if (store && store.currentTheme) {
@@ -950,7 +951,7 @@ export function getKimchiColor(val) {
 
   // 1. 라이트 테마 (밝은 배경 최적화)
   if (isLight) {
-    if (val < -10) return "#0F172A"; // 초심해 네이비블랙 (극단 역프 경고)
+    if (val < -10) return "#0F172A"; // 네이비블랙 (낮은 역프)
     if (val < -4) return "#4B0082"; // 인디고
     if (val < -2) return "#1E3A8A"; // 딥 블루
     if (val < 0) return "#2E8B57"; // 씨그린
@@ -959,11 +960,11 @@ export function getKimchiColor(val) {
     if (val < 6) return "#FB923C"; // 비비드 오렌지 (밝고 선명한 주황)
     if (val < 8) return "#EF4444"; // 화사한 비비드 레드
     if (val < 10) return "#FF2D55"; // 강렬한 브라이트 핑크레드
-    return "#FF0055"; // 최고조 네온 하이퍼 크림슨 (극단 고김프 폭주)
+    return "#FF0055"; // 네온 크림슨 (높은 김프)
   }
 
   // 2. 다크 테마 (검은 배경 최적화 - 명도 30% 감소)
-  if (val < -10) return "#94A3B8"; // 네온 시안 / 빙하 화이트 (극단 역프 경고)
+  if (val < -10) return "#94A3B8"; // 네온 시안, 빙하 화이트 (낮은 역프)
   if (val < -4) return "#865CB0"; // 밝은 바이올렛
   if (val < -2) return "#2784AE"; // 맑은 스카이블루
   if (val < 0) return "#349B5A"; // 에메랄드 그린
@@ -972,7 +973,7 @@ export function getKimchiColor(val) {
   if (val < 6) return "#B0662A"; // 비비드 오렌지
   if (val < 8) return "#AE4F4F"; // 코랄 레드
   if (val < 10) return "#A73030"; // 선명한 네온 레드
-  return "#B2003B"; // 초강렬 네온 체리 크림슨 (극단 고김프 폭주)
+  return "#B2003B"; // 네온 체리 크림슨 (높은 김프)
 }
 if (typeof window !== "undefined") {
   window.getKimchiColor = getKimchiColor;
@@ -1012,11 +1013,11 @@ export function toggleCountdown(forceVal) {
   }
 
   if (store.showCountdown) {
-    updateRealtimeCountdown(store.lastServerMs || Date.now());
+    updateRealtimeCountdown(store.lastServerMs);
   } else if (store.countdownPriceLine && store.candleSeries) {
     try {
       store.candleSeries.removePriceLine(store.countdownPriceLine);
-    } catch (e) { }
+    } catch (e) {}
     store.countdownPriceLine = null;
   }
 
@@ -1075,26 +1076,41 @@ export function updateRealtimeCountdown(serverMs, overridePrice) {
     if (store.countdownPriceLine) {
       try {
         store.candleSeries.removePriceLine(store.countdownPriceLine);
-      } catch (e) { }
+      } catch (e) {}
       store.countdownPriceLine = null;
     }
     return;
   }
 
   let displayTime = "00:00";
-  if (!serverMs || serverMs <= 0) {
-    serverMs = Date.now();
+  // [로컬 시계 배제 ~ 거래소 서버 타임 + 하드웨어 단조 타이머(performance.now) 보간]
+  const perfNow =
+    typeof performance !== "undefined" && typeof performance.now === "function"
+      ? performance.now()
+      : 0;
+
+  // 유효한 거래소 서버 타임스탬프가 전달된 경우에만 앵커 갱신
+  if (typeof serverMs === "number" && serverMs > 1700000000000) {
     store.lastServerMs = serverMs;
-    store.localTimeAtUpdate = performance.now();
+    store.localTimeAtUpdate = perfNow;
   }
 
-  if (!store.localTimeAtUpdate) {
-    store.localTimeAtUpdate = performance.now();
+  let interpolatedMs = 0;
+  if (
+    store.lastServerMs &&
+    store.localTimeAtUpdate &&
+    perfNow >= store.localTimeAtUpdate
+  ) {
+    // 앵커 서버 시간 + 경과된 단조 시간(performance.now)으로 정밀 보간
+    interpolatedMs = store.lastServerMs + (perfNow - store.localTimeAtUpdate);
+  } else if (typeof window.getTrueEpochNow === "function") {
+    // 앵커가 없을 경우 거래소 동기화 단조 시계 사용
+    interpolatedMs = window.getTrueEpochNow();
+  } else {
+    interpolatedMs = Date.now();
   }
 
   const lastCandle = store.mainData[store.mainData.length - 1];
-  const interpolatedMs =
-    store.lastServerMs + (performance.now() - store.localTimeAtUpdate);
 
   if (typeof window.calculateTimeRemaining === "function") {
     displayTime = window.calculateTimeRemaining(
@@ -1104,15 +1120,15 @@ export function updateRealtimeCountdown(serverMs, overridePrice) {
     );
   }
 
-  // 🚀 [시뮬레이터 강제 off] 시뮬레이터 탭 활성화 시 카운트다운 시간 표시를 강제로 off
+  // [시뮬레이터 끄기] 시뮬레이터 탭 활성화 시 카운트다운 시간 표시 off
   const btnSim = document.getElementById("tab-btn-sim");
   const isSimActive = btnSim && btnSim.classList.contains("active");
   const showTitle = store.showCountdown && !isSimActive;
 
   const currentClose =
     overridePrice !== undefined &&
-      overridePrice !== null &&
-      !isNaN(overridePrice)
+    overridePrice !== null &&
+    !isNaN(overridePrice)
       ? Number(overridePrice)
       : Number(lastCandle.close);
   const isDown = currentClose < Number(lastCandle.open);
@@ -1132,7 +1148,7 @@ export function updateRealtimeCountdown(serverMs, overridePrice) {
     lineStyle: window.LightweightCharts
       ? window.LightweightCharts.LineStyle.Dashed
       : 2,
-    axisLabelVisible: true, // 🚀 우측 가격 스케일 축에 카운트다운 바 노출
+    axisLabelVisible: true, // 우측 가격 스케일 축에 카운트다운 바 노출
     title: showTitle ? `${displayTime}` : "",
     axisLabelColor: rawColor,
     axisLabelTextColor: "#ffffff",
@@ -1143,17 +1159,22 @@ export function updateRealtimeCountdown(serverMs, overridePrice) {
       store.countdownPriceLine =
         store.candleSeries.createPriceLine(lineOptions);
     } else {
-      store.countdownPriceLine.applyOptions(lineOptions);
+      try {
+        store.countdownPriceLine.applyOptions(lineOptions);
+      } catch (e) {
+        store.countdownPriceLine =
+          store.candleSeries.createPriceLine(lineOptions);
+      }
     }
   } else if (store.countdownPriceLine) {
     try {
       store.candleSeries.removePriceLine(store.countdownPriceLine);
-    } catch (e) { }
+    } catch (e) {}
     store.countdownPriceLine = null;
   }
 }
 
-// 🚀 크로스헤어 퍼센트 라벨 보이기/숨기기 토글
+// 크로스헤어 퍼센트 라벨 보이기/숨기기 토글
 export function toggleCrosshairPct(forceVal) {
   if (forceVal !== undefined) {
     store.showCrosshairPct = forceVal;
@@ -1202,7 +1223,7 @@ if (typeof window !== "undefined") {
   window.toggleCrosshairPct = toggleCrosshairPct;
   window.updateRealtimeCountdown = updateRealtimeCountdown;
 
-  // 🚀 카운트다운 타이머 숫자(시간)만 실시간 갱신 (스케일 가격표 중복 ZERO)
+  // 카운트다운 타이머 숫자(시간)만 실시간 갱신 (스케일 가격표 중복 ZERO)
   setInterval(() => {
     if (
       store.showCountdown &&
@@ -1213,7 +1234,7 @@ if (typeof window !== "undefined") {
     }
   }, 500);
 
-  // 🚀 페이지 로드 직후 토글 UI들의 슬라이더 슬라이딩 초기 위치 동기화
+  // 페이지 로드 직후 토글 UI들의 슬라이더 슬라이딩 초기 위치 동기화
   setTimeout(() => {
     const isOhlcHidden =
       localStorage.getItem("sellnance_ohlc_hidden") === "true";
@@ -1226,7 +1247,7 @@ if (typeof window !== "undefined") {
   }, 200);
 }
 
-// 🎯 브라우저 탭 제목 실시간 스위칭 통합 매니저 (소켓 중복 생성 ZERO, 메인 차트 소켓 100% 재활용)
+// 브라우저 탭 제목 실시간 스위칭 통합 매니저 (소켓 중복 생성없이 메인 차트 소켓 재활용)
 let lastTabTitleUpdateMs = 0;
 let lastTabSymbol = "";
 let lastTabMarket = "";
@@ -1239,7 +1260,7 @@ export function updateTabTitleManager(price, symbol, isKor) {
   const isStateChanged =
     symbol !== lastTabSymbol || activeMarket !== lastTabMarket;
 
-  // 🚀 500ms 쓰로틀링으로 브라우저 탭 깜빡임 부하 완벽 방어! (단, 심볼이나 마켓이 바뀌었을 경우 즉시 갱신)
+  // 쓰로틀링으로 브라우저 탭 글자 관리 (단, 심볼이나 마켓이 바뀌었을 경우 즉시 갱신)
   if (
     isStateChanged ||
     !lastTabTitleUpdateMs ||
@@ -1301,7 +1322,7 @@ export const sanitizeChartData = (dataArr, hasValueField = false) => {
     let t = d.time;
     let finalTime = null;
 
-    // time 정규화 및 강제 검증
+    // time 정규화 및 검증
     if (typeof t === "string") {
       // YYYY-MM-DD 포맷 검증
       if (/^\d{4}-\d{2}-\d{2}$/.test(t)) {
@@ -1331,7 +1352,7 @@ export const sanitizeChartData = (dataArr, hasValueField = false) => {
 
     if (finalTime === null) continue;
 
-    // 🎯 변경 코드 (최신 데이터 덮어쓰기 전략)
+    // 변경 코드 (최신 데이터 덮어쓰기 전략)
     const timeKey = String(finalTime);
     if (seen.has(timeKey)) {
       // 이미 들어간 중복 데이터가 있으면 지우고 최신 틱 데이터로 교체하기 위해 필터링
@@ -1376,8 +1397,8 @@ export const sanitizeChartData = (dataArr, hasValueField = false) => {
         close: Number(d.close),
         volume:
           d.volume !== undefined &&
-            d.volume !== null &&
-            !isNaN(Number(d.volume))
+          d.volume !== null &&
+          !isNaN(Number(d.volume))
             ? Number(d.volume)
             : 0,
       });

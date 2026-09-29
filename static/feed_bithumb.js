@@ -8,14 +8,20 @@ export function startBithumbFeed() {
     return;
   }
 
-  // 빗썸은 테이블 스나이퍼에 업비트/바이낸스 채널 위주로 유입되어, 필요시 연결을 활성화합니다.
+  // 빗썸은 테이블 스나이퍼에 업비트/바이낸스 채널 위주로 유입되어, 필요시 연결을 활성화
   bithumbRadarWs = new WebSocket("wss://pubwss.bithumb.com/pub/ws");
   store.bithumbRadarWs = bithumbRadarWs; // Backward compatibility
 
   bithumbRadarWs.onopen = () => {
     const symbols = store.currentTableData
-      .filter((row) => row.Listed_Exchanges?.includes("BITHUMB") || row.Bithumb_Symbol)
-      .map((row) => `${(row.Bithumb_Symbol || row.Symbol || "").toUpperCase()}_KRW`);
+      .filter(
+        (row) =>
+          row.Listed_Exchanges?.includes("BITHUMB") || row.Bithumb_Symbol,
+      )
+      .map(
+        (row) =>
+          `${(row.Bithumb_Symbol || row.Symbol || "").toUpperCase()}_KRW`,
+      );
 
     if (symbols.length === 0) return;
 
@@ -24,7 +30,7 @@ export function startBithumbFeed() {
         JSON.stringify({
           type: "transaction",
           symbols: symbols,
-        })
+        }),
       );
     } catch (e) {
       console.error("Bithumb Radar subscribe error:", e);
@@ -32,7 +38,12 @@ export function startBithumbFeed() {
   };
 
   bithumbRadarWs.onmessage = (event) => {
-    if (typeof window !== "undefined" && window.isSandboxActive && window.isSandboxActive()) return;
+    if (
+      typeof window !== "undefined" &&
+      window.isSandboxActive &&
+      window.isSandboxActive()
+    )
+      return;
     const res = JSON.parse(event.data);
     if (res.type !== "transaction" || !res.content?.list) return;
 
@@ -49,16 +60,24 @@ export function startBithumbFeed() {
         isBithumbRealtime: true,
       };
 
-      // 🚀 [HTS Bithumb 전용 격리 적재] 오직 빗썸 가격 변수만 정밀 대입 (O(1) 해시 색인 탐색)
-      const row = store.tickerRowMap.get(tickSymbol) || store.tickerRowMap.get(pureSym);
-      if (row && (row.Bithumb === "O" || row.Listed_Exchanges?.includes("BITHUMB") || row.Bithumb_Symbol)) {
+      // [Bithumb 전용 격리 적재] 오직 빗썸 가격 변수만 정밀 대입 (O(1) 해시 색인 탐색)
+      const row =
+        store.tickerRowMap.get(tickSymbol) || store.tickerRowMap.get(pureSym);
+      if (
+        row &&
+        (row.Bithumb === "O" ||
+          row.Listed_Exchanges?.includes("BITHUMB") ||
+          row.Bithumb_Symbol)
+      ) {
         row.Bithumb_Price = newPrice;
-        // 업비트에 상장되지 않은 빗썸 단독 상장 코인인 경우에만 Price_KRW로 전파 허용
+        // 업비트에 상장되지 않은 빗썸 단독 상장 코인인 경우에만 Price_KRW 허용
         const hasUpbit =
           row.Upbit === "O" ||
           !!row.Upbit_Symbol ||
           (Array.isArray(row.Listed_Exchanges) &&
-            row.Listed_Exchanges.some((e) => typeof e === "string" && e.toUpperCase() === "UPBIT"));
+            row.Listed_Exchanges.some(
+              (e) => typeof e === "string" && e.toUpperCase() === "UPBIT",
+            ));
         if (!hasUpbit) {
           row.Price_KRW = newPrice;
         }
@@ -70,11 +89,19 @@ export function startBithumbFeed() {
 
       if (hasSymbol) {
         if (typeof window.renderRealtimeRow === "function") {
-          window.renderRealtimeRow(tickSymbol, { c: newPrice, isBithumbRealtime: true }, false);
+          window.renderRealtimeRow(
+            tickSymbol,
+            { c: newPrice, isBithumbRealtime: true },
+            {
+              exchange: "bithumb",
+              market: "spot",
+              quote: "KRW",
+            },
+          );
         }
       }
 
-      // 🚀 퀵뷰 전용 실시간 캔들 갱신 라우팅 (단일 소켓 공유)
+      // 퀵뷰 전용 실시간 캔들 갱신 라우팅 (단일 소켓 공유)
       if (typeof window._qvBithumbHandler === "function") {
         window._qvBithumbHandler(trade);
       }

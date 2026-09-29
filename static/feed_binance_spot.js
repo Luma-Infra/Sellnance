@@ -5,7 +5,10 @@ import { getMultiplier } from "./chart_utils.js";
 let binanceSpotRadarWs = null;
 
 export function startBinanceSpotFeed() {
-  if (binanceSpotRadarWs && binanceSpotRadarWs.readyState !== WebSocket.CLOSED) {
+  if (
+    binanceSpotRadarWs &&
+    binanceSpotRadarWs.readyState !== WebSocket.CLOSED
+  ) {
     return;
   }
 
@@ -19,7 +22,7 @@ export function startBinanceSpotFeed() {
           method: "SUBSCRIBE",
           params: ["!ticker@arr"],
           id: 888,
-        })
+        }),
       );
     } catch (e) {
       console.error("Binance Spot Radar subscribe error:", e);
@@ -27,7 +30,12 @@ export function startBinanceSpotFeed() {
   };
 
   binanceSpotRadarWs.onmessage = (event) => {
-    if (typeof window !== "undefined" && window.isSandboxActive && window.isSandboxActive()) return;
+    if (
+      typeof window !== "undefined" &&
+      window.isSandboxActive &&
+      window.isSandboxActive()
+    )
+      return;
     const data = JSON.parse(event.data);
     if (!Array.isArray(data)) return;
 
@@ -39,10 +47,15 @@ export function startBinanceSpotFeed() {
       if (!store.tickerBuffer) store.tickerBuffer = {};
       store.tickerBuffer[bufferKey] = ticker;
 
-      // 🚀 [HTS Spot 전용 격리 적재] 오직 현물 가격 및 거래량 변수만 정밀 주입 (O(1) 해시 색인 탐색)
-      const row = store.tickerRowMap.get(ticker.s) || store.tickerRowMap.get(pureSymbol);
+      // [Spot 전용 격리 적재] 오직 현물 가격 및 거래량 변수만 반영 (O(1) 해시 색인 탐색)
+      const row =
+        store.tickerRowMap.get(ticker.s) || store.tickerRowMap.get(pureSymbol);
       if (row && typeof window.renderRealtimeRow === "function") {
-        window.renderRealtimeRow(ticker.s, ticker, false);
+        window.renderRealtimeRow(ticker.s, ticker, {
+          exchange: "binance",
+          market: "spot",
+          quote: "USDT",
+        });
       }
     });
   };
@@ -52,7 +65,7 @@ export function startBinanceSpotFeed() {
   };
 }
 
-// 🎯 테이블용 바이낸스 현물 스나이퍼 소켓 초기화
+// 테이블용 바이낸스 현물 스나이퍼 소켓 초기화
 export function initBinanceSniperSocket() {
   /*
   // [기존 코드 보존] 마켓 모드에 따라 현물 소켓을 개폐하던 기존 로직
@@ -87,8 +100,12 @@ export function initBinanceSniperSocket() {
   }
   */
 
-  // 🚀 [조건 완화] 화면에 노출된 코인(visibleSymbols)만 타겟 구독하므로 소켓을 항상 열어두어 실시간 갱신 보장
-  if (!store.sniperWs || store.sniperWs.readyState === WebSocket.CLOSED || store.sniperWs.readyState === WebSocket.CLOSING) {
+  // [조건 완화] 화면에 노출된 코인(visibleSymbols)만 타겟 구독하므로 소켓을 항상 열어두어 실시간 갱신하도록 하기
+  if (
+    !store.sniperWs ||
+    store.sniperWs.readyState === WebSocket.CLOSED ||
+    store.sniperWs.readyState === WebSocket.CLOSING
+  ) {
     store.sniperWs = new WebSocket("wss://stream.binance.com:9443/ws");
     store.sniperWs.onopen = () => {
       if (typeof window.syncSniperSubscriptions === "function") {
@@ -100,7 +117,11 @@ export function initBinanceSniperSocket() {
       if (data.e === "aggTrade" || data.e === "24hrMiniTicker") {
         if (typeof window.renderRealtimeRow === "function") {
           const tickerKey = data.s || "";
-          window.renderRealtimeRow(tickerKey, data, false);
+          window.renderRealtimeRow(tickerKey, data, {
+            exchange: "binance",
+            market: "spot",
+            quote: "USDT",
+          });
         }
       }
     };

@@ -8,7 +8,7 @@ import {
   getRowDisplayMetrics,
 } from "./_market_rules.js";
 
-// 🎯 개별 스트림 스나이퍼 소켓 초기화 (피드 드라이버 내부 전용 함수들을 호출)
+// 개별 스트림 스나이퍼 소켓 초기화 (피드 드라이버 내부 전용 함수들을 호출)
 export function initSniperSocket() {
   if (typeof window.initBinanceSniperSocket === "function") {
     window.initBinanceSniperSocket();
@@ -21,7 +21,7 @@ export function initSniperSocket() {
   }
 }
 
-// 🔄 [핵심] visibleSymbols와 연동하여 바이낸스/업비트 구독 리스트 동시 동기화
+// visibleSymbols와 연동하여 바이낸스/업비트 구독 리스트 동시 동기화
 export function syncSniperSubscriptions() {
   if (
     typeof window !== "undefined" &&
@@ -231,7 +231,7 @@ export function calculateRowKimchi(r, rate) {
   );
   const unitKorPrice = priceKor / domMult;
 
-  // 🚀 [김프 해외 단가 연산] market_rules.js의 단일 룰북 호출
+  // [김프 해외 단가 연산] market_rules.js의 단일 룰북 호출
   const { rawGlb, ovsMult, source } = getRowKimchiGlobalPrice(r);
 
   let unitGlbPrice = rawGlb;
@@ -327,25 +327,70 @@ function findTargetRow(tId, data) {
       if (byUid) {
         row = byUid;
       } else {
-        return null; // 오염된 이종 코인 데이터 드롭
+        return null; // 오염된 다른 코인 데이터 drop
       }
     }
   }
 
   if (!row) return null;
 
-  if (
-    !row.Ticker.endsWith("KRW") &&
-    getMultiplier(dataSym) !== getMultiplier(row.Ticker)
-  ) {
-    return null;
+  if (!row.Ticker.endsWith("KRW")) {
+    const dataMult = getMultiplier(dataSym);
+    const rowMult = getMultiplier(row.Ticker);
+    const futMult = getMultiplier(row.Exact_Futures || "");
+    const spotMult = getMultiplier(row.Exact_Spot || "");
+    const bybitMult = getMultiplier(row.Bybit_Symbol || "");
+
+    const isMultMatch =
+      dataMult === rowMult ||
+      dataMult === futMult ||
+      dataMult === spotMult ||
+      dataMult === bybitMult;
+
+    if (!isMultMatch) {
+      return null;
+    }
   }
 
   return row;
 }
 
-// ⚡ [HTS 핵심] 개별 행 정밀 렌더링 엔진 (웹소켓 전용)
-export function renderRealtimeRow(tId, data, isFutures = false) {
+// 개별 행 정밀 렌더링 엔진 (웹소켓 전용)
+export function renderRealtimeRow(tId, data, options = false) {
+  // [인자 표준화 및 하위 호환성 지원]
+  // options => {
+  //    exchange: "upbit"|"bithumb"|"binance"|"bybit"|"bitget",
+  //    market: "spot"|"futures", quote: "KRW"|"USDT"|"BTC"
+  // }  형태 지원
+  let exchange = "binance";
+  let market = "spot";
+  let quote = "USDT";
+
+  if (typeof options === "boolean") {
+    market = options ? "futures" : "spot";
+    if (data?.isUpbitRealtime) {
+      exchange = "upbit";
+      quote = "KRW";
+    } else if (
+      data?.isBithumbRealtime ||
+      (typeof tId === "string" && tId.endsWith("_KRW"))
+    ) {
+      exchange = "bithumb";
+      quote = "KRW";
+    } else if (data?.isBybitRealtime) {
+      exchange = "bybit";
+    }
+  } else if (typeof options === "object" && options !== null) {
+    exchange = (options.exchange || "binance").toLowerCase();
+    market = (options.market || "spot").toLowerCase();
+    quote =
+      options.quote ||
+      (exchange === "upbit" || exchange === "bithumb" ? "KRW" : "USDT");
+  }
+
+  const isFutures = market === "futures";
+  const isKoreaSocket = exchange === "upbit" || exchange === "bithumb";
+
   if (data && data.e === "24hrMiniTicker") {
     const close = parseFloat(data.c);
     const open = parseFloat(data.o);
@@ -360,7 +405,7 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
   }
   if (store.isTabHidden || store.isRestoringTab) return;
 
-  // [초고속 메모리 진입로] 메모리 갱신(Price_Raw 등)은 0ms 무손실로 즉시 수행
+  // 메모리 갱신(Price_Raw 등)은 무손실 진행하기
   const serverTs =
     data.trade_timestamp ||
     data.timestamp ||
@@ -375,16 +420,10 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
     typeof window.getTrueEpochNow === "function"
       ? window.getTrueEpochNow()
       : Date.now();
-  const source = data.isUpbitRealtime
-    ? "upbit"
-    : data.isBithumbRealtime
-      ? "bithumb"
-      : isFutures
-        ? "binance_futures"
-        : "binance_spot";
+  const source = `${exchange}_${market}`;
   const tickKey = `${source}:${data.s || tId}:${data.e || "ticker"}`;
 
-  // [소켓 고빈도 폭주 방어 안전 밸브: 30ms 마이크로 쓰로틀 (초당 최대 33회)]
+  // 초당 최대 횟수 지정해서 소켓 과부하 관리하기
   if (data && (data.s || tId)) {
     if (!store._lastRowTickMap) store._lastRowTickMap = new Map();
     const lastTick = store._lastRowTickMap.get(tickKey) || 0;
@@ -407,7 +446,6 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
 
   const isKrwCoin = row.Ticker.endsWith("KRW");
   const rate = store.marketDataMap?.krw_usd_rate || 1000;
-  const isKoreaSocket = !!(data.isUpbitRealtime || data.isBithumbRealtime);
 
   const hasGlobal =
     row.Binance === "O" ||
@@ -417,13 +455,18 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
     row.Listed_Exchanges?.includes("BINANCE");
 
   if (isKoreaSocket) {
-    if (data.isUpbitRealtime || row.Upbit !== "O") row.Price_KRW = newPrice;
+    if (exchange === "upbit" || data.isUpbitRealtime || row.Upbit !== "O")
+      row.Price_KRW = newPrice;
     if (!hasGlobal) {
       row.Price_Raw = rate > 0 ? newPrice / rate : 0;
     }
-    if (data.isUpbitRealtime) {
+    if (exchange === "upbit" || data.isUpbitRealtime) {
       row.Upbit_Price = newPrice;
-    } else if (data.isBithumbRealtime || tId.endsWith("_KRW")) {
+    } else if (
+      exchange === "bithumb" ||
+      data.isBithumbRealtime ||
+      (typeof tId === "string" && tId.endsWith("_KRW"))
+    ) {
       row.Bithumb_Price = newPrice;
     }
   } else {
@@ -438,9 +481,23 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
     const isSpotOnly = hasSpot && !hasFutures;
 
     const isBinance =
-      hasSpot || hasFutures || row.Exact_Spot || row.Exact_Futures;
+      exchange === "binance" ||
+      (!data.isBybitRealtime &&
+        (hasSpot || hasFutures || row.Exact_Spot || row.Exact_Futures));
 
-    if (isBinance) {
+    if (exchange === "bybit" || data.isBybitRealtime) {
+      if (isFutures) {
+        row.Bybit_Price_Futures = newPrice;
+        if (data.P !== undefined) {
+          row.Change_24h_Bybit_Futures = parseFloat(data.P);
+        }
+      } else {
+        row.Bybit_Price_Spot = newPrice;
+        if (data.P !== undefined) {
+          row.Change_24h_Bybit = parseFloat(data.P);
+        }
+      }
+    } else if (isBinance) {
       if (isFutures) {
         row.Binance_Price_Futures = newPrice;
         if (data.P !== undefined) {
@@ -484,17 +541,24 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
     }
     */
 
-    // 🚀 [선물 우선 (Futures First) 원칙] 둘 다 있거나 선물이 있으면 선물 틱 우선 매핑, 현물만 있으면 현물 틱
+    // [선물 우선 (Futures First) 원칙] 둘 다 있거나 선물이 있으면 선물 틱 우선 매핑, 현물만 있으면 현물 틱
     const shouldUpdate = hasFutures ? isFutures : !isFutures;
 
     if (shouldUpdate) {
-      if (!row.Ticker.endsWith("KRW")) {
-        row.Price_Raw = newPrice;
-      }
-      if (isBinance) {
-        row.Binance_Price = newPrice;
-      } else {
+      if (exchange === "bybit" || data.isBybitRealtime) {
         row.Bybit_Price = newPrice;
+        if (!isBinance && !row.Ticker.endsWith("KRW")) {
+          row.Price_Raw = newPrice;
+        }
+      } else {
+        if (!row.Ticker.endsWith("KRW")) {
+          row.Price_Raw = newPrice;
+        }
+        if (isBinance) {
+          row.Binance_Price = newPrice;
+        } else {
+          row.Bybit_Price = newPrice;
+        }
       }
     }
   }
@@ -503,13 +567,21 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
   if (isKrwCoin) {
     if (store.currentMarket === "UPBIT") {
       shouldUpdateChg =
-        data.isUpbitRealtime || (row.Upbit === "O" && !data.isBithumbRealtime);
+        exchange === "upbit" ||
+        data.isUpbitRealtime ||
+        (row.Upbit === "O" &&
+          !data.isBithumbRealtime &&
+          exchange !== "bithumb");
     } else {
       // 기본 모드(ALL / BINANCE): 업비트 상장 코인은 업비트 틱 우선, 빗썸 전용 코인은 빗썸 틱 우선
       shouldUpdateChg =
         row.Upbit === "O"
-          ? data.isUpbitRealtime || !data.isBithumbRealtime
-          : data.isBithumbRealtime || !data.isUpbitRealtime;
+          ? exchange === "upbit" ||
+            data.isUpbitRealtime ||
+            (exchange !== "bithumb" && !data.isBithumbRealtime)
+          : exchange === "bithumb" ||
+            data.isBithumbRealtime ||
+            (exchange !== "upbit" && !data.isUpbitRealtime);
     }
   } else {
     const hasFutures =
@@ -526,29 +598,30 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
       row.Listed_Exchanges?.includes("BYBIT_SPOT") ||
       !!row.Exact_Spot;
 
-    // 🚀 ALL / BINANCE 기본 탭: 선물 상장 코인은 선물 등락률로 대표 24h/Day 갱신 (1초 경주마 정렬 연동)
+    // ALL / BINANCE 기본 탭: 선물 상장 코인은 선물 등락률로 대표 24h/Day 갱신 (경주마 정렬 연동)
     shouldUpdateChg = hasFutures ? isFutures : !isFutures;
   }
 
   if (data.P !== undefined) {
     const chg = parseFloat(data.P);
     if (isKoreaSocket) {
-      if (data.isUpbitRealtime) row.Change_24h_Upbit = chg;
-      else if (data.isBithumbRealtime) row.Change_24h_Bithumb = chg;
+      if (exchange === "bithumb" || data.isBithumbRealtime)
+        row.Change_24h_Bithumb = chg;
     } else {
-      if (isFutures) {
-        row.Change_24h_Futures = chg;
-        if (
-          row.Bybit_Futures === "O" ||
-          row.Listed_Exchanges?.includes("BYBIT_FUTURES")
-        ) {
+      if (exchange === "bybit" || data.isBybitRealtime) {
+        if (isFutures) {
           row.Change_24h_Bybit_Futures = chg;
+        } else {
+          row.Change_24h_Bybit = chg;
         }
+      } else if (isFutures) {
+        row.Change_24h_Futures = chg;
       } else if (
         row.Listed_Exchanges?.includes("BINANCE") ||
         row.Exact_Spot ||
         row.Exact_Futures
       ) {
+        row.Change_24h_Spot = chg;
         row.Change_24h_Binance = chg;
       } else {
         row.Change_24h_Bybit = chg;
@@ -556,8 +629,20 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
     }
     if (shouldUpdateChg) {
       if (!(isKoreaSocket && hasGlobal)) {
-        row.Change_24h_Raw = chg;
+        // [수정] 업비트 당일 등락률과 24h 등락률(Change_24h_Raw) 침범 방지
+        if (!isKoreaSocket) {
+          row.Change_24h_Raw = chg;
+        }
       }
+    }
+  }
+
+  // [업비트 당일 등락률 전용 처리]
+  if (data.P_today !== undefined && data.isUpbitRealtime) {
+    const todayChg = parseFloat(data.P_today);
+    row.Change_Today_Upbit = todayChg;
+    if (shouldUpdateChg && !(isKoreaSocket && hasGlobal)) {
+      row.Change_Today_Raw = todayChg;
     }
   }
 
@@ -579,13 +664,19 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
     row.spot_utc0_open_Raw = null;
     row.utc0_open_Raw = null;
     row.utc0_open_KRW = null;
+    row._lastUtcDay = currentUtcDay;
+
+    // 날짜 변경 감지 시 즉시 서버의 공식 09시 시가 장부 동기화 트리거
+    if (typeof window.loadTableData === "function") {
+      window.loadTableData(true, true);
+    }
   }
   row._lastUtcDay = currentUtcDay;
 
   const isAlpha = row.is_alpha || row.Binance_Alpha === "O";
 
   if (isAlpha) {
-    // 🚀 [알파 방어] 알파 코인은 어떤 소켓 틱이 들어와도 Day 시가 및 Day 등락률 무조건 null (-) 고정!
+    // 알파 코인은 어떤 소켓 틱이 들어와도 Day 시가 및 Day 등락률 null (-) 고정
     row.Change_Today_Raw = null;
     row.Change_Today_Spot = null;
     row.Change_Today_Binance = null;
@@ -596,7 +687,7 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
     if (openPriceKRW <= 0 && row.utc0_open_Raw && rate > 0) {
       openPriceKRW = parseFloat(row.utc0_open_Raw) * rate;
     }
-    // 9시 이후 첫 틱 수신 시 해당 틱을 당일 시가로 초기화하여 0초부터 실시간 연산 지원
+    // 9시 이후 첫 틱 수신 시 해당 틱을 당일 시가로 초기화하여 실시간 연산 지원
     if (openPriceKRW <= 0 && newPrice > 0) {
       openPriceKRW = newPrice;
       row.utc0_open_KRW = newPrice;
@@ -609,38 +700,34 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
       if (shouldUpdateChg && !(isKoreaSocket && hasGlobal)) {
         row.Change_Today_Raw = todayKrw;
       }
-    } else if (data.isUpbitRealtime && data.P !== undefined) {
-      const todayKrw = parseFloat(data.P);
+    } else if (data.isUpbitRealtime && data.P_today !== undefined) {
+      const todayKrw = parseFloat(data.P_today);
       row.Change_Today_Upbit = todayKrw;
       if (shouldUpdateChg && !(isKoreaSocket && hasGlobal)) {
         row.Change_Today_Raw = todayKrw;
       }
     }
   } else {
+    // [현선 시가 격리] 선물과 현물은 서로의 시가/폴백에 관여하지 않기
     let openPrice = 0;
     if (isFutures) {
-      openPrice = parseFloat(
-        row.futures_utc0_open_Raw ||
-          (row.Binance_Futures === "O" ? row.utc0_open_Raw : 0) ||
-          0,
-      );
+      // 선물 틱: 오직 선물 전용 09시 시가만 참조 (현물 시가 침범 방지)
+      openPrice = parseFloat(row.futures_utc0_open_Raw || 0);
     } else {
-      openPrice = parseFloat(
-        row.spot_utc0_open_Raw ||
-          (row.Binance === "O" ? row.utc0_open_Raw : 0) ||
-          0,
-      );
+      // 현물 틱: 오직 현물 전용 09시 공식 시가만 참조 (선물 시가 침범 방지)
+      openPrice = parseFloat(row.spot_utc0_open_Raw || 0);
     }
 
-    // 9시 이후 첫 틱 수신 시 해당 틱을 당일 시가로 초기화하여 0초부터 실시간 연산 지원
+    // [안전 보정] 거래량이 매우 저조한 현/선 코인 보호
+    // 09시 이후 첫 틱 수신 시 임의 틱 체결가를 공식 시가(futures_utc0_open_Raw / spot_utc0_open_Raw)로 영구 고정하지 않기
+    // 서버의 공식 일봉 kline / tradingDay 시가가 들어올 때까지 대기하며 왜곡 방지
     if (openPrice <= 0 && newPrice > 0) {
-      openPrice = newPrice;
-      if (isFutures) {
-        row.futures_utc0_open_Raw = newPrice;
-      } else {
-        row.spot_utc0_open_Raw = newPrice;
+      // 서버에서 이미 받아둔 공식 시가가 존재하는지 재확인
+      if (isFutures && row.futures_utc0_open_Raw) {
+        openPrice = parseFloat(row.futures_utc0_open_Raw);
+      } else if (!isFutures && row.spot_utc0_open_Raw) {
+        openPrice = parseFloat(row.spot_utc0_open_Raw);
       }
-      row.utc0_open_Raw = newPrice;
     }
 
     if (openPrice > 0 && newPrice > 0) {
@@ -675,7 +762,7 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
     }
   }
 
-  // [신규 방어막] 실시간 소켓 갱신 시각 기록 (3초 레이더의 낡은 캐시 덮어쓰기 원천 차단용)
+  // 실시간 소켓 갱신 시각 기록 (3초 주기 레이더의 낡은 캐시 덮어쓰기 방지)
   row._LastRealtimeUpdate =
     typeof window.getTrueEpochNow === "function"
       ? window.getTrueEpochNow()
@@ -720,6 +807,9 @@ export function renderRealtimeRow(tId, data, isFutures = false) {
   if (isKoreaSocket) {
     if (data.q_upbit !== undefined) {
       row.Upbit_Vol = parseFloat(data.q_upbit);
+      if (data.q_upbit_today !== undefined) {
+        row.Upbit_Vol_Today = parseFloat(data.q_upbit_today);
+      }
       const rate = store.marketDataMap?.krw_usd_rate || 1000;
       if (
         store.currencyMode === "KRW" &&

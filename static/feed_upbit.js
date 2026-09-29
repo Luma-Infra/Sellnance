@@ -78,15 +78,19 @@ export function startUpbitFeed() {
         localRow.Price_KRW = newPriceKrw;
         if (ticker.signed_change_rate !== undefined) {
           localRow.Change_Today_Upbit = ticker.signed_change_rate * 100;
-          localRow.Change_24h_Upbit = ticker.signed_change_rate * 100;
+          // [수정] 업비트 signed_change_rate는 당일(09시) 등락률이므로 24h 등락률(Change_24h_Upbit)에 덮어쓰지 않도록 하기
         }
       }
 
       const normalizedTicker = {
         s: krwTicker,
         c: newPriceKrw,
-        P: ticker.signed_change_rate * 100,
+        P_today:
+          ticker.signed_change_rate !== undefined
+            ? ticker.signed_change_rate * 100
+            : undefined,
         q_upbit: ticker.acc_trade_price_24h,
+        q_upbit_today: ticker.acc_trade_price,
         isUpbitRealtime: true,
         UID: matchedUid,
       };
@@ -100,7 +104,15 @@ export function startUpbitFeed() {
         store.visibleSymbols?.has(ticker.code);
 
       if (matchedUid && typeof window.renderRealtimeRow === "function") {
-        window.renderRealtimeRow(ticker.code, normalizedTicker, false);
+        window.renderRealtimeRow(ticker.code, normalizedTicker, {
+          exchange: "upbit",
+          market: "spot",
+          quote: ticker.code.startsWith("KRW-")
+            ? "KRW"
+            : ticker.code.startsWith("BTC-")
+              ? "BTC"
+              : "USDT",
+        });
       }
 
       // 실시간 차트 캔들 및 김프 갱신으로 직결 (단일 소켓 공유)
@@ -128,12 +140,12 @@ function scheduleUpbitReconnect() {
   }, delay);
 }
 
-// 🎯 업비트 테이블 소켓 (단일 소켓으로 통합 관리)
+// 업비트 테이블 소켓 (단일 소켓으로 통합 관리)
 export function initUpbitSniperSocket() {
   startUpbitFeed();
 }
 
-// 📋 단일 소켓에서 구독할 모든 업비트 심볼 추출 (메인 테이블 + 퀵뷰 활성 코인 통합)
+// 단일 소켓에서 구독할 모든 업비트 심볼 추출 (메인 테이블 + 퀵뷰 활성 코인 통합)
 export function getActiveUpbitCodes() {
   const codeSet = new Set();
   const source = store.currentTableData || store.originalTableData || [];
@@ -143,7 +155,7 @@ export function getActiveUpbitCodes() {
     }
   });
 
-  // 🚀 퀵뷰 전용 활성 코인(8개 중 업비트 코인) 강제 포함 보장
+  // 퀵뷰에 표시 중인 코인(최대 8개 중 업비트 종목)도 웹소켓 구독 목록에 함께 추가
   if (typeof window._getQvUpbitCodes === "function") {
     const qvCodes = window._getQvUpbitCodes();
     if (Array.isArray(qvCodes)) {

@@ -1,5 +1,5 @@
 // header_display.js
-// 📊 차트 상단 헤더 전광판 가격, 등락률, 시가총액, 거래량 실시간 렌더링 및 쓰로틀링 모듈
+// 차트 상단 헤더 전광판 가격, 등락률, 시가총액, 거래량 실시간 렌더링 및 쓰로틀링 모듈
 
 import { store } from "./_store.js";
 import {
@@ -76,7 +76,7 @@ export const realUpdateHeaderDisplay = (
   isRealtimeStream = false,
   callerId = "UNKNOWN",
 ) => {
-  // [시뮬레이터 가격 침범 차단] 시뮬레이션 모드 활성화 중 실시간 소켓 스트림이 아닌 가상 가격 주입 시 즉시 return
+  // [시뮬레이터 가격 침범 차단] 시뮬레이션 모드 활성화 중 실시간 소켓 스트림이 아닌 가상 가격 반영 시 즉시 return
   const btnSim =
     typeof document !== "undefined"
       ? document.getElementById("tab-btn-sim")
@@ -125,7 +125,7 @@ export const realUpdateHeaderDisplay = (
     activeMarket === "BYBIT" ||
     activeMarket === "BYBIT_SPOT";
 
-  // 🚀 모든 코인 통용 공통: Ticker/Symbol 기준의 대표 배수 추출 (하드코딩 0%)
+  // 모든 코인 통용 공통: Ticker/Symbol 기준의 대표 배수 추출
   const storeMult = getMultiplier(row.Symbol || row.Ticker);
 
   // 국내/해외의 현재 모드별 배수 획득
@@ -145,7 +145,7 @@ export const realUpdateHeaderDisplay = (
     row.Upbit_Symbol || row.Bithumb_Symbol || row.Symbol || row.Ticker,
   );
 
-  // 🚀 활성 차트/심볼의 배수
+  // 활성 차트/심볼의 배수
   const chartSymbolMult = getMultiplier(
     store.currentAsset ||
       store.currentSelectedSymbol ||
@@ -154,23 +154,27 @@ export const realUpdateHeaderDisplay = (
   );
 
   if (isFuturesMode) {
-    const rawP = row.Binance_Price_Futures ?? row.Price_Raw ?? null;
     binanceP =
-      rawP !== null ? (rawP / (ovsFutMult || 1)) * (storeMult || 1) : null;
-    bybitP = row.Bybit_Price_Futures
-      ? (row.Bybit_Price_Futures / (ovsFutMult || 1)) * (storeMult || 1)
-      : row.Price_Raw
-        ? (row.Price_Raw / (ovsFutMult || 1)) * (storeMult || 1)
-        : null;
+      row.Binance_Price_Futures ??
+      (row.Price_Raw !== null && row.Price_Raw !== undefined
+        ? (row.Price_Raw / (storeMult || 1)) * (ovsFutMult || 1)
+        : null);
+    bybitP =
+      row.Bybit_Price_Futures ??
+      (row.Price_Raw !== null && row.Price_Raw !== undefined
+        ? (row.Price_Raw / (storeMult || 1)) * (ovsFutMult || 1)
+        : null);
   } else if (isSpotMode) {
-    const rawP = row.Binance_Price_Spot ?? row.Price_Raw ?? null;
     binanceP =
-      rawP !== null ? (rawP / (ovsSpotMult || 1)) * (storeMult || 1) : null;
-    bybitP = row.Bybit_Price_Spot
-      ? (row.Bybit_Price_Spot / (ovsSpotMult || 1)) * (storeMult || 1)
-      : row.Price_Raw
-        ? (row.Price_Raw / (ovsSpotMult || 1)) * (storeMult || 1)
-        : null;
+      row.Binance_Price_Spot ??
+      (row.Price_Raw !== null && row.Price_Raw !== undefined
+        ? (row.Price_Raw / (storeMult || 1)) * (ovsSpotMult || 1)
+        : null);
+    bybitP =
+      row.Bybit_Price_Spot ??
+      (row.Price_Raw !== null && row.Price_Raw !== undefined
+        ? (row.Price_Raw / (storeMult || 1)) * (ovsSpotMult || 1)
+        : null);
   } else {
     // ALL, KIMCHI, NEW 등 기본 탭 모드일 때: 테이블과 동일하게 대표 가격 매핑
     const hasSpot =
@@ -180,26 +184,24 @@ export const realUpdateHeaderDisplay = (
       row.Listed_Exchanges?.includes("BINANCE_FUTURES");
 
     if (hasFutures && row.Binance_Price_Futures) {
-      binanceP =
-        (row.Binance_Price_Futures / (ovsFutMult || 1)) * (storeMult || 1);
+      binanceP = row.Binance_Price_Futures;
     } else if (hasSpot && row.Binance_Price_Spot) {
-      binanceP =
-        (row.Binance_Price_Spot / (ovsSpotMult || 1)) * (storeMult || 1);
+      binanceP = row.Binance_Price_Spot;
     } else if (row.Price_Raw) {
       const activeMult = hasFutures && !hasSpot ? ovsFutMult : ovsSpotMult;
-      binanceP = (row.Price_Raw / (activeMult || 1)) * (storeMult || 1);
+      binanceP = (row.Price_Raw / (storeMult || 1)) * (activeMult || 1);
     } else {
       binanceP = null;
     }
 
     if (row.Bybit_Price_Futures) {
-      bybitP = (row.Bybit_Price_Futures / (ovsFutMult || 1)) * (storeMult || 1);
+      bybitP = row.Bybit_Price_Futures;
     } else if (row.Bybit_Price_Spot) {
-      bybitP = (row.Bybit_Price_Spot / (ovsSpotMult || 1)) * (storeMult || 1);
+      bybitP = row.Bybit_Price_Spot;
+    } else if (row.Price_Raw) {
+      bybitP = (row.Price_Raw / (storeMult || 1)) * (ovsSpotMult || 1);
     } else {
-      bybitP = row.Price_Raw
-        ? (row.Price_Raw / (ovsSpotMult || 1)) * (storeMult || 1)
-        : null;
+      bybitP = null;
     }
   }
 
@@ -265,25 +267,42 @@ export const realUpdateHeaderDisplay = (
   const isMainKrw =
     isKrwMode || activeExchange === "upbit" || activeExchange === "bithumb";
 
+  const curActiveMult =
+    activeExchange === "binance"
+      ? (isFuturesMode ? ovsFutMult : ovsSpotMult) || 1
+      : activeExchange === "bybit"
+        ? (isFuturesMode ? ovsFutMult : ovsSpotMult) || 1
+        : domMult || 1;
+  const domActiveMult = domMult || 1;
+  const ovsActiveMult = (isFuturesMode ? ovsFutMult : ovsSpotMult) || 1;
+
   if (activeExchange === "binance") {
     const rawP = binanceP || 0;
     const actualKrw = upbitP || bithumbP || null;
+    const scaledKrw =
+      actualKrw !== null
+        ? actualKrw * (curActiveMult / domActiveMult)
+        : rawP * rate;
     if (isMainKrw) {
-      displayPrice = actualKrw || rawP * rate;
+      displayPrice = scaledKrw;
       subPrice = rawP;
     } else {
       displayPrice = rawP;
-      subPrice = actualKrw || rawP * rate;
+      subPrice = scaledKrw;
     }
   } else if (activeExchange === "bybit") {
     const rawP = bybitP || 0;
     const actualKrw = upbitP || bithumbP || null;
+    const scaledKrw =
+      actualKrw !== null
+        ? actualKrw * (curActiveMult / domActiveMult)
+        : rawP * rate;
     if (isMainKrw) {
-      displayPrice = actualKrw || rawP * rate;
+      displayPrice = scaledKrw;
       subPrice = rawP;
     } else {
       displayPrice = rawP;
-      subPrice = actualKrw || rawP * rate;
+      subPrice = scaledKrw;
     }
   } else if (activeExchange === "upbit") {
     const rawP = upbitP || 0;
@@ -293,12 +312,17 @@ export const realUpdateHeaderDisplay = (
         : bybitP && Number.isFinite(bybitP)
           ? bybitP
           : null;
-    const actualUsd = validUsd;
+    const scaledUsd =
+      validUsd !== null
+        ? validUsd * (domActiveMult / ovsActiveMult)
+        : rate > 0
+          ? rawP / rate
+          : null;
     if (isMainKrw) {
       displayPrice = rawP;
-      subPrice = actualUsd || (rate > 0 ? rawP / rate : null);
+      subPrice = scaledUsd;
     } else {
-      displayPrice = actualUsd || (rate > 0 ? rawP / rate : 0);
+      displayPrice = scaledUsd || (rate > 0 ? rawP / rate : 0);
       subPrice = rawP;
     }
   } else if (activeExchange === "bithumb") {
@@ -309,12 +333,17 @@ export const realUpdateHeaderDisplay = (
         : bybitP && Number.isFinite(bybitP)
           ? bybitP
           : null;
-    const actualUsd = validUsd;
+    const scaledUsd =
+      validUsd !== null
+        ? validUsd * (domActiveMult / ovsActiveMult)
+        : rate > 0
+          ? rawP / rate
+          : null;
     if (isMainKrw) {
       displayPrice = rawP;
-      subPrice = actualUsd || (rate > 0 ? rawP / rate : null);
+      subPrice = scaledUsd;
     } else {
-      displayPrice = actualUsd || (rate > 0 ? rawP / rate : 0);
+      displayPrice = scaledUsd || (rate > 0 ? rawP / rate : 0);
       subPrice = rawP;
     }
   }
@@ -352,7 +381,7 @@ export const realUpdateHeaderDisplay = (
     });
   }
 
-  // 최종 대표 등락률(Raw) 값을 다이렉트로 매핑하여 좌측 테이블과 우측 전광판의 싱크를 완전히 일치시킵니다.
+  // 대표 등락률(Raw) 값을 다이렉트로 매핑하여 좌측 테이블과 우측 전광판의 싱크를 일치시키기
   let n24 = 0;
   let nDay = 0;
   let isDayNull = false;
@@ -500,12 +529,12 @@ export const realUpdateHeaderDisplay = (
     });
   }
 
-  // 🚀 가격과 등락폭은 항상 갱신하고, 볼륨/시총 등 정적 지표만 조기 리턴하여 보존
+  // 가격과 등락폭은 항상 갱신하고, 볼륨/시총 등 정적 지표만 조기 리턴하여 보존
   if (newPrice !== undefined || isRealtimeStream) {
     return;
   }
 
-  // 🚀 실시간 마켓캡 계산 및 출력
+  // 실시간 마켓캡 계산 및 출력
   let displayMcap = row.MarketCap_Formatted || "-";
   if (row.Price_Raw > 0 && row.MarketCap_Raw > 0) {
     if (!row._CirculatingSupply) {
@@ -521,7 +550,7 @@ export const realUpdateHeaderDisplay = (
   if (dom.headMcap && dom.headMcap.textContent !== displayMcap) {
     dom.headMcap.textContent = displayMcap;
   }
-  // 🚀 [단일 룰북 연동] 좌측(해외) & 우측(국내) 거래량 및 브랜드 색상 연산 (서브 김프 페어링)
+  // [단일 룰북 연동] 좌측(해외) & 우측(국내) 거래량 및 브랜드 색상 연산 (서브 김프 페어링)
   const { volBFormatted, volUFormatted, volBColorClass, volUColorClass } =
     getRowDisplayVolume(
       row,
@@ -569,7 +598,7 @@ export const updateHeaderDisplay = (
   if (!row || !row.Ticker) return;
   const tKey = row.Ticker;
 
-  // 🚀 [원자성 가드] 현재 활성 선택된 코인이 아니면 불필요한 헤더 연산 및 큐 오염 차단
+  // 현재 활성 선택된 코인이 아니면 불필요한 헤더 연산 및 큐 오염 차단
   const curSymbol = store.currentSelectedSymbol;
   const curAsset = store.currentAsset;
   if (
@@ -604,7 +633,7 @@ export const updateHeaderDisplay = (
     headerThrottleTimeout = setTimeout(() => {
       headerThrottleTimeout = null;
       pooledStateMap.forEach((s) => {
-        // 🚀 실행 시점에도 현재 선택 코인과 일치하는지 최종 검증 (경쟁 상태/코인 전환 덮어쓰기 완전 방지)
+        // 실행 시점에도 현재 선택 코인과 일치하는지 최종 검증 (Race condition ~ 코인 전환 덮어쓰기 방지)
         const checkSym = store.currentSelectedSymbol;
         const checkAst = store.currentAsset;
         if (
@@ -631,7 +660,7 @@ export const updateHeaderDisplay = (
 window.realUpdateHeaderDisplay = realUpdateHeaderDisplay;
 window.updateHeaderDisplay = updateHeaderDisplay;
 
-// 🚀 [추가] 차트 우측 패널 상단부 접고 펼치는 기능
+// [추가] 차트 우측 패널 상단부 접고 펼치는 기능
 export function toggleHeaderTop() {
   const assetRow = document.getElementById("head-asset-row");
   const infoRow = document.getElementById("head-info-row");

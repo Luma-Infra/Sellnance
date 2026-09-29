@@ -3,19 +3,26 @@ import { store } from "./_store.js";
 import { getPureBase } from "./chart_utils.js";
 import { showToast } from "./ui_dialog.js";
 
-import { injectSellnanceTestRow, ENABLE_SELLNANCE_TEST_ROW } from "./test_mock_coin.js";
+import {
+  injectSellnanceTestRow,
+  ENABLE_SELLNANCE_TEST_ROW,
+} from "./test_mock_coin.js";
 export { ENABLE_SELLNANCE_TEST_ROW };
 
 // 1. 데이터 파싱 및 가상 맵/테이블 구성 헬퍼 함수
 export function processTableData(result) {
   if (!result || !result.data) return;
 
-  if (typeof window !== "undefined" && window.isSandboxActive && window.isSandboxActive()) {
+  if (
+    typeof window !== "undefined" &&
+    window.isSandboxActive &&
+    window.isSandboxActive()
+  ) {
     window._latestServerResult = result;
     return;
   }
 
-  // 🚀 [초고속 0ms 복제] JSON 문자열 직렬화 2연타 제거 및 얕은 매핑으로 CPU 블로킹 방지
+  // JSON 문자열 직렬화 제거 및 얕은 매핑으로 CPU 블로킹 방지
   let rawList = result.data.map((r) => ({ ...r }));
   if (ENABLE_SELLNANCE_TEST_ROW) {
     rawList = injectSellnanceTestRow(rawList);
@@ -25,7 +32,7 @@ export function processTableData(result) {
   store.currentTableData = rawList.map((r) => ({ ...r }));
   store.isTableLoaded = true;
 
-  // 🚀 [신규] 상태 데이터 동기화
+  // [신규] 상태 데이터 동기화
   if (result.cmc_status !== undefined) {
     store.cmcStatus = result.cmc_status;
   }
@@ -42,7 +49,9 @@ export function processTableData(result) {
     store.nextUpdateRaw = result.next_update_raw;
   }
 
-  store.uidRowMap = new Map(store.currentTableData.map(r => [String(r.UID), r]));
+  store.uidRowMap = new Map(
+    store.currentTableData.map((r) => [String(r.UID), r]),
+  );
   store.tickerRowMap.clear();
   store.uidToKrwRowMap = new Map();
   store.pureBaseToRowsMap = new Map();
@@ -71,7 +80,7 @@ export function processTableData(result) {
       store.tickerRowMap.set(uid, row);
     }
 
-    // 2. Ticker 및 DisplayTicker 매핑 (단, 동명이인 코인은 UID가 일치하는 녀석이 맵을 소유하게 제어)
+    // 2. Ticker 및 DisplayTicker 매핑 (단, 동명이인 코인은 UID가 일치하는 코인이 매핑되도록 관리)
     if (tKey) {
       const exist = store.tickerRowMap.get(tKey);
       if (!exist) {
@@ -114,7 +123,7 @@ export function processTableData(result) {
       }
     }
 
-    // 3. 심볼 및 거래소별 별칭 광속 색인 (현/선물 및 국내 마켓 O(1) 탐색 보장)
+    // 3. 심볼 및 거래소별 별칭 색인 (현/선물 및 국내 마켓 O(1) 탐색)
     const registerAlias = (aliasKey) => {
       if (!aliasKey) return;
       const uk = String(aliasKey).toUpperCase();
@@ -150,19 +159,21 @@ export function processTableData(result) {
       if (row.DisplayTicker)
         store.precisionMap.set(row.DisplayTicker.toUpperCase(), p);
       if (row.Symbol) store.precisionMap.set(row.Symbol.toUpperCase(), p);
-      if (row.Exact_Spot) store.precisionMap.set(row.Exact_Spot.toUpperCase(), p);
-      if (row.Exact_Futures) store.precisionMap.set(row.Exact_Futures.toUpperCase(), p);
+      if (row.Exact_Spot)
+        store.precisionMap.set(row.Exact_Spot.toUpperCase(), p);
+      if (row.Exact_Futures)
+        store.precisionMap.set(row.Exact_Futures.toUpperCase(), p);
     }
   });
 
-  // 🚀 [추가] 최초 데이터 로드 시점에 모든 코인에 대해 대표 지표(Price_Raw, Change_Today_Raw 등) 우선순위 조율 강제 실행
+  // [추가] 최초 데이터 로드 시점에 모든 코인에 대해 대표 지표(Price_Raw, Change_Today_Raw 등) 우선순위 조율 실행
   if (typeof window.syncRowPrioritizedMetrics === "function") {
     store.currentTableData.forEach((row) => {
       window.syncRowPrioritizedMetrics(row);
     });
   }
 
-  // 🚀 [신규] 복원된 마지막 정렬 기준에 맞춰 데이터 선제 정렬 및 렌더링
+  // [신규] 복원된 마지막 정렬 기준에 맞춰 데이터 선제 정렬 및 렌더링
   if (store.currentSortCol && store.sortState !== "") {
     if (typeof window.simpleSortData === "function") {
       window.simpleSortData();
@@ -173,22 +184,22 @@ export function processTableData(result) {
     window.renderTable(false);
   }
 
-  // 🚀 [신규] 장부 수신 및 렌더 후 세션 컨트롤 패널 UI 즉시 동기화
+  // [신규] 장부 수신 및 렌더 후 세션 컨트롤 패널 UI 동기화
   if (typeof window.restoreControlPanelUI === "function") {
     window.restoreControlPanelUI();
   }
 
-  // 🚀 [신규] 테이블 장부 로드 완료 후 업비트 웹소켓 전체 구독 목록 즉시 동기화
+  // [신규] 테이블 장부 로드 완료 후 업비트 웹소켓 전체 구독 목록 동기화
   if (typeof window.syncUpbitRadarSubscription === "function") {
     window.syncUpbitRadarSubscription();
   }
 
-  // 🚀 [신규] 마지막 정렬 기준 화살표 및 버튼 강조 상태 복원
+  // [신규] 마지막 정렬 기준 화살표 및 버튼 강조 상태 복원
   if (typeof window.updateSortUI === "function") {
     window.updateSortUI(store.currentSortCol, store.sortState);
   }
 
-  // 🚀 [초기 경로/해시/선택 코인 즉시 렌더 및 쓰레기 URL 방어]
+  // 초기 경로/해시/선택 코인 렌더 및 없는 URL 주소 return
   const activeRoute =
     typeof window.getInitialRouteSymbol === "function"
       ? window.getInitialRouteSymbol()
@@ -238,21 +249,21 @@ export function processTableData(result) {
 
     if (exists && typeof window.selectSymbol === "function") {
       if (store.currentSelectedSymbol !== targetSym || !store.currentAsset) {
-        window.selectSymbol(targetSym);
+        window.selectSymbol(targetSym, store.currentChartMarket);
       }
     } else if (
       !store.currentSelectedSymbol &&
       store.originalTableData.length > 100 &&
       typeof window.selectSymbol === "function"
     ) {
-      // 🚀 [무한 락업 보호] 최초 진입 시 URL에 존재하지 않는 유령/쓰레기 주소가 들어왔을 때 유저가 보던 직전 코인으로 즉시 리턴
+      // 최초 진입 시 URL에 존재하지 않는 주소가 들어왔을 때 유저가 보던 직전 코인으로 return
       let fallbackSymbol = "BINANCE:BTC_FUTURES";
       try {
         const last = localStorage.getItem("sellnance_last_symbol");
         if (last && last !== targetSym) {
           fallbackSymbol = last;
         }
-      } catch (_) { }
+      } catch (_) {}
       window.selectSymbol(fallbackSymbol);
     }
   }
@@ -263,7 +274,7 @@ export async function loadTableData(force = false, silent = false) {
   const modal = document.getElementById("loading-modal");
   const updateTimeSpan = document.getElementById("update-time");
 
-  // 🚀 [1단계] 로컬 캐시 즉시 복원 및 선제 화면 출력 (0초 컷 최적화)
+  // [1단계] 로컬 캐시 복원 및 선제 화면 출력
   const cachedDataStr = localStorage.getItem("sellnance_market_data_cache");
   let hasCache = false;
   const isMemoryPopulated =
@@ -273,7 +284,7 @@ export async function loadTableData(force = false, silent = false) {
     try {
       const cachedResult = JSON.parse(cachedDataStr);
       if (cachedResult && cachedResult.data && cachedResult.data.length > 0) {
-        // 🚀 [상위 30개 즉시 렌더] 최초 콜드 부팅 시에만 상위 30개 선제 노출 (기존 메모리 덮어쓰기 방지)
+        // [상위 30개 렌더] 최초 콜드 부팅 시에만 상위 30개 선제 노출 (기존 메모리 덮어쓰기 방지)
         let lastSortCol =
           localStorage.getItem("sellnance_last_sort_col") || "VolumeBinance";
         if (lastSortCol === "Volume") lastSortCol = "VolumeBinance";
@@ -323,7 +334,7 @@ export async function loadTableData(force = false, silent = false) {
 
   const tableLoading = document.getElementById("table-loading-indicator");
 
-  // 🚀 서버에서 전체 코인 목록 및 최신 시세 장부를 가져와 정렬 렌더링하기 직전까지 물결 원형 로더 노출
+  // 서버에서 전체 코인 목록 및 최신 시세 장부를 가져와 정렬 렌더링 직전까지 원형 로더 노출
   if (!silent) {
     if (tableLoading) {
       tableLoading.classList.remove("hidden");
@@ -340,9 +351,13 @@ export async function loadTableData(force = false, silent = false) {
     }
 
     const res = await fetch("/api/market-data", { headers });
-    // Xconsole.log("2. 파이썬 서버가 응답 완료!"); // ⭐️ 추가
+    // Xconsole.log("2. 파이썬 서버가 응답 완료!"); //️ 추가
     const result = await res.json();
-    if (result && result.last_updated_raw && typeof window.calibrateTrueTime === "function") {
+    if (
+      result &&
+      result.last_updated_raw &&
+      typeof window.calibrateTrueTime === "function"
+    ) {
       window.calibrateTrueTime(result.last_updated_raw * 1000);
     }
 
@@ -362,7 +377,7 @@ export async function loadTableData(force = false, silent = false) {
   } catch (error) {
     console.error("데이터 로드 에러:", error);
     if (!hasCache) {
-      showToast("서버에서 데이터를 가져오지 못했습니다.", "error");
+      showToast("서버에서 데이터를 가져오지 못했어요", "error");
     }
     if (updateTimeSpan) updateTimeSpan.innerText = "업데이트 실패";
   } finally {
@@ -375,7 +390,8 @@ export async function loadTableData(force = false, silent = false) {
   }
 }
 
-// 🚀 [HTS급 사일런트 백그라운드 동기화 엔진] 1분마다 로딩 모달 없이 메모리에서 조용히 파이썬 서버 데이터를 낚아채와 테이블 전체 장부(펀딩비, 시총 등)를 갱신합니다!
+// [사일런트 백그라운드 동기화 엔진] 1분마다 로딩 모달 없이 메모리에서
+// 조용히 파이썬 서버 데이터를 가져와서 테이블 전체 장부(펀딩비, 시총 등)를 갱신
 export async function loadTableDataSilent() {
   try {
     const headers = {};
@@ -386,20 +402,25 @@ export async function loadTableDataSilent() {
     const res = await fetch("/api/market-data-silent", { headers });
     if (!res.ok) return;
     const result = await res.json();
-    if (result && result.last_updated_raw && typeof window.calibrateTrueTime === "function") {
+    if (
+      result &&
+      result.last_updated_raw &&
+      typeof window.calibrateTrueTime === "function"
+    ) {
       window.calibrateTrueTime(result.last_updated_raw * 1000);
     }
 
     if (result && result.data) {
       store.originalTableData = JSON.parse(JSON.stringify(result.data));
 
-      const freshUidMap = new Map(result.data.map((item) => [String(item.UID), item]));
+      const freshUidMap = new Map(
+        result.data.map((item) => [String(item.UID), item]),
+      );
       let needReRender = false;
 
       // 1. 기존 장부 순회하며 값 업데이트 및 Ticker 교체 처리
       store.currentTableData.forEach((row) => {
         let fresh = freshUidMap.get(String(row.UID));
-
 
         if (fresh) {
           if (row.Ticker !== fresh.Ticker) {
@@ -439,7 +460,7 @@ export async function loadTableDataSilent() {
 
             needReRender = true;
           } else {
-            // 🚀 [Single Source of Truth] 백엔드 최신 데이터를 통째로 머징하여 업비트/바이낸스 메인 및 빗썸/바이비트 보조 지표 100% 동기화
+            // [Single Source of Truth] 백엔드 최신 데이터를 통째로 머징하여 업비트/바이낸스 메인 및 빗썸/바이비트 보조 지표 동기화
             Object.assign(row, fresh);
           }
         }
@@ -456,7 +477,7 @@ export async function loadTableDataSilent() {
           !currentUids.has(freshItem.UID) &&
           !currentTickers.has(freshItem.Ticker)
         ) {
-          // Xconsole.log(`➕ [사일런트 동기화] 신규 코인 장부 주입: ${freshItem.Ticker}`,);
+          // Xconsole.log(`➕ [사일런트 동기화] 신규 코인 장부 반영: ${freshItem.Ticker}`,);
 
           freshItem.DisplayTicker = (
             freshItem.DisplayTicker || freshItem.Symbol
@@ -491,14 +512,16 @@ export async function loadTableDataSilent() {
               store.tickerRowMap.set(fDkey, freshItem);
             }
           }
-          // 🚀 [오류 방어] Symbol 단일 매핑 금지
+          // Symbol 단일 매핑 금지
 
           needReRender = true;
         }
       });
 
-      store.uidRowMap = new Map(store.currentTableData.map(r => [String(r.UID), r]));
-      store.originalTableData = store.currentTableData.map(r => ({ ...r }));
+      store.uidRowMap = new Map(
+        store.currentTableData.map((r) => [String(r.UID), r]),
+      );
+      store.originalTableData = store.currentTableData.map((r) => ({ ...r }));
 
       // Rebuild store.uidToKrwRowMap and store.pureBaseToRowsMap
       store.uidToKrwRowMap = new Map();
@@ -516,14 +539,14 @@ export async function loadTableDataSilent() {
         }
       });
 
-      // 🚀 [추가] 백그라운드 동기화 완료 후 대표 지표 우선순위 조율 강제 실행
+      // [추가] 백그라운드 동기화 완료 후 대표 지표 우선순위 조율
       if (typeof window.syncRowPrioritizedMetrics === "function") {
         store.currentTableData.forEach((row) => {
           window.syncRowPrioritizedMetrics(row);
         });
       }
 
-      // 3. 신규 주입 시 전체 갱신, 기존 데이터 머징 시 인플레이스 DOM 수치 최신화
+      // 3. 신규는 전체 갱신, 기존 데이터 머징 시 인플레이스 DOM 수치 최신화
       if (typeof window.renderTable === "function") {
         if (needReRender) {
           window.renderTable();
@@ -532,7 +555,7 @@ export async function loadTableDataSilent() {
         }
       }
 
-      // 🚀 [신규] 사일런트 갱신 시 상태 바 업데이트
+      // [신규] 사일런트 갱신 시 상태 바 업데이트
       if (result.cmc_status !== undefined) {
         store.cmcStatus = result.cmc_status;
       }
@@ -558,7 +581,7 @@ export async function loadTableDataSilent() {
   }
 }
 
-// 🚀 [5분 동기화] 브라우저 최초 로드 후 다음 :00, :05, :10, :15... 정각에 첫 실행 후 5분마다 반복
+// [5분 동기화] 브라우저 최초 로드 후 다음 :00, :05, :10, :15... 정각에 첫 실행 후 5분마다 반복
 function initWallClockSilentRefresh() {
   const now = new Date();
   const currentSec = now.getSeconds();
@@ -567,9 +590,12 @@ function initWallClockSilentRefresh() {
   const msUntilNext5Min =
     ((nextMin - currentMin) * 60 - currentSec) * 1000 - now.getMilliseconds();
 
-  setTimeout(() => {
-    loadTableDataSilent();
-    setInterval(loadTableDataSilent, 300000);
-  }, Math.max(1000, msUntilNext5Min));
+  setTimeout(
+    () => {
+      loadTableDataSilent();
+      setInterval(loadTableDataSilent, 300000);
+    },
+    Math.max(1000, msUntilNext5Min),
+  );
 }
 initWallClockSilentRefresh();

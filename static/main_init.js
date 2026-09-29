@@ -1,5 +1,5 @@
 // main_init.js
-// 🚀 대시보드 엔진 초기화, 사용자 세팅 복원, 라우팅, 디버거 및 자정 리셋 스케줄러
+// 대시보드 엔진 초기화, 사용자 세팅 복원, 라우팅, 디버거 및 자정 리셋 스케줄러
 
 import { store } from "./_store.js";
 import { loadSymbols } from "./chart_api.js";
@@ -12,7 +12,7 @@ import { initDrawingEvents, initDrawingToolbar } from "./chart_draw.js";
 import { initOrderbookDOM } from "./orderbook.js";
 import { restoreThemeSettings } from "./theme_manager.js";
 
-// 🚀 [로고 이미지 폴백 엔진] 깨진 코인 로고를 감지하여 테마별 루마 디어 svg로 자동 치환
+// [로고 이미지 폴백 엔진] 깨진 코인 로고를 감지하여 테마별 루마 디어 svg로 자동 치환
 export function handleLogoError(img) {
   if (!img || img._fallbackApplied) return;
   img._fallbackApplied = true;
@@ -82,10 +82,10 @@ export function preloadCachedMarketData() {
 }
 window.preloadCachedMarketData = preloadCachedMarketData;
 
-// 🚀 사용자의 테마, 사이드바, 테이블 뷰 모드 설정을 로컬 저장소로부터 복원하는 함수
+// 사용자의 테마, 사이드바, 테이블 뷰 모드 설정을 로컬 저장소로부터 복원하는 함수
 export function restoreSavedUserSettings() {
   try {
-    // 0. 로컬 캐시 즉시 복원 (코인 로고 0ms 표시 보장)
+    // 0. 로컬 캐시 즉시 복원
     preloadCachedMarketData();
 
     // 1. 테마 및 컬러 모드 복원
@@ -221,7 +221,7 @@ export function initDashboardEngine() {
 }
 window.initDashboardEngine = initDashboardEngine;
 
-// 🚀 [신규] 브라우저 로컬 타이머 루프 구동 (서버 부하 0%)
+// [신규] 브라우저 로컬 타이머 루프 구동
 export function updateStatusBadge() {
   const timerEl = document.getElementById("status-timer");
   const usersEl = document.getElementById("status-users");
@@ -263,7 +263,7 @@ export function updateStatusBadge() {
     if (timerEl) timerEl.innerText = msg;
     if (tipTimerEl) tipTimerEl.innerText = msg;
 
-    // 🚀 [사일런트 갱신 트리거] 카운트다운 만료 시 10초 쿨다운을 두고 즉시 사일런트 갱신 트리거
+    // [사일런트 갱신 트리거] 카운트다운 만료 시 10초 쿨다운을 두고 즉시 사일런트 갱신 트리거
     const nowMs = Date.now();
     if (
       !store._lastAutoSilentFetch ||
@@ -310,7 +310,7 @@ export function updateStatusBadge() {
       if (tipTimerEl)
         tipTimerEl.innerHTML = `${iconTimer}${formattedTime} 남음 (15분 주기)`;
       if (tipTextEl) {
-        tipTextEl.innerHTML = `개인 CMC API 키 연동 완료 ${iconRocket}<br/>15분 주기로 시총이 자동 갱신됩니다.`;
+        tipTextEl.innerHTML = `개인 CMC API 키 연동 완료 ${iconRocket}<br/>15분 주기로 시총이 자동 갱신됩니다`;
       }
       if (dot)
         dot.className =
@@ -336,7 +336,7 @@ export function updateStatusBadge() {
 export function toggleStatusTooltip(event) {
   if (event) event.stopPropagation();
 
-  // 🚀 모바일 환경(width < 1200)에서 차트 보는 중이면 팝업 열지 않고 즉시 리턴
+  // 모바일 환경(width < 1200)에서 차트 보는 중이면 팝업 열지 않고 즉시 리턴
   if (window.innerWidth < 1200) {
     const overlay = document.getElementById("mobile-chart-overlay");
     const isChartOpen =
@@ -399,7 +399,7 @@ if (typeof document !== "undefined") {
 window.toggleStatusTooltip = toggleStatusTooltip;
 window.updateStatusBadge = updateStatusBadge;
 
-// 🚀 [신규] 1초마다 성능 디버거 통계 수치 갱신
+// [신규] 성능 디버거 통계 수치 갱신
 export function updatePerformanceDebugger() {
   if (!store.bypassCounters) return;
   const total = Object.values(store.bypassCounters).reduce((a, b) => a + b, 0);
@@ -496,7 +496,7 @@ export function stopPerformanceDebugger() {
 }
 window.stopPerformanceDebugger = stopPerformanceDebugger;
 
-// 🚀 URL 경로(/BTC) 또는 해시(#BTC) 기반 자동 렌더링 도우미
+// URL 경로(/BTC) 또는 해시(#BTC) 기반 자동 렌더링 도우미
 export function getInitialRouteSymbol() {
   const path = window.location.pathname.replace(/^\/+|\/+$/g, "");
   const reserved = ["api", "static", "assets", "index.html", "favicon.ico"];
@@ -510,7 +510,7 @@ export function getInitialRouteSymbol() {
 }
 window.getInitialRouteSymbol = getInitialRouteSymbol;
 
-// 🚀 프론트엔드 정밀 타이머 리셋 (매일 오전 9시 정각 KST)
+// 프론트엔드 정밀 타이머 리셋 (매일 오전 9시 정각 KST)
 export function scheduleDailyReset() {
   const now = new Date();
   const nextReset = new Date();
@@ -526,19 +526,8 @@ export function scheduleDailyReset() {
     const rate = store.marketDataMap?.krw_usd_rate || 1000;
     if (store.currentTableData && Array.isArray(store.currentTableData)) {
       store.currentTableData.forEach((row) => {
-        if (row.Binance_Price_Futures) {
-          row.futures_utc0_open_Raw = row.Binance_Price_Futures;
-        }
-        if (row.Binance_Price_Spot) {
-          row.spot_utc0_open_Raw = row.Binance_Price_Spot;
-        }
-        if (row.Price_KRW || (row.Price_Raw && rate > 0)) {
-          row.utc0_open_KRW = row.Price_KRW || row.Price_Raw * rate;
-        }
-        if (row.Price_Raw) {
-          row.utc0_open_Raw = row.Price_Raw;
-        }
-
+        // [수정] 현재가(종가)를 09시 시가로 대입하던 로직 수정
+        // 09시 정각에는 당일 등락률만 0으로 리셋하고, 시가는 서버 공식 시가(tradingDay / 1d kline)를 받아오기
         row.Change_Today_Raw = 0;
         row.Change_Today_Futures = 0;
         row.Change_Today_Spot = 0;
@@ -552,20 +541,26 @@ export function scheduleDailyReset() {
     }
 
     if (store.currentAsset && typeof window.selectSymbol === "function") {
-      window.selectSymbol(store.currentAsset);
+      // 개선 : 현재 보고 있던 활성 마켓(ex UPBIT)을 그대로 유지해서 넘김
+      window.selectSymbol(store.currentAsset, store.currentChartMarket);
     }
 
+    // 09시 정각 즉시 서버의 확정 09:00 시가 장부 동기화
+    if (typeof window.loadTableData === "function") {
+      window.loadTableData(true, true);
+    }
+    // 재검증 보정 ~ 호출하기
     setTimeout(() => {
       if (typeof window.loadTableData === "function") {
         window.loadTableData(true, true);
       }
-    }, 2000);
+    }, 2500);
 
     scheduleDailyReset();
   }, timeUntilReset);
 }
 
-// 🚀 라우팅 및 탭 히스토리 초기화
+// 라우팅 및 탭 히스토리 초기화
 export function setupRouteAndHistory() {
   try {
     const lastTF = localStorage.getItem("sellnance_last_tf");
@@ -619,7 +614,7 @@ export function setupRouteAndHistory() {
   window.addEventListener("hashchange", handleHistoryNavigation);
 }
 
-// 🔄 [장기 방치 자가치유 & 탭 복귀 시 무깜빡임 차트 갭 자동 복구]
+// [장기 방치 자가치유 & 탭 복귀 시 무깜빡임 차트 갭 자동 복구]
 export function setupTabVisibilityRecovery() {
   let tabHiddenAt = 0;
 
@@ -632,7 +627,7 @@ export function setupTabVisibilityRecovery() {
     const now = Date.now();
     const elapsed = tabHiddenAt > 0 ? now - tabHiddenAt : 0;
 
-    // 탭 복귀 순간 브라우저 rAF 대기 없이 큐에 쌓인 최신 틱 즉시 강제 렌더링
+    // 탭 복귀 순간 브라우저 rAF 대기 없이 큐에 쌓인 최신 틱 렌더링
     if (typeof window.flushRealtimeRender === "function") {
       window.flushRealtimeRender();
     }
@@ -640,7 +635,7 @@ export function setupTabVisibilityRecovery() {
       window.refreshSniperTarget();
     }
 
-    // 1. 10초 이상 백그라운드 후 탭 복귀 시: 무깜빡임(0.01초) 차트 캔들 백그라운드 원자적 백필 동기화
+    // 1. 10초 이상 백그라운드 후 탭 복귀 시: 차트 캔들 백그라운드 동기화
     if (elapsed > 10 * 1000) {
       if (
         store.currentAsset &&
@@ -658,6 +653,11 @@ export function setupTabVisibilityRecovery() {
           store.currentUid,
           true,
         );
+      }
+
+      // 퀵뷰 패널이 열려있는 경우 퀵뷰 8개 차트도 깜빡임 없이 백필
+      if (typeof window.syncQuickViewRecentCandles === "function") {
+        window.syncQuickViewRecentCandles();
       }
     }
 
