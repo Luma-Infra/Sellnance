@@ -900,15 +900,15 @@ async def fetch_candles_guarded(
     now = time.time()
     ttl = get_candle_ttl(interval, to)
 
-    if len(CANDLE_CACHE) > 100:
-        # 1차: 300초(5분) 이상 경과한 캐시 즉시 return
+    if len(CANDLE_CACHE) > 50:
+        # 1차: 300초(5분) 이상 경과한 만료 캐시 즉시 return
         CANDLE_CACHE = {k: v for k, v in CANDLE_CACHE.items() if now - v[0] < 300}
-        # 2차: 그래도 100개 초과 시 가장 최신 80개만 남기고 즉시 제거
-        if len(CANDLE_CACHE) > 100:
+        # 2차: 그래도 50개 초과 시 가장 최신 35개만 남기고 즉시 제거 (Railway 메모리 보호)
+        if len(CANDLE_CACHE) > 50:
             sorted_items = sorted(
                 CANDLE_CACHE.items(), key=lambda item: item[1][0], reverse=True
             )
-            CANDLE_CACHE = dict(sorted_items[:80])
+            CANDLE_CACHE = dict(sorted_items[:35])
 
     req_cache_key = f"{exchange}_{symbol}_{interval}_{limit}_{start}_{to}"
 

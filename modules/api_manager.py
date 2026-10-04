@@ -181,6 +181,7 @@ def trigger_kst_9am_reset_atomic():
     print("🎯 [9AM PIPELINE] KST 09:00 시가 초기화 및 캐시 갱신 개시...")
     try:
         capture_utc0_prices_bulk()
+        utils.trim_memory()
         _fetch_and_process_data_and_cache(silent_mode=True)
         print("✅ [9AM PIPELINE] KST 09:00 동기화 완료!")
         return True
@@ -200,7 +201,7 @@ from modules.scheduler import (
 
 
 def _fetch_and_process_data_and_cache(silent_mode=False):
-    """캐시까지 업데이트하는 내부 유틸 (스케줄러 전용)"""
+    """캐시까지 업데이트하는 내부 유틸 (스케줄러 전용, 15분 정기 갱신)"""
     global GLOBAL_CACHE
     kst = pytz.timezone("Asia/Seoul")
     now_kst = datetime.now(kst)
@@ -215,6 +216,7 @@ def _fetch_and_process_data_and_cache(silent_mode=False):
                         "last_updated_str": now_kst.strftime("%Y-%m-%d %H:%M:%S"),
                     }
                 )
+            _save_market_data_cache_to_file()
             print(
                 f"✅ [BG] 캐시 갱신 완료! (총 {len(raw_data)}개, Silent:{silent_mode})"
             )
@@ -222,6 +224,50 @@ def _fetch_and_process_data_and_cache(silent_mode=False):
         print(f"🚨 [BG CACHE ERROR] {e}")
     finally:
         utils.trim_memory()
+
+
+def sync_new_listings_with_cmc(symbols: set[str] | list[str]):
+    """
+    신규 상장 감지 시 즉시 CMC에서 해당 심볼을 조회하여
+    정식 UID 및 메타데이터를 획득하고 GLOBAL_CMC_CACHE와 파일 캐시에 병합
+    """
+    if not symbols:
+        return
+    try:
+        from . import cmc_api
+        import config
+
+        clean_symbols = [str(s).strip().upper() for s in symbols if s]
+        if not clean_symbols:
+            return
+
+        print(f"🔍 [신규 상장 CMC 즉시 조회] 대상 심볼: {clean_symbols} ...")
+        new_market_data, is_invalid = cmc_api.execute_cmc_requests(
+            id_lookup=[],
+            sym_lookup=clean_symbols,
+            api_key=config.get_cmc_api_key(),
+        )
+
+        if new_market_data:
+            global GLOBAL_CMC_CACHE
+            with data_lock:
+                cmc_map = GLOBAL_CMC_CACHE.setdefault("map", {})
+                cmc_lookup = GLOBAL_CMC_CACHE.setdefault("lookup", {})
+                cmc_map.update(new_market_data)
+
+                for sym, info in new_market_data.items():
+                    ucid = info.get("ucid")
+                    if ucid and str(ucid).isdigit():
+                        cmc_lookup[f"{sym}_UPBIT"] = str(ucid)
+                        cmc_lookup[f"{sym}_BINANCE"] = str(ucid)
+                        cmc_lookup[f"{sym}_BITHUMB"] = str(ucid)
+
+                _save_owner_cache_to_file()
+            print(
+                f"✅ [신규 상장 CMC 즉시 매핑 완료] {clean_symbols} -> {len(new_market_data)}개 메타 및 정식 UID 획득!"
+            )
+    except Exception as e:
+        print(f"🚨 [신규 상장 CMC 조회 오류] {e}")
 
 
 # [수정] 모듈 로드 시점에 즉시 실행하지 않고, 처음 호출될 때 초기화하도록 변경
@@ -402,12 +448,15 @@ def _fetch_and_process_data(silent_mode=False, api_key=None):
     all_live_assets = binance_data.keys() | upbit_krw_set | bybit_data.keys()
     live_bases = {utils.get_pure_base_asset(a).upper() for a in all_live_assets}
 
+    # [메모리 최적화] 수천 개 심볼의 거대 임시 딕셔너리 즉시 참조 해제 (glibc 힙 단편화 최소화)
+    del binance_data, bybit_data, bithumb_data, upbit_data, all_live_assets
+
     # 사일런트 모드이거나, 수집된 데이터가 평소보다 적으면 족보 청소를 하지 않고 즉시 나기기
-    if silent_mode or len(binance_data) < 10 or len(upbit_krw_set) < 10:
+    if silent_mode or len(live_bases) < 10 or len(upbit_krw_set) < 10:
         if is_mapping_updated:
             config_manager.save_mapping_data(MAPPING_DATA)
         print(
-            f"⚠️ [SAFEGUARD] 족보 청소 생략 (Silent:{silent_mode}, 바낸:{len(binance_data)}, 업비트:{len(upbit_krw_set)})"
+            f"⚠️ [SAFEGUARD] 족보 청소 생략 (Silent:{silent_mode}, 활성 자산:{len(live_bases)}, 업비트:{len(upbit_krw_set)})"
         )
         return final_results
 

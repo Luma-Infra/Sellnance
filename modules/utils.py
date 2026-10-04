@@ -308,17 +308,30 @@ def is_valid_price_ratio(
 
 def trim_memory():
     """
-    리눅스 C 표준 라이브러리(glibc) heap 미사용 메모리 즉시 OS 커널 반납 (단편화 최소화)
-    - 대용량 데이터 수집/가공 직후 프로세스가 물고 있는 잔여 C 메모리 해제
-    - 윈도우/맥 등 타 OS에서는 에러 없이 안전하게 Pass
+    미사용 메모리 OS 커널 강제 반납 (Linux glibc malloc_trim + Windows SetProcessWorkingSetSize)
+    - 대용량 데이터 수집/가공 직후 프로세스가 물고 있는 잔여 C/파이썬 메모리 OS 회수
+    - Railway 프로덕션(Linux glibc) 및 로컬 개발(Windows) 양쪽 모두 지원
     """
     import gc
+    import sys
 
     gc.collect()
     try:
         import ctypes
 
-        libc = ctypes.CDLL("libc.so.6")
-        libc.malloc_trim(0)
+        # 1. Linux 프로덕션 (Railway Docker 환경: glibc 힙 단편화 강제 정리)
+        if sys.platform.startswith("linux"):
+            try:
+                libc = ctypes.CDLL("libc.so.6")
+                libc.malloc_trim(0)
+            except Exception:
+                pass
+        # 2. Windows 로컬 환경 (OS WorkingSet 트림)
+        elif sys.platform == "win32":
+            try:
+                handle = ctypes.windll.kernel32.GetCurrentProcess()
+                ctypes.windll.kernel32.SetProcessWorkingSetSize(handle, -1, -1)
+            except Exception:
+                pass
     except Exception:
         pass

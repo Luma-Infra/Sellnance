@@ -407,6 +407,21 @@ def start_realtime_listing_watcher():
                             print(
                                 f"\n🚨 [신규 상장 감지] {' | '.join(discovery_msgs)} 신규 상장 포착! 긴급 장부 동기화 가동..."
                             )
+                            # 신규 심볼 추출 후 즉시 CMC UID/메타 쿼리
+                            new_symbols = set()
+                            for ex, syms in new_diff.items():
+                                for s in syms:
+                                    clean = (
+                                        s.replace("KRW-", "")
+                                        .replace("USDT", "")
+                                        .upper()
+                                        .strip()
+                                    )
+                                    if clean:
+                                        new_symbols.add(clean)
+                            if new_symbols:
+                                api_manager.sync_new_listings_with_cmc(new_symbols)
+
                             api_manager._fetch_and_process_data_and_cache(
                                 silent_mode=True
                             )
