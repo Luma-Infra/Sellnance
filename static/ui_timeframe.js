@@ -5,11 +5,11 @@ import { fetchHistory } from "./chart_data.js";
 import { showConfirm } from "./ui_dialog.js";
 
 export const timeframes = [
-  { label: "1", value: "1m" },
-  { label: "3", value: "3m" },
-  { label: "5", value: "5m" },
-  { label: "15", value: "15m" },
-  { label: "30", value: "30m" },
+  { label: "1m", value: "1m" },
+  { label: "3m", value: "3m" },
+  { label: "5m", value: "5m" },
+  { label: "15m", value: "15m" },
+  { label: "30m", value: "30m" },
   { label: "1H", value: "1h" },
   { label: "4H", value: "4h" },
   { label: "12H", value: "12h" },

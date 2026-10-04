@@ -320,15 +320,68 @@ export function selectSymbol(
   // store.currentSelectedSymbol = chartTargetSym;
   store.currentSelectedSymbol = uniqueTicker;
 
+  const isTouch =
+    typeof window.isTouchDevice === "function"
+      ? window.isTouchDevice()
+      : (window.matchMedia && window.matchMedia("(pointer: coarse)").matches) ||
+        "ontouchstart" in window ||
+        (typeof navigator !== "undefined" && navigator.maxTouchPoints > 0);
+  const isMobile = window.innerWidth < 1200 && isTouch;
+
+  const isChartOpen =
+    store._currentMobileTab === "chart" ||
+    (function () {
+      try {
+        return (
+          sessionStorage.getItem("sellnance_active_mobile_tab") === "chart"
+        );
+      } catch (e) {
+        return false;
+      }
+    })() ||
+    (function () {
+      const el = document.getElementById("mobile-chart-overlay");
+      return (
+        el && !el.classList.contains("hidden") && el.style.display !== "none"
+      );
+    })();
+
   if (window.history && window.history.pushState) {
-    if (window.location.pathname !== targetPath && !window.location.hash) {
-      window.history.pushState(null, null, targetPath);
-    } else if (
-      window.location.hash ||
-      window.location.pathname !== targetPath
-    ) {
-      // 기존 해시로 진입한 경우 깔끔한 트레이딩뷰 스타일 URL로 전환
-      window.history.replaceState(null, null, targetPath);
+    if (isMobile) {
+      if (isChartOpen) {
+        // [모바일 SPA 뷰 라우팅] 이미 차트 화면이 열려있다면 코인 전환 시 히스토리 스택을 더 쌓지 않고 URL만 교체
+        window.history.replaceState(
+          { mobileTab: "chart", symbol: targetPath },
+          null,
+          targetPath,
+        );
+      } else {
+        // 모바일 목록에서 처음 차트로 진입할 때만 1단계 스택 푸시
+        if (
+          !window.history.state ||
+          window.history.state.mobileTab !== "list"
+        ) {
+          window.history.replaceState({ mobileTab: "list" }, null, "/");
+        }
+        window.history.pushState(
+          { mobileTab: "chart", symbol: targetPath },
+          null,
+          targetPath,
+        );
+      }
+    } else {
+      // 데스크탑 PC 환경: 코인을 클릭할 때 히스토리 스택을 쌓지 않고 URL만 교체 (뒤로가기 시 이전 웹사이트로 즉시 복귀)
+      if (
+        window.location.pathname !== targetPath ||
+        window.location.hash ||
+        !window.history.state
+      ) {
+        window.history.replaceState(
+          { symbol: targetPath, view: "pc" },
+          null,
+          targetPath,
+        );
+      }
     }
   }
 

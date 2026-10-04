@@ -1,6 +1,6 @@
 // start.js
 // 스타트뷰 엔진: 실시간 키 마스킹 + env 연동 + 유효성 검사
-// 4대장 코인(BTC, ETH, XRP, SOL) 실시간 퀵뷰 프리뷰 쇼케이스 엔진
+// 기본 코인(BTC, ETH, XRP, SOL) 실시간 퀵뷰 프리뷰 쇼케이스 엔진
 
 import { store } from "./_store.js";
 import { loadTableData } from "./table_api.js";
@@ -96,228 +96,23 @@ function getShadowTransform(extraScale = 1) {
   return get3DTransform(1.03 * extraScale);
 }
 
+/**
+ * 시작 화면 3D 쿼터뷰 프리뷰 & CMC 진입 모달 HTML 템플릿
+ * (스타일은 z_style.css로 일원화 관리)
+ */
 function getStartScreenHTML() {
   return `
-    <style>
-      #start-screen {
-        position: fixed;
-        inset: 0;
-        width: 100vw;
-        height: 100dvh;
-        background-color: color-mix(in srgb, var(--bg) 80%, transparent);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        font-family: var(--font-sans);
-        perspective: ${START_3D_CONFIG.perspective}px;
-        overflow: hidden;
-        transition: opacity ${START_3D_CONFIG.exitDurationMs}ms cubic-bezier(0.16, 1, 0.3, 1), transform ${START_3D_CONFIG.exitDurationMs}ms cubic-bezier(0.16, 1, 0.3, 1);
-        will-change: opacity, transform;
-      }
-
-      /* [기존 코드 주석 보존] PixiJS WebGL 캔버스 스타일
-      #pixi-canvas-container {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        z-index: 0;
-      }
-      */
-
-      /* 좌측 3D 쿼터뷰 프리뷰 컨테이너 (황금비 직사각형 덱) */
-      #start-qv-preview-container {
-        position: relative;
-        width: ${START_3D_CONFIG.deckWidth};
-        max-width: ${START_3D_CONFIG.deckMaxWidth};
-        aspect-ratio: ${START_3D_CONFIG.goldenRatio};
-        perspective: ${START_3D_CONFIG.perspective}px;
-        transform-style: preserve-3d;
-        pointer-events: none;
-        overflow: visible !important;
-        margin: auto;
-      }
-
-      @media (max-width: 767px) {
-        #start-qv-preview-container,
-        .start-qv-preview-wrapper {
-          display: none !important;
-        }
-      }
-      
-      /* 3차원 글래스 평면 내부에 직접 렌더링되는 테두리 프로그레스 */
-      .start-qv-inner-progress {
-        position: absolute;
-        inset: -2px;
-        width: calc(100% + 4px);
-        height: calc(100% + 4px);
-        pointer-events: none;
-        z-index: 25;
-        overflow: visible;
-        border-radius: inherit;
-      }
-      .start-qv-progress-rect {
-        stroke-dasharray: 100.2 100.2;
-        stroke-dashoffset: 100.2;
-        stroke-linecap: round;
-        filter: drop-shadow(0 0 4px var(--accent));
-        animation: startBorderProgress ${START_3D_CONFIG.cycleIntervalMs}ms linear infinite;
-      }
-      @keyframes startBorderProgress {
-        0% { stroke-dashoffset: 100.2; opacity: 0.15; }
-        4% { opacity: 0.8; }
-        96% { stroke-dashoffset: 0; opacity: 0.8; }
-        100% { stroke-dashoffset: 0; opacity: 0.15; }
-      }
-
-      #start-qv-spread-view {
-        position: absolute;
-        inset: 0;
-        aspect-ratio: ${START_3D_CONFIG.goldenRatio};
-        transform-origin: center center;
-        transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1), transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
-        will-change: opacity, transform;
-        transform: ${get3DTransform(1)};
-        opacity: 1;
-        overflow: visible;
-      }
-      #start-qv-cards-grid {
-        position: absolute;
-        inset: 0;
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        grid-template-rows: repeat(2, 1fr);
-        gap: 14px;
-        width: 100%;
-        height: 100%;
-      }
-      /* 3D 덱 하단 바닥 투영 은은한 앰비언트 섀도우 (눈이 편안한 약한 발광) */
-      .start-qv-floor-shadow {
-        position: absolute;
-        inset: ${START_3D_CONFIG.auraInset};
-        border-radius: ${START_3D_CONFIG.auraBorderRadius};
-        background: ${START_3D_CONFIG.auraBackground};
-        box-shadow: ${START_3D_CONFIG.auraBoxShadow};
-        filter: blur(${START_3D_CONFIG.auraBlur});
-        opacity: ${START_3D_CONFIG.auraOpacity};
-        pointer-events: none;
-        z-index: 0;
-        transform-origin: center center;
-        transition: transform 0.85s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.85s ease;
-        transform: ${getShadowTransform(1)};
-      }
-
-      #start-qv-overlap-view {
-        position: absolute;
-        inset: 0;
-        border-radius: 20px;
-        aspect-ratio: ${START_3D_CONFIG.goldenRatio};
-        background: var(--panel);
-        border: 1px solid var(--border);
-        box-shadow: 0 20px 48px -8px rgba(0, 0, 0, 0.4);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        transform-origin: center center;
-        transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1), transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
-        will-change: opacity, transform;
-        transform: ${get3DTransform(0.96)};
-        opacity: 0;
-      }
-      .start-qv-card {
-        position: relative;
-        aspect-ratio: ${START_3D_CONFIG.goldenRatio};
-        background: var(--panel);
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        overflow: hidden;
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        display: flex;
-        flex-direction: column;
-        box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.25);
-        transition: transform 0.85s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.85s ease;
-        will-change: transform;
-      }
-      .start-qv-badge {
-        position: absolute;
-        top: 10px;
-        left: 14px;
-        z-index: 10;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 11px;
-        font-weight: 800;
-        letter-spacing: 0.05em;
-      }
-      .start-qv-badge [id^="start-qv-spread-price"],
-      [id^="start-qv-overlap-price"] {
-        color: var(--text);
-        font-weight: 700;
-      }
-      .start-qv-overlap-legend {
-        position: absolute;
-        top: 12px;
-        left: 16px;
-        z-index: 10;
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 12px;
-        font-size: 11px;
-        font-weight: 800;
-      }
-      .start-qv-canvas {
-        width: 100%;
-        flex: 1;
-        min-height: 80px;
-      }
-      #start-qv-overlap-view .start-qv-canvas {
-        opacity: 0.55;
-        transition: opacity 0.25s ease;
-      }
-      .start-qv-legend-item {
-        transition: all 0.2s ease;
-        border: 1px solid transparent;
-        border-radius: 6px;
-      }
-      .start-qv-legend-item:hover {
-        background: var(--border);
-      }
-
-      /* 드로퍼 다이내믹 등장 애니메이션 */
-      @keyframes dynamicDropIn {
-        0% { transform: translateY(20px) scale(0.96); opacity: 0; }
-        100% { transform: translateY(0) scale(1); opacity: 1; }
-      }
-
-      /* 메인 대시보드 테마 일체화 스타일 카드 (눈 편한 미니멀 스타일) */
-      .start-main-card {
-        background: var(--panel) !important;
-        border: 1px solid var(--border) !important;
-        box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.2) !important;
-        border-radius: 24px !important;
-        animation: dynamicDropIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-      }
-      .start-main-card:focus-within {
-        border-color: var(--border) !important;
-        box-shadow: 0 20px 40px -4px rgba(0, 0, 0, 0.25) !important;
-      }
-    </style>
-
     <div
       id="start-screen" style="${localStorage.getItem("sellnance_skip_start") === "true" ? "display: none;" : "display: flex;"}"
       class="fixed inset-0 z-[500] flex items-center justify-center overflow-hidden p-4 md:p-8 bg-theme-bg text-theme-text"
     >
       <div class="w-full max-w-6xl h-full max-h-[820px] flex flex-col md:flex-row items-center justify-center md:justify-between gap-4 sm:gap-5 md:gap-8 relative z-10">
         
-        <!-- [좌츧]: 3D 아이소메트릭 쿼터뷰 차트 덱 -->
+        <!-- [좌측]: 3D 아이소메트릭 쿼터뷰 차트 덱 -->
         <div class="start-qv-preview-wrapper hidden md:flex w-full md:w-[58%] h-auto md:h-[75vh] max-h-[240px] md:max-h-none relative items-center justify-center overflow-visible mb-2 md:mb-0 pointer-events-none select-none">
           <div id="start-qv-preview-container" class="w-full relative overflow-visible pointer-events-none opacity-90 my-auto">
-            <!-- 3D 덱 하단 바닥 투영 앰비언트 섀도우 (800px 황금비 직사각형 덱 전용) -->
-            <div class="start-qv-floor-shadow pointer-events-none"></div>
+            <!-- 3D 덱 하단 바닥 투영 앰비언트 섀도우 -->
+            <div class="start-qv-floor-shadow pointer-events-none" style="transform: ${getShadowTransform(1)};"></div>
 
             <!-- 전역 그라데이션 SVG 정의 -->
             <svg width="0" height="0" class="absolute pointer-events-none">
@@ -329,8 +124,8 @@ function getStartScreenHTML() {
               </defs>
             </svg>
 
-            <!-- 1. Spread 3D 레이어 (4개 덱 전체를 아우르는 단일 외곽 프로그레스) -->
-            <div id="start-qv-spread-view" class="pointer-events-none">
+            <!-- 1. Spread 3D 레이어 -->
+            <div id="start-qv-spread-view" class="pointer-events-none" style="transform: ${get3DTransform(1)};">
               <!-- 4개 카드 전체 둘레를 감싸는 단 1개의 3D 외곽 프로그레스 바 -->
               <svg class="start-qv-inner-progress pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
                 <rect x="0.5" y="0.5" width="99" height="99" rx="3.5" ry="3.5" fill="none" stroke="var(--border)" stroke-width="0.7" />
@@ -339,8 +134,8 @@ function getStartScreenHTML() {
               <div id="start-qv-cards-grid" class="pointer-events-none"></div>
             </div>
 
-            <!-- 2. Overlap 3D 레이어 (내부 직접 3D 투영 프로그레스) -->
-            <div id="start-qv-overlap-view" class="pointer-events-none">
+            <!-- 2. Overlap 3D Layer -->
+            <div id="start-qv-overlap-view" class="pointer-events-none" style="transform: ${get3DTransform(0.96)};">
               <svg class="start-qv-inner-progress pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
                 <rect x="0.5" y="0.5" width="99" height="99" rx="3.5" ry="3.5" fill="none" stroke="var(--border)" stroke-width="0.7" />
                 <rect class="start-qv-progress-rect" x="0.5" y="0.5" width="99" height="99" rx="3.5" ry="3.5" fill="none" stroke="url(#startProgressGlow)" stroke-width="1.2" stroke-linecap="round" pathLength="100" stroke-dasharray="100.2 100.2" stroke-dashoffset="100.2" />
@@ -399,7 +194,7 @@ function getStartScreenHTML() {
                   autocomplete="off"
                   spellcheck="false"
                 />
-                <!-- 감각적인 X 클리어 버튼 (입력 시 부드러운 스케일+페이드인) -->
+
                 <button
                   type="button"
                   id="btn-clear-cmc-key"
@@ -424,7 +219,6 @@ function getStartScreenHTML() {
             </div>
 
             <div class="flex flex-col gap-2 mt-0.5">
-              <!-- 1. 키 저장 및 대시보드 시작 (메인 액션) -->
               <button
                 id="btn-start-engine"
                 onclick="saveAndStart()"
@@ -433,7 +227,6 @@ function getStartScreenHTML() {
                 Start Dashboard
               </button>
 
-              <!-- 2. 바로 이동 (서브 액션) -->
               <button
                 id="btn-skip-start"
                 onclick="skipAndStart()"
@@ -442,7 +235,6 @@ function getStartScreenHTML() {
                 바로 이동 (서버 캐시 모드, 느린 갱신)
               </button>
 
-              <!-- 3. 시작 화면 자동 건너뛰기 공통 설정 (두 버튼 모두에 대응) -->
               <div class="flex items-center justify-center pt-1">
                 <label
                   class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-theme-border/20 cursor-pointer select-none group transition-all pointer-events-auto"
@@ -473,7 +265,7 @@ function maskApiKey(key) {
   return `${start}${dots}${end}`;
 }
 
-// ================= 4대장 퀵뷰 프리뷰 쇼케이스 엔진 =================
+// ================= 기본 X4 퀵뷰 프리뷰 쇼케이스 엔진 =================
 const START_ASSETS = [
   {
     symbol: "BTCUSDT",
@@ -612,7 +404,7 @@ async function initStartQuickViewPreview() {
     startQvSpreadSeries.push(series);
   });
 
-  // [Overlap 뷰] 중앙 통합 4대장 독립 캔들스틱 겹침(오버레이) 카드 생성 (반투명 캔들 블렌딩)
+  // [Overlap View] 중앙 X4 코인 카드 생성
   overlapView.innerHTML = `
     <!-- 3D 투영 ~ 내장 프로그레스 테두리 -->
     <svg class="start-qv-inner-progress pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -1421,7 +1213,7 @@ function hideStartScreen() {
   }
   */
 
-  // 스타트 스크린 퇴장 시 4대장 퀵뷰 프리뷰 엔진 및 소켓 해제
+  // 스타트 스크린 퇴장 시 X4 코인 퀵뷰 프리뷰 엔진 및 소켓 해제
   destroyStartQuickViewPreview();
 
   // 처음 시작일 때만 initDashboardEngine()으로 전체 엔진을 점화

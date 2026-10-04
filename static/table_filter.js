@@ -62,6 +62,57 @@ export function isStockCoin(row) {
   return name.includes("stock") || name.includes("derivative");
 }
 
+// 심볼 기반(문자열)으로 저장되어 있던 즐겨찾기를 정규 CMC UID(숫자)로 자동 마이그레이션
+export function migrateFavoriteUids() {
+  const allSource =
+    store.originalTableData && store.originalTableData.length > 0
+      ? store.originalTableData
+      : store.currentTableData || [];
+  if (!allSource || allSource.length === 0) return;
+
+  let favs = JSON.parse(localStorage.getItem("sellnance_favs") || "[]");
+  let favs2 = JSON.parse(localStorage.getItem("sellnance_favs2") || "[]");
+  let changed = false;
+
+  const symbolToUidMap = new Map();
+  for (const row of allSource) {
+    if (row && row.UID && /^\d+$/.test(String(row.UID))) {
+      const uidStr = String(row.UID);
+      if (row.Symbol)
+        symbolToUidMap.set(String(row.Symbol).toUpperCase(), uidStr);
+      if (row.Ticker)
+        symbolToUidMap.set(String(row.Ticker).toUpperCase(), uidStr);
+      if (row.DisplayTicker)
+        symbolToUidMap.set(String(row.DisplayTicker).toUpperCase(), uidStr);
+    }
+  }
+
+  const migrateList = (list) => {
+    return list.map((item) => {
+      const itemStr = String(item).toUpperCase();
+      if (!/^\d+$/.test(itemStr) && symbolToUidMap.has(itemStr)) {
+        changed = true;
+        return symbolToUidMap.get(itemStr);
+      }
+      return item;
+    });
+  };
+
+  const newFavs = migrateList(favs);
+  const newFavs2 = migrateList(favs2);
+
+  if (changed) {
+    localStorage.setItem(
+      "sellnance_favs",
+      JSON.stringify([...new Set(newFavs)]),
+    );
+    localStorage.setItem(
+      "sellnance_favs2",
+      JSON.stringify([...new Set(newFavs2)]),
+    );
+  }
+}
+
 // ==========================================
 // 2. 테이블 데이터 필터링 엔진
 // ==========================================
@@ -113,6 +164,7 @@ export function getFilteredData() {
   // 1. 탭 필터링 (ALL, FAV, FAV2)
   let delistedRows = [];
   if (store.currentTab === "FAV" || store.currentTab === "FAV2") {
+    migrateFavoriteUids();
     const favKey =
       store.currentTab === "FAV" ? "sellnance_favs" : "sellnance_favs2";
     const rawFavs = JSON.parse(localStorage.getItem(favKey) || "[]");
@@ -306,8 +358,19 @@ export function getFilteredData() {
         if (exchId === "BINANCE_FUTURES")
           return listed.includes("BINANCE_FUTURES") && !isStockCoin(row);
         if (exchId === "BYBIT_SPOT")
-          return listed.includes("BYBIT_SPOT") || listed.includes("BYBIT");
-        if (exchId === "BYBIT_FUTURES") return listed.includes("BYBIT_FUTURES");
+          return (
+            listed.includes("BYBIT_SPOT") ||
+            listed.includes("BYBIT") ||
+            row.Bybit_Price_Spot > 0
+          );
+        if (exchId === "BYBIT_FUTURES")
+          return (
+            listed.includes("BYBIT_FUTURES") ||
+            row.Bybit_Futures === "O" ||
+            row.Bybit_Price_Futures > 0 ||
+            (row.Change_24h_Bybit_Futures !== undefined &&
+              row.Change_24h_Bybit_Futures !== null)
+          );
         if (exchId === "OKX_SPOT")
           return listed.includes("OKX_SPOT") || listed.includes("OKX");
         if (exchId === "BITGET_SPOT")
@@ -366,9 +429,19 @@ export function getFilteredData() {
           if (exchId === "BINANCE_FUTURES")
             return listed.includes("BINANCE_FUTURES") && !isStockCoin(row);
           if (exchId === "BYBIT_SPOT")
-            return listed.includes("BYBIT_SPOT") || listed.includes("BYBIT");
+            return (
+              listed.includes("BYBIT_SPOT") ||
+              listed.includes("BYBIT") ||
+              row.Bybit_Price_Spot > 0
+            );
           if (exchId === "BYBIT_FUTURES")
-            return listed.includes("BYBIT_FUTURES");
+            return (
+              listed.includes("BYBIT_FUTURES") ||
+              row.Bybit_Futures === "O" ||
+              row.Bybit_Price_Futures > 0 ||
+              (row.Change_24h_Bybit_Futures !== undefined &&
+                row.Change_24h_Bybit_Futures !== null)
+            );
           if (exchId === "OKX_SPOT")
             return listed.includes("OKX_SPOT") || listed.includes("OKX");
           if (exchId === "BITGET_SPOT")
@@ -419,9 +492,19 @@ export function getFilteredData() {
 
           if (exchId === "BINANCE_STOCK") return isStockCoin(row);
           if (exchId === "BYBIT_SPOT")
-            return listed.includes("BYBIT_SPOT") || listed.includes("BYBIT");
+            return (
+              listed.includes("BYBIT_SPOT") ||
+              listed.includes("BYBIT") ||
+              row.Bybit_Price_Spot > 0
+            );
           if (exchId === "BYBIT_FUTURES")
-            return listed.includes("BYBIT_FUTURES");
+            return (
+              listed.includes("BYBIT_FUTURES") ||
+              row.Bybit_Futures === "O" ||
+              row.Bybit_Price_Futures > 0 ||
+              (row.Change_24h_Bybit_Futures !== undefined &&
+                row.Change_24h_Bybit_Futures !== null)
+            );
           if (exchId === "OKX_SPOT")
             return listed.includes("OKX_SPOT") || listed.includes("OKX");
           if (exchId === "BITGET_SPOT")

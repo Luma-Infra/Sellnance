@@ -2776,3 +2776,371 @@ html.theme-upbit .kimchi-tag-bybit {
   background-color: rgba(15, 118, 110, 0.12) !important;
   border-color: rgba(15, 118, 110, 0.4) !important;
 }
+
+/* ==========================================================================
+   [스타트 스크린 3D 쿼터뷰 프리뷰 & 진입 모달 스타일]
+   ========================================================================== */
+#start-screen {
+  font-family: var(--font-sans);
+  perspective: 1200px;
+  overflow: hidden;
+  transition:
+    opacity 200ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+#start-qv-preview-container {
+  position: relative;
+  width: 100%;
+  max-width: 800px;
+  aspect-ratio: 1.618 / 1;
+  perspective: 1200px;
+  transform-style: preserve-3d;
+  pointer-events: none;
+  overflow: visible !important;
+  margin: auto;
+}
+
+@media (max-width: 767px) {
+  #start-qv-preview-container,
+  .start-qv-preview-wrapper {
+    display: none !important;
+  }
+}
+
+.start-qv-inner-progress {
+  position: absolute;
+  inset: -2px;
+  width: calc(100% + 4px);
+  height: calc(100% + 4px);
+  pointer-events: none;
+  z-index: 25;
+  overflow: visible;
+  border-radius: inherit;
+}
+
+.start-qv-progress-rect {
+  stroke-dasharray: 100.2 100.2;
+  stroke-dashoffset: 100.2;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 4px var(--accent));
+  animation: startBorderProgress 3000ms linear infinite;
+}
+
+@keyframes startBorderProgress {
+  0% {
+    stroke-dashoffset: 100.2;
+    opacity: 0.15;
+  }
+  4% {
+    opacity: 0.8;
+  }
+  96% {
+    stroke-dashoffset: 0;
+    opacity: 0.8;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0.15;
+  }
+}
+
+#start-qv-spread-view {
+  position: absolute;
+  inset: 0;
+  aspect-ratio: 1.618 / 1;
+  transform-origin: center center;
+  transition:
+    opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+  opacity: 1;
+  overflow: visible;
+}
+
+#start-qv-cards-grid {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 14px;
+  width: 100%;
+  height: 100%;
+}
+
+.start-qv-floor-shadow {
+  position: absolute;
+  inset: 0px;
+  border-radius: 20px;
+  background: radial-gradient(
+    ellipse at center,
+    var(--accent) 0%,
+    transparent 60%
+  );
+  box-shadow: 0 0 12px var(--accent);
+  filter: blur(14px);
+  opacity: 0.07;
+  pointer-events: none;
+  z-index: 0;
+  transform-origin: center center;
+  transition:
+    transform 0.85s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.85s ease;
+}
+
+#start-qv-overlap-view {
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  aspect-ratio: 1.618 / 1;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  box-shadow: 0 20px 48px -8px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transform-origin: center center;
+  transition:
+    opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+  opacity: 0;
+}
+
+.start-qv-card {
+  position: relative;
+  aspect-ratio: 1.618 / 1;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.25);
+  transition:
+    transform 0.85s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.85s ease;
+  will-change: transform;
+}
+
+.start-qv-badge {
+  position: absolute;
+  top: 10px;
+  left: 14px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.start-qv-badge [id^="start-qv-spread-price"],
+[id^="start-qv-overlap-price"] {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.start-qv-overlap-legend {
+  position: absolute;
+  top: 12px;
+  left: 16px;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.start-qv-canvas {
+  width: 100%;
+  flex: 1;
+  min-height: 80px;
+}
+
+#start-qv-overlap-view .start-qv-canvas {
+  opacity: 0.55;
+  transition: opacity 0.25s ease;
+}
+
+.start-qv-legend-item {
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  border-radius: 6px;
+}
+
+.start-qv-legend-item:hover {
+  background: var(--border);
+}
+
+@keyframes dynamicDropIn {
+  0% {
+    transform: translateY(20px) scale(0.96);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.start-main-card {
+  background: var(--panel) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.2) !important;
+  border-radius: 24px !important;
+  animation: dynamicDropIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.start-main-card:focus-within {
+  border-color: var(--border) !important;
+  box-shadow: 0 20px 40px -4px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* [즐겨찾기 이펙트 - 별 우측 상단 작은 스파클 효과] */
+@keyframes shootingStarDot {
+  0% {
+    opacity: 0;
+    transform: translate(-3px, 3px) scale(0) rotate(0deg);
+  }
+  25% {
+    opacity: 1;
+    transform: translate(0px, 0px) scale(1.3) rotate(45deg);
+  }
+  60% {
+    opacity: 1;
+    transform: translate(4px, -4px) scale(1) rotate(90deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(8px, -8px) scale(0) rotate(135deg);
+  }
+}
+
+@keyframes shootingStarTail {
+  0% {
+    opacity: 0;
+    transform: translate(-3px, 3px) scaleX(0.2) rotate(-45deg);
+  }
+  25% {
+    opacity: 0.95;
+    transform: translate(0px, 0px) scaleX(1) rotate(-45deg);
+  }
+  65% {
+    opacity: 0.85;
+    transform: translate(4px, -4px) scaleX(1.1) rotate(-45deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(8px, -8px) scaleX(0.2) rotate(-45deg);
+  }
+}
+
+.star-btn {
+  position: relative !important;
+}
+
+.star-btn.star-sparkle::before {
+  content: "✦";
+  position: absolute;
+  top: -8px;
+  right: -6px;
+  font-size: 9px;
+  line-height: 1;
+  color: #fff475;
+  text-shadow:
+    0 0 4px #ffd700,
+    0 0 8px #ffb300;
+  pointer-events: none;
+  animation: shootingStarDot 0.42s ease-out forwards;
+  z-index: 6;
+}
+
+.star-btn.star-sparkle::after {
+  content: "";
+  position: absolute;
+  top: -2px;
+  right: -3px;
+  width: 14px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #ffd700, #ffffff);
+  border-radius: 999px;
+  box-shadow: 0 0 5px 1px rgba(255, 215, 0, 0.75);
+  pointer-events: none;
+  animation: shootingStarTail 0.42s ease-out forwards;
+  z-index: 5;
+}
+
+.star-btn.active-blue.star-sparkle::before {
+  color: #93c5fd;
+  text-shadow:
+    0 0 4px #3b82f6,
+    0 0 8px #2563eb;
+}
+
+.star-btn.active-blue.star-sparkle::after {
+  background: linear-gradient(90deg, transparent, #3b82f6, #ffffff);
+  box-shadow: 0 0 5px 1px rgba(59, 130, 246, 0.75);
+}
+
+/* [Thanos Finger Snap Disintegration Effect - 즐찾 해제 소멸 이펙트] */
+@keyframes thanosSnapDisintegrate {
+  0% {
+    opacity: 1;
+    filter: blur(0px) brightness(1);
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  25% {
+    filter: blur(1.2px) brightness(1.25) contrast(1.15);
+    transform: translate3d(0, -3px, 0) scale(0.99);
+    opacity: 0.85;
+  }
+  60% {
+    filter: blur(3.5px) brightness(1.5) contrast(1.3);
+    transform: translate3d(0, -9px, 0) scale(0.97);
+    opacity: 0.4;
+  }
+  100% {
+    opacity: 0;
+    filter: blur(7px) brightness(1.8);
+    transform: translate3d(0, -16px, 0) scale(0.94);
+  }
+}
+
+@keyframes thanosCollapseRow {
+  0% {
+    max-height: 52px;
+    opacity: 1;
+  }
+  100% {
+    max-height: 0px;
+    opacity: 0;
+    padding-top: 0px !important;
+    padding-bottom: 0px !important;
+    margin-bottom: 0px !important;
+    border-color: transparent !important;
+  }
+}
+
+.thanos-snap-row {
+  position: relative !important;
+  pointer-events: none !important;
+  overflow: hidden !important;
+  animation: thanosSnapDisintegrate 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94)
+    forwards !important;
+}
+
+.thanos-collapse-row {
+  pointer-events: none !important;
+  overflow: hidden !important;
+  animation: thanosCollapseRow 0.22s ease-in-out forwards !important;
+}

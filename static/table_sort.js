@@ -98,9 +98,12 @@ export function simpleSortData() {
   const isKrwMode = store.currencyMode === "KRW";
   const rate = store.marketDataMap?.krw_usd_rate || 1000;
 
-  // [Schwartzian Transform] 공통 Raw 변수 값 및 비어있음 판단을 O(N)으로 1회만 선계산하여 캐싱
+  // [Schwartzian Transform] 공통 Raw 변수 값 및 비어있음 판단을 O(N)으로 1회만 먼저 계산하여 캐싱
   const mapped = dataCopy.map((d) => {
     let val;
+    let secVal = 0;
+    let hasSec = false;
+
     if (store.currentSortCol === "Listing_Date") {
       val = getListingDate(d);
     } else if (
@@ -122,11 +125,23 @@ export function simpleSortData() {
       store.currentSortCol === "VolumeBinance" ||
       store.currentSortCol === "Volume"
     ) {
-      const volInfo = getRowDisplayVolume(d);
+      const volInfo = getRowDisplayVolume(d, store.currentMarket);
       val = volInfo.volBRaw;
+      secVal = volInfo.volURaw || d.Upbit_Vol || 0;
+      const secNum = Number(secVal);
+      if (!isNaN(secNum) && secNum > 0 && d.Upbit_Vol_Formatted !== "-") {
+        hasSec = true;
+        secVal = secNum;
+      }
     } else if (store.currentSortCol === "VolumeUpbit") {
-      const volInfo = getRowDisplayVolume(d);
+      const volInfo = getRowDisplayVolume(d, store.currentMarket);
       val = volInfo.volURaw || d.Upbit_Vol || 0;
+      secVal = volInfo.volBRaw || 0;
+      const secNum = Number(secVal);
+      if (!isNaN(secNum) && secNum > 0 && d.Binance_Vol_Formatted !== "-") {
+        hasSec = true;
+        secVal = secNum;
+      }
     } else {
       val = d[key];
     }
@@ -194,11 +209,33 @@ export function simpleSortData() {
       }
     }
 
-    return { val, isEmpty, d };
+    return { val, isEmpty, d, secVal, hasSec };
   });
 
   // 가벼운 캐시 데이터 정렬 (O(N log N)의 비교 비용 최소화)
   mapped.sort((a, b) => {
+    // [볼륨 2단 연계 정렬]: 주 거래소 볼륨(바낸)이 없는 코인들은 차순위(업비트) 볼륨으로 내림차/오름차 정렬
+    const isVolSort =
+      store.currentSortCol === "VolumeBinance" ||
+      store.currentSortCol === "Volume" ||
+      store.currentSortCol === "VolumeUpbit";
+
+    if (isVolSort) {
+      if (!a.isEmpty && !b.isEmpty) {
+        return isAsc ? a.val - b.val : b.val - a.val;
+      }
+      if (!a.isEmpty && b.isEmpty) return -1;
+      if (a.isEmpty && !b.isEmpty) return 1;
+
+      // 둘 다 주 볼륨이 없는 경우 (예: 바낸 볼륨 정렬인데 둘 다 업비트 단독 코인)
+      if (a.hasSec && b.hasSec) {
+        return isAsc ? a.secVal - b.secVal : b.secVal - a.secVal;
+      }
+      if (a.hasSec && !b.hasSec) return -1;
+      if (!a.hasSec && b.hasSec) return 1;
+      return 0;
+    }
+
     // 값이 없는 데이터는 오름차순/내림차순 상관없이 항상 최하단으로 정렬
     if (a.isEmpty && b.isEmpty) return 0;
     if (a.isEmpty) return 1;

@@ -1,224 +1,15 @@
-import{A as e,M as t,a as n,d as r,dt as i,f as a,gt as o,ht as s,i as c,it as l,l as u,n as d,nt as f,o as p,p as m,r as h,t as g,u as ee}from"./ch120-DULIDo0X.js";import{n as _,t as v}from"./ma140-C0om1LQV.js";function te(e){!e||e._fallbackApplied||(e._fallbackApplied=!0,e.classList.add(`fallback-logo`),e.src=document.body.classList.contains(`theme-upbit`)?`/static/luma-deer-svg-light.svg`:`/static/luma-deer-svg-dark.svg`)}window.handleLogoError=te,window.addEventListener(`error`,e=>{if(e.target&&e.target.tagName===`IMG`){let t=e.target;(t.src.includes(`coinmarketcap.com/static/img/coins`)||t.closest(`.col-asset`)||t.closest(`#head-asset-name`))&&te(t)}},!0);function ne(){try{if(s.originalTableData&&s.originalTableData.length>0)return;let e=localStorage.getItem(`sellnance_market_data_cache`);if(!e)return;let t=JSON.parse(e);if(!t||!Array.isArray(t.data)||t.data.length===0)return;s.originalTableData=t.data,(!s.currentTableData||s.currentTableData.length===0)&&(s.currentTableData=t.data),s.tickerRowMap&&t.data.forEach(e=>{if(!e)return;let t=e.UID?String(e.UID):null,n=e.Symbol?String(e.Symbol).toUpperCase():null,r=e.DisplayTicker?String(e.DisplayTicker).toUpperCase():null,i=e.Ticker?String(e.Ticker).toUpperCase():null;t&&s.tickerRowMap.set(t,e),n&&!s.tickerRowMap.has(n)&&s.tickerRowMap.set(n,e),r&&!s.tickerRowMap.has(r)&&s.tickerRowMap.set(r,e),i&&!s.tickerRowMap.has(i)&&s.tickerRowMap.set(i,e)})}catch(e){console.warn(`로컬 캐시 선제 동기화 실패:`,e)}}window.preloadCachedMarketData=ne;function re(){try{if(ne(),m(),localStorage.getItem(`sellnance_sidebar_collapsed`)===`true`){s.isSidebarOpen=!1;let e=document.getElementById(`left-panel`);e&&(e.classList.remove(`md:flex`),e.classList.add(`md:hidden`));let t=document.getElementById(`sidebar-toggle-text`);t&&(t.innerText=`▶ 펼치기`)}if(localStorage.getItem(`sellnance_header_collapsed`)===`true`){let e=document.getElementById(`head-asset-row`),t=document.getElementById(`head-info-row`),n=document.getElementById(`head-badges-row`),r=document.getElementById(`toggle-header-top-btn`);[e,t,n].forEach(e=>{e&&(e.style.display=`none`,e.classList.add(`hidden`))}),r&&(r.innerText=`▼ 헤더 펼치기`)}let e=localStorage.getItem(`sellnance_panel_swapped`)===`true`;if(document.documentElement.classList.toggle(`panel-swapped-mode`,e),e){let e=document.getElementById(`panel-split-container`),t=document.getElementById(`left-panel`);e&&(e.style.setProperty(`flex-direction`,`row-reverse`,`important`),e.classList.remove(`flex-row`,`md:flex-row`),e.classList.add(`panel-swapped`,`flex-row-reverse`)),t&&(t.style.borderRightWidth=`0px`,t.style.borderLeftWidth=`1px`)}let t=localStorage.getItem(`sellnance_table_view_mode`);if(!t||t===`simple`){t=`basic`;try{localStorage.setItem(`sellnance_table_view_mode`,`basic`)}catch{}}typeof p==`function`&&p(t,!1),typeof window.restoreControlPanelUI==`function`&&window.restoreControlPanelUI(),typeof window.updateCandleThemeButtons==`function`&&window.updateCandleThemeButtons(),typeof window.updateSortUI==`function`&&window.updateSortUI(s.currentSortCol,s.sortState)}catch{}}var y=null;function b(){return y||(y=(async()=>{re(),typeof window.restoreControlPanelUI==`function`&&window.restoreControlPanelUI(),typeof v==`function`&&v();try{typeof window.initChart==`function`?await window.initChart():typeof u==`function`&&await u(),await Promise.all([c(),f()]),s.currentTableData&&s.currentTableData.length>0&&(h(),g(),d(),typeof window.initInfiniteScroll==`function`&&window.initInfiniteScroll(),typeof window.initAllExchangeFeeds==`function`&&window.initAllExchangeFeeds(),s.isEngineStarted=!0,_())}catch(e){console.error(`Dashboard engine init error:`,e)}})(),y)}window.initDashboardEngine=b;function x(){let e=document.getElementById(`status-timer`),t=document.getElementById(`status-users`),n=document.getElementById(`tooltip-timer`),r=document.getElementById(`tooltip-users`),i=document.getElementById(`status-tooltip-text`),a=document.getElementById(`status-timer-dot`),o=s.activeUsers||1;if(t&&(t.innerText=`${o} Active`),r&&(r.innerText=`${o} Active`),!s.lastUpdatedRaw&&!s.nextUpdateRaw){e&&(e.innerText=`--:-- 이후 갱신`),n&&(n.innerText=`--:--`);return}let c=Math.floor(Date.now()/1e3),l=localStorage.getItem(`CMC_API_KEY`)&&localStorage.getItem(`CMC_API_KEY`).trim()!==``,u=0;if(s.nextUpdateRaw)u=Math.floor(s.nextUpdateRaw-c);else if(s.lastUpdatedRaw){let e=l?900:14400,t=Math.floor(s.lastUpdatedRaw)+e;u=Math.floor(t-c)}else{e&&(e.innerText=`--:-- 이후 갱신`),n&&(n.innerText=`--:--`);return}if(u<=0){let t=`대기 중...`;e&&(e.innerText=t),n&&(n.innerText=t);let r=Date.now();(!s._lastAutoSilentFetch||r-s._lastAutoSilentFetch>1e4)&&(s._lastAutoSilentFetch=r,typeof window.loadTableDataSilent==`function`&&window.loadTableDataSilent());return}let d=`<svg class="inline-block w-3 h-3 mr-1 align-middle text-theme-text opacity-75" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`,f=Math.floor(u/3600),p=Math.floor(u%3600/60),m=`${f.toString().padStart(2,`0`)}:${p.toString().padStart(2,`0`)}`;l?s.cmcStatus===`INVALID_KEY`?(e&&(e.innerHTML=`${d}${m} (키 오류)`,e.title=`CMC API 키 오류 (서버 정기 캐시 유지)`,e.style.cursor=`default`),n&&(n.innerHTML=`<span class="text-rose-400 font-bold">⚠️ CMC API 키 오류</span>`),i&&(i.innerHTML=`<span class="text-rose-400 font-bold">입력하신 개인 CMC API 키가 유효하지 않아요</span><br/>실시간 시세 및 차트는 정상 작동하며, 시가총액은 서버 캐시로 안전하게 유지할게요<br/><span class="text-xs opacity-75 text-theme-accent">설정에서 유효한 키인지 다시 확인해 주세요</span>`),a&&(a.className=`inline-block w-2 h-2 min-[1200px]:w-1.5 min-[1200px]:h-1.5 rounded-full bg-rose-500 animate-pulse`)):(e&&(e.innerText=`${m} 이후 갱신`,e.title=``,e.style.cursor=`default`),n&&(n.innerHTML=`<svg class="inline-block w-3.5 h-3.5 mr-1 align-middle text-theme-text opacity-85" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>${m} 남음 (15분 주기)`),i&&(i.innerHTML=`개인 CMC API 키 연동 완료 <svg class="inline-block w-3.5 h-3.5 ml-1 align-middle text-theme-text opacity-85" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"></path><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"></path></svg><br/>15분 주기로 시총이 자동 갱신됩니다`),a&&(a.className=`inline-block w-2 h-2 min-[1200px]:w-1.5 min-[1200px]:h-1.5 rounded-full bg-emerald-500 animate-pulse`)):(e&&(e.innerHTML=`${d}${m} (정기 캐시)`,e.title=``,e.style.cursor=`default`),n&&(n.innerHTML=`${d}${m} (정기 캐시)`),i&&(i.innerHTML=`개인 CMC API 키 미입력 상태에요<br/>서버 정기 캐시 모드(4시간 주기)로 시총을 갱신할게요`),a&&(a.className=`inline-block w-2 h-2 min-[1200px]:w-1.5 min-[1200px]:h-1.5 rounded-full bg-amber-400 animate-pulse`))}function ie(e){if(e&&e.stopPropagation(),window.innerWidth<1200){let e=document.getElementById(`mobile-chart-overlay`);if(e&&e.style.opacity===`1`&&!e.classList.contains(`hidden`)||window.store&&window.store._currentMobileTab===`chart`)return}let t=document.getElementById(`status-cache-tooltip`);t&&(t.classList.contains(`opacity-100`)?(t.classList.remove(`opacity-100`,`pointer-events-auto`,`translate-y-0`),t.classList.add(`opacity-0`,`pointer-events-none`,`translate-y-1`)):(x(),t.classList.remove(`opacity-0`,`pointer-events-none`,`translate-y-1`),t.classList.add(`opacity-100`,`pointer-events-auto`,`translate-y-0`)))}typeof document<`u`&&document.addEventListener(`click`,e=>{if(window.innerWidth<1200){let t=document.getElementById(`server-status-badge`),n=document.getElementById(`status-cache-tooltip`);n&&n.classList.contains(`opacity-100`)&&(!t||!t.contains(e.target))&&(n.classList.remove(`opacity-100`,`pointer-events-auto`,`translate-y-0`),n.classList.add(`opacity-0`,`pointer-events-none`,`translate-y-1`))}}),window.toggleStatusTooltip=ie,window.updateStatusBadge=x;function S(){if(!s.bypassCounters)return;let e=Object.values(s.bypassCounters).reduce((e,t)=>e+t,0),t=document.getElementById(`perf-total-bypass`);t&&(t.innerText=`Total: ${e}`),[`leftDom`,`tabScroll`,`tableUpdate`,`kimchi`,`radarBatch`,`mouseEvent`,`dynamicHtml`,`throttleBypass`,`throttlePass`].forEach(e=>{let t=document.getElementById(`bypass-cnt-${e}`);t&&(t.textContent=s.bypassCounters[e]||0)});let n=document.getElementById(`perf-top-risk-analysis`);if(n){let e=-1,t=`NONE`;Object.entries(s.bypassCounters).forEach(([n,r])=>{r>e&&(e=r,t=n)}),e===0?(n.innerText=`안정 (소켓 수급 정체 혹은 렉 유발 없음)`,n.className=`text-[8.5px] font-semibold text-emerald-400 opacity-90 leading-tight bg-white/2 p-1 rounded font-sans`):(n.innerText=`⚠️ ${{leftDom:`좌측 테이블 DOM 최적화 차단`,chartDom:`우측 차트 렌더러 지연 차단`,orderbook:`실시간 호가창 렌더링 락`,legend:`상단 가격 레전드 문자열 덮어쓰기`,resize:`차트 리사이즈 오버헤드`,mouseEvent:`차트 십자선 마우스 이벤트 지연`,sort:`테이블 실시간 순위 재배치 루프`,tabScroll:`테이블 전체 리렌더링 리플로우`,tableUpdate:`개별 행 셀 텍스트 갱신 과부하`,kimchi:`3초 주기 김프 연산 전파 루프`,radarBatch:`3초 레이더 일괄 갱신 차단`,dynamicHtml:`김프 전파 HTML 동적 렌더링 과부하`}[t]||t} (${e}회 Bypass)`,n.className=`text-[8.5px] font-semibold text-rose-400 opacity-90 leading-tight bg-white/2 p-1 rounded font-sans`)}}window.updatePerformanceDebugger=S;var C=null,w=null;function ae(){C&&clearInterval(C),w=Date.now(),s.bypassCounters&&Object.keys(s.bypassCounters).forEach(e=>{s.bypassCounters[e]=0});let e=document.getElementById(`perf-run-time-display`);e&&(e.innerText=`(0s 경과)`),S(),C=setInterval(()=>{if(w){let e=Math.floor((Date.now()-w)/1e3),t=document.getElementById(`perf-run-time-display`);t&&(t.innerText=`(${e}s 경과)`)}S()},1e3)}window.startPerformanceDebugger=ae;function oe(){C&&=(clearInterval(C),null)}window.stopPerformanceDebugger=oe;function se(){let e=window.location.pathname.replace(/^\/+|\/+$/g,``);return e&&![`api`,`static`,`assets`,`index.html`,`favicon.ico`].includes(e.toLowerCase())?decodeURIComponent(e):window.location.hash&&window.location.hash.length>1?decodeURIComponent(window.location.hash.substring(1)):null}window.getInitialRouteSymbol=se;function ce(){let e=new Date,t=new Date;t.setUTCHours(0,0,0,0),e>=t&&t.setUTCDate(t.getUTCDate()+1);let n=t.getTime()-e.getTime();setTimeout(()=>{s.marketDataMap?.krw_usd_rate,s.currentTableData&&Array.isArray(s.currentTableData)&&(s.currentTableData.forEach(e=>{e.Change_Today_Raw=0,e.Change_Today_Futures=0,e.Change_Today_Spot=0,e.Change_Today_Binance=0,e.Change_Today_Upbit=0,e.Change_Today_Bithumb=0,e.Change_Today_Bybit=0}),typeof window.renderTable==`function`&&window.renderTable()),s.currentAsset&&typeof window.selectSymbol==`function`&&window.selectSymbol(s.currentAsset,s.currentChartMarket),typeof window.loadTableData==`function`&&window.loadTableData(!0,!0),setTimeout(()=>{typeof window.loadTableData==`function`&&window.loadTableData(!0,!0)},2500),ce()},n)}function le(){try{let e=localStorage.getItem(`sellnance_last_tf`);e&&[`1m`,`3m`,`5m`,`15m`,`30m`,`1h`,`4h`,`12h`,`1d`,`3d`,`1w`,`1M`].includes(e)&&(s.currentTF=e)}catch{}let e=se();if(e&&s.isEngineStarted)typeof n==`function`&&n(e);else if(window.innerWidth<1200)try{(sessionStorage.getItem(`sellnance_active_mobile_tab`)||`list`)===`chart`&&typeof switchMobileTab==`function`&&switchMobileTab(`chart`)}catch{}let t=()=>{let e=se();e&&s.isEngineStarted&&typeof n==`function`&&n(e)};window.addEventListener(`popstate`,t),window.addEventListener(`hashchange`,t)}function ue(){let e=0,t=()=>{if(typeof document<`u`&&document.visibilityState!==`visible`)return;let t=e>0?Date.now()-e:0;typeof window.flushRealtimeRender==`function`&&window.flushRealtimeRender(),typeof window.refreshSniperTarget==`function`&&window.refreshSniperTarget(),t>10*1e3&&(s.currentAsset&&s.candleSeries&&!s.isFetchingChart&&!s.isSilentSyncing&&typeof window.fetchHistory==`function`&&window.fetchHistory(s.currentAsset,!1,!1,!1,s.currentUid,!0),typeof window.syncQuickViewRecentCandles==`function`&&window.syncQuickViewRecentCandles()),t>30*1e3&&(typeof window.syncSniperSubscriptions==`function`&&window.syncSniperSubscriptions(),typeof window.initAllExchangeFeeds==`function`&&window.initAllExchangeFeeds(),typeof window.loadTableDataSilent==`function`?window.loadTableDataSilent():typeof window.loadTableData==`function`&&window.loadTableData(!1,!0)),e=0};typeof document<`u`&&document.addEventListener(`visibilitychange`,()=>{document.visibilityState===`hidden`?e=Date.now():document.visibilityState===`visible`&&t()}),typeof window<`u`&&window.addEventListener(`focus`,()=>{e>0&&t()})}var T={cycleIntervalMs:3e3,goldenRatio:`1.618 / 1`,deckWidth:`100%`,deckMaxWidth:`800px`,compassCycle:[`NW`,`NE`],tiltAngle:[5,5,-5,-5],scale:1,perspective:1200,exitDurationMs:200,auraInset:`0px`,auraBorderRadius:`20px`,auraBlur:`14px`,auraOpacity:.07,auraBackground:`radial-gradient(ellipse at center, var(--accent) 0%, transparent 60%)`,auraBoxShadow:`0 0 12px var(--accent)`},E=[{layout:`spread`,tf:`4h`,candleMode:`unique`},{layout:`overlap`,tf:`1d`,candleMode:`unique`},{layout:`spread`,tf:`4h`,candleMode:`default`},{layout:`overlap`,tf:`1d`,candleMode:`default`}],de={NE:{rx:1,ry:-1,rz:1},NW:{rx:1,ry:1,rz:-1},SW:{rx:-1,ry:1,rz:1},SE:{rx:-1,ry:-1,rz:-1},N:{rx:1.2,ry:0,rz:0},S:{rx:-1.2,ry:0,rz:0},E:{rx:0,ry:-1.2,rz:0},W:{rx:0,ry:1.2,rz:0},CENTER:{rx:0,ry:0,rz:0}},D=0;function O(e=1){let t=T.compassCycle,n=de[t[D%t.length]||`NE`]||de.NE,r=Array.isArray(T.tiltAngle)?T.tiltAngle:[T.tiltAngle],i=r[D%r.length]??10;return`rotateX(${(n.rx*i).toFixed(1)}deg) rotateY(${(n.ry*i).toFixed(1)}deg) rotateZ(${(n.rz*(i/4)).toFixed(1)}deg) scale(${(T.scale*e).toFixed(3)})`}function fe(e=1){return O(1.03*e)}function pe(){return`
-    <style>
-      #start-screen {
-        position: fixed;
-        inset: 0;
-        width: 100vw;
-        height: 100dvh;
-        background-color: color-mix(in srgb, var(--bg) 80%, transparent);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        font-family: var(--font-sans);
-        perspective: ${T.perspective}px;
-        overflow: hidden;
-        transition: opacity ${T.exitDurationMs}ms cubic-bezier(0.16, 1, 0.3, 1), transform ${T.exitDurationMs}ms cubic-bezier(0.16, 1, 0.3, 1);
-        will-change: opacity, transform;
-      }
-
-      /* [기존 코드 주석 보존] PixiJS WebGL 캔버스 스타일
-      #pixi-canvas-container {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        z-index: 0;
-      }
-      */
-
-      /* 좌측 3D 쿼터뷰 프리뷰 컨테이너 (황금비 직사각형 덱) */
-      #start-qv-preview-container {
-        position: relative;
-        width: ${T.deckWidth};
-        max-width: ${T.deckMaxWidth};
-        aspect-ratio: ${T.goldenRatio};
-        perspective: ${T.perspective}px;
-        transform-style: preserve-3d;
-        pointer-events: none;
-        overflow: visible !important;
-        margin: auto;
-      }
-
-      @media (max-width: 767px) {
-        #start-qv-preview-container,
-        .start-qv-preview-wrapper {
-          display: none !important;
-        }
-      }
-      
-      /* 3차원 글래스 평면 내부에 직접 렌더링되는 테두리 프로그레스 */
-      .start-qv-inner-progress {
-        position: absolute;
-        inset: -2px;
-        width: calc(100% + 4px);
-        height: calc(100% + 4px);
-        pointer-events: none;
-        z-index: 25;
-        overflow: visible;
-        border-radius: inherit;
-      }
-      .start-qv-progress-rect {
-        stroke-dasharray: 100.2 100.2;
-        stroke-dashoffset: 100.2;
-        stroke-linecap: round;
-        filter: drop-shadow(0 0 4px var(--accent));
-        animation: startBorderProgress ${T.cycleIntervalMs}ms linear infinite;
-      }
-      @keyframes startBorderProgress {
-        0% { stroke-dashoffset: 100.2; opacity: 0.15; }
-        4% { opacity: 0.8; }
-        96% { stroke-dashoffset: 0; opacity: 0.8; }
-        100% { stroke-dashoffset: 0; opacity: 0.15; }
-      }
-
-      #start-qv-spread-view {
-        position: absolute;
-        inset: 0;
-        aspect-ratio: ${T.goldenRatio};
-        transform-origin: center center;
-        transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1), transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
-        will-change: opacity, transform;
-        transform: ${O(1)};
-        opacity: 1;
-        overflow: visible;
-      }
-      #start-qv-cards-grid {
-        position: absolute;
-        inset: 0;
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        grid-template-rows: repeat(2, 1fr);
-        gap: 14px;
-        width: 100%;
-        height: 100%;
-      }
-      /* 3D 덱 하단 바닥 투영 은은한 앰비언트 섀도우 (눈이 편안한 약한 발광) */
-      .start-qv-floor-shadow {
-        position: absolute;
-        inset: ${T.auraInset};
-        border-radius: ${T.auraBorderRadius};
-        background: ${T.auraBackground};
-        box-shadow: ${T.auraBoxShadow};
-        filter: blur(${T.auraBlur});
-        opacity: ${T.auraOpacity};
-        pointer-events: none;
-        z-index: 0;
-        transform-origin: center center;
-        transition: transform 0.85s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.85s ease;
-        transform: ${fe(1)};
-      }
-
-      #start-qv-overlap-view {
-        position: absolute;
-        inset: 0;
-        border-radius: 20px;
-        aspect-ratio: ${T.goldenRatio};
-        background: var(--panel);
-        border: 1px solid var(--border);
-        box-shadow: 0 20px 48px -8px rgba(0, 0, 0, 0.4);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        transform-origin: center center;
-        transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1), transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
-        will-change: opacity, transform;
-        transform: ${O(.96)};
-        opacity: 0;
-      }
-      .start-qv-card {
-        position: relative;
-        aspect-ratio: ${T.goldenRatio};
-        background: var(--panel);
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        overflow: hidden;
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        display: flex;
-        flex-direction: column;
-        box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.25);
-        transition: transform 0.85s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.85s ease;
-        will-change: transform;
-      }
-      .start-qv-badge {
-        position: absolute;
-        top: 10px;
-        left: 14px;
-        z-index: 10;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 11px;
-        font-weight: 800;
-        letter-spacing: 0.05em;
-      }
-      .start-qv-badge [id^="start-qv-spread-price"],
-      [id^="start-qv-overlap-price"] {
-        color: var(--text);
-        font-weight: 700;
-      }
-      .start-qv-overlap-legend {
-        position: absolute;
-        top: 12px;
-        left: 16px;
-        z-index: 10;
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 12px;
-        font-size: 11px;
-        font-weight: 800;
-      }
-      .start-qv-canvas {
-        width: 100%;
-        flex: 1;
-        min-height: 80px;
-      }
-      #start-qv-overlap-view .start-qv-canvas {
-        opacity: 0.55;
-        transition: opacity 0.25s ease;
-      }
-      .start-qv-legend-item {
-        transition: all 0.2s ease;
-        border: 1px solid transparent;
-        border-radius: 6px;
-      }
-      .start-qv-legend-item:hover {
-        background: var(--border);
-      }
-
-      /* 드로퍼 다이내믹 등장 애니메이션 */
-      @keyframes dynamicDropIn {
-        0% { transform: translateY(20px) scale(0.96); opacity: 0; }
-        100% { transform: translateY(0) scale(1); opacity: 1; }
-      }
-
-      /* 메인 대시보드 테마 일체화 스타일 카드 (눈 편한 미니멀 스타일) */
-      .start-main-card {
-        background: var(--panel) !important;
-        border: 1px solid var(--border) !important;
-        box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.2) !important;
-        border-radius: 24px !important;
-        animation: dynamicDropIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-      }
-      .start-main-card:focus-within {
-        border-color: var(--border) !important;
-        box-shadow: 0 20px 40px -4px rgba(0, 0, 0, 0.25) !important;
-      }
-    </style>
-
+import{A as e,M as t,a as n,d as r,dt as i,f as a,gt as o,ht as s,i as c,it as l,l as u,n as d,nt as f,o as p,p as m,r as h,t as g,u as ee}from"./ch120-DnlerkCk.js";import{n as _,t as v}from"./ma140-BtcPvhXh.js";function te(e){!e||e._fallbackApplied||(e._fallbackApplied=!0,e.classList.add(`fallback-logo`),e.src=document.body.classList.contains(`theme-upbit`)?`/static/luma-deer-svg-light.svg`:`/static/luma-deer-svg-dark.svg`)}window.handleLogoError=te,window.addEventListener(`error`,e=>{if(e.target&&e.target.tagName===`IMG`){let t=e.target;(t.src.includes(`coinmarketcap.com/static/img/coins`)||t.closest(`.col-asset`)||t.closest(`#head-asset-name`))&&te(t)}},!0);function ne(){try{if(s.originalTableData&&s.originalTableData.length>0)return;let e=localStorage.getItem(`sellnance_market_data_cache`);if(!e)return;let t=JSON.parse(e);if(!t||!Array.isArray(t.data)||t.data.length===0)return;s.originalTableData=t.data,(!s.currentTableData||s.currentTableData.length===0)&&(s.currentTableData=t.data),s.tickerRowMap&&t.data.forEach(e=>{if(!e)return;let t=e.UID?String(e.UID):null,n=e.Symbol?String(e.Symbol).toUpperCase():null,r=e.DisplayTicker?String(e.DisplayTicker).toUpperCase():null,i=e.Ticker?String(e.Ticker).toUpperCase():null;t&&s.tickerRowMap.set(t,e),n&&!s.tickerRowMap.has(n)&&s.tickerRowMap.set(n,e),r&&!s.tickerRowMap.has(r)&&s.tickerRowMap.set(r,e),i&&!s.tickerRowMap.has(i)&&s.tickerRowMap.set(i,e)})}catch(e){console.warn(`로컬 캐시 선제 동기화 실패:`,e)}}window.preloadCachedMarketData=ne;function re(){try{if(ne(),m(),localStorage.getItem(`sellnance_sidebar_collapsed`)===`true`){s.isSidebarOpen=!1;let e=document.getElementById(`left-panel`);e&&(e.classList.remove(`md:flex`),e.classList.add(`md:hidden`));let t=document.getElementById(`sidebar-toggle-text`);t&&(t.innerText=`▶ 펼치기`)}if(localStorage.getItem(`sellnance_header_collapsed`)===`true`){let e=document.getElementById(`head-asset-row`),t=document.getElementById(`head-info-row`),n=document.getElementById(`head-badges-row`),r=document.getElementById(`toggle-header-top-btn`);[e,t,n].forEach(e=>{e&&(e.style.display=`none`,e.classList.add(`hidden`))}),r&&(r.innerText=`▼ 헤더 펼치기`)}let e=localStorage.getItem(`sellnance_panel_swapped`)===`true`;if(document.documentElement.classList.toggle(`panel-swapped-mode`,e),e){let e=document.getElementById(`panel-split-container`),t=document.getElementById(`left-panel`);e&&(e.style.setProperty(`flex-direction`,`row-reverse`,`important`),e.classList.remove(`flex-row`,`md:flex-row`),e.classList.add(`panel-swapped`,`flex-row-reverse`)),t&&(t.style.borderRightWidth=`0px`,t.style.borderLeftWidth=`1px`)}let t=localStorage.getItem(`sellnance_table_view_mode`);if(!t||t===`simple`){t=`basic`;try{localStorage.setItem(`sellnance_table_view_mode`,`basic`)}catch{}}typeof p==`function`&&p(t,!1),typeof window.restoreControlPanelUI==`function`&&window.restoreControlPanelUI(),typeof window.updateCandleThemeButtons==`function`&&window.updateCandleThemeButtons(),typeof window.updateSortUI==`function`&&window.updateSortUI(s.currentSortCol,s.sortState)}catch{}}var y=null;function b(){return y||(y=(async()=>{re(),typeof window.restoreControlPanelUI==`function`&&window.restoreControlPanelUI(),typeof v==`function`&&v();try{typeof window.initChart==`function`?await window.initChart():typeof u==`function`&&await u(),await Promise.all([c(),f()]),s.currentTableData&&s.currentTableData.length>0&&(h(),g(),d(),typeof window.initInfiniteScroll==`function`&&window.initInfiniteScroll(),typeof window.initAllExchangeFeeds==`function`&&window.initAllExchangeFeeds(),s.isEngineStarted=!0,_())}catch(e){console.error(`Dashboard engine init error:`,e)}})(),y)}window.initDashboardEngine=b;function x(){let e=document.getElementById(`status-timer`),t=document.getElementById(`status-users`),n=document.getElementById(`tooltip-timer`),r=document.getElementById(`tooltip-users`),i=document.getElementById(`status-tooltip-text`),a=document.getElementById(`status-timer-dot`),o=s.activeUsers||1;if(t&&(t.innerText=`${o} Active`),r&&(r.innerText=`${o} Active`),!s.lastUpdatedRaw&&!s.nextUpdateRaw){e&&(e.innerText=`--:-- 이후 갱신`),n&&(n.innerText=`--:--`);return}let c=Math.floor(Date.now()/1e3),l=localStorage.getItem(`CMC_API_KEY`)&&localStorage.getItem(`CMC_API_KEY`).trim()!==``,u=0;if(s.nextUpdateRaw)u=Math.floor(s.nextUpdateRaw-c);else if(s.lastUpdatedRaw){let e=l?900:14400,t=Math.floor(s.lastUpdatedRaw)+e;u=Math.floor(t-c)}else{e&&(e.innerText=`--:-- 이후 갱신`),n&&(n.innerText=`--:--`);return}if(u<=0){let t=`대기 중...`;e&&(e.innerText=t),n&&(n.innerText=t);let r=Date.now();(!s._lastAutoSilentFetch||r-s._lastAutoSilentFetch>1e4)&&(s._lastAutoSilentFetch=r,typeof window.loadTableDataSilent==`function`&&window.loadTableDataSilent());return}let d=`<svg class="inline-block w-3 h-3 mr-1 align-middle text-theme-text opacity-75" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`,f=Math.floor(u/3600),p=Math.floor(u%3600/60),m=`${f.toString().padStart(2,`0`)}:${p.toString().padStart(2,`0`)}`;l?s.cmcStatus===`INVALID_KEY`?(e&&(e.innerHTML=`${d}${m} (키 오류)`,e.title=`CMC API 키 오류 (서버 정기 캐시 유지)`,e.style.cursor=`default`),n&&(n.innerHTML=`<span class="text-rose-400 font-bold">⚠️ CMC API 키 오류</span>`),i&&(i.innerHTML=`<span class="text-rose-400 font-bold">입력하신 개인 CMC API 키가 유효하지 않아요</span><br/>실시간 시세 및 차트는 정상 작동하며, 시가총액은 서버 캐시로 안전하게 유지할게요<br/><span class="text-xs opacity-75 text-theme-accent">설정에서 유효한 키인지 다시 확인해 주세요</span>`),a&&(a.className=`inline-block w-2 h-2 min-[1200px]:w-1.5 min-[1200px]:h-1.5 rounded-full bg-rose-500 animate-pulse`)):(e&&(e.innerText=`${m} 이후 갱신`,e.title=``,e.style.cursor=`default`),n&&(n.innerHTML=`<svg class="inline-block w-3.5 h-3.5 mr-1 align-middle text-theme-text opacity-85" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>${m} 남음 (15분 주기)`),i&&(i.innerHTML=`개인 CMC API 키 연동 완료 <svg class="inline-block w-3.5 h-3.5 ml-1 align-middle text-theme-text opacity-85" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"></path><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"></path></svg><br/>15분 주기로 시총이 자동 갱신됩니다`),a&&(a.className=`inline-block w-2 h-2 min-[1200px]:w-1.5 min-[1200px]:h-1.5 rounded-full bg-emerald-500 animate-pulse`)):(e&&(e.innerHTML=`${d}${m} (정기 캐시)`,e.title=``,e.style.cursor=`default`),n&&(n.innerHTML=`${d}${m} (정기 캐시)`),i&&(i.innerHTML=`개인 CMC API 키 미입력 상태에요<br/>서버 정기 캐시 모드(4시간 주기)로 시총을 갱신할게요`),a&&(a.className=`inline-block w-2 h-2 min-[1200px]:w-1.5 min-[1200px]:h-1.5 rounded-full bg-amber-400 animate-pulse`))}function ie(e){if(e&&e.stopPropagation(),window.innerWidth<1200){let e=document.getElementById(`mobile-chart-overlay`);if(e&&e.style.opacity===`1`&&!e.classList.contains(`hidden`)||window.store&&window.store._currentMobileTab===`chart`)return}let t=document.getElementById(`status-cache-tooltip`);t&&(t.classList.contains(`opacity-100`)?(t.classList.remove(`opacity-100`,`pointer-events-auto`,`translate-y-0`),t.classList.add(`opacity-0`,`pointer-events-none`,`translate-y-1`)):(x(),t.classList.remove(`opacity-0`,`pointer-events-none`,`translate-y-1`),t.classList.add(`opacity-100`,`pointer-events-auto`,`translate-y-0`)))}typeof document<`u`&&document.addEventListener(`click`,e=>{if(window.innerWidth<1200){let t=document.getElementById(`server-status-badge`),n=document.getElementById(`status-cache-tooltip`);n&&n.classList.contains(`opacity-100`)&&(!t||!t.contains(e.target))&&(n.classList.remove(`opacity-100`,`pointer-events-auto`,`translate-y-0`),n.classList.add(`opacity-0`,`pointer-events-none`,`translate-y-1`))}}),window.toggleStatusTooltip=ie,window.updateStatusBadge=x;function S(){if(!s.bypassCounters)return;let e=Object.values(s.bypassCounters).reduce((e,t)=>e+t,0),t=document.getElementById(`perf-total-bypass`);t&&(t.innerText=`Total: ${e}`),[`leftDom`,`tabScroll`,`tableUpdate`,`kimchi`,`radarBatch`,`mouseEvent`,`dynamicHtml`,`throttleBypass`,`throttlePass`].forEach(e=>{let t=document.getElementById(`bypass-cnt-${e}`);t&&(t.textContent=s.bypassCounters[e]||0)});let n=document.getElementById(`perf-top-risk-analysis`);if(n){let e=-1,t=`NONE`;Object.entries(s.bypassCounters).forEach(([n,r])=>{r>e&&(e=r,t=n)}),e===0?(n.innerText=`안정 (소켓 수급 정체 혹은 렉 유발 없음)`,n.className=`text-[8.5px] font-semibold text-emerald-400 opacity-90 leading-tight bg-white/2 p-1 rounded font-sans`):(n.innerText=`⚠️ ${{leftDom:`좌측 테이블 DOM 최적화 차단`,chartDom:`우측 차트 렌더러 지연 차단`,orderbook:`실시간 호가창 렌더링 락`,legend:`상단 가격 레전드 문자열 덮어쓰기`,resize:`차트 리사이즈 오버헤드`,mouseEvent:`차트 십자선 마우스 이벤트 지연`,sort:`테이블 실시간 순위 재배치 루프`,tabScroll:`테이블 전체 리렌더링 리플로우`,tableUpdate:`개별 행 셀 텍스트 갱신 과부하`,kimchi:`3초 주기 김프 연산 전파 루프`,radarBatch:`3초 레이더 일괄 갱신 차단`,dynamicHtml:`김프 전파 HTML 동적 렌더링 과부하`}[t]||t} (${e}회 Bypass)`,n.className=`text-[8.5px] font-semibold text-rose-400 opacity-90 leading-tight bg-white/2 p-1 rounded font-sans`)}}window.updatePerformanceDebugger=S;var C=null,w=null;function ae(){C&&clearInterval(C),w=Date.now(),s.bypassCounters&&Object.keys(s.bypassCounters).forEach(e=>{s.bypassCounters[e]=0});let e=document.getElementById(`perf-run-time-display`);e&&(e.innerText=`(0s 경과)`),S(),C=setInterval(()=>{if(w){let e=Math.floor((Date.now()-w)/1e3),t=document.getElementById(`perf-run-time-display`);t&&(t.innerText=`(${e}s 경과)`)}S()},1e3)}window.startPerformanceDebugger=ae;function oe(){C&&=(clearInterval(C),null)}window.stopPerformanceDebugger=oe;function se(){let e=window.location.pathname.replace(/^\/+|\/+$/g,``);return e&&![`api`,`static`,`assets`,`index.html`,`favicon.ico`].includes(e.toLowerCase())?decodeURIComponent(e):window.location.hash&&window.location.hash.length>1?decodeURIComponent(window.location.hash.substring(1)):null}window.getInitialRouteSymbol=se;function ce(){let e=new Date,t=new Date;t.setUTCHours(0,0,0,0),e>=t&&t.setUTCDate(t.getUTCDate()+1);let n=t.getTime()-e.getTime();setTimeout(()=>{s.marketDataMap?.krw_usd_rate,s.currentTableData&&Array.isArray(s.currentTableData)&&(s.currentTableData.forEach(e=>{e.Change_Today_Raw=0,e.Change_Today_Futures=0,e.Change_Today_Spot=0,e.Change_Today_Binance=0,e.Change_Today_Upbit=0,e.Change_Today_Bithumb=0,e.Change_Today_Bybit=0}),typeof window.renderTable==`function`&&window.renderTable()),s.currentAsset&&typeof window.selectSymbol==`function`&&window.selectSymbol(s.currentAsset,s.currentChartMarket),typeof window.loadTableData==`function`&&window.loadTableData(!0,!0),setTimeout(()=>{typeof window.loadTableData==`function`&&window.loadTableData(!0,!0)},2500),ce()},n)}function le(){try{let e=localStorage.getItem(`sellnance_last_tf`);e&&[`1m`,`3m`,`5m`,`15m`,`30m`,`1h`,`4h`,`12h`,`1d`,`3d`,`1w`,`1M`].includes(e)&&(s.currentTF=e)}catch{}let e=se(),t=typeof window.isTouchDevice==`function`?window.isTouchDevice():window.matchMedia&&window.matchMedia(`(pointer: coarse)`).matches||`ontouchstart`in window||typeof navigator<`u`&&navigator.maxTouchPoints>0;if(window.innerWidth<1200&&t)if(e){try{window.history&&window.history.replaceState&&window.history.pushState&&(window.history.replaceState({mobileTab:`list`},null,`/`),window.history.pushState({mobileTab:`chart`,symbol:window.location.pathname},null,window.location.pathname))}catch{}s.isEngineStarted&&typeof n==`function`&&n(e)}else{try{window.history&&window.history.replaceState&&window.history.replaceState({mobileTab:`list`},null,`/`)}catch{}try{(sessionStorage.getItem(`sellnance_active_mobile_tab`)||`list`)===`chart`&&typeof switchMobileTab==`function`&&switchMobileTab(`chart`)}catch{}}else e&&s.isEngineStarted&&typeof n==`function`&&n(e);let r=e=>{let t=typeof window.isTouchDevice==`function`?window.isTouchDevice():window.matchMedia&&window.matchMedia(`(pointer: coarse)`).matches||`ontouchstart`in window||typeof navigator<`u`&&navigator.maxTouchPoints>0;if(window.innerWidth<1200&&t){if(s._currentMobileTab===`chart`||(function(){try{return sessionStorage.getItem(`sellnance_active_mobile_tab`)===`chart`}catch{return!1}})()||(function(){let e=document.getElementById(`mobile-chart-overlay`);return e&&!e.classList.contains(`hidden`)&&e.style.display!==`none`})()){typeof window.switchMobileTab==`function`?window.switchMobileTab(`list`):typeof window.closeMobileChart==`function`&&window.closeMobileChart(),window.history&&window.history.replaceState&&window.history.replaceState({mobileTab:`list`},null,`/`);return}if(e&&e.state&&e.state.mobileTab===`chart`&&e.state.symbol){let t=e.state.symbol.replace(/^\//,``);typeof n==`function`&&n(t);return}return}let r=se();r&&s.isEngineStarted&&typeof n==`function`&&n(r)};window.addEventListener(`popstate`,r),window.addEventListener(`hashchange`,r)}function ue(){let e=0,t=()=>{if(typeof document<`u`&&document.visibilityState!==`visible`)return;let t=e>0?Date.now()-e:0;typeof window.flushRealtimeRender==`function`&&window.flushRealtimeRender(),typeof window.refreshSniperTarget==`function`&&window.refreshSniperTarget(),t>10*1e3&&(s.currentAsset&&s.candleSeries&&!s.isFetchingChart&&!s.isSilentSyncing&&typeof window.fetchHistory==`function`&&window.fetchHistory(s.currentAsset,!1,!1,!1,s.currentUid,!0),typeof window.syncQuickViewRecentCandles==`function`&&window.syncQuickViewRecentCandles()),t>30*1e3&&(typeof window.syncSniperSubscriptions==`function`&&window.syncSniperSubscriptions(),typeof window.initAllExchangeFeeds==`function`&&window.initAllExchangeFeeds(),typeof window.loadTableDataSilent==`function`?window.loadTableDataSilent():typeof window.loadTableData==`function`&&window.loadTableData(!1,!0)),e=0};typeof document<`u`&&document.addEventListener(`visibilitychange`,()=>{document.visibilityState===`hidden`?e=Date.now():document.visibilityState===`visible`&&t()}),typeof window<`u`&&window.addEventListener(`focus`,()=>{e>0&&t()})}var T={cycleIntervalMs:3e3,goldenRatio:`1.618 / 1`,deckWidth:`100%`,deckMaxWidth:`800px`,compassCycle:[`NW`,`NE`],tiltAngle:[5,5,-5,-5],scale:1,perspective:1200,exitDurationMs:200,auraInset:`0px`,auraBorderRadius:`20px`,auraBlur:`14px`,auraOpacity:.07,auraBackground:`radial-gradient(ellipse at center, var(--accent) 0%, transparent 60%)`,auraBoxShadow:`0 0 12px var(--accent)`},E=[{layout:`spread`,tf:`4h`,candleMode:`unique`},{layout:`overlap`,tf:`1d`,candleMode:`unique`},{layout:`spread`,tf:`4h`,candleMode:`default`},{layout:`overlap`,tf:`1d`,candleMode:`default`}],de={NE:{rx:1,ry:-1,rz:1},NW:{rx:1,ry:1,rz:-1},SW:{rx:-1,ry:1,rz:1},SE:{rx:-1,ry:-1,rz:-1},N:{rx:1.2,ry:0,rz:0},S:{rx:-1.2,ry:0,rz:0},E:{rx:0,ry:-1.2,rz:0},W:{rx:0,ry:1.2,rz:0},CENTER:{rx:0,ry:0,rz:0}},D=0;function O(e=1){let t=T.compassCycle,n=de[t[D%t.length]||`NE`]||de.NE,r=Array.isArray(T.tiltAngle)?T.tiltAngle:[T.tiltAngle],i=r[D%r.length]??10;return`rotateX(${(n.rx*i).toFixed(1)}deg) rotateY(${(n.ry*i).toFixed(1)}deg) rotateZ(${(n.rz*(i/4)).toFixed(1)}deg) scale(${(T.scale*e).toFixed(3)})`}function fe(e=1){return O(1.03*e)}function pe(){return`
     <div
       id="start-screen" style="${localStorage.getItem(`sellnance_skip_start`)===`true`?`display: none;`:`display: flex;`}"
       class="fixed inset-0 z-[500] flex items-center justify-center overflow-hidden p-4 md:p-8 bg-theme-bg text-theme-text"
     >
       <div class="w-full max-w-6xl h-full max-h-[820px] flex flex-col md:flex-row items-center justify-center md:justify-between gap-4 sm:gap-5 md:gap-8 relative z-10">
         
-        <!-- [좌츧]: 3D 아이소메트릭 쿼터뷰 차트 덱 -->
+        <!-- [좌측]: 3D 아이소메트릭 쿼터뷰 차트 덱 -->
         <div class="start-qv-preview-wrapper hidden md:flex w-full md:w-[58%] h-auto md:h-[75vh] max-h-[240px] md:max-h-none relative items-center justify-center overflow-visible mb-2 md:mb-0 pointer-events-none select-none">
           <div id="start-qv-preview-container" class="w-full relative overflow-visible pointer-events-none opacity-90 my-auto">
-            <!-- 3D 덱 하단 바닥 투영 앰비언트 섀도우 (800px 황금비 직사각형 덱 전용) -->
-            <div class="start-qv-floor-shadow pointer-events-none"></div>
+            <!-- 3D 덱 하단 바닥 투영 앰비언트 섀도우 -->
+            <div class="start-qv-floor-shadow pointer-events-none" style="transform: ${fe(1)};"></div>
 
             <!-- 전역 그라데이션 SVG 정의 -->
             <svg width="0" height="0" class="absolute pointer-events-none">
@@ -230,8 +21,8 @@ import{A as e,M as t,a as n,d as r,dt as i,f as a,gt as o,ht as s,i as c,it as l
               </defs>
             </svg>
 
-            <!-- 1. Spread 3D 레이어 (4개 덱 전체를 아우르는 단일 외곽 프로그레스) -->
-            <div id="start-qv-spread-view" class="pointer-events-none">
+            <!-- 1. Spread 3D 레이어 -->
+            <div id="start-qv-spread-view" class="pointer-events-none" style="transform: ${O(1)};">
               <!-- 4개 카드 전체 둘레를 감싸는 단 1개의 3D 외곽 프로그레스 바 -->
               <svg class="start-qv-inner-progress pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
                 <rect x="0.5" y="0.5" width="99" height="99" rx="3.5" ry="3.5" fill="none" stroke="var(--border)" stroke-width="0.7" />
@@ -240,8 +31,8 @@ import{A as e,M as t,a as n,d as r,dt as i,f as a,gt as o,ht as s,i as c,it as l
               <div id="start-qv-cards-grid" class="pointer-events-none"></div>
             </div>
 
-            <!-- 2. Overlap 3D 레이어 (내부 직접 3D 투영 프로그레스) -->
-            <div id="start-qv-overlap-view" class="pointer-events-none">
+            <!-- 2. Overlap 3D Layer -->
+            <div id="start-qv-overlap-view" class="pointer-events-none" style="transform: ${O(.96)};">
               <svg class="start-qv-inner-progress pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
                 <rect x="0.5" y="0.5" width="99" height="99" rx="3.5" ry="3.5" fill="none" stroke="var(--border)" stroke-width="0.7" />
                 <rect class="start-qv-progress-rect" x="0.5" y="0.5" width="99" height="99" rx="3.5" ry="3.5" fill="none" stroke="url(#startProgressGlow)" stroke-width="1.2" stroke-linecap="round" pathLength="100" stroke-dasharray="100.2 100.2" stroke-dashoffset="100.2" />
@@ -300,7 +91,7 @@ import{A as e,M as t,a as n,d as r,dt as i,f as a,gt as o,ht as s,i as c,it as l
                   autocomplete="off"
                   spellcheck="false"
                 />
-                <!-- 감각적인 X 클리어 버튼 (입력 시 부드러운 스케일+페이드인) -->
+
                 <button
                   type="button"
                   id="btn-clear-cmc-key"
@@ -325,7 +116,6 @@ import{A as e,M as t,a as n,d as r,dt as i,f as a,gt as o,ht as s,i as c,it as l
             </div>
 
             <div class="flex flex-col gap-2 mt-0.5">
-              <!-- 1. 키 저장 및 대시보드 시작 (메인 액션) -->
               <button
                 id="btn-start-engine"
                 onclick="saveAndStart()"
@@ -334,7 +124,6 @@ import{A as e,M as t,a as n,d as r,dt as i,f as a,gt as o,ht as s,i as c,it as l
                 Start Dashboard
               </button>
 
-              <!-- 2. 바로 이동 (서브 액션) -->
               <button
                 id="btn-skip-start"
                 onclick="skipAndStart()"
@@ -343,7 +132,6 @@ import{A as e,M as t,a as n,d as r,dt as i,f as a,gt as o,ht as s,i as c,it as l
                 바로 이동 (서버 캐시 모드, 느린 갱신)
               </button>
 
-              <!-- 3. 시작 화면 자동 건너뛰기 공통 설정 (두 버튼 모두에 대응) -->
               <div class="flex items-center justify-center pt-1">
                 <label
                   class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-theme-border/20 cursor-pointer select-none group transition-all pointer-events-auto"

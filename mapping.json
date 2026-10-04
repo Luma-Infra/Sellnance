@@ -14,7 +14,7 @@
   "__MEMO__12": "DUPLICATED_LIST: 동일 티커 다른 코인(동명이인) 또는 거래소별 티커 상이 코인의 UID/거래소별 티커 매핑",
   "__MEMO__13": "TICKER_DATA: 전체 자산 마스터 메타데이터: [0: CMC_ID, 1: 체인/메인넷, 2: 영문명, 3: 표준티커, 4: 자산타입(COIN/STOCK), 5: 특수구분(ALPHA 등)]",
   "__MEMO__14": "-------------------------------------------------------------",
-  "DEFAULT_KRW_USD_RATE": 1358.05,
+  "DEFAULT_KRW_USD_RATE": 1342.51,
   "CHAIN_LOGO_MAP": {
     "ETH": "https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png",
     "BNB": "https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png",
@@ -449,6 +449,13 @@
       "ACM",
       "COIN"
     ],
+    "ACN(STOCK)": [
+      "42379",
+      null,
+      "ACN (Derivatives)",
+      "ACN",
+      "STOCK"
+    ],
     "ACT": [
       "33566",
       null,
@@ -482,6 +489,13 @@
       null,
       "ADBE (Derivatives)",
       "ADBE",
+      "STOCK"
+    ],
+    "ADBEB(STOCK)": [
+      "42384",
+      null,
+      "ADBEB (Derivatives)",
+      "ADBEB",
       "STOCK"
     ],
     "ADI": [
@@ -1862,6 +1876,13 @@
       "BULLA",
       "COIN"
     ],
+    "BWET(STOCK)": [
+      "42378",
+      null,
+      "BWET (Derivatives)",
+      "BWET",
+      "STOCK"
+    ],
     "BX": [
       "33691",
       null,
@@ -2374,6 +2395,13 @@
       "CRMB",
       "STOCK"
     ],
+    "CRML(STOCK)": [
+      "42377",
+      null,
+      "CRML (Derivatives)",
+      "CRML",
+      "STOCK"
+    ],
     "CRO": [
       "3635",
       "CRO",
@@ -2479,6 +2507,13 @@
       "CSOPSKHYNIX2L",
       "STOCK"
     ],
+    "CT": [
+      "42253",
+      null,
+      "CT",
+      "CT",
+      "COIN"
+    ],
     "CTC": [
       "5198",
       "CTC",
@@ -2521,6 +2556,13 @@
       "Civic",
       "CVC",
       "COIN"
+    ],
+    "CVNA(STOCK)": [
+      "42372",
+      null,
+      "CVNA (Derivatives)",
+      "CVNA",
+      "STOCK"
     ],
     "CVX": [
       "9903",
@@ -3359,6 +3401,13 @@
       "FWDI",
       "STOCK"
     ],
+    "FWDIB(STOCK)": [
+      "42386",
+      null,
+      "FWDIB (Derivatives)",
+      "FWDIB",
+      "STOCK"
+    ],
     "G": [
       "32120",
       null,
@@ -3925,6 +3974,13 @@
       null,
       "HPE (Derivatives)",
       "HPE",
+      "STOCK"
+    ],
+    "HPEB(STOCK)": [
+      "42385",
+      null,
+      "HPEB (Derivatives)",
+      "HPEB",
       "STOCK"
     ],
     "HUAHONG": [
@@ -5175,6 +5231,13 @@
       "MOVR",
       "COIN"
     ],
+    "MP(STOCK)": [
+      "42380",
+      null,
+      "MP (Derivatives)",
+      "MP",
+      "STOCK"
+    ],
     "MPLX": [
       "21870",
       null,
@@ -5570,6 +5633,13 @@
       "NIULAI",
       "COIN"
     ],
+    "NKE(STOCK)": [
+      "42382",
+      null,
+      "NKE (Derivatives)",
+      "NKE",
+      "STOCK"
+    ],
     "NMR": [
       "1732",
       null,
@@ -5725,6 +5795,13 @@
       "OKB",
       "OKB",
       "COIN"
+    ],
+    "OKLO(STOCK)": [
+      "42370",
+      null,
+      "OKLO (Derivatives)",
+      "OKLO",
+      "STOCK"
     ],
     "OKTA": [
       "40943",
@@ -5957,6 +6034,13 @@
       "PDD",
       "STOCK"
     ],
+    "PDDB(STOCK)": [
+      "42383",
+      null,
+      "PDDB (Derivatives)",
+      "PDDB",
+      "STOCK"
+    ],
     "PEAQ": [
       "14588",
       null,
@@ -6089,6 +6173,13 @@
       null,
       "Peanut the Squirrel",
       "PNUT",
+      "COIN"
+    ],
+    "POD": [
+      "42398",
+      "-",
+      "Dolphin",
+      "POD",
       "COIN"
     ],
     "POET": [
@@ -6718,6 +6809,13 @@
       "RSR",
       "COIN"
     ],
+    "RUM(STOCK)": [
+      "42373",
+      null,
+      "RUM (Derivatives)",
+      "RUM",
+      "STOCK"
+    ],
     "RUNE": [
       "4157",
       null,
@@ -6845,6 +6943,13 @@
       "SECZ",
       "COIN"
     ],
+    "SECZ(STOCK)": [
+      "42381",
+      null,
+      "SECZ (Derivatives)",
+      "SECZ",
+      "STOCK"
+    ],
     "SEI": [
       "23149",
       null,
@@ -6885,6 +6990,13 @@
       null,
       "SHAZ (Derivatives)",
       "SHAZ",
+      "STOCK"
+    ],
+    "SHAZB(STOCK)": [
+      "42389",
+      null,
+      "SHAZB (Derivatives)",
+      "SHAZB",
       "STOCK"
     ],
     "SHEIN": [
@@ -8046,6 +8158,13 @@
       "TUT",
       "COIN"
     ],
+    "TWST(STOCK)": [
+      "42371",
+      null,
+      "TWST (Derivatives)",
+      "TWST",
+      "STOCK"
+    ],
     "TWT": [
       "5964",
       null,
@@ -8129,6 +8248,13 @@
       "UnitedHealth Group (Derivatives)",
       "UNH",
       "COIN"
+    ],
+    "UNH(STOCK)": [
+      "39630",
+      null,
+      "UNH (Derivatives)",
+      "UNH",
+      "STOCK"
     ],
     "UNI": [
       "7083",
@@ -8467,6 +8593,13 @@
       "WEN",
       "STOCK"
     ],
+    "WENB(STOCK)": [
+      "42387",
+      null,
+      "WENB (Derivatives)",
+      "WENB",
+      "STOCK"
+    ],
     "WENSTOCK": [
       "WENSTOCK",
       null,
@@ -8713,6 +8846,13 @@
       "XOM",
       "COIN"
     ],
+    "XOM(STOCK)": [
+      "40741",
+      null,
+      "XOM (Derivatives)",
+      "XOM",
+      "STOCK"
+    ],
     "XPD(STOCK)": [
       "39481",
       null,
@@ -8944,6 +9084,13 @@
       null,
       "ZM (Derivatives)",
       "ZM",
+      "STOCK"
+    ],
+    "ZMB(STOCK)": [
+      "42388",
+      null,
+      "ZMB (Derivatives)",
+      "ZMB",
       "STOCK"
     ],
     "ZORA": [

@@ -187,6 +187,15 @@ export function closeMobileChart() {
     leftPanel.style.pointerEvents = "";
   }
 
+  // [모바일 네이티브 UX] 차트 패널 닫힐 때 URL 및 히스토리 상태를 목록으로 동기화
+  if (isTouchDevice() && window.innerWidth < 1200) {
+    if (window.history && window.history.replaceState) {
+      if (!window.history.state || window.history.state.mobileTab !== "list") {
+        window.history.replaceState({ mobileTab: "list" }, null, "/");
+      }
+    }
+  }
+
   panel.classList.remove("translate-y-0");
   panel.classList.add("translate-y-full");
 

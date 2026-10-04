@@ -586,21 +586,122 @@ export function setupRouteAndHistory() {
   } catch (e) {}
 
   const initialRouteSym = getInitialRouteSymbol();
-  if (initialRouteSym && store.isEngineStarted) {
-    if (typeof selectSymbol === "function") {
-      selectSymbol(initialRouteSym);
-    }
-  } else if (window.innerWidth < 1200) {
-    try {
-      const activeTab =
-        sessionStorage.getItem("sellnance_active_mobile_tab") || "list";
-      if (activeTab === "chart" && typeof switchMobileTab === "function") {
-        switchMobileTab("chart");
+  const isTouch =
+    typeof window.isTouchDevice === "function"
+      ? window.isTouchDevice()
+      : (window.matchMedia && window.matchMedia("(pointer: coarse)").matches) ||
+        "ontouchstart" in window ||
+        (typeof navigator !== "undefined" && navigator.maxTouchPoints > 0);
+  const isMobile = window.innerWidth < 1200 && isTouch;
+
+  if (isMobile) {
+    if (initialRouteSym) {
+      // 모바일에서 특정 코인 URL로 접속한 경우
+      // 뒤로가기 1회 시 즉시 목록으로 복귀할 수 있도록 라우팅 조정
+      try {
+        if (
+          window.history &&
+          window.history.replaceState &&
+          window.history.pushState
+        ) {
+          window.history.replaceState({ mobileTab: "list" }, null, "/");
+          window.history.pushState(
+            { mobileTab: "chart", symbol: window.location.pathname },
+            null,
+            window.location.pathname,
+          );
+        }
+      } catch (e) {}
+
+      if (store.isEngineStarted && typeof selectSymbol === "function") {
+        selectSymbol(initialRouteSym);
       }
-    } catch (e) {}
+    } else {
+      try {
+        if (window.history && window.history.replaceState) {
+          window.history.replaceState({ mobileTab: "list" }, null, "/");
+        }
+      } catch (e) {}
+
+      try {
+        const activeTab =
+          sessionStorage.getItem("sellnance_active_mobile_tab") || "list";
+        if (activeTab === "chart" && typeof switchMobileTab === "function") {
+          switchMobileTab("chart");
+        }
+      } catch (e) {}
+    }
+  } else {
+    // 데스크탑 PC 환경 초기 라우팅
+    if (initialRouteSym && store.isEngineStarted) {
+      if (typeof selectSymbol === "function") {
+        selectSymbol(initialRouteSym);
+      }
+    }
   }
 
-  const handleHistoryNavigation = () => {
+  const handleHistoryNavigation = (event) => {
+    const isTouchNow =
+      typeof window.isTouchDevice === "function"
+        ? window.isTouchDevice()
+        : (window.matchMedia &&
+            window.matchMedia("(pointer: coarse)").matches) ||
+          "ontouchstart" in window ||
+          (typeof navigator !== "undefined" && navigator.maxTouchPoints > 0);
+    const isMobileNow = window.innerWidth < 1200 && isTouchNow;
+
+    if (isMobileNow) {
+      const isChartOpen =
+        store._currentMobileTab === "chart" ||
+        (function () {
+          try {
+            return (
+              sessionStorage.getItem("sellnance_active_mobile_tab") === "chart"
+            );
+          } catch (e) {
+            return false;
+          }
+        })() ||
+        (function () {
+          const el = document.getElementById("mobile-chart-overlay");
+          return (
+            el &&
+            !el.classList.contains("hidden") &&
+            el.style.display !== "none"
+          );
+        })();
+
+      // 1. 차트 화면을 보고 있던 중 뒤로가기 발생 시
+      // 이전 코인으로 되돌아가지 않고, 차트를 닫고 코인 목록으로 복귀
+      if (isChartOpen) {
+        if (typeof window.switchMobileTab === "function") {
+          window.switchMobileTab("list");
+        } else if (typeof window.closeMobileChart === "function") {
+          window.closeMobileChart();
+        }
+        if (window.history && window.history.replaceState) {
+          window.history.replaceState({ mobileTab: "list" }, null, "/");
+        }
+        return;
+      }
+
+      // 2. 모바일 목록 상태에서 앞으로 가기(Forward)로 다시 차트 진입 시
+      if (
+        event &&
+        event.state &&
+        event.state.mobileTab === "chart" &&
+        event.state.symbol
+      ) {
+        const sym = event.state.symbol.replace(/^\//, "");
+        if (typeof selectSymbol === "function") {
+          selectSymbol(sym);
+        }
+        return;
+      }
+      return;
+    }
+
+    // 데스크탑 PC 환경: 기존 트레이딩뷰 라우팅 동작 유지
     const routeSym = getInitialRouteSymbol();
     if (
       routeSym &&

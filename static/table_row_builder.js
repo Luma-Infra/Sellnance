@@ -835,7 +835,9 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
                   (ex.id === "BINANCE" &&
                     (row.Binance_Futures === "O" || !!row.Exact_Futures)) ||
                   (ex.id === "BYBIT" &&
-                    (row.Bybit_Futures === "O" || !!row.Exact_Futures));
+                    (row.Bybit_Futures === "O" ||
+                      row.Bybit_Price_Futures > 0 ||
+                      exchanges.includes("BYBIT_FUTURES")));
 
                 const isAlpha =
                   ex.id === "BINANCE" &&

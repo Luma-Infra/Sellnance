@@ -615,7 +615,15 @@ export function initInfiniteScroll() {
   );
 }
 
-export function updateHeaderStar(uid) {
+export function triggerStarSparkle(btn) {
+  if (!btn) return;
+  btn.classList.remove("star-sparkle");
+  void btn.offsetWidth;
+  btn.classList.add("star-sparkle");
+  setTimeout(() => btn.classList.remove("star-sparkle"), 450);
+}
+
+export function updateHeaderStar(uid, withAnimation = false) {
   const headStarBtns = document.querySelectorAll(
     "#head-asset-name .star-btn, #head-asset-name-pc .star-btn",
   );
@@ -654,6 +662,10 @@ export function updateHeaderStar(uid) {
     btn.innerText = starText;
     btn.style.color = starColor;
     btn.className = `star-btn text-[16px] transition-all hover:scale-125 flex-shrink-0 ${starClass}`;
+    // 빈별로 전환될 때는 이펙트가 발생하지 않도록 (isFav || isFav2)인 경우에만 스파클 실행
+    if (withAnimation && (isFav || isFav2)) {
+      triggerStarSparkle(btn);
+    }
   });
 }
 
@@ -717,6 +729,8 @@ export function toggleFavorite(uid, event, forceImmediate = false) {
       targetState,
     });
 
+    const isTargetStar = targetState === "FAV" || targetState === "FAV2";
+
     const row =
       store.currentTableData.find((r) => r.UID === uid) ||
       (store.tickerRowMap && store.tickerRowMap.get(String(uid)));
@@ -726,6 +740,13 @@ export function toggleFavorite(uid, event, forceImmediate = false) {
         store.rowDomMap.get(row.Ticker);
       if (rowEl) {
         updateRowInnerHTML(rowEl, row);
+        // 빈별로 변할 때는 이펙트 없이, 노란별/파란별이 될 때만 별똥별 이펙트 발생
+        if (isTargetStar) {
+          const newStarBtn = rowEl.querySelector(".star-btn");
+          if (newStarBtn) {
+            triggerStarSparkle(newStarBtn);
+          }
+        }
       }
     }
 
@@ -733,7 +754,7 @@ export function toggleFavorite(uid, event, forceImmediate = false) {
     if (typeof window.updateFavoritesCount === "function") {
       window.updateFavoritesCount();
     }
-    updateHeaderStar(uid);
+    updateHeaderStar(uid, isTargetStar);
     return;
   }
 
@@ -760,22 +781,48 @@ export function toggleFavorite(uid, event, forceImmediate = false) {
     window.updateFavoritesCount();
   }
 
+  const isNowStar = favorites.includes(uid) || favorites2.includes(uid);
+
   const row =
     store.currentTableData.find((r) => r.UID === uid) ||
     (store.tickerRowMap && store.tickerRowMap.get(String(uid)));
-  if (row) {
-    const rowEl =
-      (row.UID ? store.rowDomMap.get(String(row.UID)) : null) ||
-      store.rowDomMap.get(row.Ticker);
-    if (rowEl) {
-      updateRowInnerHTML(rowEl, row);
+  const rowEl = row
+    ? (row.UID ? store.rowDomMap.get(String(row.UID)) : null) ||
+      store.rowDomMap.get(row.Ticker)
+    : null;
+  if (row && rowEl) {
+    updateRowInnerHTML(rowEl, row);
+    // 빈별로 변할 때는 이펙트 없이, 별이 켜질 때(노란별/파란별)만 별똥별 꼬리 이펙트
+    if (isNowStar) {
+      const newStarBtn = rowEl.querySelector(".star-btn");
+      if (newStarBtn) {
+        triggerStarSparkle(newStarBtn);
+      }
     }
   }
 
-  updateHeaderStar(uid);
+  updateHeaderStar(uid, isNowStar);
 
   if (store.currentTab === "FAV" || store.currentTab === "FAV2") {
-    setTimeout(() => renderTable(), 100);
+    const isNowFav = favorites.includes(uid);
+    const isNowFav2 = favorites2.includes(uid);
+    const isNowEmptyStar = !isNowFav && !isNowFav2;
+
+    // 노란별에서 빈별 or 파랑별에서 빈별로 완전히 사라지는 경우에만 소멸 애니메이션 발동
+    // 노란별 <-> 파랑별 전환은 효과 없이 이전처럼 즉시 이동
+    if (isNowEmptyStar && rowEl && document.body.contains(rowEl)) {
+      rowEl.classList.add("thanos-snap-row");
+      setTimeout(() => {
+        rowEl.classList.remove("thanos-snap-row");
+        rowEl.classList.add("thanos-collapse-row");
+        setTimeout(() => {
+          rowEl.classList.remove("thanos-collapse-row");
+          renderTable();
+        }, 200);
+      }, 450);
+    } else {
+      setTimeout(() => renderTable(), 100);
+    }
   }
 }
 
@@ -802,12 +849,44 @@ export function commitFavoriteChange(uid) {
   localStorage.setItem("sellnance_favs", JSON.stringify(favorites));
   localStorage.setItem("sellnance_favs2", JSON.stringify(favorites2));
 
-  renderTable();
-  updateProgressBar();
-  if (typeof window.updateFavoritesCount === "function") {
-    window.updateFavoritesCount();
+  // 노란별에서 빈별 or 파랑별에서 빈별로 사라지는 경우에만 타노스 소멸 발동
+  // 노란별 <-> 파랑별 전환(FAV <-> FAV2)은 타노스 효과 없이 이전처럼 이동
+  const isBecameEmptyStar =
+    (store.currentTab === "FAV" || store.currentTab === "FAV2") &&
+    action.targetState === "NONE";
+
+  const row =
+    store.currentTableData?.find((r) => String(r.UID) === String(uid)) ||
+    (store.tickerRowMap && store.tickerRowMap.get(String(uid)));
+  const rowEl = row
+    ? (row.UID ? store.rowDomMap.get(String(row.UID)) : null) ||
+      store.rowDomMap.get(row.Ticker)
+    : null;
+
+  if (isBecameEmptyStar && rowEl && document.body.contains(rowEl)) {
+    rowEl.classList.add("thanos-snap-row");
+    setTimeout(() => {
+      rowEl.classList.remove("thanos-snap-row");
+      rowEl.classList.add("thanos-collapse-row");
+      setTimeout(() => {
+        rowEl.classList.remove("thanos-collapse-row");
+        renderTable();
+        updateProgressBar();
+        if (typeof window.updateFavoritesCount === "function") {
+          window.updateFavoritesCount();
+        }
+        updateHeaderStar(uid);
+      }, 200);
+    }, 450);
+  } else {
+    // 노란별 <-> 파랑별 전환은 타노스 효과 없이 이전처럼 이동
+    renderTable();
+    updateProgressBar();
+    if (typeof window.updateFavoritesCount === "function") {
+      window.updateFavoritesCount();
+    }
+    updateHeaderStar(uid);
   }
-  updateHeaderStar(uid);
 }
 
 window.cancelFavoriteChange = function (uid, event) {
