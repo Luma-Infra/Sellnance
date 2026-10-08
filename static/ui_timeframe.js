@@ -131,7 +131,7 @@ export function syncChartControlsModalUI() {
     "카운트다운 ON",
     "카운트다운 OFF",
   );
-  updateBtn("modal-ctrl-kimchi", isKimchi, "김프 비교 ON", "김프 비교 OFF");
+  updateBtn("modal-ctrl-kimchi", isKimchi, "김프 비교 켜기", "김프 비교 끄기");
 }
 
 export function toggleTfSettings() {

@@ -379,6 +379,7 @@ def build_upbit_row(
     total_vol = binance_vol + up_vol_24h + by_vol_24h
     mcap_val = info.get("market_cap") if info else None
     mcap = mcap_val if mcap_val is not None else 0
+    fdv = float(info.get("fdv", 0) or 0.0) if info else 0.0
     vmc_raw = (total_vol / mcap * 100) if (mcap is not None and mcap > 0) else 0.0
 
     by_spot_p = float(by_raw.get("spot_price") or 0.0)
@@ -459,6 +460,7 @@ def build_upbit_row(
         "Kimchi_Formatted": "-",
         "Kimchi_Label": kimchi_label,
         "MarketCap_Formatted": utils.format_market_cap_string(mcap),
+        "FDV_Formatted": utils.format_market_cap_string(fdv) if fdv > 0 else "-",
         "VMC_Formatted": f"{vmc_raw:.2f}%",
         "Binance_Vol_Formatted": utils.format_volume_string(binance_vol) if (has_binance_listing and binance_vol > 0) else "-",
         "Binance_Spot_Vol_Formatted": utils.format_volume_string(bin_agg["binance_spot_vol"]) if bin_agg["binance_spot_vol"] > 0 else "-",
@@ -468,6 +470,7 @@ def build_upbit_row(
         "Change_Today_Raw": change_today,
         "Volume_Raw": binance_vol if has_binance_listing else (float(up_info.get("volume_24h") or up_info.get("acc_trade_price_24h") or 0.0) / krw_usd_rate if krw_usd_rate > 0 else 0.0),
         "MarketCap_Raw": mcap,
+        "FDV_Raw": fdv,
         "VMC_Raw": vmc_raw,
         "Kimchi_Raw": None,
         "utc0_open_Raw": utc0_open,

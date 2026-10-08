@@ -18,6 +18,7 @@ import requests
 import aiohttp
 import asyncio
 import hashlib
+import random
 import pytz
 import json
 import time
@@ -1010,9 +1011,14 @@ async def send_feedback(data: dict = Body(...)):
         return {"status": "error", "message": "잠시 후 다시 전송해 주세요"}
     _last_feedback_time = now
 
-    # 2. .env 환경변수에서 디스코드 웹훅 로드
-    webhook_url = os.environ.get("DISCORD_FEEDBACK_WEBHOOK", "").strip()
-    if not webhook_url:
+    # 2. .env 환경변수에서 디스코드 웹훅 로드 (포럼 및 일반 채널)
+    webhook_forum = os.environ.get("DISCORD_FEEDBACK_WEBHOOK_FORUM", "").strip()
+    webhook_general = (
+        os.environ.get("DISCORD_FEEDBACK_WEBHOOK_GENERAL", "").strip()
+        or os.environ.get("DISCORD_FEEDBACK_WEBHOOK", "").strip()
+    )
+
+    if not webhook_forum and not webhook_general:
         return {"status": "error", "message": "웹훅이 설정되지 않았습니다"}
 
     symbol = str(data.get("symbol", "미선택")).strip()
@@ -1027,46 +1033,312 @@ async def send_feedback(data: dict = Body(...)):
     env_clean = environment.replace("💻 ", "").replace("📱 ", "")
     email_tag = f" • ✉️ {email}" if email else ""
     footer_text = (
-        f"{symbol} (UID: {uid}), {env_clean}, {resolution}, {now_kst_str}"
+        f"{symbol} (UID: {uid}), {env_clean}, {resolution}\n{now_kst_str}"
     )
 
-    payload = {
-        "username": "Sellnance Feedback",
-        "avatar_url": "https://sellnance.app/static/luma-deer-svg-dark.svg",
-        "embeds": [
-            {
-                # "title": f"💬 사용자 피드백{email_tag}",
-                "description": message,
-                "color": 15776011,  # Sellnance Gold (#F0B90B)
-                "footer": {
-                    "text": footer_text,
-                },
-            }
-        ],
+    feedback_id = f"fb_{int(time.time() * 1000)}"
+
+    # 포럼 게시글 제목 (첫 줄 요약 또는 심볼 태그)
+    first_line = message.strip().split("\n")[0].strip()
+    title_summary = (first_line[:35] + "...") if len(first_line) > 35 else first_line
+    thread_title = f"[{symbol}] {title_summary}" if symbol != "미선택" else title_summary
+    if not thread_title:
+        thread_title = f"사용자 피드백 ({now_kst_str})"
+
+    # 랜덤 프로필 아바타 (DiceBear 봇 이미지)
+    avatar_seeds = ["Felix", "Milo", "Oscar", "Luna", "Leo", "Zoe", "Sam", "Jack", "Coco", "Oliver", "Ruby", "Toby", "Gizmo", "Dexter", "Penny"]
+    chosen_seed = f"{random.choice(avatar_seeds)}_{random.randint(100, 999)}"
+    avatar_url = f"https://api.dicebear.com/7.x/bottts/png?seed={chosen_seed}"
+
+    # CMC UID 기반 코인 로고 이미지 (우측 상단 썸네일)
+    coin_logo_url = (
+        f"https://s2.coinmarketcap.com/static/img/coins/64x64/{uid}.png"
+        if uid and str(uid).isdigit() and int(uid) > 0
+        else "https://sellnance.app/static/luma-deer-svg-dark.svg"
+    )
+
+    # 양방향 동기화 버튼 (해결 완료 / 되돌리기 토글)
+    components = [
+        {
+            "type": 1,
+            "components": [
+                {
+                    "type": 2,
+                    "style": 3,  # Success Green
+                    "label": "해결 완료 체크",
+                    "custom_id": f"toggle:{feedback_id}",
+                    "emoji": {"name": "✅"},
+                }
+            ],
+        }
+    ]
+
+    embed_body = {
+        "color": 15776011,  # Sellnance Gold (#F0B90B)
+        "thumbnail": {"url": coin_logo_url},
+        "footer": {"text": footer_text},
+    }
+
+    sync_entry = {
+        "feedback_id": feedback_id,
+        "symbol": symbol,
+        "uid": uid,
+        "content": message,
+        "coin_logo_url": coin_logo_url,
+        "footer_text": footer_text,
+        "status": "unresolved",
+        "forum_msg_id": None,
+        "forum_thread_id": None,
+        "general_msg_id": None,
     }
 
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.post(
-                webhook_url,
-                json=payload,
-                timeout=aiohttp.ClientTimeout(total=4),
-            ) as resp:
-                if resp.status in [200, 204]:
-                    return {"status": "success"}
-                else:
-                    return {
-                        "status": "error",
-                        "message": f"웹훅 전송 실패 (응답 코드: {resp.status})",
-                    }
+            # 1. 포럼 채널로 전송 (thread_name 포함, wait=true로 ID 획득)
+            if webhook_forum:
+                forum_payload = {
+                    "username": f"Sellnance 피드백봇 ({symbol})" if symbol != "미선택" else "Sellnance 피드백봇",
+                    "avatar_url": avatar_url,
+                    "thread_name": thread_title,
+                    "content": message,
+                    "embeds": [embed_body],
+                    "components": components,
+                }
+                async with session.post(
+                    f"{webhook_forum}?wait=true",
+                    json=forum_payload,
+                    timeout=aiohttp.ClientTimeout(total=4),
+                ) as resp_f:
+                    if resp_f.status in [200, 204]:
+                        res_data = await resp_f.json()
+                        sync_entry["forum_msg_id"] = str(res_data.get("id"))
+                        sync_entry["forum_thread_id"] = str(res_data.get("channel_id"))
+
+            # 2. 일반 채널로 전송 (thread_name 없이, wait=true로 ID 획득)
+            if webhook_general:
+                gen_payload = {
+                    "username": f"Sellnance 피드백봇 ({symbol})" if symbol != "미선택" else "Sellnance 피드백봇",
+                    "avatar_url": avatar_url,
+                    "content": message,
+                    "embeds": [embed_body],
+                    "components": components,
+                }
+                async with session.post(
+                    f"{webhook_general}?wait=true",
+                    json=gen_payload,
+                    timeout=aiohttp.ClientTimeout(total=4),
+                ) as resp_g:
+                    if resp_g.status in [200, 204]:
+                        res_data = await resp_g.json()
+                        sync_entry["general_msg_id"] = str(res_data.get("id"))
+
+            # 동기화 장부 저장
+            _save_feedback_sync_entry(sync_entry)
+            return {"status": "success"}
+
     except Exception as e:
         print(f"피드백 전송 예외: {e}")
-        return {
-            "status": "error",
-            "message": "피드백 전송 중 통신 오류가 발생했습니다",
-        }
+        return {"status": "error", "message": "피드백 전송 중 통신 오류가 발생했습니다"}
 
     return {"status": "error", "message": "피드백 전송에 실패했어요"}
+
+
+_FEEDBACK_SYNC_FILE = os.path.join(
+    os.path.dirname(__file__), "../static/discord_feedback_sync.json"
+)
+_feedback_sync_memory = {}
+
+
+def _save_feedback_sync_entry(entry: dict):
+    global _feedback_sync_memory
+    fid = entry.get("feedback_id")
+    if not fid:
+        return
+    _feedback_sync_memory[fid] = entry
+    try:
+        # 최근 200건만 파일 유지
+        if len(_feedback_sync_memory) > 200:
+            keys = list(_feedback_sync_memory.keys())
+            for k in keys[:-200]:
+                _feedback_sync_memory.pop(k, None)
+        utils.atomic_save_json(_FEEDBACK_SYNC_FILE, _feedback_sync_memory)
+    except Exception as e:
+        print(f"동기화 장부 저장 실패: {e}")
+
+
+def _load_feedback_sync_entry(fid: str) -> dict | None:
+    global _feedback_sync_memory
+    if fid in _feedback_sync_memory:
+        return _feedback_sync_memory[fid]
+    if os.path.exists(_FEEDBACK_SYNC_FILE):
+        try:
+            with open(_FEEDBACK_SYNC_FILE, "r", encoding="utf-8") as f:
+                _feedback_sync_memory = json.load(f)
+            return _feedback_sync_memory.get(fid)
+        except Exception:
+            pass
+    return None
+
+
+@app.post("/api/discord/interactions")
+async def discord_interactions(request: Request):
+    """
+    [양방향 실시간 동기화 인터랙션 핸들러]
+    일반 채널 또는 포럼 채널 어느 쪽에서든 [해결/미해결] 클릭 시:
+    1. 클릭된 쪽 메시지 실시간 업데이트 (type: 7)
+    2. 반대편 채널 메시지도 웹훅 PATCH로 100% 동일하게 동기화!
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        return {"type": 4, "data": {"content": "잘못된 요청입니다."}}
+
+    i_type = body.get("type", 0)
+
+    # 1. PING 핸드셰이크
+    if i_type == 1:
+        return {"type": 1}
+
+    # 2. 버튼 클릭 인터랙션
+    if i_type == 3:
+        custom_id = body.get("data", {}).get("custom_id", "")
+        if custom_id.startswith("toggle:"):
+            fid = custom_id.replace("toggle:", "").strip()
+            entry = _load_feedback_sync_entry(fid)
+
+            # 유저명 및 KST 시각 추출
+            member = body.get("member") or {}
+            user = member.get("user") or body.get("user") or {}
+            user_name = (
+                member.get("nick")
+                or user.get("global_name")
+                or user.get("username")
+                or "관리자"
+            )
+
+            kst = pytz.timezone("Asia/Seoul")
+            now_kst_str = datetime.now(kst).strftime("%Y-%m-%d %H:%M:%S")
+
+            # 상태 토글: unresolved <-> resolved
+            cur_status = entry.get("status", "unresolved") if entry else "unresolved"
+            is_resolving = cur_status != "resolved"
+            new_status = "resolved" if is_resolving else "unresolved"
+
+            coin_logo = (
+                entry.get("coin_logo_url")
+                if entry
+                else "https://sellnance.app/static/luma-deer-svg-dark.svg"
+            )
+            base_footer = (
+                entry.get("footer_text", "")
+                if entry
+                else f"Sellnance Feedback • {now_kst_str}"
+            )
+
+            # 새 Embed 카드 조립
+            if is_resolving:
+                new_color = 2278750  # 초록색
+                new_fields = [
+                    {
+                        "name": "✅ 해결 완료 처리됨",
+                        "value": f"⏱️ **해결 시각**: `{now_kst_str} KST`\n👤 **담당자**: `{user_name}`",
+                        "inline": False,
+                    }
+                ]
+                new_btn_label = f"↩️ 미해결로 되돌리기 ({user_name})"
+                new_btn_style = 2  # Secondary (Grey)
+                new_btn_emoji = {"name": "↩️"}
+            else:
+                new_color = 15776011  # 골드색
+                new_fields = []
+                new_btn_label = "해결 완료 체크"
+                new_btn_style = 3  # Success Green
+                new_btn_emoji = {"name": "✅"}
+
+            new_embed = {
+                "color": new_color,
+                "thumbnail": {"url": coin_logo},
+                "footer": {"text": base_footer},
+            }
+            if new_fields:
+                new_embed["fields"] = new_fields
+
+            new_components = [
+                {
+                    "type": 1,
+                    "components": [
+                        {
+                            "type": 2,
+                            "style": new_btn_style,
+                            "label": new_btn_label,
+                            "custom_id": f"toggle:{fid}",
+                            "emoji": new_btn_emoji,
+                        }
+                    ],
+                }
+            ]
+
+            # 상태 저장
+            if entry:
+                entry["status"] = new_status
+                entry["resolved_at"] = now_kst_str if is_resolving else None
+                entry["resolved_by"] = user_name if is_resolving else None
+                _save_feedback_sync_entry(entry)
+
+            # [반대편 채널 비동기 동기화 패치 함수]
+            asyncio.create_task(
+                _sync_counterpart_message(
+                    entry, new_embed, new_components, clicked_channel_id=str(body.get("channel_id"))
+                )
+            )
+
+            # 현재 클릭한 메시지는 즉시 실시간 갱신 (type 7)
+            return {
+                "type": 7,
+                "data": {
+                    "embeds": [new_embed],
+                    "components": new_components,
+                },
+            }
+
+    return {"type": 4, "data": {"content": "확인되었습니다."}}
+
+
+async def _sync_counterpart_message(entry: dict | None, embed: dict, components: list, clicked_channel_id: str):
+    """클릭되지 않은 반대편 채널의 메시지를 찾아 웹훅 PATCH로 실시간 동기화"""
+    if not entry:
+        return
+
+    webhook_forum = os.environ.get("DISCORD_FEEDBACK_WEBHOOK_FORUM", "").strip()
+    webhook_general = (
+        os.environ.get("DISCORD_FEEDBACK_WEBHOOK_GENERAL", "").strip()
+        or os.environ.get("DISCORD_FEEDBACK_WEBHOOK", "").strip()
+    )
+
+    f_msg_id = entry.get("forum_msg_id")
+    f_thread_id = entry.get("forum_thread_id")
+    g_msg_id = entry.get("general_msg_id")
+
+    payload = {
+        "embeds": [embed],
+        "components": components,
+    }
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            # 포럼 글에서 클릭된 경우 ➔ 일반 채널 동기화
+            if clicked_channel_id in [f_thread_id, f_msg_id]:
+                if webhook_general and g_msg_id:
+                    edit_url = f"{webhook_general}/messages/{g_msg_id}"
+                    await session.patch(edit_url, json=payload, timeout=aiohttp.ClientTimeout(total=4))
+            # 일반 채널에서 클릭된 경우 ➔ 포럼 글 동기화
+            else:
+                if webhook_forum and f_msg_id:
+                    thread_param = f"?thread_id={f_thread_id}" if f_thread_id else ""
+                    edit_url = f"{webhook_forum}/messages/{f_msg_id}{thread_param}"
+                    await session.patch(edit_url, json=payload, timeout=aiohttp.ClientTimeout(total=4))
+    except Exception as e:
+        print(f"반대편 채널 동기화 예외: {e}")
 
 
 # 서버 시작 시 브라우저 자동 실행 (기존 로직 유지)

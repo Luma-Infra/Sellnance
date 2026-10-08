@@ -66,39 +66,13 @@ export function startBinanceSpotFeed() {
 }
 
 // 테이블용 바이낸스 현물 스나이퍼 소켓 초기화
-export function initBinanceSniperSocket() {
-  /*
-  // [기존 코드 보존] 마켓 모드에 따라 현물 소켓을 개폐하던 기존 로직
-  const currentMarket = store.currentMarket || "ALL";
-  const needSpot = currentMarket !== "FUTURES";
-  if (needSpot) {
-    if (!store.sniperWs || store.sniperWs.readyState === WebSocket.CLOSED || store.sniperWs.readyState === WebSocket.CLOSING) {
-      store.sniperWs = new WebSocket("wss://stream.binance.com:9443/ws");
-      store.sniperWs.onopen = () => {
-        if (typeof window.syncSniperSubscriptions === "function") {
-          window.syncSniperSubscriptions();
-        }
-      };
-      store.sniperWs.onmessage = (e) => {
-        const data = JSON.parse(e.data);
-        if (data.e === "aggTrade" || data.e === "24hrMiniTicker") {
-          if (typeof window.renderRealtimeRow === "function") {
-            const tickerKey = data.s || "";
-            window.renderRealtimeRow(tickerKey, data, false);
-          }
-        }
-      };
-      store.sniperWs.onclose = () => {
-        setTimeout(initBinanceSniperSocket, 1000);
-      };
-    }
-  } else {
-    if (store.sniperWs) {
-      try { store.sniperWs.close(); } catch (e) { }
-      store.sniperWs = null;
-    }
+export function initBinanceSniperSocket(forceReconnect = false) {
+  if (forceReconnect && store.sniperWs) {
+    try {
+      store.sniperWs.close();
+    } catch (_) {}
+    store.sniperWs = null;
   }
-  */
 
   // [조건 완화] 화면에 노출된 코인(visibleSymbols)만 타겟 구독하므로 소켓을 항상 열어두어 실시간 갱신하도록 하기
   if (
@@ -130,5 +104,3 @@ export function initBinanceSniperSocket() {
     };
   }
 }
-
-window.initBinanceSniperSocket = initBinanceSniperSocket;

@@ -70,40 +70,13 @@ export function startBinanceFuturesFeed() {
 }
 
 // 테이블용 바이낸스 선물 스나이퍼 소켓 초기화
-export function initBinanceFuturesSniperSocket() {
-  /*
-  // [기존 코드 보존] 마켓 모드에 따라 선물 소켓을 개폐하던 기존 로직
-  // (BINANCE 또는 SPOT 탭 진입 시 선물 전용 코인의 실시간 시세가 차단되던 이슈로 인해 상시 연결로 완화)
-  const currentMarket = store.currentMarket || "ALL";
-  const needFutures = currentMarket === "ALL" || currentMarket === "FUTURES";
-  if (needFutures) {
-    if (!store.sniperWsFutures || store.sniperWsFutures.readyState === WebSocket.CLOSED || store.sniperWsFutures.readyState === WebSocket.CLOSING) {
-      store.sniperWsFutures = new WebSocket("wss://fstream.binance.com/market/ws");
-      store.sniperWsFutures.onopen = () => {
-        if (typeof window.syncSniperSubscriptions === "function") {
-          window.syncSniperSubscriptions();
-        }
-      };
-      store.sniperWsFutures.onmessage = (e) => {
-        const data = JSON.parse(e.data);
-        if (data.e === "aggTrade" || data.e === "24hrMiniTicker") {
-          if (typeof window.renderRealtimeRow === "function") {
-            const tickerKey = data.s || "";
-            window.renderRealtimeRow(tickerKey, data, true);
-          }
-        }
-      };
-      store.sniperWsFutures.onclose = () => {
-        setTimeout(initBinanceFuturesSniperSocket, 1000);
-      };
-    }
-  } else {
-    if (store.sniperWsFutures) {
-      try { store.sniperWsFutures.close(); } catch (e) { }
-      store.sniperWsFutures = null;
-    }
+export function initBinanceFuturesSniperSocket(forceReconnect = false) {
+  if (forceReconnect && store.sniperWsFutures) {
+    try {
+      store.sniperWsFutures.close();
+    } catch (_) {}
+    store.sniperWsFutures = null;
   }
-  */
 
   // [조건 완화] 화면에 노출된 코인(visibleSymbols)만 타겟 구독하므로 소켓을 항상 열어두어 선물 전용 코인도 실시간 갱신
   if (
@@ -137,5 +110,3 @@ export function initBinanceFuturesSniperSocket() {
     };
   }
 }
-
-window.initBinanceFuturesSniperSocket = initBinanceFuturesSniperSocket;

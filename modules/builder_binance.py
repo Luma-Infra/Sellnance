@@ -544,6 +544,7 @@ def build_binance_row(
 
     price = b_info["price"]
     mcap = info.get("market_cap", 0) if info else 0
+    fdv = float(info.get("fdv", 0) or 0.0) if info else 0.0
     listed_on = set(global_listings.get(base, set()))
 
     agg = _aggregate_binance_market(
@@ -600,10 +601,11 @@ def build_binance_row(
 
     up_price_krw = 0.0
     up_open_krw = 0.0
-    if target_up_base and target_up_base in upbit_data:
-        up_price_krw = upbit_data[target_up_base].get("price", 0.0)
-        up_open_krw = upbit_data[target_up_base].get("utc0_open", 0.0)
+    if target_up_base:
         listed_on.add("UPBIT")
+        if target_up_base in upbit_data:
+            up_price_krw = upbit_data[target_up_base].get("price", 0.0)
+            up_open_krw = upbit_data[target_up_base].get("utc0_open", 0.0)
 
     by_spot_p = 0.0
     by_futures_p = 0.0
@@ -827,6 +829,9 @@ def build_binance_row(
             utils.format_volume_string(binance_vol) if binance_vol > 0 else "-"
         ),
         "MarketCap_Formatted": utils.format_market_cap_string(mcap),
+        "FDV_Formatted": (
+            utils.format_market_cap_string(fdv) if fdv > 0 else "-"
+        ),
         "VMC_Formatted": f"{vmc_raw:.2f}%",
         "Binance_Vol_Formatted": (
             utils.format_volume_string(binance_vol) if binance_vol > 0 else "-"
@@ -844,6 +849,7 @@ def build_binance_row(
         "Change_Today_Raw": change_today,
         "Volume_Raw": binance_vol,
         "MarketCap_Raw": mcap,
+        "FDV_Raw": fdv,
         "VMC_Raw": vmc_raw,
         "Basis_Raw": basis_raw,
         "Kimchi_Raw": kimchi_raw,

@@ -196,4 +196,3 @@ if (typeof window !== "undefined") {
 }
 
 window.syncUpbitRadarSubscription = syncUpbitRadarSubscription;
-window.initUpbitSniperSocket = initUpbitSniperSocket;

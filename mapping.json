@@ -14,7 +14,7 @@
   "__MEMO__12": "DUPLICATED_LIST: 동일 티커 다른 코인(동명이인) 또는 거래소별 티커 상이 코인의 UID/거래소별 티커 매핑",
   "__MEMO__13": "TICKER_DATA: 전체 자산 마스터 메타데이터: [0: CMC_ID, 1: 체인/메인넷, 2: 영문명, 3: 표준티커, 4: 자산타입(COIN/STOCK), 5: 특수구분(ALPHA 등)]",
   "__MEMO__14": "-------------------------------------------------------------",
-  "DEFAULT_KRW_USD_RATE": 1342.51,
+  "DEFAULT_KRW_USD_RATE": 1339.94,
   "CHAIN_LOGO_MAP": {
     "ETH": "https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png",
     "BNB": "https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png",
@@ -645,6 +645,13 @@
       "aixbt",
       "AIXBT",
       "COIN"
+    ],
+    "AKAM(STOCK)": [
+      "42407",
+      null,
+      "AKAM (Derivatives)",
+      "AKAM",
+      "STOCK"
     ],
     "AKE": [
       "38127",
@@ -1867,6 +1874,13 @@
       null,
       "Bitway",
       "BTW",
+      "COIN"
+    ],
+    "BUILD ON BNB": [
+      "BUILD ON BNB",
+      null,
+      "BUILD ON BNB",
+      "BUILD ON BNB",
       "COIN"
     ],
     "BULLA": [
@@ -4354,6 +4368,13 @@
       "JPM",
       "STOCK"
     ],
+    "JPMB(STOCK)": [
+      "42416",
+      null,
+      "JPMB (Derivatives)",
+      "JPMB",
+      "STOCK"
+    ],
     "JPYC": [
       "40123",
       "ETH",
@@ -4712,6 +4733,13 @@
       "LLY",
       "STOCK"
     ],
+    "LLYB(STOCK)": [
+      "42415",
+      null,
+      "LLYB (Derivatives)",
+      "LLYB",
+      "STOCK"
+    ],
     "LONGXIA": [
       "LONGXIA",
       null,
@@ -4928,6 +4956,13 @@
       "CDbio",
       "MCD",
       "COIN"
+    ],
+    "MCD(STOCK)": [
+      "21488",
+      null,
+      "MCD (Derivatives)",
+      "MCD",
+      "STOCK"
     ],
     "MDB": [
       "33712",
@@ -5181,6 +5216,13 @@
       "MOG",
       "COIN",
       "ALPHA"
+    ],
+    "MOG COIN": [
+      "MOG COIN",
+      null,
+      "MOG COIN",
+      "MOG COIN",
+      "COIN"
     ],
     "MON": [
       "30495",
@@ -6950,6 +6992,13 @@
       "SECZ",
       "STOCK"
     ],
+    "SECZB(STOCK)": [
+      "42417",
+      null,
+      "SECZB (Derivatives)",
+      "SECZB",
+      "STOCK"
+    ],
     "SEI": [
       "23149",
       null,
@@ -8347,6 +8396,20 @@
       "USDE",
       "COIN"
     ],
+    "USDEB": [
+      "42418",
+      null,
+      "StablecoinX Tokenized bStocks",
+      "USDEB",
+      "COIN"
+    ],
+    "USDEX(STOCK)": [
+      "20281",
+      null,
+      "USDEX (Derivatives)",
+      "USDEX",
+      "STOCK"
+    ],
     "USDG": [
       "33793",
       "ETH",
@@ -8465,6 +8528,13 @@
       "Virtuals Protocol",
       "VIRTUAL",
       "COIN"
+    ],
+    "VKTX(STOCK)": [
+      "42405",
+      null,
+      "VKTX (Derivatives)",
+      "VKTX",
+      "STOCK"
     ],
     "VOOI": [
       "38854",

@@ -114,35 +114,7 @@ export function applyChartLayout() {
         const w = paneVol.clientWidth;
         const h = paneVol.clientHeight;
 
-        // 컨테이너가 켜지는 과정에서 일시적으로 clientHeight가 0일 경우, 대기 후 re-resize 예약
-        if (h === 0 && (v || k)) {
-          setTimeout(() => {
-            if (store.chartVol && paneVol) {
-              const rw = paneVol.clientWidth;
-              const rh = paneVol.clientHeight;
-              if (rw > 0 && rh > 0) {
-                store.volWidthCache = rw;
-                store.volHeightCache = rh;
-                store.chartVol.resize(rw, rh);
-                if (store.chart) {
-                  const r = store.chart.timeScale().getVisibleLogicalRange();
-                  if (r) {
-                    try {
-                      store.chartVol.timeScale().setVisibleLogicalRange(r);
-                    } catch (e) {}
-                  }
-                }
-                if (!store.isVolPriceScaleUserZoomed) {
-                  try {
-                    store.chartVol
-                      .priceScale("right")
-                      .applyOptions({ autoScale: true });
-                  } catch (e) {}
-                }
-              }
-            }
-          }, 50);
-        } else if (
+        if (
           w > 0 &&
           h > 0 &&
           (store.volWidthCache !== w || store.volHeightCache !== h)
@@ -150,21 +122,6 @@ export function applyChartLayout() {
           store.volWidthCache = w;
           store.volHeightCache = h;
           store.chartVol.resize(w, h);
-          if (store.chart) {
-            const r = store.chart.timeScale().getVisibleLogicalRange();
-            if (r) {
-              try {
-                store.chartVol.timeScale().setVisibleLogicalRange(r);
-              } catch (e) {}
-            }
-          }
-          if (!store.isVolPriceScaleUserZoomed) {
-            try {
-              store.chartVol
-                .priceScale("right")
-                .applyOptions({ autoScale: true });
-            } catch (e) {}
-          }
         }
       }
     });

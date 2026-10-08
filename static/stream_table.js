@@ -8,16 +8,35 @@ import {
   getRowDisplayMetrics,
 } from "./_market_rules.js";
 
-// 개별 스트림 스나이퍼 소켓 초기화 (피드 드라이버 내부 전용 함수들을 호출)
-export function initSniperSocket() {
-  if (typeof window.initBinanceSniperSocket === "function") {
-    window.initBinanceSniperSocket();
+import { initBinanceSniperSocket } from "./feed_binance_spot.js";
+import { initBinanceFuturesSniperSocket } from "./feed_binance_futures.js";
+import { initUpbitSniperSocket } from "./feed_upbit.js";
+
+// 모듈 내부 검증 토큰
+export const RECONNECT_SECRET = Symbol("SELLNANCE_INTERNAL_SOCKET_SECRET");
+
+let lastSocketInitTime = 0;
+const RECONNECT_COOLDOWN_MS = 2500; // 최소 2.5초 간격 쿨다운
+
+// 개별 스트림 스나이퍼 소켓 초기화 (피드 드라이버 내부 전용 파이프라인)
+export function initSniperSocket(force = false, callerKey = null) {
+  const now = Date.now();
+  if (now - lastSocketInitTime < RECONNECT_COOLDOWN_MS) {
+    return;
   }
-  if (typeof window.initBinanceFuturesSniperSocket === "function") {
-    window.initBinanceFuturesSniperSocket();
+  lastSocketInitTime = now;
+
+  const isAuthorized = callerKey === RECONNECT_SECRET;
+  const safeForce = Boolean(force && isAuthorized);
+
+  if (typeof initBinanceSniperSocket === "function") {
+    initBinanceSniperSocket(safeForce);
   }
-  if (typeof window.initUpbitSniperSocket === "function") {
-    window.initUpbitSniperSocket();
+  if (typeof initBinanceFuturesSniperSocket === "function") {
+    initBinanceFuturesSniperSocket(safeForce);
+  }
+  if (typeof initUpbitSniperSocket === "function") {
+    initUpbitSniperSocket();
   }
 }
 
@@ -1046,6 +1065,5 @@ function renderRowDom(row) {
 }
 
 window.renderRealtimeRow = renderRealtimeRow;
-window.initSniperSocket = initSniperSocket;
 window.syncSniperSubscriptions = syncSniperSubscriptions;
 window.refreshSniperTarget = refreshSniperTarget;

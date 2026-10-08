@@ -297,10 +297,13 @@ def execute_cmc_requests(id_lookup, sym_lookup, api_key=None):
                     or q.get("fully_diluted_market_cap")
                 )
 
+                fdv = float(q.get("fully_diluted_market_cap") or 0.0)
+
                 # builder ~ 공통 데이터 맵 만들기
                 asset_info = {
                     "name": name,
                     "market_cap": mcap,
+                    "fdv": fdv,
                     "cmc_price": q.get("price"),
                     "volume_24h": q.get("volume_24h"),
                     "ucid": ucid_str,

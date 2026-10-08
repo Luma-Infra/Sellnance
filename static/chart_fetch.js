@@ -479,6 +479,78 @@ async function fetchRawCandles(ctx, isSubSwitch, isSilentSync) {
 }
 
 // ============================================================================
+// 거래 대기 중 (가격 <= 0) 모래시계 오버레이 동기화
+// ============================================================================
+export function syncChartWaitingOverlay(ctx) {
+  const overlay = document.getElementById("chart-waiting-overlay");
+  if (!overlay) return false;
+
+  // 강제 테스트 플래그 확인 (window._testWaitingOverlayActive)
+  if (typeof window !== "undefined" && window._testWaitingOverlayActive) {
+    overlay.style.display = "flex";
+    return true;
+  }
+
+  // URL 쿼리 파라미터 ?test_waiting=1 체크
+  if (
+    typeof window !== "undefined" &&
+    window.location &&
+    window.location.search &&
+    window.location.search.includes("test_waiting=1")
+  ) {
+    overlay.style.display = "flex";
+    return true;
+  }
+
+  if (!ctx || !ctx.rowInfo) {
+    overlay.style.display = "none";
+    return false;
+  }
+
+  const row = ctx.rowInfo;
+  const mkt = store.currentChartMarket || "ALL";
+
+  // 활성 마켓별 가격 추출
+  let activePrice = 0;
+  let marketLabel = mkt;
+
+  if (mkt === "BITHUMB") {
+    activePrice = Number(
+      row.Bithumb_Price || (row.Upbit !== "O" ? row.Price_KRW : 0) || 0,
+    );
+    marketLabel = "BITHUMB";
+  } else if (mkt === "UPBIT") {
+    activePrice = Number(row.Upbit_Price || row.Price_KRW || 0);
+    marketLabel = "UPBIT";
+  } else if (mkt === "BYBIT_FUTURES") {
+    activePrice = Number(row.Bybit_Price_Futures || 0);
+    marketLabel = "BYBIT 선";
+  } else if (mkt === "BYBIT" || mkt === "BYBIT_SPOT") {
+    activePrice = Number(row.Bybit_Price_Spot || 0);
+    marketLabel = "BYBIT";
+  } else if (mkt === "FUTURES" || mkt === "BINANCE_FUTURES") {
+    activePrice = Number(row.Binance_Price_Futures || row.Price_Raw || 0);
+    marketLabel = "BINANCE 선";
+  } else if (mkt === "SPOT" || mkt === "BINANCE_SPOT" || mkt === "BINANCE") {
+    activePrice = Number(row.Binance_Price_Spot || row.Price_Raw || 0);
+    marketLabel = "BINANCE";
+  } else {
+    activePrice = Number(row.Price_Raw || 0);
+  }
+
+  // 가격 0 초과 조건만 체크 (0 이하 또는 누락 시 거래 대기 중)
+  const isWaiting = activePrice <= 0;
+
+  if (isWaiting) {
+    overlay.style.display = "flex";
+    return true;
+  } else {
+    overlay.style.display = "none";
+    return false;
+  }
+}
+
+// ============================================================================
 // [4단계] 데이터 부재 시 지능형 거래소 폴백 처리
 // ============================================================================
 function handleExchangeFallback(
@@ -490,8 +562,24 @@ function handleExchangeFallback(
   loadingModal,
   wrapper,
 ) {
+  // 거래 대기 중인지 먼저 동기화
+  const isWaiting = syncChartWaitingOverlay(ctx);
+
   if (canReuseMain || (rawMain && rawMain.length > 0)) {
+    // 정상 캔들이 있고 대기 상태가 아니면 오버레이 확실히 닫기
+    if (!isWaiting) {
+      const overlay = document.getElementById("chart-waiting-overlay");
+      if (overlay && !window._testWaitingOverlayActive) {
+        overlay.style.display = "none";
+      }
+    }
     return false; // 정상 수집됨 -> 폴백 불필요
+  }
+
+  // 캔들이 없는 상태: 가격이 0 이하이거나 거래 전이면 대기 오버레이 활성화
+  if (isWaiting) {
+    const overlay = document.getElementById("chart-waiting-overlay");
+    if (overlay) overlay.style.display = "flex";
   }
 
   // 폴백 관리 : 유저가 선택한 거래소/마켓(바낸 현물, 바낸 선물, 바이비트 등)을 다른 거래소로 제멋대로 바꾸지 않음
@@ -1138,6 +1226,10 @@ export async function fetchHistory(
     if (loadingModal) loadingModal.classList.add("hidden");
     if (wrapper) wrapper.classList.remove("chart-loading");
     if (gapOverlay) gapOverlay.style.display = "none";
+    const waitingOverlay = document.getElementById("chart-waiting-overlay");
+    if (waitingOverlay && !window._testWaitingOverlayActive) {
+      waitingOverlay.style.display = "none";
+    }
 
     // 7단계: 김프 백그라운드 수집 및 final 동기화
     finalizeKimchiAndRendering(
@@ -1169,3 +1261,44 @@ export async function fetchHistory(
 }
 
 window.fetchHistory = fetchHistory;
+window.syncChartWaitingOverlay = syncChartWaitingOverlay;
+
+// [테스트 헬퍼] 신규 상장 대기 / 가격 0원 모래시계 오버레이 검증용 테스트 API
+if (typeof window !== "undefined") {
+  // 1. 모래시계 오버레이 강제 토글 (콘솔: testWaitingOverlay(true) / testWaitingOverlay(false))
+  window.testWaitingOverlay = function (enable = true) {
+    window._testWaitingOverlayActive = Boolean(enable);
+    const overlay = document.getElementById("chart-waiting-overlay");
+    if (overlay) {
+      overlay.style.display = enable ? "flex" : "none";
+    }
+    console.log(
+      `⏳ [테스트] 모래시계 대기 오버레이 ${enable ? "활성화" : "비활성화"}`,
+    );
+  };
+
+  // 2. 현재 선택된 코인의 지정 마켓 가격을 0원으로 모킹하여 실제 대기 뱃지 클릭 상황 시뮬레이션
+  window.simulateWaitingMarket = function (market = "BITHUMB") {
+    const sym = store.currentSelectedSymbol || store.currentAsset;
+    const row = store.currentTableData?.find(
+      (r) => r.DisplayTicker === sym || r.Ticker === sym || r.Symbol === sym,
+    );
+    if (!row) {
+      console.warn(
+        "현재 선택된 코인이 없습니다. 목록에서 코인을 먼저 선택해 주세요.",
+      );
+      return;
+    }
+    console.log(
+      `[테스트 시뮬레이션] ${row.Symbol || row.Ticker}의 ${market} 가격을 0원으로 설정 후 대기 상태를 검증합니다.`,
+    );
+    if (market === "BITHUMB") row.Bithumb_Price = 0;
+    else if (market === "UPBIT") row.Upbit_Price = 0;
+    else if (market.includes("BYBIT")) row.Bybit_Price_Spot = 0;
+    else row.Binance_Price_Spot = 0;
+
+    if (typeof window.selectSymbol === "function") {
+      window.selectSymbol(row.Ticker || row.Symbol, market, row.UID);
+    }
+  };
+}

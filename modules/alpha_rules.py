@@ -53,6 +53,8 @@ def fetch_binance_alpha_raw():
         print(f"[Alpha Engine Error] Binance alpha fetch failed: {e}")
         if _ALPHA_API_CACHE["data"]:
             return _ALPHA_API_CACHE["data"]
+    if not alpha_map and _ALPHA_API_CACHE.get("data"):
+        return _ALPHA_API_CACHE["data"]
     return alpha_map
 
 
@@ -142,9 +144,10 @@ def filter_dynamic_alpha_gems(
     krw_usd_rate=None,
     bybit_data=None,
     duplicated_list=None,
+    ticker_data=None,
 ):
     """
-    전체 알파 코인 중 족보(DUPLICATED_LIST) 우선 확정 및 2배수 가격 검증 통과 검증
+    전체 알파 코인 중 족보(DUPLICATED_LIST 및 TICKER_DATA) 우선 확정 및 2배수 가격 검증 통과 검증
     """
     if binance_futures_set is None:
         binance_futures_set = set()
@@ -153,7 +156,7 @@ def filter_dynamic_alpha_gems(
     if binance_spot_set is None:
         binance_spot_set = set()
 
-    # 0. 족보(DUPLICATED_LIST)에 "binance_alpha"로 사전 등록된 알파 코인 추출 (1순위 우선권)
+    # 0. 족보(DUPLICATED_LIST 및 TICKER_DATA)에 사전 등록된 알파 코인 추출 (1순위 우선권)
     fixed_alpha_entries = {}
     if duplicated_list and isinstance(duplicated_list, dict):
         for k, v in duplicated_list.items():
@@ -166,6 +169,17 @@ def filter_dynamic_alpha_gems(
                     "fallback_exchange": fb_k,
                     "key": k,
                 }
+    if ticker_data and isinstance(ticker_data, dict):
+        for k, v in ticker_data.items():
+            if isinstance(v, list) and len(v) >= 6 and str(v[5]).upper() == "ALPHA":
+                sym_k = str(v[2] or k).upper().strip()
+                uid_k = str(v[0]).strip() if v[0] else ""
+                if sym_k not in fixed_alpha_entries:
+                    fixed_alpha_entries[sym_k] = {
+                        "uid": uid_k,
+                        "fallback_exchange": "BITGET",
+                        "key": k,
+                    }
 
     matched_gems = {}
 
@@ -282,6 +296,7 @@ def inject_alpha_gems_into_pipeline(
     krw_usd_rate=None,
     bybit_data=None,
     duplicated_list=None,
+    ticker_data=None,
 ):
     """
     [파이프라인 함수]
@@ -319,6 +334,7 @@ def inject_alpha_gems_into_pipeline(
             krw_usd_rate=krw_usd_rate,
             bybit_data=bybit_data,
             duplicated_list=duplicated_list,
+            ticker_data=ticker_data,
         )
 
         injected_count = 0

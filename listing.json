@@ -1551,7 +1551,7 @@
     "binance_listing": "2026-03-16"
   },
   "EWYB": {
-    "binance_listing": "2026-06-23"
+    "binance_listing": "2026-03-16"
   },
   "EWYUSDT": {
     "binance_listing": "2026-03-16"
@@ -2817,7 +2817,8 @@
     "binance_listing": "2021-04-08"
   },
   "NMR": {
-    "binance_listing": "2023-06-22"
+    "binance_listing": "2023-06-22",
+    "upbit_listing": "2026-10-06"
   },
   "NMRUSDT": {
     "binance_listing": "2023-06-01",
@@ -4163,6 +4164,9 @@
   },
   "TUTUSDT": {
     "binance_listing": "2025-03-17"
+  },
+  "TWST": {
+    "binance_listing": "2026-09-28"
   },
   "TWT": {
     "binance_listing": "2023-11-03"

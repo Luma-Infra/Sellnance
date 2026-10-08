@@ -127,6 +127,7 @@ def assemble_final_dashboard(
         krw_usd_rate=krw_usd_rate,
         bybit_data=bybit_data,
         duplicated_list=DUPLICATED_LIST,
+        ticker_data=TICKER_DATA,
     )
 
     # 1. 바이낸스 투입 (마켓 데이터 사전 해시 인덱싱으로 O(1) 조회)

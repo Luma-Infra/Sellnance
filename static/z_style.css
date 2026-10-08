@@ -6,6 +6,9 @@
 @source "../index.html";
 @source "./";
 @source "./**/*.js";
+@source "./templates";
+@source "./templates/**/*.html";
+@source "./templates/index.html";
 
 @theme {
   --color-theme-bg: var(--bg);
@@ -3006,30 +3009,30 @@ html.theme-upbit .kimchi-tag-bybit {
   box-shadow: 0 20px 40px -4px rgba(0, 0, 0, 0.25) !important;
 }
 
-/* [즐겨찾기 이펙트 - 별 우측 상단 작은 스파클 효과] */
+/* [즐겨찾기 이펙트 - 별 우측 상단 스파클 효과] */
 @keyframes shootingStarDot {
   0% {
     opacity: 0;
-    transform: translate(-3px, 3px) scale(0) rotate(0deg);
+    transform: translate(-1px, 1px) scale(0) rotate(0deg);
   }
   25% {
     opacity: 1;
-    transform: translate(0px, 0px) scale(1.3) rotate(45deg);
+    transform: translate(0px, 0px) scale(1.2) rotate(30deg);
   }
   60% {
     opacity: 1;
-    transform: translate(4px, -4px) scale(1) rotate(90deg);
+    transform: translate(2px, -2px) scale(0.95) rotate(60deg);
   }
   100% {
     opacity: 0;
-    transform: translate(8px, -8px) scale(0) rotate(135deg);
+    transform: translate(4px, -4px) scale(0) rotate(90deg);
   }
 }
 
 @keyframes shootingStarTail {
   0% {
     opacity: 0;
-    transform: translate(-3px, 3px) scaleX(0.2) rotate(-45deg);
+    transform: translate(-1px, 1px) scaleX(0.2) rotate(-45deg);
   }
   25% {
     opacity: 0.95;
@@ -3037,11 +3040,11 @@ html.theme-upbit .kimchi-tag-bybit {
   }
   65% {
     opacity: 0.85;
-    transform: translate(4px, -4px) scaleX(1.1) rotate(-45deg);
+    transform: translate(2px, -2px) scaleX(0.9) rotate(-45deg);
   }
   100% {
     opacity: 0;
-    transform: translate(8px, -8px) scaleX(0.2) rotate(-45deg);
+    transform: translate(4px, -4px) scaleX(0.2) rotate(-45deg);
   }
 }
 
@@ -3052,9 +3055,9 @@ html.theme-upbit .kimchi-tag-bybit {
 .star-btn.star-sparkle::before {
   content: "✦";
   position: absolute;
-  top: -8px;
-  right: -6px;
-  font-size: 9px;
+  top: -2px;
+  right: -1px;
+  font-size: 8.5px;
   line-height: 1;
   color: #fff475;
   text-shadow:
@@ -3068,9 +3071,9 @@ html.theme-upbit .kimchi-tag-bybit {
 .star-btn.star-sparkle::after {
   content: "";
   position: absolute;
-  top: -2px;
-  right: -3px;
-  width: 14px;
+  top: 2px;
+  right: 0px;
+  width: 12px;
   height: 2px;
   background: linear-gradient(90deg, transparent, #ffd700, #ffffff);
   border-radius: 999px;
@@ -3143,4 +3146,105 @@ html.theme-upbit .kimchi-tag-bybit {
   pointer-events: none !important;
   overflow: hidden !important;
   animation: thanosCollapseRow 0.22s ease-in-out forwards !important;
+}
+
+/* ==========================================================================
+   차트 거래 대기 중 모래시계 애니메이션 (Hourglass Animation)
+   ========================================================================== */
+@keyframes hourglassFlip {
+  0%,
+  65% {
+    transform: rotate(0deg);
+  }
+  85%,
+  100% {
+    transform: rotate(180deg);
+  }
+}
+
+@keyframes hourglassSandDrain {
+  0% {
+    transform: scaleY(1) scaleX(1);
+    opacity: 1;
+  }
+  55% {
+    transform: scaleY(0.05) scaleX(0.2);
+    opacity: 0.7;
+  }
+  62%,
+  85% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  92%,
+  100% {
+    transform: scaleY(1) scaleX(1);
+    opacity: 1;
+  }
+}
+
+@keyframes hourglassStreamFlow {
+  0% {
+    opacity: 0;
+    stroke-dashoffset: 0;
+  }
+  6% {
+    opacity: 1;
+  }
+  52% {
+    opacity: 1;
+    stroke-dashoffset: -12;
+  }
+  58%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes hourglassSandFill {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  8% {
+    transform: scaleY(0.1) scaleX(0.2);
+    opacity: 0.8;
+  }
+  58%,
+  85% {
+    transform: scaleY(1) scaleX(1);
+    opacity: 1;
+  }
+  92%,
+  100% {
+    transform: scale(0);
+    opacity: 0;
+  }
+}
+
+.hourglass-anim-wrapper {
+  perspective: 400px;
+}
+
+.hourglass-svg {
+  transform-origin: 24px 24px;
+  animation: hourglassFlip 2.8s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+  will-change: transform;
+}
+
+.hourglass-sand-top {
+  transform-origin: 24px 21px;
+  animation: hourglassSandDrain 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  will-change: transform, opacity;
+}
+
+.hourglass-sand-stream {
+  animation: hourglassStreamFlow 2.8s linear infinite;
+  will-change: opacity, stroke-dashoffset;
+}
+
+.hourglass-sand-bottom {
+  transform-origin: 24px 37px;
+  animation: hourglassSandFill 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  will-change: transform, opacity;
 }

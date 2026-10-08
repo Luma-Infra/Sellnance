@@ -685,6 +685,11 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
           kimchiPctEl.textContent = row.Kimchi_Formatted;
         kimchiPctEl.className = `kimchi-pct text-[11px] font-medium whitespace-nowrap flex-shrink-0 ${row.Kimchi_Raw > 0 ? "text-theme-up" : "text-theme-down"}`;
 
+        if (row.Kimchi_Label && row.Kimchi_Label !== "-") {
+          const rate = store.krwUsdRate || 1350;
+          kimchiPctEl.title = `김치 프리미엄: ${row.Kimchi_Formatted} (${row.Kimchi_Label} 기준, 환율 ${Number(rate).toFixed(1)}원)`;
+        }
+
         // 최대 +333.33%(8글자) 대응 로그 폰트 축소 (6글자 초과 시 9.5px까지 스케일 다운)
         const kLen = (row.Kimchi_Formatted || "").length;
         if (kLen > 6) {

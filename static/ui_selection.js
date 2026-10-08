@@ -222,6 +222,7 @@ export function selectSymbol(
   store.isFetchingChart = true;
   window.isFetchingChart = true;
   store.isUserZoomed = false;
+  store.activeCandleFallback = null;
   store.currentAsset = uniqueTicker;
   store.currentSelectedSymbol = uniqueTicker;
   store.currentSelectedUid = rowInfo ? rowInfo.UID : targetUid || null;
@@ -231,6 +232,21 @@ export function selectSymbol(
   } catch (e) {}
   if (typeof window.addRecentSearch === "function") {
     window.addRecentSearch(uniqueTicker);
+  }
+
+  // 코인 클릭 시점에 헤더 전광판(Mcap/FDV/가격) 변경
+  if (rowInfo && typeof window.realUpdateHeaderDisplay === "function") {
+    const p =
+      typeof store.getPrecision === "function"
+        ? store.getPrecision(uniqueTicker)
+        : 2;
+    window.realUpdateHeaderDisplay(
+      rowInfo,
+      undefined,
+      p,
+      false,
+      "CLICK_IMMEDIATE",
+    );
   }
 
   // 선택된 코인은 화면 가시 영역(30위 바깥)과 상관없이 실시간 시세 구독에 등록
@@ -783,7 +799,11 @@ export function updateExchangeBadges(s, targetUid = null) {
         cmcId: 351,
         market: "UPBIT",
         type: null,
-        condition: Boolean(rowInfo.Listed_Exchanges?.includes("UPBIT")),
+        condition: Boolean(
+          rowInfo.Listed_Exchanges?.includes("UPBIT") ||
+          rowInfo.Upbit === "O" ||
+          Number(rowInfo.Upbit_Price) > 0,
+        ),
       },
       {
         id: "BITHUMB",
@@ -791,7 +811,11 @@ export function updateExchangeBadges(s, targetUid = null) {
         cmcId: 200,
         market: "BITHUMB",
         type: null,
-        condition: Boolean(rowInfo.Listed_Exchanges?.includes("BITHUMB")),
+        condition: Boolean(
+          rowInfo.Listed_Exchanges?.includes("BITHUMB") ||
+          rowInfo.Bithumb === "O" ||
+          Number(rowInfo.Bithumb_Price) > 0,
+        ),
       },
       {
         id: "BYBIT-SPOT",
@@ -870,7 +894,20 @@ export function updateExchangeBadges(s, targetUid = null) {
             ? rawFallback
             : null;
 
-        if ((item.id === "B-SPOT" || item.id === "B-ALPHA") && fallbackEx) {
+        const isLegitBinanceTarget =
+          item.id === "B-ALPHA"
+            ? isAlpha
+            : Boolean(
+                rowInfo.Listed_Exchanges?.includes("BINANCE_SPOT") ||
+                rowInfo.Binance === "O" ||
+                rowInfo.Exact_Spot,
+              );
+
+        if (
+          isLegitBinanceTarget &&
+          (item.id === "B-SPOT" || item.id === "B-ALPHA") &&
+          fallbackEx
+        ) {
           const FALLBACK_META_MAP = {
             BITGET: { name: "비트겟", short: "BITGET", cmcId: 513 },
             BITHUMB: { name: "빗썸", short: "BITHUMB", cmcId: 200 },

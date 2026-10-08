@@ -6,7 +6,7 @@ import { loadSymbols } from "./chart_api.js";
 import { loadTableData } from "./table_api.js";
 import { selectSymbol, switchViewMode } from "./ui_control.js";
 import { initChart } from "./chart.js";
-import { initSniperSocket } from "./stream_table.js";
+import { initSniperSocket, RECONNECT_SECRET } from "./stream_table.js";
 import { initMeasureEvents } from "./chart_measure.js";
 import { initDrawingEvents, initDrawingToolbar } from "./chart_draw.js";
 import { initOrderbookDOM } from "./orderbook.js";
@@ -736,7 +736,27 @@ export function setupTabVisibilityRecovery() {
       window.refreshSniperTarget();
     }
 
-    // 1. 10초 이상 백그라운드 후 탭 복귀 시: 차트 캔들 백그라운드 동기화
+    // 0. 경주마(실시간 정렬) 즉각 가동 및 스케줄 타이머 리셋
+    if (typeof window.applyRealtimeSort === "function") {
+      window.applyRealtimeSort();
+    }
+    if (typeof window.scheduleNextRealtimeSort === "function") {
+      window.scheduleNextRealtimeSort();
+    }
+
+    // 1. 5초 이상 백그라운드 후 복귀 시: 스나이퍼 소켓 점검 (15초 이상 방치 시 좀비 소켓 강제 재연결)
+    if (elapsed > 5 * 1000) {
+      const forceReconnect = elapsed > 15 * 1000;
+      initSniperSocket(forceReconnect, RECONNECT_SECRET);
+      if (typeof window.syncSniperSubscriptions === "function") {
+        window.syncSniperSubscriptions();
+      }
+      if (typeof window.initAllExchangeFeeds === "function") {
+        window.initAllExchangeFeeds();
+      }
+    }
+
+    // 2. 10초 이상 백그라운드 후 탭 복귀 시: 차트 캔들 백그라운드 동기화 및 마켓 테이블 최신화
     if (elapsed > 10 * 1000) {
       if (
         store.currentAsset &&
@@ -760,16 +780,8 @@ export function setupTabVisibilityRecovery() {
       if (typeof window.syncQuickViewRecentCandles === "function") {
         window.syncQuickViewRecentCandles();
       }
-    }
 
-    // 2. 30초 이상 방치 후 복귀 시: 소켓 피드 점검 및 마켓 테이블 사일런트 시세 동기화
-    if (elapsed > 30 * 1000) {
-      if (typeof window.syncSniperSubscriptions === "function") {
-        window.syncSniperSubscriptions();
-      }
-      if (typeof window.initAllExchangeFeeds === "function") {
-        window.initAllExchangeFeeds();
-      }
+      // 알파 코인 및 전체 마켓 테이블 사일런트 동기화
       if (typeof window.loadTableDataSilent === "function") {
         window.loadTableDataSilent();
       } else if (typeof window.loadTableData === "function") {

@@ -1906,6 +1906,22 @@
                     >
                   </div>
 
+                  <!-- 4-1. FDV (완전희석 시가총액, PC 전용 노출) -->
+                  <div
+                    id="head-metric-box-fdv"
+                    class="hidden min-[1200px]:flex flex-col text-xs text-right shrink-0 min-w-fit items-end"
+                  >
+                    <span
+                      class="opacity-50 text-[10px] min-[1200px]:text-[9.5px] uppercase font-medium tracking-wider text-right min-[1200px]:leading-none"
+                      >FDV</span
+                    >
+                    <b
+                      id="head-fdv"
+                      class="text-[12px] md:text-[13px] min-[1200px]:text-[13px] font-sans tabular-nums mt-0.5 min-[1200px]:mt-[3px] font-normal text-right min-[1200px]:leading-none text-theme-text/80"
+                      >-</b
+                    >
+                  </div>
+
                   <!-- 5. 해외 Vol(24h) (PC 전용 노출) -->
                   <div
                     id="head-metric-box-bvol"
@@ -2001,7 +2017,7 @@
                         window.toggleKimchiComparison();
                     "
                   >
-                    김프 비교 ON
+                    김프 비교 켜기
                   </button>
 
                   <!-- 호가창 열기/닫기 토글 버튼 -->
@@ -2159,7 +2175,7 @@
               id="chart-wrapper"
               class="flex-1 flex flex-col relative overflow-hidden border border-theme-border rounded-lg bg-theme-panel min-w-0"
             >
-              <!-- [신규] 초기 안내 오버레이 -->
+              <!-- 초기 안내 오버레이 -->
               <div
                 id="chart-init-message"
                 class="absolute inset-0 z-[95] flex flex-col items-center justify-center bg-theme-panel text-theme-text/80 select-none"
@@ -2167,6 +2183,75 @@
                 <span class="text-sm font-bold opacity-60"
                   >📈 테이블 목록에서 코인을 선택해 보세요</span
                 >
+              </div>
+
+              <!-- 거래 대기 중 모래시계 ⏳ 오버레이 -->
+              <div
+                id="chart-waiting-overlay"
+                class="absolute inset-0 z-40 flex flex-col items-center justify-center bg-theme-panel/80 backdrop-blur-md transition-all duration-300 pointer-events-auto"
+                style="display: none"
+              >
+                <div
+                  class="flex flex-col items-center gap-3.5 p-6 sm:p-7 rounded-2xl bg-theme-bg/90 border border-theme-border/60 shadow-2xl text-center max-w-[320px] select-none mx-4"
+                >
+                  <!-- SVG 애니메이션 -->
+                  <div
+                    class="hourglass-anim-wrapper relative w-16 h-16 flex items-center justify-center"
+                  >
+                    <svg
+                      class="hourglass-svg w-12 h-12"
+                      viewBox="0 0 48 48"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <!-- 프레임 -->
+                      <path
+                        d="M12 6H36M12 42H36M14 6V14C14 19 20 23 23 24C20 25 14 29 14 34V42M34 6V14C34 19 28 23 25 24C28 25 34 29 34 34V42"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        class="text-amber-400/80"
+                      />
+                      <!-- 상단 모래 -->
+                      <path
+                        class="hourglass-sand-top"
+                        d="M16 11H32C32 15 28 19 24 21C20 19 16 15 16 11Z"
+                        fill="#f59e0b"
+                      />
+                      <!-- 떨어지는 모래 -->
+                      <line
+                        class="hourglass-sand-stream"
+                        x1="24"
+                        y1="21"
+                        x2="24"
+                        y2="37"
+                        stroke="#fbbf24"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-dasharray="2 3"
+                      />
+                      <!-- 하단 모래 -->
+                      <path
+                        class="hourglass-sand-bottom"
+                        d="M24 27C27 29 32 33 32 37H16C16 33 21 29 24 27Z"
+                        fill="#f59e0b"
+                      />
+                    </svg>
+                  </div>
+                  <!-- 안내 문구 -->
+                  <div class="flex flex-col gap-1 items-center">
+                    <span
+                      class="text-base sm:text-lg font-black text-theme-accent tracking-tight"
+                      >거래 대기 중이에요</span
+                    >
+                    <span
+                      class="text-xs font-medium text-theme-text/60 tracking-tight leading-relaxed"
+                    >
+                      아직 거래소에서 실제 거래가 되지 않았어요
+                    </span>
+                  </div>
+                </div>
               </div>
               <!-- Chart columns container -->
               <div
