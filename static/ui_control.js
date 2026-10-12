@@ -326,6 +326,14 @@ setTimeout(() => {
             if (typeof window.applyChartLayout === "function") {
               window.applyChartLayout();
             }
+            // [개선] 전체화면 진입/복원 시 캔들이 뷰포트 밖으로 밀려나 잘리지 않도록 시간축 자동 정렬
+            try {
+              if (store.chart && store.chart.timeScale) {
+                if (!store.isUserZoomed) {
+                  store.chart.timeScale().scrollToRealtime();
+                }
+              }
+            } catch (_) {}
           }, 50);
         });
       }

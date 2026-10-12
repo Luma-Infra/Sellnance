@@ -102,13 +102,9 @@ window.scrollActiveTfIntoView = scrollActiveTfIntoView;
 let pendingTfSettings = null;
 
 export function syncChartControlsModalUI() {
-  const updateBtn = (id, isActive, activeText, inactiveText) => {
+  const updateBtn = (id, isActive) => {
     const btn = document.getElementById(id);
     if (!btn) return;
-    const textSpan = btn.querySelector("span") || btn;
-    if (activeText && inactiveText) {
-      textSpan.innerText = isActive ? activeText : inactiveText;
-    }
     if (isActive) {
       btn.className =
         "px-2 py-1.5 text-[11px] font-bold rounded border transition-all flex items-center justify-center gap-1.5 cursor-pointer bg-theme-accent text-white border-theme-accent shadow-sm";
@@ -122,16 +118,41 @@ export function syncChartControlsModalUI() {
   const isPct = store.showCrosshairPct !== false;
   const isCountdown = !!store.showCountdown;
   const isKimchi = !store.isKimchiDisabled;
+  const isPriceLine = store.showPriceLine !== false;
 
-  updateBtn("modal-ctrl-ohlc", isOhlc, "OHLC 정보 ON", "OHLC 정보 OFF");
-  updateBtn("modal-ctrl-pct", isPct, "우측 % 켜짐", "우측 % 꺼짐");
-  updateBtn(
-    "modal-ctrl-countdown",
-    isCountdown,
-    "카운트다운 ON",
-    "카운트다운 OFF",
-  );
-  updateBtn("modal-ctrl-kimchi", isKimchi, "김프 비교 ON", "김프 비교 OFF");
+  updateBtn("modal-ctrl-ohlc", isOhlc);
+  updateBtn("modal-ctrl-pct", isPct);
+  updateBtn("modal-ctrl-countdown", isCountdown);
+  updateBtn("modal-ctrl-kimchi", isKimchi);
+  updateBtn("modal-ctrl-priceline", isPriceLine);
+
+  const pcPriceLineBtn = document.getElementById("toggle-priceline-btn");
+  if (pcPriceLineBtn) {
+    pcPriceLineBtn.innerText = "현재가 점선";
+    if (isPriceLine) {
+      pcPriceLineBtn.classList.add(
+        "text-theme-accent",
+        "border-theme-accent/40",
+        "bg-theme-accent/10",
+      );
+      pcPriceLineBtn.classList.remove(
+        "text-theme-text",
+        "border-theme-border/50",
+        "bg-theme-panel/50",
+      );
+    } else {
+      pcPriceLineBtn.classList.remove(
+        "text-theme-accent",
+        "border-theme-accent/40",
+        "bg-theme-accent/10",
+      );
+      pcPriceLineBtn.classList.add(
+        "text-theme-text",
+        "border-theme-border/50",
+        "bg-theme-panel/50",
+      );
+    }
+  }
 }
 
 export function toggleTfSettings() {
@@ -298,6 +319,11 @@ export function executeSetTF(tf) {
   }
 
   scrollActiveTfIntoView(true);
+
+  // [피드백 반영] 타임프레임(TF) 변경 시 고정되어 있던 크로스헤어 지우기
+  if (typeof window.clearAllCrosshairs === "function") {
+    window.clearAllCrosshairs();
+  }
 
   if (typeof fetchHistory === "function")
     fetchHistory(store.currentAsset, true);

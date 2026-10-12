@@ -19,6 +19,7 @@ const domCache = {
   headChg24h: null,
   headChgDay: null,
   headMcap: null,
+  headFdv: null,
   headVolB: null,
   headVolU: null,
   headCallerEl: null,
@@ -28,17 +29,33 @@ const domCache = {
   bottomEls: null,
   headChg24hEls: null,
   headChgDayEls: null,
+  _renderedUid: null,
 };
+
+export function formatCapDisplay(val) {
+  if (val === null || val === undefined || isNaN(val) || Number(val) <= 0)
+    return "-";
+  const num = Number(val);
+  if (num >= 1e12) return (num / 1e12).toFixed(2) + " T";
+  if (num >= 1e9) return (num / 1e9).toFixed(2) + " B";
+  if (num >= 1e6) return (num / 1e6).toFixed(2) + " M";
+  if (num >= 1e3) return (num / 1e3).toFixed(2) + " K";
+  return Math.round(num).toLocaleString();
+}
 
 export function invalidateHeaderDomCache() {
   domCache.headChg24h = null;
+  domCache.headMcap = null;
+  domCache.headFdv = null;
   domCache.topEls = null;
   domCache.bottomEls = null;
   domCache.headChg24hEls = null;
   domCache.headChgDayEls = null;
+  domCache._renderedUid = null;
 }
 if (typeof window !== "undefined") {
   window.invalidateHeaderDomCache = invalidateHeaderDomCache;
+  window.formatCapDisplay = formatCapDisplay;
 }
 
 function getHeaderDom() {
@@ -46,6 +63,7 @@ function getHeaderDom() {
     domCache.headChg24h = document.getElementById("head-chg-24h");
     domCache.headChgDay = document.getElementById("head-chg-day");
     domCache.headMcap = document.getElementById("head-mcap");
+    domCache.headFdv = document.getElementById("head-fdv");
     domCache.headVolB = document.getElementById("head-vol-binance");
     domCache.headVolU = document.getElementById("head-vol-upbit");
     domCache.headCallerEl = document.getElementById("head-caller-id");
@@ -529,26 +547,39 @@ export const realUpdateHeaderDisplay = (
     });
   }
 
-  // 가격과 등락폭은 항상 갱신하고, 볼륨/시총 등 정적 지표만 조기 리턴하여 보존
-  if (newPrice !== undefined || isRealtimeStream) {
+  // 직전 렌더링된 코인과 다른 코인이면 Mcap, FDV, Vol 다시 렌더링
+  const rowId = String(row.UID || row.Ticker || "");
+  const isAssetChanged =
+    !domCache._renderedUid || domCache._renderedUid !== rowId;
+  if (isAssetChanged) {
+    domCache._renderedUid = rowId;
+  }
+
+  // 가격과 등락폭은 항상 갱신. 코인이 바뀌지 않았을 때만 볼륨/시총 등 무거운 정적 DOM 재연산 패스
+  if (!isAssetChanged && (newPrice !== undefined || isRealtimeStream)) {
     return;
   }
 
-  // 실시간 마켓캡 계산 및 출력
-  let displayMcap = row.MarketCap_Formatted || "-";
-  if (row.Price_Raw > 0 && row.MarketCap_Raw > 0) {
-    if (!row._CirculatingSupply) {
-      row._CirculatingSupply = row.MarketCap_Raw / row.Price_Raw;
-    }
-    const liveMcap = row.Price_Raw * row._CirculatingSupply;
-    if (liveMcap >= 1e9) displayMcap = (liveMcap / 1e9).toFixed(2) + " B";
-    else if (liveMcap >= 1e6) displayMcap = (liveMcap / 1e6).toFixed(2) + " M";
-    else if (liveMcap >= 1e3) displayMcap = (liveMcap / 1e3).toFixed(2) + " K";
-    else displayMcap = liveMcap.toFixed(2);
-  }
+  // 1. 유통 시가총액 (Market Cap) - FDV와 동일한 단위/포맷 체계 적용
+  let displayMcap =
+    row.MarketCap_Formatted && row.MarketCap_Formatted !== "0"
+      ? row.MarketCap_Formatted
+      : formatCapDisplay(row.MarketCap_Raw);
+  if (!displayMcap || displayMcap === "0") displayMcap = "-";
 
   if (dom.headMcap && dom.headMcap.textContent !== displayMcap) {
     dom.headMcap.textContent = displayMcap;
+  }
+
+  // 2. 완전희석 시가총액 (FDV) 전용 열 출력 - Market Cap과 동일한 단위/포맷 체계
+  let displayFdv =
+    row.FDV_Formatted && row.FDV_Formatted !== "0"
+      ? row.FDV_Formatted
+      : formatCapDisplay(row.FDV_Raw);
+  if (!displayFdv || displayFdv === "0") displayFdv = "-";
+
+  if (dom.headFdv && dom.headFdv.textContent !== displayFdv) {
+    dom.headFdv.textContent = displayFdv;
   }
   // [단일 룰북 연동] 좌측(해외) & 우측(국내) 거래량 및 브랜드 색상 연산 (서브 김프 페어링)
   const { volBFormatted, volUFormatted, volBColorClass, volUColorClass } =
