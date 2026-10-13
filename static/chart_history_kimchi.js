@@ -103,31 +103,26 @@ export function updateKimchiComparisonUI() {
   const isDisabled = !!store.isKimchiDisabled;
 
   if (btn) {
+    btn.innerText = "김프 비교";
     if (isDisabled) {
-      btn.innerText = "김프 비교 OFF";
       btn.classList.remove(
         "text-theme-accent",
         "border-theme-accent/40",
         "bg-theme-accent/10",
-        "shadow-sm",
       );
       btn.classList.add(
         "text-theme-text",
-        "opacity-50",
         "border-theme-border/50",
         "bg-theme-panel/50",
       );
     } else {
-      btn.innerText = "김프 비교 ON";
       btn.classList.add(
         "text-theme-accent",
         "border-theme-accent/40",
         "bg-theme-accent/10",
-        "shadow-sm",
       );
       btn.classList.remove(
         "text-theme-text",
-        "opacity-50",
         "border-theme-border/50",
         "bg-theme-panel/50",
       );
@@ -163,19 +158,6 @@ export function updateKimchiComparisonUI() {
   // 김프 시리즈 가시성 제어
   if (store.kimchiSeries) {
     store.kimchiSeries.applyOptions({ visible: !isDisabled });
-    if (isDisabled) {
-      try {
-        const visibleRange = store.chart
-          ? store.chart.timeScale().getVisibleLogicalRange()
-          : null;
-        store.kimchiSeries.setData([]);
-        if (visibleRange && store.chartVol)
-          store.chartVol.timeScale().setVisibleLogicalRange(visibleRange);
-      } catch (e) {}
-    }
-  }
-  if (typeof applyChartLayout === "function") {
-    applyChartLayout();
   }
   if (typeof window.syncChartControlsModalUI === "function") {
     window.syncChartControlsModalUI();
@@ -197,27 +179,14 @@ export function toggleKimchiComparison(forceVal) {
 
   updateKimchiComparisonUI();
 
+  // [메인과 볼륨 단일 동기 확장] 차트 틀 좌측 여백(65px ↔ 0px) 즉시 1:1 동기 적용
+  if (typeof applyChartLayout === "function") applyChartLayout();
+  if (typeof window.syncPriceScaleWidths === "function") {
+    window.syncPriceScaleWidths(true);
+  }
+
   if (store.isKimchiDisabled) {
-    // [김프 끄기] 전체 재조회(fetchHistory) 없이 캔들과 볼륨은 실시간 스트리밍 유지하고 김프만 off
-    if (store.kimchiSeries) {
-      try {
-        const visibleRange = store.chart
-          ? store.chart.timeScale().getVisibleLogicalRange()
-          : null;
-        store.kimchiSeries.setData([]);
-        if (visibleRange && store.chartVol)
-          store.chartVol.timeScale().setVisibleLogicalRange(visibleRange);
-      } catch (e) {}
-    }
-    store.kimchiData = [];
-    if (store.kimchiDataMap) store.kimchiDataMap.clear();
-    store.realtimeKimchi = null;
-
-    if (typeof applyChartLayout === "function") applyChartLayout();
-    if (typeof window.syncPriceScaleWidths === "function") {
-      window.syncPriceScaleWidths(true);
-    }
-
+    // [김프 끄기] 레전드만 갱신 (볼륨 차트 캔버스는 메인과 동일하게 제자리에서 매끄럽게 확장)
     if (
       store.mainData &&
       store.mainData.length > 0 &&
@@ -228,8 +197,12 @@ export function toggleKimchiComparison(forceVal) {
       window.updateLegend(store.mainData[lastIdx], v, null);
     }
   } else {
-    // [김프 켜기] 백그라운드에서 김프 데이터만 수집하여 차트에 바인딩
-    if (typeof window.fetchHistory === "function" && store.currentAsset) {
+    // [김프 켜기] 데이터가 없을 때만 백그라운드 비동기로 데이터 페칭
+    if (
+      (!store.kimchiData || store.kimchiData.length === 0) &&
+      typeof window.fetchHistory === "function" &&
+      store.currentAsset
+    ) {
       window.fetchHistory(store.currentAsset, false, false, true);
     }
   }

@@ -44,8 +44,8 @@ export function applyChartLayout() {
 
   const isKimchiActuallyVisible = !!k && !store.isKimchiDisabled;
 
-  // ON일 때는 둘 다 60px, OFF일 때는 둘 다 0px로 일치 (OFF 시 캔버스 확장)
-  const leftWidth = !isSmallMobile && isKimchiActuallyVisible ? 60 : 0;
+  // ON일 때는 둘 다 64px, OFF일 때는 둘 다 0px로 일치 (OFF 시 캔버스 확장)
+  const leftWidth = !isSmallMobile && isKimchiActuallyVisible ? 64 : 0;
   const isLeftVisible = leftWidth > 0;
 
   const leftScaleOptions = {
@@ -114,35 +114,7 @@ export function applyChartLayout() {
         const w = paneVol.clientWidth;
         const h = paneVol.clientHeight;
 
-        // 컨테이너가 켜지는 과정에서 일시적으로 clientHeight가 0일 경우, 대기 후 re-resize 예약
-        if (h === 0 && (v || k)) {
-          setTimeout(() => {
-            if (store.chartVol && paneVol) {
-              const rw = paneVol.clientWidth;
-              const rh = paneVol.clientHeight;
-              if (rw > 0 && rh > 0) {
-                store.volWidthCache = rw;
-                store.volHeightCache = rh;
-                store.chartVol.resize(rw, rh);
-                if (store.chart) {
-                  const r = store.chart.timeScale().getVisibleLogicalRange();
-                  if (r) {
-                    try {
-                      store.chartVol.timeScale().setVisibleLogicalRange(r);
-                    } catch (e) {}
-                  }
-                }
-                if (!store.isVolPriceScaleUserZoomed) {
-                  try {
-                    store.chartVol
-                      .priceScale("right")
-                      .applyOptions({ autoScale: true });
-                  } catch (e) {}
-                }
-              }
-            }
-          }, 50);
-        } else if (
+        if (
           w > 0 &&
           h > 0 &&
           (store.volWidthCache !== w || store.volHeightCache !== h)
@@ -150,21 +122,6 @@ export function applyChartLayout() {
           store.volWidthCache = w;
           store.volHeightCache = h;
           store.chartVol.resize(w, h);
-          if (store.chart) {
-            const r = store.chart.timeScale().getVisibleLogicalRange();
-            if (r) {
-              try {
-                store.chartVol.timeScale().setVisibleLogicalRange(r);
-              } catch (e) {}
-            }
-          }
-          if (!store.isVolPriceScaleUserZoomed) {
-            try {
-              store.chartVol
-                .priceScale("right")
-                .applyOptions({ autoScale: true });
-            } catch (e) {}
-          }
         }
       }
     });
@@ -186,6 +143,11 @@ export function applyChartLayout() {
   if (typeof window.mountTimezoneButton === "function") {
     window.mountTimezoneButton();
   }
+
+  // 상하 차트 좌우 스케일 폭 실시간 동기화 트리거
+  if (typeof window.syncPriceScaleWidths === "function") {
+    window.syncPriceScaleWidths();
+  }
 }
 
 // 2. 드래그 엔진 초기화
@@ -196,18 +158,55 @@ export function initResizers() {
   const wrapper = document.getElementById("chart-wrapper");
   const rVol = document.getElementById("resizer-vol");
 
-  const startDrag = (e) => {
+  let touchStartY = null;
+  let touchStartX = null;
+  let touchHoldTimer = null;
+  let isTouchCommitted = false;
+
+  const beginCommitDrag = () => {
     isDraggingResizer = true;
+    window._isDraggingResizer = true;
     document.body.style.cursor = "row-resize";
     document.body.style.userSelect = "none";
-    if (e.cancelable && e.type === "touchstart") {
-      e.preventDefault();
+    if (rVol) rVol.classList.add("resizer-active");
+    if (typeof window.clearAllCrosshairs === "function") {
+      window.clearAllCrosshairs();
     }
   };
 
+  const startDragMouse = (e) => {
+    beginCommitDrag();
+  };
+
+  const startDragTouch = (e) => {
+    if (!e.touches || e.touches.length === 0) return;
+    const t = e.touches[0];
+    touchStartY = t.clientY;
+    touchStartX = t.clientX;
+    isTouchCommitted = false;
+
+    // 터치 시 크로스헤어가 켜져있다면 해제하여 간섭 차단
+    if (typeof window.clearAllCrosshairs === "function") {
+      window.clearAllCrosshairs();
+    }
+
+    // [UX 개선] 꾹 누르거나(160ms 이상 터치 유지) 수직으로 확실하게 드래그할 때만 리사이저 반응
+    if (touchHoldTimer) clearTimeout(touchHoldTimer);
+    touchHoldTimer = setTimeout(() => {
+      touchHoldTimer = null;
+      isTouchCommitted = true;
+      beginCommitDrag();
+      if (typeof navigator !== "undefined" && navigator.vibrate) {
+        try {
+          navigator.vibrate(12);
+        } catch (_) {}
+      }
+    }, 160);
+  };
+
   if (rVol) {
-    rVol.addEventListener("mousedown", startDrag);
-    rVol.addEventListener("touchstart", startDrag, { passive: false });
+    rVol.addEventListener("mousedown", startDragMouse);
+    rVol.addEventListener("touchstart", startDragTouch, { passive: true });
   }
 
   const handleDragMove = (clientY) => {
@@ -229,21 +228,58 @@ export function initResizers() {
   window.addEventListener(
     "touchmove",
     (e) => {
-      if (isDraggingResizer && e.touches && e.touches.length > 0) {
+      if (!e.touches || e.touches.length === 0) return;
+      const t = e.touches[0];
+
+      if (!isTouchCommitted && touchStartY !== null) {
+        const dy = Math.abs(t.clientY - touchStartY);
+        const dx = Math.abs(t.clientX - touchStartX);
+
+        // 수직 이동이 10px 이상이고 수평보다 확실히 클 때 드래그 개시
+        if (dy > 10 && dy > dx * 1.2) {
+          if (touchHoldTimer) {
+            clearTimeout(touchHoldTimer);
+            touchHoldTimer = null;
+          }
+          isTouchCommitted = true;
+          beginCommitDrag();
+        } else if (dx > 12 && dx > dy) {
+          // 수평 차트 스크롤인 경우 리사이저 대기 즉시 취소
+          if (touchHoldTimer) {
+            clearTimeout(touchHoldTimer);
+            touchHoldTimer = null;
+          }
+          touchStartY = null;
+          touchStartX = null;
+          return;
+        }
+      }
+
+      if (isDraggingResizer) {
         if (e.cancelable) {
           e.preventDefault();
         }
-        handleDragMove(e.touches[0].clientY);
+        handleDragMove(t.clientY);
       }
     },
     { passive: false },
   );
 
   const endDrag = () => {
+    if (touchHoldTimer) {
+      clearTimeout(touchHoldTimer);
+      touchHoldTimer = null;
+    }
+    touchStartY = null;
+    touchStartX = null;
+    isTouchCommitted = false;
+
     if (isDraggingResizer) {
       isDraggingResizer = false;
+      window._isDraggingResizer = false;
       document.body.style.cursor = "default";
       document.body.style.userSelect = "";
+      if (rVol) rVol.classList.remove("resizer-active");
       try {
         if (store.chartSplits?.s1) {
           localStorage.setItem(
@@ -257,6 +293,7 @@ export function initResizers() {
 
   window.addEventListener("mouseup", endDrag);
   window.addEventListener("touchend", endDrag, { passive: true });
+  window.addEventListener("touchcancel", endDrag, { passive: true });
 }
 
 window.togglePane = togglePane;
