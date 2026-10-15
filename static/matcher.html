@@ -1,0 +1,1465 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sellnance | 8대 거래소 티커 & 배수 매칭 검증기</title>
+    <link rel="stylesheet" href="/static/pretendard.css" />
+    <style>
+      :root {
+        --bg: #090c10;
+        --bg-panel: #0d1117;
+        --bg-card: #161b22;
+        --bg-hover: #1c2128;
+        --border: #30363d;
+        --border-subtle: #21262d;
+        --text: #f0f6fc;
+        --text-muted: #8b949e;
+        --text-dim: #484f58;
+        --accent: #58a6ff;
+        --green: #3fb950;
+        --green-bg: rgba(63, 185, 80, 0.12);
+        --green-border: rgba(63, 185, 80, 0.35);
+        --amber: #d29922;
+        --amber-bg: rgba(210, 153, 34, 0.12);
+        --amber-border: rgba(210, 153, 34, 0.35);
+        --purple: #bc8cff;
+        --purple-bg: rgba(188, 140, 255, 0.12);
+        --purple-border: rgba(188, 140, 255, 0.35);
+        --red: #f85149;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background-color: var(--bg);
+        color: var(--text);
+        font-family:
+          "Pretendard Variable",
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+        min-height: 100vh;
+        font-size: 13px;
+        line-height: 1.5;
+        padding: 24px;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* Container */
+      .container {
+        max-width: 1560px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      /* Header Bar */
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 20px;
+        background: var(--bg-panel);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .logo-badge {
+        background: linear-gradient(135deg, #1f6feb 0%, #388bfd 100%);
+        color: #fff;
+        font-weight: 800;
+        font-size: 13px;
+        padding: 4px 8px;
+        border-radius: 6px;
+        letter-spacing: 0.5px;
+      }
+
+      .title-group h1 {
+        font-size: 16px;
+        font-weight: 700;
+        letter-spacing: -0.3px;
+        color: var(--text);
+      }
+
+      .title-group p {
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-top: 2px;
+      }
+
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      /* Buttons */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 12px;
+        font-size: 12px;
+        font-weight: 500;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        background: var(--bg-card);
+        color: var(--text);
+        cursor: pointer;
+        transition: all 0.15s ease;
+        text-decoration: none;
+        white-space: nowrap;
+      }
+
+      .btn:hover {
+        background: var(--bg-hover);
+        border-color: #8b949e;
+      }
+
+      .btn-primary {
+        background: #238636;
+        border-color: rgba(240, 246, 252, 0.1);
+        color: #ffffff;
+        font-weight: 600;
+      }
+
+      .btn-primary:hover {
+        background: #2ea043;
+        border-color: rgba(240, 246, 252, 0.2);
+      }
+
+      .btn-primary:disabled {
+        background: #21262d;
+        border-color: var(--border);
+        color: var(--text-dim);
+        cursor: not-allowed;
+      }
+
+      .btn-sm {
+        padding: 4px 8px;
+        font-size: 11px;
+      }
+
+      /* Stats Grid */
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+      }
+
+      .stat-card {
+        background: var(--bg-panel);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 14px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .stat-card .label {
+        font-size: 11px;
+        color: var(--text-muted);
+        font-weight: 500;
+      }
+
+      .stat-card .value {
+        font-size: 22px;
+        font-weight: 700;
+        font-family:
+          ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+        letter-spacing: -0.5px;
+        color: var(--text);
+      }
+
+      .stat-card .desc {
+        font-size: 10px;
+        color: var(--text-dim);
+      }
+
+      /* Filter Panel */
+      .filter-panel {
+        background: var(--bg-panel);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 14px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .filter-row-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .search-box {
+        flex: 1;
+        min-width: 260px;
+        position: relative;
+      }
+
+      .search-input {
+        width: 100%;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 8px 12px 8px 34px;
+        color: var(--text);
+        font-size: 12px;
+        font-family: inherit;
+        outline: none;
+        transition: border-color 0.15s;
+      }
+
+      .search-input:focus {
+        border-color: var(--accent);
+      }
+
+      .search-icon {
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+        pointer-events: none;
+      }
+
+      .filter-chips-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+
+      .chip-group-label {
+        font-size: 11px;
+        color: var(--text-dim);
+        margin-right: 2px;
+        font-weight: 600;
+      }
+
+      .chip {
+        background: var(--bg-card);
+        border: 1px solid var(--border-subtle);
+        color: var(--text-muted);
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        cursor: pointer;
+        transition: all 0.15s;
+        user-select: none;
+      }
+
+      .chip:hover {
+        background: var(--bg-hover);
+        color: var(--text);
+      }
+
+      .chip.active {
+        background: var(--accent);
+        color: #090c10;
+        border-color: var(--accent);
+        font-weight: 600;
+      }
+
+      /* Actions Toolbar */
+      .table-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 14px;
+        font-size: 12px;
+      }
+
+      .selection-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--text-muted);
+      }
+
+      .selection-count {
+        color: var(--text);
+        font-weight: 700;
+        font-family: ui-monospace, monospace;
+      }
+
+      .selection-buttons {
+        display: flex;
+        gap: 6px;
+      }
+
+      /* Table Container */
+      .table-wrap {
+        background: var(--bg-panel);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+      }
+
+      thead {
+        background: #12171f;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        border-bottom: 1px solid var(--border);
+      }
+
+      th {
+        padding: 10px 12px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        cursor: pointer;
+        user-select: none;
+        white-space: nowrap;
+        transition: color 0.15s;
+      }
+
+      th:hover {
+        color: var(--text);
+      }
+
+      th.sort-active {
+        color: var(--accent);
+      }
+
+      th .sort-arrow {
+        font-size: 10px;
+        margin-left: 4px;
+        display: inline-block;
+        vertical-align: middle;
+        opacity: 0.4;
+      }
+
+      th.sort-active .sort-arrow {
+        opacity: 1;
+      }
+
+      th.no-sort {
+        cursor: default;
+      }
+
+      tbody tr {
+        border-bottom: 1px solid var(--border-subtle);
+        transition: background 0.12s;
+      }
+
+      tbody tr:hover {
+        background: var(--bg-hover);
+      }
+
+      tbody tr.selected-row {
+        background: rgba(88, 166, 255, 0.08);
+      }
+
+      td {
+        padding: 10px 12px;
+        vertical-align: middle;
+        color: var(--text);
+      }
+
+      /* Badges */
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 7px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: -0.2px;
+        white-space: nowrap;
+      }
+
+      .badge-conf-95 {
+        background: var(--green-bg);
+        color: var(--green);
+        border: 1px solid var(--green-border);
+      }
+
+      .badge-conf-88 {
+        background: var(--amber-bg);
+        color: var(--amber);
+        border: 1px solid var(--amber-border);
+      }
+
+      .badge-mult-1 {
+        background: #21262d;
+        color: var(--text-muted);
+        border: 1px solid #30363d;
+        font-family: ui-monospace, monospace;
+      }
+
+      .badge-mult-scaled {
+        background: var(--purple-bg);
+        color: var(--purple);
+        border: 1px solid var(--purple-border);
+        font-family: ui-monospace, monospace;
+        font-weight: 700;
+      }
+
+      .exchange-badge {
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 4px;
+        letter-spacing: 0.2px;
+        text-transform: uppercase;
+        font-family: ui-monospace, monospace;
+      }
+
+      .ex-okx {
+        background: #262626;
+        color: #fff;
+        border: 1px solid #404040;
+      }
+      .ex-bybit {
+        background: #3a2e16;
+        color: #f7a600;
+        border: 1px solid #634d22;
+      }
+      .ex-bitget {
+        background: #0f353b;
+        color: #00f0ff;
+        border: 1px solid #165b64;
+      }
+      .ex-bithumb {
+        background: #3d1b18;
+        color: #ff6b5b;
+        border: 1px solid #6b2f29;
+      }
+      .ex-upbit {
+        background: #132442;
+        color: #4b89dc;
+        border: 1px solid #1f3d6f;
+      }
+      .ex-gateio {
+        background: #1c274a;
+        color: #5c8bff;
+        border: 1px solid #2f4077;
+      }
+      .ex-binance {
+        background: #383116;
+        color: #f3ba2f;
+        border: 1px solid #685a23;
+      }
+
+      .diff-low {
+        color: var(--green);
+        font-weight: 600;
+      }
+      .diff-mid {
+        color: var(--amber);
+        font-weight: 600;
+      }
+      .diff-high {
+        color: var(--red);
+        font-weight: 600;
+      }
+
+      .mono {
+        font-family:
+          ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+        font-size: 12px;
+      }
+
+      .coin-cell {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+      }
+
+      .coin-sym {
+        font-weight: 700;
+        color: #fff;
+      }
+
+      .coin-name {
+        font-size: 10px;
+        color: var(--text-muted);
+      }
+
+      .reason-cell {
+        max-width: 280px;
+        font-size: 11px;
+        color: var(--text-muted);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .status-tag {
+        font-size: 10px;
+        padding: 2px 6px;
+        border-radius: 3px;
+      }
+      .status-new {
+        background: rgba(88, 166, 255, 0.15);
+        color: var(--accent);
+        border: 1px solid rgba(88, 166, 255, 0.3);
+      }
+      .status-done {
+        background: rgba(139, 148, 158, 0.15);
+        color: var(--text-muted);
+        border: 1px solid #30363d;
+      }
+
+      /* Modal */
+      .modal-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(4px);
+        z-index: 100;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .modal-backdrop.show {
+        display: flex;
+      }
+
+      .modal {
+        background: var(--bg-panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        max-width: 580px;
+        width: 90%;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+      }
+
+      .modal h3 {
+        font-size: 16px;
+        color: var(--text);
+      }
+
+      .modal p {
+        color: var(--text-muted);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .modal-list {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        max-height: 220px;
+        overflow-y: auto;
+        padding: 8px 12px;
+        font-family: ui-monospace, monospace;
+        font-size: 11px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+
+      /* Toast */
+      .toast {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        background: #1f2937;
+        color: #fff;
+        border: 1px solid #374151;
+        border-radius: 8px;
+        padding: 12px 18px;
+        font-size: 13px;
+        font-weight: 500;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+        transform: translateY(100px);
+        opacity: 0;
+        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        z-index: 200;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .toast.show {
+        transform: translateY(0);
+        opacity: 1;
+      }
+
+      .toast.toast-success {
+        border-color: var(--green);
+        background: #0d2818;
+      }
+
+      .empty-state {
+        padding: 60px 20px;
+        text-align: center;
+        color: var(--text-muted);
+      }
+
+      .empty-state h3 {
+        font-size: 15px;
+        color: var(--text);
+        margin-bottom: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Header -->
+      <header>
+        <div class="brand">
+          <span class="logo-badge">SELLNANCE</span>
+          <div class="title-group">
+            <h1>8대 거래소 전수 티커 & 배수 검증 매칭 테이블</h1>
+            <p id="subInfo">캐시 데이터 로드 중...</p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-sm" id="btnScan" onclick="triggerScan()">
+            <span>⚡ 스캔 안내 (uv run run2)</span>
+          </button>
+          <button class="btn btn-sm" onclick="exportJSON()">
+            <span>📥 JSON 내보내기</span>
+          </button>
+          <a href="/" class="btn btn-sm">
+            <span>🏠 메인 터미널로</span>
+          </a>
+        </div>
+      </header>
+
+      <!-- Stats Grid -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="label">총 매칭 후보</span>
+          <span class="value" id="statTotal">-</span>
+          <span class="desc">장부 미등록 8대 거래소 상장 코인</span>
+        </div>
+        <div class="stat-card">
+          <span class="label">🟢 높은 신뢰도 (95점)</span>
+          <span class="value" id="statHigh" style="color: var(--green)">-</span>
+          <span class="desc">정상 시세 오차 5% 이내 완벽 일치</span>
+        </div>
+        <div class="stat-card">
+          <span class="label">🟡 시계열 검증 (88점)</span>
+          <span class="value" id="statVerify" style="color: var(--amber)"
+            >-</span
+          >
+          <span class="desc">김프/가두리/신규 상장 분할 검증</span>
+        </div>
+        <div class="stat-card">
+          <span class="label">⚡ 배율 적용 티커</span>
+          <span class="value" id="statMultiplier" style="color: var(--purple)"
+            >-</span
+          >
+          <span class="desc">10x, 1000x, 1/1000x 등 배수 종목</span>
+        </div>
+      </div>
+
+      <!-- Filter Panel -->
+      <div class="filter-panel">
+        <div class="filter-row-top">
+          <div class="search-box">
+            <svg
+              class="search-icon"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input
+              type="text"
+              id="searchInput"
+              class="search-input"
+              placeholder="심볼, 코인명, UID, 대상 티커, 사유 실시간 검색... (예: SHIB, 1000x, OKX, 95)"
+              oninput="applyFilter()"
+            />
+          </div>
+
+          <div class="filter-chips-row">
+            <span class="chip-group-label">신뢰도:</span>
+            <div
+              class="chip active"
+              data-filter="conf"
+              data-val="all"
+              onclick="setFilter('conf', 'all')"
+            >
+              전체
+            </div>
+            <div
+              class="chip"
+              data-filter="conf"
+              data-val="95"
+              onclick="setFilter('conf', '95')"
+            >
+              95점 (시세일치)
+            </div>
+            <div
+              class="chip"
+              data-filter="conf"
+              data-val="88"
+              onclick="setFilter('conf', '88')"
+            >
+              88점 (시계열)
+            </div>
+          </div>
+
+          <div class="filter-chips-row">
+            <span class="chip-group-label">배율:</span>
+            <div
+              class="chip active"
+              data-filter="mult"
+              data-val="all"
+              onclick="setFilter('mult', 'all')"
+            >
+              전체
+            </div>
+            <div
+              class="chip"
+              data-filter="mult"
+              data-val="1x"
+              onclick="setFilter('mult', '1x')"
+            >
+              1x (기본)
+            </div>
+            <div
+              class="chip"
+              data-filter="mult"
+              data-val="scaled"
+              onclick="setFilter('mult', 'scaled')"
+            >
+              배율 적용 (10x~1000x)
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-chips-row">
+          <span class="chip-group-label">거래소:</span>
+          <div
+            class="chip active"
+            data-filter="ex"
+            data-val="all"
+            onclick="setFilter('ex', 'all')"
+          >
+            전체
+          </div>
+          <div
+            class="chip"
+            data-filter="ex"
+            data-val="OKX"
+            onclick="setFilter('ex', 'OKX')"
+          >
+            OKX
+          </div>
+          <div
+            class="chip"
+            data-filter="ex"
+            data-val="BYBIT"
+            onclick="setFilter('ex', 'BYBIT')"
+          >
+            BYBIT
+          </div>
+          <div
+            class="chip"
+            data-filter="ex"
+            data-val="BITGET"
+            onclick="setFilter('ex', 'BITGET')"
+          >
+            BITGET
+          </div>
+          <div
+            class="chip"
+            data-filter="ex"
+            data-val="BITHUMB"
+            onclick="setFilter('ex', 'BITHUMB')"
+          >
+            BITHUMB
+          </div>
+          <div
+            class="chip"
+            data-filter="ex"
+            data-val="UPBIT"
+            onclick="setFilter('ex', 'UPBIT')"
+          >
+            UPBIT
+          </div>
+          <div
+            class="chip"
+            data-filter="ex"
+            data-val="GATEIO"
+            onclick="setFilter('ex', 'GATEIO')"
+          >
+            GATEIO
+          </div>
+          <div
+            class="chip"
+            data-filter="ex"
+            data-val="BINANCE"
+            onclick="setFilter('ex', 'BINANCE')"
+          >
+            BINANCE
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions Toolbar -->
+      <div class="table-toolbar">
+        <div class="selection-info">
+          <span
+            >선택: <span class="selection-count" id="selectedCount">0</span>개 /
+            전체 <span id="filteredCount">0</span>개 표시</span
+          >
+          <div class="selection-buttons">
+            <button class="btn btn-sm" onclick="selectAll(true)">
+              화면 전체 선택
+            </button>
+            <button class="btn btn-sm" onclick="selectHighConfidenceOnly()">
+              95점만 일괄 선택
+            </button>
+            <button class="btn btn-sm" onclick="selectAll(false)">
+              선택 해제
+            </button>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 8px">
+          <button class="btn btn-sm" onclick="copySelected()">
+            📋 클립보드 복사
+          </button>
+          <button
+            class="btn btn-primary"
+            id="btnApply"
+            onclick="openApplyModal()"
+            disabled
+          >
+            <span>✓ 선택한 항목 mapping.json에 영구 반영</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrap">
+        <table id="matchTable">
+          <thead>
+            <tr>
+              <th class="no-sort" style="width: 38px; text-align: center">
+                <input
+                  type="checkbox"
+                  id="masterCheckbox"
+                  onchange="toggleMasterCheckbox(this.checked)"
+                />
+              </th>
+              <th onclick="sortBy('idx')" id="th_idx" style="width: 50px">
+                # <span class="sort-arrow">▲</span>
+              </th>
+              <th
+                onclick="sortBy('confidence')"
+                id="th_confidence"
+                style="width: 80px"
+              >
+                신뢰도 <span class="sort-arrow">▼</span>
+              </th>
+              <th onclick="sortBy('uid')" id="th_uid" style="width: 80px">
+                UID <span class="sort-arrow"></span>
+              </th>
+              <th onclick="sortBy('anchor_symbol')" id="th_anchor_symbol">
+                기준 코인 <span class="sort-arrow"></span>
+              </th>
+              <th
+                onclick="sortBy('anchor_price')"
+                id="th_anchor_price"
+                style="text-align: right"
+              >
+                기준 시세(USD) <span class="sort-arrow"></span>
+              </th>
+              <th
+                onclick="sortBy('target_exchange')"
+                id="th_target_exchange"
+                style="width: 130px"
+              >
+                대상 거래소 <span class="sort-arrow"></span>
+              </th>
+              <th onclick="sortBy('target_symbol')" id="th_target_symbol">
+                대상 심볼 <span class="sort-arrow"></span>
+              </th>
+              <th
+                onclick="sortBy('target_price')"
+                id="th_target_price"
+                style="text-align: right"
+              >
+                대상 시세(USD) <span class="sort-arrow"></span>
+              </th>
+              <th
+                onclick="sortBy('multiplier')"
+                id="th_multiplier"
+                style="width: 80px; text-align: center"
+              >
+                배수 <span class="sort-arrow"></span>
+              </th>
+              <th
+                onclick="sortBy('diff_pct')"
+                id="th_diff_pct"
+                style="width: 80px; text-align: right"
+              >
+                오차율 <span class="sort-arrow"></span>
+              </th>
+              <th onclick="sortBy('match_type')" id="th_match_type">
+                판정 사유 <span class="sort-arrow"></span>
+              </th>
+              <th
+                onclick="sortBy('is_already_mapped')"
+                id="th_is_already_mapped"
+                style="width: 90px; text-align: center"
+              >
+                상태 <span class="sort-arrow"></span>
+              </th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <tr>
+              <td colspan="13" class="empty-state">
+                <h3>데이터 로딩 중...</h3>
+                <p>잠시만 기다려 주세요.</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal-backdrop" id="applyModal">
+      <div class="modal">
+        <h3>⚠️ mapping.json 영구 반영 확인</h3>
+        <p>
+          선택하신
+          <strong id="modalItemCount" style="color: #fff">0</strong>개의 매칭
+          항목을 <code style="color: var(--accent)">mapping.json</code>의
+          <code>DUPLICATED_LIST</code>에 추가합니다.<br />
+          기존 족보 파일은 원자적 백업을 통해 안전하게 갱신됩니다.
+        </p>
+        <div class="modal-list" id="modalItemList"></div>
+        <div class="modal-actions">
+          <button class="btn" onclick="closeApplyModal()">취소</button>
+          <button
+            class="btn btn-primary"
+            id="btnConfirmApply"
+            onclick="executeApply()"
+          >
+            영구 반영 실행
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+      // State
+      let rawData = [];
+      let filteredData = [];
+      let selectedKeys = new Set();
+      let currentSort = { col: "confidence", asc: false };
+      let currentFilters = {
+        conf: "all",
+        mult: "all",
+        ex: "all",
+        search: "",
+      };
+
+      // Initialize
+      async function loadData() {
+        try {
+          const res = await fetch("/api/ticker-matcher/results");
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          const data = await res.json();
+          const results = data.results || [];
+          rawData = results.map((item, idx) => ({
+            ...item,
+            idx: idx + 1,
+            unique_key: `${item.uid}_${item.target_exchange}_${item.target_symbol}`,
+          }));
+
+          document.getElementById("statTotal").textContent =
+            rawData.length.toLocaleString();
+          document.getElementById("statHigh").textContent = rawData
+            .filter((d) => d.confidence >= 95)
+            .length.toLocaleString();
+          document.getElementById("statVerify").textContent = rawData
+            .filter((d) => d.confidence < 95)
+            .length.toLocaleString();
+          document.getElementById("statMultiplier").textContent = rawData
+            .filter((d) => d.multiplier !== 1)
+            .length.toLocaleString();
+
+          const timeStr = data.scanned_at
+            ? new Date(data.scanned_at).toLocaleString("ko-KR")
+            : "최근 스캔";
+          document.getElementById("subInfo").textContent =
+            `마지막 스캔: ${timeStr} · 총 ${rawData.length}개 후보`;
+
+          applyFilter();
+        } catch (e) {
+          console.error(e);
+          document.getElementById("tableBody").innerHTML = `
+          <tr>
+            <td colspan="13" class="empty-state">
+              <h3>데이터 로드 실패</h3>
+              <p>스캔 결과 파일을 찾을 수 없습니다. (static/ticker_matcher_results.json)</p>
+            </td>
+          </tr>
+        `;
+        }
+      }
+
+      // Filter Logic
+      function setFilter(type, val) {
+        currentFilters[type] = val;
+        document.querySelectorAll(`[data-filter="${type}"]`).forEach((el) => {
+          el.classList.toggle("active", el.getAttribute("data-val") === val);
+        });
+        applyFilter();
+      }
+
+      function applyFilter() {
+        const q = document
+          .getElementById("searchInput")
+          .value.trim()
+          .toLowerCase();
+        filteredData = rawData.filter((item) => {
+          // Conf
+          if (currentFilters.conf === "95" && item.confidence < 95)
+            return false;
+          if (currentFilters.conf === "88" && item.confidence >= 95)
+            return false;
+
+          // Mult
+          if (currentFilters.mult === "1x" && item.multiplier !== 1)
+            return false;
+          if (currentFilters.mult === "scaled" && item.multiplier === 1)
+            return false;
+
+          // Exchange
+          if (currentFilters.ex !== "all") {
+            if (!item.target_exchange.toUpperCase().includes(currentFilters.ex))
+              return false;
+          }
+
+          // Search query
+          if (q) {
+            const matchTarget = [
+              item.uid,
+              item.anchor_symbol,
+              item.anchor_name,
+              item.target_exchange,
+              item.target_symbol,
+              item.target_base,
+              item.match_type,
+              `${item.multiplier}x`,
+              `${item.confidence}점`,
+            ]
+              .join(" ")
+              .toLowerCase();
+            if (!matchTarget.includes(q)) return false;
+          }
+
+          return true;
+        });
+
+        sortData();
+        renderTable();
+      }
+
+      // Sorting Logic
+      function sortBy(col) {
+        if (currentSort.col === col) {
+          currentSort.asc = !currentSort.asc;
+        } else {
+          currentSort.col = col;
+          currentSort.asc =
+            col === "idx" || col === "uid" || col === "diff_pct";
+        }
+        updateSortHeaders();
+        sortData();
+        renderTable();
+      }
+
+      function sortData() {
+        const { col, asc } = currentSort;
+        filteredData.sort((a, b) => {
+          let vA = a[col];
+          let vB = b[col];
+
+          if (col === "uid" || col === "idx") {
+            vA = parseInt(vA, 10) || 0;
+            vB = parseInt(vB, 10) || 0;
+          } else if (typeof vA === "string") {
+            return asc ? vA.localeCompare(vB) : vB.localeCompare(vA);
+          }
+
+          if (vA < vB) return asc ? -1 : 1;
+          if (vA > vB) return asc ? 1 : -1;
+          return 0;
+        });
+      }
+
+      function updateSortHeaders() {
+        document.querySelectorAll("th").forEach((th) => {
+          th.classList.remove("sort-active");
+          const arrow = th.querySelector(".sort-arrow");
+          if (arrow) arrow.textContent = "";
+        });
+        const activeTh = document.getElementById(`th_${currentSort.col}`);
+        if (activeTh) {
+          activeTh.classList.add("sort-active");
+          const arrow = activeTh.querySelector(".sort-arrow");
+          if (arrow) arrow.textContent = currentSort.asc ? "▲" : "▼";
+        }
+      }
+
+      // Render Table
+      function renderTable() {
+        const tbody = document.getElementById("tableBody");
+        document.getElementById("filteredCount").textContent =
+          filteredData.length.toLocaleString();
+
+        if (!filteredData.length) {
+          tbody.innerHTML = `
+          <tr>
+            <td colspan="13" class="empty-state">
+              <h3>검색된 매칭 후보가 없습니다</h3>
+              <p>필터 조건을 초기화하거나 다른 검색어를 입력해 보세요.</p>
+            </td>
+          </tr>
+        `;
+          updateSelectionUI();
+          return;
+        }
+
+        const rowsHtml = filteredData
+          .map((item) => {
+            const isChecked = selectedKeys.has(item.unique_key);
+            const multLabel =
+              item.multiplier >= 1
+                ? `${item.multiplier}x`
+                : `1/${Math.round(1 / item.multiplier)}x`;
+            const multClass =
+              item.multiplier === 1 ? "badge-mult-1" : "badge-mult-scaled";
+            const confClass =
+              item.confidence >= 95 ? "badge-conf-95" : "badge-conf-88";
+
+            let exClass = "ex-okx";
+            const exUpper = item.target_exchange.toUpperCase();
+            if (exUpper.includes("BYBIT")) exClass = "ex-bybit";
+            else if (exUpper.includes("BITGET")) exClass = "ex-bitget";
+            else if (exUpper.includes("BITHUMB")) exClass = "ex-bithumb";
+            else if (exUpper.includes("UPBIT")) exClass = "ex-upbit";
+            else if (exUpper.includes("GATEIO")) exClass = "ex-gateio";
+            else if (exUpper.includes("BINANCE")) exClass = "ex-binance";
+
+            let diffClass = "diff-low";
+            if (item.diff_pct > 10) diffClass = "diff-high";
+            else if (item.diff_pct > 3) diffClass = "diff-mid";
+
+            const statusTag = item.is_already_mapped
+              ? `<span class="status-tag status-done">등록완료</span>`
+              : `<span class="status-tag status-new">신규</span>`;
+
+            const anchorPriceStr = formatPrice(item.anchor_price);
+            const targetPriceStr = formatPrice(item.target_price);
+
+            return `
+          <tr class="${isChecked ? "selected-row" : ""}">
+            <td style="text-align: center;">
+              <input type="checkbox" ${isChecked ? "checked" : ""} onchange="toggleSelect('${item.unique_key}', this.checked)" />
+            </td>
+            <td class="mono" style="color: var(--text-dim);">${item.idx}</td>
+            <td><span class="badge ${confClass}">${item.confidence}점</span></td>
+            <td class="mono" style="color: var(--text-muted); font-weight: 600;">${item.uid}</td>
+            <td>
+              <div class="coin-cell">
+                <span class="coin-sym">${escapeHtml(item.anchor_symbol)}</span>
+                <span class="coin-name">${escapeHtml(item.anchor_name)}</span>
+              </div>
+            </td>
+            <td class="mono" style="text-align: right; color: var(--text-muted);">${anchorPriceStr}</td>
+            <td>
+              <span class="exchange-badge ${exClass}">${escapeHtml(item.target_exchange)}</span>
+            </td>
+            <td>
+              <span class="mono" style="font-weight: 600; color: #fff;">${escapeHtml(item.target_symbol)}</span>
+            </td>
+            <td class="mono" style="text-align: right; color: var(--text-muted);">${targetPriceStr}</td>
+            <td style="text-align: center;">
+              <span class="badge ${multClass}">${multLabel}</span>
+            </td>
+            <td class="mono ${diffClass}" style="text-align: right;">${item.diff_pct.toFixed(1)}%</td>
+            <td>
+              <span class="reason-cell" title="${escapeHtml(item.match_type)}">${escapeHtml(item.match_type)}</span>
+            </td>
+            <td style="text-align: center;">${statusTag}</td>
+          </tr>
+        `;
+          })
+          .join("");
+
+        tbody.innerHTML = rowsHtml;
+        updateSelectionUI();
+      }
+
+      function formatPrice(p) {
+        if (p === undefined || p === null) return "-";
+        if (p >= 1000)
+          return (
+            "$" +
+            Number(p).toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })
+          );
+        if (p >= 1) return "$" + Number(p).toFixed(4);
+        if (p >= 0.0001) return "$" + Number(p).toFixed(6);
+        return "$" + Number(p).toFixed(8);
+      }
+
+      function escapeHtml(str) {
+        if (!str) return "";
+        return String(str).replace(
+          /[&<>"']/g,
+          (m) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#39;",
+            })[m],
+        );
+      }
+
+      // Selection Handling
+      function toggleSelect(key, checked) {
+        if (checked) selectedKeys.add(key);
+        else selectedKeys.delete(key);
+        updateSelectionUI();
+        // Highlight row without full redraw
+        renderTable();
+      }
+
+      function toggleMasterCheckbox(checked) {
+        filteredData.forEach((item) => {
+          if (checked) selectedKeys.add(item.unique_key);
+          else selectedKeys.delete(item.unique_key);
+        });
+        updateSelectionUI();
+        renderTable();
+      }
+
+      function selectAll(checked) {
+        filteredData.forEach((item) => {
+          if (checked) selectedKeys.add(item.unique_key);
+          else selectedKeys.delete(item.unique_key);
+        });
+        updateSelectionUI();
+        renderTable();
+      }
+
+      function selectHighConfidenceOnly() {
+        filteredData.forEach((item) => {
+          if (item.confidence >= 95) selectedKeys.add(item.unique_key);
+        });
+        updateSelectionUI();
+        renderTable();
+      }
+
+      function updateSelectionUI() {
+        const count = selectedKeys.size;
+        document.getElementById("selectedCount").textContent =
+          count.toLocaleString();
+        const btnApply = document.getElementById("btnApply");
+        btnApply.disabled = count === 0;
+
+        const master = document.getElementById("masterCheckbox");
+        if (
+          filteredData.length > 0 &&
+          filteredData.every((d) => selectedKeys.has(d.unique_key))
+        ) {
+          master.checked = true;
+          master.indeterminate = false;
+        } else if (filteredData.some((d) => selectedKeys.has(d.unique_key))) {
+          master.checked = false;
+          master.indeterminate = true;
+        } else {
+          master.checked = false;
+          master.indeterminate = false;
+        }
+      }
+
+      // Copy to Clipboard
+      function copySelected() {
+        const selectedItems = rawData.filter((d) =>
+          selectedKeys.has(d.unique_key),
+        );
+        if (!selectedItems.length) {
+          showToast("선택된 항목이 없습니다.");
+          return;
+        }
+        const lines = selectedItems
+          .map(
+            (d) =>
+              `UID ${d.uid} | ${d.anchor_symbol} ↔ ${d.target_exchange}: ${d.target_symbol} (배율: ${d.multiplier}x, 오차: ${d.diff_pct}%)`,
+          )
+          .join("\n");
+        navigator.clipboard.writeText(lines).then(() => {
+          showToast(
+            `📋 ${selectedItems.length}개 항목이 클립보드에 복사되었습니다.`,
+          );
+        });
+      }
+
+      // Export JSON
+      function exportJSON() {
+        const targetItems =
+          selectedKeys.size > 0
+            ? rawData.filter((d) => selectedKeys.has(d.unique_key))
+            : filteredData;
+        const blob = new Blob([JSON.stringify(targetItems, null, 2)], {
+          type: "application/json",
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `sellnance_ticker_matches_${new Date().toISOString().slice(0, 10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      // Modal & Apply Execution
+      function openApplyModal() {
+        const selectedItems = rawData.filter((d) =>
+          selectedKeys.has(d.unique_key),
+        );
+        if (!selectedItems.length) return;
+
+        document.getElementById("modalItemCount").textContent =
+          selectedItems.length;
+        const listEl = document.getElementById("modalItemList");
+        listEl.innerHTML =
+          selectedItems
+            .slice(0, 100)
+            .map(
+              (d) =>
+                `<div>• UID ${d.uid} (${d.anchor_symbol}) ➔ ${d.target_exchange}: ${d.target_symbol} [${d.multiplier}x]</div>`,
+            )
+            .join("") +
+          (selectedItems.length > 100
+            ? `<div>...외 ${selectedItems.length - 100}개 추가</div>`
+            : "");
+
+        document.getElementById("applyModal").classList.add("show");
+      }
+
+      function closeApplyModal() {
+        document.getElementById("applyModal").classList.remove("show");
+      }
+
+      async function executeApply() {
+        const btn = document.getElementById("btnConfirmApply");
+        btn.disabled = true;
+        btn.textContent = "반영 처리 중...";
+
+        const selectedItems = rawData.filter((d) =>
+          selectedKeys.has(d.unique_key),
+        );
+        try {
+          const res = await fetch("/api/ticker-matcher/apply", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ items: selectedItems }),
+          });
+          const result = await res.json();
+          closeApplyModal();
+
+          if (result.success) {
+            showToast(`🎉 ${result.message}`, true);
+            // Mark applied items as mapped
+            selectedItems.forEach((item) => {
+              item.is_already_mapped = true;
+            });
+            selectedKeys.clear();
+            renderTable();
+          } else {
+            showToast(`❌ 실패: ${result.message}`);
+          }
+        } catch (e) {
+          showToast(`❌ 네트워크 오류: ${e.message}`);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "영구 반영 실행";
+        }
+      }
+
+      // Trigger Scan Guide
+      async function triggerScan() {
+        showToast(
+          "💡 터미널에서 'uv run run2' 또는 'uv run run2.py'를 실행하시면 독립적으로 스캔이 수행됩니다.",
+        );
+      }
+
+      // Toast Utility
+      function showToast(msg, isSuccess = false) {
+        const t = document.getElementById("toast");
+        t.textContent = msg;
+        t.className = "toast show" + (isSuccess ? " toast-success" : "");
+        setTimeout(() => {
+          t.className = "toast";
+        }, 3500);
+      }
+
+      // Start
+      loadData();
+    </script>
+  </body>
+</html>
