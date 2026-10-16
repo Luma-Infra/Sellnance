@@ -209,12 +209,16 @@ export function setupMeasureTool() {
 }
 
 export function toggleMeasureTool() {
+  const btn = document.getElementById("toggle-measure-btn");
   if (store.activeTool === "measure") {
     store.activeTool = null;
     stopMeasuring();
-    const btn = document.getElementById("toggle-measure-btn");
     if (btn) {
+      btn.innerText = "자(Ruler)";
       btn.classList.remove(
+        "text-theme-accent",
+        "border-theme-accent/40",
+        "bg-theme-accent/10",
         "text-theme-up",
         "border-theme-up/40",
         "bg-theme-up/10",
@@ -227,17 +231,17 @@ export function toggleMeasureTool() {
     }
   } else {
     store.activeTool = "measure";
-    const btn = document.getElementById("toggle-measure-btn");
     if (btn) {
+      btn.innerText = "자(Ruler)";
       btn.classList.remove(
         "text-theme-text",
         "border-theme-border/50",
         "bg-theme-panel/50",
       );
       btn.classList.add(
-        "text-theme-up",
-        "border-theme-up/40",
-        "bg-theme-up/10",
+        "text-theme-accent",
+        "border-theme-accent/40",
+        "bg-theme-accent/10",
       );
     }
   }

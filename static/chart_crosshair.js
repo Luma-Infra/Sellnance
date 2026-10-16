@@ -8,10 +8,41 @@ const ENABLE_PERF_LOG = false;
 // ==========================================
 // 1. 크로스헤어 마그네틱 상호 동기화 엔진
 // ==========================================
+export function clearAllCrosshairs() {
+  store.activeChart = null;
+  store.crosshairPrice = null;
+  store.crosshairLeftPrice = null;
+  store.isCrosshairActive = false;
+  try {
+    if (store._mainCrosshair) store._mainCrosshair.setX(null);
+    if (store._volCrosshair) store._volCrosshair.setX(null);
+    if (store.chart) store.chart.clearCrosshairPosition();
+    if (store.chartVol) store.chartVol.clearCrosshairPosition();
+  } catch (e) {}
+  if (store._drawingPrimitive) {
+    store._drawingPrimitive.updateAll();
+  }
+  if (
+    store.mainData &&
+    store.mainData.length > 0 &&
+    typeof window.updateLegend === "function"
+  ) {
+    const lastIdx = store.mainData.length - 1;
+    const v = store.volumeData ? store.volumeData[lastIdx] : null;
+    const k = store.kimchiData ? store.kimchiData[lastIdx] : null;
+    window.updateLegend(store.mainData[lastIdx], v, k);
+  }
+}
+window.clearAllCrosshairs = clearAllCrosshairs;
+
 export function syncCrosshair(sourceChart, targetCharts) {
   if (!sourceChart || !targetCharts || !targetCharts.length) return;
 
   sourceChart.subscribeCrosshairMove((param) => {
+    if (window._isDraggingResizer) {
+      clearAllCrosshairs();
+      return;
+    }
     const perfStart = ENABLE_PERF_LOG ? performance.now() : 0;
     try {
       if (!param || !param.point) {
@@ -119,7 +150,7 @@ export function syncCrosshair(sourceChart, targetCharts) {
           });
         }
 
-        // 가로축 마그네틱 스냅
+        // 가로축 마그네틱 스냅 (Candle Magnet Snap)
         store.lastMouseX = param.point.x;
         let magnetX = param.point.x;
         let currentLogical = null;
