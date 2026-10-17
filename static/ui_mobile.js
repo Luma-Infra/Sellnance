@@ -137,6 +137,29 @@ export function showMobileChart() {
     leftPanel.style.pointerEvents = "none";
   }
 
+  // [모바일 네이티브 뒤로가기 UX]
+  // 차트가 열릴 때 히스토리 스택에 { mobileTab: "chart" }가 없다면 push
+  // 안드로이드/아이폰 뒤로가기 시 이전 웹사이트(구글/네이버 등)로 이탈하지 않고 코인 목록으로 복귀
+  if (
+    isTouchDevice() &&
+    window.innerWidth < 1200 &&
+    window.history &&
+    window.history.pushState
+  ) {
+    if (!window.history.state || window.history.state.mobileTab !== "chart") {
+      if (!window.history.state || window.history.state.mobileTab !== "list") {
+        window.history.replaceState({ mobileTab: "list" }, null, "/");
+      }
+      const curSym = store.currentSelectedSymbol || store.currentAsset || "";
+      const path = curSym ? `/${curSym}` : window.location.pathname;
+      window.history.pushState(
+        { mobileTab: "chart", symbol: path },
+        null,
+        path,
+      );
+    }
+  }
+
   requestAnimationFrame(() => {
     panel.classList.add("translate-y-0");
     if (typeof window.applyChartLayout === "function") {
@@ -343,7 +366,7 @@ export function initMobileRubberBandScroll() {
       const maxScroll = listBody.scrollHeight - listBody.clientHeight;
 
       // 1. 하단 도달 후 위로 더 당길 때 (Elastic Pull-Up)
-      if (deltaY < 0 && listBody.scrollTop >= maxScroll - 2) {
+      if (deltaY < 0 && listBody.scrollTop >= maxScroll - 6) {
         if (!isPullingBottom) {
           isPullingBottom = true;
           pullStartOffset = currentY;
@@ -354,26 +377,26 @@ export function initMobileRubberBandScroll() {
         listBody.style.transform = `translate3d(0, -${tension.toFixed(2)}px, 0)`;
 
         if (fadeOverlay) {
-          fadeOverlay.style.opacity = Math.max(0.2, 1 - tension / 60).toFixed(
+          fadeOverlay.style.opacity = Math.max(0.1, 1 - tension / 60).toFixed(
             2,
           );
         }
 
-        if (e.cancelable && overscroll > 5) {
+        if (e.cancelable) {
           e.preventDefault();
         }
       }
       // 2. 상단 도달 후 아래로 더 당길 때 (Elastic Pull-Down)
-      else if (deltaY > 0 && listBody.scrollTop <= 2) {
+      else if (deltaY > 0 && listBody.scrollTop <= 6) {
         if (!isPullingTop) {
           isPullingTop = true;
           pullStartOffset = currentY;
         }
-        const overscroll = currentY - pullStartOffset;
+        const overscroll = Math.max(0, currentY - pullStartOffset);
         const tension = (overscroll * 70) / (overscroll + 100);
         listBody.style.transform = `translate3d(0, ${tension.toFixed(2)}px, 0)`;
 
-        if (e.cancelable && overscroll > 5) {
+        if (e.cancelable) {
           e.preventDefault();
         }
       } else {
@@ -382,6 +405,15 @@ export function initMobileRubberBandScroll() {
           if (fadeOverlay) fadeOverlay.style.opacity = "";
           isPullingBottom = false;
           isPullingTop = false;
+        }
+        // 일반 스크롤 중 맨 아래 부근(30px 이내)에 도달하면 하단 블러를 걷어내어 마지막 코인이 선명하게 보이도록 처리
+        if (fadeOverlay) {
+          if (maxScroll > 10 && listBody.scrollTop >= maxScroll - 30) {
+            const ratio = Math.max(0, (maxScroll - listBody.scrollTop) / 30);
+            fadeOverlay.style.opacity = ratio.toFixed(2);
+          } else {
+            fadeOverlay.style.opacity = "";
+          }
         }
       }
     },
@@ -412,6 +444,22 @@ export function initMobileRubberBandScroll() {
 
   listBody.addEventListener("touchend", resetElastic, { passive: true });
   listBody.addEventListener("touchcancel", resetElastic, { passive: true });
+
+  // 스크롤 시 맨 하단 도달 시 블러 페이드 오버레이 투명화 (마지막 코인 완벽 노출)
+  listBody.addEventListener(
+    "scroll",
+    () => {
+      if (!fadeOverlay) return;
+      const maxScroll = listBody.scrollHeight - listBody.clientHeight;
+      if (maxScroll > 10 && listBody.scrollTop >= maxScroll - 30) {
+        const ratio = Math.max(0, (maxScroll - listBody.scrollTop) / 30);
+        fadeOverlay.style.opacity = ratio.toFixed(2);
+      } else if (!isPullingBottom && !isPullingTop) {
+        fadeOverlay.style.opacity = "";
+      }
+    },
+    { passive: true },
+  );
 }
 
 // [모바일 전용] 가로 스크롤 끝단 블러/페이드 마스크 UX 인디케이터

@@ -333,9 +333,9 @@ export function getFilteredData() {
     ([_, state]) => state !== 0,
   );
 
-  const filterMode = store.exchFilterMode || "AND";
+  const filterMode = store.exchFilterMode || "OR";
 
-  if (activeExchFilters.length > 0 || filterMode === "ONLY") {
+  if (activeExchFilters.length > 0) {
     const includeFilters = activeExchFilters.filter(([_, state]) => state > 0);
     const excludeFilters = activeExchFilters.filter(
       ([_, state]) => state === -1,
@@ -373,6 +373,10 @@ export function getFilteredData() {
           );
         if (exchId === "OKX_SPOT")
           return listed.includes("OKX_SPOT") || listed.includes("OKX");
+        if (exchId === "OKX_FUTURES")
+          return listed.includes("OKX_FUTURES");
+        if (exchId === "OKX")
+          return listed.includes("OKX") || listed.includes("OKX_SPOT") || listed.includes("OKX_FUTURES");
         if (exchId === "BITGET_SPOT")
           return listed.includes("BITGET_SPOT") || listed.includes("BITGET");
         if (exchId === "GATEIO_SPOT")
@@ -386,7 +390,7 @@ export function getFilteredData() {
       if (isExcluded) return false;
 
       // [B] ONLY(순수 독점) 모드
-      if (filterMode === "ONLY") {
+      if (filterMode === "ONLY" && includeFilters.length > 0) {
         const targetExchs = [
           "BINANCE_SPOT",
           "BINANCE_FUTURES",
@@ -444,6 +448,10 @@ export function getFilteredData() {
             );
           if (exchId === "OKX_SPOT")
             return listed.includes("OKX_SPOT") || listed.includes("OKX");
+          if (exchId === "OKX_FUTURES")
+            return listed.includes("OKX_FUTURES");
+          if (exchId === "OKX")
+            return listed.includes("OKX") || listed.includes("OKX_SPOT") || listed.includes("OKX_FUTURES");
           if (exchId === "BITGET_SPOT")
             return listed.includes("BITGET_SPOT") || listed.includes("BITGET");
           if (exchId === "GATEIO_SPOT")
@@ -507,6 +515,10 @@ export function getFilteredData() {
             );
           if (exchId === "OKX_SPOT")
             return listed.includes("OKX_SPOT") || listed.includes("OKX");
+          if (exchId === "OKX_FUTURES")
+            return listed.includes("OKX_FUTURES");
+          if (exchId === "OKX")
+            return listed.includes("OKX") || listed.includes("OKX_SPOT") || listed.includes("OKX_FUTURES");
           if (exchId === "BITGET_SPOT")
             return listed.includes("BITGET_SPOT") || listed.includes("BITGET");
           if (exchId === "GATEIO_SPOT")
@@ -525,10 +537,6 @@ export function getFilteredData() {
         } else {
           return includeFilters.some(checkMatch);
         }
-      }
-
-      if (filterMode === "ONLY" && includeFilters.length === 0) {
-        return false;
       }
 
       return true;
@@ -560,7 +568,7 @@ export function saveControlPanelSession() {
       hideSmallCap: store.hideSmallCap,
       currentTab: store.currentTab || "ALL",
       exchFilterStates: store.exchFilterStates,
-      exchFilterMode: store.exchFilterMode || "AND",
+      exchFilterMode: store.exchFilterMode || "OR",
       activePresetIndex: store.activePresetIndex,
       customMcapMin: store.customMcapMin,
       customMcapMax: store.customMcapMax,
@@ -727,6 +735,14 @@ export function switchTab(tab) {
       "border-theme-border",
     );
     activeBtn.classList.add("bg-theme-accent", "text-white", "shadow-md");
+  }
+
+  const listBody = document.getElementById("coin-list-body");
+  if (listBody) {
+    listBody.scrollTop = 0;
+    listBody.style.transform = "";
+    const fadeOverlay = document.getElementById("coin-list-bottom-fade");
+    if (fadeOverlay) fadeOverlay.style.opacity = "";
   }
 
   renderTable();

@@ -191,14 +191,22 @@ export function flushResetStaleDayChanges() {
     typeof getTrueEpochNow === "function" ? getTrueEpochNow() : Date.now();
   const currentUtcDay = new Date(trueNow).toISOString().slice(0, 10);
 
-  // 최초 페이지 로딩 시점에는 현재 날짜만 기록하고 스킵
+  const serverUtcDay = store.lastUpdatedRaw
+    ? new Date(store.lastUpdatedRaw * 1000).toISOString().slice(0, 10)
+    : null;
+
+  // 최초 실행 시점: 서버 데이터가 어제 날짜이거나 날짜가 바뀐 경우 플러시
+  const isInitialStale =
+    !_lastFlushedUtcDay && serverUtcDay && serverUtcDay !== currentUtcDay;
+  const isDayChanged =
+    _lastFlushedUtcDay && currentUtcDay !== _lastFlushedUtcDay;
+
   if (!_lastFlushedUtcDay) {
     _lastFlushedUtcDay = currentUtcDay;
-    return;
   }
 
-  // UTC 날짜가 변경되는 9시 정각(UTC 00:00:00) 순간 단 1회 발동
-  if (currentUtcDay !== _lastFlushedUtcDay) {
+  // UTC 날짜가 변경되는 9시 정각(UTC 00:00:00) 순간 또는 어제 캐시로 시작된 경우 발동
+  if (isDayChanged || isInitialStale) {
     _lastFlushedUtcDay = currentUtcDay;
 
     const allRows = store.currentTableData || [];

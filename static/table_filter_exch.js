@@ -57,20 +57,17 @@ export function updateExchFilterUI() {
     { id: "GATEIO_SPOT", cmcId: 302, name: "GATEIO" },
   ];
 
-  // 3단 스위치 모드 토글 HTML (AND / OR / ONLY)
-  const currentMode = store.exchFilterMode || "AND";
-  const modeLabels = { AND: "AND", OR: "OR", ONLY: "ONLY" };
+  // 3단 스위치 모드 토글 HTML (OR / AND / ONLY)
+  const currentMode = store.exchFilterMode || "OR";
+  const modeLabels = { OR: "OR", AND: "AND", ONLY: "ONLY" };
 
   let modeBtnClass = "bg-theme-panel/10 border-theme-border/30 text-theme-text";
-  if (currentMode === "AND") {
-    modeBtnClass =
-      "bg-theme-accent/20 border-theme-accent text-theme-accent font-bold";
-  } else if (currentMode === "OR") {
-    modeBtnClass =
-      "bg-green-500/10 border-green-500/50 text-green-400 font-bold";
+  if (currentMode === "OR") {
+    modeBtnClass = "filter-mode-btn-or";
+  } else if (currentMode === "AND") {
+    modeBtnClass = "filter-mode-btn-and";
   } else if (currentMode === "ONLY") {
-    modeBtnClass =
-      "bg-orange-500/25 border-orange-500/80 text-orange-400 font-bold";
+    modeBtnClass = "filter-mode-btn-only";
   }
 
   // [PC 상단 메인 필터바 (#exchange-filter-container)] 스크롤 차단 & 1줄로 쾌적하게 배치
@@ -79,7 +76,7 @@ export function updateExchFilterUI() {
       <button onclick="window.switchExchFilterMode()" 
               class="flex items-center justify-center border rounded-xl transition-all duration-300 text-[9.5px] font-bold tracking-tight hover:scale-105 active:scale-95 shrink-0 select-none cursor-pointer ${modeBtnClass}" 
               style="width: 52px; min-width: 52px; max-width: 52px; height: 34px;"
-              title="조건 결합 모드 (AND -> OR -> ONLY 순환)">
+              title="거래소 조건 (OR -> AND -> ONLY)">
         ${modeLabels[currentMode]}
       </button>
     `;
@@ -180,7 +177,7 @@ export function updateExchFilterUI() {
     const mobModeToggleHtml = `
       <button onclick="window.switchExchFilterMode()" 
               class="flex items-center justify-center px-1 border rounded-xl transition-all duration-300 h-9 text-[9.5px] font-bold tracking-tight hover:scale-105 active:scale-95 col-span-2 w-full select-none cursor-pointer ${modeBtnClass}" 
-              title="조건 결합 모드 (AND -> OR -> ONLY 순환)">
+              title="거래소 조건 (OR -> AND -> ONLY)">
         ${modeLabels[currentMode]}
       </button>
     `;
@@ -413,12 +410,12 @@ export function updateExchFilterUI() {
   }
 }
 
-// 3단 결합 조건 모드 스위칭 함수 (AND -> OR -> ONLY -> AND)
+// 3단 결합 조건 모드 스위칭 함수 (OR -> AND -> ONLY -> OR)
 export function switchExchFilterMode() {
-  const current = store.exchFilterMode || "AND";
-  if (current === "AND") store.exchFilterMode = "OR";
-  else if (current === "OR") store.exchFilterMode = "ONLY";
-  else store.exchFilterMode = "AND";
+  const current = store.exchFilterMode || "OR";
+  if (current === "OR") store.exchFilterMode = "AND";
+  else if (current === "AND") store.exchFilterMode = "ONLY";
+  else store.exchFilterMode = "OR";
 
   store.currentRenderLimit = 1000;
   if (typeof renderTable === "function") renderTable();
@@ -446,7 +443,7 @@ export function resetExchFilters() {
   Object.keys(store.exchFilterStates).forEach((key) => {
     store.exchFilterStates[key] = 0;
   });
-  store.exchFilterMode = "AND"; // 리셋 시 결합 조건도 AND 기본값으로 복구
+  store.exchFilterMode = "OR"; // 리셋 시 결합 조건도 OR 기본값으로 복구
   store.currentRenderLimit = 1000;
   if (typeof renderTable === "function") renderTable();
   updateExchFilterUI();
@@ -462,7 +459,7 @@ export function selectExchPreset(index) {
         store.exchFilterStates[key] = 0;
       });
     }
-    store.exchFilterMode = "AND";
+    store.exchFilterMode = "OR";
     store.currentRenderLimit = 1000;
     if (typeof renderTable === "function") renderTable();
     updateExchFilterUI();
@@ -479,14 +476,14 @@ export function selectExchPreset(index) {
   const preset = presets[index];
   if (preset) {
     store.exchFilterStates = { ...preset.states };
-    store.exchFilterMode = preset.mode || "AND";
+    store.exchFilterMode = preset.mode || "OR";
   } else {
     if (store.exchFilterStates) {
       Object.keys(store.exchFilterStates).forEach((key) => {
         store.exchFilterStates[key] = 0;
       });
     }
-    store.exchFilterMode = "AND";
+    store.exchFilterMode = "OR";
   }
   store.currentRenderLimit = 1000;
   if (typeof renderTable === "function") renderTable();
@@ -507,7 +504,7 @@ export function saveCurrentPreset() {
 
   presets[index] = {
     states: { ...store.exchFilterStates },
-    mode: store.exchFilterMode || "AND",
+    mode: store.exchFilterMode || "OR",
   };
 
   localStorage.setItem("sellnance_exch_presets", JSON.stringify(presets));
@@ -533,7 +530,7 @@ export function deleteCurrentPreset() {
       store.exchFilterStates[key] = 0;
     });
   }
-  store.exchFilterMode = "AND";
+  store.exchFilterMode = "OR";
   store.currentRenderLimit = 1000;
   if (typeof renderTable === "function") renderTable();
 

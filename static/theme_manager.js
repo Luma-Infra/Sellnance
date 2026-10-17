@@ -10,7 +10,7 @@ import { updateChartTheme } from "./chart.js";
 let isThemeToggling = false; // 연타 방지 플래그
 
 /**
- * 🚀 CSS 변수에서 차트 캔들 전용 상승/하락 색상 읽기
+ * CSS 변수에서 차트 캔들 전용 상승/하락 색상 읽기
  */
 export function getCandleThemeColors() {
   const currentMode =
@@ -43,7 +43,7 @@ function getCandleSvgIcon(upColor, downColor) {
 }
 
 /**
- * 🚀 차트 캔들 테마 토글 버튼 아이콘/타이틀 UI 갱신
+ * 차트 캔들 테마 토글 버튼 아이콘/타이틀 UI 갱신
  */
 export function updateCandleThemeButtons() {
   const currentMode =
@@ -66,7 +66,7 @@ export function updateCandleThemeButtons() {
 }
 
 /**
- * 🚀 캔들 및 전역 텍스트/경주마 상승하락 컬러 모드 적용 (UPBIT vs BINANCE)
+ * 캔들 및 전역 텍스트/경주마 상승하락 컬러 모드 적용 (UPBIT vs BINANCE)
  */
 export function applyCandleTheme(theme) {
   if (theme) {
@@ -118,7 +118,7 @@ export function toggleCandleTheme() {
 }
 
 /**
- * 🚀 배경 테마 토글 (라이트 ↔ 다크)
+ * 배경 테마 토글 (라이트 ↔ 다크)
  */
 export function toggleTheme() {
   if (isThemeToggling) return;
@@ -217,7 +217,7 @@ export function toggleTheme() {
 }
 
 /**
- * 🚀 초기 테마 설정 일괄 복원
+ * 초기 테마 설정 일괄 복원
  */
 export function restoreThemeSettings() {
   try {
