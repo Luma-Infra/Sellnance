@@ -152,13 +152,18 @@ def fetch_global_listings(force_reload: bool = False):
         try:
             add_tags(
                 [
-                    i["baseCcy"]
+                    i["instId"].split("-")[0]
                     for i in API_SESSION.get(
                         "https://www.okx.com/api/v5/public/instruments?instType=SWAP",
                         timeout=5,
                     )
                     .json()
                     .get("data", [])
+                    if i.get("instId")
+                    and (
+                        "-USDT-SWAP" in i.get("instId", "")
+                        or "-USD-SWAP" in i.get("instId", "")
+                    )
                 ],
                 "OKX_FUTURES",
             )
@@ -413,21 +418,40 @@ def capture_utc0_prices_bulk():
         today_cache = UTC0_OPEN_CACHE.setdefault(today_str, {})
         today_cache.clear()
 
-        # 9시 정각: 바이낸스 tradingDay 전체를 1회 벌크 호출하여 모든 현물 공식 09시 시가 조회
+        # 9시 정각: 바이낸스 USDT 현물 티커 목록 확보 후 tradingDay 100개씩 청크 호출하여 모든 현물 공식 09시 시가 조회
         try:
-            res_all_td = api_session.get(
-                "https://api.binance.com/api/v3/ticker/tradingDay",
-                timeout=7,
+            spot_tickers_res = api_session.get(
+                "https://api.binance.com/api/v3/ticker/price",
+                timeout=5,
             ).json()
-            if isinstance(res_all_td, list):
-                docked_spot = 0
-                for item in res_all_td:
-                    symbol_str = item.get("symbol", "")
-                    if symbol_str.endswith("USDT"):
-                        sym = symbol_str[:-4]
-                        if is_valid_ticker(sym) and item.get("openPrice"):
-                            today_cache[sym] = float(item["openPrice"])
-                            docked_spot += 1
+            spot_usdt_symbols = []
+            if isinstance(spot_tickers_res, list):
+                spot_usdt_symbols = [
+                    item["symbol"]
+                    for item in spot_tickers_res
+                    if isinstance(item, dict)
+                    and item.get("symbol", "").endswith("USDT")
+                    and is_valid_ticker(item.get("symbol", "")[:-4])
+                ]
+
+            docked_spot = 0
+            if spot_usdt_symbols:
+                for i in range(0, len(spot_usdt_symbols), 100):
+                    chunk = spot_usdt_symbols[i : i + 100]
+                    params = {"symbols": json.dumps(chunk, separators=(",", ":"))}
+                    res_chunk = api_session.get(
+                        "https://api.binance.com/api/v3/ticker/tradingDay",
+                        params=params,
+                        timeout=5,
+                    ).json()
+                    if isinstance(res_chunk, list):
+                        for item in res_chunk:
+                            symbol_str = item.get("symbol", "")
+                            if symbol_str.endswith("USDT"):
+                                sym = symbol_str[:-4]
+                                if is_valid_ticker(sym) and item.get("openPrice"):
+                                    today_cache[sym] = float(item["openPrice"])
+                                    docked_spot += 1
                 print(f"⚡ [9AM 선제 장전] 바이낸스 현물 {docked_spot}개 종목 09시 공식 시가 즉시 캐싱 완료!")
         except Exception as te:
             print(f"⚠️ [9AM tradingDay 벌크 경고] 백업 지연 수집 전환: {te}")
@@ -741,17 +765,31 @@ def fetch_binance_futures_spot(bybit_data=None):
             and is_valid_ticker(s.get("symbol").replace("USDT", ""))
         }
 
-        # 3. 정밀도(Precision) 및 펀딩비 맵 생성
-        b_precisions = {}
-        for s in info_f.get("symbols", []) + info_s.get("symbols", []):
-            if s.get("quoteAsset") == "USDT" and s.get("symbol") not in b_precisions:
+        # 3. 정밀도(Precision) 및 펀딩비 맵 생성 (현물/선물 정밀도 분리)
+        b_precisions_f = {}
+        for s in info_f.get("symbols", []):
+            if s.get("quoteAsset") == "USDT":
                 f_list = s.get("filters", [])
                 tick_size = "0.01"
                 for filt in f_list:
                     if filt.get("filterType") == "PRICE_FILTER":
                         tick_size = filt.get("tickSize", "0.01")
                         break
-                b_precisions[s["symbol"]] = utils.get_precision(tick_size)
+                b_precisions_f[s["symbol"]] = utils.get_precision(tick_size)
+
+        b_precisions_s = {}
+        for s in info_s.get("symbols", []):
+            if s.get("quoteAsset") == "USDT":
+                f_list = s.get("filters", [])
+                tick_size = "0.01"
+                for filt in f_list:
+                    if filt.get("filterType") == "PRICE_FILTER":
+                        tick_size = filt.get("tickSize", "0.01")
+                        break
+                b_precisions_s[s["symbol"]] = utils.get_precision(tick_size)
+
+        # 기본 폴백용 맵 (선물 우선)
+        b_precisions = {**b_precisions_s, **b_precisions_f}
 
         # underlyingType & contractType 정보 수집
         binance_types = {}
@@ -893,9 +931,13 @@ def fetch_binance_futures_spot(bybit_data=None):
                 "spot_change_24h": s_data.get("change_24h", 0),
                 "futures_change_24h": f_data.get("change_24h", 0),
                 "vol_futures": f_data.get("vol", 0.0),
-                "vol_spot": s_data.get("vol", 0.0),
-                "precision": b_precisions.get(ticker, 2),
-                "is_spot_only": ticker not in active_f,
+                "precision": (
+                    b_precisions_f.get(ticker)
+                    if ticker in active_f
+                    else b_precisions_s.get(ticker, 2)
+                ),
+                "precision_futures": b_precisions_f.get(ticker),
+                "precision_spot": b_precisions_s.get(ticker),
                 "is_futures": ticker in active_f,
                 "is_spot": ticker in active_s,
                 "spot_utc0_open": utc0_open_dict.get(sym),
@@ -1047,6 +1089,7 @@ def fetch_bybit_prices():
                     bybit_data[base]["change_24h"] = chg_24
                 if base in b_precisions:
                     bybit_data[base]["precision"] = b_precisions[base]
+                    bybit_data[base]["precision_futures"] = b_precisions[base]
 
     except Exception as e:
         print(f"🚨 [바이비트 수집 에러]: {e}")

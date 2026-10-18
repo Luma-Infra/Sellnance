@@ -41,3 +41,7 @@ dev = [
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
+
+[project.scripts]
+run2 = "sellnance.run2_cli:main"
+

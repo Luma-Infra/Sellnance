@@ -53,6 +53,8 @@ def fetch_binance_alpha_raw():
         print(f"[Alpha Engine Error] Binance alpha fetch failed: {e}")
         if _ALPHA_API_CACHE["data"]:
             return _ALPHA_API_CACHE["data"]
+    if not alpha_map and _ALPHA_API_CACHE.get("data"):
+        return _ALPHA_API_CACHE["data"]
     return alpha_map
 
 
@@ -63,7 +65,9 @@ def is_valid_price_ratio(alpha_price, ref_price):
     return utils.is_valid_price_ratio(alpha_price, ref_price)
 
 
-def get_reference_price_usd(sym, bithumb_data=None, krw_usd_rate=None, bybit_data=None):
+def get_reference_price_usd(
+    sym, bithumb_data=None, krw_usd_rate=None, bybit_data=None, return_exchange=False
+):
     """
     기존 CEX(빗썸/바이비트 등)의 신뢰할 수 있는 기준 시세(USD) 추출
     """
@@ -74,7 +78,8 @@ def get_reference_price_usd(sym, bithumb_data=None, krw_usd_rate=None, bybit_dat
         if isinstance(bi_item, dict):
             p_krw = float(bi_item.get("price") or 0.0)
             if p_krw > 0:
-                return p_krw / krw_usd_rate
+                p_usd = p_krw / krw_usd_rate
+                return (p_usd, "BITHUMB") if return_exchange else p_usd
 
     # 2. 바이비트 시세 (USD)
     if bybit_data:
@@ -82,9 +87,9 @@ def get_reference_price_usd(sym, bithumb_data=None, krw_usd_rate=None, bybit_dat
         if isinstance(by_item, dict):
             p_usd = float(by_item.get("price") or by_item.get("spot_price") or 0.0)
             if p_usd > 0:
-                return p_usd
+                return (p_usd, "BYBIT") if return_exchange else p_usd
 
-    return None
+    return (None, None) if return_exchange else None
 
 
 def evaluate_gem_rules(sym, exch_tags):
@@ -142,9 +147,10 @@ def filter_dynamic_alpha_gems(
     krw_usd_rate=None,
     bybit_data=None,
     duplicated_list=None,
+    ticker_data=None,
 ):
     """
-    전체 알파 코인 중 족보(DUPLICATED_LIST) 우선 확정 및 2배수 가격 검증 통과 검증
+    전체 알파 코인 중 족보(DUPLICATED_LIST 및 TICKER_DATA) 우선 확정 및 2배수 가격 검증 통과 검증
     """
     if binance_futures_set is None:
         binance_futures_set = set()
@@ -153,12 +159,19 @@ def filter_dynamic_alpha_gems(
     if binance_spot_set is None:
         binance_spot_set = set()
 
-    # 0. 족보(DUPLICATED_LIST)에 "binance_alpha"로 사전 등록된 알파 코인 추출 (1순위 우선권)
+    # 0. 족보(DUPLICATED_LIST 및 TICKER_DATA)에 사전 등록된 알파 코인 추출 (1순위 우선권)
     fixed_alpha_entries = {}
     if duplicated_list and isinstance(duplicated_list, dict):
         for k, v in duplicated_list.items():
             if len(v) >= 4 and "binance_alpha" in str(v[3]).lower():
                 sym_k = str(v[2]).upper().strip()
+                # [승격]: 이미 업비트 KRW나 바이낸스 정규 현물/선물에 상장된 코인은 알파에서 제외
+                if (
+                    sym_k in upbit_krw_set
+                    or sym_k in binance_spot_set
+                    or sym_k in binance_futures_set
+                ):
+                    continue
                 uid_k = str(v[0]).strip()
                 fb_k = str(v[5]).upper().strip() if len(v) >= 6 and v[5] else "BITGET"
                 fixed_alpha_entries[sym_k] = {
@@ -166,6 +179,24 @@ def filter_dynamic_alpha_gems(
                     "fallback_exchange": fb_k,
                     "key": k,
                 }
+    if ticker_data and isinstance(ticker_data, dict):
+        for k, v in ticker_data.items():
+            if isinstance(v, list) and len(v) >= 6 and str(v[5]).upper() == "ALPHA":
+                sym_k = str(v[3] if len(v) >= 4 and v[3] else k).upper().strip()
+                # [승격]: 이미 업비트 KRW나 바이낸스 정규 현물/선물에 상장된 코인은 알파에서 제외
+                if (
+                    sym_k in upbit_krw_set
+                    or sym_k in binance_spot_set
+                    or sym_k in binance_futures_set
+                ):
+                    continue
+                uid_k = str(v[0]).strip() if v[0] else ""
+                if sym_k not in fixed_alpha_entries:
+                    fixed_alpha_entries[sym_k] = {
+                        "uid": uid_k,
+                        "fallback_exchange": "BITGET",
+                        "key": k,
+                    }
 
     matched_gems = {}
 
@@ -239,7 +270,9 @@ def filter_dynamic_alpha_gems(
 
         if evaluate_gem_rules(sym, exch_tags):
             # [2배수 안전 마진 검증]: 기존 거래소 시세와 비교해 동명이인 사칭/잡코인 자동 차단
-            ref_p = get_reference_price_usd(sym, bithumb_data, krw_usd_rate, bybit_data)
+            ref_p, ref_ex = get_reference_price_usd(
+                sym, bithumb_data, krw_usd_rate, bybit_data, return_exchange=True
+            )
             candidates = alpha_item.get("_candidates", [alpha_item])
 
             chosen_item = None
@@ -261,9 +294,16 @@ def filter_dynamic_alpha_gems(
                         [f"${float(c.get('price') or 0.0):.4f}" for c in candidates]
                     )
                     print(
-                        f"[Alpha Guard] {sym} 동명이인 차단! (바낸알파 후보가: [{prices_str}] vs 기준시세: ${ref_p:.4f})"
+                        f"[Alpha Guard] {sym} 동명이인 감지 ([{prices_str}] != 기준가 ${ref_p:.4f}) -> 정상 기준시세로 폴백 연결"
                     )
-                    continue
+                    chosen_item = {
+                        "symbol": sym,
+                        "price": ref_p,
+                        "percentChange24h": 0.0,
+                        "volume24h": 0.0,
+                    }
+                    if ref_ex:
+                        chosen_item["fallback_exchange"] = ref_ex
             else:
                 chosen_item = candidates[0]
 
@@ -282,6 +322,7 @@ def inject_alpha_gems_into_pipeline(
     krw_usd_rate=None,
     bybit_data=None,
     duplicated_list=None,
+    ticker_data=None,
 ):
     """
     [파이프라인 함수]
@@ -319,6 +360,7 @@ def inject_alpha_gems_into_pipeline(
             krw_usd_rate=krw_usd_rate,
             bybit_data=bybit_data,
             duplicated_list=duplicated_list,
+            ticker_data=ticker_data,
         )
 
         injected_count = 0

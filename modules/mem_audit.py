@@ -106,7 +106,7 @@ def start_hourly_memory_audit():
 
         now_str = datetime.now(KST).strftime("%H:%M:%S")
         print(
-            f"📊 [MEM AUDIT BASELINE {now_str}] 초기 프로세스 RAM: {prev_rss:.1f} MB (독립 감사 데몬 가동 완료)"
+            f"📊 [MEM AUDIT BASELINE {now_str}] 초기 프로세스 RAM: {prev_rss:.1f} MB (독립 데몬 준비)"
         )
 
         while True:

@@ -80,14 +80,16 @@ def atomic_save_json(
 
 # --- FORMATTING FUNCTIONS ---
 def format_market_cap_string(mc):
-    if mc is None or mc == 0:
-        return "0"
+    if mc is None or mc <= 0:
+        return "-"
     if mc >= 1_000_000_000_000:
         return f"{mc / 1_000_000_000_000:,.2f} T"
     if mc >= 1_000_000_000:
         return f"{mc / 1_000_000_000:,.2f} B"
     if mc >= 1_000_000:
         return f"{mc / 1_000_000:,.2f} M"
+    if mc >= 1_000:
+        return f"{mc / 1_000:,.2f} K"
     return f"{mc:,.0f}"
 
 

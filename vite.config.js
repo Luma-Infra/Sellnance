@@ -2,12 +2,28 @@ import { defineConfig } from "vite";
 import { resolve } from "path";
 import { fileURLToPath } from "url";
 import path from "path";
+import { execSync } from "child_process";
 
 // ESM 환경에서 __dirname을 안전하게 가져오는 방법
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+let lastUpdateDate = "";
+try {
+  lastUpdateDate = execSync('git log -1 --format="%ad" --date=short', {
+    encoding: "utf-8",
+  }).trim();
+} catch (e) {
+  lastUpdateDate = new Date().toISOString().split("T")[0];
+}
+if (!lastUpdateDate || !/^\d{4}-\d{2}-\d{2}$/.test(lastUpdateDate)) {
+  lastUpdateDate = new Date().toISOString().split("T")[0];
+}
+
 export default defineConfig({
+  define: {
+    __LAST_UPDATE__: JSON.stringify(lastUpdateDate),
+  },
   // index.html이 들어있는 폴더
   root: "templates",
   // 정적 자산(favicon, svg 등)이 들어있는 폴더
