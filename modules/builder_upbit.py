@@ -28,6 +28,10 @@ def _resolve_names_and_ucid(
     existing_uid = (
         ticker_info[0] if isinstance(ticker_info, list) and len(ticker_info) > 0 else ""
     )
+    # [더미 해시] 임시 해시는 오염된 값이므로 무효화하여 CMC 실제 조회/매칭 유도
+    if existing_uid and str(existing_uid).isdigit() and int(existing_uid) >= 100000000:
+        existing_uid = ""
+
     hardcoded_id = str(SYMBOL_TO_ID_MAP.get(base, ""))
 
     final_ucid = (
@@ -37,12 +41,23 @@ def _resolve_names_and_ucid(
     lookup_id = asset_to_lookup_key.get(f"{base.upper()}_UPBIT")
     info = market_data_map.get(str(final_ucid)) or market_data_map.get(lookup_id)
 
-    if (not final_ucid or not final_ucid.isdigit()) and info:
+    if (not final_ucid or not str(final_ucid).isdigit()) and info:
         new_ucid = info.get("ucid", "")
-        if new_ucid and new_ucid.isdigit():
-            final_ucid = new_ucid
-    if not final_ucid:
-        final_ucid = base
+        if new_ucid and str(new_ucid).isdigit():
+            final_ucid = str(new_ucid)
+
+    if not final_ucid or not str(final_ucid).isdigit():
+        cand_id = (
+            SYMBOL_TO_ID_MAP.get(display_name)
+            or SYMBOL_TO_ID_MAP.get(base)
+            or SYMBOL_TO_ID_MAP.get(raw_key)
+        )
+        if cand_id and str(cand_id).isdigit():
+            final_ucid = str(cand_id)
+        else:
+            final_ucid = str(abs(hash(f"{base}_COIN")) % 900000000 + 100000000)
+
+    final_ucid = str(final_ucid)
 
     return (
         raw_key,
@@ -128,6 +143,7 @@ def _aggregate_binance_for_upbit(
     binance_futures_vol = 0.0
     binance_spot_vol = 0.0
     has_binance_futures = False
+    matched_b_info = {}
 
     for b_tick, b_inf in binance_data.items():
         b_base = utils.get_pure_base_asset(b_tick.replace("USDT", "")).upper()
@@ -145,6 +161,13 @@ def _aggregate_binance_for_upbit(
                 flags=re.IGNORECASE,
             )
             if alias_binance_clean == display_name:
+                if b_inf.get("precision") is not None:
+                    matched_b_info["precision"] = b_inf.get("precision")
+                if b_inf.get("precision_futures") is not None:
+                    matched_b_info["precision_futures"] = b_inf.get("precision_futures")
+                if b_inf.get("precision_spot") is not None:
+                    matched_b_info["precision_spot"] = b_inf.get("precision_spot")
+
                 if b_inf.get("is_spot"):
                     listed_on.add("BINANCE_SPOT")
                     exact_spot_ticker = b_tick.replace("USDT", "")
@@ -186,6 +209,7 @@ def _aggregate_binance_for_upbit(
         "binance_futures_vol": binance_futures_vol,
         "binance_spot_vol": binance_spot_vol,
         "has_binance_futures": has_binance_futures,
+        "matched_b_info": matched_b_info,
     }
 
 
@@ -283,17 +307,22 @@ def build_upbit_row(
             if (isinstance(ticker_info, list) and len(ticker_info) >= 6)
             else []
         )
-        TICKER_DATA[display_name] = [
-            final_ucid,
-            ch_sym,
-            coin_name,
-            base,
-            "COIN",
-        ] + extra_args
-        is_updated = True
-        print(
-            f"✅ [족보 세탁] {display_name} UID 및 타입 복구 완료: {final_ucid} (COIN)"
+        # [가드] 1억 이상 임시 더미 해시는 족보(TICKER_DATA) 파일에 영구 기록 금지 (메모리 런타임에서만 임시 사용)
+        is_dummy_hash = (
+            final_ucid and str(final_ucid).isdigit() and int(final_ucid) >= 100000000
         )
+        if not is_dummy_hash:
+            TICKER_DATA[display_name] = [
+                final_ucid,
+                ch_sym,
+                coin_name,
+                base,
+                "COIN",
+            ] + extra_args
+            is_updated = True
+            print(
+                f"✅ [족보 세탁] {display_name} UID 및 타입 복구 완료: {final_ucid} (COIN)"
+            )
 
     up_precision, by_raw, duplicated_bases = _determine_precision(
         base, current_p, final_ucid, DUPLICATED_LIST, bybit_data, binance_data
@@ -302,13 +331,25 @@ def build_upbit_row(
     listed_on = set()
     if base not in duplicated_bases:
         listed_on = set(global_listings.get(base, set()))
+        # [가격 검증] 심볼 기반 글로벌 상장(Bybit 등)에 대해 시세 괴리 검증 (주식 선물 등의 디스 매치 방지)
+        if current_p > 0:
+            by_info = bybit_data.get(base, {})
+            by_p = (
+                by_info.get("spot_price")
+                or by_info.get("futures_price")
+                or by_info.get("price")
+                or 0.0
+            )
+            if by_p > 0 and not utils.is_valid_price_ratio(by_p, current_p):
+                listed_on.discard("BYBIT")
+                listed_on.discard("BYBIT_SPOT")
+                listed_on.discard("BYBIT_FUTURES")
     else:
-        # 1. 족보(DUPLICATED_LIST)에 등록된 해당 UID의 모든 거래소 태그 수집
-        dup_symbols = set()
+        # [동명이인 격리] 족보(DUPLICATED_LIST)에 등록된 해당 UID의 거래소 태그만 배타적으로 수집
+        # 동명이인의 원본 심볼(META, EDGE 등)로 global_listings를 조회하면 타 자산의 상장이 유입되는 현상 수정
         for k, v in DUPLICATED_LIST.items():
             if len(v) >= 4 and str(v[0]) == str(final_ucid):
                 ex_name = str(v[3]).upper().strip()
-                dup_symbols.add(str(v[2]).upper().strip())
                 if ex_name in ("BYBIT", "BYBIT_SPOT"):
                     listed_on.add("BYBIT_SPOT")
                 elif ex_name == "BYBIT_FUTURES":
@@ -329,24 +370,6 @@ def build_upbit_row(
                         else ex_name
                     )
                     listed_on.add(tag)
-
-        # 2. 동명이인의 실제 해외 심볼(예: UP2 -> UP)의 글로벌 상장(BITGET, COINBASE 등) 연동 (가격 검증 적용)
-        ref_upbit_usd = (
-            current_p / krw_usd_rate if (current_p > 0 and krw_usd_rate > 0) else 0.0
-        )
-        for s in dup_symbols:
-            ext_tags = global_listings.get(s, set())
-            for tag in ext_tags:
-                if "BYBIT" in tag:
-                    by_p = (
-                        bybit_data.get(s, {}).get("spot_price")
-                        or bybit_data.get(s, {}).get("price")
-                        or 0.0
-                    )
-                    if by_p > 0 and ref_upbit_usd > 0:
-                        if not utils.is_valid_price_ratio(by_p, ref_upbit_usd):
-                            continue
-                listed_on.add(tag)
 
     bin_agg = _aggregate_binance_for_upbit(
         base, display_name, binance_data, REVERSE_LOOKUP, listed_on
@@ -379,6 +402,7 @@ def build_upbit_row(
     total_vol = binance_vol + up_vol_24h + by_vol_24h
     mcap_val = info.get("market_cap") if info else None
     mcap = mcap_val if mcap_val is not None else 0
+    fdv = float(info.get("fdv", 0) or 0.0) if info else 0.0
     vmc_raw = (total_vol / mcap * 100) if (mcap is not None and mcap > 0) else 0.0
 
     by_spot_p = float(by_raw.get("spot_price") or 0.0)
@@ -421,6 +445,12 @@ def build_upbit_row(
         or binance_vol > 0
     )
 
+    b_inf_data = (
+        bin_agg.get("matched_b_info")
+        or binance_data.get(f"{base}USDT", {})
+        or {}
+    )
+
     row = {
         "UID": final_ucid,
         "Symbol": base,
@@ -430,6 +460,11 @@ def build_upbit_row(
         "Name": coin_name,
         "Chain": chain,
         "precision": up_precision,
+        "Binance_Precision": b_inf_data.get("precision") if b_inf_data else None,
+        "Binance_Precision_Futures": b_inf_data.get("precision_futures") if b_inf_data else None,
+        "Binance_Precision_Spot": b_inf_data.get("precision_spot") if b_inf_data else None,
+        "Bybit_Precision": by_raw.get("precision") if by_raw else None,
+        "Bybit_Precision_Futures": by_raw.get("precision_futures") if by_raw else None,
         "Upbit": "O",
         "Upbit_Symbol": base,
         "Bithumb_Symbol": bithumb_symbol,
@@ -459,6 +494,7 @@ def build_upbit_row(
         "Kimchi_Formatted": "-",
         "Kimchi_Label": kimchi_label,
         "MarketCap_Formatted": utils.format_market_cap_string(mcap),
+        "FDV_Formatted": utils.format_market_cap_string(fdv) if fdv > 0 else "-",
         "VMC_Formatted": f"{vmc_raw:.2f}%",
         "Binance_Vol_Formatted": utils.format_volume_string(binance_vol) if (has_binance_listing and binance_vol > 0) else "-",
         "Binance_Spot_Vol_Formatted": utils.format_volume_string(bin_agg["binance_spot_vol"]) if bin_agg["binance_spot_vol"] > 0 else "-",
@@ -468,6 +504,7 @@ def build_upbit_row(
         "Change_Today_Raw": change_today,
         "Volume_Raw": binance_vol if has_binance_listing else (float(up_info.get("volume_24h") or up_info.get("acc_trade_price_24h") or 0.0) / krw_usd_rate if krw_usd_rate > 0 else 0.0),
         "MarketCap_Raw": mcap,
+        "FDV_Raw": fdv,
         "VMC_Raw": vmc_raw,
         "Kimchi_Raw": None,
         "utc0_open_Raw": utc0_open,

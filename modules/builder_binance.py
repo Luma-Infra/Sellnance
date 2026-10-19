@@ -93,6 +93,15 @@ def _determine_final_ucid_and_info(
     ):
         existing_uid = ""
 
+    # [더미 해시] 일반 코인의 1억 이상 임시 해시는 오염된 값이므로 무효화하여 CMC 실제 조회/매칭 유도
+    if (
+        not is_stock
+        and existing_uid
+        and str(existing_uid).isdigit()
+        and int(existing_uid) >= 100000000
+    ):
+        existing_uid = ""
+
     hardcoded_id = str(
         SYMBOL_TO_ID_MAP.get(base, "") or SYMBOL_TO_ID_MAP.get(raw_symbol, "")
     )
@@ -141,18 +150,25 @@ def _determine_final_ucid_and_info(
             info = stock_info
             final_ucid = stock_info.get("ucid", "")
 
-    if (not final_ucid or not final_ucid.isdigit()) and info:
+    if (not final_ucid or not str(final_ucid).isdigit()) and info:
         new_ucid = info.get("ucid", "")
-        if new_ucid and new_ucid.isdigit():
-            final_ucid = new_ucid
+        if new_ucid and str(new_ucid).isdigit():
+            final_ucid = str(new_ucid)
 
-    if is_stock and (not final_ucid or not final_ucid.isdigit()):
-        final_ucid = f"STOCK_{raw_symbol.upper()}"
+    if not final_ucid or not str(final_ucid).isdigit():
+        cand_id = (
+            SYMBOL_TO_ID_MAP.get(display_name)
+            or SYMBOL_TO_ID_MAP.get(base)
+            or SYMBOL_TO_ID_MAP.get(raw_symbol)
+        )
+        if cand_id and str(cand_id).isdigit():
+            final_ucid = str(cand_id)
+        elif info and str(info.get("ucid", "")).isdigit():
+            final_ucid = str(info["ucid"])
+        else:
+            final_ucid = str(abs(hash(f"{base}_{'STOCK' if is_stock else 'COIN'}")) % 900000000 + 100000000)
 
-    if not final_ucid:
-        final_ucid = base
-
-    return final_ucid, info
+    return str(final_ucid), info
 
 
 def build_binance_index(binance_data):
@@ -513,8 +529,16 @@ def build_binance_row(
     )
 
     asset_type = "STOCK" if is_stock else "COIN"
+    is_alpha_coin = bool(b_info.get("is_alpha"))
+    needs_alpha_tag = is_alpha_coin and (
+        not ticker_info
+        or len(ticker_info) < 6
+        or str(ticker_info[5]).upper() != "ALPHA"
+    )
+
     if not final_ucid.startswith("STOCK_") and (
         not ticker_info
+        or needs_alpha_tag
         or (
             isinstance(ticker_info, list)
             and (
@@ -526,25 +550,48 @@ def build_binance_row(
         )
     ):
         extra_args = (
-            ticker_info[5:]
+            list(ticker_info[5:])
             if (isinstance(ticker_info, list) and len(ticker_info) >= 6)
             else []
         )
-        TICKER_DATA[display_name] = [
-            final_ucid,
-            ch_sym,
-            coin_name,
-            base,
-            asset_type,
-        ] + extra_args
-        is_updated = True
-        print(
-            f"✅ [족보 세탁] {display_name} UID 및 타입 복구 완료: {final_ucid} ({asset_type})"
+        if is_alpha_coin and "ALPHA" not in [str(x).upper() for x in extra_args]:
+            extra_args.insert(0, "ALPHA")
+        # [가드] 1억 이상 임시 더미 해시는 족보(TICKER_DATA) 파일에 영구 기록 금지 (메모리 런타임에서만 임시 사용)
+        is_dummy_hash = (
+            not is_stock
+            and final_ucid
+            and str(final_ucid).isdigit()
+            and int(final_ucid) >= 100000000
         )
+        if not is_dummy_hash:
+            TICKER_DATA[display_name] = [
+                final_ucid,
+                ch_sym,
+                coin_name,
+                base,
+                asset_type,
+            ] + extra_args
+            is_updated = True
+            print(
+                f"✅ [족보 세탁] {display_name} UID 및 타입 복구 완료: {final_ucid} ({asset_type}{', ALPHA' if is_alpha_coin else ''})"
+            )
 
     price = b_info["price"]
     mcap = info.get("market_cap", 0) if info else 0
-    listed_on = set(global_listings.get(base, set()))
+    fdv = float(info.get("fdv", 0) or 0.0) if info else 0.0
+    target_bases = {base.upper()}
+    if DUPLICATED_LIST and final_ucid:
+        for k, v in DUPLICATED_LIST.items():
+            if (
+                len(v) >= 4
+                and str(v[0]) == str(final_ucid)
+                and "binance" in v[3].lower()
+            ):
+                target_bases.add(v[2].upper())
+
+    listed_on = set()
+    for t_base in target_bases:
+        listed_on.update(global_listings.get(t_base, set()))
 
     agg = _aggregate_binance_market(
         base,
@@ -600,11 +647,21 @@ def build_binance_row(
 
     up_price_krw = 0.0
     up_open_krw = 0.0
-    if target_up_base and target_up_base in upbit_data:
-        up_price_krw = upbit_data[target_up_base].get("price", 0.0)
-        up_open_krw = upbit_data[target_up_base].get("utc0_open", 0.0)
+    if target_up_base:
         listed_on.add("UPBIT")
+        if target_up_base in upbit_data:
+            up_price_krw = upbit_data[target_up_base].get("price", 0.0)
+            up_open_krw = upbit_data[target_up_base].get("utc0_open", 0.0)
 
+    bybit_aliases = [
+        v[2]
+        for v in DUPLICATED_LIST.values()
+        if len(v) >= 4
+        and (str(v[0]) == str(final_ucid) or str(v[0]) == str(base))
+        and "BYBIT" in v[3].upper()
+    ]
+
+    by_info = {}
     by_spot_p = 0.0
     by_futures_p = 0.0
     by_spot_vol = 0.0
@@ -617,6 +674,18 @@ def build_binance_row(
         by_spot_vol = by_info.get("spot_volume_24h", 0.0)
         by_futures_vol = by_info.get("futures_volume_24h", 0.0)
         by_vol_24h = by_info.get("volume_24h", 0.0)
+
+    if (by_spot_p == 0 and by_futures_p == 0) and bybit_aliases:
+        for b_alias in bybit_aliases:
+            if b_alias in bybit_data:
+                by_info = bybit_data.get(b_alias, {})
+                by_spot_p = by_info.get("spot_price", 0.0)
+                by_futures_p = by_info.get("futures_price", 0.0)
+                by_spot_vol = by_info.get("spot_volume_24h", 0.0)
+                by_futures_vol = by_info.get("futures_volume_24h", 0.0)
+                by_vol_24h = by_info.get("volume_24h", 0.0)
+                if by_spot_p > 0 or by_futures_p > 0:
+                    break
 
     if (
         (by_spot_p == 0 and by_futures_p == 0)
@@ -791,6 +860,11 @@ def build_binance_row(
         "Chain": chain,
         "Is_Stock": is_stock,
         "precision": precision,
+        "Binance_Precision": precision,
+        "Binance_Precision_Futures": b_info.get("precision_futures"),
+        "Binance_Precision_Spot": b_info.get("precision_spot"),
+        "Bybit_Precision": by_info.get("precision") if by_info else None,
+        "Bybit_Precision_Futures": by_info.get("precision_futures") if by_info else None,
         "Upbit": "O" if target_up_base else "X",
         "Upbit_Symbol": target_up_base,
         "Binance": "O" if (binance_spot_price > 0 or b_info.get("is_alpha")) else "X",
@@ -827,6 +901,9 @@ def build_binance_row(
             utils.format_volume_string(binance_vol) if binance_vol > 0 else "-"
         ),
         "MarketCap_Formatted": utils.format_market_cap_string(mcap),
+        "FDV_Formatted": (
+            utils.format_market_cap_string(fdv) if fdv > 0 else "-"
+        ),
         "VMC_Formatted": f"{vmc_raw:.2f}%",
         "Binance_Vol_Formatted": (
             utils.format_volume_string(binance_vol) if binance_vol > 0 else "-"
@@ -844,6 +921,7 @@ def build_binance_row(
         "Change_Today_Raw": change_today,
         "Volume_Raw": binance_vol,
         "MarketCap_Raw": mcap,
+        "FDV_Raw": fdv,
         "VMC_Raw": vmc_raw,
         "Basis_Raw": basis_raw,
         "Kimchi_Raw": kimchi_raw,

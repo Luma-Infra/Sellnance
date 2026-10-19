@@ -127,6 +127,7 @@ def assemble_final_dashboard(
         krw_usd_rate=krw_usd_rate,
         bybit_data=bybit_data,
         duplicated_list=DUPLICATED_LIST,
+        ticker_data=TICKER_DATA,
     )
 
     # 1. 바이낸스 투입 (마켓 데이터 사전 해시 인덱싱으로 O(1) 조회)
@@ -160,6 +161,10 @@ def assemble_final_dashboard(
         if row:
             row["krw_usd_rate"] = krw_usd_rate  # 모든 행에 테더 환율 반영
             uid = str(row.get("UID") or row.get("DisplayTicker") or ticker)
+            if uid in final_results:
+                existing_listed = set(final_results[uid].get("Listed_Exchanges", []))
+                new_listed = set(row.get("Listed_Exchanges", []))
+                row["Listed_Exchanges"] = list(existing_listed | new_listed)
             final_results[uid] = row
 
     # 2. 업비트 투입
@@ -286,15 +291,21 @@ def assemble_final_dashboard(
                     dom_unit_price = row["Price_KRW"] / dom_mult
                     ovs_unit_price = target_by_p / ovs_mult
 
-                    overseas_krw = ovs_unit_price * krw_usd_rate
-                    kimchi = ((dom_unit_price / overseas_krw) - 1) * 100
-                    row["Kimchi_Raw"] = kimchi
-                    row["Kimchi_Formatted"] = f"{kimchi:+.2f}%"
-                    if by_futures_p > 0:
-                        row.setdefault("Listed_Exchanges", []).append("BYBIT_FUTURES")
-                    if by_spot_p > 0:
-                        row.setdefault("Listed_Exchanges", []).append("BYBIT_SPOT")
-                    row["Listed_Exchanges"] = list(set(row.get("Listed_Exchanges", [])))
+                    # [가격 검증] 해외 시세와 국내 시세 간의 심한 갭차이(주식 선물 디스 매칭) 방지
+                    ref_dom_usd = dom_unit_price / krw_usd_rate
+                    if utils.is_valid_price_ratio(ovs_unit_price, ref_dom_usd):
+                        overseas_krw = ovs_unit_price * krw_usd_rate
+                        kimchi = ((dom_unit_price / overseas_krw) - 1) * 100
+                        row["Kimchi_Raw"] = kimchi
+                        row["Kimchi_Formatted"] = f"{kimchi:+.2f}%"
+                        if by_futures_p > 0:
+                            row.setdefault("Listed_Exchanges", []).append("BYBIT_FUTURES")
+                        if by_spot_p > 0:
+                            row.setdefault("Listed_Exchanges", []).append("BYBIT_SPOT")
+                        row["Listed_Exchanges"] = list(set(row.get("Listed_Exchanges", [])))
+                    else:
+                        row["Kimchi_Raw"] = None
+                        row["Kimchi_Formatted"] = "-"
                 row["krw_usd_rate"] = krw_usd_rate  # 모든 행에 테더 환율 반영
                 final_results[uid] = row
         if updated:

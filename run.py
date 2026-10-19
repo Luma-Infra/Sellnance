@@ -70,6 +70,15 @@ def start_engine():
 
     if not is_prod:
         clear_port(port)
+        import tempfile
+        from pathlib import Path
+
+        flag_file = Path(tempfile.gettempdir()) / f"sellnance_open_{port}.flag"
+        if flag_file.exists():
+            try:
+                flag_file.unlink()
+            except Exception:
+                pass
     lan_ip = get_lan_ip()
 
     print("\n" + "=" * 50)
@@ -99,6 +108,11 @@ def start_engine():
                 "dist/*",
                 "node_modules/*",
                 "*.tmp",
+                "*ticker_matcher*",
+                "*matcher*",
+                "run2.py",
+                "run2*",
+                "*run2*",
             ],
         }
 

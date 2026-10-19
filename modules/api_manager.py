@@ -127,6 +127,32 @@ def _save_market_data_cache_to_file():
         print(f"🚨 [MARKET DATA CACHE SAVE ERROR] {e}")
 
 
+def _trigger_browser_open_once():
+    """초기 데이터(시가/시세/CMC/조립) 준비 완료 시 로컬 개발 환경에서 1회 브라우저 오픈"""
+    is_prod = bool(
+        os.environ.get("RAILWAY_STATIC_URL")
+        or os.environ.get("RAILWAY_ENVIRONMENT")
+        or os.environ.get("PRODUCTION")
+    )
+    if is_prod:
+        return
+    import tempfile
+    from pathlib import Path
+    import webbrowser
+
+    port = int(os.environ.get("PORT", 8000))
+    flag_file = Path(tempfile.gettempdir()) / f"sellnance_open_{port}.flag"
+    if not flag_file.exists():
+        try:
+            flag_file.touch()
+            print(
+                f"\n🌐 [READY] 초기 데이터 조립 완료! 브라우저 자동 오픈 (1회): http://127.0.0.1:{port}\n"
+            )
+            webbrowser.open(f"http://127.0.0.1:{port}")
+        except Exception:
+            pass
+
+
 def _load_owner_cache_from_file():
     global GLOBAL_CMC_CACHE
     try:
@@ -217,6 +243,7 @@ def _fetch_and_process_data_and_cache(silent_mode=False):
                     }
                 )
             _save_market_data_cache_to_file()
+            _trigger_browser_open_once()
             print(
                 f"✅ [BG] 캐시 갱신 완료! (총 {len(raw_data)}개, Silent:{silent_mode})"
             )
@@ -448,15 +475,62 @@ def _fetch_and_process_data(silent_mode=False, api_key=None):
     all_live_assets = binance_data.keys() | upbit_krw_set | bybit_data.keys()
     live_bases = {utils.get_pure_base_asset(a).upper() for a in all_live_assets}
 
+    # [알파 코인 승격 기준] 바이낸스 현물/선물 및 업비트 KRW 상장 여부 추출 (가상 주입된 알파 코인은 제외)
+    binance_spot_bases = {
+        utils.get_pure_base_asset(k).upper()
+        for k, v in binance_data.items()
+        if isinstance(v, dict) and v.get("is_spot") and not v.get("is_alpha")
+    }
+    binance_futures_bases = {
+        utils.get_pure_base_asset(k).upper()
+        for k, v in binance_data.items()
+        if isinstance(v, dict) and v.get("is_futures") and not v.get("is_alpha")
+    }
+
+    # [알파 코인 승격]: 업비트 KRW 또는 바이낸스 현물/선물에 상장된 코인은 ALPHA -> 정규 코인으로 승격 (사일런트 모드 포함 상시 실행)
+    if "TICKER_DATA" in MAPPING_DATA and isinstance(MAPPING_DATA["TICKER_DATA"], dict):
+        for saved_name in list(MAPPING_DATA["TICKER_DATA"].keys()):
+            clean_name = re.sub(r"\(STOCK\)$", "", saved_name, flags=re.IGNORECASE)
+            ticker_val = MAPPING_DATA["TICKER_DATA"].get(saved_name)
+            is_promoted = (
+                clean_name in upbit_krw_set
+                or clean_name in binance_spot_bases
+                or clean_name in binance_futures_bases
+            )
+            if (
+                isinstance(ticker_val, list)
+                and len(ticker_val) >= 6
+                and str(ticker_val[5]).upper() == "ALPHA"
+                and is_promoted
+            ):
+                ticker_val.pop(5)
+                is_mapping_updated = True
+                platforms = []
+                if clean_name in upbit_krw_set:
+                    platforms.append("업비트 KRW")
+                if clean_name in binance_spot_bases:
+                    platforms.append("바이낸스 현물")
+                if clean_name in binance_futures_bases:
+                    platforms.append("바이낸스 선물")
+                print(
+                    f"🎓 [승격] {clean_name} {'/'.join(platforms)} 상장으로 알파에서 정규 코인으로 승격 완료!"
+                )
+
     # [메모리 최적화] 수천 개 심볼의 거대 임시 딕셔너리 즉시 참조 해제 (glibc 힙 단편화 최소화)
     del binance_data, bybit_data, bithumb_data, upbit_data, all_live_assets
 
-    # 사일런트 모드이거나, 수집된 데이터가 평소보다 적으면 족보 청소를 하지 않고 즉시 나기기
-    if silent_mode or len(live_bases) < 10 or len(upbit_krw_set) < 10:
+    # 사일런트 모드이거나, CMC 매칭/최종 장부 또는 수집 데이터가 평소보다 적으면 족보 청소를 하지 않고 즉시 나가기
+    if (
+        silent_mode
+        or len(live_bases) < 10
+        or len(upbit_krw_set) < 10
+        or (isinstance(final_results, list) and len(final_results) < 500)
+    ):
         if is_mapping_updated:
             config_manager.save_mapping_data(MAPPING_DATA)
+        final_count = len(final_results) if isinstance(final_results, list) else 0
         print(
-            f"⚠️ [SAFEGUARD] 족보 청소 생략 (Silent:{silent_mode}, 활성 자산:{len(live_bases)}, 업비트:{len(upbit_krw_set)})"
+            f"⚠️ [SAFEGUARD] 족보 청소 생략 (Silent:{silent_mode}, 활성 자산:{len(live_bases)}, 최종 장부:{final_count}, 업비트:{len(upbit_krw_set)})"
         )
         return final_results
 
@@ -670,6 +744,7 @@ def get_cached_data(force_reload=False, silent_mode=False, user_api_key=None):
                         }
                     )
                     _save_market_data_cache_to_file()
+                    _trigger_browser_open_once()
                     print(
                         f"✅ 데이터 캐싱 완료! (총 {len(raw_data)}개, Silent:{silent_mode})"
                     )
