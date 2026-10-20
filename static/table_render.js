@@ -99,13 +99,15 @@ export function renderTable(isRealtime = false) {
   const filteredData = getFilteredData();
   const totalCount = filteredData.length;
 
-  // [사건 X] 필터링, 정렬, 검색, 탭전환 등 화면 구성 변화 시 반드시 상위 30개 코인을 visibleSymbols에 등록하여 실시간 구독 시작
+  // [사건 X] 필터링, 정렬, 검색, 탭전환 등 화면 구성 변화 시 반드시 상위 코인(최대 35개)을 visibleSymbols 및 baselineVisibleSymbols에 등록하여 실시간 구독 유지
   if (!isRealtime) {
     store.visibleSymbols.clear();
-    const initLimit = Math.min(30, totalCount);
+    store.baselineVisibleSymbols = new Set();
+    const initLimit = Math.min(35, totalCount);
     for (let i = 0; i < initLimit; i++) {
       if (filteredData[i]) {
         store.visibleSymbols.add(filteredData[i].Ticker);
+        store.baselineVisibleSymbols.add(filteredData[i].Ticker);
       }
     }
     // 선택된 코인도 실시간 구독 대상 유지
@@ -159,10 +161,12 @@ export function renderTable(isRealtime = false) {
                 store.visibleSymbols.add(rowData.Ticker);
                 changed = true;
               }
-              const isPending = !!(
+              const sRowUid = String(rowData.UID);
+              const pendingAction =
                 store.pendingFavActions &&
-                store.pendingFavActions.has(rowData.UID)
-              );
+                (store.pendingFavActions.get(rowData.UID) ||
+                  store.pendingFavActions.get(sRowUid));
+              const isPending = !!pendingAction;
 
               // 화면에 들어온 행의 순위만 갱신
               const targetIdx = parseInt(rowEl.dataset.index);
@@ -176,17 +180,34 @@ export function renderTable(isRealtime = false) {
                 }
               }
 
-              // 정적 레이어 갱신 체크 (티커 변화, 언어 번역, 즐겨찾기 대기 상태 반영)
+              // 정적 레이어 갱신 체크 (티커 변화, 언어 번역, 즐겨찾기 상태/대기 상태 반영)
+              const favs = JSON.parse(
+                localStorage.getItem("sellnance_favs") || "[]",
+              );
+              const favs2 = JSON.parse(
+                localStorage.getItem("sellnance_favs2") || "[]",
+              );
+              const isFav = favs.some((f) => String(f) === sRowUid);
+              const isFav2 = favs2.some((f) => String(f) === sRowUid);
+              let curFavState;
+              if (pendingAction) {
+                curFavState = pendingAction.targetState;
+              } else {
+                curFavState = isFav ? "FAV" : isFav2 ? "FAV2" : "NONE";
+              }
+
               const needsStatic =
                 !rowEl.dataset.renderedSym ||
                 rowEl.dataset.renderedSym !== rowData.Ticker ||
                 rowEl.dataset.renderedLang !== store.lang ||
-                (rowEl.dataset.renderedPending === "true") !== isPending;
+                (rowEl.dataset.renderedPending === "true") !== isPending ||
+                rowEl.dataset.renderedFav !== curFavState;
 
               if (needsStatic) {
                 updateRowStaticHTML(rowEl, rowData);
                 rowEl.dataset.renderedSym = rowData.Ticker;
                 rowEl.dataset.renderedLang = store.lang;
+                rowEl.dataset.renderedFav = curFavState;
               }
 
               // 동적 지표 레이어 갱신 (화면에 들어왔을 때 최신 가격/등락률 동기화)
@@ -201,12 +222,15 @@ export function renderTable(isRealtime = false) {
                 store.intersectingSymbols.delete(rowData.Ticker);
               }
               if (store.visibleSymbols.has(rowData.Ticker)) {
-                // 선택된 코인은 화면 밖으로 나가더라도 구독/갱신 유지
-                if (
-                  rowData.Ticker !== store.currentSelectedSymbol &&
-                  rowData.DisplayTicker !== store.currentSelectedSymbol &&
-                  rowData.Symbol !== store.currentSelectedSymbol
-                ) {
+                // [안정성 강화] 상위 베이스라인 코인이나 선택 코인은 스크롤 바운스나 일시적 미교차 시에도 구독/갱신 유지
+                const isProtected =
+                  (store.baselineVisibleSymbols &&
+                    store.baselineVisibleSymbols.has(rowData.Ticker)) ||
+                  rowData.Ticker === store.currentSelectedSymbol ||
+                  rowData.DisplayTicker === store.currentSelectedSymbol ||
+                  rowData.Symbol === store.currentSelectedSymbol;
+
+                if (!isProtected) {
                   store.visibleSymbols.delete(rowData.Ticker);
                   changed = true;
                 }
@@ -386,6 +410,12 @@ export function renderTable(isRealtime = false) {
         (uid && currentVisibleSet.has(uid)) ||
         (sym && currentVisibleSet.has(sym));
       if (!isVisible) {
+        if (
+          child.classList.contains("thanos-snap-row") ||
+          child.classList.contains("thanos-collapse-row")
+        ) {
+          continue;
+        }
         if (child.style.display !== "none") {
           child.style.setProperty("display", "none", "important");
         }
@@ -486,21 +516,41 @@ export function renderTable(isRealtime = false) {
           store.visibleSymbols.add(rowData.Ticker);
         }
 
-        const isPending = !!(
-          store.pendingFavActions && store.pendingFavActions.has(rowData.UID)
-        );
+        const sRowUid = String(rowData.UID);
+        const pendingAction =
+          store.pendingFavActions &&
+          (store.pendingFavActions.get(rowData.UID) ||
+            store.pendingFavActions.get(sRowUid));
+        const isPending = !!pendingAction;
 
         // 정적 식별 정보 갱신 검사 (화면에 보이지 않는 행은 IntersectionObserver 콜백이 알아서 채움)
         if (isPreRender || store.visibleSymbols.has(rowData.Ticker)) {
+          const favs = JSON.parse(
+            localStorage.getItem("sellnance_favs") || "[]",
+          );
+          const favs2 = JSON.parse(
+            localStorage.getItem("sellnance_favs2") || "[]",
+          );
+          const isFav = favs.some((f) => String(f) === sRowUid);
+          const isFav2 = favs2.some((f) => String(f) === sRowUid);
+          let curFavState;
+          if (pendingAction) {
+            curFavState = pendingAction.targetState;
+          } else {
+            curFavState = isFav ? "FAV" : isFav2 ? "FAV2" : "NONE";
+          }
+
           const needsStatic =
             !rowEl.dataset.renderedSym ||
             rowEl.dataset.renderedSym !== rowData.Ticker ||
             rowEl.dataset.renderedLang !== store.lang ||
-            (rowEl.dataset.renderedPending === "true") !== isPending;
+            (rowEl.dataset.renderedPending === "true") !== isPending ||
+            rowEl.dataset.renderedFav !== curFavState;
           if (needsStatic) {
             updateRowStaticHTML(rowEl, rowData);
             rowEl.dataset.renderedSym = rowData.Ticker;
             rowEl.dataset.renderedLang = store.lang;
+            rowEl.dataset.renderedFav = curFavState;
 
             // HTML 재할당으로 밀렸을 수도 있는 순위 카운터 다시 복구
             const reCounterEl = rowEl.querySelector(".row-counter");
@@ -676,27 +726,26 @@ export function toggleFavorite(uid, event, forceImmediate = false) {
     store.pendingFavActions = new Map();
   }
 
+  const sUid = String(uid);
   let favorites = JSON.parse(localStorage.getItem("sellnance_favs") || "[]");
   let favorites2 = JSON.parse(localStorage.getItem("sellnance_favs2") || "[]");
 
-  const isFav = favorites.includes(uid);
-  const isFav2 = favorites2.includes(uid);
+  const isFav = favorites.some((f) => String(f) === sUid);
+  const isFav2 = favorites2.some((f) => String(f) === sUid);
+  const isFavTab = store.currentTab === "FAV" || store.currentTab === "FAV2";
 
-  // FAV 혹은 FAV2 탭일 경우 즐겨찾기 대기 취소 메커니즘 실행
-  if (
-    !forceImmediate &&
-    (store.currentTab === "FAV" || store.currentTab === "FAV2")
-  ) {
+  // 1. FAV 또는 FAV2 탭일 경우 5초 대기 시간 타이머 메커니즘 실행
+  if (!forceImmediate && isFavTab) {
     let originalState;
     let targetState;
-    let existingAction = store.pendingFavActions.get(uid);
+    let existingAction =
+      store.pendingFavActions.get(uid) || store.pendingFavActions.get(sUid);
 
     if (existingAction) {
-      // 이미 대기 중인 상태가 있으면 타이머 취소
       clearTimeout(existingAction.timerId);
-      originalState = existingAction.originalState; // 최초 상태 보존!
+      originalState = existingAction.originalState;
 
-      // targetState 순환 토글: FAV -> FAV2 -> NONE -> FAV ...
+      // targetState 순환: FAV -> FAV2 -> NONE -> FAV ...
       if (existingAction.targetState === "FAV") {
         targetState = "FAV2";
       } else if (existingAction.targetState === "FAV2") {
@@ -705,9 +754,9 @@ export function toggleFavorite(uid, event, forceImmediate = false) {
         targetState = "FAV";
       }
     } else {
-      // 처음 대기 진입
       originalState = isFav ? "FAV" : isFav2 ? "FAV2" : "NONE";
 
+      // 처음 클릭 시 순환: FAV -> FAV2, FAV2 -> NONE, NONE -> FAV
       if (originalState === "FAV") {
         targetState = "FAV2";
       } else if (originalState === "FAV2") {
@@ -721,27 +770,26 @@ export function toggleFavorite(uid, event, forceImmediate = false) {
       commitFavoriteChange(uid);
     }, 5000);
 
-    store.pendingFavActions.set(uid, {
+    const actionData = {
       timerId,
       startTimestamp: Date.now(),
       duration: 5000,
       originalState,
       targetState,
-    });
-
-    const isTargetStar = targetState === "FAV" || targetState === "FAV2";
+    };
+    store.pendingFavActions.set(uid, actionData);
+    store.pendingFavActions.set(sUid, actionData);
 
     const row =
-      store.currentTableData.find((r) => r.UID === uid) ||
-      (store.tickerRowMap && store.tickerRowMap.get(String(uid)));
+      store.currentTableData?.find((r) => String(r.UID) === sUid) ||
+      (store.tickerRowMap && store.tickerRowMap.get(sUid));
     if (row) {
       const rowEl =
         (row.UID ? store.rowDomMap.get(String(row.UID)) : null) ||
         store.rowDomMap.get(row.Ticker);
       if (rowEl) {
         updateRowInnerHTML(rowEl, row);
-        // 빈별로 변할 때는 이펙트 없이, 노란별/파란별이 될 때만 별똥별 이펙트 발생
-        if (isTargetStar) {
+        if (targetState !== "NONE") {
           const newStarBtn = rowEl.querySelector(".star-btn");
           if (newStarBtn) {
             triggerStarSparkle(newStarBtn);
@@ -754,26 +802,29 @@ export function toggleFavorite(uid, event, forceImmediate = false) {
     if (typeof window.updateFavoritesCount === "function") {
       window.updateFavoritesCount();
     }
-    updateHeaderStar(uid, isTargetStar);
+    updateHeaderStar(uid, targetState !== "NONE");
     return;
   }
 
-  // 지연 없는 변경 (ALL 탭 또는 빈 별 -> 노란별 추가 등)
-  if (store.pendingFavActions.has(uid)) {
-    clearTimeout(store.pendingFavActions.get(uid).timerId);
+  // 2. ALL 탭 등 비-즐겨찾기 탭에서는 즉시 변경 (대기 시간 없이 즉시 적용)
+  if (store.pendingFavActions.has(uid) || store.pendingFavActions.has(sUid)) {
+    const act =
+      store.pendingFavActions.get(uid) || store.pendingFavActions.get(sUid);
+    if (act) clearTimeout(act.timerId);
     store.pendingFavActions.delete(uid);
+    store.pendingFavActions.delete(sUid);
   }
 
   if (!isFav && !isFav2) {
     favorites.push(uid);
     localStorage.setItem("sellnance_favs", JSON.stringify(favorites));
   } else if (isFav) {
-    favorites = favorites.filter((f) => f !== uid);
+    favorites = favorites.filter((f) => String(f) !== sUid);
     localStorage.setItem("sellnance_favs", JSON.stringify(favorites));
     favorites2.push(uid);
     localStorage.setItem("sellnance_favs2", JSON.stringify(favorites2));
   } else {
-    favorites2 = favorites2.filter((f) => f !== uid);
+    favorites2 = favorites2.filter((f) => String(f) !== sUid);
     localStorage.setItem("sellnance_favs2", JSON.stringify(favorites2));
   }
 
@@ -781,18 +832,22 @@ export function toggleFavorite(uid, event, forceImmediate = false) {
     window.updateFavoritesCount();
   }
 
-  const isNowStar = favorites.includes(uid) || favorites2.includes(uid);
+  const isNowFav = favorites.some((f) => String(f) === sUid);
+  const isNowFav2 = favorites2.some((f) => String(f) === sUid);
+  const isNowStar = isNowFav || isNowFav2;
+
+  updateHeaderStar(uid, isNowStar);
 
   const row =
-    store.currentTableData.find((r) => r.UID === uid) ||
-    (store.tickerRowMap && store.tickerRowMap.get(String(uid)));
+    store.currentTableData?.find((r) => String(r.UID) === sUid) ||
+    (store.tickerRowMap && store.tickerRowMap.get(sUid));
   const rowEl = row
     ? (row.UID ? store.rowDomMap.get(String(row.UID)) : null) ||
       store.rowDomMap.get(row.Ticker)
     : null;
+
   if (row && rowEl) {
     updateRowInnerHTML(rowEl, row);
-    // 빈별로 변할 때는 이펙트 없이, 별이 켜질 때(노란별/파란별)만 별똥별 꼬리 이펙트
     if (isNowStar) {
       const newStarBtn = rowEl.querySelector(".star-btn");
       if (newStarBtn) {
@@ -800,45 +855,28 @@ export function toggleFavorite(uid, event, forceImmediate = false) {
       }
     }
   }
-
-  updateHeaderStar(uid, isNowStar);
-
-  if (store.currentTab === "FAV" || store.currentTab === "FAV2") {
-    const isNowFav = favorites.includes(uid);
-    const isNowFav2 = favorites2.includes(uid);
-    const isNowEmptyStar = !isNowFav && !isNowFav2;
-
-    // 노란별에서 빈별 or 파랑별에서 빈별로 완전히 사라지는 경우에만 소멸 애니메이션 발동
-    // 노란별 <-> 파랑별 전환은 효과 없이 이전처럼 즉시 이동
-    if (isNowEmptyStar && rowEl && document.body.contains(rowEl)) {
-      rowEl.classList.add("thanos-snap-row");
-      setTimeout(() => {
-        rowEl.classList.remove("thanos-snap-row");
-        rowEl.classList.add("thanos-collapse-row");
-        setTimeout(() => {
-          rowEl.classList.remove("thanos-collapse-row");
-          renderTable();
-        }, 200);
-      }, 450);
-    } else {
-      setTimeout(() => renderTable(), 100);
-    }
-  }
 }
 
 export function commitFavoriteChange(uid) {
-  if (!store.pendingFavActions || !store.pendingFavActions.has(uid)) return;
+  const sUid = String(uid);
+  if (
+    !store.pendingFavActions ||
+    (!store.pendingFavActions.has(uid) && !store.pendingFavActions.has(sUid))
+  )
+    return;
 
-  const action = store.pendingFavActions.get(uid);
+  const action =
+    store.pendingFavActions.get(uid) || store.pendingFavActions.get(sUid);
   clearTimeout(action.timerId); // Clear background timeout to prevent double commits!
   store.pendingFavActions.delete(uid);
+  store.pendingFavActions.delete(sUid);
 
   let favorites = JSON.parse(localStorage.getItem("sellnance_favs") || "[]");
   let favorites2 = JSON.parse(localStorage.getItem("sellnance_favs2") || "[]");
 
-  // targetState 기준으로 반영
-  favorites = favorites.filter((f) => f !== uid);
-  favorites2 = favorites2.filter((f) => f !== uid);
+  // targetState 기준으로 반영 (number/string UID 일치 보장)
+  favorites = favorites.filter((f) => String(f) !== sUid);
+  favorites2 = favorites2.filter((f) => String(f) !== sUid);
 
   if (action.targetState === "FAV") {
     favorites.push(uid);
@@ -850,20 +888,25 @@ export function commitFavoriteChange(uid) {
   localStorage.setItem("sellnance_favs2", JSON.stringify(favorites2));
 
   // 노란별에서 빈별 or 파랑별에서 빈별로 사라지는 경우에만 타노스 소멸 발동
-  // 노란별 <-> 파랑별 전환(FAV <-> FAV2)은 타노스 효과 없이 이전처럼 이동
+  // 노란별 <-> 파랑별 전환(FAV <-> FAV2)은 타노스 효과 없이 부드러운 collapse 이동
   const isBecameEmptyStar =
     (store.currentTab === "FAV" || store.currentTab === "FAV2") &&
     action.targetState === "NONE";
 
+  const willLeaveCurrentTab =
+    (store.currentTab === "FAV" && action.targetState !== "FAV") ||
+    (store.currentTab === "FAV2" && action.targetState !== "FAV2");
+
   const row =
-    store.currentTableData?.find((r) => String(r.UID) === String(uid)) ||
-    (store.tickerRowMap && store.tickerRowMap.get(String(uid)));
+    store.currentTableData?.find((r) => String(r.UID) === sUid) ||
+    (store.tickerRowMap && store.tickerRowMap.get(sUid));
   const rowEl = row
     ? (row.UID ? store.rowDomMap.get(String(row.UID)) : null) ||
       store.rowDomMap.get(row.Ticker)
     : null;
 
   if (isBecameEmptyStar && rowEl && document.body.contains(rowEl)) {
+    rowEl.classList.remove("thanos-collapse-row");
     rowEl.classList.add("thanos-snap-row");
     setTimeout(() => {
       rowEl.classList.remove("thanos-snap-row");
@@ -878,8 +921,19 @@ export function commitFavoriteChange(uid) {
         updateHeaderStar(uid);
       }, 200);
     }, 450);
+  } else if (willLeaveCurrentTab && rowEl && document.body.contains(rowEl)) {
+    // 노란별 <-> 파란별 이동은 타노스 모션 없이 부드럽게 collapse 퇴장
+    rowEl.classList.add("thanos-collapse-row");
+    setTimeout(() => {
+      rowEl.classList.remove("thanos-collapse-row");
+      renderTable();
+      updateProgressBar();
+      if (typeof window.updateFavoritesCount === "function") {
+        window.updateFavoritesCount();
+      }
+      updateHeaderStar(uid);
+    }, 220);
   } else {
-    // 노란별 <-> 파랑별 전환은 타노스 효과 없이 이전처럼 이동
     renderTable();
     updateProgressBar();
     if (typeof window.updateFavoritesCount === "function") {
@@ -891,19 +945,25 @@ export function commitFavoriteChange(uid) {
 
 window.cancelFavoriteChange = function (uid, event) {
   if (event) event.stopPropagation();
-  if (!store.pendingFavActions || !store.pendingFavActions.has(uid)) return;
+  const sUid = String(uid);
+  if (
+    !store.pendingFavActions ||
+    (!store.pendingFavActions.has(uid) && !store.pendingFavActions.has(sUid))
+  )
+    return;
 
-  const action = store.pendingFavActions.get(uid);
+  const action =
+    store.pendingFavActions.get(uid) || store.pendingFavActions.get(sUid);
   clearTimeout(action.timerId);
   store.pendingFavActions.delete(uid);
+  store.pendingFavActions.delete(sUid);
 
-  // localStorage는 건드린 적이 없으므로 pendingAction만 삭제하고 renderTable()을 실행해
-  // 원래 localStorage의 상태(isFav, isFav2)대로 안전하게 되돌리기
   renderTable();
   updateProgressBar();
   if (typeof window.updateFavoritesCount === "function") {
     window.updateFavoritesCount();
   }
+  updateHeaderStar(uid);
 };
 
 window.confirmFavoriteChange = function (uid, event) {
@@ -931,9 +991,15 @@ export function updateProgressBar() {
       }
 
       for (const [uid, action] of store.pendingFavActions.entries()) {
-        const row = store.currentTableData.find((r) => r.UID === uid);
+        const sUid = String(uid);
+        const row =
+          store.currentTableData?.find((r) => String(r.UID) === sUid) ||
+          (store.tickerRowMap && store.tickerRowMap.get(sUid));
         if (row) {
-          const bar = document.getElementById(`progress-bar-${row.Ticker}`);
+          const bar =
+            document.getElementById(`progress-bar-${row.Ticker}`) ||
+            document.querySelector(`[data-progress-uid="${sUid}"]`) ||
+            document.getElementById(`progress-bar-${sUid}`);
           if (bar) {
             const elapsed = Date.now() - action.startTimestamp;
             const remaining = action.duration - elapsed;
@@ -965,3 +1031,10 @@ export function clearAllPendingFavActions() {
     window.updateFavoritesCount();
   }
 }
+
+window.toggleFavorite = toggleFavorite;
+window.commitFavoriteChange = commitFavoriteChange;
+window.cancelFavoriteChange = cancelFavoriteChange;
+window.confirmFavoriteChange = confirmFavoriteChange;
+window.updateProgressBar = updateProgressBar;
+window.clearAllPendingFavActions = clearAllPendingFavActions;

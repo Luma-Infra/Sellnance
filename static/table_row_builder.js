@@ -58,11 +58,13 @@ export function updateRowStaticHTML(rowEl, row) {
     localStorage.getItem("sellnance_favs2") || "[]",
   );
   const uId = row.UID; // 백엔드에서 제공하는 근본 고유 식별키 (final_ucid)
-  const isFav = favorites.includes(uId);
-  const isFav2 = favorites2.includes(uId);
+  const sUid = String(uId);
+  const isFav = favorites.some((f) => String(f) === sUid);
+  const isFav2 = favorites2.some((f) => String(f) === sUid);
 
   const pendingAction =
-    store.pendingFavActions && store.pendingFavActions.get(uId);
+    store.pendingFavActions &&
+    (store.pendingFavActions.get(uId) || store.pendingFavActions.get(sUid));
   rowEl.dataset.renderedPending = pendingAction ? "true" : "false";
   let currentFavState;
   if (pendingAction) {
@@ -70,6 +72,7 @@ export function updateRowStaticHTML(rowEl, row) {
   } else {
     currentFavState = isFav ? "FAV" : isFav2 ? "FAV2" : "NONE";
   }
+  rowEl.dataset.renderedFav = currentFavState;
 
   let starText = "☆";
   let starColor = "gray";
@@ -91,12 +94,12 @@ export function updateRowStaticHTML(rowEl, row) {
   // 레이아웃 깨짐을 방지하고 스크롤 시 공백 노출을 최소화합니다
 
   rowEl.innerHTML = `
-  <div class="p-2 col-asset overflow-visible">
+  <div class="p-2 col-asset overflow-visible relative">
     ${
       pendingAction
         ? `
       <div class="row-progress-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 2.5px; z-index: 50; pointer-events: none;">
-         <div id="progress-bar-${row.Ticker}" class="row-progress-bar" style="height: 100%; width: 100%; background: linear-gradient(90deg, var(--accent) 0%, #3b82f6 100%); transition: width 50ms linear;"></div>
+         <div id="progress-bar-${row.Ticker}" data-progress-uid="${sUid}" class="row-progress-bar" style="height: 100%; width: 100%; background: linear-gradient(90deg, #f0b90b 0%, #3b82f6 100%); transition: width 50ms linear;"></div>
       </div>
     `
         : ""
@@ -106,7 +109,7 @@ export function updateRowStaticHTML(rowEl, row) {
       <div class="w-[20px] flex-shrink-0 text-center">
         <span class="row-counter text-[10px] font-medium font-medium text-theme-text opacity-40 flex-shrink-0 px-0 leading-none"></span>
       </div>
-      <!-- 1. 별 버튼 (상폐 여부와 무관하게 100% 선명한 원본 컬러 유지) -->
+      <!-- 1. 별 버튼 -->
       <div class="flex items-center gap-0.5 flex-shrink-0">
         <button onclick="toggleFavorite('${uId}', event)" class="star-btn text-[14px] transition-all hover:scale-125 flex-shrink-0 ${starClass}" style="color: ${starColor}">
           ${starText}
@@ -125,7 +128,7 @@ export function updateRowStaticHTML(rowEl, row) {
         }
       </div>
       
-      <!-- 2. 티커 이미지 (상폐 시 회색조 처리) -->
+      <!-- 2. 티커 이미지 (상폐 시 회색 처리) -->
       <div class="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-white/1 overflow-hidden ${delistMutedClass}">
         ${row.Logo || `<img src="${document.body?.classList.contains("theme-upbit") ? "/static/luma-deer-svg-light.svg" : "/static/luma-deer-svg-dark.svg"}" class="fallback-logo" loading="lazy" style="width: 24px; height: 24px; vertical-align: middle; border-radius: 50%;">`}
       </div>
@@ -288,11 +291,17 @@ export function updateRowStaticHTML(rowEl, row) {
   }
 }
 
-export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
+export function updateRowDynamicHTML(
+  rowEl,
+  row,
+  lightweight = false,
+  options = {},
+) {
   if (typeof window !== "undefined" && !window.updateRowDynamicHTML) {
     window.updateRowDynamicHTML = updateRowDynamicHTML;
   }
-  if (row.Ticker === store.currentSelectedSymbol) {
+  const { priceOnly = false, skipFlash = false } = options;
+  if (row.Ticker === store.currentSelectedSymbol && !priceOnly) {
     lightweight = false;
   }
   //   window.syncRowPrioritizedMetrics(row);
@@ -390,6 +399,7 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
         );
         if (numEl.textContent !== formattedPrice) {
           if (
+            !skipFlash &&
             oldPrice > 0 &&
             nPrice > 0 &&
             oldPrice !== nPrice &&
@@ -448,6 +458,9 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
       todayEl.className = `${colorDay} ${todayText.length > 8 ? "text-[9.5px]" : "text-[10.5px]"} flex-1 min-w-0 text-left tracking-tighter whitespace-nowrap`;
     }
   }
+
+  // [최적화] 순수 가격 및 등락률만 갱신하는 경우, 볼륨/시총/김프 등 이후 셀 렌더링 건너뛰기
+  if (priceOnly) return;
 
   // 바이낸스 볼륨/시총 렌더링
   const volBCell =
@@ -684,6 +697,11 @@ export function updateRowDynamicHTML(rowEl, row, lightweight = false) {
         if (kimchiPctEl.textContent !== row.Kimchi_Formatted)
           kimchiPctEl.textContent = row.Kimchi_Formatted;
         kimchiPctEl.className = `kimchi-pct text-[11px] font-medium whitespace-nowrap flex-shrink-0 ${row.Kimchi_Raw > 0 ? "text-theme-up" : "text-theme-down"}`;
+
+        if (row.Kimchi_Label && row.Kimchi_Label !== "-") {
+          const rate = store.krwUsdRate || 1350;
+          kimchiPctEl.title = `김치 프리미엄: ${row.Kimchi_Formatted} (${row.Kimchi_Label} 기준, 환율 ${Number(rate).toFixed(1)}원)`;
+        }
 
         // 최대 +333.33%(8글자) 대응 로그 폰트 축소 (6글자 초과 시 9.5px까지 스케일 다운)
         const kLen = (row.Kimchi_Formatted || "").length;

@@ -52,6 +52,14 @@ export function flushRealtimeRender() {
     ) {
       window.updateRealtimeCountdown(null, Number(currentCandle.close));
     }
+
+    // 실시간 캔들 봉 변동 시 고점/저점 태그 동기화
+    if (
+      store._highLowPrimitive &&
+      typeof store._highLowPrimitive.updateAll === "function"
+    ) {
+      store._highLowPrimitive.updateAll();
+    }
   } catch (candleUpdateErr) {
     // Xconsole.warn("🚨 candleSeries.update 예외 우회 완료:", candleUpdateErr);
   }
