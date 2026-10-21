@@ -133,15 +133,18 @@ export function resetChartScale() {
     });
   }
 
-  // [원자적 리셋] 메인 및 볼륨/김프 스케일 일괄 autoScale 복구
+  // [원자적 리셋] 메인 및 볼륨/김프 스케일 일괄 autoScale 복구 (좌측 김프축은 64px 고정 유지)
+  const isSmallMobile =
+    typeof window !== "undefined" && window.innerWidth < 768;
+  const isKimchiVisible = !!store.paneConfig?.kimchi && !store.isKimchiDisabled;
+  const baseLeftWidth = !isSmallMobile && isKimchiVisible ? 64 : 0;
+
   store.chart
     .priceScale("right")
     .applyOptions({ minimumWidth: 0, autoScale: true });
-  if (store.leftScaleSeries) {
-    store.chart
-      .priceScale("left")
-      .applyOptions({ minimumWidth: 0, autoScale: true });
-  }
+  store.chart
+    .priceScale("left")
+    .applyOptions({ minimumWidth: baseLeftWidth, autoScale: true });
 
   if (store.chartVol) {
     store.chartVol
@@ -149,7 +152,7 @@ export function resetChartScale() {
       .applyOptions({ minimumWidth: 0, autoScale: true });
     store.chartVol
       .priceScale("left")
-      .applyOptions({ minimumWidth: 0, autoScale: true });
+      .applyOptions({ minimumWidth: baseLeftWidth, autoScale: true });
   }
 
   const margin = 10; // [수동 오토핏 버튼] 우측 마진 고정값으로 세팅
@@ -283,39 +286,43 @@ export function formatSmartPrice(price, p, isKrw = false) {
       return formatKrwPrice(numPrice, exch);
     }
 
-    // 달러(USD) 가격 규칙: 소수점 이하 유효숫자 4자리 관리 (0.00000001080 같은 코인 0/잘림 방지)
-    let decimals =
-      p !== undefined && p !== null ? Math.max(0, parseInt(p, 10)) : 2;
-    if (numPrice > 0 && numPrice < 0.01) {
-      const formattedStr = numPrice.toPrecision(4);
-      const parts = formattedStr.split("e");
-      if (parts.length === 1) {
-        const dotIndex = formattedStr.indexOf(".");
-        if (dotIndex !== -1) {
-          const sub = formattedStr.substring(dotIndex + 1);
-          const firstActive = sub.search(/[1-9]/);
-          const minDecimals = firstActive !== -1 ? firstActive + 4 : 4;
-          decimals = Math.max(decimals, Math.min(10, minDecimals));
+    // 달러(USD) 가격 규칙: 거래소가 제공한 정밀도(precision) 그대로 사용 (강제 확장/축소 배제)
+    let decimals = null;
+    if (p !== undefined && p !== null && !isNaN(p)) {
+      decimals = Math.max(0, parseInt(p, 10));
+    } else {
+      // precision 정보가 없을 때만 유효숫자 기반으로 계산
+      decimals = 2;
+      if (numPrice > 0 && numPrice < 0.01) {
+        const formattedStr = numPrice.toPrecision(4);
+        const parts = formattedStr.split("e");
+        if (parts.length === 1) {
+          const dotIndex = formattedStr.indexOf(".");
+          if (dotIndex !== -1) {
+            const sub = formattedStr.substring(dotIndex + 1);
+            const firstActive = sub.search(/[1-9]/);
+            const minDecimals = firstActive !== -1 ? firstActive + 4 : 4;
+            decimals = Math.min(10, minDecimals);
+          }
+        } else {
+          const exp = Math.abs(parseInt(parts[1], 10));
+          decimals = Math.min(10, exp + 3);
         }
-      } else {
-        const exp = Math.abs(parseInt(parts[1], 10));
-        decimals = Math.max(decimals, Math.min(10, exp + 3));
-      }
-    } else if (numPrice > 0 && numPrice < 1 && decimals <= 2) {
-      // [1달러 미만 코인 보정] 정밀도가 2 이하로 잘못 넘어온 경우 최소 4자리 유효숫자 관리 (0.11, 0.12 잘림 방지)
-      const formattedStr = numPrice.toPrecision(4);
-      const parts = formattedStr.split("e");
-      if (parts.length === 1) {
-        const dotIndex = formattedStr.indexOf(".");
-        if (dotIndex !== -1) {
-          const sub = formattedStr.substring(dotIndex + 1);
-          const firstActive = sub.search(/[1-9]/);
-          const minDecimals = firstActive !== -1 ? firstActive + 4 : 4;
-          decimals = Math.max(decimals, Math.min(8, minDecimals));
+      } else if (numPrice > 0 && numPrice < 1) {
+        const formattedStr = numPrice.toPrecision(4);
+        const parts = formattedStr.split("e");
+        if (parts.length === 1) {
+          const dotIndex = formattedStr.indexOf(".");
+          if (dotIndex !== -1) {
+            const sub = formattedStr.substring(dotIndex + 1);
+            const firstActive = sub.search(/[1-9]/);
+            const minDecimals = firstActive !== -1 ? firstActive + 4 : 4;
+            decimals = Math.min(8, minDecimals);
+          }
+        } else {
+          const exp = Math.abs(parseInt(parts[1], 10));
+          decimals = Math.min(8, exp + 3);
         }
-      } else {
-        const exp = Math.abs(parseInt(parts[1], 10));
-        decimals = Math.max(decimals, Math.min(8, exp + 3));
       }
     }
     return numPrice.toLocaleString(undefined, {
@@ -366,7 +373,13 @@ export function formatVolumeKRW(vol) {
   return vol.toFixed(0);
 }
 
-function updateLegend(d, v, k) {
+// OHLC 갱신 속도 60fps 쓰로틀 제어용 상태
+const OHLC_FPS_INTERVAL_MS = 1000 / 60; // 16.67ms (60fps)
+let _lastLegendRenderTime = 0;
+let _legendRafPending = false;
+let _pendingLegendArgs = null;
+
+function updateLegend(d, v, k, forceImmediate = false) {
   // [디버그 옵션] 우측 패널 DOM 차단 또는 레전드 개별 차단 시 추적용 즉시 리턴
   if (store.blockRightDom || store.blockLegend) {
     const nowTime = Date.now();
@@ -375,6 +388,29 @@ function updateLegend(d, v, k) {
       return;
     }
     window._lastLegendUpdateTime = nowTime;
+  }
+
+  // OHLC 조율 (고빈도 마우스 이동 및 소켓 틱 폭주 시 60fps로 매끄럽게 제어)
+  if (!forceImmediate && d) {
+    const now = performance.now();
+    if (now - _lastLegendRenderTime < OHLC_FPS_INTERVAL_MS) {
+      _pendingLegendArgs = [d, v, k];
+      if (!_legendRafPending) {
+        _legendRafPending = true;
+        requestAnimationFrame(() => {
+          _legendRafPending = false;
+          if (_pendingLegendArgs) {
+            const args = _pendingLegendArgs;
+            _pendingLegendArgs = null;
+            updateLegend(args[0], args[1], args[2], true);
+          }
+        });
+      }
+      return;
+    }
+    _lastLegendRenderTime = now;
+  } else {
+    _lastLegendRenderTime = performance.now();
   }
 
   const leg = document.getElementById("ohlc-legend");
@@ -396,6 +432,22 @@ function updateLegend(d, v, k) {
     }
   } else {
     leg.style.display = "flex";
+  }
+
+  // 접힘(Collapse) 상태 확인
+  const isCollapsed =
+    store.isOhlcCollapsed ??
+    localStorage.getItem("sellnance_ohlc_collapsed") === "true";
+  const ohlcContent = document.getElementById("ohlc-content");
+  if (isCollapsed) {
+    if (ohlcContent && !ohlcContent.classList.contains("hidden")) {
+      ohlcContent.classList.add("hidden");
+    }
+    return;
+  } else {
+    if (ohlcContent && ohlcContent.classList.contains("hidden")) {
+      ohlcContent.classList.remove("hidden");
+    }
   }
 
   const placeholder = document.getElementById("ohlc-placeholder");
@@ -791,6 +843,13 @@ export function autoFit(isTabRestore = false) {
         }
       } catch (e) {}
     }
+
+    if (
+      store._highLowPrimitive &&
+      typeof store._highLowPrimitive.updateAll === "function"
+    ) {
+      store._highLowPrimitive.updateAll();
+    }
   }
 }
 
@@ -987,28 +1046,36 @@ export function toggleCountdown(forceVal) {
   }
   const btn = document.getElementById("toggle-countdown-btn");
   if (btn) {
-    btn.innerText = store.showCountdown ? "카운트다운 끄기" : "카운트다운 켜기";
+    btn.innerText = "카운트다운";
     if (store.showCountdown) {
       btn.classList.add(
         "text-theme-accent",
         "border-theme-accent/40",
         "bg-theme-accent/10",
       );
-      btn.classList.remove("bg-theme-panel/50");
+      btn.classList.remove(
+        "text-theme-text",
+        "border-theme-border/50",
+        "bg-theme-panel/50",
+      );
     } else {
       btn.classList.remove(
         "text-theme-accent",
         "border-theme-accent/40",
         "bg-theme-accent/10",
       );
-      btn.classList.add("bg-theme-panel/50");
+      btn.classList.add(
+        "text-theme-text",
+        "border-theme-border/50",
+        "bg-theme-panel/50",
+      );
     }
   }
 
   if (store.candleSeries) {
     store.candleSeries.applyOptions({
       lastValueVisible: !store.showCountdown,
-      priceLineVisible: !store.showCountdown,
+      priceLineVisible: store.showPriceLine !== false && !store.showCountdown,
     });
   }
 
@@ -1048,25 +1115,101 @@ export function toggleOhlc(forceVal) {
   }
   const btn = document.getElementById("toggle-ohlc-legend-btn");
   if (btn) {
-    btn.innerText = active ? "OHLC 끄기" : "OHLC 켜기";
+    btn.innerText = "OHLC";
     if (active) {
       btn.classList.add(
         "text-theme-accent",
         "border-theme-accent/40",
         "bg-theme-accent/10",
       );
-      btn.classList.remove("bg-theme-panel/50");
+      btn.classList.remove(
+        "text-theme-text",
+        "border-theme-border/50",
+        "bg-theme-panel/50",
+      );
     } else {
       btn.classList.remove(
         "text-theme-accent",
         "border-theme-accent/40",
         "bg-theme-accent/10",
       );
-      btn.classList.add("bg-theme-panel/50");
+      btn.classList.add(
+        "text-theme-text",
+        "border-theme-border/50",
+        "bg-theme-panel/50",
+      );
     }
   }
   if (typeof window.syncChartControlsModalUI === "function") {
     window.syncChartControlsModalUI();
+  }
+}
+
+export function applyOhlcCollapseUI(isCollapsed) {
+  const svg = document.getElementById("ohlc-collapse-svg");
+  const content = document.getElementById("ohlc-content");
+  const btn = document.getElementById("ohlc-toggle-collapse-btn");
+
+  if (svg) {
+    if (isCollapsed) {
+      svg.classList.add("-rotate-90");
+    } else {
+      svg.classList.remove("-rotate-90");
+    }
+  }
+
+  if (btn) {
+    if (isCollapsed) {
+      btn.classList.remove("mb-1");
+      btn.classList.add("mb-0");
+    } else {
+      btn.classList.remove("mb-0");
+      btn.classList.add("mb-1");
+    }
+  }
+
+  if (content) {
+    if (isCollapsed) {
+      content.classList.add("hidden");
+    } else {
+      content.classList.remove("hidden");
+    }
+  }
+}
+
+export function toggleOhlcCollapse(forceVal) {
+  const isCurrentlyCollapsed =
+    localStorage.getItem("sellnance_ohlc_collapsed") === "true";
+  const nextCollapsed =
+    forceVal !== undefined ? forceVal : !isCurrentlyCollapsed;
+
+  localStorage.setItem(
+    "sellnance_ohlc_collapsed",
+    nextCollapsed ? "true" : "false",
+  );
+  store.isOhlcCollapsed = nextCollapsed;
+
+  applyOhlcCollapseUI(nextCollapsed);
+
+  // 펼쳤을 때 현재 캔들 정보가 있으면 즉시 1회 동기화 렌더링
+  if (!nextCollapsed) {
+    const lastIdx =
+      store.mainData && store.mainData.length ? store.mainData.length - 1 : -1;
+    if (lastIdx !== -1) {
+      const last = store.mainData[lastIdx];
+      const v =
+        store.volumeData && store.volumeData.length > 0
+          ? store.volumeData[lastIdx]
+          : null;
+      let k = null;
+      if (last.time) {
+        k = store.kimchiDataMap.get(getUnixSeconds(last.time)) || null;
+      }
+      if (!k && store.kimchiData && store.kimchiData.length > 0) {
+        k = store.kimchiData[lastIdx];
+      }
+      updateLegend(last, v, k);
+    }
   }
 }
 
@@ -1089,8 +1232,12 @@ export function updateRealtimeCountdown(serverMs, overridePrice) {
       ? performance.now()
       : 0;
 
-  // 유효한 거래소 서버 타임스탬프가 전달된 경우에만 앵커 갱신
-  if (typeof serverMs === "number" && serverMs > 1700000000000) {
+  // 유효한 거래소 서버 타임스탬프가 전달된 경우에만 앵커 갱신 (새로운 서버 시각일 때만 재설정)
+  if (
+    typeof serverMs === "number" &&
+    serverMs > 1700000000000 &&
+    serverMs !== store.lastServerMs
+  ) {
     store.lastServerMs = serverMs;
     store.localTimeAtUpdate = perfNow;
   }
@@ -1143,7 +1290,7 @@ export function updateRealtimeCountdown(serverMs, overridePrice) {
   const lineOptions = {
     price: currentClose,
     color: rawColor,
-    lineVisible: true,
+    lineVisible: store.showPriceLine !== false,
     lineWidth: 1,
     lineStyle: window.LightweightCharts
       ? window.LightweightCharts.LineStyle.Dashed
@@ -1174,6 +1321,67 @@ export function updateRealtimeCountdown(serverMs, overridePrice) {
   }
 }
 
+// [가로 점선 현재가 라인 (Price Now Line)] 보이기/숨기기 토글
+export function togglePriceLine(forceVal) {
+  if (forceVal !== undefined) {
+    store.showPriceLine = forceVal;
+  } else {
+    store.showPriceLine = !(store.showPriceLine !== false);
+  }
+  try {
+    localStorage.setItem(
+      "sellnance_show_price_line",
+      String(store.showPriceLine),
+    );
+  } catch (e) {}
+
+  const btn = document.getElementById("toggle-priceline-btn");
+  if (btn) {
+    const isShow = store.showPriceLine !== false;
+    btn.innerText = "현재가 점선";
+    if (isShow) {
+      btn.classList.add(
+        "text-theme-accent",
+        "border-theme-accent/40",
+        "bg-theme-accent/10",
+      );
+      btn.classList.remove(
+        "text-theme-text",
+        "border-theme-border/50",
+        "bg-theme-panel/50",
+      );
+    } else {
+      btn.classList.remove(
+        "text-theme-accent",
+        "border-theme-accent/40",
+        "bg-theme-accent/10",
+      );
+      btn.classList.add(
+        "text-theme-text",
+        "border-theme-border/50",
+        "bg-theme-panel/50",
+      );
+    }
+  }
+
+  if (store.candleSeries) {
+    store.candleSeries.applyOptions({
+      priceLineVisible: store.showPriceLine && !store.showCountdown,
+    });
+  }
+  if (store.countdownPriceLine) {
+    try {
+      store.countdownPriceLine.applyOptions({
+        lineVisible: store.showPriceLine,
+      });
+    } catch (e) {}
+  }
+  if (typeof window.syncChartControlsModalUI === "function") {
+    window.syncChartControlsModalUI();
+  }
+}
+window.togglePriceLine = togglePriceLine;
+
 // 크로스헤어 퍼센트 라벨 보이기/숨기기 토글
 export function toggleCrosshairPct(forceVal) {
   if (forceVal !== undefined) {
@@ -1188,22 +1396,29 @@ export function toggleCrosshairPct(forceVal) {
 
   const btn = document.getElementById("toggle-crosshair-pct-btn");
   if (btn) {
+    btn.innerText = "등락률(%)";
     if (store.showCrosshairPct) {
-      btn.innerText = "우측 퍼센트% 끄기";
       btn.classList.add(
         "text-theme-accent",
         "border-theme-accent/40",
         "bg-theme-accent/10",
       );
-      btn.classList.remove("bg-theme-panel/50");
+      btn.classList.remove(
+        "text-theme-text",
+        "border-theme-border/50",
+        "bg-theme-panel/50",
+      );
     } else {
-      btn.innerText = "우측 퍼센트% 켜기";
       btn.classList.remove(
         "text-theme-accent",
         "border-theme-accent/40",
         "bg-theme-accent/10",
       );
-      btn.classList.add("bg-theme-panel/50");
+      btn.classList.add(
+        "text-theme-text",
+        "border-theme-border/50",
+        "bg-theme-panel/50",
+      );
     }
   }
 
@@ -1220,30 +1435,39 @@ export function toggleCrosshairPct(forceVal) {
 if (typeof window !== "undefined") {
   window.toggleCountdown = toggleCountdown;
   window.toggleOhlc = toggleOhlc;
+  window.toggleOhlcCollapse = toggleOhlcCollapse;
+  window.applyOhlcCollapseUI = applyOhlcCollapseUI;
   window.toggleCrosshairPct = toggleCrosshairPct;
   window.updateRealtimeCountdown = updateRealtimeCountdown;
 
   // 카운트다운 타이머 숫자(시간)만 실시간 갱신 (스케일 가격표 중복 ZERO)
+  // 틱이 들어오지 않더라도 performance.now() 보간을 연속적인 시간 흐름 유지하기
   setInterval(() => {
     if (
       store.showCountdown &&
       store.lastServerMs > 0 &&
       !store.isFetchingChart
     ) {
-      updateRealtimeCountdown(store.lastServerMs);
+      updateRealtimeCountdown(null);
     }
-  }, 500);
+  }, 250);
 
   // 페이지 로드 직후 토글 UI들의 슬라이더 슬라이딩 초기 위치 동기화
   setTimeout(() => {
     const isOhlcHidden =
       localStorage.getItem("sellnance_ohlc_hidden") === "true";
     if (typeof toggleOhlc === "function") toggleOhlc(!isOhlcHidden);
+    const isOhlcCollapsed =
+      localStorage.getItem("sellnance_ohlc_collapsed") === "true";
+    store.isOhlcCollapsed = isOhlcCollapsed;
+    applyOhlcCollapseUI(isOhlcCollapsed);
     if (typeof toggleLogScale === "function") toggleLogScale(store.isLogMode);
     if (typeof toggleCountdown === "function")
       toggleCountdown(store.showCountdown);
     if (typeof toggleCrosshairPct === "function")
       toggleCrosshairPct(store.showCrosshairPct !== false);
+    if (typeof togglePriceLine === "function")
+      togglePriceLine(store.showPriceLine !== false);
   }, 200);
 }
 

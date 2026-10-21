@@ -198,7 +198,7 @@ export const store = {
     GATEIO: 0,
     COINBASE: 0,
   },
-  exchFilterMode: sessionControlPanel?.exchFilterMode ?? "AND", // 거래소 필터링 결합 모드 (AND, OR, ONLY)
+  exchFilterMode: sessionControlPanel?.exchFilterMode ?? "OR", // 거래소 필터링 결합 모드 (OR, AND, ONLY)
 
   isFetchingChart: false, // 차트 데이터 호출 진행 상태 플래그
   isSilentSyncing: false, // 무깜빡임 탭 복귀 백필 진행 중 상태 플래그 (실시간 소켓 틱 렌더링 유지)
@@ -226,9 +226,16 @@ export const store = {
   isKimchiDisabled:
     typeof localStorage !== "undefined" &&
     localStorage.getItem("sellnance_kimchi_disabled") === "true", // 김프 비교 끄기 여부
+  isOhlcCollapsed:
+    typeof localStorage !== "undefined" &&
+    localStorage.getItem("sellnance_ohlc_collapsed") === "true", // OHLC 접힘 여부
   traceRowCaller: false, // [디버그 토글] 단 1줄로 좌측 1번 행(Index 0) callerId 전광판 추적 및 확장 영역 보이기/사라지기 제어!
   enableOrderbookVisual: true, //호가창 보기
   showCountdown: true, // 차트 카운트다운 표시 여부
+  showPriceLine:
+    typeof localStorage !== "undefined"
+      ? localStorage.getItem("sellnance_show_price_line") !== "false"
+      : true, // 현재가 점선(Price Line) 표시 여부
   currentRenderLimit: 1000, // 최대 렌더링 캔들 제한 개수
 
   // [성능 통계 카운터] 차단 로직에 의해 연산/갱신이 바이패스 처리된 실시간 카운트 집계기
@@ -307,20 +314,49 @@ export const store = {
   precisionMap: new Map(),
   getPrecision: function (sym) {
     if (!sym) return store.currentPrecision || 2;
-    let key = String(sym).toUpperCase().trim();
+    let rawKey = String(sym).toUpperCase().trim();
 
     // 트레이딩뷰 라우팅 스타일 (BINANCE:BTC_FUTURES 등) 정규화
+    let marketFromSym = null;
+    let key = rawKey;
     if (key.includes(":")) {
-      key = key.split(":")[1].trim();
+      const parts = key.split(":");
+      marketFromSym = parts[0].trim();
+      key = parts[1].trim();
     }
+
+    const isFuturesFromSym = key.endsWith("_FUTURES");
+    const isSpotFromSym = key.endsWith("_SPOT");
+
     key = key
       .replace(/_FUTURES$/i, "")
       .replace(/_SPOT$/i, "")
       .replace(/_UPBIT$/i, "")
       .replace(/_BITHUMB$/i, "");
 
-    if (store.precisionMap.has(key)) {
-      return store.precisionMap.get(key);
+    const activeM = String(
+      marketFromSym || store.currentChartMarket || store.currentMarket || "ALL",
+    ).toUpperCase();
+
+    const isFuturesMode =
+      isFuturesFromSym ||
+      activeM.includes("FUTURES") ||
+      activeM === "FUT" ||
+      (!isSpotFromSym && (activeM === "ALL" || activeM === "FUTURES"));
+    const isSpotMode =
+      isSpotFromSym ||
+      activeM.includes("SPOT") ||
+      activeM === "BINANCE" ||
+      activeM === "BYBIT";
+
+    const subKey = isFuturesMode ? "FUT" : isSpotMode ? "SPOT" : "BASE";
+    const cacheKey = `${activeM}:${key}:${subKey}`;
+
+    if (store.precisionMap.has(cacheKey)) {
+      return store.precisionMap.get(cacheKey);
+    }
+    if (store.precisionMap.has(rawKey)) {
+      return store.precisionMap.get(rawKey);
     }
 
     let row = store.tickerRowMap.get(key);
@@ -380,15 +416,41 @@ export const store = {
       row = store.tickerRowMap.get(String(store.currentSelectedUid));
     }
 
-    if (row && row.precision !== undefined && row.precision !== null) {
-      const p = Number(row.precision);
-      if (row.Ticker) store.precisionMap.set(row.Ticker.toUpperCase(), p);
-      if (row.DisplayTicker)
-        store.precisionMap.set(row.DisplayTicker.toUpperCase(), p);
-      if (row.Symbol) store.precisionMap.set(row.Symbol.toUpperCase(), p);
-      store.precisionMap.set(key, p);
-      store.currentPrecision = p;
-      return p;
+    if (row) {
+      let p = null;
+      if (activeM.includes("BYBIT")) {
+        if (isFuturesMode && row.Bybit_Precision_Futures != null) {
+          p = Number(row.Bybit_Precision_Futures);
+        } else if (isSpotMode && row.Bybit_Precision_Spot != null) {
+          p = Number(row.Bybit_Precision_Spot);
+        } else if (row.Bybit_Precision != null) {
+          p = Number(row.Bybit_Precision);
+        }
+      } else if (
+        activeM.includes("BINANCE") ||
+        activeM === "ALL" ||
+        activeM === "FUTURES" ||
+        activeM === "SPOT"
+      ) {
+        if (isFuturesMode && row.Binance_Precision_Futures != null) {
+          p = Number(row.Binance_Precision_Futures);
+        } else if (isSpotMode && row.Binance_Precision_Spot != null) {
+          p = Number(row.Binance_Precision_Spot);
+        } else if (row.Binance_Precision != null) {
+          p = Number(row.Binance_Precision);
+        }
+      }
+
+      if (p === null && row.precision != null) {
+        p = Number(row.precision);
+      }
+
+      if (p !== null && !isNaN(p)) {
+        store.precisionMap.set(cacheKey, p);
+        store.precisionMap.set(rawKey, p);
+        store.currentPrecision = p;
+        return p;
+      }
     }
 
     // [캐시 오염 방지] row를 아직 찾지 못한 초기 로딩 단계에서는 precisionMap을 2로 영구 오염시키지 않고 임시 폴백만 반환

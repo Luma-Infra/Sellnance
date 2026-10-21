@@ -23,6 +23,7 @@ import {
   setupScaleModeButtons,
   updateScaleModeButtonsUI,
 } from "./chart_sync.js";
+import { attachHighLowPrimitive } from "./chart_high_low.js";
 export { getCandleThemeColors, applyCandleTheme };
 
 // === DEBUG_PERF_TOGGLE ===
@@ -202,6 +203,8 @@ export async function initChart() {
     layout: {
       background: { color: "transparent" },
       textColor: textColor,
+      fontFamily:
+        '"Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Segoe UI", sans-serif',
       attributionLogo: false, // 트레이딩뷰 워터마크 끄기
     },
     grid: { vertLines: { color: gridColor }, horzLines: { color: gridColor } },
@@ -261,7 +264,7 @@ export async function initChart() {
       minimumWidth:
         typeof window !== "undefined" && window.innerWidth < 768
           ? 0
-          : store.savedLeftPriceScaleWidth || 60,
+          : store.savedLeftPriceScaleWidth || 64,
       borderColor: "transparent",
       scaleMargins: {
         top: store.mainChartScaleMargins?.top ?? 0.1,
@@ -278,7 +281,7 @@ export async function initChart() {
       ...commonOptions.crosshair,
       vertLine: {
         ...commonOptions.crosshair.vertLine,
-        labelVisible: false, // [정답] 네이티브 시간 라벨만 딱 끄기! (플러그인 라벨과 겹침 방지)
+        labelVisible: false, // 네이티브 시간 라벨만 끄기 (플러그인 라벨과 겹침 방지)
       },
     },
     timeScale: {
@@ -301,7 +304,7 @@ export async function initChart() {
       minimumWidth:
         typeof window !== "undefined" && window.innerWidth < 768
           ? 0
-          : store.savedLeftPriceScaleWidth || 60,
+          : store.savedLeftPriceScaleWidth || 64,
       borderColor: "transparent", // [좌측 테두리 제거] 메인 차트와 동일하게 좌측 테두리 선 투명화
       scaleMargins: {
         top: store.volChartScaleMargins?.kimchiTop ?? 0.1,
@@ -589,11 +592,14 @@ export async function initChart() {
       wickUpColor: upColor,
       wickDownColor: downColor,
       lastValueVisible: !store.showCountdown, // 카운트다운 활성화 시 카운트다운 일체형 바 단독 노출 (중복 뱃지 방지)
-      priceLineVisible: !store.showCountdown, // 카운트다운 활성화 시 카운트다운 선 단독 노출 (중복 점선 방지)
+      priceLineVisible: store.showPriceLine !== false && !store.showCountdown, // 현재가 점선 토글 연동
       priceFormat: customPriceFormat,
       autoscaleInfoProvider: mainCandleAutoscaleProvider,
     },
   );
+
+  // 바이낸스 스타일의 화면 가시 영역 캔들 최고가/최저가 가격 태그 플러그인 부착
+  attachHighLowPrimitive(store.chart, store.candleSeries);
 
   // 좌측 스케일 전용 등락률 및 가격차이 표시 보조 시리즈
   store.leftScaleSeries = store.chart.addSeries(
@@ -629,6 +635,7 @@ export async function initChart() {
     {
       color: "#26a69a",
       priceFormat: { type: "volume" },
+      priceLineVisible: false, // vol 현재가 점선 숨기기
     },
   );
 
@@ -928,6 +935,15 @@ export function updateChartTheme() {
     try {
       window.updateStatus();
     } catch (e) {}
+  }
+
+  if (
+    store._highLowPrimitive &&
+    typeof store._highLowPrimitive.updateAll === "function"
+  ) {
+    try {
+      store._highLowPrimitive.updateAll();
+    } catch (_) {}
   }
 
   applyChartLayout();

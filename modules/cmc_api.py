@@ -45,11 +45,28 @@ def _fetch_cmc_api_chunk(task):
     url, headers, params = task
     try:
         resp = requests.get(url, headers=headers, params=params, timeout=10)
-        if resp.status_code in [400, 402, 401, 403, 429]:
+        if resp.status_code in [401, 403]:
+            err_msg = ""
+            try:
+                err_data = resp.json()
+                err_msg = err_data.get("status", {}).get("error_message", "")
+            except Exception:
+                err_msg = resp.text[:120] if resp.text else ""
             print(
-                f"[CMC 키 인증 실패] HTTP {resp.status_code}: 유효하지 않은 API 키입니다"
+                f"[CMC 키 인증 실패] HTTP {resp.status_code}: {err_msg or '유효하지 않은 API 키입니다'}"
             )
             return {"error": "INVALID_KEY", "status_code": resp.status_code}
+        elif resp.status_code in [400, 402, 429]:
+            err_msg = ""
+            try:
+                err_data = resp.json()
+                err_msg = err_data.get("status", {}).get("error_message", "")
+            except Exception:
+                err_msg = resp.text[:120] if resp.text else ""
+            print(
+                f"[CMC API 요청 오류] HTTP {resp.status_code}: {err_msg or '요청 처리 실패'}"
+            )
+            return None
         resp.raise_for_status()
         if resp.text:
             data = resp.json()
@@ -191,7 +208,8 @@ def build_cmc_lookup_lists(binance_data, upbit_krw_set, MAPPING_DATA):
             elif alias_name in TICKER_DATA:
                 cmc_id = str(TICKER_DATA[alias_name][0])
 
-            if cmc_id and not cmc_id.isdigit():
+            # 더미 해시, 비정상 ID는 무효화하여 sym_lookup(CMC 실제 심볼 조회) 전환
+            if cmc_id and (not cmc_id.isdigit() or int(cmc_id) >= 100000000):
                 cmc_id = None
 
         # --- 장부 기록 ---
@@ -255,8 +273,12 @@ def execute_cmc_requests(id_lookup, sym_lookup, api_key=None):
             (url, headers, {"id": ",".join(id_lookup), "convert": "USD"})
         )
 
-    # 심볼 묶음 생성 (200개씩 청크)
-    sym_list = [str(s).strip() for s in sym_lookup if s]
+    # 심볼 묶음 생성 (CMC API가 허용하는 1~20자 영어, 숫자 규격만 200개씩 청크)
+    sym_list = [
+        str(s).strip()
+        for s in sym_lookup
+        if s and re.match(r"^[A-Za-z0-9]{1,20}$", str(s).strip())
+    ]
     for i in range(0, len(sym_list), 200):
         chunk = sym_list[i : i + 200]
         if chunk:
@@ -297,10 +319,13 @@ def execute_cmc_requests(id_lookup, sym_lookup, api_key=None):
                     or q.get("fully_diluted_market_cap")
                 )
 
+                fdv = float(q.get("fully_diluted_market_cap") or 0.0)
+
                 # builder ~ 공통 데이터 맵 만들기
                 asset_info = {
                     "name": name,
                     "market_cap": mcap,
+                    "fdv": fdv,
                     "cmc_price": q.get("price"),
                     "volume_24h": q.get("volume_24h"),
                     "ucid": ucid_str,

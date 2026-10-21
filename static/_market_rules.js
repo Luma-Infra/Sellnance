@@ -213,19 +213,19 @@ export function getRowDisplayMetrics(row, isKrwMode = null, rate = null) {
       displayPrice = row.Price_KRW || (row.Price_Raw || 0) * rate;
     }
   } else {
-    // [USD 모드: 1.바낸 선물 ➔ 2.업비트 현물(환산가) ➔ 3.빗썸 현물(환산가) ➔ 4.바낸 현물 ➔ 5.바이빗(선물/현물)]
+    // [USD 모드: 1.바낸 선물 ➔ 2.업비트 현물(환산가) ➔ 3.바낸 현물 ➔ 4.빗썸 현물(환산가) ➔ 5.바이빗(선물/현물)]
     if (binanceFuturesP !== null && binanceFuturesP > 0) {
       activeExchange = "binance";
       displayPrice = binanceFuturesP;
     } else if (upbitP !== null && upbitP > 0) {
       activeExchange = "upbit";
       displayPrice = rate > 0 ? upbitP / rate : upbitP;
-    } else if (bithumbP !== null && bithumbP > 0) {
-      activeExchange = "bithumb";
-      displayPrice = rate > 0 ? bithumbP / rate : bithumbP;
     } else if (binanceSpotP !== null && binanceSpotP > 0) {
       activeExchange = "binance";
       displayPrice = binanceSpotP;
+    } else if (bithumbP !== null && bithumbP > 0) {
+      activeExchange = "bithumb";
+      displayPrice = rate > 0 ? bithumbP / rate : bithumbP;
     } else if (bybitFuturesP !== null && bybitFuturesP > 0) {
       activeExchange = "bybit";
       displayPrice = bybitFuturesP;

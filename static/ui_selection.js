@@ -9,6 +9,101 @@ import { getExchangeLogo } from "./table_tooltips.js";
 let pendingSelectRaf = null;
 let pendingSelectTimeout = null;
 
+export function updateHeaderAssetName(
+  rowInfo,
+  uniqueTicker,
+  parsedSymbol = null,
+) {
+  const headAssetNames = document.querySelectorAll(
+    "#head-asset-name, #head-asset-name-pc",
+  );
+  if (!headAssetNames || headAssetNames.length === 0) return;
+
+  let contentHtml = "";
+  if (rowInfo) {
+    const favorites = JSON.parse(
+      localStorage.getItem("sellnance_favs") || "[]",
+    );
+    const favorites2 = JSON.parse(
+      localStorage.getItem("sellnance_favs2") || "[]",
+    );
+    const isFav = favorites.includes(rowInfo.UID);
+    const isFav2 = favorites2.includes(rowInfo.UID);
+
+    let starText = "☆";
+    let starColor = "gray";
+    let starClass = "";
+    if (isFav) {
+      starText = "★";
+      starColor = "#e3b30a"; // 노란색 고정
+      starClass = "active";
+    } else if (isFav2) {
+      starText = "★";
+      starColor = "#3b82f6";
+      starClass = "active-blue";
+    }
+
+    const defaultDeerFallback = `<img src="${document.body?.classList.contains("theme-upbit") ? "/static/luma-deer-svg-light.svg" : "/static/luma-deer-svg-dark.svg"}" class="fallback-logo" loading="lazy" style="width: 24px; height: 24px; vertical-align: middle; border-radius: 50%;">`;
+    const logoHtml = rowInfo.Logo || defaultDeerFallback;
+    const pureSym = getPureBase(
+      rowInfo.Symbol || rowInfo.DisplayTicker || rowInfo.Ticker,
+    );
+    const rawName =
+      (store.lang === "KR" ? rowInfo.Name_KR || rowInfo.Name : rowInfo.Name) ||
+      "";
+    const nameStr = rawName
+      .replace(/\s*[\(\（\[][^\)\）\]]*[\)\）\]]/g, "")
+      .trim();
+    // 전용: [Symbol | Name] (예: 龙虾 | LONGXIA(lobster)) 원본 괄호 포함 표기
+    const pcText = rawName ? `${pureSym} | ${rawName}` : pureSym;
+    const len = pcText.length;
+    // 수학적 로그 방식 적용: 10글자 초과 시 길이에 반비례하여 부드럽게 폰트 크기 축소
+    let fontSizeStyle = "";
+    const fs = CONFIG.FONT_SCALE;
+
+    if (fs && len > fs.ASSET_THRESHOLD) {
+      const sizeRem = Math.max(
+        fs.ASSET_MIN_REM,
+        fs.ASSET_BASE_REM -
+          Math.log10(len / fs.ASSET_THRESHOLD) * fs.ASSET_LOG_MULT,
+      );
+      fontSizeStyle = `style="font-size: ${sizeRem.toFixed(3)}rem; line-height: 1.1; white-space: nowrap;"`;
+    } else {
+      fontSizeStyle = `style="white-space: nowrap;"`;
+    }
+
+    contentHtml = `
+      <div class="flex items-center gap-2">
+        <button onclick="window.toggleFavorite('${rowInfo.UID}', event, true);" class="star-btn text-[16px] transition-all hover:scale-125 flex-shrink-0 ${starClass}" style="color: ${starColor}">
+          ${starText}
+        </button>
+        <div class="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-white/5 rounded-full overflow-hidden">
+          ${logoHtml}
+        </div>
+        <!-- PC 전용 (>=1200px): [Symbol | Name] 단일 라인 표기 -->
+        <span class="hidden min-[1200px]:inline truncate font-extrabold text-theme-accent" title="${pcText}" ${fontSizeStyle}>${pcText}</span>
+        <!-- 모바일 전용 (<1200px): 코인 이름 2단 정렬 -->
+        <div class="flex flex-col min-[1200px]:hidden leading-none min-w-0">
+          <span class="text-base sm:text-lg font-extrabold tracking-wide truncate leading-tight text-theme-accent">${pureSym}</span>
+          ${nameStr ? `<span class="text-[10px] text-theme-text/60 font-medium tracking-tight truncate leading-tight mt-0.5">${nameStr}</span>` : ""}
+        </div>
+      </div>
+    `;
+  } else {
+    // [신규] rowInfo 로드 대기 중(직접 URL 진입 등)에도 기본 심볼 표기
+    const pureSym = getPureBase(uniqueTicker || parsedSymbol);
+    contentHtml = `
+      <div class="flex items-center gap-2">
+        <span style="white-space: nowrap;">${pureSym}</span>
+      </div>
+    `;
+  }
+
+  headAssetNames.forEach((el) => {
+    el.innerHTML = contentHtml;
+  });
+}
+
 export function selectSymbol(
   s,
   forceMarket = null,
@@ -222,6 +317,7 @@ export function selectSymbol(
   store.isFetchingChart = true;
   window.isFetchingChart = true;
   store.isUserZoomed = false;
+  store.activeCandleFallback = null;
   store.currentAsset = uniqueTicker;
   store.currentSelectedSymbol = uniqueTicker;
   store.currentSelectedUid = rowInfo ? rowInfo.UID : targetUid || null;
@@ -233,33 +329,7 @@ export function selectSymbol(
     window.addRecentSearch(uniqueTicker);
   }
 
-  // 선택된 코인은 화면 가시 영역(30위 바깥)과 상관없이 실시간 시세 구독에 등록
-  if (store.visibleSymbols) {
-    store.visibleSymbols.add(uniqueTicker);
-    if (rowInfo?.Ticker) store.visibleSymbols.add(rowInfo.Ticker);
-    if (rowInfo?.DisplayTicker) store.visibleSymbols.add(rowInfo.DisplayTicker);
-    if (rowInfo?.Symbol) store.visibleSymbols.add(rowInfo.Symbol);
-    if (typeof window.syncSniperSubscriptions === "function") {
-      window.syncSniperSubscriptions();
-    }
-  }
-
-  // 테이블 행이 DOM에 이미 생성되어 있고, 마켓 스위칭이 아닐 때만 동적 지표(Day/24h) 동기화
-  const isMarketSwitchOnly =
-    forceMarket !== null &&
-    (store.currentSelectedSymbol === uniqueTicker ||
-      (rowInfo && String(store.currentSelectedUid) === String(rowInfo.UID)));
-  // if (!isMarketSwitchOnly) {
-  //   const rowEl =
-  //     store.rowDomMap?.get(uniqueTicker) ||
-  //     (rowInfo?.Ticker ? store.rowDomMap?.get(rowInfo.Ticker) : null) ||
-  //     (rowInfo?.DisplayTicker ? store.rowDomMap?.get(rowInfo.DisplayTicker) : null);
-  //   if (rowEl && rowInfo && typeof window.updateRowDynamicHTML === "function") {
-  //     window.updateRowDynamicHTML(rowEl, rowInfo, false);
-  //   }
-  // }
-
-  // 주소창 해시 연동 (라우팅 최적화)
+  // 마켓 우선순위 선제 확정
   let tempMarket = forceMarket || parsedMarket;
   if (tempMarket === "BINANCE") tempMarket = "SPOT";
   if (tempMarket === "BINANCE_FUTURES") tempMarket = "FUTURES";
@@ -291,6 +361,43 @@ export function selectSymbol(
   if (!tempMarket) {
     tempMarket = getChartDefaultMarket(rowInfo);
   }
+  store.currentChartMarket = tempMarket;
+
+  // [헤더 동기화] 코인 이름/티커/로고/별표 + 거래소 뱃지 + 가격/시총/등락률 전광판을 동일 시점에 갱신
+  updateHeaderAssetName(rowInfo, uniqueTicker, parsedSymbol);
+  updateExchangeBadges(uniqueTicker, rowInfo ? rowInfo.UID : null);
+
+  // 코인 클릭 시점에 헤더 전광판(Mcap/FDV/가격) 변경
+  if (rowInfo && typeof window.realUpdateHeaderDisplay === "function") {
+    const p =
+      typeof store.getPrecision === "function"
+        ? store.getPrecision(uniqueTicker)
+        : 2;
+    window.realUpdateHeaderDisplay(
+      rowInfo,
+      undefined,
+      p,
+      false,
+      "CLICK_IMMEDIATE",
+    );
+  }
+
+  // 선택된 코인은 화면 가시 영역(30위 바깥)과 상관없이 실시간 시세 구독에 등록
+  if (store.visibleSymbols) {
+    store.visibleSymbols.add(uniqueTicker);
+    if (rowInfo?.Ticker) store.visibleSymbols.add(rowInfo.Ticker);
+    if (rowInfo?.DisplayTicker) store.visibleSymbols.add(rowInfo.DisplayTicker);
+    if (rowInfo?.Symbol) store.visibleSymbols.add(rowInfo.Symbol);
+    if (typeof window.syncSniperSubscriptions === "function") {
+      window.syncSniperSubscriptions();
+    }
+  }
+
+  // 마켓 스위칭(선물/현물 전환) 여부 판별
+  const isMarketSwitchOnly =
+    forceMarket !== null &&
+    (store.currentSelectedSymbol === uniqueTicker ||
+      (rowInfo && String(store.currentSelectedUid) === String(rowInfo.UID)));
 
   const symbolOnly = rowInfo ? rowInfo.Symbol : parsedSymbol;
   const futuresSymbol =
@@ -355,8 +462,8 @@ export function selectSymbol(
           null,
           targetPath,
         );
-      } else {
-        // 모바일 목록에서 처음 차트로 진입할 때만 1단계 스택 푸시
+      } else if (isRowClick) {
+        // 사용자가 모바일 목록에서 행(코인)을 직접 터치하여 차트를 여는 경우만 스택 푸시
         if (
           !window.history.state ||
           window.history.state.mobileTab !== "list"
@@ -368,6 +475,15 @@ export function selectSymbol(
           null,
           targetPath,
         );
+      } else {
+        // 모바일 목록 화면인 상태에서(초기 로딩 등) 사용자가 차트를 연 것이 아니라면
+        // URL에 코인 심볼을 강제로 붙이지 않고 루트 목록('/') 상태를 보존
+        if (
+          !window.history.state ||
+          window.history.state.mobileTab !== "list"
+        ) {
+          window.history.replaceState({ mobileTab: "list" }, null, "/");
+        }
       }
     } else {
       // 데스크탑 PC 환경: 코인을 클릭할 때 히스토리 스택을 쌓지 않고 URL만 교체 (뒤로가기 시 이전 웹사이트로 즉시 복귀)
@@ -407,111 +523,11 @@ export function selectSymbol(
     applySelectedHighlight();
   }
 
-  // [INP 최적화] 무거운 배열 탐색, DOM 재생성, API 통신, 차트 렌더링(fetchHistory)을 다음 페인트 이후로 양보(Yielding)
+  // [INP 최적화] 무거운 배열 탐색, 차트 렌더링(fetchHistory)을 다음 페인트 이후로 양보(Yielding)
   pendingSelectRaf = requestAnimationFrame(() => {
     pendingSelectTimeout = setTimeout(() => {
       pendingSelectRaf = null;
       pendingSelectTimeout = null;
-      // 마켓 우선순위 결정
-      store.currentChartMarket = tempMarket || getChartDefaultMarket(rowInfo);
-
-      const p = store.getPrecision(uniqueTicker);
-      const headAssetNames = document.querySelectorAll(
-        "#head-asset-name, #head-asset-name-pc",
-      );
-
-      if (headAssetNames.length > 0) {
-        let contentHtml = "";
-        if (rowInfo) {
-          const favorites = JSON.parse(
-            localStorage.getItem("sellnance_favs") || "[]",
-          );
-          const favorites2 = JSON.parse(
-            localStorage.getItem("sellnance_favs2") || "[]",
-          );
-          const isFav = favorites.includes(rowInfo.UID);
-          const isFav2 = favorites2.includes(rowInfo.UID);
-
-          let starText = "☆";
-          let starColor = "gray";
-          let starClass = "";
-          if (isFav) {
-            starText = "★";
-            starColor = "#e3b30a"; // 노란색 고정
-            starClass = "active";
-          } else if (isFav2) {
-            starText = "★";
-            starColor = "#3b82f6";
-            starClass = "active-blue";
-          }
-
-          const defaultDeerFallback = `<img src="${document.body?.classList.contains("theme-upbit") ? "/static/luma-deer-svg-light.svg" : "/static/luma-deer-svg-dark.svg"}" class="fallback-logo" loading="lazy" style="width: 24px; height: 24px; vertical-align: middle; border-radius: 50%;">`;
-          const logoHtml = rowInfo.Logo || defaultDeerFallback;
-          const pureSym = getPureBase(
-            rowInfo.Symbol || rowInfo.DisplayTicker || rowInfo.Ticker,
-          );
-          const rawName =
-            (store.lang === "KR"
-              ? rowInfo.Name_KR || rowInfo.Name
-              : rowInfo.Name) || "";
-          const nameStr = rawName
-            .replace(/\s*[\(\（\[][^\)\）\]]*[\)\）\]]/g, "")
-            .trim();
-          // 전용: [Symbol | Name] (예: 龙虾 | LONGXIA(lobster)) 원본 괄호 포함 표기
-          const pcText = rawName ? `${pureSym} | ${rawName}` : pureSym;
-          const len = pcText.length;
-          // 수학적 로그 방식 적용: 10글자 초과 시 길이에 반비례하여 부드럽게 폰트 크기 축소
-          let fontSizeStyle = "";
-          const fs = CONFIG.FONT_SCALE;
-
-          if (fs && len > fs.ASSET_THRESHOLD) {
-            const sizeRem = Math.max(
-              fs.ASSET_MIN_REM,
-              fs.ASSET_BASE_REM -
-                Math.log10(len / fs.ASSET_THRESHOLD) * fs.ASSET_LOG_MULT,
-            );
-            fontSizeStyle = `style="font-size: ${sizeRem.toFixed(3)}rem; line-height: 1.1; white-space: nowrap;"`;
-          } else {
-            fontSizeStyle = `style="white-space: nowrap;"`;
-          }
-
-          contentHtml = `
-            <div class="flex items-center gap-2">
-              <button onclick="window.toggleFavorite('${rowInfo.UID}', event, true);" class="star-btn text-[16px] transition-all hover:scale-125 flex-shrink-0 ${starClass}" style="color: ${starColor}">
-                ${starText}
-              </button>
-              <div class="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-white/5 rounded-full overflow-hidden">
-                ${logoHtml}
-              </div>
-              <!-- PC 전용 (>=1200px): [Symbol | Name] 단일 라인 표기 -->
-              <span class="hidden min-[1200px]:inline truncate font-extrabold text-theme-accent" title="${pcText}" ${fontSizeStyle}>${pcText}</span>
-              <!-- 모바일 전용 (<1200px): 코인 이름을 아랫줄 2단으로 정렬 -->
-              <div class="flex flex-col min-[1200px]:hidden leading-none min-w-0">
-                <span class="text-base sm:text-lg font-extrabold tracking-wide truncate leading-tight text-theme-accent">${pureSym}</span>
-                ${nameStr ? `<span class="text-[10px] text-theme-text/60 font-medium tracking-tight truncate leading-tight mt-0.5">${nameStr}</span>` : ""}
-              </div>
-            </div>
-          `;
-        } else {
-          // [신규] rowInfo 로드 대기 중(직접 URL 진입 등)에도 기본 깔끔한 심볼 표기
-          const pureSym = getPureBase(uniqueTicker || parsedSymbol);
-          contentHtml = `
-            <div class="flex items-center gap-2">
-              <span style="white-space: nowrap;">${pureSym}</span>
-            </div>
-          `;
-        }
-
-        headAssetNames.forEach((el) => {
-          el.innerHTML = contentHtml;
-        });
-
-        if (typeof window.updateHeaderDisplay === "function") {
-          window.updateHeaderDisplay(rowInfo, undefined, p);
-        }
-      }
-
-      updateExchangeBadges(uniqueTicker, rowInfo ? rowInfo.UID : null);
 
       // 호가창(Orderbook) 업데이트 (호가창 패널이 열려 있을 경우 자동 재연결)
       const chartTargetSym =
@@ -750,6 +766,12 @@ export function updateExchangeBadges(s, targetUid = null) {
         condition:
           !isAlpha &&
           Boolean(rowInfo.Listed_Exchanges?.includes("BINANCE_SPOT")),
+        isListed: Boolean(
+          rowInfo.Binance === "O" ||
+          rowInfo.Listed_Exchanges?.includes("BINANCE_SPOT") ||
+          rowInfo.Listed_Exchanges?.includes("BINANCE") ||
+          rowInfo.Exact_Spot,
+        ),
       },
       {
         id: "B-FUT",
@@ -760,6 +782,11 @@ export function updateExchangeBadges(s, targetUid = null) {
         condition:
           !isStock &&
           Boolean(rowInfo.Listed_Exchanges?.includes("BINANCE_FUTURES")),
+        isListed: Boolean(
+          rowInfo.Binance_Futures === "O" ||
+          rowInfo.Listed_Exchanges?.includes("BINANCE_FUTURES") ||
+          rowInfo.Exact_Futures,
+        ),
       },
       {
         id: "B-ALPHA",
@@ -768,6 +795,7 @@ export function updateExchangeBadges(s, targetUid = null) {
         market: "SPOT",
         type: "ALPHA",
         condition: isAlpha,
+        isListed: isAlpha,
       },
       {
         id: "B-STOCK",
@@ -776,6 +804,7 @@ export function updateExchangeBadges(s, targetUid = null) {
         market: "FUTURES",
         type: "STOCK",
         condition: isStock,
+        isListed: isStock,
       },
       {
         id: "UPBIT",
@@ -783,7 +812,16 @@ export function updateExchangeBadges(s, targetUid = null) {
         cmcId: 351,
         market: "UPBIT",
         type: null,
-        condition: Boolean(rowInfo.Listed_Exchanges?.includes("UPBIT")),
+        condition: Boolean(
+          rowInfo.Listed_Exchanges?.includes("UPBIT") ||
+          rowInfo.Upbit === "O" ||
+          Number(rowInfo.Upbit_Price) > 0,
+        ),
+        isListed: Boolean(
+          rowInfo.Listed_Exchanges?.includes("UPBIT") ||
+          rowInfo.Upbit === "O" ||
+          Number(rowInfo.Upbit_Price) > 0,
+        ),
       },
       {
         id: "BITHUMB",
@@ -791,7 +829,16 @@ export function updateExchangeBadges(s, targetUid = null) {
         cmcId: 200,
         market: "BITHUMB",
         type: null,
-        condition: Boolean(rowInfo.Listed_Exchanges?.includes("BITHUMB")),
+        condition: Boolean(
+          rowInfo.Listed_Exchanges?.includes("BITHUMB") ||
+          rowInfo.Bithumb === "O" ||
+          Number(rowInfo.Bithumb_Price) > 0,
+        ),
+        isListed: Boolean(
+          rowInfo.Listed_Exchanges?.includes("BITHUMB") ||
+          rowInfo.Bithumb === "O" ||
+          Number(rowInfo.Bithumb_Price) > 0,
+        ),
       },
       {
         id: "BYBIT-SPOT",
@@ -800,6 +847,11 @@ export function updateExchangeBadges(s, targetUid = null) {
         market: "BYBIT",
         type: "SPOT",
         condition: Boolean(rowInfo.Listed_Exchanges?.includes("BYBIT_SPOT")),
+        isListed: Boolean(
+          rowInfo.Listed_Exchanges?.includes("BYBIT_SPOT") ||
+          rowInfo.Listed_Exchanges?.includes("BYBIT") ||
+          Number(rowInfo.Bybit_Price_Spot) > 0,
+        ),
       },
       {
         id: "BYBIT-FUT",
@@ -808,37 +860,79 @@ export function updateExchangeBadges(s, targetUid = null) {
         market: "BYBIT_FUTURES",
         type: "FUTURE",
         condition: Boolean(rowInfo.Listed_Exchanges?.includes("BYBIT_FUTURES")),
+        isListed: Boolean(
+          rowInfo.Listed_Exchanges?.includes("BYBIT_FUTURES") ||
+          rowInfo.Bybit_Futures === "O" ||
+          Number(rowInfo.Bybit_Price_Futures) > 0,
+        ),
       },
       {
-        id: "GATE-SPOT",
-        name: "Gate.io 현물",
-        cmcId: 302,
-        market: "GATE_SPOT",
+        id: "BITGET-SPOT",
+        name: "비트겟 현물",
+        cmcId: 513,
+        market: "BITGET_SPOT",
         type: "SPOT",
-        condition: ["BTC", "ETH", "XRP"].includes(
-          rowInfo.Symbol?.toUpperCase(),
+        condition: false, // 여전히 선택은 미지원
+        isListed: Boolean(
+          rowInfo.Listed_Exchanges?.includes("BITGET_SPOT") ||
+          rowInfo.Listed_Exchanges?.includes("BITGET"),
         ),
-        isBeta: true,
       },
       {
-        id: "GATE-FUT",
-        name: "Gate.io 선물",
-        cmcId: 302,
-        market: "GATE_FUTURES",
+        id: "BITGET-FUT",
+        name: "비트겟 선물",
+        cmcId: 513,
+        market: "BITGET_FUTURES",
         type: "FUTURE",
-        condition: ["BTC", "ETH", "XRP"].includes(
-          rowInfo.Symbol?.toUpperCase(),
-        ),
-        isBeta: true,
+        condition: false, // 여전히 선택은 미지원
+        isListed: Boolean(rowInfo.Listed_Exchanges?.includes("BITGET_FUTURES")),
       },
     ];
 
-    // 활성 거래소(좌측 우선) -> 비활성 거래소(우측 순차) 정렬
-    // (B-ALPHA와 B-STOCK은 해당 코인이 아닐 때 비활성 버튼으로 불필요하게 낭비되지 않도록 필터링)
+    // [게이트아이오(Gate.io)]: BTC, ETH 실험적 베타 코인에서만 beta 유지 노출
+    // 그 외 일반 코인은 노출 안하며 비트겟 자리로 대체
+    if (["BTC", "ETH"].includes(rowInfo.Symbol?.toUpperCase())) {
+      list.push(
+        {
+          id: "GATE-SPOT",
+          name: "Gate.io 현물",
+          cmcId: 302,
+          market: "GATE_SPOT",
+          type: "SPOT",
+          condition: true,
+          isListed: true,
+          isBeta: true,
+        },
+        {
+          id: "GATE-FUT",
+          name: "Gate.io 선물",
+          cmcId: 302,
+          market: "GATE_FUTURES",
+          type: "FUTURE",
+          condition: true,
+          isListed: true,
+          isBeta: true,
+        },
+      );
+    }
+
+    // [3단 UI/UX 정렬]:
+    // 1단: 차트 지원 거래소 (클릭 가능)
+    // 2단: 상장되어 있으나 차트 미지원 거래소 (고유 색상 유지 + 투명도 30% + 클릭 불가)
+    // 3단: 미상장 거래소 (흑백 그레이스케일 + 투명도 15% + 점선 테두리)
     const sortedList = [
       ...list.filter((item) => item.condition),
       ...list.filter(
-        (item) => !item.condition && !["B-ALPHA", "B-STOCK"].includes(item.id),
+        (item) =>
+          !item.condition &&
+          item.isListed &&
+          !["B-ALPHA", "B-STOCK"].includes(item.id),
+      ),
+      ...list.filter(
+        (item) =>
+          !item.condition &&
+          !item.isListed &&
+          !["B-ALPHA", "B-STOCK"].includes(item.id),
       ),
     ];
 
@@ -870,7 +964,20 @@ export function updateExchangeBadges(s, targetUid = null) {
             ? rawFallback
             : null;
 
-        if ((item.id === "B-SPOT" || item.id === "B-ALPHA") && fallbackEx) {
+        const isLegitBinanceTarget =
+          item.id === "B-ALPHA"
+            ? isAlpha
+            : Boolean(
+                rowInfo.Listed_Exchanges?.includes("BINANCE_SPOT") ||
+                rowInfo.Binance === "O" ||
+                rowInfo.Exact_Spot,
+              );
+
+        if (
+          isLegitBinanceTarget &&
+          (item.id === "B-SPOT" || item.id === "B-ALPHA") &&
+          fallbackEx
+        ) {
           const FALLBACK_META_MAP = {
             BITGET: { name: "비트겟", short: "BITGET", cmcId: 513 },
             BITHUMB: { name: "빗썸", short: "BITHUMB", cmcId: 200 },
@@ -896,7 +1003,7 @@ export function updateExchangeBadges(s, targetUid = null) {
               <!-- A: 바이낸스 -->
               <div class="relative w-5 h-5 shrink-0 flex items-center justify-center">
                 <img src="${imgUrl}" alt="BINANCE" class="w-full h-full object-contain rounded" />
-                <span class="absolute min-[1200px]:-top-1.5 min-[1200px]:-right-1.5 max-[1199px]:-top-1 max-[1199px]:right-0 bg-purple-600 text-white text-[7px] max-[1199px]:text-[7.5px] px-1 py-0.2 rounded-full font-bold leading-none shadow-sm border border-purple-400/50 select-none">α</span>
+                <span class="absolute min-[1200px]:-top-1.5 min-[1200px]:left-1/2 -translate-x-1/2 max-[1199px]:-top-1 max-[1199px]:right-0 bg-purple-600 text-white text-[7px] max-[1199px]:text-[7.5px] px-1 py-0.2 rounded-full font-bold leading-none shadow-sm border border-purple-400/50 select-none">α</span>
               </div>
 
               <!-- A to B 연결 화살표 -->
@@ -912,25 +1019,25 @@ export function updateExchangeBadges(s, targetUid = null) {
           return;
         }
 
-        // 활성 거래소 배지
+        // 1단: 활성 거래소 배지 (차트 지원 - 풀 컬러 & 클릭 가능)
         const ringClass = isCurrentActive
           ? "ring-2 ring-white scale-105 shadow-lg brightness-110 opacity-100"
           : "opacity-60 hover:opacity-100 hover:scale-105";
 
         let typeBadge = "";
         if (item.type === "SPOT") {
-          typeBadge = `<div class="absolute -bottom-1 -right-1.5 bg-zinc-900 text-white text-[8px] px-1.5 py-0.5 rounded-[3px] border border-white/30 leading-none font-black shadow-[0_1px_3px_rgba(0,0,0,0.5)] whitespace-nowrap select-none tracking-tight">SPOT</div>`;
+          typeBadge = `<div class="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-zinc-900 text-white text-[8px] px-1.5 py-0.5 rounded-[3px] border border-white/30 leading-none font-black shadow-[0_1px_3px_rgba(0,0,0,0.5)] whitespace-nowrap select-none tracking-tight">SPOT</div>`;
         } else if (item.type === "FUTURE") {
-          typeBadge = `<div class="absolute -bottom-1 -right-1.5 bg-[#f0b90b] text-black text-[8px] px-1.5 py-0.5 rounded-[3px] leading-none font-black shadow-[0_1px_3px_rgba(0,0,0,0.5)] whitespace-nowrap select-none tracking-tight">FUTURE</div>`;
+          typeBadge = `<div class="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-[#f0b90b] text-black text-[8px] px-1.5 py-0.5 rounded-[3px] leading-none font-black shadow-[0_1px_3px_rgba(0,0,0,0.5)] whitespace-nowrap select-none tracking-tight">FUTURE</div>`;
         } else if (item.type === "ALPHA") {
-          typeBadge = `<div class="absolute -bottom-1 -right-1.5 bg-purple-600 text-white text-[8px] px-1.5 py-0.5 rounded-[3px] border border-purple-400/40 leading-none font-black shadow-[0_1px_3px_rgba(0,0,0,0.5)] whitespace-nowrap select-none tracking-tight">ALPHA</div>`;
+          typeBadge = `<div class="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-purple-600 text-white text-[8px] px-1.5 py-0.5 rounded-[3px] border border-purple-400/40 leading-none font-black shadow-[0_1px_3px_rgba(0,0,0,0.5)] whitespace-nowrap select-none tracking-tight">ALPHA</div>`;
         } else if (item.type === "STOCK") {
-          typeBadge = `<div class="absolute -bottom-1 -right-1.5 bg-blue-600 text-white text-[8px] px-1.5 py-0.5 rounded-[3px] border border-blue-400/40 leading-none font-black shadow-[0_1px_3px_rgba(0,0,0,0.5)] whitespace-nowrap select-none tracking-tight">STOCK</div>`;
+          typeBadge = `<div class="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[8px] px-1.5 py-0.5 rounded-[3px] border border-blue-400/40 leading-none font-black shadow-[0_1px_3px_rgba(0,0,0,0.5)] whitespace-nowrap select-none tracking-tight">STOCK</div>`;
         }
 
         let topBadge = "";
         if (item.isBeta) {
-          topBadge = `<div class="absolute -top-1.5 -right-1.5 bg-blue-600 text-white text-[8px] px-1.5 py-0.5 rounded-full flex items-center justify-center font-bold leading-none shadow-[0_1px_3px_rgba(0,0,0,0.5)] select-none z-10 border border-blue-400/50 whitespace-nowrap">beta</div>`;
+          topBadge = `<div class="absolute -top-1.5 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[8px] px-1.5 py-0.5 rounded-full flex items-center justify-center font-bold leading-none shadow-[0_1px_3px_rgba(0,0,0,0.5)] select-none z-10 border border-blue-400/50 whitespace-nowrap">beta</div>`;
         }
 
         badges += `
@@ -942,24 +1049,45 @@ export function updateExchangeBadges(s, targetUid = null) {
             ${typeBadge}
           </button>
         `;
-      } else {
-        // 비활성 거래소 배지 (미상장/미지원) - 어둡게 + 클릭 금지 + 점선 테두리
+      } else if (item.isListed) {
+        // 2단: 상장 거래소 배지 (해당 거래소에 상장되어 있으나 차트 미제공 - 원래 색상 유지 + 투명도 30% + 클릭 불가)
         let typeBadge = "";
         if (item.type === "SPOT") {
-          typeBadge = `<div class="absolute -bottom-1 -right-1.5 bg-zinc-800 text-zinc-400 text-[8px] px-1.5 py-0.5 rounded-[3px] border border-zinc-700/50 leading-none font-black opacity-60 whitespace-nowrap select-none tracking-tight">SPOT</div>`;
+          typeBadge = `<div class="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-zinc-900 text-white text-[8px] px-1.5 py-0.5 rounded-[3px] border border-white/20 leading-none font-bold opacity-80 whitespace-nowrap select-none tracking-tight">SPOT</div>`;
         } else if (item.type === "FUTURE") {
-          typeBadge = `<div class="absolute -bottom-1 -right-1.5 bg-zinc-800 text-zinc-400 text-[8px] px-1.5 py-0.5 rounded-[3px] border border-zinc-700/50 leading-none font-black opacity-60 whitespace-nowrap select-none tracking-tight">FUT</div>`;
+          typeBadge = `<div class="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-[#f0b90b] text-black text-[8px] px-1.5 py-0.5 rounded-[3px] leading-none font-bold opacity-80 whitespace-nowrap select-none tracking-tight">FUTURE</div>`;
         } else if (item.type === "ALPHA") {
-          typeBadge = `<div class="absolute -bottom-1 -right-1.5 bg-zinc-800 text-zinc-400 text-[8px] px-1.5 py-0.5 rounded-[3px] border border-zinc-700/50 leading-none font-black opacity-60 whitespace-nowrap select-none tracking-tight">ALPHA</div>`;
+          typeBadge = `<div class="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-purple-600 text-white text-[8px] px-1.5 py-0.5 rounded-[3px] leading-none font-bold opacity-80 whitespace-nowrap select-none tracking-tight">ALPHA</div>`;
         } else if (item.type === "STOCK") {
-          typeBadge = `<div class="absolute -bottom-1 -right-1.5 bg-zinc-800 text-zinc-400 text-[8px] px-1.5 py-0.5 rounded-[3px] border border-zinc-700/50 leading-none font-black opacity-60 whitespace-nowrap select-none tracking-tight">STOCK</div>`;
+          typeBadge = `<div class="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[8px] px-1.5 py-0.5 rounded-[3px] leading-none font-bold opacity-80 whitespace-nowrap select-none tracking-tight">STOCK</div>`;
         }
 
         badges += `
           <button disabled
-                  title="${item.name} (미지원/미상장)"
-                  class="relative flex items-center justify-center p-1 border border-dashed border-theme-border/25 rounded-xl w-8 h-8 min-w-[32px] min-h-[32px] shrink-0 flex-shrink-0 opacity-20 grayscale brightness-50 cursor-not-allowed select-none pointer-events-none">
-            <img src="${imgUrl}" alt="${item.id}" class="w-full h-full object-contain rounded opacity-40" />
+                  title="${item.name}, 상장 거래소이지만 아직 차트는 지원하지 않아요"
+                  class="relative flex items-center justify-center p-1 border border-theme-border/40 rounded-xl w-8 h-8 min-w-[32px] min-h-[32px] shrink-0 flex-shrink-0 opacity-30 cursor-not-allowed select-none transition-all">
+            <img src="${imgUrl}" alt="${item.id}" class="w-full h-full object-contain rounded" />
+            ${typeBadge}
+          </button>
+        `;
+      } else {
+        // 3단: 비활성 거래소 배지 (미상장) - 흑백 그레이스케일 + 투명도 15% + 점선 테두리
+        let typeBadge = "";
+        if (item.type === "SPOT") {
+          typeBadge = `<div class="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-zinc-800 text-zinc-400 text-[8px] px-1.5 py-0.5 rounded-[3px] border border-zinc-700/50 leading-none font-black opacity-60 whitespace-nowrap select-none tracking-tight">SPOT</div>`;
+        } else if (item.type === "FUTURE") {
+          typeBadge = `<div class="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-zinc-800 text-zinc-400 text-[8px] px-1.5 py-0.5 rounded-[3px] border border-zinc-700/50 leading-none font-black opacity-60 whitespace-nowrap select-none tracking-tight">FUTURE</div>`;
+        } else if (item.type === "ALPHA") {
+          typeBadge = `<div class="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-zinc-800 text-zinc-400 text-[8px] px-1.5 py-0.5 rounded-[3px] border border-zinc-700/50 leading-none font-black opacity-60 whitespace-nowrap select-none tracking-tight">ALPHA</div>`;
+        } else if (item.type === "STOCK") {
+          typeBadge = `<div class="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-zinc-800 text-zinc-400 text-[8px] px-1.5 py-0.5 rounded-[3px] border border-zinc-700/50 leading-none font-black opacity-60 whitespace-nowrap select-none tracking-tight">STOCK</div>`;
+        }
+
+        badges += `
+          <button disabled
+                  title="${item.name} (미상장)"
+                  class="relative flex items-center justify-center p-1 border border-dashed border-theme-border/25 rounded-xl w-8 h-8 min-w-[32px] min-h-[32px] shrink-0 flex-shrink-0 opacity-15 grayscale brightness-50 cursor-not-allowed select-none pointer-events-none">
+            <img src="${imgUrl}" alt="${item.id}" class="w-full h-full object-contain rounded opacity-30" />
             ${typeBadge}
           </button>
         `;
@@ -980,3 +1108,4 @@ export function updateExchangeBadges(s, targetUid = null) {
 
 window.selectSymbol = selectSymbol;
 window.updateExchangeBadges = updateExchangeBadges;
+window.updateHeaderAssetName = updateHeaderAssetName;
