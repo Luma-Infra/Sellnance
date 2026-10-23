@@ -249,7 +249,12 @@ export function processTableData(result) {
 
     if (exists && typeof window.selectSymbol === "function") {
       if (store.currentSelectedSymbol !== targetSym || !store.currentAsset) {
-        window.selectSymbol(targetSym, store.currentChartMarket);
+        // [개선] 초기 진입/새로고침 시 store.currentChartMarket이 'ALL'이면 URL에 명시된 마켓(_FUTURES, _SPOT 등)이 우선되도록 null 전달
+        const preferredMkt =
+          store.currentChartMarket && store.currentChartMarket !== "ALL"
+            ? store.currentChartMarket
+            : null;
+        window.selectSymbol(targetSym, preferredMkt);
       }
     } else if (
       !store.currentSelectedSymbol &&
@@ -284,47 +289,17 @@ export async function loadTableData(force = false, silent = false) {
     try {
       const cachedResult = JSON.parse(cachedDataStr);
       if (cachedResult && cachedResult.data && cachedResult.data.length > 0) {
-        // [상위 30개 렌더] 최초 콜드 부팅 시에만 상위 30개 선제 노출 (기존 메모리 덮어쓰기 방지)
+        // [SWR 선제 노출] 캐시된 전체 장부를 즉시 렌더링
         let lastSortCol =
           localStorage.getItem("sellnance_last_sort_col") || "VolumeBinance";
         if (lastSortCol === "Volume") lastSortCol = "VolumeBinance";
         const lastSortState =
           localStorage.getItem("sellnance_last_sort_state") || "desc";
 
-        const sortKeyMap = {
-          MarketCap: "MarketCap_Raw",
-          Price: "Price_Raw",
-          Change_24h: "Change_24h_Raw",
-          Change_Today: "Change_Today_Raw",
-          VolumeBinance: "Volume_Raw",
-          Volume: "Volume_Raw",
-          VolumeUpbit: "Upbit_Vol",
-          Ticker: "DisplayTicker",
-          Kimchi: "Kimchi_Raw",
-          Gap: "Basis_Raw",
-          Funding: "Funding_Raw",
-          VMC: "VMC_Raw",
-        };
-        const key = sortKeyMap[lastSortCol] || lastSortCol;
-        const isAsc = lastSortState === "asc";
-        const isTextCol =
-          lastSortCol === "Ticker" || lastSortCol === "Listing_Date";
-
-        const top30 = [...cachedResult.data]
-          .sort((a, b) => {
-            const va = isTextCol ? a[key] || "" : Number(a[key]) || -Infinity;
-            const vb = isTextCol ? b[key] || "" : Number(b[key]) || -Infinity;
-            if (isTextCol)
-              return isAsc ? va.localeCompare(vb) : vb.localeCompare(va);
-            return isAsc ? va - vb : vb - va;
-          })
-          .slice(0, 30);
-
-        // store 정렬 상태 복원 (화살표 표시 등 UI 싱크)
         store.currentSortCol = lastSortCol;
         store.sortState = lastSortState;
 
-        processTableData({ ...cachedResult, data: top30 });
+        processTableData(cachedResult);
         hasCache = true;
       }
     } catch (e) {
@@ -334,9 +309,9 @@ export async function loadTableData(force = false, silent = false) {
 
   const tableLoading = document.getElementById("table-loading-indicator");
 
-  // 서버에서 전체 코인 목록 및 최신 시세 장부를 가져와 정렬 렌더링 직전까지 원형 로더 노출
+  // 서버에서 전체 코인 목록 및 최신 시세 장부를 가져와 정렬 렌더링 직전까지 원형 로더 노출 (캐시가 있으면 노출 생략)
   if (!silent) {
-    if (tableLoading) {
+    if (tableLoading && !hasCache) {
       tableLoading.classList.remove("hidden");
     } else if (modal && !hasCache) {
       modal.classList.remove("hidden");
@@ -460,8 +435,47 @@ export async function loadTableDataSilent() {
 
             needReRender = true;
           } else {
-            // [Single Source of Truth] 백엔드 최신 데이터를 통째로 머징하여 업비트/바이낸스 메인 및 빗썸/바이비트 보조 지표 동기화
-            Object.assign(row, fresh);
+            // [Single Source of Truth]
+            // 백엔드 최신 데이터를 가져오되, 실시간 활성 코인의 라이브 가격/등락률 보존
+            // 탭 sleep 후 복귀 시 일부 코인 증발 방지
+            const isLive =
+              (row.UID &&
+                String(row.UID) === String(store.currentSelectedUid)) ||
+              row.Ticker === store.currentSelectedSymbol ||
+              (row._LastRealtimeUpdate &&
+                Date.now() - row._LastRealtimeUpdate < 900000);
+
+            if (isLive) {
+              const liveBackup = {
+                Price_Raw: row.Price_Raw,
+                Price_KRW: row.Price_KRW,
+                Binance_Price_Futures: row.Binance_Price_Futures,
+                Binance_Price_Spot: row.Binance_Price_Spot,
+                Upbit_Price: row.Upbit_Price,
+                Bithumb_Price: row.Bithumb_Price,
+                Bybit_Price_Futures: row.Bybit_Price_Futures,
+                Bybit_Price_Spot: row.Bybit_Price_Spot,
+                Change_24h_Raw: row.Change_24h_Raw,
+                Change_24h_Futures: row.Change_24h_Futures,
+                Change_24h_Spot: row.Change_24h_Spot,
+                Change_24h_Upbit: row.Change_24h_Upbit,
+                Change_24h_Bithumb: row.Change_24h_Bithumb,
+                Change_Today_Raw: row.Change_Today_Raw,
+                Change_Today_Futures: row.Change_Today_Futures,
+                Change_Today_Spot: row.Change_Today_Spot,
+                Change_Today_Upbit: row.Change_Today_Upbit,
+                Change_Today_Bithumb: row.Change_Today_Bithumb,
+                _LastRealtimeUpdate: row._LastRealtimeUpdate,
+              };
+              Object.assign(row, fresh);
+              for (const [k, v] of Object.entries(liveBackup)) {
+                if (v !== undefined && v !== null) {
+                  row[k] = v;
+                }
+              }
+            } else {
+              Object.assign(row, fresh);
+            }
           }
         }
       });

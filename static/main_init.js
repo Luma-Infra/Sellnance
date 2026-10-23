@@ -6,7 +6,7 @@ import { loadSymbols } from "./chart_api.js";
 import { loadTableData } from "./table_api.js";
 import { selectSymbol, switchViewMode } from "./ui_control.js";
 import { initChart } from "./chart.js";
-import { initSniperSocket } from "./stream_table.js";
+import { initSniperSocket, RECONNECT_SECRET } from "./stream_table.js";
 import { initMeasureEvents } from "./chart_measure.js";
 import { initDrawingEvents, initDrawingToolbar } from "./chart_draw.js";
 import { initOrderbookDOM } from "./orderbook.js";
@@ -23,6 +23,22 @@ export function handleLogoError(img) {
     : "/static/luma-deer-svg-dark.svg";
 }
 window.handleLogoError = handleLogoError;
+
+// [좌측 상단 로고 인터랙션] 클릭 시 부드러운 회전 애니메이션 후 자연스럽게 새로고침 트리거
+export function handleLogoRefresh(btn) {
+  if (!btn || btn._isRefreshing) return;
+  btn._isRefreshing = true;
+  const img = btn.querySelector("#brand-logo-img");
+  if (img) {
+    img.style.transition = "transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)";
+    img.style.transform = "rotate(360deg) scale(1.15)";
+  }
+  btn.style.opacity = "0.7";
+  setTimeout(() => {
+    window.location.reload();
+  }, 300);
+}
+window.handleLogoRefresh = handleLogoRefresh;
 
 // 캡처링 단계에서 모든 동적/정적 <img>의 로드 실패를 즉시 가로채기
 window.addEventListener(
@@ -191,14 +207,28 @@ export function initDashboardEngine() {
     if (typeof initOrderbookDOM === "function") initOrderbookDOM();
 
     try {
-      // 1️⃣ [차트 선제 점화]
+      // [차트 선제 점화]
       if (typeof window.initChart === "function") await window.initChart();
       else if (typeof initChart === "function") await initChart();
 
-      // 2️⃣ [병렬 데이터 로드]
+      // [차트 페칭] 테이블 로드 완료를 기다리지 않고 직전 코인 차트부터 병렬 로드
+      const initialSymbol =
+        (typeof window.getInitialRouteSymbol === "function"
+          ? window.getInitialRouteSymbol()
+          : null) ||
+        localStorage.getItem("sellnance_last_symbol") ||
+        "BINANCE:BTC_FUTURES";
+
+      if (typeof selectSymbol === "function" && initialSymbol) {
+        selectSymbol(initialSymbol);
+      } else if (typeof window.selectSymbol === "function" && initialSymbol) {
+        window.selectSymbol(initialSymbol);
+      }
+
+      // [병렬 데이터 로드]
       await Promise.all([loadSymbols(), loadTableData()]);
 
-      // 3️⃣ [엔진 준비]
+      // [엔진 준비]
       if (store.currentTableData && store.currentTableData.length > 0) {
         initMeasureEvents();
         initDrawingEvents();
@@ -736,7 +766,25 @@ export function setupTabVisibilityRecovery() {
       window.refreshSniperTarget();
     }
 
-    // 1. 10초 이상 백그라운드 후 탭 복귀 시: 차트 캔들 백그라운드 동기화
+    // 0. 경주마(실시간 정렬) 즉각 가동 및 스케줄 타이머 리셋
+    if (typeof window.applyRealtimeSort === "function") {
+      window.applyRealtimeSort();
+    }
+    if (typeof window.scheduleNextRealtimeSort === "function") {
+      window.scheduleNextRealtimeSort();
+    }
+
+    // 1. 탭 복귀 시 스나이퍼 소켓 및 실시간 피드 즉각 점검 (10초 이상 방치 시 좀비 소켓 강제 재연결)
+    const forceReconnect = elapsed > 10 * 1000;
+    initSniperSocket(forceReconnect, RECONNECT_SECRET);
+    if (typeof window.syncSniperSubscriptions === "function") {
+      window.syncSniperSubscriptions();
+    }
+    if (typeof window.initAllExchangeFeeds === "function") {
+      window.initAllExchangeFeeds();
+    }
+
+    // 2. 10초 이상 백그라운드 후 탭 복귀 시: 차트 캔들 백그라운드 동기화 및 마켓 테이블 최신화
     if (elapsed > 10 * 1000) {
       if (
         store.currentAsset &&
@@ -760,16 +808,8 @@ export function setupTabVisibilityRecovery() {
       if (typeof window.syncQuickViewRecentCandles === "function") {
         window.syncQuickViewRecentCandles();
       }
-    }
 
-    // 2. 30초 이상 방치 후 복귀 시: 소켓 피드 점검 및 마켓 테이블 사일런트 시세 동기화
-    if (elapsed > 30 * 1000) {
-      if (typeof window.syncSniperSubscriptions === "function") {
-        window.syncSniperSubscriptions();
-      }
-      if (typeof window.initAllExchangeFeeds === "function") {
-        window.initAllExchangeFeeds();
-      }
+      // 알파 코인 및 전체 마켓 테이블 사일런트 동기화
       if (typeof window.loadTableDataSilent === "function") {
         window.loadTableDataSilent();
       } else if (typeof window.loadTableData === "function") {
@@ -792,9 +832,15 @@ export function setupTabVisibilityRecovery() {
 
   if (typeof window !== "undefined") {
     window.addEventListener("focus", () => {
-      if (tabHiddenAt > 0) {
-        triggerRecovery();
-      }
+      triggerRecovery();
     });
+
+    // 사이트 우측 하단 마지막 업데이트 일자 반영
+    try {
+      const updateEl = document.getElementById("site-last-update-val");
+      if (updateEl && typeof __LAST_UPDATE__ !== "undefined") {
+        updateEl.textContent = __LAST_UPDATE__;
+      }
+    } catch (_) {}
   }
 }
