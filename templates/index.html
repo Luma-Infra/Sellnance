@@ -506,11 +506,29 @@
         class="relative flex w-full shrink-0 h-11 bg-theme-panel border-b border-theme-border/50 px-4 items-center justify-between z-[100] shadow-sm"
       >
         <div class="flex items-center gap-3 h-full">
-          <h2
-            class="m-0 text-lg font-bold tracking-tighter text-theme-accent uppercase flex items-center h-full"
+          <button
+            id="brand-logo-btn"
+            type="button"
+            onclick="handleLogoRefresh(this)"
+            class="group flex items-center gap-2 h-full cursor-pointer select-none border-0 bg-transparent p-0 transition-opacity hover:opacity-85 focus:outline-none"
+            title="클릭하여 새로고침"
           >
-            sellance
-          </h2>
+            <div
+              class="relative w-5 h-5 flex items-center justify-center shrink-0"
+            >
+              <img
+                src="/static/luma-deer-svg-dark.svg"
+                id="brand-logo-img"
+                class="w-5 h-5 object-contain transition-transform duration-500 ease-out group-hover:scale-110"
+                alt="Sellnance Logo"
+              />
+            </div>
+            <h2
+              class="m-0 text-lg font-bold tracking-tighter text-theme-accent uppercase flex items-center h-full leading-none"
+            >
+              sellance
+            </h2>
+          </button>
           <!-- 서버 갱신 상태 배지: PC는 풀 텍스트, 모바일은 펄스 불빛 점 (모바일 탭 시 팝업 토글) -->
           <div
             id="server-status-badge"
@@ -1906,6 +1924,22 @@
                     >
                   </div>
 
+                  <!-- 4-1. FDV (완전희석 시가총액, PC 전용 노출) -->
+                  <div
+                    id="head-metric-box-fdv"
+                    class="hidden min-[1200px]:flex flex-col text-xs text-right shrink-0 min-w-fit items-end"
+                  >
+                    <span
+                      class="opacity-50 text-[10px] min-[1200px]:text-[9.5px] uppercase font-medium tracking-wider text-right min-[1200px]:leading-none"
+                      >FDV</span
+                    >
+                    <b
+                      id="head-fdv"
+                      class="text-[12px] md:text-[13px] min-[1200px]:text-[13px] font-sans tabular-nums mt-0.5 min-[1200px]:mt-[3px] font-normal text-right min-[1200px]:leading-none text-theme-text/80"
+                      >-</b
+                    >
+                  </div>
+
                   <!-- 5. 해외 Vol(24h) (PC 전용 노출) -->
                   <div
                     id="head-metric-box-bvol"
@@ -1952,6 +1986,7 @@
                   <!-- 그리기 도구 삭제, 자(Ruler) 단독 분리 -->
                   <button
                     id="toggle-measure-btn"
+                    title="자(Ruler) 측정 도구"
                     class="px-2 py-0.5 text-[10px] min-[1200px]:text-[10.5px] font-medium text-theme-text opacity-70 hover:opacity-100 border border-theme-border/50 rounded bg-theme-panel/50 transition-all whitespace-nowrap cursor-pointer"
                     onclick="
                       if (window.toggleMeasureTool) window.toggleMeasureTool();
@@ -1960,59 +1995,66 @@
                     자(Ruler)
                   </button>
 
-                  <!-- OHLC 레전드 보이기 가리기 토글 버튼 -->
-                  <button
-                    id="toggle-ohlc-legend-btn"
-                    class="px-2 py-0.5 text-[10px] min-[1200px]:text-[10.5px] font-medium text-theme-text opacity-70 hover:opacity-100 border border-theme-border/50 rounded bg-theme-panel/50 transition-all whitespace-nowrap cursor-pointer"
-                    onclick="if (window.toggleOhlc) window.toggleOhlc();"
-                  >
-                    OHLC 끄기
-                  </button>
-
                   <!-- 크로스헤어 등락률(%) 라벨 보이기/숨기기 토글 버튼 -->
                   <button
                     id="toggle-crosshair-pct-btn"
-                    class="px-2 py-0.5 text-[10px] min-[1200px]:text-[10.5px] font-medium text-theme-text opacity-70 hover:opacity-100 border border-theme-border/50 rounded bg-theme-panel/50 transition-all whitespace-nowrap cursor-pointer"
+                    title="크로스헤어 등락률(%) 라벨"
+                    class="px-2 py-0.5 text-[10px] min-[1200px]:text-[10.5px] font-medium text-theme-accent border border-theme-accent/40 bg-theme-accent/10 rounded transition-all whitespace-nowrap cursor-pointer"
                     onclick="
                       if (window.toggleCrosshairPct)
                         window.toggleCrosshairPct();
                     "
                   >
-                    우측 퍼센트% 끄기
+                    등락률(%)
+                  </button>
+
+                  <!-- 현재가 점선 보이기/숨기기 토글 버튼 -->
+                  <button
+                    id="toggle-priceline-btn"
+                    title="현재가 점선"
+                    class="px-2 py-0.5 text-[10px] min-[1200px]:text-[10.5px] font-medium text-theme-accent border border-theme-accent/40 bg-theme-accent/10 rounded transition-all whitespace-nowrap cursor-pointer"
+                    onclick="
+                      if (window.togglePriceLine) window.togglePriceLine();
+                    "
+                  >
+                    현재가 점선
                   </button>
 
                   <!-- 카운트다운 토글 버튼 -->
                   <button
                     id="toggle-countdown-btn"
-                    class="px-2 py-0.5 text-[10px] min-[1200px]:text-[10.5px] font-medium text-theme-text opacity-70 hover:opacity-100 border border-theme-border/50 rounded bg-theme-panel/50 transition-all whitespace-nowrap cursor-pointer"
+                    title="캔들 카운트다운"
+                    class="px-2 py-0.5 text-[10px] min-[1200px]:text-[10.5px] font-medium text-theme-accent border border-theme-accent/40 bg-theme-accent/10 rounded transition-all whitespace-nowrap cursor-pointer"
                     onclick="
                       if (window.toggleCountdown) window.toggleCountdown();
                     "
                   >
-                    카운트다운 ON
+                    카운트다운
                   </button>
 
                   <!-- 김프 비교 끄기/켜기 토글 버튼 -->
                   <button
                     id="toggle-kimchi-btn"
-                    class="px-2 py-0.5 text-[10px] min-[1200px]:text-[10.5px] font-medium text-theme-accent border border-theme-accent/40 bg-theme-accent/10 rounded transition-all whitespace-nowrap cursor-pointer shadow-sm"
+                    title="김치 프리미엄 비교"
+                    class="px-2 py-0.5 text-[10px] min-[1200px]:text-[10.5px] font-medium text-theme-accent border border-theme-accent/40 bg-theme-accent/10 rounded transition-all whitespace-nowrap cursor-pointer"
                     onclick="
                       if (window.toggleKimchiComparison)
                         window.toggleKimchiComparison();
                     "
                   >
-                    김프 비교 ON
+                    김프 비교
                   </button>
 
                   <!-- 호가창 열기/닫기 토글 버튼 -->
                   <button
                     id="toggle-orderbook-btn"
+                    title="실시간 호가창(Orderbook)"
                     class="px-2 py-0.5 text-[10px] min-[1200px]:text-[10.5px] font-medium text-theme-text opacity-70 hover:opacity-100 border border-theme-border/50 rounded bg-theme-panel/50 transition-all whitespace-nowrap cursor-pointer"
                     onclick="
                       if (window.toggleOrderbook) window.toggleOrderbook();
                     "
                   >
-                    호가창 열기
+                    호가창
                   </button>
                 </div>
               </div>
@@ -2138,6 +2180,17 @@
                     >
                       <span>김프 비교</span>
                     </button>
+                    <button
+                      id="modal-ctrl-priceline"
+                      onclick="
+                        if (window.togglePriceLine) window.togglePriceLine();
+                        if (window.syncChartControlsModalUI)
+                          window.syncChartControlsModalUI();
+                      "
+                      class="col-span-2 px-2 py-1.5 text-[11px] font-bold rounded border transition-all flex items-center justify-center gap-1.5 cursor-pointer bg-theme-accent text-white border-theme-accent shadow-sm"
+                    >
+                      <span>현재가 점선</span>
+                    </button>
                     <!-- 호가창 제외 주석처리
                   <button id="modal-ctrl-orderbook" onclick="if (window.toggleOrderbook) window.toggleOrderbook(); if (window.syncChartControlsModalUI) window.syncChartControlsModalUI();"
                     class="col-span-2 px-2 py-1.5 text-[11px] font-medium rounded border transition-all flex items-center justify-center gap-1.5 cursor-pointer bg-theme-panel/50 text-theme-text opacity-70 border-theme-border/50 hover:opacity-100">
@@ -2152,14 +2205,14 @@
           <!-- 차트 전체를 감싸는 부모 (기존 chart-container 자리를 대체) -->
           <!-- 차트와 호가창을 감싸는 Flex 부모 -->
           <div
-            class="flex-1 flex flex-col md:flex-row overflow-hidden m-[5px] w-[calc(100%-10px)] gap-[5px] chart-container"
+            class="flex-1 flex flex-row overflow-hidden m-[5px] w-[calc(100%-10px)] gap-[5px] chart-container"
           >
             <!-- 1. 메인 차트 -->
             <div
               id="chart-wrapper"
               class="flex-1 flex flex-col relative overflow-hidden border border-theme-border rounded-lg bg-theme-panel min-w-0"
             >
-              <!-- [신규] 초기 안내 오버레이 -->
+              <!-- 초기 안내 오버레이 -->
               <div
                 id="chart-init-message"
                 class="absolute inset-0 z-[95] flex flex-col items-center justify-center bg-theme-panel text-theme-text/80 select-none"
@@ -2167,6 +2220,75 @@
                 <span class="text-sm font-bold opacity-60"
                   >📈 테이블 목록에서 코인을 선택해 보세요</span
                 >
+              </div>
+
+              <!-- 거래 대기 중 모래시계 ⏳ 오버레이 -->
+              <div
+                id="chart-waiting-overlay"
+                class="absolute inset-0 z-40 flex flex-col items-center justify-center bg-theme-panel/80 backdrop-blur-md transition-all duration-300 pointer-events-auto"
+                style="display: none"
+              >
+                <div
+                  class="flex flex-col items-center gap-3.5 p-6 sm:p-7 rounded-2xl bg-theme-bg/90 border border-theme-border/60 shadow-2xl text-center max-w-[320px] select-none mx-4"
+                >
+                  <!-- SVG 애니메이션 -->
+                  <div
+                    class="hourglass-anim-wrapper relative w-16 h-16 flex items-center justify-center"
+                  >
+                    <svg
+                      class="hourglass-svg w-12 h-12"
+                      viewBox="0 0 48 48"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <!-- 프레임 -->
+                      <path
+                        d="M12 6H36M12 42H36M14 6V14C14 19 20 23 23 24C20 25 14 29 14 34V42M34 6V14C34 19 28 23 25 24C28 25 34 29 34 34V42"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        class="text-amber-400/80"
+                      />
+                      <!-- 상단 모래 -->
+                      <path
+                        class="hourglass-sand-top"
+                        d="M16 11H32C32 15 28 19 24 21C20 19 16 15 16 11Z"
+                        fill="#f59e0b"
+                      />
+                      <!-- 떨어지는 모래 -->
+                      <line
+                        class="hourglass-sand-stream"
+                        x1="24"
+                        y1="21"
+                        x2="24"
+                        y2="32"
+                        stroke="#fbbf24"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-dasharray="2 3"
+                      />
+                      <!-- 하단 모래 -->
+                      <path
+                        class="hourglass-sand-bottom"
+                        d="M24 27C27 29 32 33 32 37H16C16 33 21 29 24 27Z"
+                        fill="#f59e0b"
+                      />
+                    </svg>
+                  </div>
+                  <!-- 안내 문구 -->
+                  <div class="flex flex-col gap-1 items-center">
+                    <span
+                      class="text-base sm:text-lg font-black text-theme-accent tracking-tight"
+                      >거래 대기 중이에요</span
+                    >
+                    <span
+                      class="text-xs font-medium text-theme-text/60 tracking-tight leading-relaxed"
+                    >
+                      아직 거래소에서 실제 거래가 되지 않았어요
+                    </span>
+                  </div>
+                </div>
               </div>
               <!-- Chart columns container -->
               <div
@@ -2203,7 +2325,7 @@
                 <!-- 조절바 (메인-볼륨) -->
                 <div
                   id="resizer-vol"
-                  class="w-full h-[4px] bg-theme-border/50 cursor-row-resize z-[100] hidden hover:bg-theme-accent transition-colors relative touch-none select-none before:absolute before:-top-1.5 before:-bottom-1.5 before:left-0 before:right-0 before:content-['']"
+                  class="w-full h-[4px] bg-theme-border/50 cursor-row-resize z-[100] hidden hover:bg-theme-accent transition-colors relative touch-none select-none before:absolute before:-top-1 before:-bottom-1 before:left-0 before:right-0 before:content-['']"
                 ></div>
 
                 <!-- 2. 볼륨 차트 -->
@@ -2288,18 +2410,44 @@
 
                 <div
                   id="ohlc-legend"
-                  class="absolute top-1.5 md:top-2.5 left-[10px] z-[50] font-medium text-[9px] md:text-[11px] flex flex-col items-start px-2 py-1 md:pt-1.5 md:pb-2 text-theme-text backdrop-blur-sm border border-theme-border/50 rounded pointer-events-none shadow-sm w-fit max-w-[calc(100%-75px)] md:max-w-none"
+                  class="absolute top-1.5 md:top-2.5 left-[10px] z-[50] font-medium text-[9px] md:text-[11px] flex flex-col items-start px-2 py-1 md:pt-1 md:pb-1.5 text-theme-text bg-theme-panel/60 backdrop-blur-sm border border-theme-border/50 rounded pointer-events-none shadow-sm w-fit max-w-[calc(100%-75px)] md:max-w-none transition-all duration-150"
                   style="contain: layout paint; height: auto"
                 >
-                  <span
-                    id="ohlc-placeholder"
-                    class="opacity-50 text-[9px] md:text-[10px] whitespace-nowrap"
-                    >Hover on chart...</span
+                  <!-- 접기/펼치기 토글 헤더 (좌측 상단 SVG 버튼) -->
+                  <button
+                    id="ohlc-toggle-collapse-btn"
+                    type="button"
+                    class="flex items-center gap-1.5 text-[9px] md:text-[10px] font-bold tracking-wider text-theme-text/70 hover:text-theme-accent transition-colors duration-150 pointer-events-auto cursor-pointer select-none border-none bg-transparent p-0 -ml-0.5 group/ohlc mb-1"
+                    title="OHLC 접기/펼치기"
+                    onclick="window.toggleOhlcCollapse && window.toggleOhlcCollapse()"
                   >
-                  <div
-                    id="ohlc-values"
-                    class="hidden flex flex-col items-start gap-y-0.5 w-fit md:w-full"
-                  >
+                    <span class="flex items-center justify-center w-3.5 h-3.5 md:w-4 md:h-4 rounded group-hover/ohlc:bg-theme-accent/15 transition-all duration-150">
+                      <svg
+                        id="ohlc-collapse-svg"
+                        class="w-3 h-3 transition-transform duration-200 text-current"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                      </svg>
+                    </span>
+                    <span class="uppercase tracking-wider text-[8px] md:text-[9px] opacity-80 group-hover/ohlc:opacity-100 transition-opacity">OHLC</span>
+                  </button>
+
+                  <div id="ohlc-content" class="flex flex-col items-start w-full">
+                    <span
+                      id="ohlc-placeholder"
+                      class="opacity-50 text-[9px] md:text-[10px] whitespace-nowrap"
+                      >Hover on chart...</span
+                    >
+                    <div
+                      id="ohlc-values"
+                      class="hidden flex flex-col items-start gap-y-0.5 w-fit md:w-full"
+                    >
                     <!-- 모바일 1줄 고정 (open ~ vol) -->
                     <div
                       class="flex flex-row md:contents items-center flex-nowrap gap-x-1.5 md:gap-x-0 w-fit md:w-full shrink-0"
@@ -2406,11 +2554,13 @@
                 </div>
               </div>
             </div>
+            <!-- #chart-wrapper 닫기 -->
+          </div>
 
-            <!-- 2. 우측 호가창 (Orderbook) 패널 -->
-            <div
-              id="orderbook-panel"
-              class="hidden w-full md:w-[260px] flex-shrink-0 flex-col border border-theme-border rounded-lg bg-theme-panel relative overflow-hidden transition-all duration-300 shadow-md"
+          <!-- 2. 우측 호가창 (Orderbook) 패널 -->
+          <div
+            id="orderbook-panel"
+              class="hidden w-[260px] flex-shrink-0 flex-col border border-theme-border rounded-lg bg-theme-panel relative overflow-hidden transition-all duration-300 shadow-md"
             >
               <!-- Orderbook Header -->
               <div
@@ -3360,7 +3510,7 @@
     >
       <div
         id="feedback-modal-card"
-        class="pointer-events-auto relative w-[320px] max-w-[calc(100vw-32px)] p-4 rounded-2xl bg-theme-panel/95 border border-theme-border/90 shadow-2xl shadow-black/50 flex flex-col gap-3 text-theme-text font-sans backdrop-blur-md"
+        class="pointer-events-auto relative w-[320px] max-w-[calc(100vw-36px)] p-4 rounded-2xl bg-theme-panel/95 border border-theme-border/90 shadow-2xl shadow-black/50 flex flex-col gap-3 text-theme-text font-sans backdrop-blur-md"
       >
         <!-- 위젯 헤더 -->
         <div
@@ -3458,6 +3608,14 @@
           </button>
         </form>
       </div>
+    </div>
+
+    <!-- [자동 배포 버전] 사이트 우측 하단 마지막 업데이트 일자 표기 -->
+    <div
+      id="site-last-update-tag"
+      class="fixed bottom-1 right-2.5 z-30 pointer-events-none select-none text-[10px] text-theme-text/40 font-mono tracking-tight"
+    >
+      last update : <span id="site-last-update-val">2026-10-13</span>
     </div>
   </body>
 </html>

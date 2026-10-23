@@ -63,21 +63,51 @@ export function toggleOrderbook() {
   if (panel.classList.contains("hidden")) {
     panel.classList.remove("hidden");
     panel.classList.add("flex");
-    if (btn) btn.innerText = "호가창 닫기";
+    if (btn) {
+      btn.innerText = "호가창";
+      btn.classList.add(
+        "text-theme-accent",
+        "border-theme-accent/40",
+        "bg-theme-accent/10",
+      );
+      btn.classList.remove(
+        "text-theme-text",
+        "border-theme-border/50",
+        "bg-theme-panel/50",
+      );
+    }
     startOrderbookStream(store.currentAsset, store.currentChartMarket);
   } else {
     panel.classList.add("hidden");
     panel.classList.remove("flex");
-    if (btn) btn.innerText = "호가창 열기";
+    if (btn) {
+      btn.innerText = "호가창";
+      btn.classList.remove(
+        "text-theme-accent",
+        "border-theme-accent/40",
+        "bg-theme-accent/10",
+      );
+      btn.classList.add(
+        "text-theme-text",
+        "border-theme-border/50",
+        "bg-theme-panel/50",
+      );
+    }
     stopOrderbookStream();
   }
 
   // Trigger chart resize
   setTimeout(() => {
+    if (typeof window.applyChartLayout === "function")
+      window.applyChartLayout();
     if (typeof window.syncPriceScaleWidths === "function")
-      window.syncPriceScaleWidths();
+      window.syncPriceScaleWidths(true);
     // if (store.chart) store.chart.timeScale().fitContent();
   }, 100);
+  setTimeout(() => {
+    if (typeof window.applyChartLayout === "function")
+      window.applyChartLayout();
+  }, 320);
 }
 
 export function changeOrderbookPrecision(delta) {
