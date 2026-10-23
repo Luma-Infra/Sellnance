@@ -82,7 +82,7 @@ export const performSyncPriceScaleWidths = (force = false) => {
   const isSmallMobile =
     typeof window !== "undefined" && window.innerWidth < 768;
   const isKimchiVisible = !!store.paneConfig?.kimchi && !store.isKimchiDisabled;
-  const BASE_LEFT_WIDTH = !isSmallMobile && isKimchiVisible ? 60 : 0;
+  const BASE_LEFT_WIDTH = !isSmallMobile && isKimchiVisible ? 64 : 0;
 
   try {
     let measuredRight = 0;
@@ -115,21 +115,26 @@ export const performSyncPriceScaleWidths = (force = false) => {
       }
     }
 
-    // 2. 좌측 김프축 원자적 동기화
+    // 2. 좌측 김프축 원자적 동기화 (우측 축과 동일하게 실시간 너비 측정 & Math.max 락킹)
     if (BASE_LEFT_WIDTH > 0) {
-      const lw1 = c1 ? c1.priceScale("left").width() : 0;
-      const lw2 = c2 ? c2.priceScale("left").width() : 0;
-      const measuredLeft = Math.max(BASE_LEFT_WIDTH, lw1, lw2);
-      const targetLeftWidth =
-        measuredLeft > 0 ? measuredLeft : currentMaxLeft || BASE_LEFT_WIDTH;
+      let measuredLeft = 0;
+      if (c1) {
+        const lWidth = c1.priceScale("left").width();
+        if (lWidth > measuredLeft) measuredLeft = lWidth;
+      }
+      if (c2) {
+        const lWidth = c2.priceScale("left").width();
+        if (lWidth > measuredLeft) measuredLeft = lWidth;
+      }
 
-      if (
-        targetLeftWidth > 0 &&
-        (targetLeftWidth !== currentMaxLeft ||
-          lw1 !== targetLeftWidth ||
-          lw2 !== targetLeftWidth ||
-          force)
-      ) {
+      // 기본 최소치(BASE_LEFT_WIDTH) 및 c1/c2 중 더 넓은 실제 렌더링 너비로 양쪽 동시 락킹
+      const targetLeftWidth = Math.max(
+        currentMaxLeft,
+        measuredLeft,
+        BASE_LEFT_WIDTH,
+      );
+
+      if (currentMaxLeft !== targetLeftWidth || force) {
         currentMaxLeft = targetLeftWidth;
         store.savedLeftPriceScaleWidth = targetLeftWidth;
         if (c1) {
@@ -208,7 +213,7 @@ export const resetPriceScaleWidthSync = () => {
   const isSmallMobile =
     typeof window !== "undefined" && window.innerWidth < 768;
   const isKimchiVisible = !!store.paneConfig?.kimchi && !store.isKimchiDisabled;
-  const BASE_LEFT_WIDTH = !isSmallMobile && isKimchiVisible ? 60 : 0;
+  const BASE_LEFT_WIDTH = !isSmallMobile && isKimchiVisible ? 64 : 0;
 
   const c1 = store.chart;
   const c2 = store.chartVol;
