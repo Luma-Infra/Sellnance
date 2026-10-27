@@ -94,21 +94,23 @@ export function updateRowStaticHTML(rowEl, row) {
   // 레이아웃 깨짐을 방지하고 스크롤 시 공백 노출을 최소화합니다
 
   rowEl.innerHTML = `
-  <div class="p-2 col-asset overflow-visible relative">
-    ${
-      pendingAction
-        ? `
-      <div class="row-progress-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 2.5px; z-index: 50; pointer-events: none;">
-         <div id="progress-bar-${row.Ticker}" data-progress-uid="${sUid}" class="row-progress-bar" style="height: 100%; width: 100%; background: linear-gradient(90deg, #f0b90b 0%, #3b82f6 100%); transition: width 50ms linear;"></div>
-      </div>
-    `
-        : ""
-    }
+  ${
+    pendingAction
+      ? `
+    <div class="row-progress-container" style="position: absolute; top: 0; left: 0; right: 0; width: 100%; height: 3px; z-index: 60; pointer-events: none; padding: 0 !important; margin: 0 !important; display: block !important; overflow: hidden; border: none !important;">
+       <div id="progress-bar-${row.Ticker}" data-progress-uid="${sUid}" class="row-progress-bar" style="height: 100%; width: 100%; background: linear-gradient(90deg, #f0b90b 0%, #3b82f6 100%); transition: width 50ms linear;"></div>
+    </div>
+  `
+      : ""
+  }
+  <div class="p-2 pl-0 col-asset overflow-visible relative">
     <div class="flex items-center gap-0.5 min-w-0 w-full">
+
       <!-- 0. 절대 순위 번호 (CSS 카운터로 1부터 800까지 순차 자동 렌더링) -->
       <div class="w-[20px] flex-shrink-0 text-center">
         <span class="row-counter text-[10px] font-medium font-medium text-theme-text opacity-40 flex-shrink-0 px-0 leading-none"></span>
       </div>
+
       <!-- 1. 별 버튼 -->
       <div class="flex items-center gap-0.5 flex-shrink-0">
         <button onclick="toggleFavorite('${uId}', event)" class="star-btn text-[14px] transition-all hover:scale-125 flex-shrink-0 ${starClass}" style="color: ${starColor}">
@@ -133,7 +135,7 @@ export function updateRowStaticHTML(rowEl, row) {
         ${row.Logo || `<img src="${document.body?.classList.contains("theme-upbit") ? "/static/luma-deer-svg-light.svg" : "/static/luma-deer-svg-dark.svg"}" class="fallback-logo" loading="lazy" style="width: 24px; height: 24px; vertical-align: middle; border-radius: 50%;">`}
       </div>
       
-      <!-- 3. 티커 & 이름 (상폐 시 회색조 처리) -->
+      <!-- 3. 티커 & 이름 (상폐 시 회색 처리) -->
       <div class="flex flex-col leading-[1.1] min-w-0 flex-1 ${delistMutedClass}">
         <b class="text-[12px] text-theme-text font-medium tracking-tighter flex items-center min-w-0 max-w-full">
           ${getDisplayTickerHtml(row)}
@@ -145,7 +147,7 @@ export function updateRowStaticHTML(rowEl, row) {
                 ? row.Name_KR || row.Name || ""
                 : row.Name || "";
             n = n.replace(/\s*[\(\（\[][^\)\）\]]*[\)\）\]]/g, "").trim();
-            return n.length > 8 ? n.substring(0, 8) + ".." : n;
+            return n.length > 14 ? n.substring(0, 14) + ".." : n;
           })()}
         </span>
       </div>

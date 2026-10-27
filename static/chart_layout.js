@@ -90,42 +90,41 @@ export function applyChartLayout() {
     store.chartVol.timeScale().applyOptions({ visible: v || k });
 
   // [리사이즈 비동기 스케줄링] DOM 너비/높이 측정에 따른 Reflow 및 캔버스 중복 resize 방지
-  // [성능 최적화] 실제 너비/높이 값이 달라졌을 때만 resize를 호출하여 불필요한 DOM Reflow 렉 차단
-  if (store.chart && paneMain) {
-    requestAnimationFrame(() => {
-      if (store.chart && paneMain) {
-        const w = paneMain.clientWidth;
-        const h = paneMain.clientHeight;
-        if (
-          w > 0 &&
-          h > 0 &&
-          (store.mainWidthCache !== w || store.mainHeightCache !== h)
-        ) {
-          store.mainWidthCache = w;
-          store.mainHeightCache = h;
-          store.chart.resize(w, h);
-        }
+  // [리사이즈 원자적 통합 스케줄링] Main과 Vol 차트를 단일 rAF 프레임에서 동시에 resize하여 상하 캔버스 시차 조정
+  requestAnimationFrame(() => {
+    let resized = false;
+    if (store.chart && paneMain) {
+      const w = paneMain.clientWidth;
+      const h = paneMain.clientHeight;
+      if (
+        w > 0 &&
+        h > 0 &&
+        (store.mainWidthCache !== w || store.mainHeightCache !== h)
+      ) {
+        store.mainWidthCache = w;
+        store.mainHeightCache = h;
+        store.chart.resize(w, h);
+        resized = true;
       }
-    });
-  }
-  if (store.chartVol && paneVol) {
-    requestAnimationFrame(() => {
-      if (store.chartVol && paneVol) {
-        const w = paneVol.clientWidth;
-        const h = paneVol.clientHeight;
-
-        if (
-          w > 0 &&
-          h > 0 &&
-          (store.volWidthCache !== w || store.volHeightCache !== h)
-        ) {
-          store.volWidthCache = w;
-          store.volHeightCache = h;
-          store.chartVol.resize(w, h);
-        }
+    }
+    if (store.chartVol && paneVol) {
+      const w = paneVol.clientWidth;
+      const h = paneVol.clientHeight;
+      if (
+        w > 0 &&
+        h > 0 &&
+        (store.volWidthCache !== w || store.volHeightCache !== h)
+      ) {
+        store.volWidthCache = w;
+        store.volHeightCache = h;
+        store.chartVol.resize(w, h);
+        resized = true;
       }
-    });
-  }
+    }
+    if (resized && typeof window.syncPriceScaleWidths === "function") {
+      window.syncPriceScaleWidths(false);
+    }
+  });
 
   // 김프 비교군 스위처 (pane-vol 영역 상단 위치) 연동
   const kimchiSwitcher = document.getElementById("kimchi-switcher");

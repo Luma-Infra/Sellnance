@@ -478,7 +478,7 @@ export function closeTimezoneMenu() {
 }
 
 /**
- * 🚀 차트 우측 하단 스텁 코너에 타임존 버튼 마운트
+ * 차트 우측 하단 스텁 코너에 타임존 버튼 마운트
  */
 export function mountTimezoneButton() {
   const paneMain = document.getElementById("pane-main");

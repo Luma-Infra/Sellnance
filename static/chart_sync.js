@@ -1,6 +1,6 @@
-// chart_sync.js - 🚀 메인/볼륨/김프 멀티 차트 간 시간축, 가격축 너비, 스케일 모드 및 줌 동기화 전담 엔진
+// chart_sync.js - 메인/볼륨/김프 멀티 차트 간 시간축, 가격축 너비, 스케일 모드 및 줌 동기화 전담 엔진
 import { store } from "./_store.js";
-import { resetChartScale } from "./chart_utils.js";
+import { resetChartScale, formatCrosshairPrice } from "./chart_utils.js";
 import { syncCrosshair } from "./chart_crosshair.js";
 
 export { syncCrosshair };
@@ -67,11 +67,22 @@ export function syncTimeScales(sourceChart, targetChart) {
 // ==========================================
 // 3. Y축(Price Scale) 가로폭 락킹 & 동기화 엔진
 // ==========================================
-let currentMaxRight = 0;
 let currentMaxLeft = 0;
 let isSyncingWidth = false;
 let lastWidthSyncTime = 0;
 let widthSyncPending = false;
+// [코인별 우측 가격축 초기 기준 너비 산출]
+// 종가 문자열 자릿수 기반으로 초기 너비를 즉각 산출하여 이전 코인 너비 고정 및 덜컹거림 제거
+export const estimateCoinPriceScaleWidth = () => {
+  const last = store.candleData?.[store.candleData.length - 1];
+  if (!last || !last.close) return 56;
+  const p = store.currentPrecision ?? 2;
+  const isKrw = ["UPBIT", "BITHUMB"].includes(store?.currentChartMarket);
+  const priceStr = formatCrosshairPrice(last.close, p, false, isKrw) || "";
+  const len = Math.max(priceStr.length, 6); // 최소 6글자 (거래량 단위 100.0M 기준)
+  const est = Math.ceil(len * 7.5 + 16);
+  return est + (est % 2); // 짝수 보정
+};
 
 export const performSyncPriceScaleWidths = (force = false) => {
   const c1 = store.chart;
@@ -85,22 +96,15 @@ export const performSyncPriceScaleWidths = (force = false) => {
   const BASE_LEFT_WIDTH = !isSmallMobile && isKimchiVisible ? 64 : 0;
 
   try {
-    let measuredRight = 0;
-    if (c1) {
-      const rWidth = c1.priceScale("right").width();
-      if (rWidth > measuredRight) measuredRight = rWidth;
-    }
-    if (c2) {
-      const rWidth = c2.priceScale("right").width();
-      if (rWidth > measuredRight) measuredRight = rWidth;
-    }
+    let targetWidth = 0;
 
-    // [단방향 최대치 고정 락] 줄어들지 않고 메인/볼륨 중 더 넓은 너비로 불변 고정
-    const targetWidth = Math.max(currentMaxRight, measuredRight);
-
-    if (targetWidth > 0 && (targetWidth !== currentMaxRight || force)) {
-      currentMaxRight = targetWidth;
+    // 1. 우측 가격축 동기화: 메인/볼륨 둘 중 큰 쪽으로 원자적 일치 고정
+    if (force) {
+      currentMaxLeft = 0;
+      // 신규 코인의 고유 캔들/볼륨 데이터로부터 자연 너비 즉각 산출 (이전 넓은 코인의 잔여 너비 완전 폐기)
+      targetWidth = estimateCoinPriceScaleWidth();
       store.savedPriceScaleWidth = targetWidth;
+
       if (c1) {
         c1.priceScale("right").applyOptions({
           minimumWidth: targetWidth,
@@ -112,6 +116,40 @@ export const performSyncPriceScaleWidths = (force = false) => {
           minimumWidth: targetWidth,
           autoScale: !store.isVolPriceScaleUserZoomed,
         });
+      }
+
+      // 차트가 신규 데이터로 첫 렌더링된 후 실제 렌더링 너비를 읽어 1px 단위 정밀 동기화
+      requestAnimationFrame(() => {
+        const mWidth = c1 ? c1.priceScale("right").width() : 0;
+        const vWidth = c2 ? c2.priceScale("right").width() : 0;
+        const realTarget = Math.max(mWidth, vWidth);
+        if (realTarget > 0 && realTarget !== targetWidth) {
+          store.savedPriceScaleWidth = realTarget;
+          if (c1)
+            c1.priceScale("right").applyOptions({ minimumWidth: realTarget });
+          if (c2)
+            c2.priceScale("right").applyOptions({ minimumWidth: realTarget });
+        }
+      });
+    } else {
+      const mainWidth = c1 ? c1.priceScale("right").width() : 0;
+      const volWidth = c2 ? c2.priceScale("right").width() : 0;
+      targetWidth = Math.max(mainWidth, volWidth);
+
+      if (targetWidth > 0) {
+        store.savedPriceScaleWidth = targetWidth;
+        if (c1) {
+          c1.priceScale("right").applyOptions({
+            minimumWidth: targetWidth,
+            autoScale: !store.isPriceScaleUserZoomed,
+          });
+        }
+        if (c2) {
+          c2.priceScale("right").applyOptions({
+            minimumWidth: targetWidth,
+            autoScale: !store.isVolPriceScaleUserZoomed,
+          });
+        }
       }
     }
 
@@ -128,11 +166,10 @@ export const performSyncPriceScaleWidths = (force = false) => {
       }
 
       // 기본 최소치(BASE_LEFT_WIDTH) 및 c1/c2 중 더 넓은 실제 렌더링 너비로 양쪽 동시 락킹
-      const targetLeftWidth = Math.max(
-        currentMaxLeft,
-        measuredLeft,
-        BASE_LEFT_WIDTH,
-      );
+      const targetLeftWidth =
+        force && measuredLeft > 0
+          ? Math.max(measuredLeft, BASE_LEFT_WIDTH)
+          : Math.max(currentMaxLeft, measuredLeft, BASE_LEFT_WIDTH);
 
       if (currentMaxLeft !== targetLeftWidth || force) {
         currentMaxLeft = targetLeftWidth;
@@ -202,37 +239,12 @@ export const syncPriceScaleWidths = (force = false) => {
 
 export const resetPriceScaleWidthSync = () => {
   window.isResettingWidth = true;
-  currentMaxRight = 0;
   currentMaxLeft = 0;
   store.isPriceScaleUserZoomed = false;
   store.isVolPriceScaleUserZoomed = false;
   store.isKimchiPriceScaleUserZoomed = false;
   store.savedPriceScaleWidth = null;
   store.savedLeftPriceScaleWidth = null;
-
-  const isSmallMobile =
-    typeof window !== "undefined" && window.innerWidth < 768;
-  const isKimchiVisible = !!store.paneConfig?.kimchi && !store.isKimchiDisabled;
-  const BASE_LEFT_WIDTH = !isSmallMobile && isKimchiVisible ? 64 : 0;
-
-  const c1 = store.chart;
-  const c2 = store.chartVol;
-  if (c1) {
-    c1.priceScale("right").applyOptions({ minimumWidth: 0, autoScale: true });
-    c1.priceScale("left").applyOptions({
-      minimumWidth: BASE_LEFT_WIDTH,
-      visible: BASE_LEFT_WIDTH > 0,
-      autoScale: true,
-    });
-  }
-  if (c2) {
-    c2.priceScale("right").applyOptions({ minimumWidth: 0, autoScale: true });
-    c2.priceScale("left").applyOptions({
-      minimumWidth: BASE_LEFT_WIDTH,
-      visible: BASE_LEFT_WIDTH > 0,
-      autoScale: true,
-    });
-  }
 
   if (typeof updateScaleModeButtonsUI === "function")
     updateScaleModeButtonsUI();

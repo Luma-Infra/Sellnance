@@ -201,7 +201,7 @@ func main() {
 	go DailyResetScheduler()
 
 	// 7. 서버 시작 (8000번 포트)
-	log.Println("🚀 Go Engine Started on http://127.0.0.1:8000")
+	log.Println("Go Engine Started on http://127.0.0.1:8000")
 	log.Fatal(app.Listen(":8000"))
 }
 

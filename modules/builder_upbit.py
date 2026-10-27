@@ -370,6 +370,26 @@ def build_upbit_row(
                         else ex_name
                     )
                     listed_on.add(tag)
+                    base_ex = tag.replace("_SPOT", "").replace("_FUTURES", "")
+                    if base_ex:
+                        listed_on.add(base_ex)
+
+    # [족보 연동] DUPLICATED_LIST에 등록된 외부 거래소 상장 태그 보강 (일반 코인 포함)
+    if DUPLICATED_LIST and final_ucid:
+        for k, v in DUPLICATED_LIST.items():
+            if len(v) >= 4 and str(v[0]) == str(final_ucid):
+                ex_name = str(v[3]).upper().strip()
+                if ex_name:
+                    tag = (
+                        f"{ex_name}_SPOT"
+                        if not ex_name.endswith("_SPOT")
+                        and not ex_name.endswith("_FUTURES")
+                        else ex_name
+                    )
+                    listed_on.add(tag)
+                    base_ex = tag.replace("_SPOT", "").replace("_FUTURES", "")
+                    if base_ex:
+                        listed_on.add(base_ex)
 
     bin_agg = _aggregate_binance_for_upbit(
         base, display_name, binance_data, REVERSE_LOOKUP, listed_on

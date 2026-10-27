@@ -55,9 +55,7 @@ class HighLowPaneRenderer {
       !series ||
       !chart ||
       !store.mainData ||
-      store.mainData.length === 0 ||
-      store.isFetchingChart ||
-      window.isFetchingChart
+      store.mainData.length === 0
     ) {
       return;
     }
@@ -140,17 +138,13 @@ class HighLowPaneRenderer {
 
       // 테마별 CSS 변수 및 폰트 동적 추출 (Sellnance Theme & Typography)
       const style = getComputedStyle(document.body);
-      const rawBg = style.getPropertyValue("--bg").trim();
       const rawText = style.getPropertyValue("--text").trim();
-      const rawPanel = style.getPropertyValue("--panel").trim();
-      const rawBorder = style.getPropertyValue("--border").trim();
       const rawFontSans = style
         .getPropertyValue("--font-sans")
         .replace(/\s+/g, " ")
         .trim();
 
       const textColor = rawText || (isLight ? "#0f172a" : "#f1f5f9");
-      const haloColor = rawBg || rawPanel || (isLight ? "#ffffff" : "#131722");
       // 지시선 및 기준점 색상: 배경과 확실히 대비되는 선명한 컬러 적용 (다크: slate-300, 라이트: slate-700)
       const lineColor = isLight
         ? "rgba(51, 65, 85, 0.88)"
@@ -199,16 +193,9 @@ class HighLowPaneRenderer {
           ctx.lineTo(endX, y);
           ctx.stroke();
 
-          // 텍스트 (우측 배치)
+          // 순수 텍스트 (우측 배치)
           const textX = endX + 4;
           ctx.textAlign = "left";
-
-          // 가독성을 위한 헤일로 테두리
-          ctx.strokeStyle = haloColor;
-          ctx.lineWidth = 3;
-          ctx.lineJoin = "round";
-          ctx.strokeText(text, textX, y);
-
           ctx.fillStyle = textColor;
           ctx.fillText(text, textX, y);
         } else {
@@ -218,15 +205,9 @@ class HighLowPaneRenderer {
           ctx.lineTo(endX, y);
           ctx.stroke();
 
-          // 텍스트 (좌측 배치)
+          // 순수 텍스트 (좌측 배치)
           const textX = endX - 4;
           ctx.textAlign = "right";
-
-          ctx.strokeStyle = haloColor;
-          ctx.lineWidth = 3;
-          ctx.lineJoin = "round";
-          ctx.strokeText(text, textX, y);
-
           ctx.fillStyle = textColor;
           ctx.fillText(text, textX, y);
         }

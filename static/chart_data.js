@@ -22,11 +22,12 @@ import {
 } from "./table_render.js";
 // import { fetchBithumbUnifiedCandles } from "./chart_bithumb_sync.js"; // 빗썸 정신차릴 때까지 임시 대기
 
-// [업비트 토큰 버킷 & 서킷 브레이커 모듈 분리 연동]
+// [업비트/바이낸스 토큰 버킷 & 서킷 브레이커 모듈 분리 연동]
 import {
   UpbitBrowserLimiter,
   upbitBrowserLimiter,
   UPBIT_PACING_MS,
+  binanceBrowserLimiter,
 } from "./chart_limiter.js";
 import { normalizeExchangeInterval } from "./_market_rules.js";
 export { UpbitBrowserLimiter, upbitBrowserLimiter, UPBIT_PACING_MS };
@@ -157,45 +158,78 @@ async function _fetchCandlesSmartInternal(
         directUrl = `https://api.bybit.com/v5/market/kline?category=${category}&symbol=${symbol}&interval=${normInt}&limit=${limit || 1000}${endParamBybit}${startParamBybit}`;
       }
 
-      if (directUrl) {
-        const fetchTimeout = exchange === "upbit" ? 1500 : 500;
-        const fetchSignal =
-          typeof AbortSignal !== "undefined" &&
-          typeof AbortSignal.timeout === "function"
-            ? AbortSignal.timeout(fetchTimeout)
-            : undefined;
-        const res = await fetch(directUrl, { signal: fetchSignal });
+      const isBinance = exchange.startsWith("binance");
+      let acquiredBinanceToken = false;
 
-        if (res.ok) {
-          if (exchange === "upbit") {
-            const remReq = res.headers.get("Remaining-Req");
-            if (remReq) upbitBrowserLimiter.syncRemainingReq(remReq);
+      if (isBinance) {
+        // [2400 Weight 중 2200 하드 캡 제한] 서버로 토스하지 않고 브라우저 자체 롤링 윈도우에서 2200 이하로 제한
+        const canSend = await binanceBrowserLimiter.acquireWeight(2, 1200);
+        if (!canSend) {
+          // 2200 도달 시 바이낸스로 패킷을 절대 보내지 않고 브라우저에서 차단 (서버 토스 금지)
+          return [];
+        }
+        acquiredBinanceToken = true;
+      }
+
+      if (directUrl) {
+        try {
+          const fetchTimeout = exchange === "upbit" ? 1500 : 700;
+          const fetchSignal =
+            typeof AbortSignal !== "undefined" &&
+            typeof AbortSignal.timeout === "function"
+              ? AbortSignal.timeout(fetchTimeout)
+              : undefined;
+          const res = await fetch(directUrl, { signal: fetchSignal });
+
+          if (res.ok) {
+            if (exchange === "upbit") {
+              const remReq = res.headers.get("Remaining-Req");
+              if (remReq) upbitBrowserLimiter.syncRemainingReq(remReq);
+            } else if (isBinance) {
+              const usedWeight = res.headers.get("x-mbx-used-weight-1m");
+              if (usedWeight) binanceBrowserLimiter.syncUsedWeight(usedWeight);
+            }
+            const data = await res.json();
+            if (
+              exchange.startsWith("binance") &&
+              Array.isArray(data) &&
+              data.length > 0
+            ) {
+              return data;
+            } else if (exchange === "upbit" && Array.isArray(data)) {
+              return data;
+            } else if (
+              exchange.startsWith("bybit") &&
+              data &&
+              data.retCode === 0
+            ) {
+              return data;
+            }
+          } else if (res.status === 429) {
+            if (exchange === "upbit") {
+              upbitBrowserLimiter.triggerCooldown(5.0);
+            } else if (isBinance) {
+              const retryAfter = parseInt(
+                res.headers.get("retry-after") || "10",
+                10,
+              );
+              binanceBrowserLimiter.triggerCooldown(retryAfter);
+            }
+          } else if (res.status === 418) {
+            // [HTTP 418 Teapot / IP Banned 감지] 즉각 3분(180초) 브라우저 셧다운하여 추가 연장 벤 원천 방지
+            if (isBinance) {
+              binanceBrowserLimiter.triggerCooldown(180);
+            }
+          } else if (res.status === 404 || res.status === 400) {
+            if (exchange === "binance_spot") {
+              // pass through to server proxy fallback
+            } else {
+              return [];
+            }
           }
-          const data = await res.json();
-          if (
-            exchange.startsWith("binance") &&
-            Array.isArray(data) &&
-            data.length > 0
-          ) {
-            return data;
-          } else if (exchange === "upbit" && Array.isArray(data)) {
-            return data;
-          } else if (
-            exchange.startsWith("bybit") &&
-            data &&
-            data.retCode === 0
-          ) {
-            return data;
-          }
-        } else if (res.status === 429) {
-          if (exchange === "upbit") {
-            upbitBrowserLimiter.triggerCooldown(5.0);
-          }
-        } else if (res.status === 404 || res.status === 400) {
-          if (exchange === "binance_spot") {
-            // pass through to server proxy fallback
-          } else {
-            return [];
+        } finally {
+          if (isBinance && acquiredBinanceToken) {
+            binanceBrowserLimiter.release();
           }
         }
       }

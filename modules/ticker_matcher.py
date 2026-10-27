@@ -541,7 +541,7 @@ def generate_search_keys(symbol: str, name: str = "") -> Set[str]:
     if m_num:
         keys.add(clean_string_core(m_num.group(1)))
 
-    # 7. 풀네임 기반 약칭 및 단어 추출
+    # 7. 풀네임 기반 약칭 및 구성 단어 전수 추출 (스톱워드 제외)
     if name:
         n_clean = clean_string_core(name)
         if n_clean:
@@ -551,8 +551,33 @@ def generate_search_keys(symbol: str, name: str = "") -> Set[str]:
             acronym = "".join(w[0] for w in words).lower()
             if len(acronym) >= 2:
                 keys.add(acronym)
-        if words and len(words[0]) >= 2:
-            keys.add(clean_string_core(words[0]))
+
+        # 범용 프로젝트 접미어/스톱워드 (오탐 버킷 오염 방지)
+        STOP_WORDS = {
+            "token",
+            "tokens",
+            "coin",
+            "coins",
+            "protocol",
+            "protocols",
+            "network",
+            "networks",
+            "finance",
+            "chain",
+            "chains",
+            "dao",
+            "swap",
+            "dex",
+            "official",
+            "the",
+            "and",
+            "for",
+        }
+        for w in words:
+            if len(w) >= 2:
+                w_clean = clean_string_core(w)
+                if w_clean and w_clean not in STOP_WORDS:
+                    keys.add(w_clean)
 
     # 빈 문자열만 제외하고 1글자 심볼(A, X 등)도 모두 허용
     return {k for k in keys if len(k) >= 1}
@@ -1016,6 +1041,26 @@ def run_full_scan_matching(
     print(f"   🌐 전용 웹 뷰어: http://localhost:8000/matcher")
     print(f"   📁 결과 JSON 저장: static/ticker_matcher_results.json")
     print(f"==================================================")
+
+    # 브라우저 자동 실행
+    try:
+        import webbrowser
+        import socket
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(0.5)
+        server_open = (s.connect_ex(("127.0.0.1", 8000)) == 0)
+        s.close()
+
+        if server_open:
+            url = "http://localhost:8000/matcher"
+        else:
+            matcher_path = os.path.abspath(os.path.join(PROJECT_ROOT, "static", "matcher.html"))
+            url = f"file:///{matcher_path.replace(os.sep, '/')}"
+
+        print(f"   🚀 브라우저에서 매칭 웹 뷰어를 자동으로 엽니다: {url}")
+        webbrowser.open(url)
+    except Exception as e:
+        print(f"⚠️ 브라우저 자동 오픈 실패: {e}")
 
     if not discovered_matches:
         print("💡 현재 장부와 8대 거래소 간 미등록 매칭 후보가 없습니다. (족보 최적 상태)")

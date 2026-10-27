@@ -457,6 +457,36 @@ async def _raw_fetch_candles(
     """실제 거래소 및 트뷰로 나가 데이터를 수집하는 내부 비동기 워커"""
     now = time.time()
 
+    # [DUPLICATED_LIST 기반 거래소별 심볼 별칭 자동 매핑]
+    if api_manager.MAPPING_DATA:
+        dup_list = api_manager.MAPPING_DATA.get("DUPLICATED_LIST", {})
+        clean_base = (
+            symbol.replace("USDT.P", "")
+            .replace(".P", "")
+            .replace("-USDT", "")
+            .replace("_USDT", "")
+            .replace("USDT", "")
+            .replace("KRW-", "")
+            .replace("_KRW", "")
+            .upper()
+        )
+        for k, v in dup_list.items():
+            if len(v) >= 4:
+                prefix = k.split("(")[0].upper()
+                v_ex = str(v[3]).lower()
+                if prefix == clean_base and (exchange.lower() in v_ex or v_ex in exchange.lower()):
+                    alias_ticker = v[2].upper()
+                    if alias_ticker:
+                        if symbol.endswith("USDT.P"):
+                            symbol = f"{alias_ticker}USDT.P"
+                        elif symbol.endswith("USDT"):
+                            symbol = f"{alias_ticker}USDT"
+                        elif symbol.startswith("KRW-"):
+                            symbol = f"KRW-{alias_ticker}"
+                        else:
+                            symbol = alias_ticker
+                    break
+
     # [BITHUMB 전용 aiohttp TV 고속 우회 엔진]
     if exchange == "bithumb":
         clean_sym = (

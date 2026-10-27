@@ -910,16 +910,12 @@ export function commitFavoriteChange(uid) {
     rowEl.classList.add("thanos-snap-row");
     setTimeout(() => {
       rowEl.classList.remove("thanos-snap-row");
-      rowEl.classList.add("thanos-collapse-row");
-      setTimeout(() => {
-        rowEl.classList.remove("thanos-collapse-row");
-        renderTable();
-        updateProgressBar();
-        if (typeof window.updateFavoritesCount === "function") {
-          window.updateFavoritesCount();
-        }
-        updateHeaderStar(uid);
-      }, 200);
+      renderTable();
+      updateProgressBar();
+      if (typeof window.updateFavoritesCount === "function") {
+        window.updateFavoritesCount();
+      }
+      updateHeaderStar(uid);
     }, 450);
   } else if (willLeaveCurrentTab && rowEl && document.body.contains(rowEl)) {
     // 노란별 <-> 파란별 이동은 타노스 모션 없이 부드럽게 collapse 퇴장
@@ -932,7 +928,7 @@ export function commitFavoriteChange(uid) {
         window.updateFavoritesCount();
       }
       updateHeaderStar(uid);
-    }, 220);
+    }, 250);
   } else {
     renderTable();
     updateProgressBar();

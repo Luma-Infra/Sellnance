@@ -238,6 +238,8 @@ def _aggregate_binance_market(
     exact_futures_ticker = ""
     spot_utc0 = 0.0
     futures_utc0 = 0.0
+    binance_spot_precision = None
+    binance_futures_precision = None
 
     target_bases = {base.upper()}
     if DUPLICATED_LIST and final_ucid:
@@ -338,6 +340,9 @@ def _aggregate_binance_market(
                     binance_spot_change_today = utils.js_round(
                         ((binance_spot_price - spot_utc0) / spot_utc0 * 100), 2
                     )
+                prec_s = b_inf.get("precision_spot") or b_inf.get("precision")
+                if prec_s is not None:
+                    binance_spot_precision = prec_s
             if b_inf.get("is_alpha"):
                 listed_on.add("BINANCE_ALPHA")
                 listed_on.add("BINANCE_SPOT")
@@ -365,6 +370,9 @@ def _aggregate_binance_market(
                     binance_futures_change_today = utils.js_round(
                         ((binance_futures_price - futures_utc0) / futures_utc0 * 100), 2
                     )
+                prec_f = b_inf.get("precision_futures") or b_inf.get("precision")
+                if prec_f is not None:
+                    binance_futures_precision = prec_f
 
             total_vol_futures += b_inf.get("vol_futures", 0.0)
             total_vol_spot += b_inf.get("vol_spot", 0.0)
@@ -380,6 +388,8 @@ def _aggregate_binance_market(
         "binance_futures_change_today": binance_futures_change_today,
         "binance_futures_funding": binance_futures_funding,
         "binance_futures_funding_interval": binance_futures_funding_interval,
+        "binance_spot_precision": binance_spot_precision,
+        "binance_futures_precision": binance_futures_precision,
         "exact_spot_ticker": exact_spot_ticker,
         "exact_futures_ticker": exact_futures_ticker,
         "spot_utc0": spot_utc0,
@@ -593,6 +603,28 @@ def build_binance_row(
     for t_base in target_bases:
         listed_on.update(global_listings.get(t_base, set()))
 
+    # [족보 연동] DUPLICATED_LIST에 등록된 외부 거래소(Gate.io, Bitget 등) 상장 태그 직접 반영
+    if DUPLICATED_LIST and final_ucid:
+        for k, v in DUPLICATED_LIST.items():
+            if len(v) >= 4 and str(v[0]) == str(final_ucid):
+                ex_name = str(v[3]).upper().strip()
+                if ex_name:
+                    tag = (
+                        f"{ex_name}_SPOT"
+                        if not ex_name.endswith("_SPOT")
+                        and not ex_name.endswith("_FUTURES")
+                        else ex_name
+                    )
+                    listed_on.add(tag)
+                    base_ex = tag.replace("_SPOT", "").replace("_FUTURES", "")
+                    if base_ex:
+                        listed_on.add(base_ex)
+                alias_sym = v[2].upper() if len(v) >= 3 else ""
+                if alias_sym and alias_sym in global_listings:
+                    for gl_tag in global_listings[alias_sym]:
+                        if ex_name and any(p in gl_tag for p in ex_name.split("_")):
+                            listed_on.add(gl_tag)
+
     agg = _aggregate_binance_market(
         base,
         is_stock,
@@ -612,6 +644,8 @@ def build_binance_row(
     binance_futures_change_today = agg["binance_futures_change_today"]
     binance_futures_funding = agg["binance_futures_funding"]
     binance_futures_funding_interval = agg.get("binance_futures_funding_interval", 8)
+    binance_spot_precision = agg.get("binance_spot_precision")
+    binance_futures_precision = agg.get("binance_futures_precision")
     exact_spot_ticker = agg["exact_spot_ticker"]
     exact_futures_ticker = agg["exact_futures_ticker"]
     spot_utc0 = agg["spot_utc0"]
@@ -731,7 +765,19 @@ def build_binance_row(
     up_vol_24h_usd = up_vol_24h_krw / krw_usd_rate if krw_usd_rate > 0 else 0.0
     vol_24h = binance_vol + up_vol_24h_usd + by_vol_24h
     change_24h = b_info.get("change_24h", 0.0)
-    precision = b_info.get("precision", 2)
+    is_futures_row = bool(b_info.get("is_futures")) or (ticker and ticker.endswith(".P"))
+    if is_futures_row:
+        precision = (
+            binance_futures_precision
+            if binance_futures_precision is not None
+            else b_info.get("precision", 2)
+        )
+    else:
+        precision = (
+            binance_spot_precision
+            if binance_spot_precision is not None
+            else b_info.get("precision", 2)
+        )
     # [현선 독립] 선물 코인은 선물 시가, 현물 코인은 현물 시가만 사용 (서로 침범 금지)
     if b_info.get("is_futures") and futures_utc0 > 0:
         utc0_open = utils.js_round(futures_utc0, 8)
@@ -861,8 +907,12 @@ def build_binance_row(
         "Is_Stock": is_stock,
         "precision": precision,
         "Binance_Precision": precision,
-        "Binance_Precision_Futures": b_info.get("precision_futures"),
-        "Binance_Precision_Spot": b_info.get("precision_spot"),
+        "Binance_Precision_Futures": (
+            binance_futures_precision or b_info.get("precision_futures")
+        ),
+        "Binance_Precision_Spot": (
+            binance_spot_precision or b_info.get("precision_spot")
+        ),
         "Bybit_Precision": by_info.get("precision") if by_info else None,
         "Bybit_Precision_Futures": by_info.get("precision_futures") if by_info else None,
         "Upbit": "O" if target_up_base else "X",

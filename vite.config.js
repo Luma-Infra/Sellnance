@@ -24,6 +24,17 @@ export default defineConfig({
   define: {
     __LAST_UPDATE__: JSON.stringify(lastUpdateDate),
   },
+  plugins: [
+    {
+      name: "html-git-date-inject",
+      transformIndexHtml(html) {
+        return html.replace(
+          /<span id="site-last-update-val">.*?<\/span>/,
+          `<span id="site-last-update-val">${lastUpdateDate}</span>`,
+        );
+      },
+    },
+  ],
   // index.html이 들어있는 폴더
   root: "templates",
   // 정적 자산(favicon, svg 등)이 들어있는 폴더

@@ -459,7 +459,13 @@ export function getDisplayTickerHtml(row) {
   let ticker = row.DisplayTicker || row.Symbol || row.Ticker || "";
   ticker = ticker.replace(/\s*[\(\（\[][^\)\）\]]*[\)\）\]]/g, "").trim();
   const isBinanceFutures = isFuturesCoin(row);
-  return `<span class="inline-flex items-center min-w-0 max-w-full"><span class="truncate">${ticker}</span>${isBinanceFutures ? `<span class="shrink-0 ml-0.5 text-theme-accent font-bold">.P</span>` : ""}</span>`;
+  const effectiveLen = ticker.length + (isBinanceFutures ? 1.5 : 0);
+  let fontStyle = "";
+  if (effectiveLen > 5) {
+    const size = Math.max(8.5, 12 - (effectiveLen - 5) * 0.7);
+    fontStyle = ` style="font-size: ${size.toFixed(1)}px;"`;
+  }
+  return `<span class="inline-flex items-center min-w-0 max-w-full"${fontStyle}><span class="truncate">${ticker}</span>${isBinanceFutures ? `<span class="shrink-0 ml-0.5 text-theme-accent font-bold">.P</span>` : ""}</span>`;
 }
 
 /**

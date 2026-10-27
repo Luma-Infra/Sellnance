@@ -7,6 +7,7 @@ import {
 import { getPureBase } from "./chart_utils.js";
 import { getCandleThemeColors } from "./theme_manager.js";
 import { formatChartTickMark, formatChartTime } from "./chart_timezone.js";
+import { binanceBrowserLimiter } from "./chart_limiter.js";
 
 // 퀵뷰 전용 상태 제어 장치
 const qvState = {
@@ -581,18 +582,36 @@ async function initSingleQuickViewChart(container, asset, idx) {
           ? `https://fapi.binance.com/fapi/v1/klines`
           : `https://api.binance.com/api/v3/klines`;
       try {
-        const res = await fetch(
-          `${baseUrl}?symbol=${symbol}&interval=${qvState.timeframe}&limit=100`,
-        );
-        const raw = await res.json();
-        if (Array.isArray(raw) && raw.length > 0) {
-          candles = raw.map((d) => ({
-            time: Number(d[0]) / 1000,
-            open: Number(d[1]),
-            high: Number(d[2]),
-            low: Number(d[3]),
-            close: Number(d[4]),
-          }));
+        const canSend = await binanceBrowserLimiter.acquireWeight(2, 1200);
+        if (!canSend) return [];
+        try {
+          const res = await fetch(
+            `${baseUrl}?symbol=${symbol}&interval=${qvState.timeframe}&limit=100`,
+          );
+          if (res.ok) {
+            const usedWeight = res.headers.get("x-mbx-used-weight-1m");
+            if (usedWeight) binanceBrowserLimiter.syncUsedWeight(usedWeight);
+            const raw = await res.json();
+            if (Array.isArray(raw) && raw.length > 0) {
+              candles = raw.map((d) => ({
+                time: Number(d[0]) / 1000,
+                open: Number(d[1]),
+                high: Number(d[2]),
+                low: Number(d[3]),
+                close: Number(d[4]),
+              }));
+            }
+          } else if (res.status === 429) {
+            const retryAfter = parseInt(
+              res.headers.get("retry-after") || "10",
+              10,
+            );
+            binanceBrowserLimiter.triggerCooldown(retryAfter);
+          } else if (res.status === 418) {
+            binanceBrowserLimiter.triggerCooldown(180);
+          }
+        } finally {
+          binanceBrowserLimiter.release();
         }
       } catch (e) {}
     }
