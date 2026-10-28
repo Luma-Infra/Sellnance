@@ -3305,3 +3305,40 @@ html.theme-upbit .kimchi-tag-bybit {
   color: #fb923c !important;
   font-weight: 700 !important;
 }
+
+/* 트뷰 네이티브 멀티 페인 간격 조절선(Splitter) 가시성 개선 */
+#pane-main tr:has(> td[colspan="3"]),
+#pane-main tr:has(> td[colspan]) {
+  height: 1px !important;
+  min-height: 1px !important;
+  max-height: 1px !important;
+  line-height: 0 !important;
+  font-size: 0 !important;
+}
+
+#pane-main td[colspan="3"],
+#pane-main td[colspan] {
+  height: 1px !important;
+  min-height: 1px !important;
+  max-height: 1px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  line-height: 0 !important;
+  font-size: 0 !important;
+  background-color: var(--grid, var(--border, #2a2a22)) !important;
+  transition:
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
+  cursor: row-resize !important;
+  position: relative;
+}
+#pane-main td[colspan="3"] > div,
+#pane-main td[colspan] > div {
+  background-color: transparent !important;
+}
+
+#pane-main td[colspan="3"]:hover,
+#pane-main td[colspan]:hover {
+  background-color: #38bdf8 !important;
+  box-shadow: 0 0 3px rgba(56, 189, 248, 0.8) !important;
+}

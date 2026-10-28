@@ -379,8 +379,8 @@ let _lastLegendRenderTime = 0;
 let _legendRafPending = false;
 let _pendingLegendArgs = null;
 
-function updateLegend(d, v, k, forceImmediate = false) {
-  // [디버그 옵션] 우측 패널 DOM 차단 또는 레전드 개별 차단 시 추적용 즉시 리턴
+export function updateLegend(d, v, k, forceImmediate = false) {
+  // [디버그 옵션] 우측 패널 DOM 차단 또는 레전드 개별 차단 시 추적용 리턴
   if (store.blockRightDom || store.blockLegend) {
     const nowTime = Date.now();
     if (!window._lastLegendUpdateTime) window._lastLegendUpdateTime = 0;
@@ -812,6 +812,22 @@ export function autoFit(isTabRestore = false) {
     } catch (e) {}
     return;
   }
+
+  // 상하 간격만 오토핏하고 time/가로 줌 간격은 초기화 안하도록 유지
+  if (store.isUserZoomed) {
+    if (store.chart && !store.isPriceScaleUserZoomed) {
+      store.chart.priceScale("right").applyOptions({ autoScale: true });
+    }
+    if (
+      store.chart &&
+      !store.isKimchiPriceScaleUserZoomed &&
+      store.kimchiSeries
+    ) {
+      store.chart.priceScale("left").applyOptions({ autoScale: true });
+    }
+    return;
+  }
+
   if (store.chart && store.mainData.length) {
     const len = store.mainData.length;
     // [UX 개선] 캔들 개수(len)가 매우 적은 신규 상장 코인(예: 일봉 5개) 전환 시에만 캔들 수축되는 현상 방지

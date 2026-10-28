@@ -116,11 +116,11 @@
       src="https://static.cloudflareinsights.com/beacon.min.js"
       data-cf-beacon='{"token": "1c7917a73feb458db846dbdb1a40786d"}'
     ></script>
-    <script type="module" crossorigin src="/assets/ap120-BTR3ivQc.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/ch120-Dy-m67bt.js">
-    <link rel="modulepreload" crossorigin href="/assets/ma140-CmLopszW.js">
-    <link rel="modulepreload" crossorigin href="/assets/uc160-By55Hhps.js">
-    <link rel="stylesheet" crossorigin href="/assets/ma100-D7OZbBOu.css">
+    <script type="module" crossorigin src="/assets/ap120-MCCaBMe7.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/ch120-V2uIuwKy.js">
+    <link rel="modulepreload" crossorigin href="/assets/ma140-D2XDJIcX.js">
+    <link rel="modulepreload" crossorigin href="/assets/uc160-B0sfSms2.js">
+    <link rel="stylesheet" crossorigin href="/assets/ma100-C8YuwrP5.css">
   </head>
 
   <body
@@ -2311,12 +2311,58 @@
                   <!-- 1. 메인 차트 -->
                   <div
                     id="pane-main"
-                    class="w-full relative z-0 flex-[6] min-h-[100px] group"
+                    class="w-full h-full relative z-0 flex-1 min-h-[100px] group"
                   >
-                    <!-- 메인 차트용 A/L 오버레이 -->
+                    <!-- 메인 차트용 A/L & 트뷰 스타일 페인 컨트롤 오버레이 -->
                     <div
-                      class="scale-mode-container absolute bottom-[4px] right-[80px] z-[110] flex gap-1 bg-theme-panel/95 p-0.5 rounded border border-theme-border select-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-auto shadow-md"
+                      class="scale-mode-container absolute bottom-[4px] right-[80px] z-[110] flex items-center gap-1 bg-theme-panel/95 p-0.5 rounded border border-theme-border select-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-auto shadow-md"
                     >
+                      <!-- 페인 위/아래 이동 버튼 (임시 숨김 주석 처리)
+                      <div class="scale-mode-btn-wrap">
+                        <button
+                          id="pane-move-up-btn"
+                          onclick="
+                            if (window.moveActivePaneUp)
+                              window.moveActivePaneUp();
+                          "
+                          class="w-5 h-5 flex items-center justify-center text-[10px] font-bold rounded cursor-pointer transition-colors bg-theme-border/20 text-theme-text hover:bg-theme-accent hover:text-white border border-theme-border/30"
+                          title="하단 패널 위로 이동 (▲)"
+                        >
+                          ▲
+                        </button>
+                      </div>
+                      <div class="scale-mode-btn-wrap">
+                        <button
+                          id="pane-move-down-btn"
+                          onclick="
+                            if (window.moveActivePaneDown)
+                              window.moveActivePaneDown();
+                          "
+                          class="w-5 h-5 flex items-center justify-center text-[10px] font-bold rounded cursor-pointer transition-colors bg-theme-border/20 text-theme-text hover:bg-theme-accent hover:text-white border border-theme-border/30"
+                          title="상단 패널 아래로 이동 (▼)"
+                        >
+                          ▼
+                        </button>
+                      </div>
+                      -->
+                      <!-- 거래량 & 김프 분리 ~ 통합 토글 버튼 -->
+                      <div class="scale-mode-btn-wrap">
+                        <button
+                          id="pane-split-toggle-btn"
+                          onclick="
+                            if (window.toggleKimchiSplit)
+                              window.toggleKimchiSplit();
+                          "
+                          class="px-1.5 h-5 flex items-center justify-center text-[9px] font-bold rounded cursor-pointer transition-colors bg-theme-border/20 text-theme-text hover:bg-theme-accent hover:text-white border border-theme-border/30 gap-0.5"
+                          title="김프/거래량 분리 및 통합 전환"
+                        >
+                          <span id="pane-split-icon">⧉</span>
+                          <span id="pane-split-text" class="text-[8px]"
+                            >분리</span
+                          >
+                        </button>
+                      </div>
+                      <!-- 상하 가격 스케일 오토핏 버튼 A (봉 time 간격 유지) -->
                       <div class="scale-mode-btn-wrap">
                         <button
                           id="main-scale-a-btn"
@@ -3515,7 +3561,7 @@
         class="hidden min-[1200px]:block absolute top-full right-0 pt-1 z-30 pointer-events-none select-none text-[10px] text-theme-text/40 font-sans font-medium tracking-tight"
       >
         last update :
-        <span id="site-last-update-val">2026-10-24</span>
+        <span id="site-last-update-val">2026-10-27</span>
       </div>
     </div>
     <!-- #main-dashboard-wrapper 닫기 -->

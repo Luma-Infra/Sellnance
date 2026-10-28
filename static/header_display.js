@@ -399,10 +399,9 @@ export const realUpdateHeaderDisplay = (
     });
   }
 
-  // 대표 등락률(Raw) 값을 다이렉트로 매핑하여 좌측 테이블과 우측 전광판의 싱크를 일치시키기
-  let n24 = 0;
-  let nDay = 0;
-  let isDayNull = false;
+  // [거래소/마켓별 등락률 산출 - 상호 침범 및 임의 폴백 차단]
+  let n24 = null;
+  let nDay = null;
 
   const isPureAlpha = Boolean(
     (row.Binance_Alpha === "O" || row.is_alpha) &&
@@ -410,115 +409,211 @@ export const realUpdateHeaderDisplay = (
     !row.is_futures,
   );
 
+  const isValidNum = (v) =>
+    v !== null &&
+    v !== undefined &&
+    typeof Number(v) === "number" &&
+    !isNaN(Number(v));
+
   if (isPureAlpha) {
     if (activeMarket === "BITHUMB") {
-      n24 = row.Change_24h_Bithumb ?? row.Change_24h_Raw ?? 0;
-      nDay = row.Change_Today_Bithumb ?? null;
-      if (nDay === null) isDayNull = true;
+      n24 = isValidNum(row.Change_24h_Bithumb)
+        ? Number(row.Change_24h_Bithumb)
+        : null;
+      nDay = isValidNum(row.Change_Today_Bithumb)
+        ? Number(row.Change_Today_Bithumb)
+        : null;
     } else {
-      n24 = row.Change_24h_Raw ?? 0;
-      nDay = null;
-      isDayNull = true;
+      n24 = isValidNum(row.Change_24h_Raw) ? Number(row.Change_24h_Raw) : null;
+      nDay = null; // 알파 코인은 24h 전용 (Day 변동폭 미지원 고정)
     }
   } else if (activeMarket === "UPBIT") {
-    n24 = row.Change_24h_Upbit ?? row.Change_24h_Raw ?? 0;
-    nDay = row.Change_Today_Upbit ?? row.Change_Today_Raw ?? 0;
+    // 1. 업비트 단독: 오직 업비트 데이터만 사용
+    const hasUpbit =
+      row.Upbit === "O" ||
+      row.Listed_Exchanges?.includes("UPBIT") ||
+      (row.Ticker && row.Ticker.endsWith("KRW")) ||
+      isValidNum(row.Upbit_Price);
+
+    if (hasUpbit) {
+      n24 = isValidNum(row.Change_24h_Upbit)
+        ? Number(row.Change_24h_Upbit)
+        : null;
+      nDay = isValidNum(row.Change_Today_Upbit)
+        ? Number(row.Change_Today_Upbit)
+        : null;
+    } else {
+      n24 = null;
+      nDay = null;
+    }
+  } else if (activeMarket === "FUTURES") {
+    // 2. 바이낸스 선물 단독: 오직 바이낸스 선물 데이터만 사용
+    const hasFutures =
+      row.Binance_Futures === "O" ||
+      row.Listed_Exchanges?.includes("BINANCE_FUTURES") ||
+      row.is_futures ||
+      isValidNum(row.Binance_Price_Futures);
+
+    if (hasFutures) {
+      n24 = isValidNum(row.Change_24h_Futures)
+        ? Number(row.Change_24h_Futures)
+        : null;
+      nDay = isValidNum(row.Change_Today_Futures)
+        ? Number(row.Change_Today_Futures)
+        : null;
+    } else {
+      n24 = null;
+      nDay = null;
+    }
+  } else if (activeMarket === "SPOT") {
+    // 3. 바이낸스 현물 단독: 오직 바이낸스 현물 데이터만 사용
+    const hasSpot =
+      row.Binance === "O" ||
+      row.Listed_Exchanges?.includes("BINANCE") ||
+      isValidNum(row.Binance_Price_Spot) ||
+      Boolean(row.Exact_Spot);
+
+    if (hasSpot) {
+      const spot24 = isValidNum(row.Change_24h_Spot)
+        ? row.Change_24h_Spot
+        : isValidNum(row.Change_24h_Binance)
+          ? row.Change_24h_Binance
+          : null;
+      const spotDay = isValidNum(row.Change_Today_Spot)
+        ? row.Change_Today_Spot
+        : isValidNum(row.Change_Today_Binance)
+          ? row.Change_Today_Binance
+          : null;
+      n24 = isValidNum(spot24) ? Number(spot24) : null;
+      nDay = isValidNum(spotDay) ? Number(spotDay) : null;
+    } else {
+      n24 = null;
+      nDay = null;
+    }
+  } else if (activeMarket === "BYBIT_FUTURES") {
+    // 4. 바이비트 선물 단독
+    const hasBybitFut =
+      row.Bybit_Futures === "O" ||
+      row.Listed_Exchanges?.includes("BYBIT_FUTURES") ||
+      isValidNum(row.Bybit_Price_Futures);
+    if (hasBybitFut) {
+      n24 = isValidNum(row.Change_24h_Bybit_Futures)
+        ? Number(row.Change_24h_Bybit_Futures)
+        : null;
+      nDay = isValidNum(row.Change_Today_Bybit_Futures)
+        ? Number(row.Change_Today_Bybit_Futures)
+        : null;
+    } else {
+      n24 = null;
+      nDay = null;
+    }
+  } else if (activeMarket === "BYBIT" || activeMarket === "BYBIT_SPOT") {
+    // 5. 바이비트 현물 단독
+    const hasBybitSpot =
+      row.Bybit === "O" ||
+      row.Listed_Exchanges?.includes("BYBIT") ||
+      isValidNum(row.Bybit_Price_Spot);
+    if (hasBybitSpot) {
+      n24 = isValidNum(row.Change_24h_Bybit)
+        ? Number(row.Change_24h_Bybit)
+        : null;
+      nDay = isValidNum(row.Change_Today_Bybit)
+        ? Number(row.Change_Today_Bybit)
+        : null;
+    } else {
+      n24 = null;
+      nDay = null;
+    }
   } else if (activeMarket === "BITHUMB") {
-    n24 = row.Change_24h_Bithumb ?? row.Change_24h_Raw ?? 0;
-    nDay = row.Change_Today_Bithumb ?? row.Change_Today_Raw ?? 0;
-  } else if (activeMarket === "FUTURES" || activeMarket === "BYBIT_FUTURES") {
-    n24 =
-      (activeMarket === "BYBIT_FUTURES"
-        ? row.Change_24h_Bybit_Futures ||
-          row.Change_24h_Bybit ||
-          row.Change_24h_Futures
-        : row.Change_24h_Futures ||
-          row.Change_24h_Bybit_Futures ||
-          row.Change_24h_Bybit) ||
-      row.Change_24h_Raw ||
-      0;
-    nDay =
-      (activeMarket === "BYBIT_FUTURES"
-        ? row.Change_Today_Bybit_Futures ||
-          row.Change_Today_Bybit ||
-          row.Change_Today_Futures
-        : row.Change_Today_Futures ||
-          row.Change_Today_Bybit_Futures ||
-          row.Change_Today_Bybit) ||
-      row.Change_Today_Raw ||
-      0;
-  } else if (
-    activeMarket === "SPOT" ||
-    activeMarket === "BYBIT" ||
-    activeMarket === "BYBIT_SPOT"
-  ) {
-    n24 =
-      (activeMarket === "SPOT"
-        ? (row.Change_24h_Spot ?? row.Change_24h_Binance)
-        : row.Change_24h_Bybit ||
-          row.Change_24h_Spot ||
-          row.Change_24h_Binance ||
-          row.Change_24h_Raw) ??
-      row.Change_24h_Raw ??
-      0;
-    nDay =
-      (activeMarket === "SPOT"
-        ? (row.Change_Today_Spot ?? row.Change_Today_Binance)
-        : row.Change_Today_Bybit ||
-          row.Change_Today_Spot ||
-          row.Change_Today_Binance ||
-          row.Change_Today_Raw) ??
-      row.Change_Today_Raw ??
-      0;
-    if (nDay === null || nDay === undefined) isDayNull = true;
+    // 6. 빗썸 단독
+    const hasBithumb =
+      row.Bithumb === "O" ||
+      row.Listed_Exchanges?.includes("BITHUMB") ||
+      isValidNum(row.Bithumb_Price);
+    if (hasBithumb) {
+      n24 = isValidNum(row.Change_24h_Bithumb)
+        ? Number(row.Change_24h_Bithumb)
+        : null;
+      nDay = isValidNum(row.Change_Today_Bithumb)
+        ? Number(row.Change_Today_Bithumb)
+        : null;
+    } else {
+      n24 = null;
+      nDay = null;
+    }
   } else {
-    // ALL, KIMCHI, NEW 등 기본 탭 모드에서의 우선순위 분기
+    // 7. ALL / KIMCHI / NEW 등 기본 탭: 해당 코인이 상장된 대표 거래소 단일 매핑 (교차 침범 차단)
     const hasFutures =
       row.Binance_Futures === "O" ||
       row.Listed_Exchanges?.includes("BINANCE_FUTURES");
     const hasSpot =
       row.Binance === "O" || row.Listed_Exchanges?.includes("BINANCE");
+    const hasUpbit =
+      row.Upbit === "O" || row.Listed_Exchanges?.includes("UPBIT");
+    const hasBithumb =
+      row.Bithumb === "O" || row.Listed_Exchanges?.includes("BITHUMB");
+    const hasBybitFut =
+      row.Bybit_Futures === "O" ||
+      row.Listed_Exchanges?.includes("BYBIT_FUTURES");
+
     if (hasFutures) {
-      n24 = row.Change_24h_Futures || row.Change_24h_Raw || 0;
-      nDay = row.Change_Today_Futures || row.Change_Today_Raw || 0;
+      n24 = isValidNum(row.Change_24h_Futures)
+        ? Number(row.Change_24h_Futures)
+        : null;
+      nDay = isValidNum(row.Change_Today_Futures)
+        ? Number(row.Change_Today_Futures)
+        : null;
     } else if (hasSpot) {
-      n24 =
-        row.Change_24h_Spot ??
-        row.Change_24h_Binance ??
-        row.Change_24h_Raw ??
-        0;
-      nDay =
-        row.Change_Today_Spot ??
-        row.Change_Today_Binance ??
-        row.Change_Today_Raw ??
-        0;
-      if (nDay === null || nDay === undefined) isDayNull = true;
-    } else if (row.Upbit === "O" || row.Listed_Exchanges?.includes("UPBIT")) {
-      n24 = row.Change_24h_Upbit ?? row.Change_24h_Raw ?? 0;
-      nDay = row.Change_Today_Upbit ?? row.Change_Today_Raw ?? 0;
-    } else if (
-      row.Bithumb === "O" ||
-      row.Listed_Exchanges?.includes("BITHUMB")
-    ) {
-      n24 = row.Change_24h_Bithumb ?? row.Change_24h_Raw ?? 0;
-      nDay = row.Change_Today_Bithumb ?? row.Change_Today_Raw ?? 0;
+      const spot24 = isValidNum(row.Change_24h_Spot)
+        ? row.Change_24h_Spot
+        : row.Change_24h_Binance;
+      const spotDay = isValidNum(row.Change_Today_Spot)
+        ? row.Change_Today_Spot
+        : row.Change_Today_Binance;
+      n24 = isValidNum(spot24) ? Number(spot24) : null;
+      nDay = isValidNum(spotDay) ? Number(spotDay) : null;
+    } else if (hasUpbit) {
+      n24 = isValidNum(row.Change_24h_Upbit)
+        ? Number(row.Change_24h_Upbit)
+        : null;
+      nDay = isValidNum(row.Change_Today_Upbit)
+        ? Number(row.Change_Today_Upbit)
+        : null;
+    } else if (hasBithumb) {
+      n24 = isValidNum(row.Change_24h_Bithumb)
+        ? Number(row.Change_24h_Bithumb)
+        : null;
+      nDay = isValidNum(row.Change_Today_Bithumb)
+        ? Number(row.Change_Today_Bithumb)
+        : null;
+    } else if (hasBybitFut) {
+      n24 = isValidNum(row.Change_24h_Bybit_Futures)
+        ? Number(row.Change_24h_Bybit_Futures)
+        : null;
+      nDay = isValidNum(row.Change_Today_Bybit_Futures)
+        ? Number(row.Change_Today_Bybit_Futures)
+        : null;
     } else {
-      n24 =
-        row.Change_24h_Bybit_Futures ??
-        row.Change_24h_Bybit ??
-        row.Change_24h_Raw ??
-        0;
-      nDay =
-        row.Change_Today_Bybit_Futures ??
-        row.Change_Today_Bybit ??
-        row.Change_Today_Raw ??
-        0;
+      n24 = isValidNum(row.Change_24h_Bybit)
+        ? Number(row.Change_24h_Bybit)
+        : null;
+      nDay = isValidNum(row.Change_Today_Bybit)
+        ? Number(row.Change_Today_Bybit)
+        : null;
     }
   }
 
-  const c24 =
-    n24 > 0 ? "text-theme-up" : n24 < 0 ? "text-theme-down" : "text-theme-text";
-  const text24 = `${n24 > 0 ? "+" : ""}${Number(n24).toFixed(2)}%`;
+  const is24Null = n24 === null;
+  const isDayNull = nDay === null;
+
+  const c24 = is24Null
+    ? "text-theme-text opacity-40"
+    : n24 > 0
+      ? "text-theme-up"
+      : n24 < 0
+        ? "text-theme-down"
+        : "text-theme-text";
+  const text24 = is24Null ? "-" : `${n24 > 0 ? "+" : ""}${n24.toFixed(2)}%`;
 
   if (dom.headChg24hEls) {
     dom.headChg24hEls.forEach((el) => {
@@ -535,9 +630,7 @@ export const realUpdateHeaderDisplay = (
       : nDay < 0
         ? "text-theme-down"
         : "text-theme-text";
-  const textDay = isDayNull
-    ? "-"
-    : `${nDay > 0 ? "+" : ""}${Number(nDay).toFixed(2)}%`;
+  const textDay = isDayNull ? "-" : `${nDay > 0 ? "+" : ""}${nDay.toFixed(2)}%`;
 
   if (dom.headChgDayEls) {
     dom.headChgDayEls.forEach((el) => {
