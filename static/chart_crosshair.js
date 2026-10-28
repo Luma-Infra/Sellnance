@@ -1,4 +1,4 @@
-// chart_crosshair.js - 🚀 메인 & 볼륨 차트 간 십자선(Crosshair) 마그네틱 스냅 및 다중 동기화 전담 엔진
+// chart_crosshair.js - 메인 & 볼륨 차트 간 십자선(Crosshair) 마그네틱 스냅 및 다중 동기화 전담 엔진
 import { store, tfSec } from "./_store.js";
 import { getUnixSeconds } from "./chart_utils.js";
 import { formatChartTime } from "./chart_timezone.js";

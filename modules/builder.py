@@ -364,7 +364,7 @@ def assemble_final_dashboard(
         ) or EXCHANGE_WARNINGS.get("BINANCE", {}).get(base_sym)
         bin_warn: str | None = str(bin_warn_raw) if bin_warn_raw else None
 
-        # [오탐 무효화] 활성 선물(Binance_Price_Futures > 0 또는 Exact_Futures)이나 현물이 정상 거래 중이면 구 페어 정지 경고 제거
+        # [오탐 방지, 경고 및 상장 연계 필터링]
         if bin_warn:
             has_live_fut = bool(
                 row.get("Binance_Price_Futures")
@@ -378,21 +378,39 @@ def assemble_final_dashboard(
                 or row.get("Binance") == "O"
             )
 
-            if "거래 정지(선물)" in bin_warn and has_live_fut:
-                if bin_warn == "거래 정지(선물)":
-                    bin_warn = None
-                elif "거래 정지(현물)" in bin_warn and not has_live_spot:
-                    bin_warn = "거래 정지(현물)"
-                else:
-                    bin_warn = None
+            is_bin_spot_listed = (row.get("Binance") == "O") or has_live_spot
+            is_bin_fut_listed = (row.get("Binance_Futures") == "O") or has_live_fut
 
-            if bin_warn and "거래 정지(현물)" in bin_warn and has_live_spot:
-                if bin_warn == "거래 정지(현물)":
-                    bin_warn = None
-                elif "거래 정지(선물)" in bin_warn and not has_live_fut:
-                    bin_warn = "거래 정지(선물)"
-                else:
-                    bin_warn = None
+            # 유효 경고 판정:
+            # 1) 현물 거래정지: 바이낸스 현물 상장 종목이면서 실시간 거래가 중단된 경우에만 인정
+            #    (정상 거래 중이거나 아예 미상장인 코인에 구 마켓 상폐 딱지 부착 방지)
+            keep_spot_halt = ("현물" in bin_warn and "정지" in bin_warn) and (
+                is_bin_spot_listed and not has_live_spot
+            )
+
+            # 2) 선물 거래정지: 바이낸스 선물 상장 종목이면서 실시간 거래가 중단된 경우에만 인정
+            #    (정상 거래 중이거나 아예 미상장인 코인에 구 계약 만료/상폐 딱지 부착 방지)
+            keep_fut_halt = ("선물" in bin_warn and "정지" in bin_warn) and (
+                is_bin_fut_listed and not has_live_fut
+            )
+
+            # 3) 모니터링 경고: 바이낸스 현물 상장 종목에만 유효
+            keep_monitoring = (
+                "모니터링" in bin_warn or "주의" in bin_warn
+            ) and is_bin_spot_listed
+
+            active_msgs = []
+            if keep_spot_halt and keep_fut_halt:
+                active_msgs.append("거래 정지(현물/선물)")
+            elif keep_spot_halt:
+                active_msgs.append("거래 정지(현물)")
+            elif keep_fut_halt:
+                active_msgs.append("거래 정지(선물)")
+
+            if keep_monitoring:
+                active_msgs.append("거래 주의(모니터링)")
+
+            bin_warn = " / ".join(active_msgs) if active_msgs else None
 
         if bin_warn:
             warnings["BINANCE"] = bin_warn

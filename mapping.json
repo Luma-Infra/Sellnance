@@ -14,7 +14,7 @@
   "__MEMO__12": "DUPLICATED_LIST: 동일 티커 다른 코인(동명이인) 또는 거래소별 티커 상이 코인의 UID/거래소별 티커 매핑",
   "__MEMO__13": "TICKER_DATA: 전체 자산 마스터 메타데이터: [0: CMC_ID, 1: 체인/메인넷, 2: 영문명, 3: 표준티커, 4: 자산타입(COIN/STOCK), 5: 특수구분(ALPHA 등)]",
   "__MEMO__14": "-------------------------------------------------------------",
-  "DEFAULT_KRW_USD_RATE": 1323.66,
+  "DEFAULT_KRW_USD_RATE": 1327.54,
   "CHAIN_LOGO_MAP": {
     "ETH": "https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png",
     "BNB": "https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png",
@@ -664,6 +664,13 @@
       "AAVE",
       "COIN"
     ],
+    "ABBV(STOCK)": [
+      "42650",
+      null,
+      "ABBV (Derivatives)",
+      "ABBV",
+      "STOCK"
+    ],
     "ACE": [
       "28674",
       null,
@@ -727,6 +734,13 @@
       "ADBE",
       "STOCK"
     ],
+    "ADBEB": [
+      "42384",
+      null,
+      "Adobe Tokenized bStocks",
+      "ADBEB",
+      "COIN"
+    ],
     "ADBEB(STOCK)": [
       "42384",
       null,
@@ -770,12 +784,12 @@
       "AGLD",
       "COIN"
     ],
-    "AGPU(STOCK)": [
-      "40951",
+    "AGPUB": [
+      "42353",
       null,
-      "AGPU (Derivatives)",
-      "AGPU",
-      "STOCK"
+      "Axe Compute Tokenized bStocks",
+      "AGPUB",
+      "COIN"
     ],
     "AGPUB(STOCK)": [
       "42353",
@@ -988,6 +1002,13 @@
       "AMC (Derivatives)",
       "AMC",
       "STOCK"
+    ],
+    "AMCB": [
+      "42355",
+      null,
+      "AMC Entertainment Holdings Tokenized bStocks",
+      "AMCB",
+      "COIN"
     ],
     "AMCB(STOCK)": [
       "42355",
@@ -1568,7 +1589,7 @@
     "BAS": [
       "37387",
       null,
-      "BNB Attestation Service",
+      "BAS",
       "BAS",
       "COIN"
     ],
@@ -1747,13 +1768,6 @@
       "BITO",
       "STOCK"
     ],
-    "BLAST": [
-      "28480",
-      "BLAST",
-      "Blast",
-      "BLAST",
-      "COIN"
-    ],
     "BLEND": [
       "39666",
       "BLEND",
@@ -1910,6 +1924,13 @@
       "BOT",
       "STOCK"
     ],
+    "BOTB": [
+      "42613",
+      null,
+      "RoboStrategy Inc Tokenized bStocks",
+      "BOTB",
+      "COIN"
+    ],
     "BOTB(STOCK)": [
       "254586228",
       null,
@@ -1958,6 +1979,13 @@
       "BRKB (Derivatives)",
       "BRKB",
       "STOCK"
+    ],
+    "BRKBB": [
+      "42612",
+      null,
+      "Berkshire Hathaway Tokenized bStocks",
+      "BRKBB",
+      "COIN"
     ],
     "BRKBB(STOCK)": [
       "761648810",
@@ -2213,7 +2241,7 @@
       "COIN"
     ],
     "CEG(STOCK)": [
-      "229383590",
+      "42618",
       null,
       "CEG (Derivatives)",
       "CEG",
@@ -2746,6 +2774,13 @@
       "CYPH",
       "STOCK"
     ],
+    "CYPHB": [
+      "42354",
+      null,
+      "Cypherpunk Technologies Tokenized bStocks",
+      "CYPHB",
+      "COIN"
+    ],
     "CYPHB(STOCK)": [
       "42354",
       null,
@@ -3085,6 +3120,13 @@
       "EGLD",
       "COIN"
     ],
+    "EIDO(STOCK)": [
+      "42676",
+      null,
+      "EIDO (Derivatives)",
+      "EIDO",
+      "STOCK"
+    ],
     "EIGEN": [
       "30494",
       null,
@@ -3148,6 +3190,13 @@
       "EPT",
       "COIN",
       "ALPHA"
+    ],
+    "EQT(STOCK)": [
+      "42677",
+      null,
+      "EQT (Derivatives)",
+      "EQT",
+      "STOCK"
     ],
     "ERA": [
       "37374",
@@ -3492,6 +3541,13 @@
       "FWDI (Derivatives)",
       "FWDI",
       "STOCK"
+    ],
+    "FWDIB": [
+      "42386",
+      null,
+      "Forward Industries Tokenized bStocks",
+      "FWDIB",
+      "COIN"
     ],
     "FWDIB(STOCK)": [
       "42386",
@@ -3936,14 +3992,14 @@
       "COIN"
     ],
     "HK0625(STOCK)": [
-      "744635366",
+      "480113223",
       null,
       "HK0625 (Derivatives)",
       "HK0625",
       "STOCK"
     ],
     "HK0700(STOCK)": [
-      "202691414",
+      "163816070",
       null,
       "HK0700 (Derivatives)",
       "HK0700",
@@ -3957,7 +4013,7 @@
       "STOCK"
     ],
     "HK1810(STOCK)": [
-      "727261177",
+      "559818654",
       null,
       "HK1810 (Derivatives)",
       "HK1810",
@@ -4032,6 +4088,13 @@
       "HPE (Derivatives)",
       "HPE",
       "STOCK"
+    ],
+    "HPEB": [
+      "42385",
+      null,
+      "Hewlett Packard Tokenized bStocks",
+      "HPEB",
+      "COIN"
     ],
     "HPEB(STOCK)": [
       "42385",
@@ -4362,6 +4425,13 @@
       "JPM",
       "STOCK"
     ],
+    "JPMB": [
+      "42416",
+      null,
+      "JPMorgan Chase Tokenized bStocks",
+      "JPMB",
+      "COIN"
+    ],
     "JPMB(STOCK)": [
       "42416",
       null,
@@ -4580,6 +4650,13 @@
       "KSTR",
       "STOCK"
     ],
+    "KSTRB": [
+      "42615",
+      null,
+      "KraneShares STAR Market 50 ETF Tokenized bStocks",
+      "KSTRB",
+      "COIN"
+    ],
     "KSTRB(STOCK)": [
       "356310620",
       null,
@@ -4720,6 +4797,13 @@
       "LLY",
       "STOCK"
     ],
+    "LLYB": [
+      "42415",
+      null,
+      "Eli Lilly Tokenized bStocks",
+      "LLYB",
+      "COIN"
+    ],
     "LLYB(STOCK)": [
       "42415",
       null,
@@ -4787,7 +4871,7 @@
       "20314",
       null,
       "Terra",
-      "LUNA",
+      "LUNA2",
       "COIN"
     ],
     "LUNA2": [
@@ -4944,6 +5028,13 @@
       "MDB",
       "STOCK"
     ],
+    "MDBB": [
+      "42535",
+      null,
+      "Mongodb Tokenized bStocks",
+      "MDBB",
+      "COIN"
+    ],
     "MDBB(STOCK)": [
       "42535",
       null,
@@ -4952,7 +5043,7 @@
       "STOCK"
     ],
     "MDT(STOCK)": [
-      "136101225",
+      "42621",
       null,
       "MDT (Derivatives)",
       "MDT",
@@ -5971,6 +6062,13 @@
       "PDD",
       "STOCK"
     ],
+    "PDDB": [
+      "42383",
+      null,
+      "PDD Holdings Tokenized bStocks",
+      "PDDB",
+      "COIN"
+    ],
     "PDDB(STOCK)": [
       "42383",
       null,
@@ -5993,12 +6091,12 @@
       "PENDLE",
       "COIN"
     ],
-    "PENG(STOCK)": [
-      "40761",
+    "PENGB": [
+      "42536",
       null,
-      "PENG (Derivatives)",
-      "PENG",
-      "STOCK"
+      "Penguin Solutions Tokenized bStocks",
+      "PENGB",
+      "COIN"
     ],
     "PENGB(STOCK)": [
       "42536",
@@ -6187,6 +6285,13 @@
       null,
       "Powerledger",
       "POWR",
+      "COIN"
+    ],
+    "PREDICT": [
+      "42642",
+      null,
+      "Predict.fun",
+      "PREDICT",
       "COIN"
     ],
     "PRL": [
@@ -6853,6 +6958,13 @@
       "SECZ",
       "STOCK"
     ],
+    "SECZB": [
+      "42417",
+      null,
+      "Securitize Tokenized bStocks",
+      "SECZB",
+      "COIN"
+    ],
     "SECZB(STOCK)": [
       "42417",
       null,
@@ -6894,6 +7006,13 @@
       "SHAZ (Derivatives)",
       "SHAZ",
       "STOCK"
+    ],
+    "SHAZB": [
+      "42389",
+      null,
+      "SharonAI Tokenized bStocks",
+      "SHAZB",
+      "COIN"
     ],
     "SHAZB(STOCK)": [
       "42389",
@@ -7428,6 +7547,13 @@
       "STEEM",
       "COIN"
     ],
+    "STM(STOCK)": [
+      "42678",
+      null,
+      "STM (Derivatives)",
+      "STM",
+      "STOCK"
+    ],
     "STO": [
       "32194",
       null,
@@ -7722,6 +7848,13 @@
       "TMF (Derivatives)",
       "TMF",
       "STOCK"
+    ],
+    "TMFB": [
+      "42611",
+      null,
+      "Direxion Daily 20 Year Treasury Bull 3X ETF Tokenized bStocks",
+      "TMFB",
+      "COIN"
     ],
     "TMFB(STOCK)": [
       "803744233",
@@ -8222,6 +8355,13 @@
       "UVXY",
       "STOCK"
     ],
+    "UVXYB": [
+      "42537",
+      null,
+      "ProShares Ultra VIX Short-Term Futures ETF  Tokenized bStocks",
+      "UVXYB",
+      "COIN"
+    ],
     "UVXYB(STOCK)": [
       "42537",
       null,
@@ -8329,6 +8469,13 @@
       "VST",
       "STOCK"
     ],
+    "VSTB": [
+      "42614",
+      null,
+      "Vistra Corp Tokenized bStocks",
+      "VSTB",
+      "COIN"
+    ],
     "VSTB(STOCK)": [
       "853884947",
       null,
@@ -8413,12 +8560,12 @@
       "WDCB",
       "STOCK"
     ],
-    "WEN(STOCK)": [
-      "40575",
+    "WENB": [
+      "6728",
       null,
-      "WEN (Derivatives)",
-      "WEN",
-      "STOCK"
+      "Wenburn",
+      "WENB",
+      "COIN"
     ],
     "WENB(STOCK)": [
       "42387",

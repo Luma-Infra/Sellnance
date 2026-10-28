@@ -199,6 +199,14 @@ export function processTableData(result) {
     window.updateSortUI(store.currentSortCol, store.sortState);
   }
 
+  // [신규] 사이트 마지막 깃 업데이트 일자 동기화
+  if (result && result.git_last_update) {
+    const updateEl = document.getElementById("site-last-update-val");
+    if (updateEl) {
+      updateEl.textContent = result.git_last_update;
+    }
+  }
+
   // 초기 경로/해시/선택 코인 렌더 및 없는 URL 주소 return
   const activeRoute =
     typeof window.getInitialRouteSymbol === "function"

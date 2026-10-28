@@ -535,6 +535,149 @@
         border: 1px solid #30363d;
       }
 
+      /* Group Row & Accordion Styles */
+      tbody tr.group-row {
+        background: var(--bg-card);
+        cursor: pointer;
+        border-top: 1px solid var(--border);
+        border-bottom: 1px solid var(--border-subtle);
+        transition: background 0.15s ease;
+      }
+      tbody tr.group-row:hover {
+        background: #1c222b;
+      }
+      tbody tr.group-row.expanded {
+        background: #181d26;
+        border-bottom: 1px dashed var(--border-subtle);
+      }
+
+      .toggle-btn {
+        width: 22px;
+        height: 22px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-muted);
+        font-size: 10px;
+        transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background 0.15s ease, color 0.15s ease;
+        user-select: none;
+      }
+      .group-row.expanded .toggle-btn {
+        transform: rotate(90deg);
+        color: var(--accent);
+        background: rgba(88, 166, 255, 0.18);
+      }
+
+      .anchor-symbol-badge {
+        font-size: 14px;
+        font-weight: 800;
+        color: #ffffff;
+        letter-spacing: -0.2px;
+        font-family: ui-monospace, monospace;
+      }
+      .uid-tag {
+        font-size: 10px;
+        font-family: ui-monospace, monospace;
+        color: var(--text-dim);
+        background: rgba(255, 255, 255, 0.04);
+        padding: 1px 5px;
+        border-radius: 3px;
+        border: 1px solid var(--border-subtle);
+      }
+
+      /* Target Exchange Mini Chips on Group Row */
+      .target-chips-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+      }
+      .target-mini-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 2px 7px;
+        border-radius: 4px;
+        background: #0d1117;
+        border: 1px solid var(--border);
+        font-size: 11px;
+        font-family: ui-monospace, monospace;
+      }
+      .target-mini-chip .chip-ex {
+        font-weight: 700;
+        font-size: 9.5px;
+        opacity: 0.85;
+      }
+      .target-mini-chip .chip-sym {
+        font-weight: 700;
+        color: #58a6ff;
+      }
+
+      /* Nested Sub Row Area */
+      tr.sub-container-row {
+        background: #090c10;
+      }
+      tr.sub-container-row.collapsed {
+        display: none;
+      }
+      .sub-table-wrapper {
+        padding: 8px 16px 14px 44px;
+        background: linear-gradient(180deg, rgba(88, 166, 255, 0.02) 0%, rgba(0, 0, 0, 0.3) 100%);
+        border-left: 3px solid var(--accent);
+        margin: 0 0 8px 12px;
+        border-radius: 0 0 8px 8px;
+      }
+      .sub-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+        background: #0d1117;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        overflow: hidden;
+      }
+      .sub-table th {
+        background: #161b22;
+        padding: 8px 10px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-muted);
+        border-bottom: 1px solid var(--border);
+        text-align: left;
+        cursor: default;
+      }
+      .sub-table td {
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--border-subtle);
+        background: transparent;
+      }
+      .sub-table tr:last-child td {
+        border-bottom: none;
+      }
+      .sub-table tr:hover td {
+        background: #1c2128;
+      }
+      .sub-table tr.selected-row td {
+        background: rgba(88, 166, 255, 0.08);
+      }
+      .target-sym-highlight {
+        font-family: ui-monospace, monospace;
+        font-weight: 700;
+        color: #58a6ff;
+        font-size: 12.5px;
+      }
+      .target-base-tag {
+        font-size: 10px;
+        font-family: ui-monospace, monospace;
+        color: var(--text-muted);
+        margin-left: 4px;
+        background: rgba(255, 255, 255, 0.04);
+        padding: 1px 4px;
+        border-radius: 3px;
+      }
+
       /* Modal */
       .modal-backdrop {
         display: none;
@@ -846,20 +989,13 @@
       <!-- Actions Toolbar -->
       <div class="table-toolbar">
         <div class="selection-info">
-          <span
-            >선택: <span class="selection-count" id="selectedCount">0</span>개 /
-            전체 <span id="filteredCount">0</span>개 표시</span
-          >
+          <span>선택: <span class="selection-count" id="selectedCount">0</span>개 / 전체 <span id="filteredCount">0</span>개 항목 (<span id="groupCount" style="color: #fff; font-weight: 700;">0</span>개 대표 코인)</span>
           <div class="selection-buttons">
-            <button class="btn btn-sm" onclick="selectAll(true)">
-              화면 전체 선택
-            </button>
-            <button class="btn btn-sm" onclick="selectHighConfidenceOnly()">
-              95점만 일괄 선택
-            </button>
-            <button class="btn btn-sm" onclick="selectAll(false)">
-              선택 해제
-            </button>
+            <button class="btn btn-sm" onclick="selectAll(true)">화면 전체 선택</button>
+            <button class="btn btn-sm" onclick="selectHighConfidenceOnly()">95점만 일괄 선택</button>
+            <button class="btn btn-sm" onclick="selectAll(false)">선택 해제</button>
+            <span style="color: var(--border); margin: 0 4px;">|</span>
+            <button class="btn btn-sm" id="btnToggleAllExpand" onclick="toggleExpandAll()">▼ 모두 접기</button>
           </div>
         </div>
 
@@ -890,62 +1026,45 @@
                   onchange="toggleMasterCheckbox(this.checked)"
                 />
               </th>
-              <th onclick="sortBy('idx')" id="th_idx" style="width: 50px">
+              <th class="no-sort" style="width: 36px; text-align: center" title="서브 목록 펼침/접기">
+                펼침
+              </th>
+              <th onclick="sortBy('idx')" id="th_idx" style="width: 48px">
                 # <span class="sort-arrow">▲</span>
               </th>
-              <th
-                onclick="sortBy('confidence')"
-                id="th_confidence"
-                style="width: 80px"
-              >
-                신뢰도 <span class="sort-arrow">▼</span>
-              </th>
-              <th onclick="sortBy('uid')" id="th_uid" style="width: 80px">
-                UID <span class="sort-arrow"></span>
-              </th>
-              <th onclick="sortBy('anchor_symbol')" id="th_anchor_symbol">
-                기준 코인 <span class="sort-arrow"></span>
+              <th onclick="sortBy('anchor_symbol')" id="th_anchor_symbol" style="width: 170px;">
+                대표 코인 (기준 티커) <span class="sort-arrow"></span>
               </th>
               <th
                 onclick="sortBy('anchor_price')"
                 id="th_anchor_price"
-                style="text-align: right"
+                style="text-align: right; width: 130px;"
               >
                 기준 시세(USD) <span class="sort-arrow"></span>
               </th>
-              <th
-                onclick="sortBy('target_exchange')"
-                id="th_target_exchange"
-                style="width: 130px"
-              >
-                대상 거래소 <span class="sort-arrow"></span>
-              </th>
-              <th onclick="sortBy('target_symbol')" id="th_target_symbol">
-                대상 심볼 <span class="sort-arrow"></span>
+              <th class="no-sort">
+                거래소별 임의 지정 티커 (Target Tickers)
               </th>
               <th
-                onclick="sortBy('target_price')"
-                id="th_target_price"
-                style="text-align: right"
+                onclick="sortBy('match_count')"
+                id="th_match_count"
+                style="width: 100px; text-align: center"
               >
-                대상 시세(USD) <span class="sort-arrow"></span>
+                매칭 거래소 <span class="sort-arrow"></span>
+              </th>
+              <th
+                onclick="sortBy('confidence')"
+                id="th_confidence"
+                style="width: 80px; text-align: center"
+              >
+                최고 신뢰도 <span class="sort-arrow"></span>
               </th>
               <th
                 onclick="sortBy('multiplier')"
                 id="th_multiplier"
-                style="width: 80px; text-align: center"
+                style="width: 85px; text-align: center"
               >
-                배수 <span class="sort-arrow"></span>
-              </th>
-              <th
-                onclick="sortBy('diff_pct')"
-                id="th_diff_pct"
-                style="width: 80px; text-align: right"
-              >
-                오차율 <span class="sort-arrow"></span>
-              </th>
-              <th onclick="sortBy('match_type')" id="th_match_type">
-                판정 사유 <span class="sort-arrow"></span>
+                배수 요약 <span class="sort-arrow"></span>
               </th>
               <th
                 onclick="sortBy('is_already_mapped')"
@@ -958,13 +1077,14 @@
           </thead>
           <tbody id="tableBody">
             <tr>
-              <td colspan="13" class="empty-state">
+              <td colspan="10" class="empty-state">
                 <h3>데이터 로딩 중...</h3>
                 <p>잠시만 기다려 주세요.</p>
               </td>
             </tr>
           </tbody>
         </table>
+      </div>
       </div>
     </div>
 
@@ -1012,8 +1132,12 @@
       // Initialize
       async function loadData() {
         try {
-          const res = await fetch("/api/ticker-matcher/results");
-          if (!res.ok) throw new Error("HTTP " + res.status);
+          let res = await fetch("/api/ticker-matcher/results").catch(() => null);
+          if (!res || !res.ok) {
+            // 로컬 서버 미가동(file:// 직접 열기 등) 시 로컬 JSON 직접 fetch 시도
+            res = await fetch("./ticker_matcher_results.json").catch(() => null);
+          }
+          if (!res || !res.ok) throw new Error("HTTP " + (res ? res.status : "Fetch Failed"));
           const data = await res.json();
           const results = data.results || [];
           rawData = results.map((item, idx) => ({
@@ -1159,16 +1283,101 @@
         }
       }
 
-      // Render Table
+      // State for Hierarchical Group View
+      let isAllExpanded = true;
+      const expandedGroupKeys = new Set();
+
+      function getExClass(exchangeStr) {
+        if (!exchangeStr) return "ex-okx";
+        const exUpper = exchangeStr.toUpperCase();
+        if (exUpper.includes("BYBIT")) return "ex-bybit";
+        if (exUpper.includes("BITGET")) return "ex-bitget";
+        if (exUpper.includes("BITHUMB")) return "ex-bithumb";
+        if (exUpper.includes("UPBIT")) return "ex-upbit";
+        if (exUpper.includes("GATEIO")) return "ex-gateio";
+        if (exUpper.includes("BINANCE")) return "ex-binance";
+        return "ex-okx";
+      }
+
+      function groupFilteredData(items) {
+        const groupsMap = new Map();
+        items.forEach((item) => {
+          const key = String(item.uid || item.anchor_symbol);
+          if (!groupsMap.has(key)) {
+            groupsMap.set(key, {
+              group_key: key,
+              uid: item.uid,
+              anchor_symbol: item.anchor_symbol,
+              anchor_name: item.anchor_name,
+              anchor_price: item.anchor_price,
+              anchor_exchange: item.anchor_exchange,
+              items: [],
+            });
+          }
+          groupsMap.get(key).items.push(item);
+        });
+
+        const groups = Array.from(groupsMap.values());
+        groups.forEach((g) => {
+          g.max_confidence = Math.max(...g.items.map((i) => i.confidence || 0));
+          g.has_scaled = g.items.some((i) => i.multiplier !== 1);
+          g.has_new = g.items.some((i) => !i.is_already_mapped);
+          g.all_mapped = g.items.every((i) => i.is_already_mapped);
+          g.match_count = g.items.length;
+        });
+
+        // Group sorting
+        const { col, asc } = currentSort;
+        groups.sort((a, b) => {
+          let vA, vB;
+          if (col === "anchor_symbol") {
+            vA = a.anchor_symbol;
+            vB = b.anchor_symbol;
+            return asc ? vA.localeCompare(vB) : vB.localeCompare(vA);
+          } else if (col === "uid") {
+            vA = parseInt(a.uid, 10) || 0;
+            vB = parseInt(b.uid, 10) || 0;
+          } else if (col === "anchor_price") {
+            vA = a.anchor_price || 0;
+            vB = b.anchor_price || 0;
+          } else if (col === "confidence") {
+            vA = a.max_confidence;
+            vB = b.max_confidence;
+          } else if (col === "match_count") {
+            vA = a.match_count;
+            vB = b.match_count;
+          } else if (col === "is_already_mapped") {
+            vA = a.has_new ? 0 : 1;
+            vB = b.has_new ? 0 : 1;
+          } else {
+            vA = a.items[0]?.idx || 0;
+            vB = b.items[0]?.idx || 0;
+          }
+
+          if (vA < vB) return asc ? -1 : 1;
+          if (vA > vB) return asc ? 1 : -1;
+          return 0;
+        });
+
+        return groups;
+      }
+
+      // Render Table (Hierarchical Master-Detail View)
       function renderTable() {
         const tbody = document.getElementById("tableBody");
+        const groups = groupFilteredData(filteredData);
+
         document.getElementById("filteredCount").textContent =
           filteredData.length.toLocaleString();
+        const groupCountEl = document.getElementById("groupCount");
+        if (groupCountEl) {
+          groupCountEl.textContent = groups.length.toLocaleString();
+        }
 
         if (!filteredData.length) {
           tbody.innerHTML = `
           <tr>
-            <td colspan="13" class="empty-state">
+            <td colspan="10" class="empty-state">
               <h3>검색된 매칭 후보가 없습니다</h3>
               <p>필터 조건을 초기화하거나 다른 검색어를 입력해 보세요.</p>
             </td>
@@ -1178,75 +1387,253 @@
           return;
         }
 
-        const rowsHtml = filteredData
-          .map((item) => {
-            const isChecked = selectedKeys.has(item.unique_key);
-            const multLabel =
-              item.multiplier >= 1
-                ? `${item.multiplier}x`
-                : `1/${Math.round(1 / item.multiplier)}x`;
-            const multClass =
-              item.multiplier === 1 ? "badge-mult-1" : "badge-mult-scaled";
-            const confClass =
-              item.confidence >= 95 ? "badge-conf-95" : "badge-conf-88";
+        let rowsHtml = "";
+        groups.forEach((group, gIdx) => {
+          // Initialize expansion for new groups
+          if (isAllExpanded && !expandedGroupKeys.has(group.group_key)) {
+            expandedGroupKeys.add(group.group_key);
+          }
 
-            let exClass = "ex-okx";
-            const exUpper = item.target_exchange.toUpperCase();
-            if (exUpper.includes("BYBIT")) exClass = "ex-bybit";
-            else if (exUpper.includes("BITGET")) exClass = "ex-bitget";
-            else if (exUpper.includes("BITHUMB")) exClass = "ex-bithumb";
-            else if (exUpper.includes("UPBIT")) exClass = "ex-upbit";
-            else if (exUpper.includes("GATEIO")) exClass = "ex-gateio";
-            else if (exUpper.includes("BINANCE")) exClass = "ex-binance";
+          const isExpanded = expandedGroupKeys.has(group.group_key);
+          const checkedCount = group.items.filter((it) =>
+            selectedKeys.has(it.unique_key)
+          ).length;
+          const isAllChecked =
+            checkedCount === group.items.length && group.items.length > 0;
 
-            let diffClass = "diff-low";
-            if (item.diff_pct > 10) diffClass = "diff-high";
-            else if (item.diff_pct > 3) diffClass = "diff-mid";
+          // Target exchange mini chips
+          const chipsHtml = group.items
+            .map((it) => {
+              const exClass = getExClass(it.target_exchange);
+              const cleanEx = it.target_exchange
+                .replace("_FUTURES", "")
+                .replace("_SPOT", "");
+              const multBadge =
+                it.multiplier !== 1
+                  ? `<span class="badge badge-mult-scaled" style="padding: 0 4px; font-size: 9px; line-height: 1.2;">${
+                      it.multiplier >= 1
+                        ? it.multiplier + "x"
+                        : "1/" + Math.round(1 / it.multiplier) + "x"
+                    }</span>`
+                  : "";
+              return `
+              <span class="target-mini-chip">
+                <span class="exchange-badge ${exClass}">${cleanEx}</span>
+                <span class="chip-sym">${escapeHtml(it.target_symbol)}</span>
+                ${multBadge}
+              </span>
+            `;
+            })
+            .join("");
 
-            const statusTag = item.is_already_mapped
-              ? `<span class="status-tag status-done">등록완료</span>`
-              : `<span class="status-tag status-new">신규</span>`;
+          // Sub table rows
+          const subRowsHtml = group.items
+            .map((item) => {
+              const isChecked = selectedKeys.has(item.unique_key);
+              const multLabel =
+                item.multiplier >= 1
+                  ? `${item.multiplier}x`
+                  : `1/${Math.round(1 / item.multiplier)}x`;
+              const multClass =
+                item.multiplier === 1 ? "badge-mult-1" : "badge-mult-scaled";
+              const confClass =
+                item.confidence >= 95 ? "badge-conf-95" : "badge-conf-88";
+              const exClass = getExClass(item.target_exchange);
 
-            const anchorPriceStr = formatPrice(item.anchor_price);
-            const targetPriceStr = formatPrice(item.target_price);
+              let diffClass = "diff-low";
+              if (item.diff_pct > 10) diffClass = "diff-high";
+              else if (item.diff_pct > 3) diffClass = "diff-mid";
 
-            return `
-          <tr class="${isChecked ? "selected-row" : ""}">
-            <td style="text-align: center;">
-              <input type="checkbox" ${isChecked ? "checked" : ""} onchange="toggleSelect('${item.unique_key}', this.checked)" />
-            </td>
-            <td class="mono" style="color: var(--text-dim);">${item.idx}</td>
-            <td><span class="badge ${confClass}">${item.confidence}점</span></td>
-            <td class="mono" style="color: var(--text-muted); font-weight: 600;">${item.uid}</td>
-            <td>
-              <div class="coin-cell">
-                <span class="coin-sym">${escapeHtml(item.anchor_symbol)}</span>
-                <span class="coin-name">${escapeHtml(item.anchor_name)}</span>
-              </div>
-            </td>
-            <td class="mono" style="text-align: right; color: var(--text-muted);">${anchorPriceStr}</td>
-            <td>
-              <span class="exchange-badge ${exClass}">${escapeHtml(item.target_exchange)}</span>
-            </td>
-            <td>
-              <span class="mono" style="font-weight: 600; color: #fff;">${escapeHtml(item.target_symbol)}</span>
-            </td>
-            <td class="mono" style="text-align: right; color: var(--text-muted);">${targetPriceStr}</td>
-            <td style="text-align: center;">
-              <span class="badge ${multClass}">${multLabel}</span>
-            </td>
-            <td class="mono ${diffClass}" style="text-align: right;">${item.diff_pct.toFixed(1)}%</td>
-            <td>
-              <span class="reason-cell" title="${escapeHtml(item.match_type)}">${escapeHtml(item.match_type)}</span>
-            </td>
-            <td style="text-align: center;">${statusTag}</td>
-          </tr>
-        `;
-          })
-          .join("");
+              const statusTag = item.is_already_mapped
+                ? `<span class="status-tag status-done">등록완료</span>`
+                : `<span class="status-tag status-new">신규</span>`;
+
+              return `
+                <tr class="${isChecked ? "selected-row" : ""}">
+                  <td style="text-align: center;">
+                    <input type="checkbox" ${isChecked ? "checked" : ""} 
+                           data-group="${group.group_key}"
+                           onchange="toggleSelect('${item.unique_key}', this.checked)" />
+                  </td>
+                  <td>
+                    <span class="exchange-badge ${exClass}">${escapeHtml(item.target_exchange)}</span>
+                  </td>
+                  <td>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                      <span class="target-sym-highlight">${escapeHtml(item.target_symbol)}</span>
+                      ${
+                        item.target_base && item.target_base !== item.target_symbol
+                          ? `<span class="target-base-tag">Base: ${escapeHtml(item.target_base)}</span>`
+                          : ""
+                      }
+                    </div>
+                  </td>
+                  <td class="mono" style="text-align: right; color: var(--text-muted);">${formatPrice(item.target_price)}</td>
+                  <td style="text-align: center;">
+                    <span class="badge ${multClass}">${multLabel}</span>
+                  </td>
+                  <td class="mono ${diffClass}" style="text-align: right;">${item.diff_pct.toFixed(1)}%</td>
+                  <td>
+                    <span class="reason-cell" title="${escapeHtml(item.match_type)}">${escapeHtml(item.match_type)}</span>
+                  </td>
+                  <td style="text-align: center;">
+                    <span class="badge ${confClass}">${item.confidence}점</span>
+                  </td>
+                  <td style="text-align: center;">${statusTag}</td>
+                </tr>
+              `;
+            })
+            .join("");
+
+          rowsHtml += `
+            <tr class="group-row ${isExpanded ? "expanded" : ""}" 
+                id="group_row_${group.group_key}"
+                onclick="toggleGroupRow('${group.group_key}', event)">
+              <td style="text-align: center;" onclick="event.stopPropagation()">
+                <input type="checkbox" id="chk_group_${group.group_key}" 
+                       ${isAllChecked ? "checked" : ""} 
+                       onchange="toggleGroupCheckbox('${group.group_key}', this.checked)" />
+              </td>
+              <td style="text-align: center;">
+                <span class="toggle-btn" id="btn_toggle_${group.group_key}">▶</span>
+              </td>
+              <td class="mono" style="color: var(--text-dim);">${gIdx + 1}</td>
+              <td>
+                <div class="coin-cell">
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <span class="anchor-symbol-badge">${escapeHtml(group.anchor_symbol)}</span>
+                    <span class="uid-tag">UID ${group.uid}</span>
+                  </div>
+                  <span class="coin-name">${escapeHtml(group.anchor_name)}</span>
+                </div>
+              </td>
+              <td class="mono" style="text-align: right; font-weight: 700; color: #fff;">
+                ${formatPrice(group.anchor_price)}
+              </td>
+              <td>
+                <div class="target-chips-container">
+                  ${chipsHtml}
+                </div>
+              </td>
+              <td style="text-align: center;">
+                <span class="badge" style="background: rgba(88, 166, 255, 0.12); color: var(--accent); border: 1px solid rgba(88, 166, 255, 0.3);">
+                  ${group.items.length}개 거래소
+                </span>
+              </td>
+              <td style="text-align: center;">
+                <span class="badge ${group.max_confidence >= 95 ? "badge-conf-95" : "badge-conf-88"}">
+                  ${group.max_confidence}점
+                </span>
+              </td>
+              <td style="text-align: center;">
+                ${
+                  group.has_scaled
+                    ? '<span class="badge badge-mult-scaled">배율 포함</span>'
+                    : '<span class="badge badge-mult-1">1x</span>'
+                }
+              </td>
+              <td style="text-align: center;">
+                ${
+                  group.has_new
+                    ? '<span class="status-tag status-new">신규 후보</span>'
+                    : '<span class="status-tag status-done">등록완료</span>'
+                }
+              </td>
+            </tr>
+            <tr class="sub-container-row ${isExpanded ? "" : "collapsed"}" id="sub_row_${group.group_key}">
+              <td colspan="10" style="padding: 0;">
+                <div class="sub-table-wrapper">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                    <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+                      <span style="color: var(--accent);">↳</span> [${escapeHtml(group.anchor_symbol)}] 거래소별 임의 지정 티커 세부 매칭 (${group.items.length}개 거래소)
+                    </span>
+                  </div>
+                  <table class="sub-table">
+                    <thead>
+                      <tr>
+                        <th style="width: 38px; text-align: center;">선택</th>
+                        <th style="width: 140px;">대상 거래소</th>
+                        <th>거래소 임의 지정 티커 (Target Symbol)</th>
+                        <th style="text-align: right; width: 120px;">거래소 시세(USD)</th>
+                        <th style="text-align: center; width: 75px;">배수</th>
+                        <th style="text-align: right; width: 75px;">시세 오차</th>
+                        <th>판정 사유 (추론 근거)</th>
+                        <th style="text-align: center; width: 65px;">신뢰도</th>
+                        <th style="text-align: center; width: 75px;">상태</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${subRowsHtml}
+                    </tbody>
+                  </table>
+                </div>
+              </td>
+            </tr>
+          `;
+        });
 
         tbody.innerHTML = rowsHtml;
+
+        // Apply indeterminate state to group checkboxes
+        groups.forEach((group) => {
+          const chk = document.getElementById(`chk_group_${group.group_key}`);
+          if (chk) {
+            const checkedCount = group.items.filter((it) =>
+              selectedKeys.has(it.unique_key)
+            ).length;
+            chk.checked = checkedCount === group.items.length && group.items.length > 0;
+            chk.indeterminate =
+              checkedCount > 0 && checkedCount < group.items.length;
+          }
+        });
+
         updateSelectionUI();
+      }
+
+      function toggleGroupRow(groupKey, event) {
+        if (event && event.target && event.target.tagName === "INPUT") return;
+        const subRow = document.getElementById(`sub_row_${groupKey}`);
+        const groupRow = document.getElementById(`group_row_${groupKey}`);
+        if (!subRow || !groupRow) return;
+
+        if (expandedGroupKeys.has(groupKey)) {
+          expandedGroupKeys.delete(groupKey);
+          subRow.classList.add("collapsed");
+          groupRow.classList.remove("expanded");
+        } else {
+          expandedGroupKeys.add(groupKey);
+          subRow.classList.remove("collapsed");
+          groupRow.classList.add("expanded");
+        }
+      }
+
+      function toggleExpandAll() {
+        const btn = document.getElementById("btnToggleAllExpand");
+        isAllExpanded = !isAllExpanded;
+        const groups = groupFilteredData(filteredData);
+        if (isAllExpanded) {
+          groups.forEach((g) => expandedGroupKeys.add(g.group_key));
+          if (btn) btn.textContent = "▼ 모두 접기";
+        } else {
+          expandedGroupKeys.clear();
+          if (btn) btn.textContent = "▶ 모두 펼치기";
+        }
+        renderTable();
+      }
+
+      function toggleGroupCheckbox(groupKey, checked) {
+        const group = groupFilteredData(filteredData).find(
+          (g) => g.group_key === groupKey
+        );
+        if (!group) return;
+
+        group.items.forEach((item) => {
+          if (checked) selectedKeys.add(item.unique_key);
+          else selectedKeys.delete(item.unique_key);
+        });
+
+        updateSelectionUI();
+        renderTable();
       }
 
       function formatPrice(p) {
@@ -1284,8 +1671,14 @@
         if (checked) selectedKeys.add(key);
         else selectedKeys.delete(key);
         updateSelectionUI();
-        // Highlight row without full redraw
-        renderTable();
+        
+        // In-place highlight row
+        document.querySelectorAll(`input[type="checkbox"][data-group]`).forEach((input) => {
+          const tr = input.closest("tr");
+          if (tr) {
+            tr.classList.toggle("selected-row", input.checked);
+          }
+        });
       }
 
       function toggleMasterCheckbox(checked) {
@@ -1335,6 +1728,20 @@
           master.checked = false;
           master.indeterminate = false;
         }
+
+        // Synchronize indeterminate and checked state of group checkboxes
+        const groups = groupFilteredData(filteredData);
+        groups.forEach((group) => {
+          const chk = document.getElementById(`chk_group_${group.group_key}`);
+          if (chk) {
+            const checkedCount = group.items.filter((it) =>
+              selectedKeys.has(it.unique_key)
+            ).length;
+            chk.checked = checkedCount === group.items.length && group.items.length > 0;
+            chk.indeterminate =
+              checkedCount > 0 && checkedCount < group.items.length;
+          }
+        });
       }
 
       // Copy to Clipboard

@@ -1,4 +1,4 @@
-// chart_fetch.js - 🚀 메인 차트 초기화 및 히스토리컬 캔들 페칭/조립 전담 엔진
+// chart_fetch.js - 메인 차트 초기화 및 히스토리컬 캔들 페칭/조립 전담 엔진
 import { store, tfSec } from "./_store.js";
 import {
   getPureBase,
@@ -16,7 +16,6 @@ import { findRowInfo, determineListingDate } from "./chart_history_helper.js";
 import { updateExchangeBadges } from "./ui_control.js";
 import { applyChartLayout } from "./chart_layout.js";
 import { fetchCandlesSmart, clearChartData, mapTime } from "./chart_data.js";
-import { resetPriceScaleWidthSync } from "./chart_sync.js";
 import {
   isExchangeNativeTF,
   normalizeExchangeInterval,
@@ -33,11 +32,6 @@ function prepareFetchState(isSubSwitch, isSilentSync, isTfChange) {
   if (!isSubSwitch && !isSilentSync) {
     if (!isTfChange) {
       store.preferredKimchiSub = null;
-      if (typeof resetPriceScaleWidthSync === "function") {
-        resetPriceScaleWidthSync();
-      } else if (typeof window.resetPriceScaleWidthSync === "function") {
-        window.resetPriceScaleWidthSync();
-      }
     }
     store.isPriceScaleUserZoomed = false;
     store.isVolPriceScaleUserZoomed = false;

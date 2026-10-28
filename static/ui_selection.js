@@ -523,11 +523,21 @@ export function selectSymbol(
     applySelectedHighlight();
   }
 
-  // [INP 최적화] 무거운 배열 탐색, 차트 렌더링(fetchHistory)을 다음 페인트 이후로 양보(Yielding)
-  pendingSelectRaf = requestAnimationFrame(() => {
-    pendingSelectTimeout = setTimeout(() => {
+  // [이전 대기 중인 선택 및 fetch 취소] 방향키 빠른 이동 시 네트워크/렌더링 차단
+  if (pendingSelectRaf) {
+    cancelAnimationFrame(pendingSelectRaf);
+    pendingSelectRaf = null;
+  }
+  if (pendingSelectTimeout) {
+    clearTimeout(pendingSelectTimeout);
+    pendingSelectTimeout = null;
+  }
+
+  // [INP 최적화 & 바이낸스 418 차단 방지] 방향키 연타 시 중간 코인들의 캔들 호출을 스킵하고 멈춘 코인만 fetch
+  pendingSelectTimeout = setTimeout(() => {
+    pendingSelectTimeout = null;
+    pendingSelectRaf = requestAnimationFrame(() => {
       pendingSelectRaf = null;
-      pendingSelectTimeout = null;
 
       // 호가창(Orderbook) 업데이트 (호가창 패널이 열려 있을 경우 자동 재연결)
       const chartTargetSym =
@@ -758,6 +768,21 @@ export function updateExchangeBadges(s, targetUid = null) {
 
     const list = [
       {
+        id: "B-FUT",
+        name: "바이낸스 선물",
+        cmcId: 270,
+        market: "FUTURES",
+        type: "FUTURE",
+        condition:
+          !isStock &&
+          Boolean(rowInfo.Listed_Exchanges?.includes("BINANCE_FUTURES")),
+        isListed: Boolean(
+          rowInfo.Binance_Futures === "O" ||
+          rowInfo.Listed_Exchanges?.includes("BINANCE_FUTURES") ||
+          rowInfo.Exact_Futures,
+        ),
+      },
+      {
         id: "B-SPOT",
         name: "바이낸스 현물",
         cmcId: 270,
@@ -771,21 +796,6 @@ export function updateExchangeBadges(s, targetUid = null) {
           rowInfo.Listed_Exchanges?.includes("BINANCE_SPOT") ||
           rowInfo.Listed_Exchanges?.includes("BINANCE") ||
           rowInfo.Exact_Spot,
-        ),
-      },
-      {
-        id: "B-FUT",
-        name: "바이낸스 선물",
-        cmcId: 270,
-        market: "FUTURES",
-        type: "FUTURE",
-        condition:
-          !isStock &&
-          Boolean(rowInfo.Listed_Exchanges?.includes("BINANCE_FUTURES")),
-        isListed: Boolean(
-          rowInfo.Binance_Futures === "O" ||
-          rowInfo.Listed_Exchanges?.includes("BINANCE_FUTURES") ||
-          rowInfo.Exact_Futures,
         ),
       },
       {
@@ -808,10 +818,10 @@ export function updateExchangeBadges(s, targetUid = null) {
       },
       {
         id: "UPBIT",
-        name: "업비트",
+        name: "업비트 현물",
         cmcId: 351,
         market: "UPBIT",
-        type: null,
+        type: "SPOT",
         condition: Boolean(
           rowInfo.Listed_Exchanges?.includes("UPBIT") ||
           rowInfo.Upbit === "O" ||
@@ -825,10 +835,10 @@ export function updateExchangeBadges(s, targetUid = null) {
       },
       {
         id: "BITHUMB",
-        name: "빗썸",
+        name: "빗썸 현물",
         cmcId: 200,
         market: "BITHUMB",
-        type: null,
+        type: "SPOT",
         condition: Boolean(
           rowInfo.Listed_Exchanges?.includes("BITHUMB") ||
           rowInfo.Bithumb === "O" ||
@@ -838,19 +848,6 @@ export function updateExchangeBadges(s, targetUid = null) {
           rowInfo.Listed_Exchanges?.includes("BITHUMB") ||
           rowInfo.Bithumb === "O" ||
           Number(rowInfo.Bithumb_Price) > 0,
-        ),
-      },
-      {
-        id: "BYBIT-SPOT",
-        name: "바이비트 현물",
-        cmcId: 521,
-        market: "BYBIT",
-        type: "SPOT",
-        condition: Boolean(rowInfo.Listed_Exchanges?.includes("BYBIT_SPOT")),
-        isListed: Boolean(
-          rowInfo.Listed_Exchanges?.includes("BYBIT_SPOT") ||
-          rowInfo.Listed_Exchanges?.includes("BYBIT") ||
-          Number(rowInfo.Bybit_Price_Spot) > 0,
         ),
       },
       {
@@ -867,15 +864,16 @@ export function updateExchangeBadges(s, targetUid = null) {
         ),
       },
       {
-        id: "BITGET-SPOT",
-        name: "비트겟 현물",
-        cmcId: 513,
-        market: "BITGET_SPOT",
+        id: "BYBIT-SPOT",
+        name: "바이비트 현물",
+        cmcId: 521,
+        market: "BYBIT",
         type: "SPOT",
-        condition: false, // 여전히 선택은 미지원
+        condition: Boolean(rowInfo.Listed_Exchanges?.includes("BYBIT_SPOT")),
         isListed: Boolean(
-          rowInfo.Listed_Exchanges?.includes("BITGET_SPOT") ||
-          rowInfo.Listed_Exchanges?.includes("BITGET"),
+          rowInfo.Listed_Exchanges?.includes("BYBIT_SPOT") ||
+          rowInfo.Listed_Exchanges?.includes("BYBIT") ||
+          Number(rowInfo.Bybit_Price_Spot) > 0,
         ),
       },
       {
@@ -887,6 +885,18 @@ export function updateExchangeBadges(s, targetUid = null) {
         condition: false, // 여전히 선택은 미지원
         isListed: Boolean(rowInfo.Listed_Exchanges?.includes("BITGET_FUTURES")),
       },
+      {
+        id: "BITGET-SPOT",
+        name: "비트겟 현물",
+        cmcId: 513,
+        market: "BITGET_SPOT",
+        type: "SPOT",
+        condition: false, // 여전히 선택은 미지원
+        isListed: Boolean(
+          rowInfo.Listed_Exchanges?.includes("BITGET_SPOT") ||
+          rowInfo.Listed_Exchanges?.includes("BITGET"),
+        ),
+      },
     ];
 
     // [게이트아이오(Gate.io)]: BTC, ETH 실험적 베타 코인에서만 beta 유지 노출
@@ -894,21 +904,21 @@ export function updateExchangeBadges(s, targetUid = null) {
     if (["BTC", "ETH"].includes(rowInfo.Symbol?.toUpperCase())) {
       list.push(
         {
-          id: "GATE-SPOT",
-          name: "Gate.io 현물",
-          cmcId: 302,
-          market: "GATE_SPOT",
-          type: "SPOT",
-          condition: true,
-          isListed: true,
-          isBeta: true,
-        },
-        {
           id: "GATE-FUT",
           name: "Gate.io 선물",
           cmcId: 302,
           market: "GATE_FUTURES",
           type: "FUTURE",
+          condition: true,
+          isListed: true,
+          isBeta: true,
+        },
+        {
+          id: "GATE-SPOT",
+          name: "Gate.io 현물",
+          cmcId: 302,
+          market: "GATE_SPOT",
+          type: "SPOT",
           condition: true,
           isListed: true,
           isBeta: true,

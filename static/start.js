@@ -6,6 +6,7 @@ import { store } from "./_store.js";
 import { loadTableData } from "./table_api.js";
 import { showToast } from "./ui_dialog.js";
 import { initDashboardEngine } from "./main_init.js";
+import { binanceBrowserLimiter } from "./chart_limiter.js";
 
 // ===================================================================================
 // [3D 퀵뷰 프리뷰 8방위 시선 각도 & 황금비율(Golden Ratio) 설정소]
@@ -550,18 +551,24 @@ function setStartOverlapFocus(focusIdx) {
 async function loadStartPreviewKlines(tf) {
   const promises = START_ASSETS.map(async (asset, idx) => {
     try {
-      const res = await fetch(
-        `https://api.binance.com/api/v3/klines?symbol=${asset.symbol}&interval=${tf}&limit=60`,
-      );
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        const candles = data.map((d) => ({
-          time: Math.floor(d[0] / 1000),
-          open: parseFloat(d[1]),
-          high: parseFloat(d[2]),
-          low: parseFloat(d[3]),
-          close: parseFloat(d[4]),
-        }));
+      const canSend = await binanceBrowserLimiter.acquireWeight(2, 1200);
+      if (!canSend) return;
+      try {
+        const res = await fetch(
+          `https://api.binance.com/api/v3/klines?symbol=${asset.symbol}&interval=${tf}&limit=60`,
+        );
+        if (res.ok) {
+          const usedWeight = res.headers.get("x-mbx-used-weight-1m");
+          if (usedWeight) binanceBrowserLimiter.syncUsedWeight(usedWeight);
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            const candles = data.map((d) => ({
+              time: Math.floor(d[0] / 1000),
+              open: parseFloat(d[1]),
+              high: parseFloat(d[2]),
+              low: parseFloat(d[3]),
+              close: parseFloat(d[4]),
+            }));
 
         if (startQvSpreadSeries[idx]) {
           startQvSpreadSeries[idx].setData(candles);
@@ -583,13 +590,17 @@ async function loadStartPreviewKlines(tf) {
           }
         }
 
-        const lastPrice = candles[candles.length - 1]?.close;
-        if (lastPrice) {
-          const spEl = document.getElementById(`start-qv-spread-price-${idx}`);
-          const ovEl = document.getElementById(`start-qv-overlap-price-${idx}`);
-          if (spEl) spEl.innerText = `$${lastPrice.toLocaleString()}`;
-          if (ovEl) ovEl.innerText = `$${lastPrice.toLocaleString()}`;
+            const lastPrice = candles[candles.length - 1]?.close;
+            if (lastPrice) {
+              const spEl = document.getElementById(`start-qv-spread-price-${idx}`);
+              const ovEl = document.getElementById(`start-qv-overlap-price-${idx}`);
+              if (spEl) spEl.innerText = `$${lastPrice.toLocaleString()}`;
+              if (ovEl) ovEl.innerText = `$${lastPrice.toLocaleString()}`;
+            }
+          }
         }
+      } finally {
+        binanceBrowserLimiter.release();
       }
     } catch (e) {}
   });

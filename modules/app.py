@@ -465,10 +465,28 @@ def chrome_devtools_dummy():
     return {}
 
 
+import subprocess
+
+try:
+    GIT_LAST_DATE = subprocess.check_output(
+        ["git", "log", "-1", "--format=%ad", "--date=short"],
+        text=True,
+        stderr=subprocess.DEVNULL,
+    ).strip()
+    if not re.match(r"^\d{4}-\d{2}-\d{2}$", GIT_LAST_DATE):
+        GIT_LAST_DATE = datetime.now().strftime("%Y-%m-%d")
+except Exception:
+    GIT_LAST_DATE = datetime.now().strftime("%Y-%m-%d")
+
+
 @app.get("/")
 async def home(request: Request):
     # 뼈대만 렌더링하고 데이터는 AJAX로 그림
-    return templates.TemplateResponse(request=request, name="index.html")
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html",
+        context={"request": request, "git_last_date": GIT_LAST_DATE},
+    )
 
 
 load_dotenv()
@@ -627,6 +645,7 @@ def get_market_data(request: Request):
         ),
         "active_users": user_count,
         "cmc_status": cmc_status,
+        "git_last_update": GIT_LAST_DATE,
     }
 
 
@@ -1370,10 +1389,54 @@ async def progress_stream():
 
 
 # =================================================
-# [티커/배수 매칭 뷰어 & API] 8대 거래소 전수 매칭 웹 테이블 서빙
+# [티커/배수 매칭 뷰어 & API] 8대 거래소 전수 매칭 웹 테이블 서빙 (로컬/사설망 전용)
 # =================================================
+def is_local_or_private_request(request: Request) -> bool:
+    """
+    로컬 환경(127.*, localhost, ::1) 및 사설망 LAN(192.168.*, 10.*, 172.16~31.*)만 접근 허용.
+    공개 배포(sellnance.app, railway.app 등)를 통한 외부 접속은 원천 차단.
+    """
+    # 1. 공개 배포 도메인(sellnance.app, railway.app)으로 인입된 경우 차단
+    host_header = (request.headers.get("host") or "").lower().split(":")[0]
+    if "sellnance.app" in host_header or "railway.app" in host_header:
+        return False
+
+    # 2. 클라이언트 실제 IP 추출 (Cloudflare / 프록시 헤더 우선 검증)
+    cf_ip = (request.headers.get("cf-connecting-ip") or "").strip()
+    x_forwarded = (request.headers.get("x-forwarded-for") or "").strip()
+    client_host = (request.client.host if request.client else "").strip()
+
+    # 프록시 헤더가 존재할 경우 가장 첫 번째 클라이언트 IP 확인
+    target_ip = cf_ip or (x_forwarded.split(",")[0].strip() if x_forwarded else "") or client_host
+
+    if not target_ip:
+        return False
+
+    # 3. 로컬 루프백 및 테스트 클라이언트 허용 (127.*, ::1, localhost, testclient)
+    if target_ip in ("localhost", "::1", "testclient") or target_ip.startswith("127."):
+        return True
+
+    # 4. 사설 LAN IP 허용 (192.168.*, 10.*, 172.16~31.*)
+    if target_ip.startswith("192.168.") or target_ip.startswith("10."):
+        return True
+
+    if target_ip.startswith("172."):
+        parts = target_ip.split(".")
+        if len(parts) >= 2 and parts[1].isdigit():
+            second_octet = int(parts[1])
+            if 16 <= second_octet <= 31:
+                return True
+
+    return False
+
+
 @app.get("/matcher")
-async def matcher_web_viewer():
+async def matcher_web_viewer(request: Request):
+    if not is_local_or_private_request(request):
+        raise HTTPException(
+            status_code=403,
+            detail="Forbidden: Matcher tool is only accessible from local/private network (127.*, 192.168.*, localhost)."
+        )
     matcher_file = BASE_DIR / "static" / "matcher.html"
     if matcher_file.exists():
         from fastapi.responses import FileResponse
@@ -1382,7 +1445,12 @@ async def matcher_web_viewer():
 
 
 @app.get("/api/ticker-matcher/results")
-async def api_get_matcher_results():
+async def api_get_matcher_results(request: Request):
+    if not is_local_or_private_request(request):
+        raise HTTPException(
+            status_code=403,
+            detail="Forbidden: Matcher results are only accessible from local/private network."
+        )
     results_file = BASE_DIR / "static" / "ticker_matcher_results.json"
     if not results_file.exists():
         return {"total_count": 0, "results": [], "scanned_at": None}
@@ -1395,6 +1463,11 @@ async def api_get_matcher_results():
 
 @app.post("/api/ticker-matcher/apply")
 async def api_apply_matcher_items(request: Request):
+    if not is_local_or_private_request(request):
+        raise HTTPException(
+            status_code=403,
+            detail="Forbidden: Matcher apply is only accessible from local/private network."
+        )
     try:
         body = await request.json()
         items = body.get("items", [])
@@ -1413,7 +1486,12 @@ async def api_apply_matcher_items(request: Request):
 
 
 @app.post("/api/ticker-matcher/scan")
-async def api_trigger_matcher_scan():
+async def api_trigger_matcher_scan(request: Request):
+    if not is_local_or_private_request(request):
+        raise HTTPException(
+            status_code=403,
+            detail="Forbidden: Matcher scan is only accessible from local/private network."
+        )
     # run2는 사용자의 의지로 터미널에서만 수동 실행되도록 run.py 서버와 완전 격리
     return {
         "success": False,

@@ -58,6 +58,8 @@ API_SESSION.mount("http://", adapter)
 def get_korean_exchange_markets():
     global EXCHANGE_WARNINGS
     upbit_krw_set, bithumb_krw_set = set(), set()
+    new_upbit_warn = {}
+    new_bithumb_warn = {}
     try:
         res = API_SESSION.get(
             "https://api.upbit.com/v1/market/all?isDetails=true", timeout=5
@@ -74,7 +76,7 @@ def get_korean_exchange_markets():
                 and m.get("market_event", {}).get("warning") is True
             )
             if is_warn:
-                EXCHANGE_WARNINGS["UPBIT"][sym] = "투자유의 종목 지정"
+                new_upbit_warn[sym] = "투자유의 종목 지정"
     except Exception as e:
         print(f"🚨 [디버그] 업비트 마켓 목록 에러: {e}")
     try:
@@ -93,9 +95,13 @@ def get_korean_exchange_markets():
                 and m.get("market_event", {}).get("warning") is True
             )
             if is_warn:
-                EXCHANGE_WARNINGS["BITHUMB"][sym] = "거래유의 종목 지정"
+                new_bithumb_warn[sym] = "거래유의 종목 지정"
     except Exception as e:
         print(f"🚨 [디버그] 빗썸 마켓 목록 에러: {e}")
+
+    # 원자적 교체: 유의 종목 지정이 해제되면 즉시 캐시에서 제거되어 딱지가 떼어짐
+    EXCHANGE_WARNINGS["UPBIT"] = new_upbit_warn
+    EXCHANGE_WARNINGS["BITHUMB"] = new_bithumb_warn
     return upbit_krw_set, bithumb_krw_set
 
 
@@ -700,6 +706,9 @@ def fetch_binance_futures_spot(bybit_data=None):
         global EXCHANGE_WARNINGS
         binance_spot_warn = {}
         binance_fut_warn = {}
+        now_ms = time.time() * 1000
+        # 선물 정산/만료 기한: deliveryDate가 현재보다 3일 이상 지난 과거 계약은 무시
+        FUTURES_SETTLE_TTL_MS = 3 * 24 * 3600 * 1000
 
         active_s_bases = {
             s.get("baseAsset", "").upper()
@@ -712,9 +721,15 @@ def fetch_binance_futures_spot(bybit_data=None):
             if s.get("status") == "TRADING" and s.get("quoteAsset") == "USDT"
         }
 
+        # 현물 유효 페어 (가장 최근 실시간 가격 수신 페어 검증)
+        live_spot_symbols = {
+            p.get("symbol") for p in prices_s if float(p.get("price", 0) or 0) > 0
+        }
+
         for s in info_s.get("symbols", []):
             if s.get("quoteAsset") == "USDT":
                 base_sym = s.get("baseAsset", "").upper()
+                sym = s.get("symbol", "")
                 tags = s.get("tags") or []
                 status = s.get("status", "")
                 if "Monitoring" in tags:
@@ -723,7 +738,10 @@ def fetch_binance_futures_spot(bybit_data=None):
                     status in ["BREAK", "HALT", "PENDING_TRADING"]
                     and base_sym not in active_s_bases
                 ):
-                    binance_spot_warn[base_sym] = "거래 정지(현물)"
+                    # 과거 상폐되어 방치된 BREAK 심볼 배제:
+                    # 현물 거래가 허용되어 있거나 최근 실시간 가격 체결이 있는 페어만 유효 정지로 판단
+                    if s.get("isSpotTradingAllowed", False) or sym in live_spot_symbols:
+                        binance_spot_warn[base_sym] = "거래 정지(현물)"
 
         for s in info_f.get("symbols", []):
             if s.get("quoteAsset") == "USDT" and s.get("status") in [
@@ -733,22 +751,31 @@ def fetch_binance_futures_spot(bybit_data=None):
                 "SETTLING",
                 "DELIVERING",
             ]:
+                # 만료일(deliveryDate) 검증: 이미 정산/배송 완료 후 3일 넘게 지난 과거 계약은 제외 (기한 만료)
+                d_date = s.get("deliveryDate", 0)
+                if d_date and (now_ms - d_date) > FUTURES_SETTLE_TTL_MS:
+                    continue
+
                 base_sym = s.get("baseAsset", "").upper()
                 if base_sym not in active_f_bases:
                     binance_fut_warn[base_sym] = "거래 정지(선물)"
 
+        new_binance_warn = {}
         all_bin_bases = set(binance_spot_warn.keys()) | set(binance_fut_warn.keys())
         for b in all_bin_bases:
             s_msg = binance_spot_warn.get(b)
             f_msg = binance_fut_warn.get(b)
             if s_msg == "거래 정지(현물)" and f_msg == "거래 정지(선물)":
-                EXCHANGE_WARNINGS["BINANCE"][b] = "거래 정지(현물/선물)"
+                new_binance_warn[b] = "거래 정지(현물/선물)"
             elif s_msg and f_msg:
-                EXCHANGE_WARNINGS["BINANCE"][b] = f"{s_msg} / {f_msg}"
+                new_binance_warn[b] = f"{s_msg} / {f_msg}"
             elif s_msg:
-                EXCHANGE_WARNINGS["BINANCE"][b] = s_msg
+                new_binance_warn[b] = s_msg
             elif f_msg:
-                EXCHANGE_WARNINGS["BINANCE"][b] = f_msg
+                new_binance_warn[b] = f_msg
+
+        # 정지/점검 해제 시 캐시에서 제거
+        EXCHANGE_WARNINGS["BINANCE"] = new_binance_warn
 
         active_f = {
             s["symbol"]
