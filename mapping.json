@@ -14,7 +14,7 @@
   "__MEMO__12": "DUPLICATED_LIST: 동일 티커 다른 코인(동명이인) 또는 거래소별 티커 상이 코인의 UID/거래소별 티커 매핑",
   "__MEMO__13": "TICKER_DATA: 전체 자산 마스터 메타데이터: [0: CMC_ID, 1: 체인/메인넷, 2: 영문명, 3: 표준티커, 4: 자산타입(COIN/STOCK), 5: 특수구분(ALPHA 등)]",
   "__MEMO__14": "-------------------------------------------------------------",
-  "DEFAULT_KRW_USD_RATE": 1326.78,
+  "DEFAULT_KRW_USD_RATE": 1333.9,
   "CHAIN_LOGO_MAP": {
     "ETH": "https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png",
     "BNB": "https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png",
@@ -1031,6 +1031,13 @@
       "AMDB",
       "STOCK"
     ],
+    "AMGN(STOCK)": [
+      "42651",
+      null,
+      "AMGN (Derivatives)",
+      "AMGN",
+      "STOCK"
+    ],
     "AMP(Amp)": [
       "6945",
       null,
@@ -1134,6 +1141,13 @@
       null,
       "APP (Derivatives)",
       "APP",
+      "STOCK"
+    ],
+    "APPB(STOCK)": [
+      "42683",
+      null,
+      "APPB (Derivatives)",
+      "APPB",
       "STOCK"
     ],
     "APR": [
@@ -2027,6 +2041,13 @@
       null,
       "BSP (Derivatives)",
       "BSP",
+      "STOCK"
+    ],
+    "BSPB(STOCK)": [
+      "42682",
+      null,
+      "BSPB (Derivatives)",
+      "BSPB",
       "STOCK"
     ],
     "BSV": [
@@ -3338,6 +3359,13 @@
       "EWZ",
       "STOCK"
     ],
+    "EWZS(STOCK)": [
+      "42697",
+      null,
+      "EWZS (Derivatives)",
+      "EWZS",
+      "STOCK"
+    ],
     "F": [
       "34297",
       null,
@@ -3632,6 +3660,13 @@
       null,
       "GEV (Derivatives)",
       "GEV",
+      "STOCK"
+    ],
+    "GEVB(STOCK)": [
+      "42681",
+      null,
+      "GEVB (Derivatives)",
+      "GEVB",
       "STOCK"
     ],
     "GIGADEV(STOCK)": [
@@ -4867,13 +4902,6 @@
       "LUNA",
       "COIN"
     ],
-    "LUNA(Terra)": [
-      "20314",
-      null,
-      "Terra",
-      "LUNA2",
-      "COIN"
-    ],
     "LUNA2": [
       "20314",
       null,
@@ -5090,6 +5118,13 @@
       "Official Melania Meme",
       "MELANIA",
       "COIN"
+    ],
+    "MELI(STOCK)": [
+      "42700",
+      null,
+      "MELI (Derivatives)",
+      "MELI",
+      "STOCK"
     ],
     "MEME": [
       "28301",
@@ -6006,6 +6041,13 @@
       "OURA",
       "STOCK"
     ],
+    "OXY(STOCK)": [
+      "8029",
+      null,
+      "OXY (Derivatives)",
+      "OXY",
+      "STOCK"
+    ],
     "PANW": [
       "40199",
       null,
@@ -6125,6 +6167,13 @@
       "Pepe",
       "PEPE",
       "COIN"
+    ],
+    "PFE(STOCK)": [
+      "7891",
+      null,
+      "PFE (Derivatives)",
+      "PFE",
+      "STOCK"
     ],
     "PHA": [
       "6841",
@@ -7077,6 +7126,13 @@
       "SKDD",
       "STOCK"
     ],
+    "SKDDB(STOCK)": [
+      "42680",
+      null,
+      "SKDDB (Derivatives)",
+      "SKDDB",
+      "STOCK"
+    ],
     "SKHY": [
       "40833",
       null,
@@ -7138,6 +7194,13 @@
       null,
       "SKUU (Derivatives)",
       "SKUU",
+      "STOCK"
+    ],
+    "SKUUB(STOCK)": [
+      "42684",
+      null,
+      "SKUUB (Derivatives)",
+      "SKUUB",
       "STOCK"
     ],
     "SKY": [
@@ -7208,6 +7271,13 @@
       null,
       "SMHB (Derivatives)",
       "SMHB",
+      "STOCK"
+    ],
+    "SMR(STOCK)": [
+      "42698",
+      null,
+      "SMR (Derivatives)",
+      "SMR",
       "STOCK"
     ],
     "SNDK": [

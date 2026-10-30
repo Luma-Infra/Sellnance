@@ -343,6 +343,11 @@ export function formatCrosshairPrice(
   isKrw = null,
 ) {
   if (!isLeftScale) {
+    // 시리즈에 고정 정밀도(p)가 지정된 경우 원화/달러 구분 없이 동일한 소수점 자릿수(p)를 유지하여
+    // 스크롤 경계나 네이티브 엔진의 폭 측정 테스트 값(+0.11111111)에서 자릿수가 튀며 우측 축 너비가 흔들리는 현상 방지
+    if (p !== undefined && p !== null && !isNaN(p)) {
+      return formatSmartPrice(price, p, false);
+    }
     const krwMode =
       isKrw !== null
         ? isKrw
@@ -753,11 +758,6 @@ function updateStatus(d, p) {
 
     updateLegend(last, v, k);
   }
-
-  // 실시간 시세 변동 시 우측 현재가 등락폭 레이블 갱신
-  if (store._drawingPrimitive && !store.isCrosshairActive) {
-    store._drawingPrimitive.updateAll();
-  }
 }
 
 export function autoFit(isTabRestore = false) {
@@ -787,8 +787,14 @@ export function autoFit(isTabRestore = false) {
         if (!store.isPriceScaleUserZoomed) {
           store.chart.priceScale("right").applyOptions({ autoScale: true });
         }
+        if (!store.isVolPriceScaleUserZoomed && store.volumeSeries) {
+          store.volumeSeries.priceScale().applyOptions({ autoScale: true });
+        }
+        if (!store.isKimchiPriceScaleUserZoomed && store.kimchiSeries) {
+          store.kimchiSeries.priceScale().applyOptions({ autoScale: true });
+        }
       }
-      if (store.chartVol) {
+      if (store.chartVol && store.chartVol !== store.chart) {
         const timeScaleVol = store.chartVol.timeScale();
         const rangeVol = timeScaleVol.getVisibleLogicalRange();
         if (rangeVol && store.mainData && store.mainData.length) {
@@ -818,12 +824,15 @@ export function autoFit(isTabRestore = false) {
     if (store.chart && !store.isPriceScaleUserZoomed) {
       store.chart.priceScale("right").applyOptions({ autoScale: true });
     }
+    if (!store.isVolPriceScaleUserZoomed && store.volumeSeries) {
+      store.volumeSeries.priceScale().applyOptions({ autoScale: true });
+    }
     if (
       store.chart &&
       !store.isKimchiPriceScaleUserZoomed &&
       store.kimchiSeries
     ) {
-      store.chart.priceScale("left").applyOptions({ autoScale: true });
+      store.kimchiSeries.priceScale().applyOptions({ autoScale: true });
     }
     return;
   }
@@ -846,9 +855,15 @@ export function autoFit(isTabRestore = false) {
     if (!store.isPriceScaleUserZoomed) {
       store.chart.priceScale("right").applyOptions({ autoScale: true });
     }
+    if (!store.isVolPriceScaleUserZoomed && store.volumeSeries) {
+      store.volumeSeries.priceScale().applyOptions({ autoScale: true });
+    }
+    if (!store.isKimchiPriceScaleUserZoomed && store.kimchiSeries) {
+      store.kimchiSeries.priceScale().applyOptions({ autoScale: true });
+    }
 
-    // 거래량 차트(vol-pane) 동기화 오토핏 (스케일 튀는 현상 방지)
-    if (store.chartVol) {
+    // 거래량 차트(vol-pane) 동기화 오토핏 (독립 인스턴스일 때만 실행하여 중복 호출 방지)
+    if (store.chartVol && store.chartVol !== store.chart) {
       try {
         store.chartVol.timeScale().setVisibleLogicalRange(logicalRange);
         if (!store.isVolPriceScaleUserZoomed) {
@@ -1318,15 +1333,38 @@ export function updateRealtimeCountdown(serverMs, overridePrice) {
   };
 
   if (showTitle) {
+    const lineVisibleVal = store.showPriceLine !== false;
+    const titleVal = `${displayTime}`;
     if (!store.countdownPriceLine) {
       store.countdownPriceLine =
         store.candleSeries.createPriceLine(lineOptions);
+      store._lastCountdownLineState = {
+        price: currentClose,
+        color: rawColor,
+        lineVisible: lineVisibleVal,
+        title: titleVal,
+      };
     } else {
-      try {
-        store.countdownPriceLine.applyOptions(lineOptions);
-      } catch (e) {
-        store.countdownPriceLine =
-          store.candleSeries.createPriceLine(lineOptions);
+      const prev = store._lastCountdownLineState;
+      if (
+        !prev ||
+        prev.price !== currentClose ||
+        prev.color !== rawColor ||
+        prev.lineVisible !== lineVisibleVal ||
+        prev.title !== titleVal
+      ) {
+        try {
+          store.countdownPriceLine.applyOptions(lineOptions);
+        } catch (e) {
+          store.countdownPriceLine =
+            store.candleSeries.createPriceLine(lineOptions);
+        }
+        store._lastCountdownLineState = {
+          price: currentClose,
+          color: rawColor,
+          lineVisible: lineVisibleVal,
+          title: titleVal,
+        };
       }
     }
   } else if (store.countdownPriceLine) {
@@ -1334,6 +1372,7 @@ export function updateRealtimeCountdown(serverMs, overridePrice) {
       store.candleSeries.removePriceLine(store.countdownPriceLine);
     } catch (e) {}
     store.countdownPriceLine = null;
+    store._lastCountdownLineState = null;
   }
 }
 

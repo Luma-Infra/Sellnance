@@ -16,7 +16,30 @@ export class DrawingPrimitive {
   attached({ chart, series, requestUpdate }) {
     this._chart = chart;
     this._series = series;
-    this._requestUpdate = requestUpdate;
+    // 네이티브 requestUpdate()는 Full Layout(Pa -> Dg 우측 캔버스 너비 재계산)을 호출하므로
+    // 차트 모델의 Light Update(mr)가 존재하면 이를 우선 사용하여 불필요한 우측 축 폭 재계산 차단
+    const chartModel = series?.ae?.Qt?.();
+    this._requestUpdate =
+      chartModel && typeof chartModel.mr === "function"
+        ? () => chartModel.mr()
+        : requestUpdate;
+
+    // 크로스헤어 퍼센트 라벨(DrawingPriceAxisView)이 우측 가격축 너비 측정(bm -> ri)에
+    // 영향을 주지 않도록 내부 Wt 래퍼의 ri()만 빈 문자열("")을 반환하게 분리 (실제 렌더링 Tt는 정상 동작)
+    const emptyRi = () => "";
+    const ht = series?.ae?.fa?.find((item) => item?.Qh?.() === this);
+    if (ht && typeof ht.qn === "function") {
+      const origQn = ht.qn.bind(ht);
+      ht.qn = () => {
+        const views = origQn();
+        for (let i = 0; i < views.length; i++) {
+          if (views[i] && views[i].ri !== emptyRi) {
+            views[i].ri = emptyRi;
+          }
+        }
+        return views;
+      };
+    }
   }
   detached() {
     this._chart = null;
@@ -90,6 +113,9 @@ class DrawingPriceAxisView {
     // 트뷰 네이티브 가격 라벨 높이(18~20px)를 감안하여 위(y - 20) 또는 아래(y + 20)에 스냅
     return pct >= 0 ? y - 20 : y + 20;
   }
+  fixedCoordinate() {
+    return this.coordinate();
+  }
   text() {
     if (!store.mainData || store.mainData.length === 0) return "";
     if (!store.isCrosshairActive || store.crosshairPrice === null) return "";
@@ -104,7 +130,7 @@ class DrawingPriceAxisView {
     return "#e1e4eb";
   }
   backColor() {
-    return "#2a2e39";
+    return store.chart?.options()?.crosshair?.horzLine?.labelBackgroundColor;
   }
   visible() {
     const pctEnabled =

@@ -5,12 +5,13 @@ import { formatChartTime } from "./chart_timezone.js";
 
 // 십자선 초기화
 export function clearAllCrosshairs() {
+  const wasActive = store.isCrosshairActive || store.crosshairPrice !== null;
   store.activeChart = null;
   store.crosshairPrice = null;
   store.crosshairLeftPrice = null;
   store.isCrosshairActive = false;
 
-  if (store._drawingPrimitive) {
+  if (store._drawingPrimitive && wasActive) {
     store._drawingPrimitive.setFutureTime(null, null);
     store._drawingPrimitive.updateAll();
   }
