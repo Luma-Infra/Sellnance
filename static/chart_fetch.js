@@ -926,14 +926,20 @@ function applySeriesAndLayout(
 
     try {
       // [네이티브 단일 동기 배치 교체] 포맷 + 스케일 리셋 + 캔들/볼륨 반영 + 뷰포트 피팅을 동기적으로 일괄 처리
+      const customPriceFormat = {
+        type: "custom",
+        precision: p,
+        minMove: p > 0 ? Number((1 / Math.pow(10, p)).toFixed(p)) : 1,
+        formatter: (price) => formatCrosshairPrice(price, p, false, isKor),
+      };
       store.candleSeries.applyOptions({
-        priceFormat: {
-          type: "custom",
-          precision: p,
-          minMove: p > 0 ? Number((1 / Math.pow(10, p)).toFixed(p)) : 1,
-          formatter: (price) => formatCrosshairPrice(price, p, false, isKor),
-        },
+        priceFormat: customPriceFormat,
       });
+      if (store.previewSeries) {
+        store.previewSeries.applyOptions({
+          priceFormat: customPriceFormat,
+        });
+      }
 
       // [신규 코인 로드] 이전 코인의 커스텀 스케일 락을 해제하여 캔들 증발 방지
       if (!isSubSwitch && !isTfChange) {
@@ -1133,34 +1139,43 @@ function finalizeKimchiAndRendering(
           if (typeof window.updateRealtimeCountdown === "function")
             window.updateRealtimeCountdown(store.lastServerMs);
 
-          if (!isSubSwitch && !isSilentSync) {
-            if (typeof autoFit === "function") {
-              autoFit(isTabRestore);
-            } else if (typeof window.autoFit === "function") {
-              window.autoFit(isTabRestore);
-            }
+          // 6단계(applySeriesAndLayout)에서 이미 메인 차트 autoFit이 완료되었으므로,
+          // 김프 데이터가 비동기로 추가된 경우에만 좌측(김프) 스케일을 오토스케일링하여 메인 우측 축 재흔들림 방지
+          if (
+            !store.isKimchiPriceScaleUserZoomed &&
+            store.kimchiSeries &&
+            store.kimchiData &&
+            store.kimchiData.length > 0
+          ) {
+            try {
+              store.kimchiSeries.priceScale().applyOptions({ autoScale: true });
+            } catch (e) {}
           }
 
-          if (store.chart && store.chartVol) {
+          if (store.chart) {
             // 사일런트 복귀 시 유저가 줌/스크롤하지 않은 상태(실시간 앵커링)라면 최신 봉으로 이동
             if (isSilentSync && !store.isUserZoomed) {
               try {
                 store.chart.timeScale().scrollToRealtime();
-                store.chartVol.timeScale().scrollToRealtime();
+                if (store.chartVol && store.chartVol !== store.chart) {
+                  store.chartVol.timeScale().scrollToRealtime();
+                }
               } catch (e) {}
             }
-            const curRange = store.chart.timeScale().getVisibleLogicalRange();
-            if (curRange) {
-              try {
-                store.chartVol.timeScale().setVisibleLogicalRange(curRange);
-              } catch (e) {}
-            }
-            if (!store.isVolPriceScaleUserZoomed) {
-              try {
-                store.chartVol
-                  .priceScale("right")
-                  .applyOptions({ autoScale: true });
-              } catch (e) {}
+            if (store.chartVol && store.chartVol !== store.chart) {
+              const curRange = store.chart.timeScale().getVisibleLogicalRange();
+              if (curRange) {
+                try {
+                  store.chartVol.timeScale().setVisibleLogicalRange(curRange);
+                } catch (e) {}
+              }
+              if (!store.isVolPriceScaleUserZoomed) {
+                try {
+                  store.chartVol
+                    .priceScale("right")
+                    .applyOptions({ autoScale: true });
+                } catch (e) {}
+              }
             }
           }
 

@@ -24,128 +24,70 @@ export function applyChartLayout() {
   if (store.blockChartResize) return;
   if (!store.chart || !store.candleSeries) return;
 
-  const v = store.paneConfig.volume;
-  const k = store.paneConfig.kimchi;
+  const v = !!store.paneConfig?.volume;
+  const k = !!store.paneConfig?.kimchi;
 
   const paneMain = document.getElementById("pane-main");
   const paneVol = document.getElementById("pane-vol");
   const rVol = document.getElementById("resizer-vol");
 
-  // 1. 시리즈 & 스케일 표시/숨김 설정
-  if (store.volumeSeries) {
-    store.volumeSeries.applyOptions({ visible: v });
-    store.chartVol.priceScale("right").applyOptions({ visible: v });
+  // 1. 메인 차트 컨테이너 전체 채우기 & 레거시 컨테이너 숨김
+  if (paneMain) {
+    paneMain.style.flex = "1";
+    paneMain.style.height = "100%";
+    paneMain.style.width = "100%";
   }
+  if (paneVol) paneVol.style.display = "none";
+  if (rVol) rVol.style.display = "none";
 
-  // [반응형 좌측 여백] 768px 미만(모바일)이면 좌측 스케일을 접어서 캔버스 확장, 768px 이상(PC/태블릿)이면 60px 수직 정렬 항상 고정
-  // 김프 비교 끄기/켜기 시에도 상하 차트의 좌측 스케일을 일치시켜 캔버스 시작점과 크로스헤어 수직선을 오차 없이 일치시키기
+  // 2. 모바일(768px 미만)에서는 좌측 스케일을 접고, PC에서는 김프 활성화 시 노출
   const isSmallMobile =
     typeof window !== "undefined" && window.innerWidth < 768;
+  const isKimchiActuallyVisible =
+    k && !store.isKimchiDisabled && !isSmallMobile;
 
-  const isKimchiActuallyVisible = !!k && !store.isKimchiDisabled;
+  store.chart.applyOptions({
+    leftPriceScale: {
+      visible: isKimchiActuallyVisible,
+      borderColor: "transparent",
+    },
+  });
 
-  // ON일 때는 둘 다 64px, OFF일 때는 둘 다 0px로 일치 (OFF 시 캔버스 확장)
-  const leftWidth = !isSmallMobile && isKimchiActuallyVisible ? 64 : 0;
-  const isLeftVisible = leftWidth > 0;
-
-  const leftScaleOptions = {
-    visible: isLeftVisible,
-    minimumWidth: leftWidth,
-    borderColor: "transparent",
-  };
-
-  if (store.chart) {
-    store.chart.priceScale("left").applyOptions(leftScaleOptions);
+  // 3. 네이티브 페인 비율 제어 (볼륨/김프 활성화 여부에 따라 동적 전환)
+  if (v || k) {
+    const s1 = store.chartSplits?.s1 || 0.75;
+    if (store.candlePane) store.candlePane.setStretchFactor(s1);
+    if (store.volPane) store.volPane.setStretchFactor(1 - s1);
+  } else {
+    // 볼륨/김프 모두 비활성화 시 하단 페인 접기
+    if (store.candlePane) store.candlePane.setStretchFactor(1);
+    if (store.volPane) store.volPane.setStretchFactor(0.0001);
   }
-  if (store.chartVol) {
-    store.chartVol.priceScale("left").applyOptions(leftScaleOptions);
-  }
 
+  // 4. 시리즈 가시성 반영
+  if (store.volumeSeries) {
+    store.volumeSeries.applyOptions({ visible: v });
+  }
   if (store.kimchiSeries) {
     store.kimchiSeries.applyOptions({ visible: isKimchiActuallyVisible });
   }
 
-  // 2. 패널 표시/숨김 및 플렉스 비율
-  let mainFlex = 1,
-    subFlex = 0;
-
-  if (v || k) {
-    if (paneVol) paneVol.style.display = "block";
-    if (rVol) rVol.style.display = "block";
-    mainFlex = store.chartSplits.s1 || 0.75;
-    subFlex = 1 - mainFlex;
-  } else {
-    if (paneVol) paneVol.style.display = "none";
-    if (rVol) rVol.style.display = "none";
-    mainFlex = 1;
-    subFlex = 0;
-  }
-
-  if (paneMain) paneMain.style.flex = `${mainFlex}`;
-  if (paneVol) paneVol.style.flex = `${subFlex}`;
-
-  // X축(시간) 스케일 중복 방지
-  if (store.chart) store.chart.timeScale().applyOptions({ visible: !v && !k });
-  if (store.chartVol)
-    store.chartVol.timeScale().applyOptions({ visible: v || k });
-
-  // [리사이즈 비동기 스케줄링] DOM 너비/높이 측정에 따른 Reflow 및 캔버스 중복 resize 방지
-  // [리사이즈 원자적 통합 스케줄링] Main과 Vol 차트를 단일 rAF 프레임에서 동시에 resize하여 상하 캔버스 시차 조정
-  requestAnimationFrame(() => {
-    let resized = false;
-    if (store.chart && paneMain) {
-      const w = paneMain.clientWidth;
-      const h = paneMain.clientHeight;
-      if (
-        w > 0 &&
-        h > 0 &&
-        (store.mainWidthCache !== w || store.mainHeightCache !== h)
-      ) {
-        store.mainWidthCache = w;
-        store.mainHeightCache = h;
-        store.chart.resize(w, h);
-        resized = true;
-      }
-    }
-    if (store.chartVol && paneVol) {
-      const w = paneVol.clientWidth;
-      const h = paneVol.clientHeight;
-      if (
-        w > 0 &&
-        h > 0 &&
-        (store.volWidthCache !== w || store.volHeightCache !== h)
-      ) {
-        store.volWidthCache = w;
-        store.volHeightCache = h;
-        store.chartVol.resize(w, h);
-        resized = true;
-      }
-    }
-    if (resized && typeof window.syncPriceScaleWidths === "function") {
-      window.syncPriceScaleWidths(false);
-    }
-  });
-
-  // 김프 비교군 스위처 (pane-vol 영역 상단 위치) 연동
+  // 5. 김프 비교군 스위처 위치 연동
   const kimchiSwitcher = document.getElementById("kimchi-switcher");
   if (kimchiSwitcher) {
     if (isKimchiActuallyVisible) {
       kimchiSwitcher.style.display = "flex";
       kimchiSwitcher.style.top = "auto";
-      kimchiSwitcher.style.bottom = `calc(${subFlex * 100}% - 30px)`;
+      const subRatio = v || k ? 1 - (store.chartSplits?.s1 || 0.75) : 0;
+      kimchiSwitcher.style.bottom = `calc(${subRatio * 100}% - 30px)`;
     } else {
       kimchiSwitcher.style.display = "none";
     }
   }
 
-  // [추가] 활성 차트 패널에 맞춘 타임존 버튼 동기화
+  // 6. 타임존 버튼 동기화
   if (typeof window.mountTimezoneButton === "function") {
     window.mountTimezoneButton();
-  }
-
-  // 상하 차트 좌우 스케일 폭 실시간 동기화 트리거
-  if (typeof window.syncPriceScaleWidths === "function") {
-    window.syncPriceScaleWidths();
   }
 }
 
@@ -279,15 +221,10 @@ export function initResizers() {
       document.body.style.cursor = "default";
       document.body.style.userSelect = "";
       if (rVol) rVol.classList.remove("resizer-active");
-      try {
-        if (store.chartSplits?.s1) {
-          localStorage.setItem(
-            "sellnance_chart_split_s1",
-            String(store.chartSplits.s1),
-          );
-        }
-      } catch (e) {}
     }
+
+    // 네이티브 멀티페인 조절선 또는 드래그바 조작 후 비율 저장
+    saveCurrentPaneSplitRatio();
   };
 
   window.addEventListener("mouseup", endDrag);
@@ -295,9 +232,40 @@ export function initResizers() {
   window.addEventListener("touchcancel", endDrag, { passive: true });
 }
 
+// [네이티브 페인 조절선 비율 로컬 스토리지 저장]
+export function saveCurrentPaneSplitRatio() {
+  if (!store.chart) return;
+  const panes = store.chart.panes();
+  if (!panes || panes.length < 2) return;
+
+  try {
+    let candleStretch = 0;
+    let totalStretch = 0;
+    for (const p of panes) {
+      const sf = p.getStretchFactor();
+      totalStretch += sf;
+      if (
+        p === store.candlePane ||
+        (store.candleSeries && p.getSeries().includes(store.candleSeries))
+      ) {
+        candleStretch = sf;
+      }
+    }
+    if (totalStretch > 0 && candleStretch > 0) {
+      const ratio = Math.round((candleStretch / totalStretch) * 1000) / 1000;
+      if (ratio >= 0.1 && ratio <= 0.9) {
+        if (!store.chartSplits) store.chartSplits = {};
+        store.chartSplits.s1 = ratio;
+        localStorage.setItem("sellnance_chart_split_s1", String(ratio));
+      }
+    }
+  } catch (e) {}
+}
+
 window.togglePane = togglePane;
 window.applyChartLayout = applyChartLayout;
 window.initResizers = initResizers;
+window.saveCurrentPaneSplitRatio = saveCurrentPaneSplitRatio;
 window.toggleVolFallback = toggleVolFallback;
 
 // 뷰 모드 전환 시 차트만 resize (table/quickview 사이드 이펙트 방지)

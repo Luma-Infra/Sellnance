@@ -165,6 +165,23 @@ export const store = {
   isPriceScaleUserZoomed: false, // 사용자가 메인 Y축 가격 스케일을 수동 드래그/줌한 상태 (autoScale 보존용)
   isVolPriceScaleUserZoomed: false, // 사용자가 하단 볼륨 Y축 스케일을 수동 조작한 상태
   isKimchiPriceScaleUserZoomed: false, // 사용자가 하단 김프 Y축 스케일을 수동 조작한 상태
+  candlePane: null, // 트뷰 v5 네이티브 캔들 페인 인스턴스
+  volPane: null, // 트뷰 v5 네이티브 볼륨 페인 인스턴스
+  kimchiPane: null, // 트뷰 v5 네이티브 김프 전용 페인 (3단 분리 시)
+  isKimchiSplit: (() => {
+    try {
+      return localStorage.getItem("sellnance_chart_kimchi_split") === "true";
+    } catch (e) {
+      return false;
+    }
+  })(), // false: 거래량 + 김프 통합, true: 거래량 / 김프 분리
+  isPanesSwapped: (() => {
+    try {
+      return localStorage.getItem("sellnance_chart_panes_swapped") === "true";
+    } catch (e) {
+      return false;
+    }
+  })(), // 패널 순서 변경(스왑) 상태
   kimchiSeries: null,
   chartVol: null,
   chartKimchi: null,

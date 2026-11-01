@@ -1,4 +1,4 @@
-// chart.js - 순수 차트 엔진 코어
+// chart.js - 순수 차트 엔진 코어 (트뷰 v5 네이티브 멀티페인 엔진)
 import { store, CONFIG, tfSec, measureDOM } from "./_store.js";
 import { fetchHistory } from "./chart_data.js";
 import {
@@ -16,6 +16,10 @@ import {
 } from "./chart_timezone.js";
 import {
   initChartSync,
+  swapChartPanes,
+  toggleKimchiSplit,
+  toggleVolPane,
+  toggleKimchiScale,
   syncCrosshair,
   syncTimeScales,
   syncPriceScaleWidths,
@@ -23,131 +27,12 @@ import {
   setupScaleModeButtons,
   updateScaleModeButtonsUI,
 } from "./chart_sync.js";
+import { initNativeCrosshair } from "./chart_crosshair.js";
 import { attachHighLowPrimitive } from "./chart_high_low.js";
 export { getCandleThemeColors, applyCandleTheme };
 
 // === DEBUG_PERF_TOGGLE ===
 const ENABLE_PERF_LOG = false; // Set to false to disable all performance logging instantly
-
-// [메인 & 거래량 차트 양방향 대칭 by 네이티브 캔버스 십자선 플러그인]
-class CanvasCrosshairPrimitive {
-  constructor() {
-    this._chart = null;
-    this._series = null;
-    this._requestUpdate = null;
-    this._x = null;
-    this._timeStr = null;
-    this._paneViews = [new CanvasCrosshairPaneView(this)];
-    this._timeAxisViews = [new CanvasCrosshairTimeAxisView(this)];
-  }
-  attached({ chart, series, requestUpdate }) {
-    this._chart = chart;
-    this._series = series;
-    this._requestUpdate = requestUpdate;
-  }
-  detached() {
-    this._chart = null;
-    this._series = null;
-    this._requestUpdate = null;
-  }
-  paneViews() {
-    return this._x !== null ? this._paneViews : [];
-  }
-  timeAxisViews() {
-    return this._x !== null && this._timeStr ? this._timeAxisViews : [];
-  }
-  setX(x, timeStr = null) {
-    if (x === undefined || x === null || isNaN(x)) {
-      this._x = null;
-      this._timeStr = null;
-    } else {
-      this._x = x;
-      this._timeStr = timeStr;
-    }
-    if (this._requestUpdate) {
-      try {
-        this._requestUpdate();
-      } catch (e) {}
-    }
-  }
-}
-
-// [신규 플러그인: 시간축 라벨]
-// 네이티브 크로스헤어가 고장나는 딜레마를 피해, 이 커스텀 플러그인이 시간축(X축) 바닥에 시간 라벨을 직접 그립니다!
-class CanvasCrosshairTimeAxisView {
-  constructor(source) {
-    this._source = source;
-  }
-  coordinate() {
-    return this._source._x || 0;
-  }
-  text() {
-    return this._source._timeStr || "";
-  }
-  background() {
-    return this.backColor();
-  }
-  backColor() {
-    const isUpbit =
-      typeof document !== "undefined" &&
-      document.body &&
-      document.body.classList.contains("theme-upbit");
-    return isUpbit ? "#363c4e" : "#2b2b43"; // 트레이딩뷰 네이티브 크로스헤어 라벨 배경색
-  }
-  color() {
-    return "#ffffff";
-  }
-  textColor() {
-    return "#ffffff";
-  }
-}
-
-class CanvasCrosshairPaneView {
-  constructor(source) {
-    this._source = source;
-  }
-  renderer() {
-    return new CanvasCrosshairPaneRenderer(this._source);
-  }
-}
-
-class CanvasCrosshairPaneRenderer {
-  constructor(source) {
-    this._source = source;
-  }
-  draw(target) {
-    if (this._source._x === null || isNaN(this._source._x)) return;
-    const x = this._source._x;
-
-    const renderFn = (scope) => {
-      const ctx = scope.context || scope.ctx || scope;
-      ctx.save();
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = "#758696";
-      ctx.lineCap = "butt"; // round의 삐져나옴/뭉침 현상을 제거하고 칼각 도트로 복원!
-      if (typeof ctx.setLineDash === "function") {
-        ctx.setLineDash([1, 2]); // 1픽셀 찍고 2픽셀 쉬는 가장 또렷하고 촘촘한 도트 비율!
-      }
-      ctx.beginPath();
-      // x 좌표를 픽셀 경계 중앙(+0.5)으로 강제 정렬
-      const exactX = Math.round(x) + 0.5;
-      // 위아래 패널 경계선(Border/Gap)의 미세한 틈새 단절을 없애기 위해 무자비하게 팽창 렌더링!!!
-      ctx.moveTo(exactX, -100);
-      ctx.lineTo(
-        exactX,
-        (scope.mediaSize ? scope.mediaSize.height : 500) + 100,
-      );
-      ctx.stroke();
-      ctx.restore();
-    };
-
-    if (typeof target.useMediaCoordinateSpace === "function") {
-      target.useMediaCoordinateSpace(renderFn);
-    } else {
-      renderFn(target);
-    }
-  }
-}
 
 // 3. 차트 생성
 export async function initChart() {
@@ -169,23 +54,26 @@ export async function initChart() {
 
   if (store.chart) {
     store.chart.remove();
-    store.chartVol?.remove();
     store.chart = null;
     store.chartVol = null;
     store.chartKimchi = null;
+    store.candlePane = null;
+    store.volPane = null;
+    store.kimchiPane = null;
+    store.isKimchiSplit = false;
     store.candleSeries = null;
     store.volumeSeries = null;
     store.kimchiSeries = null;
     store.previewSeries = null;
-    store.countdownPriceLine = null; // 카운트다운 유령선 방지
-    store._mainCrosshair = null; // 십자선 프리미티브 GC 수거 활성화
-    store._volCrosshair = null; // 십자선 프리미티브 GC 수거 활성화
-    store._measurePrimitive = null; // 자 도구 프리미티브 GC 수거 활성화
-    store.measureStartPriceLine = null; // 자 도구 시작 가격선 GC 수거 활성화
-    store.measureEndPriceLine = null; // 자 도구 끝 가격선 GC 수거 활성화
+    store.leftScaleSeries = null;
+    store.countdownPriceLine = null;
+    store._mainCrosshair = null;
+    store._volCrosshair = null;
+    store._measurePrimitive = null;
+    store.measureStartPriceLine = null;
+    store.measureEndPriceLine = null;
   }
   const elMain = document.getElementById("pane-main");
-  const elVol = document.getElementById("pane-vol");
 
   // CSS에 정의된 다크/라이트 모드 테마 변수 가져오기
   const style = getComputedStyle(document.body);
@@ -206,6 +94,11 @@ export async function initChart() {
       fontFamily:
         '"Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Segoe UI", sans-serif',
       attributionLogo: false, // 트레이딩뷰 워터마크 끄기
+      panes: {
+        enableResize: true,
+        separatorColor: gridColor,
+        separatorHoverColor: "transparent",
+      },
     },
     grid: { vertLines: { color: gridColor }, horzLines: { color: gridColor } },
     crosshair: {
@@ -213,21 +106,21 @@ export async function initChart() {
       vertLine: {
         color: "#758696",
         width: 1,
-        style: window.LightweightCharts.LineStyle.Dotted, // 도트 점선 촘촘 모드
+        style: window.LightweightCharts.LineStyle.Dotted,
         visible: true,
         labelVisible: true,
       },
       horzLine: {
         color: "#758696",
         width: 1,
-        style: window.LightweightCharts.LineStyle.Dotted, // 도트 점선 촘촘 모드
+        style: window.LightweightCharts.LineStyle.Dotted,
         visible: true,
         labelVisible: true,
       },
     },
     handleScale: {
       axisPressedMouseMove: { time: true, price: true },
-      mouseWheel: false, // 기본 느린 트뷰 휠 줌 비활성화 (초고속 네이티브 가속 줌으로 대체)
+      mouseWheel: false,
     },
     handleScroll: { vertTouchDrag: true },
     timeScale: {
@@ -244,7 +137,7 @@ export async function initChart() {
     },
   };
 
-  // 1. 메인 차트
+  // 트뷰 v5 네이티브 단일 차트 (캔들 + 볼륨 + 김프 통합)
   store.chart = window.LightweightCharts.createChart(elMain, {
     ...commonOptions,
     rightPriceScale: {
@@ -252,66 +145,50 @@ export async function initChart() {
       visible: true,
       borderColor: gridColor,
       mode: store.isLogMode ? 1 : 0,
-      minimumWidth: store.savedPriceScaleWidth || 0, // [UX 개선] 저장된 가격 축의 너비를 레이아웃 생성 시점에 복구하여 레이아웃 꿀렁임 제거
-      scaleMargins: {
-        top: store.mainChartScaleMargins?.top ?? 0.1,
-        bottom: store.mainChartScaleMargins?.bottom ?? 0,
-      }, // 0원 및 음수 가격 노출 원천 차단 (하단 여백은 autoscaleInfoProvider가 안전 클램핑)
-    },
-    leftPriceScale: {
-      autoScale: true,
-      visible: typeof window !== "undefined" && window.innerWidth >= 768,
-      minimumWidth:
-        typeof window !== "undefined" && window.innerWidth < 768
-          ? 0
-          : store.savedLeftPriceScaleWidth || 64,
-      borderColor: "transparent",
       scaleMargins: {
         top: store.mainChartScaleMargins?.top ?? 0.1,
         bottom: store.mainChartScaleMargins?.bottom ?? 0,
       },
-      // entireTextOnly: true,
+    },
+    leftPriceScale: {
+      autoScale: true,
+      visible:
+        typeof window !== "undefined" &&
+        window.innerWidth >= 768 &&
+        !!store.paneConfig?.kimchi &&
+        !store.isKimchiDisabled,
+      borderColor: "transparent",
+      scaleMargins: {
+        top: 0.1,
+        bottom: 0.1,
+      },
     },
   });
 
-  // 2. 볼륨 차트 (좌측 김프, 우측 거래량 스케일 동시 적용)
-  store.chartVol = window.LightweightCharts.createChart(elVol, {
-    ...commonOptions,
-    crosshair: {
-      ...commonOptions.crosshair,
-      vertLine: {
-        ...commonOptions.crosshair.vertLine,
-        labelVisible: false, // 네이티브 시간 라벨만 끄기 (플러그인 라벨과 겹침 방지)
-      },
-    },
-    timeScale: {
-      ...commonOptions.timeScale,
-      borderColor: "transparent", // [하단 테두리 제거] 볼륨 캔버스 하단의 진한 테두리 선 투명화
-    },
-    rightPriceScale: {
-      autoScale: true,
-      visible: true,
-      borderColor: gridColor,
-      scaleMargins: {
-        top: store.volChartScaleMargins?.top ?? 0.5,
-        bottom: store.volChartScaleMargins?.bottom ?? 0,
-      },
-      minimumWidth: store.savedPriceScaleWidth || 0, // [UX 개선] 저장된 가격 축의 너비를 레이아웃 생성 시점에 복구하여 레이아웃 꿀렁임 제거
-    },
-    leftPriceScale: {
-      autoScale: true,
-      visible: typeof window !== "undefined" && window.innerWidth >= 768,
-      minimumWidth:
-        typeof window !== "undefined" && window.innerWidth < 768
-          ? 0
-          : store.savedLeftPriceScaleWidth || 64,
-      borderColor: "transparent", // [좌측 테두리 제거] 메인 차트와 동일하게 좌측 테두리 선 투명화
-      scaleMargins: {
-        top: store.volChartScaleMargins?.kimchiTop ?? 0.1,
-        bottom: store.volChartScaleMargins?.kimchiBottom ?? 0.1,
-      },
-    },
-  });
+  // 하위 호환성 보장: chartVol을 chart로 바인딩
+  store.chartVol = store.chart;
+
+  // 1. Pane 0: 메인 캔들스틱 페인
+  const firstPane = store.chart.panes()[0];
+  store.candlePane = firstPane;
+
+  // 2. Pane 1: 하단 거래량 & 김프 페인
+  const volPane = store.chart.addPane();
+  store.volPane = volPane;
+
+  // 페인 기본 비율 설정 (로컬 스토리지에 저장된 비율 반영)
+  const s1 = store.chartSplits?.s1 || 0.75;
+  firstPane.setStretchFactor(s1);
+  volPane.setStretchFactor(1 - s1);
+
+  // [로컬 스토리지] 저장된 패널 스왑 상태 복원
+  if (store.isPanesSwapped) {
+    try {
+      store.chart.swapPanes(0, 1);
+    } catch (e) {
+      console.warn("restore isPanesSwapped error:", e);
+    }
+  }
 
   // 사용자가 차트 줌/패닝을 직접 조작했음을 감지하는 이벤트 리스너 부착
   store.chart.timeScale().subscribeVisibleTimeRangeChange(() => {
@@ -387,9 +264,8 @@ export async function initChart() {
       // tdIndex 0: 좌측 스케일(김프), 1: 차트 본체(캔들/바), 2: 우측 가격 스케일
 
       // 2) 좌표 기반 듀얼 체크
-      const isOverVol = elVol && elVol.contains(targetEl);
-      const activeEl = isOverVol ? elVol : elMain;
-      const activeChart = isOverVol ? store.chartVol : store.chart;
+      const activeEl = elMain;
+      const activeChart = store.chart;
       const rect = activeEl ? activeEl.getBoundingClientRect() : null;
 
       let isOverRightScale = tdIndex === 2;
@@ -506,25 +382,8 @@ export async function initChart() {
       const targetRange = { from: newFrom, to: newTo };
       timeScale.setVisibleLogicalRange(targetRange);
 
-      if (store.chartVol) {
-        try {
-          store.chartVol.timeScale().setVisibleLogicalRange(targetRange);
-        } catch (_) {}
-      }
-
-      // [원자적 동기화] 휠 줌 즉시 메인/볼륨 십자선 마그네틱 자석 좌표 실시간 일치
-      try {
-        const curX = e.clientX - rect.left;
-        let postLogical = timeScale.coordinateToLogical(curX);
-        if (postLogical === null || isNaN(postLogical)) {
-          postLogical = cursorLogical;
-        }
-        const snappedX = timeScale.logicalToCoordinate(Math.round(postLogical));
-        if (snappedX !== null) {
-          if (store._mainCrosshair) store._mainCrosshair.setX(snappedX);
-          if (store._volCrosshair) store._volCrosshair.setX(snappedX);
-        }
-      } catch (_) {}
+      store.isUserZoomed = true;
+      store.savedZoomWidth = Math.round(newSpan);
 
       store.isUserZoomed = true;
       store.savedZoomWidth = Math.round(newSpan);
@@ -583,7 +442,7 @@ export async function initChart() {
     formatter: (price) => formatCrosshairPrice(price, p, true),
   };
 
-  store.candleSeries = store.chart.addSeries(
+  store.candleSeries = firstPane.addSeries(
     window.LightweightCharts.CandlestickSeries,
     {
       upColor: upColor,
@@ -602,7 +461,7 @@ export async function initChart() {
   attachHighLowPrimitive(store.chart, store.candleSeries);
 
   // 좌측 스케일 전용 등락률 및 가격차이 표시 보조 시리즈
-  store.leftScaleSeries = store.chart.addSeries(
+  store.leftScaleSeries = firstPane.addSeries(
     window.LightweightCharts.LineSeries,
     {
       priceScaleId: "left",
@@ -615,8 +474,8 @@ export async function initChart() {
     },
   );
 
-  // [추가] _main.js에 있던 시뮬레이터용 캔들 시리즈 할당 복구
-  store.previewSeries = store.chart.addSeries(
+  // [추가] 시뮬레이터용 캔들 시리즈 할당
+  store.previewSeries = firstPane.addSeries(
     window.LightweightCharts.CandlestickSeries,
     {
       upColor: upColor + "4D",
@@ -630,11 +489,12 @@ export async function initChart() {
     },
   );
 
-  store.volumeSeries = store.chartVol.addSeries(
+  store.volumeSeries = volPane.addSeries(
     window.LightweightCharts.HistogramSeries,
     {
       color: "#26a69a",
       priceFormat: { type: "volume" },
+      priceScaleId: "right",
       priceLineVisible: false, // vol 현재가 점선 숨기기
     },
   );
@@ -696,23 +556,20 @@ export async function initChart() {
     };
   }
 
-  // 김프를 오버레이 라인 시리즈로 업그레이드 (다채로운 색상 포기, 가독성 우선)
-  store.kimchiSeries = store.chartVol.addSeries(
-    window.LightweightCharts.LineSeries,
-    {
-      priceScaleId: "left",
-      color: "#ff007a",
-      lineWidth: 2,
-      crosshairMarkerVisible: true,
-      lastValueVisible: false,
-      priceLineVisible: false,
-      priceFormat: {
-        type: "custom",
-        minMove: 0.01,
-        formatter: (p) => (p > 0 ? "+" : "") + p.toFixed(2) + "%",
-      },
+  // 김프를 오버레이 라인 시리즈로 추가 (Pane 1 좌측 스케일)
+  store.kimchiSeries = volPane.addSeries(window.LightweightCharts.LineSeries, {
+    priceScaleId: "left",
+    color: "#ff007a",
+    lineWidth: 2,
+    crosshairMarkerVisible: true,
+    lastValueVisible: false,
+    priceLineVisible: false,
+    priceFormat: {
+      type: "custom",
+      minMove: 0.01,
+      formatter: (p) => (p > 0 ? "+" : "") + p.toFixed(2) + "%",
     },
-  );
+  });
 
   // ========================================================
   // [프록시 중계] 김프 시리즈 보호하기
@@ -761,18 +618,20 @@ export async function initChart() {
     };
   }
 
-  // [메인 & 거래량 차트 양방향 대칭 십자선 플러그인 초기화 및 적용]
-  if (store.candleSeries && !store._mainCrosshair) {
-    store._mainCrosshair = new CanvasCrosshairPrimitive();
-    store.candleSeries.attachPrimitive(store._mainCrosshair);
-  }
-  if (store.volumeSeries && !store._volCrosshair) {
-    store._volCrosshair = new CanvasCrosshairPrimitive();
-    store.volumeSeries.attachPrimitive(store._volCrosshair);
+  // [트뷰 v5 네이티브 단일 차트 크로스헤어 바인딩]
+  initNativeCrosshair(store.chart);
+
+  // [로컬 스토리지에 저장된 김프 3단 분리 상태 복원]
+  if (store.isKimchiSplit) {
+    try {
+      toggleKimchiSplit();
+    } catch (e) {
+      console.warn("restore isKimchiSplit error:", e);
+    }
   }
 
-  // [멀티 차트 동기화 전담 엔진 초기화] 크로스헤어, 시간축, 가격축 너비 락킹 및 스케일 모드 버튼 바인딩
-  initChartSync(elMain, elVol);
+  // [멀티 차트 동기화 전담 엔진 초기화]
+  initChartSync();
 
   initResizers();
   applyChartLayout();
@@ -810,7 +669,13 @@ export function updateChartTheme() {
 
   // 1. 차트 배경 및 그리드 색상 업데이트
   const commonTheme = {
-    layout: { textColor: textColor },
+    layout: {
+      textColor: textColor,
+      panes: {
+        separatorColor: gridColor,
+        separatorHoverColor: "transparent",
+      },
+    },
     grid: { vertLines: { color: gridColor }, horzLines: { color: gridColor } },
     rightPriceScale: { borderColor: gridColor },
     leftPriceScale: { borderColor: "transparent" },
@@ -951,6 +816,9 @@ export function updateChartTheme() {
 
 export {
   initChartSync,
+  swapChartPanes,
+  toggleVolPane,
+  toggleKimchiScale,
   syncCrosshair,
   syncTimeScales,
   syncPriceScaleWidths,

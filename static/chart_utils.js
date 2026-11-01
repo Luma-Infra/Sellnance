@@ -343,6 +343,11 @@ export function formatCrosshairPrice(
   isKrw = null,
 ) {
   if (!isLeftScale) {
+    // 시리즈에 고정 정밀도(p)가 지정된 경우 원화/달러 구분 없이 동일한 소수점 자릿수(p)를 유지하여
+    // 스크롤 경계나 네이티브 엔진의 폭 측정 테스트 값(+0.11111111)에서 자릿수가 튀며 우측 축 너비가 흔들리는 현상 방지
+    if (p !== undefined && p !== null && !isNaN(p)) {
+      return formatSmartPrice(price, p, false);
+    }
     const krwMode =
       isKrw !== null
         ? isKrw
@@ -379,8 +384,8 @@ let _lastLegendRenderTime = 0;
 let _legendRafPending = false;
 let _pendingLegendArgs = null;
 
-function updateLegend(d, v, k, forceImmediate = false) {
-  // [디버그 옵션] 우측 패널 DOM 차단 또는 레전드 개별 차단 시 추적용 즉시 리턴
+export function updateLegend(d, v, k, forceImmediate = false) {
+  // [디버그 옵션] 우측 패널 DOM 차단 또는 레전드 개별 차단 시 추적용 리턴
   if (store.blockRightDom || store.blockLegend) {
     const nowTime = Date.now();
     if (!window._lastLegendUpdateTime) window._lastLegendUpdateTime = 0;
@@ -753,11 +758,6 @@ function updateStatus(d, p) {
 
     updateLegend(last, v, k);
   }
-
-  // 실시간 시세 변동 시 우측 현재가 등락폭 레이블 갱신
-  if (store._drawingPrimitive && !store.isCrosshairActive) {
-    store._drawingPrimitive.updateAll();
-  }
 }
 
 export function autoFit(isTabRestore = false) {
@@ -787,8 +787,14 @@ export function autoFit(isTabRestore = false) {
         if (!store.isPriceScaleUserZoomed) {
           store.chart.priceScale("right").applyOptions({ autoScale: true });
         }
+        if (!store.isVolPriceScaleUserZoomed && store.volumeSeries) {
+          store.volumeSeries.priceScale().applyOptions({ autoScale: true });
+        }
+        if (!store.isKimchiPriceScaleUserZoomed && store.kimchiSeries) {
+          store.kimchiSeries.priceScale().applyOptions({ autoScale: true });
+        }
       }
-      if (store.chartVol) {
+      if (store.chartVol && store.chartVol !== store.chart) {
         const timeScaleVol = store.chartVol.timeScale();
         const rangeVol = timeScaleVol.getVisibleLogicalRange();
         if (rangeVol && store.mainData && store.mainData.length) {
@@ -812,6 +818,25 @@ export function autoFit(isTabRestore = false) {
     } catch (e) {}
     return;
   }
+
+  // 상하 간격만 오토핏하고 time/가로 줌 간격은 초기화 안하도록 유지
+  if (store.isUserZoomed) {
+    if (store.chart && !store.isPriceScaleUserZoomed) {
+      store.chart.priceScale("right").applyOptions({ autoScale: true });
+    }
+    if (!store.isVolPriceScaleUserZoomed && store.volumeSeries) {
+      store.volumeSeries.priceScale().applyOptions({ autoScale: true });
+    }
+    if (
+      store.chart &&
+      !store.isKimchiPriceScaleUserZoomed &&
+      store.kimchiSeries
+    ) {
+      store.kimchiSeries.priceScale().applyOptions({ autoScale: true });
+    }
+    return;
+  }
+
   if (store.chart && store.mainData.length) {
     const len = store.mainData.length;
     // [UX 개선] 캔들 개수(len)가 매우 적은 신규 상장 코인(예: 일봉 5개) 전환 시에만 캔들 수축되는 현상 방지
@@ -830,9 +855,15 @@ export function autoFit(isTabRestore = false) {
     if (!store.isPriceScaleUserZoomed) {
       store.chart.priceScale("right").applyOptions({ autoScale: true });
     }
+    if (!store.isVolPriceScaleUserZoomed && store.volumeSeries) {
+      store.volumeSeries.priceScale().applyOptions({ autoScale: true });
+    }
+    if (!store.isKimchiPriceScaleUserZoomed && store.kimchiSeries) {
+      store.kimchiSeries.priceScale().applyOptions({ autoScale: true });
+    }
 
-    // 거래량 차트(vol-pane) 동기화 오토핏 (스케일 튀는 현상 방지)
-    if (store.chartVol) {
+    // 거래량 차트(vol-pane) 동기화 오토핏 (독립 인스턴스일 때만 실행하여 중복 호출 방지)
+    if (store.chartVol && store.chartVol !== store.chart) {
       try {
         store.chartVol.timeScale().setVisibleLogicalRange(logicalRange);
         if (!store.isVolPriceScaleUserZoomed) {
@@ -1302,15 +1333,38 @@ export function updateRealtimeCountdown(serverMs, overridePrice) {
   };
 
   if (showTitle) {
+    const lineVisibleVal = store.showPriceLine !== false;
+    const titleVal = `${displayTime}`;
     if (!store.countdownPriceLine) {
       store.countdownPriceLine =
         store.candleSeries.createPriceLine(lineOptions);
+      store._lastCountdownLineState = {
+        price: currentClose,
+        color: rawColor,
+        lineVisible: lineVisibleVal,
+        title: titleVal,
+      };
     } else {
-      try {
-        store.countdownPriceLine.applyOptions(lineOptions);
-      } catch (e) {
-        store.countdownPriceLine =
-          store.candleSeries.createPriceLine(lineOptions);
+      const prev = store._lastCountdownLineState;
+      if (
+        !prev ||
+        prev.price !== currentClose ||
+        prev.color !== rawColor ||
+        prev.lineVisible !== lineVisibleVal ||
+        prev.title !== titleVal
+      ) {
+        try {
+          store.countdownPriceLine.applyOptions(lineOptions);
+        } catch (e) {
+          store.countdownPriceLine =
+            store.candleSeries.createPriceLine(lineOptions);
+        }
+        store._lastCountdownLineState = {
+          price: currentClose,
+          color: rawColor,
+          lineVisible: lineVisibleVal,
+          title: titleVal,
+        };
       }
     }
   } else if (store.countdownPriceLine) {
@@ -1318,6 +1372,7 @@ export function updateRealtimeCountdown(serverMs, overridePrice) {
       store.candleSeries.removePriceLine(store.countdownPriceLine);
     } catch (e) {}
     store.countdownPriceLine = null;
+    store._lastCountdownLineState = null;
   }
 }
 

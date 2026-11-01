@@ -13,7 +13,11 @@ class HighLowPrimitive {
   attached({ chart, series, requestUpdate }) {
     this._chart = chart;
     this._series = series;
-    this._requestUpdate = requestUpdate;
+    const chartModel = series?.ae?.Qt?.();
+    this._requestUpdate =
+      chartModel && typeof chartModel.mr === "function"
+        ? () => chartModel.mr()
+        : requestUpdate;
   }
 
   detached() {
@@ -249,24 +253,6 @@ export function attachHighLowPrimitive(chart, series) {
 
   if (typeof series.attachPrimitive === "function") {
     series.attachPrimitive(primitive);
-  }
-
-  if (typeof chart.timeScale === "function") {
-    const ts = chart.timeScale();
-    if (ts && typeof ts.subscribeVisibleLogicalRangeChange === "function") {
-      ts.subscribeVisibleLogicalRangeChange(() => {
-        if (store._highLowPrimitive) {
-          store._highLowPrimitive.updateAll();
-        }
-      });
-    }
-    if (ts && typeof ts.subscribeVisibleTimeRangeChange === "function") {
-      ts.subscribeVisibleTimeRangeChange(() => {
-        if (store._highLowPrimitive) {
-          store._highLowPrimitive.updateAll();
-        }
-      });
-    }
   }
 
   return primitive;

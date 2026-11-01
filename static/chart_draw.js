@@ -7,13 +7,39 @@ export class DrawingPrimitive {
     this._chart = null;
     this._series = null;
     this._requestUpdate = null;
+    this._futureX = null;
+    this._futureTimeStr = null;
     this._paneViews = [new DrawingPaneView(this)];
     this._priceAxisViews = [new DrawingPriceAxisView(this)];
+    this._timeAxisViews = [new FutureTimeAxisView(this)];
   }
   attached({ chart, series, requestUpdate }) {
     this._chart = chart;
     this._series = series;
-    this._requestUpdate = requestUpdate;
+    // 네이티브 requestUpdate()는 Full Layout(Pa -> Dg 우측 캔버스 너비 재계산)을 호출하므로
+    // 차트 모델의 Light Update(mr)가 존재하면 이를 우선 사용하여 불필요한 우측 축 폭 재계산 차단
+    const chartModel = series?.ae?.Qt?.();
+    this._requestUpdate =
+      chartModel && typeof chartModel.mr === "function"
+        ? () => chartModel.mr()
+        : requestUpdate;
+
+    // 크로스헤어 퍼센트 라벨(DrawingPriceAxisView)이 우측 가격축 너비 측정(bm -> ri)에
+    // 영향을 주지 않도록 내부 Wt 래퍼의 ri()만 빈 문자열("")을 반환하게 분리 (실제 렌더링 Tt는 정상 동작)
+    const emptyRi = () => "";
+    const ht = series?.ae?.fa?.find((item) => item?.Qh?.() === this);
+    if (ht && typeof ht.qn === "function") {
+      const origQn = ht.qn.bind(ht);
+      ht.qn = () => {
+        const views = origQn();
+        for (let i = 0; i < views.length; i++) {
+          if (views[i] && views[i].ri !== emptyRi) {
+            views[i].ri = emptyRi;
+          }
+        }
+        return views;
+      };
+    }
   }
   detached() {
     this._chart = null;
@@ -26,8 +52,44 @@ export class DrawingPrimitive {
   priceAxisViews() {
     return this._priceAxisViews;
   }
+  timeAxisViews() {
+    return this._futureX !== null && this._futureTimeStr
+      ? this._timeAxisViews
+      : [];
+  }
+  setFutureTime(x, timeStr) {
+    if (this._futureX === x && this._futureTimeStr === timeStr) return;
+    this._futureX = x;
+    this._futureTimeStr = timeStr;
+    if (this._requestUpdate) this._requestUpdate();
+  }
   updateAll() {
     if (this._requestUpdate) this._requestUpdate();
+  }
+}
+
+// [트뷰 네이티브 시간축 렌더링 규격 전담 뷰 (미래 영역 라벨)]
+class FutureTimeAxisView {
+  constructor(source) {
+    this._source = source;
+  }
+  coordinate() {
+    return this._source._futureX ?? -100;
+  }
+  text() {
+    return this._source._futureTimeStr || "";
+  }
+  textColor() {
+    return "#ffffff";
+  }
+  backColor() {
+    return "#1e222d";
+  }
+  visible() {
+    return this._source._futureX !== null && !!this._source._futureTimeStr;
+  }
+  tickVisible() {
+    return true;
   }
 }
 
@@ -48,8 +110,11 @@ class DrawingPriceAxisView {
     const diff = store.crosshairPrice - currentPrice;
     const pct = currentPrice > 0 ? (diff / currentPrice) * 100 : 0;
 
-    // 상승(pct >= 0)이면 선 위(y - 20), 하락(pct < 0)이면 선 아래(y + 20)
+    // 트뷰 네이티브 가격 라벨 높이(18~20px)를 감안하여 위(y - 20) 또는 아래(y + 20)에 스냅
     return pct >= 0 ? y - 20 : y + 20;
+  }
+  fixedCoordinate() {
+    return this.coordinate();
   }
   text() {
     if (!store.mainData || store.mainData.length === 0) return "";
@@ -65,7 +130,7 @@ class DrawingPriceAxisView {
     return "#e1e4eb";
   }
   backColor() {
-    return "#2C2A43";
+    return store.chart?.options()?.crosshair?.horzLine?.labelBackgroundColor;
   }
   visible() {
     const pctEnabled =
@@ -76,60 +141,8 @@ class DrawingPriceAxisView {
       pctEnabled && store.isCrosshairActive && store.crosshairPrice !== null
     );
   }
-  renderer() {
-    return new DrawingPriceAxisRenderer(this);
-  }
-}
-
-class DrawingPriceAxisRenderer {
-  constructor(view) {
-    this._view = view;
-  }
-  draw(ctx, rendererOptions) {
-    const text = this._view.text();
-    const coordinate = this._view.coordinate();
-    if (!text || coordinate === -100) return;
-
-    // CanvasRenderingContext2D 안전 추출 (래퍼 객체인 경우 대응)
-    const canvasCtx = ctx.context || ctx.ctx || ctx;
-    if (typeof canvasCtx.save !== "function") return;
-
-    canvasCtx.save();
-
-    const changeColor = this._view.backColor();
-    const borderColor = "#4a4e5a";
-
-    canvasCtx.font = "bold 10px sans-serif";
-    const textWidth = canvasCtx.measureText(text).width;
-    const rectWidth = textWidth + 8;
-    const rectHeight = 15;
-
-    // 가격축 캔버스 내부 적절한 X좌표 배치 (시작점 2px 띄움)
-    const rectX = 2;
-    const rectY = coordinate - rectHeight / 2;
-
-    canvasCtx.fillStyle = changeColor;
-    canvasCtx.strokeStyle = borderColor;
-    canvasCtx.lineWidth = 1;
-    canvasCtx.beginPath();
-    if (typeof canvasCtx.roundRect === "function") {
-      canvasCtx.roundRect(rectX, rectY, rectWidth, rectHeight, 3);
-    } else {
-      canvasCtx.rect(rectX, rectY, rectWidth, rectHeight);
-    }
-    canvasCtx.fill();
-    canvasCtx.stroke();
-
-    canvasCtx.fillStyle = this._view.textColor();
-    canvasCtx.textAlign = "center";
-    canvasCtx.textBaseline = "middle";
-    canvasCtx.fillText(
-      text,
-      rectX + rectWidth / 2,
-      rectY + rectHeight / 2 + 0.5,
-    );
-
-    canvasCtx.restore();
+  tickVisible() {
+    return true;
   }
 }
 
