@@ -961,6 +961,12 @@ function applySeriesAndLayout(
         }
       }
 
+      // [사일런트 백필 시 뷰포트 UX 개선]
+      const prevLogicalRange =
+        isSilentSync && store.chart
+          ? store.chart.timeScale().getVisibleLogicalRange()
+          : null;
+
       if (store.candleSeries && !isSubSwitch) {
         store.candleSeries.setData(sanitizeChartData(store.mainData));
       }
@@ -986,6 +992,15 @@ function applySeriesAndLayout(
         } else if (store.volumeSeries) {
           store.volumeSeries.setData([]);
         }
+      }
+
+      if (prevLogicalRange && store.chart) {
+        try {
+          store.chart.timeScale().setVisibleLogicalRange(prevLogicalRange);
+          if (store.chartVol) {
+            store.chartVol.timeScale().setVisibleLogicalRange(prevLogicalRange);
+          }
+        } catch (_) {}
       }
 
       if (store.kimchiSeries) {

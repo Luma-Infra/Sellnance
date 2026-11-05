@@ -348,7 +348,7 @@ export function updateStatusBadge() {
     }
   } else {
     if (timerEl) {
-      timerEl.innerHTML = `${iconInfo}${formattedTime} (정기 캐시)`;
+      // timerEl.innerHTML = `${iconInfo}${formattedTime} (정기 캐시)`;
       timerEl.title = "";
       timerEl.style.cursor = "default";
     }

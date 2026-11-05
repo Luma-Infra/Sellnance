@@ -381,9 +381,14 @@ export const realUpdateHeaderDisplay = (
 
   const hasSubPrice =
     subPrice !== null && Number.isFinite(subPrice) && subPrice > 0;
+  const subPrecision = isMainKrw
+    ? store.getPrecision(
+        row?.Ticker || row?.Symbol || row?.DisplayTicker || store.currentAsset,
+      )
+    : pNormalized;
   const formattedSubPrice = hasSubPrice
     ? isMainKrw
-      ? `≈ $ ${window.formatSmartPrice ? window.formatSmartPrice(subPrice, pNormalized) : formatSmartPrice(subPrice, pNormalized)}`
+      ? `≈ $ ${window.formatSmartPrice ? window.formatSmartPrice(subPrice, subPrecision) : formatSmartPrice(subPrice, subPrecision)}`
       : `≈ ${formatKrwPrice(subPrice, activeExchange)}`
     : "";
 

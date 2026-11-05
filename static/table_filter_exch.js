@@ -76,7 +76,7 @@ export function updateExchFilterUI() {
       <button onclick="window.switchExchFilterMode()" 
               class="flex items-center justify-center border rounded-xl transition-all duration-300 text-[9.5px] font-bold tracking-tight hover:scale-105 active:scale-95 shrink-0 select-none cursor-pointer ${modeBtnClass}" 
               style="width: 52px; min-width: 52px; max-width: 52px; height: 34px;"
-              title="거래소 조건 (OR -> AND -> ONLY)">
+              title="거래소 조건 OR, AND, ONLY">
         ${modeLabels[currentMode]}
       </button>
     `;
@@ -177,7 +177,7 @@ export function updateExchFilterUI() {
     const mobModeToggleHtml = `
       <button onclick="window.switchExchFilterMode()" 
               class="flex items-center justify-center px-1 border rounded-xl transition-all duration-300 h-9 text-[9.5px] font-bold tracking-tight hover:scale-105 active:scale-95 col-span-2 w-full select-none cursor-pointer ${modeBtnClass}" 
-              title="거래소 조건 (OR -> AND -> ONLY)">
+              title="거래소 조건 OR, AND, ONLY">
         ${modeLabels[currentMode]}
       </button>
     `;
@@ -304,6 +304,9 @@ export function updateExchFilterUI() {
           title += `결합모드: ${preset.mode}\n`;
           if (incs.length > 0) title += `포함: ${incs.join(", ")}\n`;
           if (decs.length > 0) title += `제외: ${decs.join(", ")}\n`;
+          if (preset.hideSmallCap) title += `초소형 제외: ON\n`;
+          if (preset.customVolMin > 0) title += `거래량 필터: 적용됨\n`;
+          if (preset.customMcapMin > 0) title += `시총 필터: 적용됨\n`;
           title += `(클릭: 선택 및 불러오기)`;
 
           if (isActive) {
@@ -439,6 +442,7 @@ export function toggleExchExclude(exchId) {
 
 // 모든 거래소 필터 상태 해제 함수
 export function resetExchFilters() {
+  store.activePresetIndex = undefined;
   if (!store.exchFilterStates) return;
   Object.keys(store.exchFilterStates).forEach((key) => {
     store.exchFilterStates[key] = 0;
@@ -460,6 +464,24 @@ export function selectExchPreset(index) {
       });
     }
     store.exchFilterMode = "OR";
+
+    // 프리셋 재클릭으로 해제 시 커스텀 필터 옵션(초소형 제외, 시총, 거래량 등)도 초기화
+    store.hideSmallCap = false;
+    store.customMcapMin = 0;
+    store.customMcapMax = 10000000000000;
+    store.customVolMin = 0;
+    store.customVolMax = 100000000000;
+    store.customVolSource = "BINANCE";
+    store.tempMcapMin = 0;
+    store.tempMcapMax = 10000000000000;
+    store.tempVolMin = 0;
+    store.tempVolMax = 100000000000;
+    store.tempVolSource = "BINANCE";
+
+    if (typeof window.restoreControlPanelUI === "function") {
+      window.restoreControlPanelUI();
+    }
+
     store.currentRenderLimit = 1000;
     if (typeof renderTable === "function") renderTable();
     updateExchFilterUI();
@@ -477,6 +499,21 @@ export function selectExchPreset(index) {
   if (preset) {
     store.exchFilterStates = { ...preset.states };
     store.exchFilterMode = preset.mode || "OR";
+    if (preset.hideSmallCap !== undefined)
+      store.hideSmallCap = preset.hideSmallCap;
+    if (preset.customMcapMin !== undefined)
+      store.customMcapMin = preset.customMcapMin;
+    if (preset.customMcapMax !== undefined)
+      store.customMcapMax = preset.customMcapMax;
+    if (preset.customVolMin !== undefined)
+      store.customVolMin = preset.customVolMin;
+    if (preset.customVolMax !== undefined)
+      store.customVolMax = preset.customVolMax;
+    if (preset.customVolSource !== undefined)
+      store.customVolSource = preset.customVolSource;
+    if (typeof window.restoreControlPanelUI === "function") {
+      window.restoreControlPanelUI();
+    }
   } else {
     if (store.exchFilterStates) {
       Object.keys(store.exchFilterStates).forEach((key) => {
@@ -505,12 +542,18 @@ export function saveCurrentPreset() {
   presets[index] = {
     states: { ...store.exchFilterStates },
     mode: store.exchFilterMode || "OR",
+    hideSmallCap: store.hideSmallCap || false,
+    customMcapMin: store.customMcapMin ?? 0,
+    customMcapMax: store.customMcapMax ?? 1e13,
+    customVolMin: store.customVolMin ?? 0,
+    customVolMax: store.customVolMax ?? 1e11,
+    customVolSource: store.customVolSource || "BINANCE",
   };
 
   localStorage.setItem("sellnance_exch_presets", JSON.stringify(presets));
   updateExchFilterUI();
 
-  showToast(`프리셋 ${index + 1} 저장됨`, "success", 2000);
+  showToast(`프리셋 ${index + 1} 번에 설정을 저장했어요`, "success", 2000);
 }
 
 export function deleteCurrentPreset() {
@@ -535,6 +578,9 @@ export function deleteCurrentPreset() {
   if (typeof renderTable === "function") renderTable();
 
   updateExchFilterUI();
+  if (typeof window.restoreControlPanelUI === "function") {
+    window.restoreControlPanelUI();
+  }
 
   showToast(`프리셋 ${index + 1} 삭제됨`, "info", 2000);
 }

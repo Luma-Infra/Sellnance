@@ -116,11 +116,11 @@
       src="https://static.cloudflareinsights.com/beacon.min.js"
       data-cf-beacon='{"token": "1c7917a73feb458db846dbdb1a40786d"}'
     ></script>
-    <script type="module" crossorigin src="/assets/ap120-kuflxxmF.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/ch120-C0ABSnjx.js">
-    <link rel="modulepreload" crossorigin href="/assets/ma140-mPgzsa3G.js">
-    <link rel="modulepreload" crossorigin href="/assets/uc160-BH-x1FTw.js">
-    <link rel="stylesheet" crossorigin href="/assets/ma100-C8YuwrP5.css">
+    <script type="module" crossorigin src="/assets/ap120-dit___0D.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/ch120-Db46JLNX.js">
+    <link rel="modulepreload" crossorigin href="/assets/ma140-DmDpX-8C.js">
+    <link rel="modulepreload" crossorigin href="/assets/uc160-CICMkV9P.js">
+    <link rel="stylesheet" crossorigin href="/assets/ma100-DPkZm2fb.css">
   </head>
 
   <body
@@ -560,7 +560,7 @@
                 >1 Active</span
               >
 
-              <!-- 테마 연동 툴팁 팝업 (PC: 마우스 호버 / 모바일: 탭 토글, z-[250]로 통일) -->
+              <!-- 테마 연동 툴팁 팝업 (PC: 마우스 호버 / 모바일: 탭 토글) -->
               <div
                 id="status-cache-tooltip"
                 class="absolute top-full left-0 mt-2 z-[250] w-64 max-w-[calc(100vw-32px)] p-3 bg-theme-panel border border-theme-border/60 rounded-xl shadow-lg opacity-0 pointer-events-none min-[1200px]:group-hover:opacity-100 min-[1200px]:group-hover:pointer-events-auto transition-all duration-150 transform translate-y-1 min-[1200px]:group-hover:translate-y-0 text-left"
@@ -577,12 +577,12 @@
                     >1 Active</span
                   >
                 </div>
-                <div
+                <!-- <div
                   class="text-[10.5px] text-theme-text mb-1 font-bold"
                   id="tooltip-timer"
                 >
                   --:--
-                </div>
+                </div> -->
                 <p
                   id="status-tooltip-text"
                   class="text-[9.5px] text-theme-text/75 leading-relaxed font-normal"
@@ -1019,6 +1019,7 @@
                       onclick="window.toggleCustomFilter(event)"
                       id="btn-custom-filter"
                       class="tab-btn px-3.5 min-[1200px]:px-4.5 py-2.5 min-[1200px]:py-2 text-[10.5px] font-semibold rounded-full transition-all text-theme-text opacity-50 hover:opacity-100 border border-theme-border whitespace-nowrap inline-flex items-center justify-center gap-1 cursor-pointer leading-none shrink-0 touch-manipulation select-none"
+                      title="커스텀 필터 설정"
                     >
                       <svg
                         class="w-3 h-3 shrink-0"
@@ -1053,6 +1054,18 @@
                       >
                         <path d="m6 9 6 6 6-6" />
                       </svg>
+                      <!-- 활성화 시 우측에 나타나는 빨간색 즉시 초기화 버튼 -->
+                      <span
+                        id="btn-custom-filter-reset"
+                        onclick="window.resetCustomFilterDirect(event)"
+                        class="hidden ml-1 p-0.5 w-3.5 h-3.5 rounded-full bg-rose-500/25 hover:bg-rose-500 text-rose-300 hover:text-white items-center justify-center transition-all duration-150 cursor-pointer active:scale-90"
+                        title="커스텀 필터 초기화"
+                      >
+                        <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18"></line>
+                          <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                      </span>
                     </button>
 
                     <!-- [모바일 전용 (<1200px)] 우측 돋보기 토글 버튼 -->
@@ -3561,7 +3574,7 @@
         class="hidden min-[1200px]:block absolute top-full right-0 pt-1 z-30 pointer-events-none select-none text-[10px] text-theme-text/40 font-sans font-medium tracking-tight"
       >
         last update :
-        <span id="site-last-update-val">2026-10-28</span>
+        <span id="site-last-update-val">2026-10-30</span>
       </div>
     </div>
     <!-- #main-dashboard-wrapper 닫기 -->

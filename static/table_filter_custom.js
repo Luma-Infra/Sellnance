@@ -78,24 +78,65 @@ export function syncCustomFilterBtnUI() {
     (store.customVolMax && store.customVolMax < 100000000000) ||
     (store.customVolSource && store.customVolSource !== "BINANCE");
 
+  const textEl = document.getElementById("btn-custom-filter-text");
+  const chevronEl = document.getElementById("custom-filter-chevron");
+  const resetEl = document.getElementById("btn-custom-filter-reset");
+
   if (isCustomActive) {
-    btnCustom.classList.remove("opacity-50");
-    btnCustom.classList.add(
-      "bg-theme-accent/20",
-      "border-theme-accent",
-      "text-theme-accent",
-      "opacity-100",
-      "active-custom-filter",
+    btnCustom.classList.remove(
+      "opacity-50",
+      "hover:opacity-100",
+      "px-3.5",
+      "min-[1200px]:px-4.5",
     );
+    btnCustom.classList.add(
+      "bg-theme-accent",
+      "text-white",
+      "border-theme-accent",
+      "opacity-100",
+      "shadow-md",
+      "active-custom-filter",
+      "px-2.5",
+      "min-[1200px]:px-3",
+    );
+    btnCustom.title = "커스텀 필터 적용 중 (클릭: 설정 열기)";
+
+    // 활성화 시: Custom 텍스트 및 셰브론 숨김 (아이콘만 남김)
+    if (textEl) textEl.classList.add("hidden");
+    if (chevronEl) chevronEl.classList.add("hidden");
+
+    // 우측에 빨간색 초기화 버튼 생성/노출
+    if (resetEl) {
+      resetEl.classList.remove("hidden");
+      resetEl.classList.add("inline-flex");
+    }
   } else {
     btnCustom.classList.remove(
-      "bg-theme-accent/20",
+      "bg-theme-accent",
+      "text-white",
       "border-theme-accent",
-      "text-theme-accent",
-      "opacity-100",
+      "shadow-md",
       "active-custom-filter",
+      "px-2.5",
+      "min-[1200px]:px-3",
     );
-    btnCustom.classList.add("opacity-50");
+    btnCustom.classList.add(
+      "opacity-50",
+      "hover:opacity-100",
+      "px-3.5",
+      "min-[1200px]:px-4.5",
+    );
+    btnCustom.title = "커스텀 필터 설정";
+
+    // 비활성화 시: Custom 텍스트 및 복원
+    if (textEl) textEl.classList.remove("hidden");
+    if (chevronEl) chevronEl.classList.remove("hidden");
+
+    // 초기화 버튼 숨김
+    if (resetEl) {
+      resetEl.classList.remove("inline-flex");
+      resetEl.classList.add("hidden");
+    }
   }
 }
 
@@ -389,6 +430,19 @@ export function resetCustomFilter() {
   if (typeof renderTable === "function") renderTable();
 }
 
+// 커스텀 필터 버튼 내부의 빨간 ✕ 버튼을 눌렀을 때 즉시 초기화
+export function resetCustomFilterDirect(event) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  resetCustomFilter();
+  const dropdown = document.getElementById("custom-filter-dropdown");
+  if (dropdown && !dropdown.classList.contains("hidden")) {
+    toggleCustomFilter();
+  }
+}
+
 // 슬라이더 입력 및 트랙 클릭 이벤트 초기화 함수
 export function initCustomFilterEvents() {
   const minMcapEl = document.getElementById("mcap-min");
@@ -501,6 +555,7 @@ if (typeof window !== "undefined") {
   window.setVolSource = setVolSource;
   window.applyCustomFilter = applyCustomFilter;
   window.resetCustomFilter = resetCustomFilter;
+  window.resetCustomFilterDirect = resetCustomFilterDirect;
   window.syncCustomFilterBtnUI = syncCustomFilterBtnUI;
   window.updateCustomFilterUI = updateCustomFilterUI;
   window.positionCustomFilterDropdown = positionCustomFilterDropdown;

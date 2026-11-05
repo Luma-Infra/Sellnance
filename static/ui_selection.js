@@ -9,6 +9,50 @@ import { getExchangeLogo } from "./table_tooltips.js";
 let pendingSelectRaf = null;
 let pendingSelectTimeout = null;
 
+// 바이낸스 선물 레버리지 맵 비동기 프리로드
+if (!store.binanceLeverageMap && typeof fetch === "function") {
+  fetch("/static/binance_leverage.json")
+    .then((r) => r.json())
+    .then((data) => {
+      store.binanceLeverageMap = data;
+    })
+    .catch(() => {});
+}
+
+export function getLeverageBadgeHtml(rowInfo, pureSym) {
+  if (!rowInfo) return "";
+  const hasBinanceFutures = Boolean(
+    rowInfo.Binance_Futures === "O" ||
+    rowInfo.Listed_Exchanges?.includes("BINANCE_FUTURES") ||
+    rowInfo.Exact_Futures ||
+    rowInfo.is_futures,
+  );
+  if (!hasBinanceFutures) return "";
+
+  const levMap = store.binanceLeverageMap || {};
+  const baseKey = pureSym ? pureSym.toUpperCase() : "";
+  const exactFut = rowInfo.Exact_Futures
+    ? rowInfo.Exact_Futures.toUpperCase()
+    : "";
+  const levVal =
+    rowInfo.Max_Leverage ||
+    (exactFut ? levMap[exactFut] || levMap[`${exactFut}USDT`] : null) ||
+    levMap[baseKey] ||
+    levMap[`${baseKey}USDT`] ||
+    (baseKey === "BTC" ? 125 : baseKey === "ETH" ? 100 : 50);
+
+  return `
+    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10.5px] min-[1200px]:text-[11.5px] font-medium text-amber-400/90 bg-amber-400/10 border border-amber-400/20 select-none shrink-0" title="바이낸스 선물 기준">
+      <span class="leading-none tabular-nums font-medium"><span class="text-[9px] opacity-70 mr-0.5 font-normal">x</span>${levVal}</span>
+      <svg class="w-2.5 h-2.5 min-[1200px]:w-3 min-[1200px]:h-3 opacity-60 hover:opacity-100 transition-opacity cursor-help shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="16" x2="12" y2="12"></line>
+        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+      </svg>
+    </span>
+  `;
+}
+
 export function updateHeaderAssetName(
   rowInfo,
   uniqueTicker,
@@ -72,6 +116,8 @@ export function updateHeaderAssetName(
       fontSizeStyle = `style="white-space: nowrap;"`;
     }
 
+    const levBadgeHtml = getLeverageBadgeHtml(rowInfo, pureSym);
+
     contentHtml = `
       <div class="flex items-center gap-2">
         <button onclick="window.toggleFavorite('${rowInfo.UID}', event, true);" class="star-btn text-[16px] transition-all hover:scale-125 flex-shrink-0 ${starClass}" style="color: ${starColor}">
@@ -80,12 +126,18 @@ export function updateHeaderAssetName(
         <div class="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-white/5 rounded-full overflow-hidden">
           ${logoHtml}
         </div>
-        <!-- PC 전용 (>=1200px): [Symbol | Name] 단일 라인 표기 -->
-        <span class="hidden min-[1200px]:inline truncate font-extrabold text-theme-accent" title="${pcText}" ${fontSizeStyle}>${pcText}</span>
-        <!-- 모바일 전용 (<1200px): 코인 이름 2단 정렬 -->
-        <div class="flex flex-col min-[1200px]:hidden leading-none min-w-0">
-          <span class="text-base sm:text-lg font-extrabold tracking-wide truncate leading-tight text-theme-accent">${pureSym}</span>
-          ${nameStr ? `<span class="text-[10px] text-theme-text/60 font-medium tracking-tight truncate leading-tight mt-0.5">${nameStr}</span>` : ""}
+        <!-- PC 전용 (>=1200px): [Symbol | Name] 단일 라인 표기 + 레버리지 -->
+        <div class="hidden min-[1200px]:flex items-center gap-2 min-w-0">
+          <span class="truncate font-extrabold text-theme-accent" title="${pcText}" ${fontSizeStyle}>${pcText}</span>
+          ${levBadgeHtml}
+        </div>
+        <!-- 모바일 전용 (<1200px): 코인 이름 2단 정렬 + 레버리지 -->
+        <div class="flex items-center gap-1.5 min-[1200px]:hidden leading-none min-w-0">
+          <div class="flex flex-col leading-none min-w-0">
+            <span class="text-base sm:text-lg font-extrabold tracking-wide truncate leading-tight text-theme-accent">${pureSym}</span>
+            ${nameStr ? `<span class="text-[10px] text-theme-text/60 font-medium tracking-tight truncate leading-tight mt-0.5">${nameStr}</span>` : ""}
+          </div>
+          ${levBadgeHtml}
         </div>
       </div>
     `;
@@ -612,6 +664,8 @@ export function selectSymbol(
                   fontSizeStyle2 = `style="white-space: nowrap;"`;
                 }
 
+                const levBadgeHtml2 = getLeverageBadgeHtml(rowInfo, displaySym);
+
                 const updateHtml2 = `
                   <div class="flex items-center gap-2">
                     <button onclick="window.toggleFavorite('${rowInfo ? rowInfo.UID : uniqueTicker}', event, true);" class="star-btn text-[16px] transition-all hover:scale-125 flex-shrink-0 ${starClass}" style="color: ${starColor}">
@@ -620,12 +674,18 @@ export function selectSymbol(
                     <div class="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-white/5 rounded-full overflow-hidden">
                       ${logoHtml}
                     </div>
-                    <!-- PC 전용 (>=1200px): [Symbol | Name] 단일 라인 표기 -->
-                    <span class="hidden min-[1200px]:inline truncate font-extrabold text-theme-accent" title="${pcText2}" ${fontSizeStyle2}>${pcText2}</span>
-                    <!-- 모바일 전용 (<1200px): 코인 이름을 아랫줄 2단으로 정렬 -->
-                    <div class="flex flex-col min-[1200px]:hidden leading-none min-w-0">
-                      <span class="text-base sm:text-lg font-extrabold tracking-wide truncate leading-tight text-theme-accent">${displaySym}</span>
-                      ${nameStr2 ? `<span class="text-[10px] text-theme-text/60 font-medium tracking-tight truncate leading-tight mt-0.5">${nameStr2}</span>` : ""}
+                    <!-- PC 전용 (>=1200px): [Symbol | Name] 단일 라인 표기 + 레버리지 -->
+                    <div class="hidden min-[1200px]:flex items-center gap-2 min-w-0">
+                      <span class="truncate font-extrabold text-theme-accent" title="${pcText2}" ${fontSizeStyle2}>${pcText2}</span>
+                      ${levBadgeHtml2}
+                    </div>
+                    <!-- 모바일 전용 (<1200px): 코인 이름을 아랫줄 2단으로 정렬 + 레버리지 -->
+                    <div class="flex items-center gap-1.5 min-[1200px]:hidden leading-none min-w-0">
+                      <div class="flex flex-col leading-none min-w-0">
+                        <span class="text-base sm:text-lg font-extrabold tracking-wide truncate leading-tight text-theme-accent">${displaySym}</span>
+                        ${nameStr2 ? `<span class="text-[10px] text-theme-text/60 font-medium tracking-tight truncate leading-tight mt-0.5">${nameStr2}</span>` : ""}
+                      </div>
+                      ${levBadgeHtml2}
                     </div>
                   </div>
                 `;

@@ -30,6 +30,7 @@ export {
   setVolSource,
   applyCustomFilter,
   resetCustomFilter,
+  resetCustomFilterDirect,
   initCustomFilterEvents,
 } from "./table_filter_custom.js";
 
@@ -75,9 +76,11 @@ export function migrateFavoriteUids() {
   let changed = false;
 
   const symbolToUidMap = new Map();
+  const allUids = new Set();
   for (const row of allSource) {
-    if (row && row.UID && /^\d+$/.test(String(row.UID))) {
+    if (row && row.UID) {
       const uidStr = String(row.UID);
+      allUids.add(uidStr);
       if (row.Symbol)
         symbolToUidMap.set(String(row.Symbol).toUpperCase(), uidStr);
       if (row.Ticker)
@@ -87,12 +90,21 @@ export function migrateFavoriteUids() {
     }
   }
 
+  let favMeta = {};
+  try {
+    favMeta = JSON.parse(localStorage.getItem("sellnance_fav_meta") || "{}");
+  } catch (_) {}
+
   const migrateList = (list) => {
     return list.map((item) => {
-      const itemStr = String(item).toUpperCase();
-      if (!/^\d+$/.test(itemStr) && symbolToUidMap.has(itemStr)) {
+      const itemStr = String(item);
+      if (allUids.has(itemStr)) return item;
+      const targetUid =
+        symbolToUidMap.get(itemStr.toUpperCase()) ||
+        symbolToUidMap.get(favMeta[itemStr]?.symbol?.toUpperCase());
+      if (targetUid) {
         changed = true;
-        return symbolToUidMap.get(itemStr);
+        return targetUid;
       }
       return item;
     });
@@ -219,8 +231,16 @@ export function getFilteredData() {
     const totalLoadedCount = allLoadedSource.length;
 
     // 검색어 필터링 결과(seenUids)가 아니라, 실제 전체 원본 데이터(allLoadedUids)에 존재하지 않는 것만 상폐 코인으로 판정
+    const allLoadedSymbols = new Set(
+      allLoadedSource.map((d) => String(d.DisplayTicker || d.Symbol || "").toUpperCase()),
+    );
     const delistedUids = store.isTableLoaded
-      ? favorites.filter((uid) => !allLoadedUids.has(String(uid)))
+      ? favorites.filter((uid) => {
+          const sUid = String(uid);
+          if (allLoadedUids.has(sUid)) return false;
+          const metaSym = (favMeta[sUid]?.symbol || "").toUpperCase();
+          return !metaSym || !allLoadedSymbols.has(metaSym);
+        })
       : [];
 
     const totalFavNormalCount = favorites.filter((uid) =>
