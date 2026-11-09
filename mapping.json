@@ -14,7 +14,7 @@
   "__MEMO__12": "DUPLICATED_LIST: 동일 티커 다른 코인(동명이인) 또는 거래소별 티커 상이 코인의 UID/거래소별 티커 매핑",
   "__MEMO__13": "TICKER_DATA: 전체 자산 마스터 메타데이터: [0: CMC_ID, 1: 체인/메인넷, 2: 영문명, 3: 표준티커, 4: 자산타입(COIN/STOCK), 5: 특수구분(ALPHA 등)]",
   "__MEMO__14": "-------------------------------------------------------------",
-  "DEFAULT_KRW_USD_RATE": 1343.99,
+  "DEFAULT_KRW_USD_RATE": 1336.25,
   "CHAIN_LOGO_MAP": {
     "ETH": "https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png",
     "BNB": "https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png",
@@ -2191,6 +2191,13 @@
       "CAP",
       "COIN"
     ],
+    "CARDS": [
+      "38283",
+      "SOL",
+      "Collector Crypt",
+      "CARDS",
+      "COIN"
+    ],
     "CARV": [
       "33372",
       null,
@@ -3541,6 +3548,13 @@
       "Legacy Frax Dollar",
       "FRAX",
       "COIN"
+    ],
+    "FRHC(STOCK)": [
+      "42804",
+      null,
+      "FRHC (Derivatives)",
+      "FRHC",
+      "STOCK"
     ],
     "FTT": [
       "4195",
@@ -4895,6 +4909,13 @@
       "LUNA",
       "COIN"
     ],
+    "LUNA(Terra)": [
+      "20314",
+      null,
+      "Terra",
+      "LUNA2",
+      "COIN"
+    ],
     "LUNA2": [
       "20314",
       null,
@@ -5780,6 +5801,13 @@
       "NS",
       "COIN",
       "ALPHA"
+    ],
+    "NU(STOCK)": [
+      "40775",
+      null,
+      "NU (Derivatives)",
+      "NU",
+      "STOCK"
     ],
     "NVDA": [
       "40685",
@@ -6928,6 +6956,13 @@
       "SAMSUNGEM (Derivatives)",
       "SAMSUNGEM",
       "STOCK"
+    ],
+    "SANC": [
+      "42589",
+      "-",
+      "Banco Santander, S.A. Tokenized Stock (Coinbase)",
+      "SANC",
+      "COIN"
     ],
     "SAND": [
       "6210",

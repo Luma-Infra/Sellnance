@@ -42,7 +42,7 @@ export function getLeverageBadgeHtml(rowInfo, pureSym) {
     (baseKey === "BTC" ? 125 : baseKey === "ETH" ? 100 : 50);
 
   return `
-    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10.5px] min-[1200px]:text-[11.5px] font-medium text-amber-400/90 bg-amber-400/10 border border-amber-400/20 select-none shrink-0" title="바이낸스 선물 기준">
+    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10.5px] min-[1200px]:text-[11.5px] font-medium text-amber-400/90 bg-amber-400/10 border border-amber-400/20 select-none shrink-0" title="바이낸스 선물 기준 레버리지">
       <span class="leading-none tabular-nums font-medium"><span class="text-[9px] opacity-70 mr-0.5 font-normal">x</span>${levVal}</span>
       <svg class="w-2.5 h-2.5 min-[1200px]:w-3 min-[1200px]:h-3 opacity-60 hover:opacity-100 transition-opacity cursor-help shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="10"></circle>

@@ -22,6 +22,14 @@
               : "/static/luma-deer-svg-dark.svg";
           }
 
+          window.addEventListener("DOMContentLoaded", function () {
+            var logo = document.getElementById("brand-logo-img");
+            if (logo) {
+              logo.src = isUpbit
+                ? "/static/sellnance_logo_light_tight.png"
+                : "/static/sellnance_logo_dark_tight.png";
+            }
+          });
           if (localStorage.getItem("sellnance_panel_swapped") === "true") {
             document.documentElement.classList.add("panel-swapped-mode");
           }
@@ -116,11 +124,11 @@
       src="https://static.cloudflareinsights.com/beacon.min.js"
       data-cf-beacon='{"token": "1c7917a73feb458db846dbdb1a40786d"}'
     ></script>
-    <script type="module" crossorigin src="/assets/ap120-dit___0D.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/ch120-Db46JLNX.js">
-    <link rel="modulepreload" crossorigin href="/assets/ma140-DmDpX-8C.js">
-    <link rel="modulepreload" crossorigin href="/assets/uc160-CICMkV9P.js">
-    <link rel="stylesheet" crossorigin href="/assets/ma100-DPkZm2fb.css">
+    <script type="module" crossorigin src="/assets/ap120-D-iZ8pId.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/ch120-BovzCkpd.js">
+    <link rel="modulepreload" crossorigin href="/assets/ma140-FlHbdF7V.js">
+    <link rel="modulepreload" crossorigin href="/assets/uc160-BaPiRgwz.js">
+    <link rel="stylesheet" crossorigin href="/assets/ma100-D44MgSXd.css">
   </head>
 
   <body
@@ -511,24 +519,15 @@
               id="brand-logo-btn"
               type="button"
               onclick="handleLogoRefresh(this)"
-              class="group flex items-center gap-2 h-full cursor-pointer select-none border-0 bg-transparent p-0 transition-opacity hover:opacity-85 focus:outline-none"
+              class="group flex items-center h-full cursor-pointer select-none border-0 bg-transparent p-0 transition-opacity hover:opacity-85 focus:outline-none"
               title="클릭하여 새로고침"
             >
-              <div
-                class="relative w-5 h-5 flex items-center justify-center shrink-0"
-              >
-                <img
-                  src="/static/luma-deer-svg-dark.svg"
-                  id="brand-logo-img"
-                  class="w-5 h-5 object-contain transition-transform duration-500 ease-out group-hover:scale-110"
-                  alt="Sellnance Logo"
-                />
-              </div>
-              <h2
-                class="m-0 text-lg font-bold tracking-tighter text-theme-accent uppercase flex items-center h-full leading-none"
-              >
-                sellance
-              </h2>
+              <img
+                src="/static/sellnance_logo_dark_tight.png"
+                id="brand-logo-img"
+                class="h-7 w-auto object-contain transition-transform duration-300 ease-out group-hover:scale-105"
+                alt="Sellnance"
+              />
             </button>
             <!-- 서버 갱신 상태 배지: PC는 풀 텍스트, 모바일은 펄스 불빛 점 (모바일 탭 시 팝업 토글) -->
             <div
@@ -3574,7 +3573,7 @@
         class="hidden min-[1200px]:block absolute top-full right-0 pt-1 z-30 pointer-events-none select-none text-[10px] text-theme-text/40 font-sans font-medium tracking-tight"
       >
         last update :
-        <span id="site-last-update-val">2026-10-30</span>
+        <span id="site-last-update-val">2026-11-13</span>
       </div>
     </div>
     <!-- #main-dashboard-wrapper 닫기 -->

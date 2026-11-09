@@ -297,6 +297,8 @@ export function executeSetTF(tf) {
 
   if (typeof window.flushRealtimeBuffers === "function")
     window.flushRealtimeBuffers();
+  if (typeof window.clearRealtimePendingUpdate === "function")
+    window.clearRealtimePendingUpdate();
 
   // DOM 전체를 파괴하고 다시 만들지 않고, 활성 클래스만 전환
   let activeBtn = null;

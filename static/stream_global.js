@@ -169,6 +169,9 @@ export function startRealtimeCandle(
       clearTimeout(realtimeUpdateTimer);
       realtimeUpdateTimer = null;
     }
+    if (typeof window.clearRealtimePendingUpdate === "function") {
+      window.clearRealtimePendingUpdate();
+    }
   };
 
   // 2️⃣ 소켓 수신 데이터를 메인 루프에 분배하는 게이트웨이
@@ -177,6 +180,7 @@ export function startRealtimeCandle(
     symbol,
     serverMs,
     marketType,
+    candleTf = store.currentTF,
   ) => {
     latestActiveCandle = activeCandle;
     latestSymbol = symbol;
@@ -190,6 +194,7 @@ export function startRealtimeCandle(
     if (activeCandle) {
       activeCandle.symbol = symbol; // 심볼 보존
       activeCandle.marketType = marketType; // 거래소 및 현/선물 타입 보존
+      activeCandle.tf = candleTf; // 타임프레임 보존
       if (now - lastTitleUpdateTime >= perfConfig.TITLE_UPDATE_THROTTLE_MS) {
         lastTitleUpdateTime = now;
         updateTabTitleManager(
@@ -210,6 +215,7 @@ export function startRealtimeCandle(
             latestSymbol,
             latestServerMs,
             marketType,
+            candleTf,
           );
         }, perfConfig.REALTIME_THROTTLE_MS);
       }
@@ -235,6 +241,7 @@ export function startRealtimeCandle(
 
       const currentCandle = latestActiveCandle;
       if (!currentCandle) return;
+      if (currentCandle.tf && currentCandle.tf !== store.currentTF) return;
 
       // 분리된 시간 가공 및 유효성 검증 엔진 가동
       const chartTime = getNormalizedTime(currentCandle);

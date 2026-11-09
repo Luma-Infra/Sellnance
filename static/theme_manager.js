@@ -176,7 +176,8 @@ export function toggleTheme() {
     store.currentTheme = "upbit";
     updateThemeButtons("upbit");
     if (faviconLink) faviconLink.href = "/static/luma-deer-svg-light.svg";
-    if (mainLogoImg) mainLogoImg.src = "/static/luma-deer-svg-light.svg";
+    const brandLogoImg = document.getElementById("brand-logo-img");
+    if (brandLogoImg) brandLogoImg.src = "/static/sellnance_logo_light_tight.png";
   } else {
     body.classList.remove("theme-upbit");
     body.classList.add("theme-binance");
@@ -185,7 +186,8 @@ export function toggleTheme() {
     store.currentTheme = "binance";
     updateThemeButtons("binance");
     if (faviconLink) faviconLink.href = "/static/luma-deer-svg-dark.svg";
-    if (mainLogoImg) mainLogoImg.src = "/static/luma-deer-svg-dark.svg";
+    const brandLogoImg = document.getElementById("brand-logo-img");
+    if (brandLogoImg) brandLogoImg.src = "/static/sellnance_logo_dark_tight.png";
   }
 
   // 캔들, 볼륨(vol), 프리뷰 차트 색상 일괄 동기화

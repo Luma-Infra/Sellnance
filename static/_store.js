@@ -484,7 +484,8 @@ export const CONFIG = {
   // [테이블 실시간 성능 & 갱신 주기 제어 콘솔 - 단일 진실 공급원]
   TABLE_PERF: {
     // 1. 행(Row) 순위 재정렬 주기 (DOM 순서 재배치)
-    SORT_INTERVAL_NORMAL_MS: 1000, // 평상시 행 정렬 주기
+    SORT_INTERVAL_NORMAL_MS: 1000, // 평상시 경주마(상위 30위) 행 정렬 주기
+    SORT_INTERVAL_OUTER_MS: 5000, // 평상시 30위 초과 코인 행 순위 정렬 주기 (기본: 5초)
     SORT_INTERVAL_TURBO_MS: 500, // 경주마 시간대(08:59:30~09:02:00) 고속 정렬 주기 (2배 가속)
     SORT_THROTTLE_WAIT_NORMAL_MS: 500, // 평상시 정렬 연산 디바운스 락
     SORT_THROTTLE_WAIT_TURBO_MS: 250, // 경주마 시간대 정렬 연산 디바운스 락

@@ -15,6 +15,14 @@ import {
 let pendingUpdate = null;
 let renderTickRaf = null;
 
+export function clearRealtimePendingUpdate() {
+  if (renderTickRaf) {
+    cancelAnimationFrame(renderTickRaf);
+    renderTickRaf = null;
+  }
+  pendingUpdate = null;
+}
+
 export function flushRealtimeRender() {
   if (renderTickRaf) {
     cancelAnimationFrame(renderTickRaf);
@@ -252,4 +260,5 @@ function restoreVolumeDataSterilized() {
 
 if (typeof window !== "undefined") {
   window.flushRealtimeRender = flushRealtimeRender;
+  window.clearRealtimePendingUpdate = clearRealtimePendingUpdate;
 }

@@ -30,8 +30,8 @@ export function handleLogoRefresh(btn) {
   btn._isRefreshing = true;
   const img = btn.querySelector("#brand-logo-img");
   if (img) {
-    img.style.transition = "transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)";
-    img.style.transform = "rotate(360deg) scale(1.15)";
+    img.style.transition = "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)";
+    img.style.transform = "scale(0.94)";
   }
   btn.style.opacity = "0.7";
   setTimeout(() => {

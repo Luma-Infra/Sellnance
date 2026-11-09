@@ -476,16 +476,23 @@ export function renderTable(isRealtime = false) {
           store._sandboxVisibleDoms.push(rowEl);
         }
         const oldIndex = parseInt(rowEl.dataset.index);
-        // 실시간 정렬 시 30위 이하(31등~) 코인은 불필요한 연속 렌더링 방지를 위해 위치를 고정시키고
-        // 현재 위치(oldIndex)가 실제 정렬 순위(i)와 달라질 때만 딱 1번 올바른 목적지(31위든 300위든)에 공백/겹침 없이 정밀 배치하고 고정시키기
+        // 실시간 정렬 시 30위 이하(31등~) 코인은 설정된 SORT_INTERVAL_OUTER_MS(기본: 5초) 주기로만 위치를 변경하여 ux 피로도 감소
+        const now = Date.now();
+        const outerSortInterval =
+          (CONFIG.TABLE_PERF && CONFIG.TABLE_PERF.SORT_INTERVAL_OUTER_MS) ||
+          5000;
+        const isOuterSortDue =
+          !store._lastOuterSortTime ||
+          now - store._lastOuterSortTime >= outerSortInterval;
+
         let needsPositionUpdate =
           !isRealtime ||
           i < 30 ||
           oldIndex < 30 ||
           isNaN(oldIndex) ||
-          oldIndex !== i;
+          (oldIndex !== i && isOuterSortDue);
         if (isRealtime && i >= 30 && oldIndex >= 30) {
-          needsPositionUpdate = oldIndex !== i;
+          needsPositionUpdate = oldIndex !== i && isOuterSortDue;
         }
 
         if (needsPositionUpdate) {
@@ -575,6 +582,10 @@ export function renderTable(isRealtime = false) {
         }
       }
     }
+  }
+
+  if (isOuterSortDue || !isRealtime) {
+    store._lastOuterSortTime = now;
   }
 
   store.lastSortedTickers = null; // 캐시 무효화
