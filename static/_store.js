@@ -84,6 +84,7 @@ export const store = {
   currentSelectedSymbol: null,
   currentSelectedUid: null,
   isScrolling: false, // 스크롤 중 여부 플래그
+  isSidebarOpen: true, // 좌측 사이드바 패널 열림 여부
   isEngineStarted: false, // 최초 코인 선택 시 소켓 및 차트 점화 여부 플래그
   mcapMin: 0, // 시총 최소값 (기본 0)
   mcapMax: 10000000000, // 시총 최대값 (기본 10B)

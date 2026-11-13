@@ -152,7 +152,22 @@ async function _fetchCandlesSmartInternal(
         !isAlphaCoin &&
         isBinanceFuturesCoin
       ) {
-        directUrl = `https://fapi.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${normInt}&limit=${limit}${endParamBinance}${startParamBinance}`;
+        const isStock = Boolean(
+          store.currentTableData?.some(
+            (c) =>
+              (c.Symbol?.toUpperCase() === cleanSymbol ||
+                c.Ticker?.toUpperCase() === `${cleanSymbol}USDT` ||
+                c.Exact_Futures?.toUpperCase() === cleanSymbol) &&
+              (c.Is_Stock === true ||
+                (c.Name || "").toLowerCase().includes("stock") ||
+                (c.Name || "").toLowerCase().includes("derivative")),
+          ),
+        );
+        if (isStock) {
+          directUrl = `https://fapi.binance.com/fapi/v1/continuousKlines?pair=${symbol}&contractType=TRADIFI_PERPETUAL&interval=${normInt}&limit=${limit}${endParamBinance}${startParamBinance}`;
+        } else {
+          directUrl = `https://fapi.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${normInt}&limit=${limit}${endParamBinance}${startParamBinance}`;
+        }
       } else if (exchange === "bybit_spot" || exchange === "bybit_futures") {
         const category = exchange === "bybit_spot" ? "spot" : "linear";
         directUrl = `https://api.bybit.com/v5/market/kline?category=${category}&symbol=${symbol}&interval=${normInt}&limit=${limit || 1000}${endParamBybit}${startParamBybit}`;
@@ -255,10 +270,9 @@ async function _fetchCandlesSmartInternal(
     .split("(")[0]
     .toUpperCase();
   if (
-    exchange === "binance_spot" &&
-    isAlphaCoin &&
+    exchange.startsWith("binance") &&
     fallbackExchange &&
-    !["BINANCE", "BINANCE_ALPHA", "BINANCE_SPOT"].includes(
+    !["BINANCE", "BINANCE_ALPHA", "BINANCE_SPOT", "BINANCE_FUTURES"].includes(
       fallbackExchange.toUpperCase(),
     )
   ) {
@@ -268,8 +282,17 @@ async function _fetchCandlesSmartInternal(
     if (typeof updateExchangeBadges === "function") {
       updateExchangeBadges(symbol);
     }
-  } else if (exchange.startsWith("binance") && !isAlphaCoin) {
+  } else if (
+    exchange.startsWith("binance") &&
+    (!fallbackExchange ||
+      ["BINANCE", "BINANCE_ALPHA", "BINANCE_SPOT", "BINANCE_FUTURES"].includes(
+        fallbackExchange.toUpperCase(),
+      ))
+  ) {
     store.activeCandleFallback = null;
+    if (store.fallbackExchanges && store.fallbackExchanges[cleanSym]) {
+      delete store.fallbackExchanges[cleanSym];
+    }
   }
   return await res.json();
 }

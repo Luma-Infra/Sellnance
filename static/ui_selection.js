@@ -1040,7 +1040,8 @@ export function updateExchangeBadges(s, targetUid = null) {
             : Boolean(
                 rowInfo.Listed_Exchanges?.includes("BINANCE_SPOT") ||
                 rowInfo.Binance === "O" ||
-                rowInfo.Exact_Spot,
+                rowInfo.Exact_Spot ||
+                isCurrentActive,
               );
 
         if (
@@ -1054,6 +1055,9 @@ export function updateExchangeBadges(s, targetUid = null) {
             BYBIT: { name: "바이비트", short: "BYBIT", cmcId: 521 },
             GATEIO: { name: "Gate.io", short: "GATE", cmcId: 302 },
             GATE: { name: "Gate.io", short: "GATE", cmcId: 302 },
+            MEXC: { name: "MEXC", short: "MEXC", cmcId: 544 },
+            OKX: { name: "OKX", short: "OKX", cmcId: 294 },
+            COINBASE: { name: "코인베이스", short: "COINBASE", cmcId: 89 },
           };
           const metaB = FALLBACK_META_MAP[fallbackEx.toUpperCase()] || {
             name: fallbackEx,

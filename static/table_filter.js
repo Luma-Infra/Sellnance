@@ -376,7 +376,9 @@ export function getFilteredData() {
             !isStockCoin(row)
           );
         if (exchId === "BINANCE_FUTURES")
-          return listed.includes("BINANCE_FUTURES") && !isStockCoin(row);
+          return (
+            listed.includes("BINANCE_FUTURES") || row.Binance_Futures === "O"
+          );
         if (exchId === "BYBIT_SPOT")
           return (
             listed.includes("BYBIT_SPOT") ||
@@ -451,7 +453,9 @@ export function getFilteredData() {
               !isStockCoin(row)
             );
           if (exchId === "BINANCE_FUTURES")
-            return listed.includes("BINANCE_FUTURES") && !isStockCoin(row);
+            return (
+              listed.includes("BINANCE_FUTURES") || row.Binance_Futures === "O"
+            );
           if (exchId === "BYBIT_SPOT")
             return (
               listed.includes("BYBIT_SPOT") ||
@@ -505,9 +509,7 @@ export function getFilteredData() {
           }
           if (exchId === "BINANCE_FUTURES")
             return (
-              (listed.includes("BINANCE_FUTURES") ||
-                row.Binance_Futures === "O") &&
-              !isStockCoin(row)
+              listed.includes("BINANCE_FUTURES") || row.Binance_Futures === "O"
             );
           if (exchId === "BINANCE_ALPHA")
             return (

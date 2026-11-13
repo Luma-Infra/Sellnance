@@ -86,19 +86,29 @@ export function applyCandleTheme(theme) {
   document.documentElement.setAttribute("data-color-mode", store.candleTheme);
   document.body.setAttribute("data-color-mode", store.candleTheme);
 
-  // 2. 캔들, 그리드, 볼륨(vol) 차트 시리즈 갱신
-  updateChartTheme();
+  const isStartActive = document.documentElement.classList.contains(
+    "start-screen-active",
+  );
+
+  // 2. 캔들, 그리드, 볼륨(vol) 차트 시리즈 갱신 (시작 화면 활성 시 숨겨진 메인 차트 연산 생략)
+  if (!isStartActive) {
+    updateChartTheme();
+  }
 
   // 3. 버튼 UI 갱신
   updateCandleThemeButtons();
 
   // 4. 시뮬레이터 핸들 색상 동기화
-  if (typeof window.changeDir === "function" && store.curDir) {
+  if (
+    !isStartActive &&
+    typeof window.changeDir === "function" &&
+    store.curDir
+  ) {
     window.changeDir(store.curDir);
   }
 
   // 5. 퀵뷰(QuickView) 캔들 차트 색상 실시간 동기화
-  if (typeof window.updateQuickViewTheme === "function") {
+  if (!isStartActive && typeof window.updateQuickViewTheme === "function") {
     window.updateQuickViewTheme();
   }
 }
@@ -123,38 +133,36 @@ export function toggleCandleTheme() {
 export function toggleTheme() {
   if (isThemeToggling) return;
 
-  const THEME_MS =
-    parseInt(
-      getComputedStyle(document.documentElement)
-        .getPropertyValue("--theme-transition-ms")
-        .trim(),
-    ) || 0;
+  const html = document.documentElement;
+  const body = document.body;
+  const isStartActive = html.classList.contains("start-screen-active");
+
+  const THEME_MS = isStartActive
+    ? 0
+    : parseInt(
+        getComputedStyle(html).getPropertyValue("--theme-transition-ms").trim(),
+      ) || 0;
 
   isThemeToggling = true;
   setTimeout(
     () => {
       isThemeToggling = false;
     },
-    THEME_MS > 0 ? THEME_MS + 20 : 100,
+    THEME_MS > 0 ? THEME_MS + 20 : 50,
   );
 
-  const html = document.documentElement;
-  const body = document.body;
   const isCurrentlyDark =
     body.classList.contains("theme-binance") ||
     html.classList.contains("theme-binance");
   const faviconLink = document.getElementById("favicon-link");
-  const mainLogoImg = document.getElementById("main-logo-img");
-  const staticPath = "../static/";
 
-  // [트랜지션 오버라이드]
-  html.classList.add("theme-transitioning");
-  setTimeout(
-    () => {
+  // [트랜지션 오버라이드] 시작 화면일 경우에는 클래스 추가를 아예 생략하여 리플로우 차단
+  if (!isStartActive && THEME_MS > 0) {
+    html.classList.add("theme-transitioning");
+    setTimeout(() => {
       html.classList.remove("theme-transitioning");
-    },
-    THEME_MS > 0 ? THEME_MS : 50,
-  );
+    }, THEME_MS);
+  }
 
   const updateThemeButtons = (theme) => {
     const isDark = theme === "binance";
@@ -177,7 +185,11 @@ export function toggleTheme() {
     updateThemeButtons("upbit");
     if (faviconLink) faviconLink.href = "/static/luma-deer-svg-light.svg";
     const brandLogoImg = document.getElementById("brand-logo-img");
-    if (brandLogoImg) brandLogoImg.src = "/static/sellnance_logo_light_tight.png";
+    if (brandLogoImg)
+      brandLogoImg.src = "/static/sellnance_logo_light_tight.png";
+    const startLogoImg = document.getElementById("start-brand-logo-img");
+    if (startLogoImg)
+      startLogoImg.src = "/static/sellnance_logo_light_tight.png";
   } else {
     body.classList.remove("theme-upbit");
     body.classList.add("theme-binance");
@@ -187,17 +199,23 @@ export function toggleTheme() {
     updateThemeButtons("binance");
     if (faviconLink) faviconLink.href = "/static/luma-deer-svg-dark.svg";
     const brandLogoImg = document.getElementById("brand-logo-img");
-    if (brandLogoImg) brandLogoImg.src = "/static/sellnance_logo_dark_tight.png";
+    if (brandLogoImg)
+      brandLogoImg.src = "/static/sellnance_logo_dark_tight.png";
+    const startLogoImg = document.getElementById("start-brand-logo-img");
+    if (startLogoImg)
+      startLogoImg.src = "/static/sellnance_logo_dark_tight.png";
   }
-
-  // 캔들, 볼륨(vol), 프리뷰 차트 색상 일괄 동기화
-  applyCandleTheme(store.candleTheme || "binance");
 
   // 테마 상태를 localStorage에 먼저 저장하여 차트 테마 및 김프 엔진이 최신 테마를 참조 가능하도록 하기
   localStorage.setItem("sellnance_theme", store.currentTheme);
 
-  // 차트 그리드선/경계선/배경색을 동기적으로 실행하여 전환
-  updateChartTheme();
+  // 시작 화면일 때는 백그라운드 캔버스 재계산 및 수백 개 이미지 DOM 순회 완전 생략! (0.001초 즉각 전환)
+  if (isStartActive) {
+    return;
+  }
+
+  // 캔들, 볼륨(vol), 프리뷰 차트 색상 일괄 동기화 (내부에서 updateChartTheme 호출됨)
+  applyCandleTheme(store.candleTheme || "binance");
 
   // 무거운 이미지 DOM 교체만 다음 프레임에 비동기 처리
   requestAnimationFrame(() => {

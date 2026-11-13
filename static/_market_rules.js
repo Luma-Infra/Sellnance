@@ -43,12 +43,12 @@ export function getRowExchangeMeta(row) {
     !!row.Exact_Futures;
   const hasBinanceSpot =
     ex.includes("BINANCE_SPOT") ||
-    ex.includes("BINANCE") ||
-    row.Binance === "O";
+    row.Binance === "O" ||
+    Boolean(row.Exact_Spot);
   const hasBybitFutures =
     ex.includes("BYBIT_FUTURES") || row.Bybit_Futures === "O";
   const hasBybitSpot =
-    ex.includes("BYBIT_SPOT") || ex.includes("BYBIT") || row.Bybit === "O";
+    ex.includes("BYBIT_SPOT") || row.Bybit === "O";
   const hasUpbit = ex.includes("UPBIT") || row.Upbit === "O";
   const hasBithumb = ex.includes("BITHUMB");
 

@@ -14,7 +14,7 @@
   "__MEMO__12": "DUPLICATED_LIST: 동일 티커 다른 코인(동명이인) 또는 거래소별 티커 상이 코인의 UID/거래소별 티커 매핑",
   "__MEMO__13": "TICKER_DATA: 전체 자산 마스터 메타데이터: [0: CMC_ID, 1: 체인/메인넷, 2: 영문명, 3: 표준티커, 4: 자산타입(COIN/STOCK), 5: 특수구분(ALPHA 등)]",
   "__MEMO__14": "-------------------------------------------------------------",
-  "DEFAULT_KRW_USD_RATE": 1336.25,
+  "DEFAULT_KRW_USD_RATE": 1336.46,
   "CHAIN_LOGO_MAP": {
     "ETH": "https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png",
     "BNB": "https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png",
@@ -282,7 +282,7 @@
       "35626",
       "",
       "DATAIP",
-      "binance"
+      "binance_futures"
     ],
     "Data(Story)_upbit": [
       "35626",
@@ -577,6 +577,18 @@
       "",
       "BENQI",
       "gateio_spot"
+    ],
+    "SANC(Sanctum)_upbit": [
+      "32299",
+      "SOL",
+      "SANC",
+      "upbit"
+    ],
+    "CLOUD(Sanctum)_binance": [
+      "32299",
+      "SOL",
+      "CLOUD",
+      "binance"
     ]
   },
   "TICKER_DATA": {
@@ -632,7 +644,7 @@
     "AAOIB(STOCK)": [
       "40844",
       null,
-      "AAOIB (Derivatives)",
+      "Applied Optoelectronics Tokenized bStocks",
       "AAOIB",
       "STOCK"
     ],
@@ -653,7 +665,7 @@
     "AAPLB(STOCK)": [
       "40927",
       null,
-      "AAPLB (Derivatives)",
+      "Apple Tokenized bStocks",
       "AAPLB",
       "STOCK"
     ],
@@ -667,7 +679,7 @@
     "ABBV(STOCK)": [
       "42650",
       null,
-      "ABBV (Derivatives)",
+      "AbbVie Inc (Derivatives)",
       "ABBV",
       "STOCK"
     ],
@@ -695,7 +707,7 @@
     "ACN(STOCK)": [
       "42379",
       null,
-      "ACN (Derivatives)",
+      "Accenture plc Class A Ordinary Shares (Derivatives)",
       "ACN",
       "STOCK"
     ],
@@ -730,7 +742,7 @@
     "ADBE(STOCK)": [
       "40115",
       null,
-      "ADBE (Derivatives)",
+      "Adobe Inc (Derivatives)",
       "ADBE",
       "STOCK"
     ],
@@ -744,7 +756,7 @@
     "ADBEB(STOCK)": [
       "42384",
       null,
-      "ADBEB (Derivatives)",
+      "Adobe Tokenized bStocks",
       "ADBEB",
       "STOCK"
     ],
@@ -794,7 +806,7 @@
     "AGPUB(STOCK)": [
       "42353",
       null,
-      "AGPUB (Derivatives)",
+      "Axe Compute Tokenized bStocks",
       "AGPUB",
       "STOCK"
     ],
@@ -872,7 +884,7 @@
     "AKAM(STOCK)": [
       "42407",
       null,
-      "AKAM (Derivatives)",
+      "Akamai Technologies Inc (Derivatives)",
       "AKAM",
       "STOCK"
     ],
@@ -914,7 +926,7 @@
     "ALABB(STOCK)": [
       "40972",
       null,
-      "ALABB (Derivatives)",
+      "Astera Labs Tokenized bStocks",
       "ALABB",
       "STOCK"
     ],
@@ -985,7 +997,7 @@
     "AMATB(STOCK)": [
       "40936",
       null,
-      "AMATB (Derivatives)",
+      "Applied Materials Tokenized bStocks",
       "AMATB",
       "STOCK"
     ],
@@ -1013,7 +1025,7 @@
     "AMCB(STOCK)": [
       "42355",
       null,
-      "AMCB (Derivatives)",
+      "AMC Entertainment Holdings Tokenized bStocks",
       "AMCB",
       "STOCK"
     ],
@@ -1027,14 +1039,14 @@
     "AMDB(STOCK)": [
       "40538",
       null,
-      "AMDB (Derivatives)",
+      "Advanced Micro Devices Tokenized bStocks",
       "AMDB",
       "STOCK"
     ],
     "AMGN(STOCK)": [
       "42651",
       null,
-      "AMGN (Derivatives)",
+      "Amgen Inc (Derivatives)",
       "AMGN",
       "STOCK"
     ],
@@ -1062,7 +1074,7 @@
     "AMZNB(STOCK)": [
       "40929",
       null,
-      "AMZNB (Derivatives)",
+      "Amazon Tokenized bStocks",
       "AMZNB",
       "STOCK"
     ],
@@ -1076,7 +1088,7 @@
     "ANET(STOCK)": [
       "42324",
       null,
-      "ANET (Derivatives)",
+      "Arista Networks Inc (Derivatives)",
       "ANET",
       "STOCK"
     ],
@@ -1104,7 +1116,7 @@
     "ANTHROPIC(STOCK)": [
       "37693",
       null,
-      "ANTHROPIC (Derivatives)",
+      "Anthropic tokenized stock (PreStocks)",
       "ANTHROPIC",
       "STOCK"
     ],
@@ -1132,21 +1144,21 @@
     "APLD(STOCK)": [
       "40747",
       null,
-      "APLD (Derivatives)",
+      "Applied Digital Tokenized Stock (Robinhood)",
       "APLD",
       "STOCK"
     ],
     "APP(STOCK)": [
       "39629",
       null,
-      "APP (Derivatives)",
+      "Applovin (Derivatives)",
       "APP",
       "STOCK"
     ],
     "APPB(STOCK)": [
       "42683",
       null,
-      "APPB (Derivatives)",
+      "Applovin Corp Tokenized bStocks",
       "APPB",
       "STOCK"
     ],
@@ -1230,7 +1242,7 @@
     "ARMB(STOCK)": [
       "40851",
       null,
-      "ARMB (Derivatives)",
+      "Arm Tokenized bStocks",
       "ARMB",
       "STOCK"
     ],
@@ -1265,7 +1277,7 @@
     "ASMLB(STOCK)": [
       "40968",
       null,
-      "ASMLB (Derivatives)",
+      "ASML Tokenized bStocks",
       "ASMLB",
       "STOCK"
     ],
@@ -1307,7 +1319,7 @@
     "ASTSB(STOCK)": [
       "40971",
       null,
-      "ASTSB (Derivatives)",
+      "AST SpaceMobile Tokenized bStocks",
       "ASTSB",
       "STOCK"
     ],
@@ -1413,7 +1425,7 @@
     "AVGOB(STOCK)": [
       "40845",
       null,
-      "AVGOB (Derivatives)",
+      "Broadcom Tokenized bStocks",
       "AVGOB",
       "STOCK"
     ],
@@ -1477,7 +1489,7 @@
     "AXTIB(STOCK)": [
       "40875",
       null,
-      "AXTIB (Derivatives)",
+      "AXT Tokenized bStocks",
       "AXTIB",
       "STOCK"
     ],
@@ -1526,7 +1538,7 @@
     "BABAB(STOCK)": [
       "40852",
       null,
-      "BABAB (Derivatives)",
+      "Alibaba Tokenized bStocks",
       "BABAB",
       "STOCK"
     ],
@@ -1835,7 +1847,7 @@
     "BMNRB(STOCK)": [
       "40964",
       null,
-      "BMNRB (Derivatives)",
+      "BitMine Immersion Technologies Tokenized bStocks",
       "BMNRB",
       "STOCK"
     ],
@@ -1877,7 +1889,7 @@
     "BNCB(STOCK)": [
       "42290",
       null,
-      "BNCB (Derivatives)",
+      "BNB Standard Corporation Tokenized bStocks",
       "BNCB",
       "STOCK"
     ],
@@ -1990,7 +2002,7 @@
     "BRKB(STOCK)": [
       "40016",
       null,
-      "BRKB (Derivatives)",
+      "Berkshire Hathaway Inc Class B (Derivatives)",
       "BRKB",
       "STOCK"
     ],
@@ -2046,7 +2058,7 @@
     "BSPB(STOCK)": [
       "42682",
       null,
-      "BSPB (Derivatives)",
+      "Bending Spoons Tokenized bStocks",
       "BSPB",
       "STOCK"
     ],
@@ -2117,7 +2129,7 @@
     "BWET(STOCK)": [
       "42378",
       null,
-      "BWET (Derivatives)",
+      "Breakwave Tanker Shipping ETF (Derivatives)",
       "BWET",
       "STOCK"
     ],
@@ -2215,7 +2227,7 @@
     "CAT(Caterpillar)": [
       "40683",
       null,
-      "Caterpillar",
+      "Caterpillar, Inc. Common Stock (Derivatives)",
       "CAT",
       "STOCK"
     ],
@@ -2257,7 +2269,7 @@
     "CBRSB(STOCK)": [
       "40791",
       null,
-      "CBRSB (Derivatives)",
+      "Cerebras Tokenized bStocks",
       "CBRSB",
       "STOCK"
     ],
@@ -2271,7 +2283,7 @@
     "CEG(STOCK)": [
       "42618",
       null,
-      "CEG (Derivatives)",
+      "Constellation Energy Corp (Derivatives)",
       "CEG",
       "STOCK"
     ],
@@ -2370,7 +2382,7 @@
     "CIEN(STOCK)": [
       "40227",
       null,
-      "CIEN (Derivatives)",
+      "Ciena Corp (Derivatives)",
       "CIEN",
       "STOCK"
     ],
@@ -2440,7 +2452,7 @@
     "COHRB(STOCK)": [
       "40965",
       null,
-      "COHRB (Derivatives)",
+      "Coherent Tokenized bStocks",
       "COHRB",
       "STOCK"
     ],
@@ -2454,7 +2466,7 @@
     "COINB(STOCK)": [
       "40789",
       null,
-      "COINB (Derivatives)",
+      "Coinbase Tokenized bStocks",
       "COINB",
       "STOCK"
     ],
@@ -2482,7 +2494,7 @@
     "COPPER(STOCK)": [
       "36847",
       null,
-      "COPPER (Derivatives)",
+      "$COPPER",
       "COPPER",
       "STOCK"
     ],
@@ -2545,7 +2557,7 @@
     "CRCLB(STOCK)": [
       "40213",
       null,
-      "CRCLB (Derivatives)",
+      "Circle Internet Group Tokenized bStocks",
       "CRCLB",
       "STOCK"
     ],
@@ -2566,7 +2578,7 @@
     "CRDOB(STOCK)": [
       "40967",
       null,
-      "CRDOB (Derivatives)",
+      "Credo Technology Tokenized bStocks",
       "CRDOB",
       "STOCK"
     ],
@@ -2594,14 +2606,14 @@
     "CRMB(STOCK)": [
       "42045",
       null,
-      "CRMB (Derivatives)",
+      "Salesforce Tokenized bStocks",
       "CRMB",
       "STOCK"
     ],
     "CRML(STOCK)": [
       "42377",
       null,
-      "CRML (Derivatives)",
+      "Critical Metals Corp (Derivatives)",
       "CRML",
       "STOCK"
     ],
@@ -2643,7 +2655,7 @@
     "CRWDB(STOCK)": [
       "41960",
       null,
-      "CRWDB (Derivatives)",
+      "CrowdStrike Tokenized bStocks",
       "CRWDB",
       "STOCK"
     ],
@@ -2664,7 +2676,7 @@
     "CRWVB(STOCK)": [
       "40877",
       null,
-      "CRWVB (Derivatives)",
+      "CoreWeave Tokenized bStocks",
       "CRWVB",
       "STOCK"
     ],
@@ -2678,7 +2690,7 @@
     "CSCO(STOCK)": [
       "39631",
       null,
-      "CSCO (Derivatives)",
+      "Cisco Systems (Derivatives)",
       "CSCO",
       "STOCK"
     ],
@@ -2692,7 +2704,7 @@
     "CSOPSAMSUNG2L(STOCK)": [
       "41076",
       null,
-      "CSOPSAMSUNG2L (Derivatives)",
+      "CSOP Samsung Daily Max (2x) (Derivatives)",
       "CSOPSAMSUNG2L",
       "STOCK"
     ],
@@ -2706,7 +2718,7 @@
     "CSOPSKHYNIX2L(STOCK)": [
       "41075",
       null,
-      "CSOPSKHYNIX2L (Derivatives)",
+      "CSOP SK Hynix Daily Max (2x) Leveraged Product (Derivatives)",
       "CSOPSKHYNIX2L",
       "STOCK"
     ],
@@ -2763,7 +2775,7 @@
     "CVNA(STOCK)": [
       "42372",
       null,
-      "CVNA (Derivatives)",
+      "Carvana Co (Derivatives)",
       "CVNA",
       "STOCK"
     ],
@@ -2784,7 +2796,7 @@
     "CXMT(STOCK)": [
       "40857",
       null,
-      "CXMT (Derivatives)",
+      "ChangXin Memory Technologies (Derivatives)",
       "CXMT",
       "STOCK"
     ],
@@ -2798,7 +2810,7 @@
     "CYPH(STOCK)": [
       "42323",
       null,
-      "CYPH (Derivatives)",
+      "Cypherpunk Technologies Inc (Derivatives)",
       "CYPH",
       "STOCK"
     ],
@@ -2812,7 +2824,7 @@
     "CYPHB(STOCK)": [
       "42354",
       null,
-      "CYPHB (Derivatives)",
+      "Cypherpunk Technologies Tokenized bStocks",
       "CYPHB",
       "STOCK"
     ],
@@ -2854,7 +2866,7 @@
     "DDOG(STOCK)": [
       "40715",
       null,
-      "DDOG (Derivatives)",
+      "Datadog Tokenized Stock (Robinhood)",
       "DDOG",
       "STOCK"
     ],
@@ -2898,7 +2910,7 @@
     "DELLB(STOCK)": [
       "40931",
       null,
-      "DELLB (Derivatives)",
+      "Dell Tokenized bStocks",
       "DELLB",
       "STOCK"
     ],
@@ -2926,7 +2938,7 @@
     "DIS(STOCK)": [
       "39998",
       null,
-      "DIS (Derivatives)",
+      "Walt Disney Co (Derivatives)",
       "DIS",
       "STOCK"
     ],
@@ -2947,7 +2959,7 @@
     "DJTB(STOCK)": [
       "41915",
       null,
-      "DJTB (Derivatives)",
+      "Trump Media & Technology Group Tokenized bStocks",
       "DJTB",
       "STOCK"
     ],
@@ -2968,7 +2980,7 @@
     "DKNG(STOCK)": [
       "40222",
       null,
-      "DKNG (Derivatives)",
+      "DraftKings Inc (Derivatives)",
       "DKNG",
       "STOCK"
     ],
@@ -3045,7 +3057,7 @@
     "DRAMB(STOCK)": [
       "40798",
       null,
-      "DRAMB (Derivatives)",
+      "Roundhill Memory ETF Tokenized bStocks",
       "DRAMB",
       "STOCK"
     ],
@@ -3101,7 +3113,7 @@
     "EBAY(STOCK)": [
       "39953",
       null,
-      "EBAY (Derivatives)",
+      "eBay (Derivatives)",
       "EBAY",
       "STOCK"
     ],
@@ -3151,7 +3163,7 @@
     "EIDO(STOCK)": [
       "42676",
       null,
-      "EIDO (Derivatives)",
+      "iShares MSCI Indonesia ETF (Derivatives)",
       "EIDO",
       "STOCK"
     ],
@@ -3215,7 +3227,7 @@
     "EQT(STOCK)": [
       "42677",
       null,
-      "EQT (Derivatives)",
+      "EQT Corporation (Derivatives)",
       "EQT",
       "STOCK"
     ],
@@ -3306,7 +3318,7 @@
     "EWJ(STOCK)": [
       "39685",
       null,
-      "EWJ (Derivatives)",
+      "iShares MSCI Japan ETF (Derivatives)",
       "EWJ",
       "STOCK"
     ],
@@ -3341,7 +3353,7 @@
     "EWYB(STOCK)": [
       "40539",
       null,
-      "EWYB (Derivatives)",
+      "iShares MSCI South Korea ETF Tokenized bStocks",
       "EWYB",
       "STOCK"
     ],
@@ -3355,14 +3367,14 @@
     "EWZ(STOCK)": [
       "39949",
       null,
-      "EWZ (Derivatives)",
+      "Ishares Msci Brazil ETF (Derivatives)",
       "EWZ",
       "STOCK"
     ],
     "EWZS(STOCK)": [
       "42697",
       null,
-      "EWZS (Derivatives)",
+      "iShares MSCI Brazil Small-Cap ETF (Derivative)",
       "EWZS",
       "STOCK"
     ],
@@ -3475,7 +3487,7 @@
     "FLNCB(STOCK)": [
       "40932",
       null,
-      "FLNCB (Derivatives)",
+      "Fluence Energy Tokenized bStocks",
       "FLNCB",
       "STOCK"
     ],
@@ -3552,7 +3564,7 @@
     "FRHC(STOCK)": [
       "42804",
       null,
-      "FRHC (Derivatives)",
+      "Freedom Holding Corp (Derivatives)",
       "FRHC",
       "STOCK"
     ],
@@ -3573,7 +3585,7 @@
     "FWDI(STOCK)": [
       "40829",
       null,
-      "FWDI (Derivatives)",
+      "Forward Industries Inc (Derivatives)",
       "FWDI",
       "STOCK"
     ],
@@ -3587,7 +3599,7 @@
     "FWDIB(STOCK)": [
       "42386",
       null,
-      "FWDIB (Derivatives)",
+      "Forward Industries Tokenized bStocks",
       "FWDIB",
       "STOCK"
     ],
@@ -3665,21 +3677,21 @@
     "GEV(STOCK)": [
       "40035",
       null,
-      "GEV (Derivatives)",
+      "GE Vernova Inc (Derivatives)",
       "GEV",
       "STOCK"
     ],
     "GEVB(STOCK)": [
       "42681",
       null,
-      "GEVB (Derivatives)",
+      "GE Vernova Inc Tokenized bStocks",
       "GEVB",
       "STOCK"
     ],
     "GIGADEV(STOCK)": [
       "40955",
       null,
-      "GIGADEV (Derivatives)",
+      "Gigadevice Semiconductor Inc (Derivatives)",
       "GIGADEV",
       "STOCK"
     ],
@@ -3721,7 +3733,7 @@
     "GLWB(STOCK)": [
       "40795",
       null,
-      "GLWB (Derivatives)",
+      "Corning Tokenized bStocks",
       "GLWB",
       "STOCK"
     ],
@@ -3735,7 +3747,7 @@
     "GMEB(STOCK)": [
       "41077",
       null,
-      "GMEB (Derivatives)",
+      "GameStop Tokenized bStocks",
       "GMEB",
       "STOCK"
     ],
@@ -3791,7 +3803,7 @@
     "GOOGLB(STOCK)": [
       "40793",
       null,
-      "GOOGLB (Derivatives)",
+      "Alphabet Tokenized bStocks",
       "GOOGLB",
       "STOCK"
     ],
@@ -3819,7 +3831,7 @@
     "GPROB(STOCK)": [
       "42303",
       null,
-      "GPROB (Derivatives)",
+      "GoPro Tokenized bStocks",
       "GPROB",
       "STOCK"
     ],
@@ -3882,7 +3894,7 @@
     "GSB(STOCK)": [
       "40934",
       null,
-      "GSB (Derivatives)",
+      "Goldman Sachs Tokenized bStocks",
       "GSB",
       "STOCK"
     ],
@@ -3903,7 +3915,7 @@
     "GTLB(STOCK)": [
       "41974",
       null,
-      "GTLB (Derivatives)",
+      "Gitlab Inc (Derivatives)",
       "GTLB",
       "STOCK"
     ],
@@ -3959,7 +3971,7 @@
     "HANMI(STOCK)": [
       "39672",
       null,
-      "HANMI (Derivatives)",
+      "Hanmi Semiconductor Co Ltd (Derivatives)",
       "HANMI",
       "STOCK"
     ],
@@ -4022,7 +4034,7 @@
     "HIMSB(STOCK)": [
       "42046",
       null,
-      "HIMSB (Derivatives)",
+      "Hims & Hers Tokenized bStocks",
       "HIMSB",
       "STOCK"
     ],
@@ -4050,7 +4062,7 @@
     "HK0992(STOCK)": [
       "41998",
       null,
-      "HK0992 (Derivatives)",
+      "Lenovo Group Ltd (Derivatives)",
       "HK0992",
       "STOCK"
     ],
@@ -4099,7 +4111,7 @@
     "HOODB(STOCK)": [
       "40850",
       null,
-      "HOODB (Derivatives)",
+      "Robinhood Tokenized bStocks",
       "HOODB",
       "STOCK"
     ],
@@ -4127,7 +4139,7 @@
     "HPE(STOCK)": [
       "40112",
       null,
-      "HPE (Derivatives)",
+      "Hewlett Packard Enterprise Co (Derivatives)",
       "HPE",
       "STOCK"
     ],
@@ -4141,7 +4153,7 @@
     "HPEB(STOCK)": [
       "42385",
       null,
-      "HPEB (Derivatives)",
+      "Hewlett Packard Tokenized bStocks",
       "HPEB",
       "STOCK"
     ],
@@ -4162,7 +4174,7 @@
     "HUT(STOCK)": [
       "42325",
       null,
-      "HUT (Derivatives)",
+      "Hut 8 Corp (Derivatives)",
       "HUT",
       "STOCK"
     ],
@@ -4218,7 +4230,7 @@
     "IBMB(STOCK)": [
       "40847",
       null,
-      "IBMB (Derivatives)",
+      "IBM Tokenized bStocks",
       "IBMB",
       "STOCK"
     ],
@@ -4302,7 +4314,7 @@
     "INTCB(STOCK)": [
       "40540",
       null,
-      "INTCB (Derivatives)",
+      "Intel Tokenized bStocks",
       "INTCB",
       "STOCK"
     ],
@@ -4323,7 +4335,7 @@
     "INTWB(STOCK)": [
       "40883",
       null,
-      "INTWB (Derivatives)",
+      "GraniteShares 2X Long INTC ETF Tokenized bStocks",
       "INTWB",
       "STOCK"
     ],
@@ -4400,7 +4412,7 @@
     "IRENB(STOCK)": [
       "40970",
       null,
-      "IRENB (Derivatives)",
+      "IREN Limited Tokenized bStocks",
       "IRENB",
       "STOCK"
     ],
@@ -4421,7 +4433,7 @@
     "IWM(STOCK)": [
       "39493",
       null,
-      "IWM (Derivatives)",
+      "iShares Russell 2000 ETF (Derivatives)",
       "IWM",
       "STOCK"
     ],
@@ -4463,7 +4475,7 @@
     "JPM(STOCK)": [
       "40013",
       null,
-      "JPM (Derivatives)",
+      "JPmorgan Chase & Co (Derivatives)",
       "JPM",
       "STOCK"
     ],
@@ -4477,7 +4489,7 @@
     "JPMB(STOCK)": [
       "42416",
       null,
-      "JPMB (Derivatives)",
+      "JPMorgan Chase Tokenized bStocks",
       "JPMB",
       "STOCK"
     ],
@@ -4597,7 +4609,7 @@
     "KLAC(STOCK)": [
       "40548",
       null,
-      "KLAC (Derivatives)",
+      "KLA Corp (Derivatives)",
       "KLAC",
       "STOCK"
     ],
@@ -4639,7 +4651,7 @@
     "KODEX200(STOCK)": [
       "41783",
       null,
-      "KODEX200 (Derivatives)",
+      "Samsung KODEX 200 ETF(Derivatives)",
       "KODEX200",
       "STOCK"
     ],
@@ -4667,7 +4679,7 @@
     "KORUB(STOCK)": [
       "40876",
       null,
-      "KORUB (Derivatives)",
+      "South Korea Bull 3X ETF Tokenized bStocks",
       "KORUB",
       "STOCK"
     ],
@@ -4688,7 +4700,7 @@
     "KSTR(STOCK)": [
       "40678",
       null,
-      "KSTR (Derivatives)",
+      "KraneShares SSE STAR Market 50 Index ETF (Derivatives)",
       "KSTR",
       "STOCK"
     ],
@@ -4716,7 +4728,7 @@
     "KUAISHOU(STOCK)": [
       "41073",
       null,
-      "KUAISHOU (Derivatives)",
+      "Kuaishou Technology (Derivatives)",
       "KUAISHOU",
       "STOCK"
     ],
@@ -4765,7 +4777,7 @@
     "LGELECTRONICS(STOCK)": [
       "41780",
       null,
-      "LGELECTRONICS (Derivatives)",
+      "LG Electronics Inc (Derivatives)",
       "LGELECTRONICS",
       "STOCK"
     ],
@@ -4821,7 +4833,7 @@
     "LITEB(STOCK)": [
       "40591",
       null,
-      "LITEB (Derivatives)",
+      "Lumentum Tokenized bStocks",
       "LITEB",
       "STOCK"
     ],
@@ -4835,7 +4847,7 @@
     "LLY(STOCK)": [
       "40720",
       null,
-      "LLY (Derivatives)",
+      "Eli Lilly Tokenized Stock (Robinhood)",
       "LLY",
       "STOCK"
     ],
@@ -4849,7 +4861,7 @@
     "LLYB(STOCK)": [
       "42415",
       null,
-      "LLYB (Derivatives)",
+      "Eli Lilly Tokenized bStocks",
       "LLYB",
       "STOCK"
     ],
@@ -4877,7 +4889,7 @@
     "LRCX(STOCK)": [
       "40547",
       null,
-      "LRCX (Derivatives)",
+      "Lam Research Corp (Derivatives)",
       "LRCX",
       "STOCK"
     ],
@@ -4907,13 +4919,6 @@
       null,
       "Terra",
       "LUNA",
-      "COIN"
-    ],
-    "LUNA(Terra)": [
-      "20314",
-      null,
-      "Terra",
-      "LUNA2",
       "COIN"
     ],
     "LUNA2": [
@@ -4947,7 +4952,7 @@
     "LYTE(STOCK)": [
       "40984",
       null,
-      "LYTE (Derivatives)",
+      "Roundhill Photonics & Optics ETF (Derivatives)",
       "LYTE",
       "STOCK"
     ],
@@ -5052,7 +5057,7 @@
     "MCD(STOCK)": [
       "21488",
       null,
-      "MCD (Derivatives)",
+      "CDbio",
       "MCD",
       "STOCK"
     ],
@@ -5080,14 +5085,14 @@
     "MDBB(STOCK)": [
       "42535",
       null,
-      "MDBB (Derivatives)",
+      "Mongodb Tokenized bStocks",
       "MDBB",
       "STOCK"
     ],
     "MDT(STOCK)": [
       "42621",
       null,
-      "MDT (Derivatives)",
+      "Medtronic PLC (Derivatives)",
       "MDT",
       "STOCK"
     ],
@@ -5122,7 +5127,7 @@
     "MEITUAN(STOCK)": [
       "41074",
       null,
-      "MEITUAN (Derivatives)",
+      "Meituan (Derivatives)",
       "MEITUAN",
       "STOCK"
     ],
@@ -5136,7 +5141,7 @@
     "MELI(STOCK)": [
       "42700",
       null,
-      "MELI (Derivatives)",
+      "MercadoLibre Inc (Derivative)",
       "MELI",
       "STOCK"
     ],
@@ -5256,7 +5261,7 @@
     "MINIMAX(STOCK)": [
       "39960",
       null,
-      "MINIMAX (Derivatives)",
+      "MiniMax Group (Derivatives)",
       "MINIMAX",
       "STOCK"
     ],
@@ -5340,7 +5345,7 @@
     "MOONSHOT(STOCK)": [
       "42356",
       null,
-      "MOONSHOT (Derivatives)",
+      "Moonshot AI (Derivatives)",
       "MOONSHOT",
       "STOCK"
     ],
@@ -5368,7 +5373,7 @@
     "MP(STOCK)": [
       "42380",
       null,
-      "MP (Derivatives)",
+      "MP Materials Corp (Derivatives)",
       "MP",
       "STOCK"
     ],
@@ -5410,7 +5415,7 @@
     "MRNAB(STOCK)": [
       "41961",
       null,
-      "MRNAB (Derivatives)",
+      "Moderna Tokenized bStocks",
       "MRNAB",
       "STOCK"
     ],
@@ -5431,7 +5436,7 @@
     "MRVLB(STOCK)": [
       "40848",
       null,
-      "MRVLB (Derivatives)",
+      "Marvell Technology Tokenized bStocks",
       "MRVLB",
       "STOCK"
     ],
@@ -5452,7 +5457,7 @@
     "MSFTB(STOCK)": [
       "40589",
       null,
-      "MSFTB (Derivatives)",
+      "Microsoft Tokenized bStocks",
       "MSFTB",
       "STOCK"
     ],
@@ -5473,7 +5478,7 @@
     "MSTRB(STOCK)": [
       "40536",
       null,
-      "MSTRB (Derivatives)",
+      "Strategy Tokenized bStocks",
       "MSTRB",
       "STOCK"
     ],
@@ -5487,7 +5492,7 @@
     "MSTU(STOCK)": [
       "42531",
       null,
-      "MSTU (Derivatives)",
+      "T-Rex 2X Long MSTR Daily Target ETF (Derivatives)",
       "MSTU",
       "STOCK"
     ],
@@ -5515,7 +5520,7 @@
     "MUB(STOCK)": [
       "40212",
       null,
-      "MUB (Derivatives)",
+      "Micron Technology Tokenized bStocks",
       "MUB",
       "STOCK"
     ],
@@ -5543,7 +5548,7 @@
     "MUUB(STOCK)": [
       "40881",
       null,
-      "MUUB (Derivatives)",
+      "Direxion MU Bull 2X ETF Tokenized bStocks",
       "MUUB",
       "STOCK"
     ],
@@ -5571,7 +5576,7 @@
     "MVLLB(STOCK)": [
       "40879",
       null,
-      "MVLLB (Derivatives)",
+      "GraniteShares 2X Long MRVL ETF Tokenized bStocks",
       "MVLLB",
       "STOCK"
     ],
@@ -5592,7 +5597,7 @@
     "NATGAS(STOCK)": [
       "39464",
       null,
-      "NATGAS (Derivatives)",
+      "Natural Gas (Derivatives)",
       "NATGAS",
       "STOCK"
     ],
@@ -5606,7 +5611,7 @@
     "NAVER(STOCK)": [
       "41782",
       null,
-      "NAVER (Derivatives)",
+      "Naver Corp (Derivatives)",
       "NAVER",
       "STOCK"
     ],
@@ -5627,7 +5632,7 @@
     "NBISB(STOCK)": [
       "40797",
       null,
-      "NBISB (Derivatives)",
+      "Nebius Tokenized bStocks",
       "NBISB",
       "STOCK"
     ],
@@ -5712,7 +5717,7 @@
     "NFLXB(STOCK)": [
       "40973",
       null,
-      "NFLXB (Derivatives)",
+      "Netflix Tokenized bStocks",
       "NFLXB",
       "STOCK"
     ],
@@ -5741,7 +5746,7 @@
     "NKE(STOCK)": [
       "42382",
       null,
-      "NKE (Derivatives)",
+      "Nike Inc (Derivatives)",
       "NKE",
       "STOCK"
     ],
@@ -5762,7 +5767,7 @@
     "NOKB(STOCK)": [
       "40853",
       null,
-      "NOKB (Derivatives)",
+      "Nokia Tokenized bStocks",
       "NOKB",
       "STOCK"
     ],
@@ -5805,7 +5810,7 @@
     "NU(STOCK)": [
       "40775",
       null,
-      "NU (Derivatives)",
+      "Nu Tokenized Stock (Robinhood)",
       "NU",
       "STOCK"
     ],
@@ -5826,7 +5831,7 @@
     "NVDAB(STOCK)": [
       "40215",
       null,
-      "NVDAB (Derivatives)",
+      "NVIDIA Tokenized bStocks",
       "NVDAB",
       "STOCK"
     ],
@@ -5840,7 +5845,7 @@
     "NVDL(STOCK)": [
       "41947",
       null,
-      "NVDL (Derivatives)",
+      "GraniteShares 2x Long NVDA Daily ETF (Derivatives)",
       "NVDL",
       "STOCK"
     ],
@@ -5854,7 +5859,7 @@
     "NVO(STOCK)": [
       "40104",
       null,
-      "NVO (Derivatives)",
+      "Novo Nordisk (Derivatives)",
       "NVO",
       "STOCK"
     ],
@@ -5897,7 +5902,7 @@
     "OKLO(STOCK)": [
       "42370",
       null,
-      "OKLO (Derivatives)",
+      "Oklo Inc. (Derivatives)",
       "OKLO",
       "STOCK"
     ],
@@ -5925,7 +5930,7 @@
     "ONDS(STOCK)": [
       "40118",
       null,
-      "ONDS (Derivatives)",
+      "Ondas Inc (Derivatives)",
       "ONDS",
       "STOCK"
     ],
@@ -5981,7 +5986,7 @@
     "OPENAI(STOCK)": [
       "37671",
       null,
-      "OPENAI (Derivatives)",
+      "OpenAI tokenized stock (PreStocks)",
       "OPENAI",
       "STOCK"
     ],
@@ -6030,7 +6035,7 @@
     "ORCLB(STOCK)": [
       "40882",
       null,
-      "ORCLB (Derivatives)",
+      "Oracle Tokenized bStocks",
       "ORCLB",
       "STOCK"
     ],
@@ -6058,14 +6063,14 @@
     "OURA(STOCK)": [
       "42363",
       null,
-      "OURA (Derivatives)",
+      "Oura Inc (Derivatives)",
       "OURA",
       "STOCK"
     ],
     "OXY(STOCK)": [
       "8029",
       null,
-      "OXY (Derivatives)",
+      "Oxygen",
       "OXY",
       "STOCK"
     ],
@@ -6079,7 +6084,7 @@
     "PANW(STOCK)": [
       "40199",
       null,
-      "PANW (Derivatives)",
+      "Palo Alto Networks Inc (Derivatives)",
       "PANW",
       "STOCK"
     ],
@@ -6093,7 +6098,7 @@
     "PATH(STOCK)": [
       "42321",
       null,
-      "PATH (Derivatives)",
+      "UiPath Inc (Derivatives)",
       "PATH",
       "STOCK"
     ],
@@ -6107,7 +6112,7 @@
     "PAYP(STOCK)": [
       "39725",
       null,
-      "PAYP (Derivatives)",
+      "PayPay Corp (Derivatives)",
       "PAYP",
       "STOCK"
     ],
@@ -6135,7 +6140,7 @@
     "PDDB(STOCK)": [
       "42383",
       null,
-      "PDDB (Derivatives)",
+      "PDD Holdings Tokenized bStocks",
       "PDDB",
       "STOCK"
     ],
@@ -6164,7 +6169,7 @@
     "PENGB(STOCK)": [
       "42536",
       null,
-      "PENGB (Derivatives)",
+      "Penguin Solutions Tokenized bStocks",
       "PENGB",
       "STOCK"
     ],
@@ -6192,7 +6197,7 @@
     "PFE(STOCK)": [
       "7891",
       null,
-      "PFE (Derivatives)",
+      "Pfizer tokenized stock FTX",
       "PFE",
       "STOCK"
     ],
@@ -6255,7 +6260,7 @@
     "PLTRB(STOCK)": [
       "40590",
       null,
-      "PLTRB (Derivatives)",
+      "Palantir Tokenized bStocks",
       "PLTRB",
       "STOCK"
     ],
@@ -6460,7 +6465,7 @@
     "PYPLB(STOCK)": [
       "40935",
       null,
-      "PYPLB (Derivatives)",
+      "Paypal Tokenized bStocks",
       "PYPLB",
       "STOCK"
     ],
@@ -6502,7 +6507,7 @@
     "QCOMB(STOCK)": [
       "40792",
       null,
-      "QCOMB (Derivatives)",
+      "Qualcomm Tokenized bStocks",
       "QCOMB",
       "STOCK"
     ],
@@ -6544,7 +6549,7 @@
     "QNTX(STOCK)": [
       "40094",
       null,
-      "QNTX (Derivatives)",
+      "Quantinuum Inc (Derivatives)",
       "QNTX",
       "STOCK"
     ],
@@ -6565,7 +6570,7 @@
     "QQQB(STOCK)": [
       "40593",
       null,
-      "QQQB (Derivatives)",
+      "Invesco QQQ Trust Tokenized bStocks",
       "QQQB",
       "STOCK"
     ],
@@ -6677,7 +6682,7 @@
     "RDDTB(STOCK)": [
       "42302",
       null,
-      "RDDTB (Derivatives)",
+      "Reddit Tokenized bStocks",
       "RDDTB",
       "STOCK"
     ],
@@ -6691,7 +6696,7 @@
     "RDW(STOCK)": [
       "40706",
       null,
-      "RDW (Derivatives)",
+      "Redwire Tokenized Stock (Robinhood)",
       "RDW",
       "STOCK"
     ],
@@ -6768,7 +6773,7 @@
     "RIVN(STOCK)": [
       "40711",
       null,
-      "RIVN (Derivatives)",
+      "Rivian Automotive Tokenized Stock (Robinhood)",
       "RIVN",
       "STOCK"
     ],
@@ -6782,7 +6787,7 @@
     "RKLB(STOCK)": [
       "40690",
       null,
-      "RKLB (Derivatives)",
+      "Rocket Lab Corporation Tokenized Stock (Robinhood)",
       "RKLB",
       "STOCK"
     ],
@@ -6796,7 +6801,7 @@
     "RKLBB(STOCK)": [
       "40849",
       null,
-      "RKLBB (Derivatives)",
+      "Rocket Lab Tokenized bStocks",
       "RKLBB",
       "STOCK"
     ],
@@ -6876,7 +6881,7 @@
     "RUM(STOCK)": [
       "42373",
       null,
-      "RUM (Derivatives)",
+      "Rum Group Inc (Derivatives)",
       "RUM",
       "STOCK"
     ],
@@ -6953,14 +6958,21 @@
     "SAMSUNGEM(STOCK)": [
       "41779",
       null,
-      "SAMSUNGEM (Derivatives)",
+      "Samsung Electro-Mechanics Co Ltd (Derivatives)",
       "SAMSUNGEM",
       "STOCK"
     ],
     "SANC": [
-      "42589",
-      "-",
-      "Banco Santander, S.A. Tokenized Stock (Coinbase)",
+      "32299",
+      "SOL",
+      "Sanctum",
+      "CLOUD",
+      "TOKEN"
+    ],
+    "SANC(Sanctum)": [
+      "32299",
+      "SOL",
+      "Sanctum",
       "SANC",
       "COIN"
     ],
@@ -7024,7 +7036,7 @@
     "SECZ(STOCK)": [
       "42381",
       null,
-      "SECZ (Derivatives)",
+      "Securitize Corp (Derivatives)",
       "SECZ",
       "STOCK"
     ],
@@ -7038,7 +7050,7 @@
     "SECZB(STOCK)": [
       "42417",
       null,
-      "SECZB (Derivatives)",
+      "Securitize Tokenized bStocks",
       "SECZB",
       "STOCK"
     ],
@@ -7073,7 +7085,7 @@
     "SHAZ(STOCK)": [
       "40807",
       null,
-      "SHAZ (Derivatives)",
+      "SharonAI Holdings Inc (Derivatives)",
       "SHAZ",
       "STOCK"
     ],
@@ -7087,7 +7099,7 @@
     "SHAZB(STOCK)": [
       "42389",
       null,
-      "SHAZB (Derivatives)",
+      "SharonAI Tokenized bStocks",
       "SHAZB",
       "STOCK"
     ],
@@ -7143,14 +7155,14 @@
     "SKDD(STOCK)": [
       "41072",
       null,
-      "SKDD (Derivatives)",
+      "GraniteShares 2x Short SK Hynix Daily ETF(Derivatives)",
       "SKDD",
       "STOCK"
     ],
     "SKDDB(STOCK)": [
       "42680",
       null,
-      "SKDDB (Derivatives)",
+      "GraniteShares 2x Short SK Hynix Daily ETF Tokenized bStocks",
       "SKDDB",
       "STOCK"
     ],
@@ -7171,7 +7183,7 @@
     "SKHYB(STOCK)": [
       "40813",
       null,
-      "SKHYB (Derivatives)",
+      "SK Hynix Tokenized bStocks",
       "SKHYB",
       "STOCK"
     ],
@@ -7213,14 +7225,14 @@
     "SKUU(STOCK)": [
       "41071",
       null,
-      "SKUU (Derivatives)",
+      "GraniteShares 2x Long SK Hynix Daily ETF (Derivatives)",
       "SKUU",
       "STOCK"
     ],
     "SKUUB(STOCK)": [
       "42684",
       null,
-      "SKUUB (Derivatives)",
+      "GraniteShares 2x Long SK Hynix Daily ETF Tokenized bStocks",
       "SKUUB",
       "STOCK"
     ],
@@ -7269,7 +7281,7 @@
     "SMCIB(STOCK)": [
       "40966",
       null,
-      "SMCIB (Derivatives)",
+      "Super Micro Computer Tokenized bStocks",
       "SMCIB",
       "STOCK"
     ],
@@ -7290,14 +7302,14 @@
     "SMHB(STOCK)": [
       "40928",
       null,
-      "SMHB (Derivatives)",
+      "VanEck Semiconductor ETF Tokenized bStocks",
       "SMHB",
       "STOCK"
     ],
     "SMR(STOCK)": [
       "42698",
       null,
-      "SMR (Derivatives)",
+      "NuScale Power Corporation Class A (Derivative)",
       "SMR",
       "STOCK"
     ],
@@ -7318,7 +7330,7 @@
     "SNDKB(STOCK)": [
       "40216",
       null,
-      "SNDKB (Derivatives)",
+      "SanDisk Tokenized bStocks",
       "SNDKB",
       "STOCK"
     ],
@@ -7339,7 +7351,7 @@
     "SNPS(STOCK)": [
       "42533",
       null,
-      "SNPS (Derivatives)",
+      "Synopsys Inc (Derivatives)",
       "SNPS",
       "STOCK"
     ],
@@ -7374,7 +7386,7 @@
     "SNXXB(STOCK)": [
       "40880",
       null,
-      "SNXXB (Derivatives)",
+      "Tradr 2X Long SNDK ETF Tokenized bStocks",
       "SNXXB",
       "STOCK"
     ],
@@ -7430,7 +7442,7 @@
     "SONY(STOCK)": [
       "40552",
       null,
-      "SONY (Derivatives)",
+      "Sony Group Corp (Derivatives)",
       "SONY",
       "STOCK"
     ],
@@ -7465,7 +7477,7 @@
     "SOXLB(STOCK)": [
       "40794",
       null,
-      "SOXLB (Derivatives)",
+      "Semicon Bull 3X ETF Tokenized bStocks",
       "SOXLB",
       "STOCK"
     ],
@@ -7486,7 +7498,7 @@
     "SOXSB(STOCK)": [
       "40930",
       null,
-      "SOXSB (Derivatives)",
+      "Direxion Semiconductor Bear 3X ETF Tokenized bStocks",
       "SOXSB",
       "STOCK"
     ],
@@ -7522,7 +7534,7 @@
     "SPCXB(STOCK)": [
       "40217",
       null,
-      "SPCXB (Derivatives)",
+      "SpaceX Tokenized bStocks",
       "SPCXB",
       "STOCK"
     ],
@@ -7571,7 +7583,7 @@
     "SPYB(STOCK)": [
       "40790",
       null,
-      "SPYB (Derivatives)",
+      "State Street SPDR S&P 500 ETF Tokenized bStocks",
       "SPYB",
       "STOCK"
     ],
@@ -7599,7 +7611,7 @@
     "SQQQB(STOCK)": [
       "41962",
       null,
-      "SQQQB (Derivatives)",
+      "ProShares UltraPro Short QQQ Tokenized bStocks",
       "SQQQB",
       "STOCK"
     ],
@@ -7641,7 +7653,7 @@
     "STM(STOCK)": [
       "42678",
       null,
-      "STM (Derivatives)",
+      "STMicroelectronics NV (Derivatives)",
       "STM",
       "STOCK"
     ],
@@ -7662,7 +7674,7 @@
     "STRC(STOCK)": [
       "40557",
       null,
-      "STRC (Derivatives)",
+      "Strategy Variable Rate Perpetual Stretch (Derivatives)",
       "STRC",
       "STOCK"
     ],
@@ -7858,7 +7870,7 @@
     "TENCENT(STOCK)": [
       "39961",
       null,
-      "TENCENT (Derivatives)",
+      "Tencent Holdings Ltd (Derivatives)",
       "TENCENT",
       "STOCK"
     ],
@@ -7936,7 +7948,7 @@
     "TMF(STOCK)": [
       "40911",
       null,
-      "TMF (Derivatives)",
+      "Direxion Daily 20+ Year Treasury Bull 3X Shares (Derivatives)",
       "TMF",
       "STOCK"
     ],
@@ -7999,7 +8011,7 @@
     "TQQQB(STOCK)": [
       "40884",
       null,
-      "TQQQB (Derivatives)",
+      "ProShares UltraPro QQQ Tokenized bStocks",
       "TQQQB",
       "STOCK"
     ],
@@ -8091,7 +8103,7 @@
     "TSLAB(STOCK)": [
       "40214",
       null,
-      "TSLAB (Derivatives)",
+      "Tesla Tokenized bStocks",
       "TSLAB",
       "STOCK"
     ],
@@ -8105,7 +8117,7 @@
     "TSLL(STOCK)": [
       "41944",
       null,
-      "TSLL (Derivatives)",
+      "Direxion Daily TSLA Bull 2X ETF (Derivatives)",
       "TSLL",
       "STOCK"
     ],
@@ -8126,7 +8138,7 @@
     "TSMB(STOCK)": [
       "40846",
       null,
-      "TSMB (Derivatives)",
+      "TSMC Tokenized bStocks",
       "TSMB",
       "STOCK"
     ],
@@ -8147,7 +8159,7 @@
     "TTWO(STOCK)": [
       "40753",
       null,
-      "TTWO (Derivatives)",
+      "Take-Two Interactive Software Tokenized Stock (Robinhood)",
       "TTWO",
       "STOCK"
     ],
@@ -8182,7 +8194,7 @@
     "TWST(STOCK)": [
       "42371",
       null,
-      "TWST (Derivatives)",
+      "Twist Bioscience Corp (Derivatives)",
       "TWST",
       "STOCK"
     ],
@@ -8217,7 +8229,7 @@
     "TZA(STOCK)": [
       "40863",
       null,
-      "TZA (Derivatives)",
+      "Direxion Daily Small Cap Bear 3X ETF (Derivatives)",
       "TZA",
       "STOCK"
     ],
@@ -8252,7 +8264,7 @@
     "UBER(STOCK)": [
       "39997",
       null,
-      "UBER (Derivatives)",
+      "Uber Technologies Inc (Derivatives)",
       "UBER",
       "STOCK"
     ],
@@ -8273,7 +8285,7 @@
     "UNH(STOCK)": [
       "39630",
       null,
-      "UNH (Derivatives)",
+      "UnitedHealth Group (Derivatives)",
       "UNH",
       "STOCK"
     ],
@@ -8294,7 +8306,7 @@
     "UNITREE(STOCK)": [
       "40974",
       null,
-      "UNITREE (Derivatives)",
+      "Yushu Technology Co (Derivatives)",
       "UNITREE",
       "STOCK"
     ],
@@ -8316,7 +8328,7 @@
     "URNM(STOCK)": [
       "39516",
       null,
-      "URNM (Derivatives)",
+      "Sprott Uranium Miners ETF (Derivatives)",
       "URNM",
       "STOCK"
     ],
@@ -8344,7 +8356,7 @@
     "USARB(STOCK)": [
       "40969",
       null,
-      "USARB (Derivatives)",
+      "USA Rare Earth Tokenized bStocks",
       "USARB",
       "STOCK"
     ],
@@ -8358,7 +8370,7 @@
     "USDBRL(STOCK)": [
       "42335",
       null,
-      "USDBRL (Derivatives)",
+      "1 US Dollar (USD) to Brazil Real (BRL) (Derivatives)",
       "USDBRL",
       "STOCK"
     ],
@@ -8386,7 +8398,7 @@
     "USDEX(STOCK)": [
       "20281",
       null,
-      "USDEX (Derivatives)",
+      "USDEX",
       "USDEX",
       "STOCK"
     ],
@@ -8442,7 +8454,7 @@
     "UVXY(STOCK)": [
       "40229",
       null,
-      "UVXY (Derivatives)",
+      "ProShares Ultra VIX Short-Term Futures ETF (Derivatives)",
       "UVXY",
       "STOCK"
     ],
@@ -8456,7 +8468,7 @@
     "UVXYB(STOCK)": [
       "42537",
       null,
-      "UVXYB (Derivatives)",
+      "ProShares Ultra VIX Short-Term Futures ETF  Tokenized bStocks",
       "UVXYB",
       "STOCK"
     ],
@@ -8520,7 +8532,7 @@
     "VKTX(STOCK)": [
       "42405",
       null,
-      "VKTX (Derivatives)",
+      "Viking Therapeutics Inc (Derivatives)",
       "VKTX",
       "STOCK"
     ],
@@ -8647,7 +8659,7 @@
     "WDCB(STOCK)": [
       "40796",
       null,
-      "WDCB (Derivatives)",
+      "Western Digital Tokenized bStocks",
       "WDCB",
       "STOCK"
     ],
@@ -8824,7 +8836,7 @@
     "XLE(STOCK)": [
       "39943",
       null,
-      "XLE (Derivatives)",
+      "State Street Energy Select Sector SPDR ETF (Derivatives)",
       "XLE",
       "STOCK"
     ],
@@ -8866,14 +8878,14 @@
     "XOM(STOCK)": [
       "40741",
       null,
-      "XOM (Derivatives)",
+      "Exxon Mobil Tokenized Stock (Robinhood)",
       "XOM",
       "STOCK"
     ],
     "XPD(STOCK)": [
       "39481",
       null,
-      "XPD (Derivatives)",
+      "Palladium (Derivatives)",
       "XPD",
       "STOCK"
     ],
@@ -8894,7 +8906,7 @@
     "XPT(STOCK)": [
       "39460",
       null,
-      "XPT (Derivatives)",
+      "Platinum (Derivatives)",
       "XPT",
       "STOCK"
     ],
@@ -8979,7 +8991,7 @@
     "ZCSH(STOCK)": [
       "42530",
       null,
-      "ZCSH (Derivatives)",
+      "Zcash ETF (Derivatives)",
       "ZCSH",
       "STOCK"
     ],
@@ -9036,7 +9048,7 @@
     "ZHIPU(STOCK)": [
       "40543",
       null,
-      "ZHIPU (Derivatives)",
+      "Knowledge Atlas Technology JSC Ltd (Derivatives)",
       "ZHIPU",
       "STOCK"
     ],
@@ -9050,7 +9062,7 @@
     "ZHONGJI(STOCK)": [
       "41778",
       null,
-      "ZHONGJI (Derivatives)",
+      "ZhongJi Innolight Co., Ltd. (Derivatives)",
       "ZHONGJI",
       "STOCK"
     ],
@@ -9106,7 +9118,7 @@
     "ZMB(STOCK)": [
       "42388",
       null,
-      "ZMB (Derivatives)",
+      "Zoom Tokenized bStocks",
       "ZMB",
       "STOCK"
     ],

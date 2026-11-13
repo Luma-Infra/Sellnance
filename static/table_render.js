@@ -99,6 +99,13 @@ export function renderTable(isRealtime = false) {
   const filteredData = getFilteredData();
   const totalCount = filteredData.length;
 
+  const now = Date.now();
+  const outerSortInterval =
+    (CONFIG.TABLE_PERF && CONFIG.TABLE_PERF.SORT_INTERVAL_OUTER_MS) || 5000;
+  const isOuterSortDue =
+    !store._lastOuterSortTime ||
+    now - store._lastOuterSortTime >= outerSortInterval;
+
   // [사건 X] 필터링, 정렬, 검색, 탭전환 등 화면 구성 변화 시 반드시 상위 코인(최대 35개)을 visibleSymbols 및 baselineVisibleSymbols에 등록하여 실시간 구독 유지
   if (!isRealtime) {
     store.visibleSymbols.clear();
@@ -476,14 +483,7 @@ export function renderTable(isRealtime = false) {
           store._sandboxVisibleDoms.push(rowEl);
         }
         const oldIndex = parseInt(rowEl.dataset.index);
-        // 실시간 정렬 시 30위 이하(31등~) 코인은 설정된 SORT_INTERVAL_OUTER_MS(기본: 5초) 주기로만 위치를 변경하여 ux 피로도 감소
-        const now = Date.now();
-        const outerSortInterval =
-          (CONFIG.TABLE_PERF && CONFIG.TABLE_PERF.SORT_INTERVAL_OUTER_MS) ||
-          5000;
-        const isOuterSortDue =
-          !store._lastOuterSortTime ||
-          now - store._lastOuterSortTime >= outerSortInterval;
+        // 실시간 정렬 시 30위 이하(31등~) 코인은 설정된 SORT_INTERVAL_OUTER_MS(기본: 5초) 주기로만 위치를 변경하여 ux 피로 감소
 
         let needsPositionUpdate =
           !isRealtime ||

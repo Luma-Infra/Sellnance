@@ -114,11 +114,13 @@ export function restoreSavedUserSettings() {
       store.isSidebarOpen = false;
       const leftPanel = document.getElementById("left-panel");
       if (leftPanel) {
-        leftPanel.classList.remove("md:flex");
-        leftPanel.classList.add("md:hidden");
+        leftPanel.classList.add("sidebar-collapsed", "hidden");
+        leftPanel.style.setProperty("display", "none", "important");
       }
       const toggleText = document.getElementById("sidebar-toggle-text");
       if (toggleText) toggleText.innerText = "▶ 펼치기";
+    } else {
+      store.isSidebarOpen = true;
     }
 
     // 3. 차트 헤더 폴딩 상태 복원

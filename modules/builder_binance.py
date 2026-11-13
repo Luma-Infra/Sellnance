@@ -531,9 +531,7 @@ def build_binance_row(
             ticker_info_list[2]
             if len(ticker_info_list) >= 3 and ticker_info_list[2]
             else (
-                f"{raw_symbol} (Derivatives)"
-                if is_stock
-                else (info.get("name", base) if info else base)
+                (info.get("name") if info and info.get("name") else (f"{raw_symbol} (Derivatives)" if is_stock else base))
             )
         )
     )

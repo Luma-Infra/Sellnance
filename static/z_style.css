@@ -160,6 +160,15 @@ html:not(.is-touch-device) #left-panel {
   display: flex !important;
 }
 
+html:not(.is-touch-device) #left-panel.sidebar-collapsed,
+#left-panel.sidebar-collapsed {
+  display: none !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+  border: none !important;
+}
+
 html:not(.is-touch-device) #right-panel {
   display: flex !important;
   flex: 1 !important;
@@ -893,15 +902,18 @@ body {
 }
 
 /* [테마 일괄 동기화 스무스 트랜지션] --theme-transition-ms 변수 하나로 전체 속도 제어 */
-html.theme-transitioning {
+/* 와일드카드(*) 전체 탐색을 차단하고 주요 컨테이너에만 적용하여 브라우저 리플로우/스타일 변경 개선 */
+html:not(.start-screen-active).theme-transitioning {
   transition:
     background-color calc(var(--theme-transition-ms) * 1ms) ease,
     color calc(var(--theme-transition-ms) * 1ms) ease !important;
 }
 
-html.theme-transitioning *,
-html.theme-transitioning *::before,
-html.theme-transitioning *::after {
+html:not(.start-screen-active).theme-transitioning body,
+html:not(.start-screen-active).theme-transitioning #main-dashboard-content,
+html:not(.start-screen-active).theme-transitioning #main-global-header,
+html:not(.start-screen-active).theme-transitioning #left-panel,
+html:not(.start-screen-active).theme-transitioning #right-panel {
   transition:
     background-color calc(var(--theme-transition-ms) * 1ms) ease,
     border-color calc(var(--theme-transition-ms) * 1ms) ease,

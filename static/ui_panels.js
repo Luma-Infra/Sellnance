@@ -8,16 +8,17 @@ import { showConfirm } from "./ui_dialog.js";
 export function toggleSidebar() {
   const leftPanel = document.getElementById("left-panel");
   const toggleText = document.getElementById("sidebar-toggle-text");
+  if (!leftPanel) return;
 
   store.isSidebarOpen = !store.isSidebarOpen;
 
   if (store.isSidebarOpen) {
-    leftPanel.classList.remove("md:hidden");
-    leftPanel.classList.add("md:flex");
+    leftPanel.classList.remove("sidebar-collapsed", "hidden", "md:hidden");
+    leftPanel.style.removeProperty("display");
     if (toggleText) toggleText.innerText = "◀ 접기";
   } else {
-    leftPanel.classList.remove("md:flex");
-    leftPanel.classList.add("md:hidden");
+    leftPanel.classList.add("sidebar-collapsed", "hidden");
+    leftPanel.style.setProperty("display", "none", "important");
     if (toggleText) toggleText.innerText = "▶ 펼치기";
   }
 
@@ -25,6 +26,8 @@ export function toggleSidebar() {
     "sellnance_sidebar_collapsed",
     (!store.isSidebarOpen).toString(),
   );
+
+  window.dispatchEvent(new Event("resize"));
 
   if (typeof window.syncQuickViewNeonSize === "function") {
     requestAnimationFrame(() => window.syncQuickViewNeonSize());

@@ -146,7 +146,7 @@ function getStartScreenHTML() {
         </div>
 
         <!-- [우측]: CMC 로그인 & 메인 대시보드 진입 패널 -->
-        <div class="w-full md:w-[42%] max-w-md flex flex-col justify-center my-auto -translate-y-5 sm:-translate-y-8 md:translate-y-0 md:my-0 relative z-50 pointer-events-auto">
+        <div class="w-full md:w-[42%] max-w-md flex flex-col justify-center my-auto -translate-y-6 sm:-translate-y-10 md:-translate-y-4 relative z-50 pointer-events-auto">
           <div class="start-main-card relative z-50 pointer-events-auto p-4 sm:p-6 md:p-8 w-full flex flex-col gap-3.5 md:gap-5 text-center">
             <!-- 우측 상단 다크/라이트 모드 토글 버튼 -->
             <button
@@ -158,9 +158,17 @@ function getStartScreenHTML() {
             >
               ${document.documentElement.classList.contains("theme-upbit") || document.body?.classList.contains("theme-upbit") || localStorage.getItem("sellnance_theme") === "upbit" ? "☀️" : "🌙"}
             </button>
-            <div>
-              <h1 class="text-2xl md:text-4xl font-extrabold text-theme-accent uppercase tracking-widest mb-1">
-                SELLNANCE
+            <div class="flex flex-col items-center justify-center pt-1">
+              <h1
+                id="start-screen-title"
+                class="flex items-center justify-center select-none mb-1.5"
+              >
+                <img
+                  id="start-brand-logo-img"
+                  src="${document.documentElement.classList.contains("theme-upbit") || document.body?.classList.contains("theme-upbit") || localStorage.getItem("sellnance_theme") === "upbit" ? "/static/sellnance_logo_light_tight.png" : "/static/sellnance_logo_dark_tight.png"}"
+                  class="h-11 sm:h-12 md:h-14 lg:h-16 w-auto max-w-[280px] sm:max-w-[320px] object-contain transition-transform duration-300 ease-out hover:scale-105 my-1"
+                  alt="Sellnance"
+                />
               </h1>
               <p class="text-theme-text opacity-70 text-xs md:text-sm font-medium tracking-wide">
                 Enter CMC API Key to initialize dashboard
@@ -304,7 +312,7 @@ let startQvOverlapCharts = [];
 let startQvOverlapSeries = [];
 let startQvWs = null;
 let startQvTimer = null;
-let startQvCurrentTF = "15m";
+let startQvCurrentTF = START_SHOWCASE_STATES[0]?.tf || "4h";
 let startQvCandleMode = "unique";
 let startShowcaseStep = 0;
 
@@ -354,7 +362,7 @@ async function initStartQuickViewPreview() {
       <div class="start-qv-badge flex items-center gap-1.5">
         <img src="${asset.icon}" class="w-3.5 h-3.5 rounded-full object-cover shadow-sm flex-shrink-0" alt="${asset.ticker}" />
         <span class="text-xs font-bold" style="color: ${asset.color}">${asset.ticker}</span>
-        <span id="start-qv-spread-tf-${idx}" class="text-[9px] px-1 py-0.2 font-mono font-bold rounded bg-theme-accent/20 border border-theme-accent/40 text-theme-accent">15M</span>
+        <span id="start-qv-spread-tf-${idx}" class="text-[9px] px-1 py-0.2 font-mono font-bold rounded bg-theme-accent/20 border border-theme-accent/40 text-theme-accent">${startQvCurrentTF.toUpperCase()}</span>
         <span id="start-qv-spread-price-${idx}" class="text-[10px] text-white/80 font-medium ml-1">Loading...</span>
       </div>
       <div class="start-qv-canvas" id="start-qv-spread-canvas-${idx}"></div>
@@ -414,7 +422,7 @@ async function initStartQuickViewPreview() {
     </svg>
     <div class="start-qv-overlap-legend">
       <span class="text-[10px] uppercase tracking-wider text-theme-accent font-bold">OVERLAP</span>
-      <span id="start-qv-overlap-tf" class="text-[9px] px-1.5 py-0.2 font-mono font-bold rounded bg-theme-accent/20 border border-theme-accent/40 text-theme-accent">15M</span>
+      <span id="start-qv-overlap-tf" class="text-[9px] px-1.5 py-0.2 font-mono font-bold rounded bg-theme-accent/20 border border-theme-accent/40 text-theme-accent">${startQvCurrentTF.toUpperCase()}</span>
       <div class="flex items-center gap-2 ml-2">
         ${START_ASSETS.map(
           (a, i) => `
@@ -495,10 +503,10 @@ async function initStartQuickViewPreview() {
     startQvOverlapSeries.push(series);
   });
 
-  // 바이낸스 데이터 백그라운드 비동기 로드
-  loadStartPreviewKlines(startQvCurrentTF);
+  // 1. 바이낸스 과거 캔들 데이터 먼저 완전히 로드 및 렌더링
+  await loadStartPreviewKlines(startQvCurrentTF);
 
-  // 바이낸스 실시간 멀티 웹소켓 가동
+  // 2. 캔들 데이터가 차트에 안착한 후 실시간 웹소켓 (Race Condition 차단)
   startStartPreviewWebSocket(startQvCurrentTF);
 
   // cycleIntervalMs 주기 4-State 크로스페이드 루프 및 프로그레스 바 정밀 동기화 가동
@@ -549,6 +557,7 @@ function setStartOverlapFocus(focusIdx) {
 
 // 과거 봉 데이터 로드
 async function loadStartPreviewKlines(tf) {
+  const requestTF = tf;
   const promises = START_ASSETS.map(async (asset, idx) => {
     try {
       const canSend = await binanceBrowserLimiter.acquireWeight(2, 1200);
@@ -561,6 +570,8 @@ async function loadStartPreviewKlines(tf) {
           const usedWeight = res.headers.get("x-mbx-used-weight-1m");
           if (usedWeight) binanceBrowserLimiter.syncUsedWeight(usedWeight);
           const data = await res.json();
+          // 응답 도착 시점에 이미 다른 TF로 전환되었으면 반환
+          if (requestTF !== startQvCurrentTF) return;
           if (Array.isArray(data)) {
             const candles = data.map((d) => ({
               time: Math.floor(d[0] / 1000),
@@ -570,30 +581,34 @@ async function loadStartPreviewKlines(tf) {
               close: parseFloat(d[4]),
             }));
 
-        if (startQvSpreadSeries[idx]) {
-          startQvSpreadSeries[idx].setData(candles);
-          if (startQvSpreadCharts[idx]) {
-            startQvSpreadCharts[idx].timeScale().fitContent();
-            startQvSpreadCharts[idx]
-              .timeScale()
-              .applyOptions({ rightOffset: 1 });
-          }
-        }
+            if (startQvSpreadSeries[idx]) {
+              startQvSpreadSeries[idx].setData(candles);
+              if (startQvSpreadCharts[idx]) {
+                startQvSpreadCharts[idx].timeScale().fitContent();
+                startQvSpreadCharts[idx]
+                  .timeScale()
+                  .applyOptions({ rightOffset: 1 });
+              }
+            }
 
-        if (startQvOverlapSeries[idx]) {
-          startQvOverlapSeries[idx].setData(candles);
-          if (startQvOverlapCharts[idx]) {
-            startQvOverlapCharts[idx].timeScale().fitContent();
-            startQvOverlapCharts[idx]
-              .timeScale()
-              .applyOptions({ rightOffset: 1 });
-          }
-        }
+            if (startQvOverlapSeries[idx]) {
+              startQvOverlapSeries[idx].setData(candles);
+              if (startQvOverlapCharts[idx]) {
+                startQvOverlapCharts[idx].timeScale().fitContent();
+                startQvOverlapCharts[idx]
+                  .timeScale()
+                  .applyOptions({ rightOffset: 1 });
+              }
+            }
 
             const lastPrice = candles[candles.length - 1]?.close;
             if (lastPrice) {
-              const spEl = document.getElementById(`start-qv-spread-price-${idx}`);
-              const ovEl = document.getElementById(`start-qv-overlap-price-${idx}`);
+              const spEl = document.getElementById(
+                `start-qv-spread-price-${idx}`,
+              );
+              const ovEl = document.getElementById(
+                `start-qv-overlap-price-${idx}`,
+              );
               if (spEl) spEl.innerText = `$${lastPrice.toLocaleString()}`;
               if (ovEl) ovEl.innerText = `$${lastPrice.toLocaleString()}`;
             }
@@ -682,6 +697,9 @@ function startStartPreviewWebSocket(tf) {
         if (!res.data || !res.data.k) return;
         const k = res.data.k;
         const symbol = res.data.s;
+
+        // 현재 활성화된 타임프레임(k.i)의 틱만 수신 (이전 TF 잔여 틱에 의한 캔들 튀는 현상 방지)
+        if (!k || k.i !== startQvCurrentTF) return;
 
         // 캔버스/시세 갱신
         const now = Date.now();
@@ -1243,6 +1261,11 @@ function hideStartScreen() {
     window.restoreControlPanelUI();
   }
 
+  // 시작 화면에서 테마를 변경했을 수 있으므로 대시보드 복귀 시 차트 테마 1회 동기화
+  if (store.isEngineStarted && typeof window.updateChartTheme === "function") {
+    window.updateChartTheme();
+  }
+
   // 대시보드로 돌아갈 때 현재 선택된 코인(currentSelectedSymbol)으로 주소창 복원
   if (
     store.isEngineStarted &&
@@ -1362,6 +1385,9 @@ export async function showStartScreen() {
   // 2. 차트 인스턴스가 사라진 상태라면 다시 초기화
   if (!startQvSpreadCharts || startQvSpreadCharts.length === 0) {
     await initStartQuickViewPreview();
+  } else {
+    // 이미 차트가 있다면 TF 웹소켓 시작
+    startStartPreviewWebSocket(startQvCurrentTF);
   }
 
   // 3. 1단계 상태(Spread 4분할, 4시간봉, 고유 네온 컬러) 복원 적용

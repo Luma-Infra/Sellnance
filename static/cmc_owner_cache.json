@@ -2326,7 +2326,7 @@
       "name": "MOODENG (moodengbnb.com)",
       "market_cap": 4681.890897089633,
       "fdv": 8038.16,
-      "cmc_price": 1.4468688779802783e-8,
+      "cmc_price": 1.4468688779802783e-08,
       "volume_24h": 0,
       "ucid": "33712",
       "chain_symbol": "BNB"
@@ -2335,7 +2335,7 @@
       "name": "MOODENG (moodengbnb.com)",
       "market_cap": 4681.890897089633,
       "fdv": 8038.16,
-      "cmc_price": 1.4468688779802783e-8,
+      "cmc_price": 1.4468688779802783e-08,
       "volume_24h": 0,
       "ucid": "33712",
       "chain_symbol": "BNB"
@@ -2344,7 +2344,7 @@
       "name": "MOODENG (moodengbnb.com)",
       "market_cap": 4681.890897089633,
       "fdv": 8038.16,
-      "cmc_price": 1.4468688779802783e-8,
+      "cmc_price": 1.4468688779802783e-08,
       "volume_24h": 0,
       "ucid": "33712",
       "chain_symbol": "BNB"
@@ -4027,7 +4027,7 @@
       "name": "AINFT",
       "market_cap": 206671054.0820351,
       "fdv": 208734289.39,
-      "cmc_price": 2.0873637675290838e-7,
+      "cmc_price": 2.0873637675290838e-07,
       "volume_24h": 20069804.84878601,
       "ucid": "9816",
       "chain_symbol": "ETH"
@@ -4036,7 +4036,7 @@
       "name": "AINFT",
       "market_cap": 206671054.0820351,
       "fdv": 208734289.39,
-      "cmc_price": 2.0873637675290838e-7,
+      "cmc_price": 2.0873637675290838e-07,
       "volume_24h": 20069804.84878601,
       "ucid": "9816",
       "chain_symbol": "ETH"
@@ -4045,7 +4045,7 @@
       "name": "AINFT",
       "market_cap": 206671054.0820351,
       "fdv": 208734289.39,
-      "cmc_price": 2.0873637675290838e-7,
+      "cmc_price": 2.0873637675290838e-07,
       "volume_24h": 20069804.84878601,
       "ucid": "9816",
       "chain_symbol": "ETH"
@@ -4576,7 +4576,7 @@
       "name": "SATS (Ordinals)",
       "market_cap": 17633558.580779485,
       "fdv": 17633558.58,
-      "cmc_price": 8.39693265751404e-9,
+      "cmc_price": 8.39693265751404e-09,
       "volume_24h": 1206583.6715213163,
       "ucid": "28194",
       "chain_symbol": "BTC"
@@ -4585,7 +4585,7 @@
       "name": "SATS (Ordinals)",
       "market_cap": 17633558.580779485,
       "fdv": 17633558.58,
-      "cmc_price": 8.39693265751404e-9,
+      "cmc_price": 8.39693265751404e-09,
       "volume_24h": 1206583.6715213163,
       "ucid": "28194",
       "chain_symbol": "BTC"
@@ -4594,7 +4594,7 @@
       "name": "SATS (Ordinals)",
       "market_cap": 17633558.580779485,
       "fdv": 17633558.58,
-      "cmc_price": 8.39693265751404e-9,
+      "cmc_price": 8.39693265751404e-09,
       "volume_24h": 1206583.6715213163,
       "ucid": "28194",
       "chain_symbol": "BTC"
@@ -4738,7 +4738,7 @@
       "name": "DOGS",
       "market_cap": 16026474.432682145,
       "fdv": 17057689.28,
-      "cmc_price": 0.000031013980518011,
+      "cmc_price": 3.1013980518011e-05,
       "volume_24h": 2925960.4966239408,
       "ucid": "32698",
       "chain_symbol": "GRAM"
@@ -4747,7 +4747,7 @@
       "name": "DOGS",
       "market_cap": 16026474.432682145,
       "fdv": 17057689.28,
-      "cmc_price": 0.000031013980518011,
+      "cmc_price": 3.1013980518011e-05,
       "volume_24h": 2925960.4966239408,
       "ucid": "32698",
       "chain_symbol": "GRAM"
@@ -4756,7 +4756,7 @@
       "name": "DOGS",
       "market_cap": 16026474.432682145,
       "fdv": 17057689.28,
-      "cmc_price": 0.000031013980518011,
+      "cmc_price": 3.1013980518011e-05,
       "volume_24h": 2925960.4966239408,
       "ucid": "32698",
       "chain_symbol": "GRAM"
@@ -4981,7 +4981,7 @@
       "name": "Terra Classic",
       "market_cap": 205063529.63359943,
       "fdv": 239299458.1,
-      "cmc_price": 0.000037138165041591,
+      "cmc_price": 3.7138165041591e-05,
       "volume_24h": 7984688.4425213365,
       "ucid": "4172",
       "chain_symbol": "LUNC"
@@ -4990,7 +4990,7 @@
       "name": "Terra Classic",
       "market_cap": 205063529.63359943,
       "fdv": 239299458.1,
-      "cmc_price": 0.000037138165041591,
+      "cmc_price": 3.7138165041591e-05,
       "volume_24h": 7984688.4425213365,
       "ucid": "4172",
       "chain_symbol": "LUNC"
@@ -4999,7 +4999,7 @@
       "name": "Terra Classic",
       "market_cap": 205063529.63359943,
       "fdv": 239299458.1,
-      "cmc_price": 0.000037138165041591,
+      "cmc_price": 3.7138165041591e-05,
       "volume_24h": 7984688.4425213365,
       "ucid": "4172",
       "chain_symbol": "LUNC"
@@ -5872,7 +5872,7 @@
       "name": "Mog Coin",
       "market_cap": 33009170.075837094,
       "fdv": 35554998.35,
-      "cmc_price": 8.451591041704627e-8,
+      "cmc_price": 8.451591041704627e-08,
       "volume_24h": 5789687.503061344,
       "ucid": "27659",
       "chain_symbol": "ETH"
@@ -5881,7 +5881,7 @@
       "name": "Mog Coin",
       "market_cap": 33009170.075837094,
       "fdv": 35554998.35,
-      "cmc_price": 8.451591041704627e-8,
+      "cmc_price": 8.451591041704627e-08,
       "volume_24h": 5789687.503061344,
       "ucid": "27659",
       "chain_symbol": "ETH"
@@ -5890,7 +5890,7 @@
       "name": "Mog Coin",
       "market_cap": 33009170.075837094,
       "fdv": 35554998.35,
-      "cmc_price": 8.451591041704627e-8,
+      "cmc_price": 8.451591041704627e-08,
       "volume_24h": 5789687.503061344,
       "ucid": "27659",
       "chain_symbol": "ETH"
@@ -6601,7 +6601,7 @@
       "name": "Spell Token",
       "market_cap": 13423500.44893291,
       "fdv": 13476281.76,
-      "cmc_price": 0.000068753473876151,
+      "cmc_price": 6.8753473876151e-05,
       "volume_24h": 719119.3498229345,
       "ucid": "11289",
       "chain_symbol": "ETH"
@@ -6610,7 +6610,7 @@
       "name": "Spell Token",
       "market_cap": 13423500.44893291,
       "fdv": 13476281.76,
-      "cmc_price": 0.000068753473876151,
+      "cmc_price": 6.8753473876151e-05,
       "volume_24h": 719119.3498229345,
       "ucid": "11289",
       "chain_symbol": "ETH"
@@ -6619,7 +6619,7 @@
       "name": "Spell Token",
       "market_cap": 13423500.44893291,
       "fdv": 13476281.76,
-      "cmc_price": 0.000068753473876151,
+      "cmc_price": 6.8753473876151e-05,
       "volume_24h": 719119.3498229345,
       "ucid": "11289",
       "chain_symbol": "ETH"
@@ -7546,7 +7546,7 @@
       "name": "Cheems (cheems.pet)",
       "market_cap": 66181992.98161642,
       "fdv": 71892476.66,
-      "cmc_price": 3.529799765678938e-7,
+      "cmc_price": 3.529799765678938e-07,
       "volume_24h": 1181391.851056351,
       "ucid": "33280",
       "chain_symbol": "BNB"
@@ -7555,7 +7555,7 @@
       "name": "Cheems (cheems.pet)",
       "market_cap": 66181992.98161642,
       "fdv": 71892476.66,
-      "cmc_price": 3.529799765678938e-7,
+      "cmc_price": 3.529799765678938e-07,
       "volume_24h": 1181391.851056351,
       "ucid": "33280",
       "chain_symbol": "BNB"
@@ -7564,7 +7564,7 @@
       "name": "Cheems (cheems.pet)",
       "market_cap": 66181992.98161642,
       "fdv": 71892476.66,
-      "cmc_price": 3.529799765678938e-7,
+      "cmc_price": 3.529799765678938e-07,
       "volume_24h": 1181391.851056351,
       "ucid": "33280",
       "chain_symbol": "BNB"
@@ -8464,7 +8464,7 @@
       "name": "Venus Reward Token",
       "market_cap": 78570.87501850801,
       "fdv": 107142.19,
-      "cmc_price": 3.571406481342e-6,
+      "cmc_price": 3.571406481342e-06,
       "volume_24h": 0,
       "ucid": "9691",
       "chain_symbol": "BNB"
@@ -8473,7 +8473,7 @@
       "name": "Venus Reward Token",
       "market_cap": 78570.87501850801,
       "fdv": 107142.19,
-      "cmc_price": 3.571406481342e-6,
+      "cmc_price": 3.571406481342e-06,
       "volume_24h": 0,
       "ucid": "9691",
       "chain_symbol": "BNB"
@@ -8482,7 +8482,7 @@
       "name": "Venus Reward Token",
       "market_cap": 78570.87501850801,
       "fdv": 107142.19,
-      "cmc_price": 3.571406481342e-6,
+      "cmc_price": 3.571406481342e-06,
       "volume_24h": 0,
       "ucid": "9691",
       "chain_symbol": "BNB"
@@ -8624,28 +8624,28 @@
     },
     "36775": {
       "name": "MEET48",
-      "market_cap": 25103587.064752184,
-      "fdv": 115154069.1,
-      "cmc_price": 0.02399043106340996,
-      "volume_24h": 64680971.520608775,
+      "market_cap": 25642030.555501208,
+      "fdv": 117623993.37,
+      "cmc_price": 0.024504998619553905,
+      "volume_24h": 59747090.963049576,
       "ucid": "36775",
       "chain_symbol": "BNB"
     },
     "IDOL_COIN": {
       "name": "MEET48",
-      "market_cap": 25103587.064752184,
-      "fdv": 115154069.1,
-      "cmc_price": 0.02399043106340996,
-      "volume_24h": 64680971.520608775,
+      "market_cap": 25642030.555501208,
+      "fdv": 117623993.37,
+      "cmc_price": 0.024504998619553905,
+      "volume_24h": 59747090.963049576,
       "ucid": "36775",
       "chain_symbol": "BNB"
     },
     "IDOL": {
       "name": "MEET48",
-      "market_cap": 25103587.064752184,
-      "fdv": 115154069.1,
-      "cmc_price": 0.02399043106340996,
-      "volume_24h": 64680971.520608775,
+      "market_cap": 25642030.555501208,
+      "fdv": 117623993.37,
+      "cmc_price": 0.024504998619553905,
+      "volume_24h": 59747090.963049576,
       "ucid": "36775",
       "chain_symbol": "BNB"
     },
@@ -8959,7 +8959,7 @@
       "name": "SPACEX4200",
       "market_cap": 24543.180620438692,
       "fdv": 24543.18,
-      "cmc_price": 0.000058436144334378,
+      "cmc_price": 5.8436144334378e-05,
       "volume_24h": 0,
       "ucid": "40226",
       "chain_symbol": "ETH"
@@ -8968,7 +8968,7 @@
       "name": "SPACEX4200",
       "market_cap": 24543.180620438692,
       "fdv": 24543.18,
-      "cmc_price": 0.000058436144334378,
+      "cmc_price": 5.8436144334378e-05,
       "volume_24h": 0,
       "ucid": "40226",
       "chain_symbol": "ETH"
@@ -8977,7 +8977,7 @@
       "name": "SPACEX4200",
       "market_cap": 24543.180620438692,
       "fdv": 24543.18,
-      "cmc_price": 0.000058436144334378,
+      "cmc_price": 5.8436144334378e-05,
       "volume_24h": 0,
       "ucid": "40226",
       "chain_symbol": "ETH"
@@ -10498,7 +10498,7 @@
       "name": "FLOKI",
       "market_cap": 189297203.4272416,
       "fdv": 198748029.67,
-      "cmc_price": 0.000019874802966606,
+      "cmc_price": 1.9874802966606e-05,
       "volume_24h": 23342195.48401236,
       "ucid": "10804",
       "chain_symbol": "ETH"
@@ -10507,7 +10507,7 @@
       "name": "FLOKI",
       "market_cap": 189297203.4272416,
       "fdv": 198748029.67,
-      "cmc_price": 0.000019874802966606,
+      "cmc_price": 1.9874802966606e-05,
       "volume_24h": 23342195.48401236,
       "ucid": "10804",
       "chain_symbol": "ETH"
@@ -10516,7 +10516,7 @@
       "name": "FLOKI",
       "market_cap": 189297203.4272416,
       "fdv": 198748029.67,
-      "cmc_price": 0.000019874802966606,
+      "cmc_price": 1.9874802966606e-05,
       "volume_24h": 23342195.48401236,
       "ucid": "10804",
       "chain_symbol": "ETH"
@@ -11281,7 +11281,7 @@
       "name": "Bonk",
       "market_cap": 236012668.4430079,
       "fdv": 238367953.36,
-      "cmc_price": 2.68213599301e-6,
+      "cmc_price": 2.68213599301e-06,
       "volume_24h": 33200968.333988532,
       "ucid": "23095",
       "chain_symbol": "SOL"
@@ -11290,7 +11290,7 @@
       "name": "Bonk",
       "market_cap": 236012668.4430079,
       "fdv": 238367953.36,
-      "cmc_price": 2.68213599301e-6,
+      "cmc_price": 2.68213599301e-06,
       "volume_24h": 33200968.333988532,
       "ucid": "23095",
       "chain_symbol": "SOL"
@@ -11299,7 +11299,7 @@
       "name": "Bonk",
       "market_cap": 236012668.4430079,
       "fdv": 238367953.36,
-      "cmc_price": 2.68213599301e-6,
+      "cmc_price": 2.68213599301e-06,
       "volume_24h": 33200968.333988532,
       "ucid": "23095",
       "chain_symbol": "SOL"
@@ -12847,7 +12847,7 @@
       "name": "BitTorrent [New]",
       "market_cap": 310085237.08094674,
       "fdv": 317981365.01,
-      "cmc_price": 3.211932979855388e-7,
+      "cmc_price": 3.211932979855388e-07,
       "volume_24h": 29048044.549207896,
       "ucid": "16086",
       "chain_symbol": "TRX"
@@ -12856,7 +12856,7 @@
       "name": "BitTorrent [New]",
       "market_cap": 310085237.08094674,
       "fdv": 317981365.01,
-      "cmc_price": 3.211932979855388e-7,
+      "cmc_price": 3.211932979855388e-07,
       "volume_24h": 29048044.549207896,
       "ucid": "16086",
       "chain_symbol": "TRX"
@@ -12865,7 +12865,7 @@
       "name": "BitTorrent [New]",
       "market_cap": 310085237.08094674,
       "fdv": 317981365.01,
-      "cmc_price": 3.211932979855388e-7,
+      "cmc_price": 3.211932979855388e-07,
       "volume_24h": 29048044.549207896,
       "ucid": "16086",
       "chain_symbol": "TRX"
@@ -13684,7 +13684,7 @@
       "name": "Neiro",
       "market_cap": 23353355.946317483,
       "fdv": 23353673.5,
-      "cmc_price": 0.000055512784948667,
+      "cmc_price": 5.5512784948667e-05,
       "volume_24h": 4063831.714700185,
       "ucid": "32521",
       "chain_symbol": "ETH"
@@ -13693,7 +13693,7 @@
       "name": "Neiro",
       "market_cap": 23353355.946317483,
       "fdv": 23353673.5,
-      "cmc_price": 0.000055512784948667,
+      "cmc_price": 5.5512784948667e-05,
       "volume_24h": 4063831.714700185,
       "ucid": "32521",
       "chain_symbol": "ETH"
@@ -13702,7 +13702,7 @@
       "name": "Neiro",
       "market_cap": 23353355.946317483,
       "fdv": 23353673.5,
-      "cmc_price": 0.000055512784948667,
+      "cmc_price": 5.5512784948667e-05,
       "volume_24h": 4063831.714700185,
       "ucid": "32521",
       "chain_symbol": "ETH"
@@ -13981,7 +13981,7 @@
       "name": "Shiba Inu",
       "market_cap": 2513116584.9872227,
       "fdv": 2514458287.76,
-      "cmc_price": 4.265027210738e-6,
+      "cmc_price": 4.265027210738e-06,
       "volume_24h": 61929980.039030306,
       "ucid": "5994",
       "chain_symbol": "ETH"
@@ -13990,7 +13990,7 @@
       "name": "Shiba Inu",
       "market_cap": 2513116584.9872227,
       "fdv": 2514458287.76,
-      "cmc_price": 4.265027210738e-6,
+      "cmc_price": 4.265027210738e-06,
       "volume_24h": 61929980.039030306,
       "ucid": "5994",
       "chain_symbol": "ETH"
@@ -13999,7 +13999,7 @@
       "name": "Shiba Inu",
       "market_cap": 2513116584.9872227,
       "fdv": 2514458287.76,
-      "cmc_price": 4.265027210738e-6,
+      "cmc_price": 4.265027210738e-06,
       "volume_24h": 61929980.039030306,
       "ucid": "5994",
       "chain_symbol": "ETH"
@@ -14440,7 +14440,7 @@
       "name": "TrumpCoin",
       "market_cap": 94296.92481328727,
       "fdv": 94296.93,
-      "cmc_price": 9.4296925916e-6,
+      "cmc_price": 9.4296925916e-06,
       "volume_24h": 0,
       "ucid": "31891",
       "chain_symbol": "SOL"
@@ -14449,7 +14449,7 @@
       "name": "TrumpCoin",
       "market_cap": 94296.92481328727,
       "fdv": 94296.93,
-      "cmc_price": 9.4296925916e-6,
+      "cmc_price": 9.4296925916e-06,
       "volume_24h": 0,
       "ucid": "31891",
       "chain_symbol": "SOL"
@@ -14458,7 +14458,7 @@
       "name": "TrumpCoin",
       "market_cap": 94296.92481328727,
       "fdv": 94296.93,
-      "cmc_price": 9.4296925916e-6,
+      "cmc_price": 9.4296925916e-06,
       "volume_24h": 0,
       "ucid": "31891",
       "chain_symbol": "SOL"
@@ -15169,7 +15169,7 @@
       "name": "WINkLink",
       "market_cap": 59822126.940853275,
       "fdv": 59822127.25,
-      "cmc_price": 0.00006020128340383,
+      "cmc_price": 6.020128340383e-05,
       "volume_24h": 18230046.466655493,
       "ucid": "4206",
       "chain_symbol": "BNB"
@@ -15178,7 +15178,7 @@
       "name": "WINkLink",
       "market_cap": 59822126.940853275,
       "fdv": 59822127.25,
-      "cmc_price": 0.00006020128340383,
+      "cmc_price": 6.020128340383e-05,
       "volume_24h": 18230046.466655493,
       "ucid": "4206",
       "chain_symbol": "BNB"
@@ -15187,7 +15187,7 @@
       "name": "WINkLink",
       "market_cap": 59822126.940853275,
       "fdv": 59822127.25,
-      "cmc_price": 0.00006020128340383,
+      "cmc_price": 6.020128340383e-05,
       "volume_24h": 18230046.466655493,
       "ucid": "4206",
       "chain_symbol": "BNB"
@@ -16204,7 +16204,7 @@
       "name": "Blynex",
       "market_cap": 406408.7306751092,
       "fdv": 10427927.94,
-      "cmc_price": 0.000010427927941376,
+      "cmc_price": 1.0427927941376e-05,
       "volume_24h": 728135.9408050376,
       "ucid": "33691",
       "chain_symbol": "BNB"
@@ -16213,7 +16213,7 @@
       "name": "Blynex",
       "market_cap": 406408.7306751092,
       "fdv": 10427927.94,
-      "cmc_price": 0.000010427927941376,
+      "cmc_price": 1.0427927941376e-05,
       "volume_24h": 728135.9408050376,
       "ucid": "33691",
       "chain_symbol": "BNB"
@@ -16222,7 +16222,7 @@
       "name": "Blynex",
       "market_cap": 406408.7306751092,
       "fdv": 10427927.94,
-      "cmc_price": 0.000010427927941376,
+      "cmc_price": 1.0427927941376e-05,
       "volume_24h": 728135.9408050376,
       "ucid": "33691",
       "chain_symbol": "BNB"
@@ -17149,7 +17149,7 @@
       "name": "eCash",
       "market_cap": 113343891.79782309,
       "fdv": 118358275.86,
-      "cmc_price": 5.636108374165e-6,
+      "cmc_price": 5.636108374165e-06,
       "volume_24h": 3081291.762857903,
       "ucid": "10791",
       "chain_symbol": "XEC"
@@ -17158,7 +17158,7 @@
       "name": "eCash",
       "market_cap": 113343891.79782309,
       "fdv": 118358275.86,
-      "cmc_price": 5.636108374165e-6,
+      "cmc_price": 5.636108374165e-06,
       "volume_24h": 3081291.762857903,
       "ucid": "10791",
       "chain_symbol": "XEC"
@@ -17167,7 +17167,7 @@
       "name": "eCash",
       "market_cap": 113343891.79782309,
       "fdv": 118358275.86,
-      "cmc_price": 5.636108374165e-6,
+      "cmc_price": 5.636108374165e-06,
       "volume_24h": 3081291.762857903,
       "ucid": "10791",
       "chain_symbol": "XEC"
@@ -18814,7 +18814,7 @@
       "name": "Pepe",
       "market_cap": 1890472660.368914,
       "fdv": 1890472660.37,
-      "cmc_price": 4.56887140944e-6,
+      "cmc_price": 4.56887140944e-06,
       "volume_24h": 599084125.2499667,
       "ucid": "24478",
       "chain_symbol": "ETH"
@@ -18823,7 +18823,7 @@
       "name": "Pepe",
       "market_cap": 1890472660.368914,
       "fdv": 1890472660.37,
-      "cmc_price": 4.56887140944e-6,
+      "cmc_price": 4.56887140944e-06,
       "volume_24h": 599084125.2499667,
       "ucid": "24478",
       "chain_symbol": "ETH"
@@ -18832,7 +18832,7 @@
       "name": "Pepe",
       "market_cap": 1890472660.368914,
       "fdv": 1890472660.37,
-      "cmc_price": 4.56887140944e-6,
+      "cmc_price": 4.56887140944e-06,
       "volume_24h": 599084125.2499667,
       "ucid": "24478",
       "chain_symbol": "ETH"
@@ -19633,7 +19633,7 @@
       "name": "Toshi",
       "market_cap": 35855195.37063783,
       "fdv": 35857909.29,
-      "cmc_price": 0.000085235944012041,
+      "cmc_price": 8.5235944012041e-05,
       "volume_24h": 3103102.6340311617,
       "ucid": "27750",
       "chain_symbol": "BNB"
@@ -19642,7 +19642,7 @@
       "name": "Toshi",
       "market_cap": 35855195.37063783,
       "fdv": 35857909.29,
-      "cmc_price": 0.000085235944012041,
+      "cmc_price": 8.5235944012041e-05,
       "volume_24h": 3103102.6340311617,
       "ucid": "27750",
       "chain_symbol": "BNB"
@@ -19651,7 +19651,7 @@
       "name": "Toshi",
       "market_cap": 35855195.37063783,
       "fdv": 35857909.29,
-      "cmc_price": 0.000085235944012041,
+      "cmc_price": 8.5235944012041e-05,
       "volume_24h": 3103102.6340311617,
       "ucid": "27750",
       "chain_symbol": "BNB"
@@ -19714,7 +19714,7 @@
       "name": "Nexus",
       "market_cap": 34565240.170069106,
       "fdv": 57608733.62,
-      "cmc_price": 5.760873361678184e-7,
+      "cmc_price": 5.760873361678184e-07,
       "volume_24h": 309662.5158225345,
       "ucid": "39965",
       "chain_symbol": "ETH"
@@ -19723,7 +19723,7 @@
       "name": "Nexus",
       "market_cap": 34565240.170069106,
       "fdv": 57608733.62,
-      "cmc_price": 5.760873361678184e-7,
+      "cmc_price": 5.760873361678184e-07,
       "volume_24h": 309662.5158225345,
       "ucid": "39965",
       "chain_symbol": "ETH"
@@ -19732,7 +19732,7 @@
       "name": "Nexus",
       "market_cap": 34565240.170069106,
       "fdv": 57608733.62,
-      "cmc_price": 5.760873361678184e-7,
+      "cmc_price": 5.760873361678184e-07,
       "volume_24h": 309662.5158225345,
       "ucid": "39965",
       "chain_symbol": "ETH"
@@ -21280,7 +21280,7 @@
       "name": "Robinhood",
       "market_cap": 198936.44062568975,
       "fdv": 198936.44,
-      "cmc_price": 4.46570596999e-6,
+      "cmc_price": 4.46570596999e-06,
       "volume_24h": 0,
       "ucid": "35566",
       "chain_symbol": "SOL"
@@ -21289,7 +21289,7 @@
       "name": "Robinhood",
       "market_cap": 198936.44062568975,
       "fdv": 198936.44,
-      "cmc_price": 4.46570596999e-6,
+      "cmc_price": 4.46570596999e-06,
       "volume_24h": 0,
       "ucid": "35566",
       "chain_symbol": "SOL"
@@ -21298,7 +21298,7 @@
       "name": "Robinhood",
       "market_cap": 198936.44062568975,
       "fdv": 198936.44,
-      "cmc_price": 4.46570596999e-6,
+      "cmc_price": 4.46570596999e-06,
       "volume_24h": 0,
       "ucid": "35566",
       "chain_symbol": "SOL"
@@ -21604,7 +21604,7 @@
       "name": "rats (Ordinals)",
       "market_cap": 12746395.720005821,
       "fdv": 12746395.72,
-      "cmc_price": 0.000012746395720006,
+      "cmc_price": 1.2746395720006e-05,
       "volume_24h": 913450.0808730514,
       "ucid": "28452",
       "chain_symbol": "BTC"
@@ -21613,7 +21613,7 @@
       "name": "rats (Ordinals)",
       "market_cap": 12746395.720005821,
       "fdv": 12746395.72,
-      "cmc_price": 0.000012746395720006,
+      "cmc_price": 1.2746395720006e-05,
       "volume_24h": 913450.0808730514,
       "ucid": "28452",
       "chain_symbol": "BTC"
@@ -21622,7 +21622,7 @@
       "name": "rats (Ordinals)",
       "market_cap": 12746395.720005821,
       "fdv": 12746395.72,
-      "cmc_price": 0.000012746395720006,
+      "cmc_price": 1.2746395720006e-05,
       "volume_24h": 913450.0808730514,
       "ucid": "28452",
       "chain_symbol": "BTC"
@@ -25411,7 +25411,7 @@
       "name": "GameStop (gamestop-coin.vip)",
       "market_cap": 2890187.9907943476,
       "fdv": 2956189.21,
-      "cmc_price": 7.02700138718e-6,
+      "cmc_price": 7.02700138718e-06,
       "volume_24h": 4076.94026950604,
       "ucid": "31248",
       "chain_symbol": "ETH"
@@ -25420,7 +25420,7 @@
       "name": "GameStop (gamestop-coin.vip)",
       "market_cap": 2890187.9907943476,
       "fdv": 2956189.21,
-      "cmc_price": 7.02700138718e-6,
+      "cmc_price": 7.02700138718e-06,
       "volume_24h": 4076.94026950604,
       "ucid": "31248",
       "chain_symbol": "ETH"
@@ -25429,7 +25429,7 @@
       "name": "GameStop (gamestop-coin.vip)",
       "market_cap": 2890187.9907943476,
       "fdv": 2956189.21,
-      "cmc_price": 7.02700138718e-6,
+      "cmc_price": 7.02700138718e-06,
       "volume_24h": 4076.94026950604,
       "ucid": "31248",
       "chain_symbol": "ETH"
@@ -25465,7 +25465,7 @@
       "name": "GameStop (thegameneverstopped.com)",
       "market_cap": 362196.0720651278,
       "fdv": 362196.07,
-      "cmc_price": 3.621960720651e-6,
+      "cmc_price": 3.621960720651e-06,
       "volume_24h": 704793.8539792732,
       "ucid": "40908",
       "chain_symbol": "-"
@@ -25987,7 +25987,7 @@
       "name": "Wen",
       "market_cap": 3860345.412455961,
       "fdv": 3860345.41,
-      "cmc_price": 5.304734767283e-6,
+      "cmc_price": 5.304734767283e-06,
       "volume_24h": 191261.82902526416,
       "ucid": "29175",
       "chain_symbol": "SOL"
@@ -25996,7 +25996,7 @@
       "name": "Wen",
       "market_cap": 3860345.412455961,
       "fdv": 3860345.41,
-      "cmc_price": 5.304734767283e-6,
+      "cmc_price": 5.304734767283e-06,
       "volume_24h": 191261.82902526416,
       "ucid": "29175",
       "chain_symbol": "SOL"
@@ -26005,7 +26005,7 @@
       "name": "Wen",
       "market_cap": 3860345.412455961,
       "fdv": 3860345.41,
-      "cmc_price": 5.304734767283e-6,
+      "cmc_price": 5.304734767283e-06,
       "volume_24h": 191261.82902526416,
       "ucid": "29175",
       "chain_symbol": "SOL"
@@ -26014,7 +26014,7 @@
       "name": "Wen Lambo (wenlamborh.com)",
       "market_cap": 60591.29843303507,
       "fdv": 80821.0,
-      "cmc_price": 0.000080820998515243,
+      "cmc_price": 8.0820998515243e-05,
       "volume_24h": 354.6099465349207,
       "ucid": "40832",
       "chain_symbol": "-"
@@ -26806,7 +26806,7 @@
       "name": "RUM - Pirates of Arrland Token",
       "market_cap": 144344.2040283565,
       "fdv": 156635.58,
-      "cmc_price": 0.000093409320170536,
+      "cmc_price": 9.3409320170536e-05,
       "volume_24h": 0,
       "ucid": "24789",
       "chain_symbol": "POL"
@@ -26815,7 +26815,7 @@
       "name": "RUM - Pirates of Arrland Token",
       "market_cap": 144344.2040283565,
       "fdv": 156635.58,
-      "cmc_price": 0.000093409320170536,
+      "cmc_price": 9.3409320170536e-05,
       "volume_24h": 0,
       "ucid": "24789",
       "chain_symbol": "POL"
@@ -26824,7 +26824,7 @@
       "name": "RUM - Pirates of Arrland Token",
       "market_cap": 144344.2040283565,
       "fdv": 156635.58,
-      "cmc_price": 0.000093409320170536,
+      "cmc_price": 9.3409320170536e-05,
       "volume_24h": 0,
       "ucid": "24789",
       "chain_symbol": "POL"
@@ -27305,6 +27305,24 @@
       "volume_24h": 1245068.9469582282,
       "ucid": "42683",
       "chain_symbol": "BNB"
+    },
+    "29120": {
+      "name": "IDOLINU",
+      "market_cap": 2314.06,
+      "fdv": 2314.06,
+      "cmc_price": null,
+      "volume_24h": 0,
+      "ucid": "29120",
+      "chain_symbol": "SOL"
+    },
+    "3042": {
+      "name": "IDOL COIN",
+      "market_cap": 0,
+      "fdv": 0.0,
+      "cmc_price": null,
+      "volume_24h": 0,
+      "ucid": "3042",
+      "chain_symbol": "ETH"
     }
   },
   "lookup": {
@@ -28315,7 +28333,25 @@
     "XDP_BINANCE": "40953",
     "XTER_BINANCE": "27582",
     "ZENT_BINANCE": "30963",
-    "ZRC_BINANCE": "29711"
+    "ZRC_BINANCE": "29711",
+    "36775_UPBIT": "36775",
+    "36775_BINANCE": "36775",
+    "36775_BITHUMB": "36775",
+    "IDOL_COIN_UPBIT": "36775",
+    "IDOL_COIN_BINANCE": "36775",
+    "IDOL_COIN_BITHUMB": "36775",
+    "IDOL_UPBIT": "36775",
+    "IDOL_BITHUMB": "36775",
+    "29120_UPBIT": "29120",
+    "29120_BINANCE": "29120",
+    "29120_BITHUMB": "29120",
+    "3042_UPBIT": "3042",
+    "3042_BINANCE": "3042",
+    "3042_BITHUMB": "3042"
   },
-  "timestamp": "2026-11-13T17:00:06.779599+09:00"
+  "timestamp": "2026-11-13T17:00:06.779599+09:00",
+  "SANC_UPBIT": "32299",
+  "CLOUD_BINANCE": "32299",
+  "32299_UPBIT": "32299",
+  "32299_BINANCE": "32299"
 }
