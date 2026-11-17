@@ -339,7 +339,7 @@ export async function lazyRenderKimchiData(params) {
       store.currentChartMarket === "BITHUMB"
     ) {
       // [현물 우선 -> 선물 fallback] 바이낸스 현물 (B-SPOT)
-      if (listedEx.includes("BINANCE_SPOT") || listedEx.includes("BINANCE"))
+      if (listedEx.includes("BINANCE_SPOT") || rowInfo?.Binance === "O")
         availableSubs.push({
           id: "binance_spot",
           name: "B-SPOT",
@@ -357,7 +357,7 @@ export async function lazyRenderKimchiData(params) {
           pureSym: exactFutures,
         });
       // 바이비트 현물 (BYB-S)
-      if (listedEx.includes("BYBIT_SPOT") || listedEx.includes("BYBIT"))
+      if (listedEx.includes("BYBIT_SPOT") || rowInfo?.Bybit === "O")
         availableSubs.push({
           id: "bybit_spot",
           name: "BYB-S",

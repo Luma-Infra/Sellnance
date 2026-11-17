@@ -587,19 +587,31 @@ def build_binance_row(
     price = b_info["price"]
     mcap = info.get("market_cap", 0) if info else 0
     fdv = float(info.get("fdv", 0) or 0.0) if info else 0.0
-    target_bases = {base.upper()}
+    from modules import exchange_api as _ex_api
+
+    primary_base = base.upper()
+    alias_bases = set()
     if DUPLICATED_LIST and final_ucid:
         for k, v in DUPLICATED_LIST.items():
-            if (
-                len(v) >= 4
-                and str(v[0]) == str(final_ucid)
-                and "binance" in v[3].lower()
-            ):
-                target_bases.add(v[2].upper())
+            if len(v) >= 4 and str(v[0]) == str(final_ucid) and v[2]:
+                sym_u = str(v[2]).upper()
+                if sym_u != primary_base:
+                    alias_bases.add(sym_u)
 
     listed_on = set()
-    for t_base in target_bases:
-        listed_on.update(global_listings.get(t_base, set()))
+    # 1. 기본 심볼(primary_base): 가격 검증 통과(또는 가격 미제공 거래소) 태그 수집
+    listed_on.update(
+        _ex_api.filter_global_listings_by_price(
+            primary_base, price, global_listings, allow_unpriced=True
+        )
+    )
+    # 2. 동일 UID 별칭(예: DATAIP -> DATA, AIGENSYN -> AI): 시세가 실제로 일치하는 해외 거래소만 자동 수집
+    for a_base in alias_bases:
+        listed_on.update(
+            _ex_api.filter_global_listings_by_price(
+                a_base, price, global_listings, allow_unpriced=False
+            )
+        )
 
     # [족보 연동] DUPLICATED_LIST에 등록된 외부 거래소(Gate.io, Bitget 등) 상장 태그 직접 반영
     if DUPLICATED_LIST and final_ucid:
@@ -615,7 +627,7 @@ def build_binance_row(
                     )
                     listed_on.add(tag)
                     base_ex = tag.replace("_SPOT", "").replace("_FUTURES", "")
-                    if base_ex:
+                    if base_ex and not tag.endswith("_FUTURES"):
                         listed_on.add(base_ex)
                 alias_sym = v[2].upper() if len(v) >= 3 else ""
                 if alias_sym and alias_sym in global_listings:
@@ -873,7 +885,12 @@ def build_binance_row(
     if binance_spot_price > 0 and binance_futures_price > 0:
         basis_raw = ((binance_futures_price / binance_spot_price) - 1) * 100
 
-    vmc_raw = (binance_vol / mcap * 100) if (mcap is not None and mcap > 0) else 0.0
+    # 주식형 토큰(Is_Stock)은 CMC가 본주 시총이 아닌 온체인 토큰 시총만 집계해 VMC가 비정상적이므로 미지원 처리
+    vmc_raw = (
+        0.0
+        if is_stock
+        else ((binance_vol / mcap * 100) if (mcap is not None and mcap > 0) else 0.0)
+    )
     funding_rate = binance_futures_funding or b_info.get("funding_rate", 0.0)
     binance_futures_funding_interval = (
         binance_futures_funding_interval
@@ -952,7 +969,7 @@ def build_binance_row(
         "FDV_Formatted": (
             utils.format_market_cap_string(fdv) if fdv > 0 else "-"
         ),
-        "VMC_Formatted": f"{vmc_raw:.2f}%",
+        "VMC_Formatted": utils.format_vmc_string(vmc_raw, is_stock=is_stock),
         "Binance_Vol_Formatted": (
             utils.format_volume_string(binance_vol) if binance_vol > 0 else "-"
         ),

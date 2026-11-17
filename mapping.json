@@ -14,7 +14,7 @@
   "__MEMO__12": "DUPLICATED_LIST: 동일 티커 다른 코인(동명이인) 또는 거래소별 티커 상이 코인의 UID/거래소별 티커 매핑",
   "__MEMO__13": "TICKER_DATA: 전체 자산 마스터 메타데이터: [0: CMC_ID, 1: 체인/메인넷, 2: 영문명, 3: 표준티커, 4: 자산타입(COIN/STOCK), 5: 특수구분(ALPHA 등)]",
   "__MEMO__14": "-------------------------------------------------------------",
-  "DEFAULT_KRW_USD_RATE": 1336.46,
+  "DEFAULT_KRW_USD_RATE": 1342.88,
   "CHAIN_LOGO_MAP": {
     "ETH": "https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png",
     "BNB": "https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png",
@@ -89,7 +89,7 @@
   "_COMMENT_DUPLICATED_LIST": {
     "[매칭 룰] 바이낸스 또는 업비트": "",
     "둘 중 하나라도 타 거래소(빗썸/바이비트) 티커명과 일치하거나,": "",
-    "여기에 명시된 UID가 일치하면 시세 및 뱃지가 자동으로 도킹됩니다!": ""
+    "여기에 명시된 UID가 일치하면 시세 및 뱃지가 자동으로 도킹됩니다": ""
   },
   "DUPLICATED_LIST": {
     "AMP(Amp)_binance": [
@@ -584,11 +584,23 @@
       "SANC",
       "upbit"
     ],
-    "CLOUD(Sanctum)_binance": [
+    "SANC(Sanctum)_bithumb": [
+      "32299",
+      "SOL",
+      "SANC",
+      "bithumb"
+    ],
+    "CLOUD(Sanctum)_bybit_spot": [
       "32299",
       "SOL",
       "CLOUD",
-      "binance"
+      "bybit_spot"
+    ],
+    "CLOUD(Sanctum)_gateio_spot": [
+      "32299",
+      "SOL",
+      "CLOUD",
+      "gateio_spot"
     ]
   },
   "TICKER_DATA": {
@@ -1043,6 +1055,13 @@
       "AMDB",
       "STOCK"
     ],
+    "AMDL(STOCK)": [
+      "42900",
+      null,
+      "GraniteShares 2x Long AMD Daily ETF (Derivatives)",
+      "AMDL",
+      "STOCK"
+    ],
     "AMGN(STOCK)": [
       "42651",
       null,
@@ -1106,18 +1125,11 @@
       "ANKR",
       "COIN"
     ],
-    "ANTHROPIC": [
-      "37693",
+    "ANTB(STOCK)": [
+      "42860",
       null,
-      "Anthropic tokenized stock (PreStocks)",
-      "ANTHROPIC",
-      "COIN"
-    ],
-    "ANTHROPIC(STOCK)": [
-      "37693",
-      null,
-      "Anthropic tokenized stock (PreStocks)",
-      "ANTHROPIC",
+      "Anthropic Tokenized bStocks",
+      "ANTB",
       "STOCK"
     ],
     "APE": [
@@ -1252,6 +1264,13 @@
       "ARPA",
       "ARPA",
       "COIN"
+    ],
+    "ARTYB(STOCK)": [
+      "42927",
+      null,
+      "iShares Future AI & Tech ETF Tokenized bStocks",
+      "ARTYB",
+      "STOCK"
     ],
     "ARX": [
       "39970",
@@ -2280,6 +2299,13 @@
       "CC",
       "COIN"
     ],
+    "CCJ(STOCK)": [
+      "42881",
+      null,
+      "Cameco Corp (Derivatives)",
+      "CCJ",
+      "STOCK"
+    ],
     "CEG(STOCK)": [
       "42618",
       null,
@@ -3280,6 +3306,13 @@
       "ETHW",
       "COIN"
     ],
+    "ETN(STOCK)": [
+      "42880",
+      null,
+      "Eaton Corporation PLC (Derivatives)",
+      "ETN",
+      "STOCK"
+    ],
     "EUL": [
       "14280",
       null,
@@ -3322,6 +3355,13 @@
       "EWJ",
       "STOCK"
     ],
+    "EWJB(STOCK)": [
+      "42863",
+      null,
+      "iShares MSCI Japan ETF Tokenized bStocks",
+      "EWJB",
+      "STOCK"
+    ],
     "EWT": [
       "5268",
       null,
@@ -3334,6 +3374,13 @@
       null,
       "EWT (Derivatives)",
       "EWT",
+      "STOCK"
+    ],
+    "EWTB(STOCK)": [
+      "42866",
+      null,
+      "iShares MSCI Taiwan ETF Tokenized bStocks",
+      "EWTB",
       "STOCK"
     ],
     "EWY": [
@@ -3371,11 +3418,25 @@
       "EWZ",
       "STOCK"
     ],
+    "EWZB(STOCK)": [
+      "42861",
+      null,
+      "iShares MSCI Brazil ETF Tokenized bStocks",
+      "EWZB",
+      "STOCK"
+    ],
     "EWZS(STOCK)": [
       "42697",
       null,
       "iShares MSCI Brazil Small-Cap ETF (Derivative)",
       "EWZS",
+      "STOCK"
+    ],
+    "EWZSB(STOCK)": [
+      "42864",
+      null,
+      "iShares MSCI Brazil Small-Cap ETF Tokenized bStocks",
+      "EWZSB",
       "STOCK"
     ],
     "F": [
@@ -3566,6 +3627,13 @@
       null,
       "Freedom Holding Corp (Derivatives)",
       "FRHC",
+      "STOCK"
+    ],
+    "FRHCB(STOCK)": [
+      "42930",
+      null,
+      "Freedom Holding Corp Tokenized bStocks",
+      "FRHCB",
       "STOCK"
     ],
     "FTT": [
@@ -4206,6 +4274,13 @@
       "HYUNDAI",
       "STOCK"
     ],
+    "IBITB(STOCK)": [
+      "42926",
+      null,
+      "iShares Bitcoin Trust Tokenized bStocks",
+      "IBITB",
+      "STOCK"
+    ],
     "IBKR(STOCK)": [
       "867873521",
       null,
@@ -4261,6 +4336,13 @@
       "MEET48",
       "IDOL",
       "COIN"
+    ],
+    "IGVB(STOCK)": [
+      "42928",
+      null,
+      "iShares Expanded Tech-Software Sector ETF Tokenized bStocks",
+      "IGVB",
+      "STOCK"
     ],
     "ILV": [
       "8719",
@@ -4437,6 +4519,13 @@
       "IWM",
       "STOCK"
     ],
+    "IWMB(STOCK)": [
+      "42865",
+      null,
+      "iShares Russell 2000 Index Fund Tokenized bStocks",
+      "IWMB",
+      "STOCK"
+    ],
     "JASMY": [
       "8425",
       null,
@@ -4457,6 +4546,13 @@
       "Jelly-My-Jelly",
       "JELLYJELLY",
       "COIN"
+    ],
+    "JNJ(STOCK)": [
+      "40820",
+      null,
+      "Johnson & Johnson (Derivatives)",
+      "JNJ",
+      "STOCK"
     ],
     "JOE": [
       "11396",
@@ -5145,6 +5241,13 @@
       "MELI",
       "STOCK"
     ],
+    "MELIB(STOCK)": [
+      "42859",
+      null,
+      "MercadoLibre Tokenized bStocks",
+      "MELIB",
+      "STOCK"
+    ],
     "MEME": [
       "28301",
       null,
@@ -5743,6 +5846,13 @@
       "NIL",
       "COIN"
     ],
+    "NIO(STOCK)": [
+      "42901",
+      null,
+      "NIO Inc. ADR (Derivatives)",
+      "NIO",
+      "STOCK"
+    ],
     "NKE(STOCK)": [
       "42382",
       null,
@@ -5812,6 +5922,13 @@
       null,
       "Nu Tokenized Stock (Robinhood)",
       "NU",
+      "STOCK"
+    ],
+    "NUB(STOCK)": [
+      "42862",
+      null,
+      "Nu Holdings Tokenized bStocks",
+      "NUB",
       "STOCK"
     ],
     "NVDA": [
@@ -6068,7 +6185,7 @@
       "STOCK"
     ],
     "OXY(STOCK)": [
-      "8029",
+      "42696",
       null,
       "Oxygen",
       "OXY",
@@ -7500,6 +7617,13 @@
       null,
       "Direxion Semiconductor Bear 3X ETF Tokenized bStocks",
       "SOXSB",
+      "STOCK"
+    ],
+    "SOXXB(STOCK)": [
+      "42929",
+      null,
+      "iShares Semiconductor ETF Tokenized bStocks",
+      "SOXXB",
       "STOCK"
     ],
     "SPA": [

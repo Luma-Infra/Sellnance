@@ -105,7 +105,7 @@ def _determine_precision(
     if base in duplicated_bases:
         bybit_alias = None
         for k, v in DUPLICATED_LIST.items():
-            if len(v) >= 4 and v[0] == final_ucid and v[3].upper() == "BYBIT":
+            if len(v) >= 4 and str(v[0]) == str(final_ucid) and str(v[3]).upper() in ("BYBIT", "BYBIT_SPOT", "BYBIT_FUTURES"):
                 bybit_alias = v[2]
                 break
         if bybit_alias:
@@ -371,7 +371,7 @@ def build_upbit_row(
                     )
                     listed_on.add(tag)
                     base_ex = tag.replace("_SPOT", "").replace("_FUTURES", "")
-                    if base_ex:
+                    if base_ex and not tag.endswith("_FUTURES"):
                         listed_on.add(base_ex)
 
     # [족보 연동] DUPLICATED_LIST에 등록된 외부 거래소 상장 태그 보강 (일반 코인 포함)
@@ -388,7 +388,7 @@ def build_upbit_row(
                     )
                     listed_on.add(tag)
                     base_ex = tag.replace("_SPOT", "").replace("_FUTURES", "")
-                    if base_ex:
+                    if base_ex and not tag.endswith("_FUTURES"):
                         listed_on.add(base_ex)
 
     bin_agg = _aggregate_binance_for_upbit(
@@ -515,7 +515,7 @@ def build_upbit_row(
         "Kimchi_Label": kimchi_label,
         "MarketCap_Formatted": utils.format_market_cap_string(mcap),
         "FDV_Formatted": utils.format_market_cap_string(fdv) if fdv > 0 else "-",
-        "VMC_Formatted": f"{vmc_raw:.2f}%",
+        "VMC_Formatted": utils.format_vmc_string(vmc_raw, is_stock=False),
         "Binance_Vol_Formatted": utils.format_volume_string(binance_vol) if (has_binance_listing and binance_vol > 0) else "-",
         "Binance_Spot_Vol_Formatted": utils.format_volume_string(bin_agg["binance_spot_vol"]) if bin_agg["binance_spot_vol"] > 0 else "-",
         "Binance_Futures_Vol_Formatted": utils.format_volume_string(bin_agg["binance_futures_vol"]) if bin_agg["binance_futures_vol"] > 0 else "-",

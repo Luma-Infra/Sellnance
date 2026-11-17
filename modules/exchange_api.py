@@ -106,7 +106,42 @@ def get_korean_exchange_markets():
 
 
 _GLOBAL_LISTINGS_CACHE = {}
+_GLOBAL_LISTINGS_PRICES_CACHE = {}
 _GLOBAL_LISTINGS_LAST_FETCH = 0.0
+
+
+def get_global_listing_prices():
+    """외부 거래소 심볼별 실시간 기준가 맵 반환 ({BASE: {EXCH_TAG: price_usd}})"""
+    return _GLOBAL_LISTINGS_PRICES_CACHE
+
+
+def filter_global_listings_by_price(
+    base_sym: str,
+    ref_price: float,
+    global_listings: dict,
+    allow_unpriced: bool = True,
+) -> set:
+    """
+    global_listings[base_sym] 태그 중 ref_price와 시세가 일치하는 거래소 태그만 반환.
+    - 동명이인 코인(AI(Gensyn) vs AI(Sleepless), DATA vs Streamr, META2 vs META 등)의
+      타 거래소 오매칭을 가격 검증(is_valid_price_ratio)으로 방지
+    """
+    tags = global_listings.get(base_sym.upper(), set())
+    if not tags:
+        return set()
+    if not ref_price or ref_price <= 0:
+        return set(tags) if allow_unpriced else set()
+
+    price_map = _GLOBAL_LISTINGS_PRICES_CACHE.get(base_sym.upper(), {})
+    verified = set()
+    for tag in tags:
+        ex_p = price_map.get(tag, 0.0)
+        if ex_p > 0:
+            if utils.is_valid_price_ratio(ex_p, ref_price):
+                verified.add(tag)
+        elif allow_unpriced:
+            verified.add(tag)
+    return verified
 _GLOBAL_LISTINGS_LOCK = threading.Lock()
 GLOBAL_LISTINGS_TTL = 3600.0  # 1시간 캐시
 
@@ -117,7 +152,7 @@ def fetch_global_listings(force_reload: bool = False):
     - [1시간 TTL 캐시 적용] 15분마다 외부 9개 마켓을 무의미하게 타격하지 않고 즉각 반환
     - time.monotonic() 기반으로 시스템 시계 오염 방지
     """
-    global _GLOBAL_LISTINGS_CACHE, _GLOBAL_LISTINGS_LAST_FETCH
+    global _GLOBAL_LISTINGS_CACHE, _GLOBAL_LISTINGS_PRICES_CACHE, _GLOBAL_LISTINGS_LAST_FETCH
 
     now = time.monotonic()
     with _GLOBAL_LISTINGS_LOCK:
@@ -129,162 +164,188 @@ def fetch_global_listings(force_reload: bool = False):
             return _GLOBAL_LISTINGS_CACHE
 
     listings = {}
+    listing_prices = {}
+    _local_lock = threading.Lock()
 
-    def add_tags(coins, tag):
-        for c in coins:
-            base = c.upper()
-            if base not in listings:
-                listings[base] = set()
-            listings[base].add(tag)
+    def add_tags_with_prices(entries, tag):
+        """entries: iterable of (base_symbol, price_float)"""
+        with _local_lock:
+            for c, p_val in entries:
+                if not c:
+                    continue
+                base = str(c).upper().strip()
+                if not base:
+                    continue
+                if base not in listings:
+                    listings[base] = set()
+                listings[base].add(tag)
+                if p_val and p_val > 0:
+                    if base not in listing_prices:
+                        listing_prices[base] = {}
+                    listing_prices[base][tag] = float(p_val)
+
+    def _safe_p(v):
+        try:
+            f = float(v)
+            return f if f > 0 else 0.0
+        except Exception:
+            return 0.0
 
     def get_okx():
         try:
-            add_tags(
-                [
-                    i["baseCcy"]
-                    for i in API_SESSION.get(
-                        "https://www.okx.com/api/v5/public/instruments?instType=SPOT",
-                        timeout=5,
-                    )
-                    .json()
-                    .get("data", [])
-                ],
-                "OKX_SPOT",
+            rows = (
+                API_SESSION.get(
+                    "https://www.okx.com/api/v5/market/tickers?instType=SPOT",
+                    timeout=5,
+                )
+                .json()
+                .get("data", [])
             )
-        except:
+            entries = []
+            for i in rows:
+                inst = i.get("instId", "")
+                if inst.endswith("-USDT") or inst.endswith("-USD"):
+                    entries.append((inst.split("-")[0], _safe_p(i.get("last"))))
+            add_tags_with_prices(entries, "OKX_SPOT")
+        except Exception:
             pass
 
     def get_okx_futures():
         try:
-            add_tags(
-                [
-                    i["instId"].split("-")[0]
-                    for i in API_SESSION.get(
-                        "https://www.okx.com/api/v5/public/instruments?instType=SWAP",
-                        timeout=5,
-                    )
-                    .json()
-                    .get("data", [])
-                    if i.get("instId")
-                    and (
-                        "-USDT-SWAP" in i.get("instId", "")
-                        or "-USD-SWAP" in i.get("instId", "")
-                    )
-                ],
-                "OKX_FUTURES",
+            rows = (
+                API_SESSION.get(
+                    "https://www.okx.com/api/v5/market/tickers?instType=SWAP",
+                    timeout=5,
+                )
+                .json()
+                .get("data", [])
             )
-        except:
+            entries = []
+            for i in rows:
+                inst = i.get("instId", "")
+                if "-USDT-SWAP" in inst or "-USD-SWAP" in inst:
+                    entries.append((inst.split("-")[0], _safe_p(i.get("last"))))
+            add_tags_with_prices(entries, "OKX_FUTURES")
+        except Exception:
             pass
 
     def get_bybit():
         try:
-            add_tags(
-                [
-                    i["baseCoin"]
-                    for i in API_SESSION.get(
-                        "https://api.bybit.com/v5/market/instruments-info?category=spot",
-                        timeout=5,
-                    )
-                    .json()
-                    .get("result", {})
-                    .get("list", [])
-                ],
-                "BYBIT_SPOT",
+            rows = (
+                API_SESSION.get(
+                    "https://api.bybit.com/v5/market/tickers?category=spot",
+                    timeout=5,
+                )
+                .json()
+                .get("result", {})
+                .get("list", [])
             )
-        except:
+            entries = []
+            for i in rows:
+                sym = i.get("symbol", "")
+                if sym.endswith("USDT") and len(sym) > 4:
+                    entries.append((sym[:-4], _safe_p(i.get("lastPrice"))))
+            add_tags_with_prices(entries, "BYBIT_SPOT")
+        except Exception:
             pass
 
     def get_bybit_futures():
         try:
-            add_tags(
-                [
-                    i["baseCoin"]
-                    for i in API_SESSION.get(
-                        "https://api.bybit.com/v5/market/instruments-info?category=linear",
-                        timeout=5,
-                    )
-                    .json()
-                    .get("result", {})
-                    .get("list", [])
-                ],
-                "BYBIT_FUTURES",
+            rows = (
+                API_SESSION.get(
+                    "https://api.bybit.com/v5/market/tickers?category=linear",
+                    timeout=5,
+                )
+                .json()
+                .get("result", {})
+                .get("list", [])
             )
-        except:
+            entries = []
+            for i in rows:
+                sym = i.get("symbol", "")
+                if sym.endswith("USDT") and len(sym) > 4:
+                    entries.append((sym[:-4], _safe_p(i.get("lastPrice"))))
+            add_tags_with_prices(entries, "BYBIT_FUTURES")
+        except Exception:
             pass
 
     def get_bitget():
         try:
-            add_tags(
-                [
-                    i["baseCoin"]
-                    for i in API_SESSION.get(
-                        "https://api.bitget.com/api/v2/spot/public/symbols", timeout=5
-                    )
-                    .json()
-                    .get("data", [])
-                ],
-                "BITGET_SPOT",
+            rows = (
+                API_SESSION.get(
+                    "https://api.bitget.com/api/v2/spot/market/tickers", timeout=5
+                )
+                .json()
+                .get("data", [])
             )
-        except:
+            entries = []
+            for i in rows:
+                sym = i.get("symbol", "")
+                if sym.endswith("USDT") and len(sym) > 4:
+                    entries.append((sym[:-4], _safe_p(i.get("lastPr"))))
+            add_tags_with_prices(entries, "BITGET_SPOT")
+        except Exception:
             pass
 
     def get_bitget_futures():
         try:
-            add_tags(
-                [
-                    i["baseCoin"]
-                    for i in API_SESSION.get(
-                        "https://api.bitget.com/api/v2/mix/market/contracts?productType=USDT-futures",
-                        timeout=5,
-                    )
-                    .json()
-                    .get("data", [])
-                ],
-                "BITGET_FUTURES",
+            rows = (
+                API_SESSION.get(
+                    "https://api.bitget.com/api/v2/mix/market/tickers?productType=USDT-FUTURES",
+                    timeout=5,
+                )
+                .json()
+                .get("data", [])
             )
-        except:
+            entries = []
+            for i in rows:
+                sym = i.get("symbol", "")
+                if sym.endswith("USDT") and len(sym) > 4:
+                    entries.append((sym[:-4], _safe_p(i.get("lastPr"))))
+            add_tags_with_prices(entries, "BITGET_FUTURES")
+        except Exception:
             pass
 
     def get_gateio():
         try:
-            add_tags(
-                [
-                    i["base"]
-                    for i in API_SESSION.get(
-                        "https://api.gateio.ws/api/v4/spot/currency_pairs", timeout=5
-                    ).json()
-                ],
-                "GATEIO_SPOT",
-            )
-        except:
+            rows = API_SESSION.get(
+                "https://api.gateio.ws/api/v4/spot/tickers", timeout=5
+            ).json()
+            entries = []
+            for i in rows:
+                cp = i.get("currency_pair", "")
+                if cp.endswith("_USDT"):
+                    entries.append((cp[:-5], _safe_p(i.get("last"))))
+            add_tags_with_prices(entries, "GATEIO_SPOT")
+        except Exception:
             pass
 
     def get_gateio_futures():
         try:
-            add_tags(
-                [
-                    i["name"].split("_")[0]
-                    for i in API_SESSION.get(
-                        "https://api.gateio.ws/api/v4/futures/usdt/contracts", timeout=5
-                    ).json()
-                ],
-                "GATEIO_FUTURES",
-            )
-        except:
+            rows = API_SESSION.get(
+                "https://api.gateio.ws/api/v4/futures/usdt/tickers", timeout=5
+            ).json()
+            entries = []
+            for i in rows:
+                ct = i.get("contract", "")
+                if ct.endswith("_USDT"):
+                    entries.append((ct[:-5], _safe_p(i.get("last"))))
+            add_tags_with_prices(entries, "GATEIO_FUTURES")
+        except Exception:
             pass
 
     def get_coinbase():
         try:
-            add_tags(
-                [
-                    i["base_currency"]
-                    for i in API_SESSION.get(
-                        "https://api.exchange.coinbase.com/products", timeout=5
-                    ).json()
-                ],
-                "COINBASE_SPOT",
-            )
-        except:
+            rows = API_SESSION.get(
+                "https://api.exchange.coinbase.com/products", timeout=5
+            ).json()
+            entries = [
+                (i.get("base_currency", ""), 0.0)
+                for i in rows
+                if i.get("quote_currency") in ("USD", "USDT")
+            ]
+            add_tags_with_prices(entries, "COINBASE_SPOT")
+        except Exception:
             pass
 
     # 병렬로 9개 마켓 동시 타격
@@ -309,6 +370,7 @@ def fetch_global_listings(force_reload: bool = False):
     with _GLOBAL_LISTINGS_LOCK:
         if listings:
             _GLOBAL_LISTINGS_CACHE = listings
+            _GLOBAL_LISTINGS_PRICES_CACHE = listing_prices
             _GLOBAL_LISTINGS_LAST_FETCH = time.monotonic()
         elif _GLOBAL_LISTINGS_CACHE:
             return _GLOBAL_LISTINGS_CACHE

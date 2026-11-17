@@ -341,7 +341,8 @@ def execute_cmc_requests(id_lookup, sym_lookup, api_key=None):
                 if info.get("symbol"):
                     sym_upper = info["symbol"].upper()
                     # 주식/코인 구분 등록 (첫 번째 등록되는 최고 순위 자산만 선점하도록 처리)
-                    if "derivatives" in name.lower() or "stock" in name.lower():
+                    # 단어 경계(\b) 기반 판별 (Rootstock 등 일반 크립토 단어 부분일치 방지, 코인명 하드코딩 지양)
+                    if re.search(r"\b(derivatives?|bstocks?|stocks?)\b", name.lower()):
                         if f"{sym_upper}_STOCK" not in market_data_map:
                             market_data_map[f"{sym_upper}_STOCK"] = asset_info
                     else:
