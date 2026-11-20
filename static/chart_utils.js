@@ -703,13 +703,11 @@ function updateStatus(d, p) {
       );
   }
 
-  // [수정] 정밀도(p)가 있으면 사용하고, 없으면 row.precision 또는 store.getPrecision에서 안전하게 참조
+  // [수정] 정밀도(p)가 있으면 사용하고, 없으면 활성 마켓 기준 store.getPrecision에서 안전하게 참조
   const precision =
     p !== undefined && p !== null
       ? p
-      : row && row.precision !== undefined && row.precision !== null
-        ? Number(row.precision)
-        : store.getPrecision(row?.Ticker || row?.Symbol || asset);
+      : store.getPrecision(row?.Ticker || row?.Symbol || asset);
   if (row && typeof window.updateHeaderDisplay === "function") {
     const btnSim = document.getElementById("tab-btn-sim");
     const isSimMode = btnSim ? btnSim.classList.contains("active") : false;

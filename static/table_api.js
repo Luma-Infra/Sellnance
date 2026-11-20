@@ -39,14 +39,14 @@ export function processTableData(result) {
   if (result.active_users !== undefined) {
     store.activeUsers = result.active_users;
   }
-  if (typeof window.updateStatusBadge === "function") {
-    window.updateStatusBadge();
-  }
   if (result.last_updated_raw !== undefined) {
     store.lastUpdatedRaw = result.last_updated_raw;
   }
   if (result.next_update_raw !== undefined) {
     store.nextUpdateRaw = result.next_update_raw;
+  }
+  if (typeof window.updateStatusBadge === "function") {
+    window.updateStatusBadge();
   }
 
   store.uidRowMap = new Map(
@@ -153,18 +153,10 @@ export function processTableData(result) {
       registerAlias(`${row.Bithumb_Symbol}_KRW`);
     }
 
-    if (row.precision !== undefined && row.precision !== null) {
-      const p = Number(row.precision);
-      if (row.Ticker) store.precisionMap.set(row.Ticker.toUpperCase(), p);
-      if (row.DisplayTicker)
-        store.precisionMap.set(row.DisplayTicker.toUpperCase(), p);
-      if (row.Symbol) store.precisionMap.set(row.Symbol.toUpperCase(), p);
-      if (row.Exact_Spot)
-        store.precisionMap.set(row.Exact_Spot.toUpperCase(), p);
-      if (row.Exact_Futures)
-        store.precisionMap.set(row.Exact_Futures.toUpperCase(), p);
-    }
+    // 마켓별(현물/선물) 정밀도가 다르므로(SHIB 8 vs 6, DODO 5 vs 6) 단일 rawKey로 precisionMap 읽지 않기
+    // store.getPrecision()이 activeMarket 기반 cacheKey로 마켓별 정밀도를 정확히 조회/캐싱할 것
   });
+  if (store.precisionMap) store.precisionMap.clear();
 
   // [추가] 최초 데이터 로드 시점에 모든 코인에 대해 대표 지표(Price_Raw, Change_Today_Raw 등) 우선순위 조율 실행
   if (typeof window.syncRowPrioritizedMetrics === "function") {
@@ -584,14 +576,14 @@ export async function loadTableDataSilent() {
       if (result.active_users !== undefined) {
         store.activeUsers = result.active_users;
       }
-      if (typeof window.updateStatusBadge === "function") {
-        window.updateStatusBadge();
-      }
       if (result.last_updated_raw !== undefined) {
         store.lastUpdatedRaw = result.last_updated_raw;
       }
       if (result.next_update_raw !== undefined) {
         store.nextUpdateRaw = result.next_update_raw;
+      }
+      if (typeof window.updateStatusBadge === "function") {
+        window.updateStatusBadge();
       }
 
       const updateTimeSpan = document.getElementById("update-time");

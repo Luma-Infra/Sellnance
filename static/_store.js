@@ -373,9 +373,6 @@ export const store = {
     if (store.precisionMap.has(cacheKey)) {
       return store.precisionMap.get(cacheKey);
     }
-    if (store.precisionMap.has(rawKey)) {
-      return store.precisionMap.get(rawKey);
-    }
 
     let row = store.tickerRowMap.get(key);
     if (!row) {
@@ -465,7 +462,6 @@ export const store = {
 
       if (p !== null && !isNaN(p)) {
         store.precisionMap.set(cacheKey, p);
-        store.precisionMap.set(rawKey, p);
         store.currentPrecision = p;
         return p;
       }

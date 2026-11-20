@@ -1012,10 +1012,9 @@ function renderRowDom(row) {
       String(row.UID) === String(store.currentSelectedUid))
   ) {
     if (typeof window.updateHeaderDisplay === "function") {
-      const pPrecision =
-        row.precision !== undefined && row.precision !== null
-          ? Number(row.precision)
-          : store.getPrecision(row.Ticker || row.DisplayTicker || row.Symbol);
+      const pPrecision = store.getPrecision(
+        row.Ticker || row.DisplayTicker || row.Symbol,
+      );
       let activePrice = row.Price_Raw;
       const activeMkt = store.currentChartMarket || "ALL";
       if (activeMkt === "UPBIT") {

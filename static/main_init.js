@@ -350,8 +350,8 @@ export function updateStatusBadge() {
     }
   } else {
     if (timerEl) {
-      // timerEl.innerHTML = `${iconInfo}${formattedTime} (정기 캐시)`;
-      timerEl.title = "";
+      timerEl.innerText = `${formattedTime} 이후 갱신`;
+      timerEl.title = "서버 정기 캐시 모드 (4시간 주기)";
       timerEl.style.cursor = "default";
     }
     if (tipTimerEl)
@@ -786,8 +786,8 @@ export function setupTabVisibilityRecovery() {
       window.initAllExchangeFeeds();
     }
 
-    // 2. 10초 이상 백그라운드 후 탭 복귀 시: 차트 캔들 백그라운드 동기화 및 마켓 테이블 최신화
-    if (elapsed > 10 * 1000) {
+    // 2. 3초 이상 백그라운드/비활성 후 탭 복귀 시: 차트 캔들 백그라운드 동기화 및 마켓 테이블 최신화
+    if (elapsed > 3 * 1000) {
       if (
         store.currentAsset &&
         store.candleSeries &&
@@ -801,21 +801,21 @@ export function setupTabVisibilityRecovery() {
           false,
           false,
           false,
-          store.currentUid,
+          store.currentSelectedUid || store.currentUid,
           true,
         );
       }
 
-      // 퀵뷰 패널이 열려있는 경우 퀵뷰 8개 차트도 깜빡임 없이 백필
-      if (typeof window.syncQuickViewRecentCandles === "function") {
-        window.syncQuickViewRecentCandles();
-      }
-
-      // 알파 코인 및 전체 마켓 테이블 사일런트 동기화
-      if (typeof window.loadTableDataSilent === "function") {
-        window.loadTableDataSilent();
-      } else if (typeof window.loadTableData === "function") {
-        window.loadTableData(false, true);
+      // 10초 이상 방치 시에만 퀵뷰 및 전체 마켓 테이블 사일런트 동기화 (과도한 API 호출 방지)
+      if (elapsed > 10 * 1000) {
+        if (typeof window.syncQuickViewRecentCandles === "function") {
+          window.syncQuickViewRecentCandles();
+        }
+        if (typeof window.loadTableDataSilent === "function") {
+          window.loadTableDataSilent();
+        } else if (typeof window.loadTableData === "function") {
+          window.loadTableData(false, true);
+        }
       }
     }
 
@@ -833,6 +833,9 @@ export function setupTabVisibilityRecovery() {
   }
 
   if (typeof window !== "undefined") {
+    window.addEventListener("blur", () => {
+      if (!tabHiddenAt) tabHiddenAt = Date.now();
+    });
     window.addEventListener("focus", () => {
       triggerRecovery();
     });

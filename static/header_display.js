@@ -268,17 +268,36 @@ export const realUpdateHeaderDisplay = (
     );
   }
 
-  const pNormalized =
-    p !== undefined && p !== null
-      ? p
-      : row && row.precision !== undefined && row.precision !== null
-        ? Number(row.precision)
-        : store.getPrecision(
-            row?.Ticker ||
-              row?.DisplayTicker ||
-              row?.Symbol ||
-              store.currentAsset,
-          );
+  let pNormalized = p !== undefined && p !== null ? Number(p) : null;
+  if (pNormalized === null || isNaN(pNormalized)) {
+    if (row) {
+      if (activeExchange === "bybit") {
+        if (isFuturesMode && row.Bybit_Precision_Futures != null) {
+          pNormalized = Number(row.Bybit_Precision_Futures);
+        } else if (isSpotMode && row.Bybit_Precision_Spot != null) {
+          pNormalized = Number(row.Bybit_Precision_Spot);
+        } else if (row.Bybit_Precision != null) {
+          pNormalized = Number(row.Bybit_Precision);
+        }
+      } else if (activeExchange === "binance") {
+        if (isFuturesMode && row.Binance_Precision_Futures != null) {
+          pNormalized = Number(row.Binance_Precision_Futures);
+        } else if (isSpotMode && row.Binance_Precision_Spot != null) {
+          pNormalized = Number(row.Binance_Precision_Spot);
+        } else if (row.Binance_Precision != null) {
+          pNormalized = Number(row.Binance_Precision);
+        }
+      }
+    }
+    if (pNormalized === null || isNaN(pNormalized)) {
+      pNormalized = store.getPrecision(
+        row?.Ticker ||
+          row?.DisplayTicker ||
+          row?.Symbol ||
+          store.currentAsset,
+      );
+    }
+  }
 
   let displayPrice = 0;
   let subPrice = null;
