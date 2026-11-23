@@ -260,22 +260,26 @@ class ExchangeAdapter:
                 url += f"&startTime={start}"
             return url
 
-        # 6. GATEIO (V4 공식 REST API)
+        # 6. GATEIO (V4 공식 REST API - to/from은 Unix 초 단위)
         elif exchange in ["gateio", "gateio_spot"]:
             limit_num = min(int(limit or 200), 1000)
             url = f"https://api.gateio.ws/api/v4/spot/candlesticks?currency_pair={norm_sym}&interval={norm_int}&limit={limit_num}"
             if to:
-                url += f"&to={to}"
+                to_sec = int(int(to) // 1000) if str(to).isdigit() and int(to) > 10**11 else to
+                url += f"&to={to_sec}"
             if start:
-                url += f"&from={start}"
+                st_sec = int(int(start) // 1000) if str(start).isdigit() and int(start) > 10**11 else start
+                url += f"&from={st_sec}"
             return url
         elif exchange == "gateio_futures":
             limit_num = min(int(limit or 200), 1000)
             url = f"https://api.gateio.ws/api/v4/futures/usdt/candlesticks?contract={norm_sym}&interval={norm_int}&limit={limit_num}"
             if to:
-                url += f"&to={to}"
+                to_sec = int(int(to) // 1000) if str(to).isdigit() and int(to) > 10**11 else to
+                url += f"&to={to_sec}"
             if start:
-                url += f"&from={start}"
+                st_sec = int(int(start) // 1000) if str(start).isdigit() and int(start) > 10**11 else start
+                url += f"&from={st_sec}"
             return url
 
         return None

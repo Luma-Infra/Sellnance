@@ -113,8 +113,9 @@ async function _fetchCandlesSmartInternal(
   // 1. 브라우저 직접 호출 (바이낸스/바이비트 직통)
   //️ 주의: 업비트는 브라우저 Origin 헤더 감지 시 10초당 1회로 제한을 걸기 때문에
   // 업비트는 브라우저 직접 fetch를 하지 않고 서버 백엔드 프록시(/api/candles)를 경유
+  // startVal(탭 복귀 백필)은 바이낸스/바이비트 직통 호출을 허용하여 주식 선물(TRADIFI_PERPETUAL) 등도 정확히 백필
   const isUpbit = exchange === "upbit";
-  const canDirectFetch = !isGapRecovery && !isUpbit && !toVal && !startVal;
+  const canDirectFetch = !isGapRecovery && !isUpbit && !toVal;
 
   if (canDirectFetch) {
     try {
@@ -140,27 +141,43 @@ async function _fetchCandlesSmartInternal(
       // 마켓 규칙(Single Source of Truth) 규격에 맞춘 인터벌 정규화
       const normInt = normalizeExchangeInterval(exchange, interval);
 
+      const isBinanceSpotCoin = Boolean(
+        !store.currentTableData?.length ||
+          store.currentTableData.some(
+            (c) =>
+              (c.Symbol?.toUpperCase() === cleanSymbol ||
+                c.Ticker?.toUpperCase() === `${cleanSymbol}USDT` ||
+                c.Exact_Spot?.toUpperCase() === cleanSymbol) &&
+              (c.Binance === "O" ||
+                c.Listed_Exchanges?.includes("BINANCE_SPOT") ||
+                Boolean(c.Exact_Spot)),
+          ),
+      );
+
       if (exchange === "upbit") {
         const uSym = symbol.startsWith("KRW-") ? symbol : `KRW-${cleanSymbol}`;
         const uCount = Math.min(limit || 200, 200);
         const uTo = toVal ? `&to=${encodeURIComponent(toVal)}` : "";
         directUrl = `https://api.upbit.com/v1/candles/${normInt}?market=${uSym}&count=${uCount}${uTo}`;
       } else if (exchange === "binance_spot" && !isAlphaCoin) {
+        if (!isBinanceSpotCoin) {
+          // 현물 미상장 코인(선물 전용 등)은 400 에러 및 프록시 폴백 호출을 원천 차단
+          return [];
+        }
         directUrl = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${normInt}&limit=${limit}${endParamBinance}${startParamBinance}`;
       } else if (
         exchange === "binance_futures" &&
         !isAlphaCoin &&
         isBinanceFuturesCoin
       ) {
+        // 백엔드 Binance exchangeInfo(underlyingType/contractType) 기반 Is_Stock 단일 진실 소스만 신뢰
         const isStock = Boolean(
           store.currentTableData?.some(
             (c) =>
               (c.Symbol?.toUpperCase() === cleanSymbol ||
                 c.Ticker?.toUpperCase() === `${cleanSymbol}USDT` ||
                 c.Exact_Futures?.toUpperCase() === cleanSymbol) &&
-              (c.Is_Stock === true ||
-                (c.Name || "").toLowerCase().includes("stock") ||
-                (c.Name || "").toLowerCase().includes("derivative")),
+              c.Is_Stock === true,
           ),
         );
         if (isStock) {

@@ -427,6 +427,7 @@ async function fetchRawCandles(ctx, isSubSwitch, isSilentSync) {
     } else {
       mainStep = 1;
     }
+    fetchInterval = fetchTf;
 
     const raw = await fetchCandlesSmart(exName, gateSym, fetchTf, 1000);
     if (Array.isArray(raw)) {
@@ -512,43 +513,27 @@ export function syncChartWaitingOverlay(ctx) {
 
   // 활성 마켓별 가격 추출
   let activePrice = 0;
-  let marketLabel = mkt;
 
   if (mkt === "BITHUMB") {
-    activePrice = Number(
-      row.Bithumb_Price || (row.Upbit !== "O" ? row.Price_KRW : 0) || 0,
-    );
-    marketLabel = "BITHUMB";
+    activePrice = Number(row.Bithumb_Price || 0);
   } else if (mkt === "UPBIT") {
-    activePrice = Number(row.Upbit_Price || row.Price_KRW || 0);
-    marketLabel = "UPBIT";
+    activePrice = Number(row.Upbit_Price || 0);
   } else if (mkt === "BYBIT_FUTURES") {
     activePrice = Number(row.Bybit_Price_Futures || 0);
-    marketLabel = "BYBIT 선";
   } else if (mkt === "BYBIT" || mkt === "BYBIT_SPOT") {
     activePrice = Number(row.Bybit_Price_Spot || 0);
-    marketLabel = "BYBIT";
   } else if (mkt === "FUTURES" || mkt === "BINANCE_FUTURES") {
-    activePrice = Number(row.Binance_Price_Futures || row.Price_Raw || 0);
-    marketLabel = "BINANCE 선";
+    activePrice = Number(row.Binance_Price_Futures || 0);
   } else if (mkt === "SPOT" || mkt === "BINANCE_SPOT" || mkt === "BINANCE") {
-    activePrice = Number(
-      row.Binance_Price_Spot ||
-        row.Alpha_Price ||
-        row.Price ||
-        row.Price_Raw ||
-        0,
-    );
-    marketLabel = "BINANCE";
+    activePrice = Number(row.Binance_Price_Spot || row.Alpha_Price || 0);
+  } else if (mkt === "GATE_SPOT" || mkt === "GATE_FUTURES") {
+    activePrice = Number(row.Price_Raw || row.Price || 0);
   } else {
     activePrice = Number(row.Price_Raw || row.Alpha_Price || row.Price || 0);
   }
 
-  if (!activePrice) {
-    activePrice = Number(row.Alpha_Price || row.Price || row.Price_Raw || 0);
-  }
-
   // 가격 0 초과 조건 및 기존 차트 캔들 존재 여부 체크 (캔들이 있으면 거래 대기 상태 아님)
+  // 주의: 특정 마켓(UPBIT 등)의 가격이 0일 때 타 거래소 가격(row.Price_Raw)으로 폴백하지 않음!
   const hasCandles = Boolean(store.mainData && store.mainData.length > 0);
   const isWaiting = activePrice <= 0 && !hasCandles;
 
@@ -757,17 +742,9 @@ function assembleAndCommitCandles(
       }
       for (const c of newMainData) {
         const sec = getUnixSeconds(c.time);
-        if (!candleMap.has(sec)) {
-          candleMap.set(sec, c);
-        } else {
-          // 경계선 캔들: 고가/저가/종가/거래량 최신화
-          const ex = candleMap.get(sec);
-          ex.high = Math.max(Number(ex.high || 0), Number(c.high || 0));
-          ex.low = Math.min(Number(ex.low || Infinity), Number(c.low || 0));
-          ex.close = Number(c.close);
-          if (c.volume)
-            ex.volume = Math.max(Number(ex.volume || 0), Number(c.volume || 0));
-        }
+        // [REST 캔들 덮어쓰기] 백그라운드 중 소켓 스로틀링으로 왜곡된 시가/고가/저가/거래량을
+        // 거래소 공식 REST 캔들 OHLCV로 완전히 교체하여 실제 차트와 일치하도록 개선
+        candleMap.set(sec, { ...c });
       }
       const mergedMain = Array.from(candleMap.values()).sort(
         (a, b) => getUnixSeconds(a.time) - getUnixSeconds(b.time),
@@ -816,6 +793,8 @@ function assembleAndCommitCandles(
     isUpbit: isUpbit,
     isBithumb: isBithumb,
     isBybit: isBybit,
+    isGate: isGate,
+    isGateFutures: ctx.isGateFutures,
     exchange: isFutures
       ? "binance_futures"
       : isBybitFutures
@@ -824,14 +803,22 @@ function assembleAndCommitCandles(
           ? "bybit_spot"
           : isSpot
             ? "binance_spot"
-            : isUpbit
-              ? "upbit"
-              : "bithumb",
+            : isGate
+              ? ctx.isGateFutures
+                ? "gateio_futures"
+                : "gateio_spot"
+              : isUpbit
+                ? "upbit"
+                : "bithumb",
     ticker: isBybit
       ? ctx.exactBybit
-      : isUpbit || isBithumb
-        ? ctx.krwTicker
-        : ctx.binanceTicker,
+      : isGate
+        ? ctx.isGateFutures
+          ? `${ctx.pureBase}USDT.P`
+          : `${ctx.pureBase}USDT`
+        : isUpbit || isBithumb
+          ? ctx.krwTicker
+          : ctx.binanceTicker,
     krwTicker: ctx.krwTicker,
     binanceTicker: ctx.binanceTicker,
     mainTickerStr: ctx.mainTickerStr,
@@ -883,12 +870,7 @@ function applySeriesAndLayout(
       const exch = isBithumb ? "bithumb" : "upbit";
       p = getKrwPrecision(latestPrice, exch);
     } else {
-      p =
-        rowInfo && rowInfo.precision !== undefined && rowInfo.precision !== null
-          ? Number(rowInfo.precision)
-          : store.getPrecision(
-              rowInfo?.Ticker || rowInfo?.Symbol || displayName,
-            );
+      p = store.getPrecision(rowInfo?.Ticker || rowInfo?.Symbol || displayName);
     }
     store.currentPrecision = p;
 
@@ -941,8 +923,8 @@ function applySeriesAndLayout(
         });
       }
 
-      // [신규 코인 로드] 이전 코인의 커스텀 스케일 락을 해제하여 캔들 증발 방지
-      if (!isSubSwitch && !isTfChange) {
+      // [신규 코인 로드] 이전 코인의 커스텀 스케일 락을 해제하여 캔들 증발 방지 (백그라운드 복귀 isSilentSync 시 유지)
+      if (!isSubSwitch && !isTfChange && !isSilentSync) {
         store.isPriceScaleUserZoomed = false;
         store.isVolPriceScaleUserZoomed = false;
         store.isKimchiPriceScaleUserZoomed = false;
@@ -1003,28 +985,32 @@ function applySeriesAndLayout(
         } catch (_) {}
       }
 
-      if (store.kimchiSeries) {
-        const visibleRange = store.chart
-          ? store.chart.timeScale().getVisibleLogicalRange()
-          : null;
-        store.kimchiSeries.setData([]);
-        if (visibleRange && store.chartVol)
-          store.chartVol.timeScale().setVisibleLogicalRange(visibleRange);
+      if (!isSilentSync) {
+        if (store.kimchiSeries) {
+          const visibleRange = store.chart
+            ? store.chart.timeScale().getVisibleLogicalRange()
+            : null;
+          store.kimchiSeries.setData([]);
+          if (visibleRange && store.chartVol)
+            store.chartVol.timeScale().setVisibleLogicalRange(visibleRange);
+        }
+        store.kimchiData = [];
+        if (store.kimchiDataMap) {
+          store.kimchiDataMap.clear();
+        }
+        store.realtimeKimchi = null;
       }
-      store.kimchiData = [];
-      if (store.kimchiDataMap) {
-        store.kimchiDataMap.clear();
-      }
-      store.realtimeKimchi = null;
 
       // [상하 너비 동기화] 캔들/볼륨 설정 직후, 동기적으로 상하 우측 너비를 일치시키기
-      if (typeof window.syncPriceScaleWidths === "function") {
-        window.syncPriceScaleWidths(true);
-      } else if (typeof syncPriceScaleWidths === "function") {
-        syncPriceScaleWidths(true);
-      }
+      if (!isSilentSync) {
+        if (typeof window.syncPriceScaleWidths === "function") {
+          window.syncPriceScaleWidths(true);
+        } else if (typeof syncPriceScaleWidths === "function") {
+          syncPriceScaleWidths(true);
+        }
 
-      if (typeof applyChartLayout === "function") applyChartLayout();
+        if (typeof applyChartLayout === "function") applyChartLayout();
+      }
       if (typeof autoFit === "function" && !isSubSwitch && !isSilentSync)
         autoFit(isTabRestore); // 사일런트 백필 시 뷰포트 유지
 

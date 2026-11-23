@@ -87,6 +87,9 @@ export async function loadMoreHistory(isSilent = false) {
   if (params.isUpbit) {
     const dt = new Date(oldestTimeSec * 1000);
     toVal = dt.toISOString();
+  } else if (params.isGate) {
+    // Gate.io V4 API는 Unix 초(seconds) 단위 to 파라미터 사용
+    toVal = Math.floor(oldestTimeSec) - 1;
   } else {
     // 바이낸스 및 바이비트는 밀리초 타임스탬프 사용 (캔들 겹치지 않게 중복 제거하기)
     toVal = Math.floor(oldestTimeSec * 1000) - 1;
@@ -212,6 +215,24 @@ export async function loadMoreHistory(isSilent = false) {
         low: Number(d[4]),
         volume: Number(d[5]),
       }));
+    } else if (params.isGate) {
+      const raw = await fetchCandlesSmart(
+        params.exchange,
+        params.ticker,
+        params.fetchInterval || params.tf,
+        500,
+        toVal,
+      );
+      if (Array.isArray(raw)) {
+        fetchedMain = raw.map((d) => ({
+          time: Number(d[0]) / 1000,
+          open: Number(d[1]),
+          high: Number(d[2]),
+          low: Number(d[3]),
+          close: Number(d[4]),
+          volume: Number(d[5]),
+        }));
+      }
     }
 
     if (isStale()) return;
@@ -232,13 +253,14 @@ export async function loadMoreHistory(isSilent = false) {
       return;
     }
 
-    // 업비트의 경우 조립(mainStep)이 필요하면 진행
-    if (params.isUpbit && params.mainStep > 1) {
+    // 업비트 / Gate.io의 경우 조립(mainStep)이 필요하면 진행
+    if ((params.isUpbit || params.isGate) && params.mainStep > 1) {
       fetchedMain.sort((a, b) => a.time - b.time);
 
       const getGroupTime = (t, tf) => {
         const d = new Date(t * 1000);
         if (tf === "15m") return Math.floor(t / 900) * 900;
+        if (tf === "12h") return Math.floor(t / 43200) * 43200;
         // if (tf === "2h") return Math.floor(t / 7200) * 7200;
         if (tf === "3d") {
           const dayTs =
