@@ -93,6 +93,16 @@ def format_market_cap_string(mc):
     return f"{mc:,.0f}"
 
 
+def format_vmc_string(val, is_stock=False):
+    if is_stock or val is None or val <= 0:
+        return "-"
+    if val >= 1_000_000:
+        return f"{val / 1_000_000:.1f}M%"
+    if val >= 10_000:
+        return f"{val / 1_000:.1f}K%"
+    return f"{val:.2f}%"
+
+
 def format_volume_string(vol):
     if vol is None or vol == 0:
         return "0"

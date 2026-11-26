@@ -119,16 +119,19 @@ export function updateHeaderAssetName(
     const levBadgeHtml = getLeverageBadgeHtml(rowInfo, pureSym);
 
     contentHtml = `
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 min-w-0 max-w-full">
         <button onclick="window.toggleFavorite('${rowInfo.UID}', event, true);" class="star-btn text-[16px] transition-all hover:scale-125 flex-shrink-0 ${starClass}" style="color: ${starColor}">
           ${starText}
         </button>
         <div class="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-white/5 rounded-full overflow-hidden">
           ${logoHtml}
         </div>
-        <!-- PC 전용 (>=1200px): [Symbol | Name] 단일 라인 표기 + 레버리지 -->
-        <div class="hidden min-[1200px]:flex items-center gap-2 min-w-0">
-          <span class="truncate font-extrabold text-theme-accent" title="${pcText}" ${fontSizeStyle}>${pcText}</span>
+        <!-- PC 전용 (>=1200px): [Symbol | Name] 티커 고정 + 긴 이름은 말줄임(...) 및 툴팁으로 거래소 뱃지 침범 차단 -->
+        <div class="hidden min-[1200px]:flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
+          <div class="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden font-extrabold text-theme-accent" title="${pcText}" ${fontSizeStyle}>
+            <span class="shrink-0">${pureSym}</span>
+            ${rawName ? `<span class="opacity-40 shrink-0">|</span><span class="truncate min-w-0">${rawName}</span>` : ""}
+          </div>
           ${levBadgeHtml}
         </div>
         <!-- 모바일 전용 (<1200px): 코인 이름 2단 정렬 + 레버리지 -->
@@ -854,7 +857,6 @@ export function updateExchangeBadges(s, targetUid = null) {
         isListed: Boolean(
           rowInfo.Binance === "O" ||
           rowInfo.Listed_Exchanges?.includes("BINANCE_SPOT") ||
-          rowInfo.Listed_Exchanges?.includes("BINANCE") ||
           rowInfo.Exact_Spot,
         ),
       },

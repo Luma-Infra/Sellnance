@@ -124,11 +124,11 @@
       src="https://static.cloudflareinsights.com/beacon.min.js"
       data-cf-beacon='{"token": "1c7917a73feb458db846dbdb1a40786d"}'
     ></script>
-    <script type="module" crossorigin src="/assets/ap120-L-AGVzJw.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/ch120-BtI6CrV6.js">
-    <link rel="modulepreload" crossorigin href="/assets/ma140-Dyn2hVUG.js">
-    <link rel="modulepreload" crossorigin href="/assets/uc160-DhnXw8kV.js">
-    <link rel="stylesheet" crossorigin href="/assets/ma100-DNzaPO9V.css">
+    <script type="module" crossorigin src="/assets/ap120-DD4_hIxE.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/ch120-CAG4hB35.js">
+    <link rel="modulepreload" crossorigin href="/assets/ma140-BkLcWJfE.js">
+    <link rel="modulepreload" crossorigin href="/assets/uc160-aDf8lfYE.js">
+    <link rel="stylesheet" crossorigin href="/assets/ma100-Ct_Db2nW.css">
   </head>
 
   <body
@@ -425,7 +425,7 @@
                 필요 채널 선택적 갱신
               </li>
               <li>
-                <b>부드러운 전환 & 메모리 제어:</b> 차트 탭 전환 시 메모리
+                <b>부드러운 전환 및 메모리 제어:</b> 차트 탭 전환 시 메모리
                 누수 감시 및 무거운 DOM 갱신 주기 제어를 통한 쾌적한 화면 전환
                 구현
               </li> -->
@@ -1060,7 +1060,15 @@
                         class="hidden ml-1 p-0.5 w-3.5 h-3.5 rounded-full bg-rose-500/25 hover:bg-rose-500 text-rose-300 hover:text-white items-center justify-center transition-all duration-150 cursor-pointer active:scale-90"
                         title="커스텀 필터 초기화"
                       >
-                        <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <svg
+                          class="w-2.5 h-2.5"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="3"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        >
                           <line x1="18" y1="6" x2="6" y2="18"></line>
                           <line x1="6" y1="6" x2="18" y2="18"></line>
                         </svg>
@@ -1826,11 +1834,11 @@
                 >
                   <!-- PC 전용 코인명 (>=1200px에서 좌측에 노출) -->
                   <div
-                    class="hidden min-[1200px]:flex items-center gap-4 min-w-0 min-[1200px]:order-1"
+                    class="hidden min-[1200px]:flex items-center gap-4 min-w-0 flex-1 overflow-hidden min-[1200px]:order-1"
                   >
                     <h3
                       id="head-asset-name-pc"
-                      class="m-0 text-theme-accent text-lg min-[1200px]:text-xl font-extrabold tracking-wide shrink-0"
+                      class="m-0 text-theme-accent text-lg min-[1200px]:text-xl font-extrabold tracking-wide min-w-0 max-w-[75%] overflow-hidden"
                     >
                       ASSET
                     </h3>
@@ -1839,16 +1847,16 @@
                   <!-- 거래소 뱃지: 모바일에서는 1층 전체 / PC에서는 우측(order-2)에 스크롤 없이 보기 좋게 배치 -->
                   <div
                     id="exchange-badges"
-                    class="flex items-center gap-3.5 sm:gap-4 min-[1200px]:gap-2 overflow-x-auto min-[1200px]:overflow-visible min-[1200px]:flex-wrap max-[1199px]:scrollbar-hide max-[1199px]:w-full max-[1199px]:py-2 max-[1199px]:px-1.5 max-[1199px]:pr-12 min-[1200px]:order-2 min-[1200px]:ml-auto min-[1200px]:justify-end"
+                    class="flex items-center gap-3.5 sm:gap-4 min-[1200px]:gap-2 overflow-x-auto min-[1200px]:overflow-visible min-[1200px]:flex-wrap max-[1199px]:scrollbar-hide max-[1199px]:w-full max-[1199px]:py-2 max-[1199px]:px-1.5 max-[1199px]:pr-12 min-[1200px]:order-2 min-[1200px]:ml-auto min-[1200px]:justify-end min-[1200px]:shrink-0"
                   ></div>
                 </div>
 
-                <!-- 2층 (모바일: [티커+가격] 좌측 ↔ [24H & Day 등락률] 우측 / PC: [Price] -> [24H] -> [Day] -> [Mcap] -> [Vol]) -->
+                <!-- 2층 (모바일: [티커+가격] 좌측 : [24H + Day 등락률] 우측 / PC: [Price] -> [24H] -> [Day] -> [Mcap] -> [Vol]) -->
                 <div
                   id="head-info-row"
                   class="flex items-center justify-between min-[1200px]:justify-start min-[1200px]:gap-6 w-full pt-1 px-2.5 sm:px-3 pb-1.5 min-[1200px]:py-0 min-[1200px]:my-auto border-none"
                 >
-                  <!-- 좌측 그룹: 모바일 코인명 + 실시간 가격 전광판 (티커 바로 옆에 가격 배치) -->
+                  <!-- 좌측 그룹: 모바일 코인명 + 실시간 가격 표시 (티커 바로 옆에 가격 배치) -->
                   <div
                     class="flex items-center gap-3.5 sm:gap-4.5 shrink min-w-0"
                   >
@@ -1864,7 +1872,7 @@
                       </h3>
                     </div>
 
-                    <!-- 1. 실시간 가격 전광판 (PC: 좌측 Price 라벨 + 우측 2단 [큰 가격 / 환산 가격]) -->
+                    <!-- 1. 실시간 가격 표시 (PC: 좌측 Price 라벨 + 우측 2단 [큰 가격 / 환산 가격]) -->
                     <div
                       id="head-price-container"
                       class="flex flex-col min-[1200px]:flex-row min-[1200px]:items-start min-[1200px]:gap-2 text-xs text-left min-w-fit shrink-0 justify-center min-[1200px]:justify-start"
@@ -1895,12 +1903,12 @@
                     </div>
                   </div>
 
-                  <!-- 우측 통계 지표 그룹: 24H Chg, Day Chg, Market Cap, B-Vol, U-Vol (우측 정렬 & 볼드 제거) -->
+                  <!-- 우측 값 : 24H Chg, Day Chg, Market Cap, B-Vol, U-Vol -->
                   <div
                     id="head-metrics-container"
                     class="flex items-center gap-2 sm:gap-3 shrink-0 text-right min-[1200px]:gap-6 ml-auto min-[1200px]:items-start"
                   >
-                    <!-- 2. 24H 변동률 전광판 -->
+                    <!-- 2. 24H 변동률 표시 -->
                     <div
                       id="head-metric-box-24h"
                       class="flex flex-col text-xs text-right shrink-0 min-w-fit items-end"
@@ -1916,7 +1924,7 @@
                       >
                     </div>
 
-                    <!-- 3. DAY 변동률 전광판 -->
+                    <!-- 3. DAY 변동률 표시 -->
                     <div
                       id="head-metric-box-day"
                       class="flex flex-col text-xs text-right shrink-0 min-w-fit items-end"
@@ -2325,7 +2333,7 @@
                     id="pane-main"
                     class="w-full h-full relative z-0 flex-1 min-h-[100px] group"
                   >
-                    <!-- 메인 차트용 A/L & 트뷰 스타일 페인 컨트롤 오버레이 -->
+                    <!-- 메인 차트용 A/L + 트뷰 스타일 페인 컨트롤 오버레이 -->
                     <div
                       class="scale-mode-container absolute bottom-[4px] right-[80px] z-[110] flex items-center gap-1 bg-theme-panel/95 p-0.5 rounded border border-theme-border select-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-auto shadow-md"
                     >
@@ -2357,7 +2365,7 @@
                         </button>
                       </div>
                       -->
-                      <!-- 거래량 & 김프 분리 ~ 통합 토글 버튼 -->
+                      <!-- 거래량 및 김프 분리 ~ 통합 토글 버튼 -->
                       <div class="scale-mode-btn-wrap">
                         <button
                           id="pane-split-toggle-btn"
@@ -2413,7 +2421,7 @@
                       있어요<br />
                       코인 혹은 타임프레임 봉을 바꿔보세요
                     </div>
-                    <!-- 김프 안내 메시지 컨테이너 (차트가 없어요 & 비교 꺼져있어요 동시 표시 시 자연스러운 세로 스택) -->
+                    <!-- 김프 안내 메시지 컨테이너 (차트가 없어요 + 비교 꺼져있어요 동시 표시 시 자연스러운 세로 스택) -->
                     <div
                       class="absolute top-2 left-3 z-[60] flex flex-col items-start gap-1.5 pointer-events-none transition-all duration-300"
                     >
@@ -2457,7 +2465,7 @@
                         >
                       </div>
                     </div>
-                    <!-- 거래량 & 김프 스케일 오버레이 (우하단 배치로 통일) -->
+                    <!-- 거래량 및 김프 스케일 오버레이 (우하단 배치로 통일) -->
                     <div
                       class="scale-mode-container-vol absolute bottom-[4px] right-[80px] z-50 flex gap-1 bg-theme-panel/95 p-0.5 rounded border border-theme-border select-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-auto shadow-md"
                     >
@@ -3059,7 +3067,7 @@
                 onclick="saveSettings()"
                 class="flex-1 bg-theme-accent text-white py-3 rounded-xl font-medium text-sm shadow-lg hover:brightness-110 active:scale-95 transition-all"
               >
-                SAVE & APPLY
+                SAVE and APPLY
               </button>
               <button
                 type="button"
@@ -3125,9 +3133,9 @@
               </div>
             </div>
 
-            <!-- 중앙: 페이지 네비게이션 & 레이아웃 세그먼트 버튼 & 유니크 캔들 토글 -->
+            <!-- 중앙: 페이지 네비게이션 + 레이아웃 세그먼트 버튼 + 유니크 캔들 토글 -->
             <div class="flex items-center gap-4">
-              <!-- 페이지 네비게이션 (+-10 페이지 빨리감기 & 이전/다음) -->
+              <!-- 페이지 네비게이션 (+-10 페이지 빨리감기 + 이전/다음) -->
               <div
                 class="flex items-center gap-1 bg-theme-border/10 p-0.5 rounded-lg border border-theme-border/20"
               >
@@ -3204,7 +3212,7 @@
               </button>
             </div>
 
-            <!-- 우측: 리셋 버튼 & 닫기 버튼 -->
+            <!-- 우측: 리셋 버튼 + 닫기 버튼 -->
             <div class="flex items-center gap-4">
               <!-- 초기화 버튼 -->
               <!-- 스케일 초기화 버튼 -->
@@ -3367,9 +3375,9 @@
               </button>
             </div>
 
-            <div class="flex gap-5 flex-wrap justify-center mt-1">
+            <div class="flex gap-4 flex-wrap justify-center mt-1 max-w-[840px]">
               <div
-                class="qv-init-card flex flex-col items-center justify-center p-6 bg-theme-panel border border-theme-border/40 hover:border-theme-accent rounded-2xl w-[150px] h-[150px] gap-3 transition-all duration-300 cursor-pointer shadow-lg hover:-translate-y-1.5 active:scale-[0.97]"
+                class="qv-init-card flex flex-col items-center justify-center p-5 bg-theme-panel border border-theme-border/40 hover:border-theme-accent rounded-2xl w-[142px] h-[142px] gap-3 transition-all duration-300 cursor-pointer shadow-lg hover:-translate-y-1.5 active:scale-[0.97]"
                 onclick="selectQuickViewInitSort('24h')"
               >
                 <span
@@ -3381,7 +3389,7 @@
                 >
               </div>
               <div
-                class="qv-init-card flex flex-col items-center justify-center p-6 bg-theme-panel border border-theme-border/40 hover:border-theme-accent rounded-2xl w-[150px] h-[150px] gap-3 transition-all duration-300 cursor-pointer shadow-lg hover:-translate-y-1.5 active:scale-[0.97]"
+                class="qv-init-card flex flex-col items-center justify-center p-5 bg-theme-panel border border-theme-border/40 hover:border-theme-accent rounded-2xl w-[142px] h-[142px] gap-3 transition-all duration-300 cursor-pointer shadow-lg hover:-translate-y-1.5 active:scale-[0.97]"
                 onclick="selectQuickViewInitSort('day')"
               >
                 <span
@@ -3393,7 +3401,7 @@
                 >
               </div>
               <div
-                class="qv-init-card flex flex-col items-center justify-center p-6 bg-theme-panel border border-theme-border/40 hover:border-theme-accent rounded-2xl w-[150px] h-[150px] gap-3 transition-all duration-300 cursor-pointer shadow-lg hover:-translate-y-1.5 active:scale-[0.97]"
+                class="qv-init-card flex flex-col items-center justify-center p-5 bg-theme-panel border border-theme-border/40 hover:border-theme-accent rounded-2xl w-[142px] h-[142px] gap-3 transition-all duration-300 cursor-pointer shadow-lg hover:-translate-y-1.5 active:scale-[0.97]"
                 onclick="selectQuickViewInitSort('mcap')"
               >
                 <span
@@ -3402,6 +3410,30 @@
                 >
                 <span class="text-[11px] font-bold text-theme-text"
                   >시가총액</span
+                >
+              </div>
+              <div
+                class="qv-init-card flex flex-col items-center justify-center p-5 bg-theme-panel border border-theme-border/40 hover:border-[#f0b90b] rounded-2xl w-[142px] h-[142px] gap-3 transition-all duration-300 cursor-pointer shadow-lg hover:-translate-y-1.5 active:scale-[0.97]"
+                onclick="selectQuickViewInitSort('vol_b')"
+              >
+                <span
+                  class="text-3xl filter drop-shadow-[0_4px_6px_rgba(240,185,11,0.35)]"
+                  >🟡</span
+                >
+                <span class="text-[11px] font-bold text-theme-text"
+                  >바이낸스 거래대금(Vol)</span
+                >
+              </div>
+              <div
+                class="qv-init-card flex flex-col items-center justify-center p-5 bg-theme-panel border border-theme-border/40 hover:border-[#3875ff] rounded-2xl w-[142px] h-[142px] gap-3 transition-all duration-300 cursor-pointer shadow-lg hover:-translate-y-1.5 active:scale-[0.97]"
+                onclick="selectQuickViewInitSort('vol_u')"
+              >
+                <span
+                  class="text-3xl filter drop-shadow-[0_4px_6px_rgba(56,117,255,0.35)]"
+                  >🔵</span
+                >
+                <span class="text-[11px] font-bold text-theme-text"
+                  >업비트 거래대금(Vol)</span
                 >
               </div>
             </div>

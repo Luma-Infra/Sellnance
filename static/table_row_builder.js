@@ -309,10 +309,6 @@ export function updateRowDynamicHTML(
   //   window.syncRowPrioritizedMetrics(row);
   // }
   const tId = row.Ticker;
-  const p =
-    row.precision !== undefined && row.precision !== null
-      ? Number(row.precision)
-      : store.getPrecision(row.Ticker || row.DisplayTicker || row.Symbol);
   const rate = store.marketDataMap?.krw_usd_rate || 1000;
   const isKrw = store.currencyMode === "KRW";
 
@@ -321,7 +317,33 @@ export function updateRowDynamicHTML(
     n24h,
     nDay,
     activeExchange,
+    isFutures: isRowFutures,
   } = getRowDisplayMetrics(row, isKrw, rate);
+
+  let p = null;
+  if (activeExchange === "binance") {
+    if (isRowFutures && row.Binance_Precision_Futures != null) {
+      p = Number(row.Binance_Precision_Futures);
+    } else if (!isRowFutures && row.Binance_Precision_Spot != null) {
+      p = Number(row.Binance_Precision_Spot);
+    } else if (row.Binance_Precision != null) {
+      p = Number(row.Binance_Precision);
+    }
+  } else if (activeExchange === "bybit") {
+    if (isRowFutures && row.Bybit_Precision_Futures != null) {
+      p = Number(row.Bybit_Precision_Futures);
+    } else if (!isRowFutures && row.Bybit_Precision_Spot != null) {
+      p = Number(row.Bybit_Precision_Spot);
+    } else if (row.Bybit_Precision != null) {
+      p = Number(row.Bybit_Precision);
+    }
+  }
+  if (p === null || isNaN(p)) {
+    p =
+      row.precision !== undefined && row.precision !== null
+        ? Number(row.precision)
+        : store.getPrecision(row.Ticker || row.DisplayTicker || row.Symbol);
+  }
   const formattedPrice = formatSmartPrice(nPrice, p, isKrw);
 
   const color24h =
@@ -338,7 +360,17 @@ export function updateRowDynamicHTML(
         ? "text-theme-down"
         : "text-theme-text";
 
-  const vmcFormatted = row.VMC_Formatted || "-";
+  let vmcFormatted = "-";
+  if (!row.Is_Stock) {
+    const vmcNum = Number(row.VMC_Raw);
+    if (Number.isFinite(vmcNum) && vmcNum > 0) {
+      if (vmcNum >= 1_000_000) vmcFormatted = `${(vmcNum / 1_000_000).toFixed(1)}M%`;
+      else if (vmcNum >= 10_000) vmcFormatted = `${(vmcNum / 1_000).toFixed(1)}K%`;
+      else vmcFormatted = row.VMC_Formatted || `${vmcNum.toFixed(2)}%`;
+    } else if (row.VMC_Formatted && row.VMC_Formatted !== "-") {
+      vmcFormatted = row.VMC_Formatted;
+    }
+  }
   const vmcColorClass = "text-theme-text";
 
   // 가격, 등락률 렌더링
@@ -995,17 +1027,37 @@ window.updateRowPriceDisplay = (target, row) => {
 
   const rate = store.marketDataMap?.krw_usd_rate || 1000;
   const isKrwMode = store.currencyMode === "KRW";
-  const p =
-    row.precision !== undefined && row.precision !== null
-      ? Number(row.precision)
-      : store.getPrecision(row.Ticker || row.DisplayTicker || row.Symbol);
-
   const oldPrice = parseFloat(parentEl.getAttribute("data-raw-price") || "0");
-  const { displayPrice, activeExchange } = getRowDisplayMetrics(
-    row,
-    isKrwMode,
-    rate,
-  );
+  const {
+    displayPrice,
+    activeExchange,
+    isFutures: isRowFutures,
+  } = getRowDisplayMetrics(row, isKrwMode, rate);
+
+  let p = null;
+  if (activeExchange === "binance") {
+    if (isRowFutures && row.Binance_Precision_Futures != null) {
+      p = Number(row.Binance_Precision_Futures);
+    } else if (!isRowFutures && row.Binance_Precision_Spot != null) {
+      p = Number(row.Binance_Precision_Spot);
+    } else if (row.Binance_Precision != null) {
+      p = Number(row.Binance_Precision);
+    }
+  } else if (activeExchange === "bybit") {
+    if (isRowFutures && row.Bybit_Precision_Futures != null) {
+      p = Number(row.Bybit_Precision_Futures);
+    } else if (!isRowFutures && row.Bybit_Precision_Spot != null) {
+      p = Number(row.Bybit_Precision_Spot);
+    } else if (row.Bybit_Precision != null) {
+      p = Number(row.Bybit_Precision);
+    }
+  }
+  if (p === null || isNaN(p)) {
+    p =
+      row.precision !== undefined && row.precision !== null
+        ? Number(row.precision)
+        : store.getPrecision(row.Ticker || row.DisplayTicker || row.Symbol);
+  }
   const isKrw = isKrwMode;
   const formattedPrice = window.formatSmartPrice(displayPrice, p, isKrw);
 

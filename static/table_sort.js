@@ -180,7 +180,8 @@ export function simpleSortData() {
         isEmpty = true;
       } else if (
         store.currentSortCol === "VMC" &&
-        (val === 0 ||
+        (d.Is_Stock === true ||
+          val === 0 ||
           val === 0.0 ||
           val === "0" ||
           Number(val) <= 0 ||

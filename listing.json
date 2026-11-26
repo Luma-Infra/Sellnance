@@ -2608,7 +2608,9 @@
     "binance_listing": "2026-03-26"
   },
   "METIS": {
-    "binance_listing": "2024-03-12"
+    "binance_listing": "2024-03-01",
+    "bybit_listing": "2024-01-01",
+    "bithumb_listing": "2024-11-01"
   },
   "METISUSDT": {
     "binance_listing": "2025-01-18"
@@ -3289,7 +3291,7 @@
     "bithumb_listing": "2025-09-11"
   },
   "PUMPBTC": {
-    "binance_listing": "2025-06-13",
+    "binance_listing": "2025-04-17",
     "bithumb_listing": "2025-04-21"
   },
   "PUMPBTCUSDT": {
@@ -3803,6 +3805,9 @@
   },
   "SOXLUSDT": {
     "binance_listing": "2026-05-15"
+  },
+  "SOXSB": {
+    "binance_listing": "2026-07-16"
   },
   "SPA": {
     "binance_listing": "2020-08-24"

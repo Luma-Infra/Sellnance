@@ -199,6 +199,16 @@ function resolveTopAssets() {
     );
   } else if (qvState.sortType === "mcap") {
     source.sort((a, b) => (b.MarketCap_Raw || 0) - (a.MarketCap_Raw || 0));
+  } else if (qvState.sortType === "vol_b") {
+    const getBinVol = (r) =>
+      Number(r.Binance_Vol_Futures || 0) ||
+      Number(r.Binance_Vol_Spot || 0) ||
+      Number(r.Volume_Raw || 0);
+    source = source.filter((r) => getBinVol(r) > 0);
+    source.sort((a, b) => getBinVol(b) - getBinVol(a));
+  } else if (qvState.sortType === "vol_u") {
+    source = source.filter((r) => Number(r.Upbit_Vol || 0) > 0);
+    source.sort((a, b) => Number(b.Upbit_Vol || 0) - Number(a.Upbit_Vol || 0));
   }
 
   // 최대 페이지 계산 (무제한)
