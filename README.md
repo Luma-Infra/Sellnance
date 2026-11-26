@@ -1,7 +1,7 @@
-# Sellnance (셀낸스)
+﻿# Sellnance (셀낸스)
 
-<img width="320" height="80" alt="sellnance_logo_dark_tight" src="https://github.com/user-attachments/assets/296438b4-de5e-4777-ad72-a7c27a872f9e" />
-<img width="320" height="80" alt="sellnance_logo_light_tight" src="https://github.com/user-attachments/assets/73578361-7e24-4335-81da-19bff12838eb" />
+<img width="320" height="80" alt="sellnance_logo_dark_tight" src="static/sellnance_logo_dark_tight.png" />
+<img width="320" height="80" alt="sellnance_logo_light_tight" src="static/sellnance_logo_light_tight.png" />
 
 ### 멀티 거래소 실시간 시세 & 김치프리미엄 통합 분석 터미널 (Sell + Binance)
 
