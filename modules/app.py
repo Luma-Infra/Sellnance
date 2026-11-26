@@ -75,7 +75,6 @@ try:
         sentry_sdk.init(
             dsn=sentry_dsn,
             traces_sample_rate=0.0,  # 병목 방지: 불필요한 APM 트레이싱 끄고 순수 에러만 비동기 수집
-            send_default_pii=False,
             before_send=sentry_before_send,
         )
 except ImportError:
