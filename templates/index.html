@@ -27,8 +27,8 @@
           var logo = document.getElementById("brand-logo-img");
           if (logo) {
             logo.src = isUpbit
-              ? "/static/sellnance_logo_light_tight.png"
-              : "/static/sellnance_logo_dark_tight.png";
+              ? "/static/sellnance_logo_light_tight.png?v=2"
+              : "/static/sellnance_logo_dark_tight.png?v=2";
           }
         });
         if (localStorage.getItem("sellnance_panel_swapped") === "true") {
@@ -362,7 +362,7 @@
           <button id="brand-logo-btn" type="button" onclick="handleLogoRefresh(this)"
             class="group flex items-center h-full cursor-pointer select-none border-0 bg-transparent p-0 transition-opacity hover:opacity-85 focus:outline-none"
             title="클릭하여 새로고침">
-            <img src="/static/sellnance_logo_dark_tight.png" id="brand-logo-img"
+            <img src="/static/sellnance_logo_dark_tight.png?v=2" id="brand-logo-img"
               class="h-7 w-auto object-contain transition-transform duration-300 ease-out group-hover:scale-105"
               alt="Sellnance" />
           </button>

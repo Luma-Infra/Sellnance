@@ -165,7 +165,7 @@ function getStartScreenHTML() {
               >
                 <img
                   id="start-brand-logo-img"
-                  src="${document.documentElement.classList.contains("theme-upbit") || document.body?.classList.contains("theme-upbit") || localStorage.getItem("sellnance_theme") === "upbit" ? "/static/sellnance_logo_light_tight.png" : "/static/sellnance_logo_dark_tight.png"}"
+                  src="${document.documentElement.classList.contains("theme-upbit") || document.body?.classList.contains("theme-upbit") || localStorage.getItem("sellnance_theme") === "upbit" ? "/static/sellnance_logo_light_tight.png?v=2" : "/static/sellnance_logo_dark_tight.png?v=2"}"
                   class="h-11 sm:h-12 md:h-14 lg:h-16 w-auto max-w-[280px] sm:max-w-[320px] object-contain transition-transform duration-300 ease-out hover:scale-105 my-1"
                   alt="Sellnance"
                 />

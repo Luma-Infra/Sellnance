@@ -186,10 +186,10 @@ export function toggleTheme() {
     if (faviconLink) faviconLink.href = "/static/luma-deer-svg-light.svg";
     const brandLogoImg = document.getElementById("brand-logo-img");
     if (brandLogoImg)
-      brandLogoImg.src = "/static/sellnance_logo_light_tight.png";
+      brandLogoImg.src = "/static/sellnance_logo_light_tight.png?v=2";
     const startLogoImg = document.getElementById("start-brand-logo-img");
     if (startLogoImg)
-      startLogoImg.src = "/static/sellnance_logo_light_tight.png";
+      startLogoImg.src = "/static/sellnance_logo_light_tight.png?v=2";
   } else {
     body.classList.remove("theme-upbit");
     body.classList.add("theme-binance");
@@ -200,10 +200,10 @@ export function toggleTheme() {
     if (faviconLink) faviconLink.href = "/static/luma-deer-svg-dark.svg";
     const brandLogoImg = document.getElementById("brand-logo-img");
     if (brandLogoImg)
-      brandLogoImg.src = "/static/sellnance_logo_dark_tight.png";
+      brandLogoImg.src = "/static/sellnance_logo_dark_tight.png?v=2";
     const startLogoImg = document.getElementById("start-brand-logo-img");
     if (startLogoImg)
-      startLogoImg.src = "/static/sellnance_logo_dark_tight.png";
+      startLogoImg.src = "/static/sellnance_logo_dark_tight.png?v=2";
   }
 
   // 테마 상태를 localStorage에 먼저 저장하여 차트 테마 및 김프 엔진이 최신 테마를 참조 가능하도록 하기

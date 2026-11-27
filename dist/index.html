@@ -27,8 +27,8 @@
           var logo = document.getElementById("brand-logo-img");
           if (logo) {
             logo.src = isUpbit
-              ? "/static/sellnance_logo_light_tight.png"
-              : "/static/sellnance_logo_dark_tight.png";
+              ? "/static/sellnance_logo_light_tight.png?v=2"
+              : "/static/sellnance_logo_dark_tight.png?v=2";
           }
         });
         if (localStorage.getItem("sellnance_panel_swapped") === "true") {
@@ -106,10 +106,10 @@
   <!-- Cloudflare Web Analytics (비동기 통계) -->
   <script defer src="https://static.cloudflareinsights.com/beacon.min.js"
     data-cf-beacon='{"token": "1c7917a73feb458db846dbdb1a40786d"}'></script>
-  <script type="module" crossorigin src="/assets/ap120-Dfd1qCJB.js"></script>
-  <link rel="modulepreload" crossorigin href="/assets/ch120-CAG4hB35.js">
-  <link rel="modulepreload" crossorigin href="/assets/ma140-BkLcWJfE.js">
-  <link rel="modulepreload" crossorigin href="/assets/uc160-Cd21CfRl.js">
+  <script type="module" crossorigin src="/assets/ap120-DTfUgSDx.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/ch120-CZ3JJkZa.js">
+  <link rel="modulepreload" crossorigin href="/assets/ma140-C5_Q0kl6.js">
+  <link rel="modulepreload" crossorigin href="/assets/uc160-D9gB5DXD.js">
   <link rel="stylesheet" crossorigin href="/assets/ma100-BVyQsEy3.css">
 </head>
 
@@ -362,7 +362,7 @@
           <button id="brand-logo-btn" type="button" onclick="handleLogoRefresh(this)"
             class="group flex items-center h-full cursor-pointer select-none border-0 bg-transparent p-0 transition-opacity hover:opacity-85 focus:outline-none"
             title="클릭하여 새로고침">
-            <img src="/static/sellnance_logo_dark_tight.png" id="brand-logo-img"
+            <img src="/static/sellnance_logo_dark_tight.png?v=2" id="brand-logo-img"
               class="h-7 w-auto object-contain transition-transform duration-300 ease-out group-hover:scale-105"
               alt="Sellnance" />
           </button>

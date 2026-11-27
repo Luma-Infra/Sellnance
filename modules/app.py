@@ -204,15 +204,16 @@ class CachedStaticFiles(StaticFiles):
     def file_response(self, *args, **kwargs) -> Response:
         resp = super().file_response(*args, **kwargs)
         path_str = str(kwargs.get("path") or (args[0] if args else "")).lower()
-        if any(
-            path_str.endswith(ext)
-            for ext in [".woff2", ".woff", ".svg", ".png", ".jpg", ".webp", ".ico"]
-        ):
-            resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
-        elif "/assets/" in str(self.directory) or "\\assets\\" in str(self.directory):
+        if Path(self.directory).name == "assets":
             resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
         elif not IS_PRODUCTION:
             resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        elif any(path_str.endswith(ext) for ext in [".woff2", ".woff"]):
+            resp.headers["Cache-Control"] = "public, max-age=604800"
+        elif any(
+            path_str.endswith(ext) for ext in [".svg", ".png", ".jpg", ".webp", ".ico"]
+        ):
+            resp.headers["Cache-Control"] = "public, no-cache"
         else:
             resp.headers["Cache-Control"] = "public, max-age=3600"
         return resp
@@ -1045,21 +1046,37 @@ async def send_feedback(data: dict = Body(...)):
 
     env_clean = environment.replace("💻 ", "").replace("📱 ", "")
     email_tag = f" • ✉️ {email}" if email else ""
-    footer_text = (
-        f"{symbol} (UID: {uid}), {env_clean}, {resolution}\n{now_kst_str}"
-    )
+    footer_text = f"{symbol} (UID: {uid}), {env_clean}, {resolution}\n{now_kst_str}"
 
     feedback_id = f"fb_{int(time.time() * 1000)}"
 
     # 포럼 게시글 제목 (첫 줄 요약 또는 심볼 태그)
     first_line = message.strip().split("\n")[0].strip()
     title_summary = (first_line[:35] + "...") if len(first_line) > 35 else first_line
-    thread_title = f"[{symbol}] {title_summary}" if symbol != "미선택" else title_summary
+    thread_title = (
+        f"[{symbol}] {title_summary}" if symbol != "미선택" else title_summary
+    )
     if not thread_title:
         thread_title = f"사용자 피드백 ({now_kst_str})"
 
     # 랜덤 프로필 아바타 (DiceBear 봇 이미지)
-    avatar_seeds = ["Felix", "Milo", "Oscar", "Luna", "Leo", "Zoe", "Sam", "Jack", "Coco", "Oliver", "Ruby", "Toby", "Gizmo", "Dexter", "Penny"]
+    avatar_seeds = [
+        "Felix",
+        "Milo",
+        "Oscar",
+        "Luna",
+        "Leo",
+        "Zoe",
+        "Sam",
+        "Jack",
+        "Coco",
+        "Oliver",
+        "Ruby",
+        "Toby",
+        "Gizmo",
+        "Dexter",
+        "Penny",
+    ]
     chosen_seed = f"{random.choice(avatar_seeds)}_{random.randint(100, 999)}"
     avatar_url = f"https://api.dicebear.com/7.x/bottts/png?seed={chosen_seed}"
 
@@ -1110,7 +1127,11 @@ async def send_feedback(data: dict = Body(...)):
             # 1. 포럼 채널로 전송 (thread_name 포함, wait=true로 ID 획득)
             if webhook_forum:
                 forum_payload = {
-                    "username": f"Sellnance 피드백봇 ({symbol})" if symbol != "미선택" else "Sellnance 피드백봇",
+                    "username": (
+                        f"Sellnance 피드백봇 ({symbol})"
+                        if symbol != "미선택"
+                        else "Sellnance 피드백봇"
+                    ),
                     "avatar_url": avatar_url,
                     "thread_name": thread_title,
                     "content": message,
@@ -1130,7 +1151,11 @@ async def send_feedback(data: dict = Body(...)):
             # 2. 일반 채널로 전송 (thread_name 없이, wait=true로 ID 획득)
             if webhook_general:
                 gen_payload = {
-                    "username": f"Sellnance 피드백봇 ({symbol})" if symbol != "미선택" else "Sellnance 피드백봇",
+                    "username": (
+                        f"Sellnance 피드백봇 ({symbol})"
+                        if symbol != "미선택"
+                        else "Sellnance 피드백봇"
+                    ),
                     "avatar_url": avatar_url,
                     "content": message,
                     "embeds": [embed_body],
@@ -1301,7 +1326,10 @@ async def discord_interactions(request: Request):
             # [반대편 채널 비동기 동기화 패치 함수]
             asyncio.create_task(
                 _sync_counterpart_message(
-                    entry, new_embed, new_components, clicked_channel_id=str(body.get("channel_id"))
+                    entry,
+                    new_embed,
+                    new_components,
+                    clicked_channel_id=str(body.get("channel_id")),
                 )
             )
 
@@ -1317,7 +1345,9 @@ async def discord_interactions(request: Request):
     return {"type": 4, "data": {"content": "확인되었습니다."}}
 
 
-async def _sync_counterpart_message(entry: dict | None, embed: dict, components: list, clicked_channel_id: str):
+async def _sync_counterpart_message(
+    entry: dict | None, embed: dict, components: list, clicked_channel_id: str
+):
     """클릭되지 않은 반대편 채널의 메시지를 찾아 웹훅 PATCH로 실시간 동기화"""
     if not entry:
         return
@@ -1343,13 +1373,17 @@ async def _sync_counterpart_message(entry: dict | None, embed: dict, components:
             if clicked_channel_id in [f_thread_id, f_msg_id]:
                 if webhook_general and g_msg_id:
                     edit_url = f"{webhook_general}/messages/{g_msg_id}"
-                    await session.patch(edit_url, json=payload, timeout=aiohttp.ClientTimeout(total=4))
+                    await session.patch(
+                        edit_url, json=payload, timeout=aiohttp.ClientTimeout(total=4)
+                    )
             # 일반 채널에서 클릭된 경우 ➔ 포럼 글 동기화
             else:
                 if webhook_forum and f_msg_id:
                     thread_param = f"?thread_id={f_thread_id}" if f_thread_id else ""
                     edit_url = f"{webhook_forum}/messages/{f_msg_id}{thread_param}"
-                    await session.patch(edit_url, json=payload, timeout=aiohttp.ClientTimeout(total=4))
+                    await session.patch(
+                        edit_url, json=payload, timeout=aiohttp.ClientTimeout(total=4)
+                    )
     except Exception as e:
         print(f"반대편 채널 동기화 예외: {e}")
 
@@ -1406,7 +1440,11 @@ def is_local_or_private_request(request: Request) -> bool:
     client_host = (request.client.host if request.client else "").strip()
 
     # 프록시 헤더가 존재할 경우 가장 첫 번째 클라이언트 IP 확인
-    target_ip = cf_ip or (x_forwarded.split(",")[0].strip() if x_forwarded else "") or client_host
+    target_ip = (
+        cf_ip
+        or (x_forwarded.split(",")[0].strip() if x_forwarded else "")
+        or client_host
+    )
 
     if not target_ip:
         return False
@@ -1434,11 +1472,12 @@ async def matcher_web_viewer(request: Request):
     if not is_local_or_private_request(request):
         raise HTTPException(
             status_code=403,
-            detail="Forbidden: Matcher tool is only accessible from local/private network (127.*, 192.168.*, localhost)."
+            detail="Forbidden: Matcher tool is only accessible from local/private network (127.*, 192.168.*, localhost).",
         )
     matcher_file = BASE_DIR / "static" / "matcher.html"
     if matcher_file.exists():
         from fastapi.responses import FileResponse
+
         return FileResponse(matcher_file)
     raise HTTPException(status_code=404, detail="Matcher viewer not found")
 
@@ -1448,7 +1487,7 @@ async def api_get_matcher_results(request: Request):
     if not is_local_or_private_request(request):
         raise HTTPException(
             status_code=403,
-            detail="Forbidden: Matcher results are only accessible from local/private network."
+            detail="Forbidden: Matcher results are only accessible from local/private network.",
         )
     results_file = BASE_DIR / "static" / "ticker_matcher_results.json"
     if not results_file.exists():
@@ -1465,7 +1504,7 @@ async def api_apply_matcher_items(request: Request):
     if not is_local_or_private_request(request):
         raise HTTPException(
             status_code=403,
-            detail="Forbidden: Matcher apply is only accessible from local/private network."
+            detail="Forbidden: Matcher apply is only accessible from local/private network.",
         )
     try:
         body = await request.json()
@@ -1474,11 +1513,12 @@ async def api_apply_matcher_items(request: Request):
             return {"success": False, "message": "선택된 매칭 항목이 없습니다."}
 
         from .ticker_matcher import apply_matches_to_mapping
+
         added_count = apply_matches_to_mapping(items)
         return {
             "success": True,
             "added_count": added_count,
-            "message": f"{added_count}개 종목이 mapping.json의 DUPLICATED_LIST에 성공적으로 등록되었습니다."
+            "message": f"{added_count}개 종목이 mapping.json의 DUPLICATED_LIST에 성공적으로 등록되었습니다.",
         }
     except Exception as e:
         return {"success": False, "message": f"반영 실패: {str(e)}"}
@@ -1489,13 +1529,13 @@ async def api_trigger_matcher_scan(request: Request):
     if not is_local_or_private_request(request):
         raise HTTPException(
             status_code=403,
-            detail="Forbidden: Matcher scan is only accessible from local/private network."
+            detail="Forbidden: Matcher scan is only accessible from local/private network.",
         )
     # run2는 사용자의 의지로 터미널에서만 수동 실행되도록 run.py 서버와 완전 격리
     return {
         "success": False,
         "manual_only": True,
-        "message": "매칭 스캔은 메인 서버와 완전히 독립되어 있습니다. 터미널에서 'uv run run2' 또는 'uv run run2.py'를 수동 실행해 주세요."
+        "message": "매칭 스캔은 메인 서버와 완전히 독립되어 있습니다. 터미널에서 'uv run run2' 또는 'uv run run2.py'를 수동 실행해 주세요.",
     }
 
 
@@ -1519,4 +1559,3 @@ async def dynamic_symbol_route(request: Request, symbol_path: str):
     if symbol_path.lower() in reserved:
         return {"error": "Not Found"}
     return templates.TemplateResponse(request=request, name="index.html")
-
